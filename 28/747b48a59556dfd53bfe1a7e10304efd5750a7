@@ -1,0 +1,19 @@
+tests/test_managed.py
+  s_0f346951ec0436::t_24b2cca1eeb30c 347
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "28747b48a59556dfd53bfe1a7e10304efd5750a7",
+  "prompts": {},
+  "sessions": {
+    "s_0f346951ec0436": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11271-f137-79a3-86ef-83a0894f88e0",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
