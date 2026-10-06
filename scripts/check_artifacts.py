@@ -31,7 +31,13 @@ with tarfile.open(directory / f"occupied-{version}.tar.gz") as source:
         "scripts/check_artifacts.py",
     ):
         assert f"occupied-{version}/{relative}" in source.getnames()
-for line in (directory / "SHA256SUMS").read_text().splitlines():
+checksums = (directory / "SHA256SUMS").read_text().splitlines()
+assert {line.split("  ", 1)[1] for line in checksums} == {
+    "occupied.zip",
+    f"occupied-{version}-py3-none-any.whl",
+    f"occupied-{version}.tar.gz",
+}
+for line in checksums:
     expected, name = line.split("  ", 1)
     assert hashlib.sha256((directory / name).read_bytes()).hexdigest() == expected
 print(f"Release {version}: zip, wheel, source distribution and checksums verified")

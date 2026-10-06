@@ -35,10 +35,15 @@ def build(destination: Path):
 if __name__ == "__main__":
     destination = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "dist"
     archive = build(destination)
-    print(f"Built {archive} ({json.loads((INTEGRATION / 'manifest.json').read_text())['version']})")
+    version = json.loads((INTEGRATION / "manifest.json").read_text())["version"]
+    print(f"Built {archive} ({version})")
+    artifacts = [
+        archive,
+        destination / f"occupied-{version}-py3-none-any.whl",
+        destination / f"occupied-{version}.tar.gz",
+    ]
     checksums = [
         f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}"
-        for path in sorted(destination.iterdir())
-        if path.is_file() and path.name != "SHA256SUMS"
+        for path in sorted(artifacts)
     ]
     (destination / "SHA256SUMS").write_text("\n".join(checksums) + "\n")
