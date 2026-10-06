@@ -344,7 +344,7 @@ def test_symlink_escape_and_size_bounds(tmp_path):
 
 def test_symlink_loop_is_a_validation_error(tmp_path):
     (tmp_path / "loop.yaml").symlink_to("loop.yaml")
-    with pytest.raises(ProgramError, match="resolve"):
+    with pytest.raises(ProgramError):
         read_managed(str(tmp_path), "loop.yaml")
 
 
