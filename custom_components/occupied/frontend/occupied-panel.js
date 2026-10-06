@@ -38,10 +38,11 @@ class OccupiedPanel extends HTMLElement {
     }
   }
 
-  async _control(service) {
+  async _control(service, extra = {}) {
     try {
       await this._hass.callService("occupied", service, {
         config_entry_id: this._panel.config.config_entry_id,
+        ...extra,
       });
       await this._refresh();
     } catch (error) {
@@ -73,18 +74,24 @@ class OccupiedPanel extends HTMLElement {
         <section aria-label="Simulation status" aria-live="polite"><dl id="status"></dl></section>
         <nav aria-label="Simulation controls" id="controls"></nav>
         <section><h2>Upcoming actions</h2><ol id="events"></ol></section>
+        <section id="daily-details" hidden><h2>Active activities</h2><ul id="activities"></ul><h2>Lighting convergence</h2><ul id="handover"></ul></section>
         <p><a href="/config/integrations/integration/occupied">Configure Occupied</a></p>
-        <p>This development checkpoint runs one light sequence and an optional timed remote activity each time activation begins. Routine editing is planned for a later stage.</p>
+        <p id="checkpoint"></p>
       </main>`;
     const root = this.shadowRoot;
     root.getElementById("error").textContent = this._error;
     const state = this._status;
     root.getElementById("house").textContent = state?.name || "Loading household…";
     if (!state) return;
+    const daily = state.mode === "daily";
+    root.getElementById("checkpoint").textContent = daily
+      ? "The daily program runs in Home Assistant while this panel is closed. Apply program changes through the Occupied API; routine editing is planned for a later stage."
+      : "This development checkpoint runs one light sequence and an optional timed remote activity each time activation begins. Apply a daily program to use routines and recovery.";
     const time = (value) => value ? new Date(value).toLocaleString() : "None";
     const fields = [
       ["Status", state.status], ["Reason", state.reason],
       ["Permission", state.enabled ? "Enabled" : "Disabled"],
+      ...(daily ? [["Execution", state.dry_run ? "Dry run" : "Live"]] : []),
       ["Next action", time(state.next_event)],
       ["Lighting handover ends", time(state.handover_deadline)],
       ["Remote activity ends", time(state.remote_deadline)],
@@ -100,13 +107,36 @@ class OccupiedPanel extends HTMLElement {
       button.addEventListener("click", () => this._control(service));
       root.getElementById("controls").append(button);
     }
-    for (const event of state.events) {
+    if (daily) {
+      const button = document.createElement("button");
+      button.textContent = state.dry_run ? "Select live execution" : "Select dry run";
+      button.addEventListener("click", () => this._control("set_dry_run", { dry_run: !state.dry_run }));
+      root.getElementById("controls").append(button);
+      root.getElementById("daily-details").hidden = false;
+      for (const activity of state.activities) {
+        const li = document.createElement("li");
+        li.textContent = `${activity.source_id} · ${activity.phase} · ends ${time(activity.deadline)}`;
+        root.getElementById("activities").append(li);
+      }
+      if (!state.activities.length) root.getElementById("activities").textContent = "None";
+      for (const [entity, handover] of Object.entries(state.handover)) {
+        const li = document.createElement("li");
+        li.textContent = `${entity} · ${Math.round(handover.progress * 100)}% · ends ${time(handover.deadline)}`;
+        root.getElementById("handover").append(li);
+      }
+      if (!Object.keys(state.handover).length) root.getElementById("handover").textContent = "None";
+    }
+    for (const event of state.events.slice(0, 50)) {
       const li = document.createElement("li");
       li.textContent = `${time(event.time)} · ${event.event.replaceAll("_", " ")}`;
       root.getElementById("events").append(li);
     }
     if (!state.events.length) {
       const li = document.createElement("li"); li.textContent = "No pending actions";
+      root.getElementById("events").append(li);
+    } else if (state.events.length > 50) {
+      const li = document.createElement("li");
+      li.textContent = `${state.events.length - 50} more actions in the daily plan`;
       root.getElementById("events").append(li);
     }
   }

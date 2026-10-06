@@ -8,11 +8,12 @@ if TYPE_CHECKING:
     from homeassistant.helpers.typing import ConfigType
 
     from .engine import OccupiedEngine
+    from .engine_daily import DailyEngine
 
-type OccupiedConfigEntry = ConfigEntry[OccupiedEngine]
+type OccupiedConfigEntry = ConfigEntry[OccupiedEngine | DailyEngine]
 
 
-def resolve_engine(hass: HomeAssistant, entry_id: str) -> OccupiedEngine:
+def resolve_engine(hass: HomeAssistant, entry_id: str) -> OccupiedEngine | DailyEngine:
     """Reject ambiguous, missing, unloaded, and foreign integration entries."""
     from homeassistant.exceptions import HomeAssistantError
 
@@ -30,7 +31,7 @@ def resolve_engine(hass: HomeAssistant, entry_id: str) -> OccupiedEngine:
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Register services once; they resolve the currently loaded entry at call time."""
     import voluptuous as vol
-    from homeassistant.exceptions import Unauthorized
+    from homeassistant.exceptions import HomeAssistantError, Unauthorized
 
     from .const import DOMAIN
     from .websocket_api import async_register_websocket
@@ -45,12 +46,22 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         engine = resolve_engine(hass, call.data["config_entry_id"])
         if call.service in {"start", "stop"}:
             await engine.async_set_enabled(call.service == "start")
+        elif call.service == "set_dry_run":
+            if not hasattr(engine, "async_set_dry_run"):
+                raise HomeAssistantError("Apply a daily program before selecting dry run")
+            await engine.async_set_dry_run(call.data["dry_run"])
         else:
             await engine.async_set_paused(call.service == "pause")
 
     schema = vol.Schema({vol.Required("config_entry_id"): str})
     for service in ("start", "stop", "pause", "resume"):
         hass.services.async_register(DOMAIN, service, control, schema=schema)
+    hass.services.async_register(
+        DOMAIN,
+        "set_dry_run",
+        control,
+        schema=vol.Schema({vol.Required("config_entry_id"): str, vol.Required("dry_run"): bool}),
+    )
     async_register_websocket(hass)
     return True
 
@@ -64,14 +75,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> 
     from .const import DOMAIN, PLATFORMS
     from .engine import OccupiedEngine
     from .panel import async_register_panel, async_remove_panel
+    from .storage import program_store
+    from .validation import ProgramError, validate_program
 
     if any(other.entry_id != entry.entry_id for other in hass.config_entries.async_entries(DOMAIN)):
-        raise ConfigEntryError("Milestone 1 supports one Occupied household entry")
-    try:
-        config = validate_input(dict(entry.options or entry.data))
-    except vol.Invalid as err:
-        raise ConfigEntryError(f"Invalid Occupied configuration: {err}") from err
-    engine = entry.runtime_data = OccupiedEngine(hass, entry.entry_id, config)
+        raise ConfigEntryError("Occupied supports one household entry")
+    source = await program_store(hass, entry.entry_id).async_load() or entry.data.get("program")
+    if source is not None:
+        from .engine_daily import DailyEngine
+
+        try:
+            program = await hass.async_add_executor_job(validate_program, source)
+        except ProgramError as err:
+            raise ConfigEntryError(f"Invalid Occupied program: {err}") from err
+        engine = entry.runtime_data = DailyEngine(hass, entry.entry_id, program)
+    else:
+        try:
+            config = validate_input(dict(entry.options or entry.data))
+        except vol.Invalid as err:
+            raise ConfigEntryError(f"Invalid Occupied configuration: {err}") from err
+        engine = entry.runtime_data = OccupiedEngine(hass, entry.entry_id, config)
     try:
         await engine.async_prepare()
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

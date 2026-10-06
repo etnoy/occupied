@@ -17,6 +17,8 @@ def async_register_websocket(hass: HomeAssistant) -> None:
         websocket_preview,
         websocket_export,
         websocket_rename_id,
+        websocket_apply,
+        websocket_diagnostics,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -137,3 +139,62 @@ async def websocket_rename_id(
     from .preview import rename_draft
 
     await _draft_operation(hass, connection, msg, rename_draft, msg["kind"], msg["old"], msg["new"])
+
+
+@websocket_api.websocket_command({**_DRAFT_SCHEMA, vol.Required("type"): "occupied/apply"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_apply(hass, connection, msg):
+    from . import resolve_engine
+    from .activation import ActivationGate
+    from .engine_daily import DailyEngine
+    from .file_config import load_program
+    from .storage import program_store
+    from .validation import ProgramError, condition_data, program_data
+
+    try:
+        engine = resolve_engine(hass, msg["config_entry_id"])
+        program = await hass.async_add_executor_job(load_program, msg["program"])
+        gate = ActivationGate(hass, [condition_data(c) for c in program.activation.conditions])
+        await gate.async_prepare()
+        if hasattr(engine, "async_replace_program"):
+            await engine.async_replace_program(program)
+        else:
+            candidate = DailyEngine(hass, engine.entry_id, program)
+            await candidate.async_prepare()
+            await candidate._ensure_plans()
+            if candidate._storage_failed:
+                raise HomeAssistantError(candidate.last_error)
+            await program_store(hass, engine.entry_id).async_save(program_data(program))
+            if not await hass.config_entries.async_reload(engine.entry_id):
+                raise HomeAssistantError("Could not load the saved daily program")
+        connection.send_result(msg["id"], {"valid": True, "program": program_data(program)})
+    except ProgramError as err:
+        connection.send_result(
+            msg["id"], {"valid": False, "issues": [i.to_dict() for i in err.issues]}
+        )
+    except (HomeAssistantError, ValueError, vol.Invalid) as err:
+        connection.send_error(msg["id"], "apply_failed", str(err))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "occupied/diagnostics",
+        vol.Required("config_entry_id"): str,
+        vol.Optional("include_sensitive", default=False): bool,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_diagnostics(hass, connection, msg):
+    from . import resolve_engine
+    from .diagnostics import diagnostics_data
+
+    try:
+        engine = resolve_engine(hass, msg["config_entry_id"])
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "not_loaded", str(err))
+        return
+    connection.send_result(
+        msg["id"], diagnostics_data(engine, include_sensitive=msg["include_sensitive"])
+    )

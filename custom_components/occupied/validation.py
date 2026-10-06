@@ -34,7 +34,7 @@ class Issue:
     column: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self) | {"path": format_path(self.path)}
+        return asdict(self) | {"path": format_path(self.path), "model_path": list(self.path)}
 
 
 class ProgramError(ValueError):

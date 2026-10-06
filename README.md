@@ -7,11 +7,17 @@ Occupied is a Home Assistant integration that simulated occupancy so that it loo
 
 It is the spiritual successor of https://github.com/acockburn/occusim
 
+Milestones 1–3 are implemented: canonical daily programs, durable plans/journals, gradual lighting handover, owned activity cleanup and restart recovery, dry run, and diagnostics. The full routine editor and managed-file/release workflow remain later milestones. See [the daily runtime guide](docs/runtime.md) for program apply, controls, recovery, and runtime limits.
+
 ## Installation
 
 1. Copy `custom_components/occupied/` into `<HA config>/custom_components/occupied/`, including `frontend/` and `translations/`.
 2. Restart Home Assistant.
 3. Open **Settings → Devices & services → Add integration → Occupied**.
+4. Create the household entry and keep its enabled permission off while configuring. Apply a canonical YAML/JSON program through the admin `occupied/apply` API as described in the runtime guide. The original proof settings remain supported.
+5. Select **Dry run** in the sidebar panel to inspect simulated calls before selecting live execution. Enable permission when ready; activation conditions still apply.
+
+There is one household entry. Applying a program stores a snapshot; it does not watch or modify the source YAML. No frontend build, AppDaemon, separate daemon, or open browser is required. The supported/tested baseline is Home Assistant Core **2026.9.4**, on Python **3.14.8** (HA requires Python >=3.14.2).
 
 ## Canonical programs and offline previews
 
@@ -34,7 +40,7 @@ Previews include UTC and local event times, intervals, stable event IDs, behavio
 
 Authenticated admin WebSocket commands `occupied/validate`, `occupied/preview`, `occupied/export`, and `occupied/rename_id` expose these draft operations to the future editor. They require a loaded `config_entry_id` and a `program` JSON object or YAML string. Preview also takes ISO `date`, `seed`, optional `days` (1–31), and optional aware ISO `at`. ID migration takes `kind`, `old`, and `new`. These commands return drafts and previews without changing the live queue or calling device services.
 
-The pure planner records nominal activity start/end pairs and declared resources. Device availability, start/ownership conditions, actual service latency, persistence, and cancellation remain runtime responsibilities for Milestone 3. Handover preview currently takes one sampled day; when completion crosses its boundary it reports `next_day_plan_required`.
+The pure planner records nominal activity start/end pairs and declared resources. The daily runtime checks device availability, native start/ownership conditions, actual service latency, persistence, and cancellation. A single-day CLI handover preview reports `next_day_plan_required` across its boundary; the runtime loads the required endpoint date. Admin `occupied/diagnostics` exports redacted counts by default, with household details available only through explicit `include_sensitive: true`.
 
 ## Development and verification
 
@@ -47,4 +53,4 @@ uv run ruff check custom_components tests
 uv run ruff format --check custom_components tests
 ```
 
-`uv.lock` pins the complete test environment, including the HA frontend package. Tests load the integration through real Home Assistant config entries, entities, native conditions, timers, HTTP, and WebSocket APIs. Only physical light/remote handlers are virtual services in HA's real registry. Accelerated-clock tests verify the live caller chain and cleanup. Pure tests cover canonical round trips, ID migration, sampled bounds over many seeds, resource conflicts, midnight/DST, overlapping lighting leases, and handover projection. API tests verify preview isolation and admin authorization. No existing HA installation or physical devices are modified by these tests.
+`uv.lock` pins the complete test environment, including the HA frontend package. All **180 tests pass with 91% Python coverage**, including 56 daily-runtime/API acceptance cases and all earlier regressions. Tests use real HA config entries, entities, native conditions, storage, timers, HTTP, and WebSocket APIs, with virtual physical-device handlers. They cover restart/overdue cleanup, immutable ends after apply, manual control, late/staggered starts, cross-day leases, persistence failure, capability fallbacks, dry run, bounded retries, authenticated apply/diagnostics, and preview isolation. Pure tests cover canonical round trips, ID migration, sampled bounds, resource conflicts, midnight/DST, and handover projection. No existing HA installation or physical devices are modified. Hardware and broader HA-version checks remain release work.

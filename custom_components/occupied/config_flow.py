@@ -93,6 +93,20 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    async def async_step_import(self, user_input):
+        from .file_config import load_program
+        from .validation import ProgramError, program_data
+
+        await self.async_set_unique_id(DOMAIN)
+        self._abort_if_unique_id_configured()
+        try:
+            program = await self.hass.async_add_executor_job(load_program, user_input)
+        except ProgramError:
+            return self.async_abort(reason="invalid_program")
+        return self.async_create_entry(
+            title=program.name, data={"name": program.name, "program": program_data(program)}
+        )
+
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
@@ -120,6 +134,13 @@ class OccupiedOptionsFlow(config_entries.OptionsFlow):
     """Replace caller-proof settings through a normal entry reload."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        from .storage import program_store
+
+        if (
+            self.config_entry.data.get("program")
+            or await program_store(self.hass, self.config_entry.entry_id).async_load()
+        ):
+            return self.async_abort(reason="daily_program")
         errors = {}
         if user_input is not None:
             try:

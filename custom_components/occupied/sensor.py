@@ -47,6 +47,15 @@ class OccupiedStatusSensor(OccupiedEntity, SensorEntity):
             "session": self.engine.session,
             "remote_owned": self.engine.remote_owned,
             "last_error": self.engine.last_error,
+            **(
+                {
+                    "dry_run": self.engine.dry_run,
+                    "active_activities": len(self.engine._activities),
+                    "handover_targets": len(self.engine._handover),
+                }
+                if hasattr(self.engine, "dry_run")
+                else {}
+            ),
         }
 
 

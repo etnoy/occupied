@@ -1,6 +1,7 @@
 """Native HA state predicates, with unresolved dependencies failing closed."""
 
 from collections.abc import Callable, Mapping
+from types import SimpleNamespace
 from typing import Any
 
 import voluptuous as vol
@@ -17,7 +18,7 @@ def validate_conditions(conditions: list[dict[str, Any]]) -> list[dict[str, Any]
     def check(item: Mapping[str, Any]) -> None:
         if item["condition"] == "state":
             if "for" in item:
-                raise vol.Invalid("State duration conditions are not supported in milestone 1")
+                raise vol.Invalid("State duration conditions are not supported")
         elif item["condition"] in {"and", "or", "not"}:
             for child in item["conditions"]:
                 check(child)
@@ -58,14 +59,15 @@ class ActivationGate:
             await condition.async_from_config(self.hass, item) for item in self.conditions
         ]
 
-    def evaluate(self) -> tuple[bool, str]:
+    def evaluate(self, states=None) -> tuple[bool, str]:
         """Missing dependencies also block a negated condition."""
+        source = self.hass if states is None else SimpleNamespace(states=states)
         for entity_id in sorted(self.entities):
-            state = self.hass.states.get(entity_id)
+            state = source.states.get(entity_id)
             if state is None or state.state in {STATE_UNKNOWN, STATE_UNAVAILABLE}:
                 return False, f"Activation entity unresolved: {entity_id}"
         for entity_id, attribute in self.attributes:
-            state = self.hass.states.get(entity_id)
+            state = source.states.get(entity_id)
             if state is None or state.attributes.get(attribute) in (
                 None,
                 STATE_UNKNOWN,
@@ -73,7 +75,7 @@ class ActivationGate:
             ):
                 return False, f"Activation attribute unresolved: {entity_id}.{attribute}"
         try:
-            passed = all(check(self.hass, {}) for check in self._checks)
+            passed = all(check(source, {}) for check in self._checks)
         except condition.ConditionError as err:
             return False, f"Activation condition failed: {err}"
         return (

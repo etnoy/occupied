@@ -9,7 +9,7 @@ start:
           integration: occupied
 stop:
   name: Disable
-  description: Persistently disable permission, cancel pending light actions, and end a still-owned remote activity.
+  description: Disable permission, cancel lighting convergence, and apply configured owned activity cleanup.
   fields:
     config_entry_id:
       required: true
@@ -34,3 +34,16 @@ resume:
       selector:
         config_entry:
           integration: occupied
+set_dry_run:
+  name: Set dry run
+  description: Select simulated execution for a daily program. Changing mode stops the previous session using its configured cleanup.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: occupied
+    dry_run:
+      required: true
+      selector:
+        boolean:

@@ -25,7 +25,8 @@
       "invalid_config": "Check the selected entities, allowed states, activity name, and duration bounds."
     },
     "abort": {
-      "already_configured": "One Occupied household is already configured."
+      "already_configured": "One Occupied household is already configured.",
+      "invalid_program": "The canonical Occupied program is invalid."
     }
   },
   "options": {
@@ -51,12 +52,18 @@
     },
     "error": {
       "invalid_config": "Check the selected entities, allowed states, activity name, and duration bounds."
+    },
+    "abort": {
+      "daily_program": "This entry uses a daily program. Apply changes through the Occupied API."
     }
   },
   "entity": {
     "switch": {
       "enabled": {
         "name": "Enabled"
+      },
+      "dry_run": {
+        "name": "Dry run"
       }
     },
     "sensor": {

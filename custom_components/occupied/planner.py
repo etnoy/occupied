@@ -116,6 +116,7 @@ class PlanEvent:
             "source_id": self.source_id,
             "kind": self.kind,
             "priority": self.priority,
+            "sequence": self.sequence,
             "lease_id": self.lease_id,
             "action": self.action.to_dict(),
         }
