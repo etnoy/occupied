@@ -1,0 +1,23 @@
+.github/workflows/release.yml
+  s_770a55a1280861::t_06d726466b6071 41-46
+docs/installation.md
+  s_770a55a1280861::t_a88729efe3b3d3 7
+docs/releasing.md
+  s_770a55a1280861::t_e4de6761b9f790 48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c2267d9c9ca52c58e7b468217c3e3f4444c896f0",
+  "prompts": {},
+  "sessions": {
+    "s_770a55a1280861": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11206-4bea-7af1-90cf-0a8792ebe5e2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
