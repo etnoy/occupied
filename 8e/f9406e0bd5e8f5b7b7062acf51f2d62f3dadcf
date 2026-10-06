@@ -1,0 +1,23 @@
+.github/workflows/check.yml
+  s_0f346951ec0436::t_47d9522dcf0723 101-106
+scripts/build_release.py
+  s_0f346951ec0436::t_8da0c9fc465680 38-44,47
+scripts/check_artifacts.py
+  s_0f346951ec0436::t_d4287a20a27e2e 34-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "8ef9406e0bd5e8f5b7b7062acf51f2d62f3dadcf",
+  "prompts": {},
+  "sessions": {
+    "s_0f346951ec0436": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11271-f137-79a3-86ef-83a0894f88e0",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
