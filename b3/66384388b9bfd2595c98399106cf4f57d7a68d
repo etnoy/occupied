@@ -1,0 +1,21 @@
+README.md
+  s_770a55a1280861::t_879ebe8992f631 2,4,6,8,10
+media/occupied.svg
+  s_770a55a1280861::t_08d97a71a6eb27 1-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b366384388b9bfd2595c98399106cf4f57d7a68d",
+  "prompts": {},
+  "sessions": {
+    "s_770a55a1280861": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11206-4bea-7af1-90cf-0a8792ebe5e2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
