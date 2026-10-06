@@ -1,8 +1,28 @@
 [project]
 name = "occupied"
 version = "0.1.0"
-description = "A native Home Assistant occupancy simulator (milestone 1)"
+description = "A native Home Assistant occupancy simulator and pure stochastic planner"
 requires-python = ">=3.14.2"
+dependencies = ["pydantic==2.13.4", "PyYAML==6.0.3", "astral==2.2"]
+
+[project.scripts]
+occupied-config = "custom_components.occupied.cli:main"
+
+[build-system]
+requires = ["setuptools>=78"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+include = ["custom_components", "custom_components.occupied*"]
+namespaces = true
+
+[tool.setuptools.package-data]
+"custom_components.occupied" = [
+  "manifest.json", "services.yaml", "strings.json", "translations/*.json", "frontend/*.js",
+]
 
 [dependency-groups]
 dev = [

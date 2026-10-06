@@ -1,22 +1,23 @@
-"""Home Assistant hosts Occupied's complete milestone-one caller chain."""
+"""HA lifecycle; imports are deferred so the planner/CLI can run without HA."""
 
-import voluptuous as vol
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.exceptions import ConfigEntryError, HomeAssistantError, Unauthorized
-from homeassistant.helpers.typing import ConfigType
+from typing import TYPE_CHECKING
 
-from .config_flow import validate_input
-from .const import DOMAIN, PLATFORMS
-from .engine import OccupiedEngine
-from .panel import async_register_panel, async_remove_panel
-from .websocket_api import async_register_websocket
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant, ServiceCall
+    from homeassistant.helpers.typing import ConfigType
+
+    from .engine import OccupiedEngine
 
 type OccupiedConfigEntry = ConfigEntry[OccupiedEngine]
 
 
 def resolve_engine(hass: HomeAssistant, entry_id: str) -> OccupiedEngine:
     """Reject ambiguous, missing, unloaded, and foreign integration entries."""
+    from homeassistant.exceptions import HomeAssistantError
+
+    from .const import DOMAIN
+
     entry = hass.config_entries.async_get_entry(entry_id)
     if entry is None or entry.domain != DOMAIN or not hasattr(entry, "runtime_data"):
         raise HomeAssistantError("Occupied config entry is not loaded")
@@ -28,6 +29,12 @@ def resolve_engine(hass: HomeAssistant, entry_id: str) -> OccupiedEngine:
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Register services once; they resolve the currently loaded entry at call time."""
+    import voluptuous as vol
+    from homeassistant.exceptions import Unauthorized
+
+    from .const import DOMAIN
+    from .websocket_api import async_register_websocket
+
     hass.data.setdefault(DOMAIN, {})
 
     async def control(call: ServiceCall) -> None:
@@ -50,6 +57,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> bool:
     """Initialize entities, a bundled panel, then HA state listeners and timers."""
+    import voluptuous as vol
+    from homeassistant.exceptions import ConfigEntryError
+
+    from .config_flow import validate_input
+    from .const import DOMAIN, PLATFORMS
+    from .engine import OccupiedEngine
+    from .panel import async_register_panel, async_remove_panel
+
     if any(other.entry_id != entry.entry_id for other in hass.config_entries.async_entries(DOMAIN)):
         raise ConfigEntryError("Milestone 1 supports one Occupied household entry")
     try:
@@ -77,6 +92,9 @@ async def _async_options_updated(hass: HomeAssistant, entry: OccupiedConfigEntry
 
 async def async_unload_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> bool:
     """Invalidate pending work first, then end an owned activity and remove resources."""
+    from .const import PLATFORMS
+    from .panel import async_remove_panel
+
     await entry.runtime_data.async_close()
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:

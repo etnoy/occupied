@@ -1,0 +1,157 @@
+schema_version: 1
+name: House
+timezone: Europe/Stockholm
+location: {latitude: 59.3293, longitude: 18.0686}
+day_boundary: "02:00"
+
+activation:
+  conditions:
+    - condition: state
+      entity_id: sensor.alarm
+      state: ["armed", "armed_away"]
+
+defaults:
+  time_distribution: uniform
+  activity_windows:
+    on_duration: {min: 5m, max: 25m}
+    min_gap: 10m
+    overlap: false
+
+groups:
+  - id: bedrooms
+    name: Bedroom lights
+    entities: [light.bedroom, light.hall]
+  - id: kitchen
+    name: Kitchen lights
+    entities: [light.kitchen]
+  - id: living_room
+    name: Living room
+    entities: [light.living_room]
+    handover: {duration: 5m}
+
+lighting:
+  managed_targets: {groups: [bedrooms, kitchen, living_room]}
+  default_brightness_pct: 70
+  baseline:
+    - targets: {groups: [bedrooms, kitchen, living_room]}
+      state: "off"
+  handover: {duration: 10m, step_interval: 30s}
+
+routines:
+  - id: weekday_mornings
+    name: Weekday mornings
+    days: [mon, tue, wed, thu, fri]
+    steps:
+      - id: wake
+        name: Wake up
+        when:
+          clock_range: {earliest: "06:40", latest: "07:20"}
+        actions:
+          - action: turn_on
+            targets: {groups: [bedrooms]}
+            data: {brightness_pct: 60, color_temp_kelvin: 2700}
+      - id: breakfast
+        name: Breakfast
+        when:
+          relative_to: wake
+          offset_range: {min: 5m, max: 20m}
+        actions:
+          - action: turn_on
+            targets: {groups: [kitchen]}
+      - id: leave
+        name: Leave for work
+        when:
+          relative_to: breakfast
+          offset_range: {min: 15m, max: 30m}
+        actions:
+          - action: turn_off
+            targets: {groups: [bedrooms, kitchen]}
+
+  - id: weekend_mornings
+    name: Weekend mornings
+    days: [sat, sun]
+    defaults: {time_distribution: triangular}
+    steps:
+      - id: weekend_wake
+        name: Slow morning
+        when:
+          clock_range: {earliest: "08:00", latest: "10:00", mode: "09:00"}
+        actions:
+          - action: turn_on
+            targets: {groups: [kitchen]}
+      - id: weekend_leave
+        name: Morning lights off
+        when:
+          relative_to: weekend_wake
+          offset_range: {min: 30m, max: 1h}
+        actions:
+          - action: turn_off
+            targets: {groups: [kitchen]}
+
+  - id: evenings
+    name: Evening routine
+    steps:
+      - id: evening
+        name: Sunset lighting
+        when:
+          sun_range:
+            sun: sunset
+            offset_range: {min: -30m, max: 30m}
+            fallback: "18:00"
+        actions:
+          - action: turn_on
+            targets: {groups: [living_room]}
+            data: {brightness_pct: 50}
+      - id: bedtime
+        name: Go to bed
+        when:
+          clock_range: {earliest: "21:30", latest: "22:45"}
+        actions:
+          - action: turn_on
+            targets: {entities: [light.bedroom]}
+            data: {brightness_pct: 30}
+          - action: turn_off
+            targets: {groups: [living_room, kitchen]}
+      - id: lights_out
+        name: Lights out
+        when:
+          relative_to: bedtime
+          offset_range: {min: 5m, max: 20m}
+        actions:
+          - action: safety_off
+            targets: {groups: [bedrooms, kitchen, living_room]}
+
+    activities:
+      - id: evening_tv
+        name: Evening television
+        when:
+          clock_range: {earliest: "19:45", latest: "20:15"}
+        duration: {fixed: 45m}
+        resources: [remote.living_room_harmony]
+        start_conditions:
+          - condition: state
+            entity_id: remote.living_room_harmony
+            state: "off"
+        on_start:
+          - action: remote.turn_on
+            targets: {entities: [remote.living_room_harmony]}
+            data: {activity: Watch TV}
+        on_end:
+          - action: remote.turn_off
+            targets: {entities: [remote.living_room_harmony]}
+        ownership_conditions:
+          - condition: state
+            entity_id: remote.living_room_harmony
+            attribute: current_activity
+            state: Watch TV
+        stop_behavior: end_if_owned
+
+    activity_windows:
+      - id: kitchen_evening
+        name: Occasional kitchen use
+        between:
+          start: {sun: sunset, offset: -1h, fallback: "18:00"}
+          end: {step: bedtime}
+        cycles: {min: 2, max: 4}
+        targets: {groups: [kitchen]}
+        target_mode: all

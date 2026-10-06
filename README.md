@@ -2,7 +2,7 @@
 
 Occupied is a native Home Assistant custom integration for authored occupancy simulation. Home Assistant starts the engine, watches activation entities, and calls device services through its own timers. The bundled panel shows status and controls permission.
 
-**Current checkpoint: implementation-plan Milestone 1.** This version proves the complete caller chain with a deterministic sequence. The stochastic daily planner, complete routine editor, managed YAML, and durable activity recovery are later stages.
+**Current checkpoint: implementation-plan Milestones 1–2.** The integration runs the deterministic caller proof described below. A pure stochastic planner now validates canonical YAML/JSON programs and produces seeded daily/week previews and lighting handover endpoints. Durable dispatch of those daily plans, the complete routine editor, and authoritative managed-file reloads are later stages.
 
 The authoritative implementation plan is [../plans/OCCUPIED_PLAN.md](../plans/OCCUPIED_PLAN.md). Keep it updated throughout implementation with scope decisions, progress, verification results, and remaining work.
 
@@ -46,11 +46,34 @@ data:
 
 ## Checkpoint limits
 
-The schedule is one proof session per activation, rather than a daily household program. Its handover endpoint is explicitly configured for one light; a daily desired-state reducer and native-fade policy are planned. A device service's successful completion proves dispatch, not physical delivery.
+The live schedule is one proof session per activation. Its handover endpoint is explicitly configured for one light. The new daily planner and desired-lighting reducer are available through the CLI and authenticated draft APIs; applying daily plans and choosing native fades at runtime belong to Milestone 3. A device service's successful completion proves dispatch, not physical delivery.
 
 Permission and pause survive reload/restart. Sampled plans, activity ownership/deadlines, and execution journals are not persisted yet. Reload or resume starts a new deterministic proof session after gate evaluation; reload first ends a still-owned remote activity. HA shutdown cancels work without depending on device services. A remote may remain running during an outage and does not yet have restart recovery. Use this checkpoint for development proof; Milestone 3 adds durable runtime recovery.
 
 Unload removes the panel, state/startup/shutdown listeners, and timer. HA's static asset API has no route-unregister operation, so a single configuration-free JS asset route remains registered and is reused on reload. No household data is embedded in it.
+
+## Canonical programs and offline previews
+
+See [the schema reference](docs/schema.md) and [the household example](examples/house.yaml). YAML files and JSON drafts use the same versioned model, defaults, graph validation, and planner. Labels and resource list order do not affect sampled times. Explicit ID migration rewrites typed references atomically.
+
+The CLI requires Python 3.14.2 or later and its three direct planner dependencies. Install without HA using `uv sync --no-dev --locked`, or use the development environment below. You can also invoke it with `python -m custom_components.occupied.cli`.
+
+```sh
+occupied-config validate examples/house.yaml
+occupied-config validate examples/house.yaml --date 2026-10-06 --days 7 --seed example
+occupied-config preview examples/house.yaml --date 2026-10-06 --days 7 --seed example --output preview.json
+occupied-config preview examples/house.yaml --date 2026-10-06 --seed example --handover-at 2026-10-06T18:00:00+02:00
+occupied-config export examples/house.yaml --output normalized.yaml
+occupied-config rename-id examples/house.yaml step wake morning_wake --output replacement.yaml
+```
+
+Validation and previews only read the source. Export and ID migration return YAML to stdout unless you explicitly select an output file. Exit status is 0 for valid/feasible results and 2 for invalid input or an infeasible sampled plan. Add `--json` to validation for structured issues, model paths, and YAML source locations. Validate with a date to check schedule feasibility after sun/timezone resolution.
+
+Previews include UTC and local event times, intervals, stable event IDs, behavior/source hashes, and skipped/infeasible explanations. `--at` projects desired lighting; `--handover-at` projects each target at its completion deadline. A default `home_assistant` timezone needs `--timezone` offline; sun rules need program location or both `--latitude` and `--longitude`.
+
+Authenticated admin WebSocket commands `occupied/validate`, `occupied/preview`, `occupied/export`, and `occupied/rename_id` expose these draft operations to the future editor. They require a loaded `config_entry_id` and a `program` JSON object or YAML string. Preview also takes ISO `date`, `seed`, optional `days` (1–31), and optional aware ISO `at`. ID migration takes `kind`, `old`, and `new`. These commands return drafts and previews without changing the live queue or calling device services.
+
+The pure planner records nominal activity start/end pairs and declared resources. Device availability, start/ownership conditions, actual service latency, persistence, and cancellation remain runtime responsibilities for Milestone 3. Handover preview currently takes one sampled day; when completion crosses its boundary it reports `next_day_plan_required`.
 
 ## Development and verification
 
@@ -63,4 +86,4 @@ uv run ruff check custom_components tests
 uv run ruff format --check custom_components tests
 ```
 
-`uv.lock` pins the complete test environment, including the HA frontend package. Tests load the integration through real Home Assistant config entries, entities, native conditions, timers, HTTP, and WebSocket APIs. Only physical light/remote handlers are virtual services in HA's real registry. Accelerated-clock tests verify gradual changes, already-true startup gating, both allowed states, permission persistence, in-flight cancellation, remote deadlines/ownership, browser closure, config/options flows, reload/unload, and dispatch failures. No existing HA installation or physical devices are modified by these tests.
+`uv.lock` pins the complete test environment, including the HA frontend package. Tests load the integration through real Home Assistant config entries, entities, native conditions, timers, HTTP, and WebSocket APIs. Only physical light/remote handlers are virtual services in HA's real registry. Accelerated-clock tests verify the live caller chain and cleanup. Pure tests cover canonical round trips, ID migration, sampled bounds over many seeds, resource conflicts, midnight/DST, overlapping lighting leases, and handover projection. API tests verify preview isolation and admin authorization. No existing HA installation or physical devices are modified by these tests.
