@@ -106,7 +106,7 @@ async def test_raw_only_and_metadata_changes_preserve_plans(
     assert engine.handover_deadline == deadline
 
 
-@pytest.mark.parametrize("failure", ["yaml", "schema", "missing", "infeasible"])
+@pytest.mark.parametrize("failure", ["yaml", "deep_yaml", "schema", "missing", "infeasible"])
 async def test_invalid_update_retains_live_program_then_recovers(
     hass, file_entry, managed_file, program_dict, failure
 ):
@@ -123,6 +123,8 @@ async def test_invalid_update_retains_live_program_then_recovers(
         managed_file.unlink()
     elif failure == "yaml":
         managed_file.write_text("name: [\n")
+    elif failure == "deep_yaml":
+        managed_file.write_text("name: " + "[" * 600 + "value" + "]" * 600)
     elif failure == "schema":
         managed_file.write_text("schema_version: 99\nname: Invalid\n")
     else:
@@ -325,7 +327,7 @@ async def test_native_file_flow_missing_then_valid(hass, managed_file):
     assert result["type"] == FlowResultType.CREATE_ENTRY and result["data"]["source"] == "file"
 
 
-@pytest.mark.parametrize("relative", ["../outside.yaml", "/tmp/house.yaml", "", "."])
+@pytest.mark.parametrize("relative", ["../outside.yaml", "/tmp/house.yaml", "", ".", "bad\x00path"])
 def test_managed_path_must_stay_under_config(tmp_path, relative):
     with pytest.raises(ProgramError):
         read_managed(str(tmp_path), relative)
@@ -338,6 +340,12 @@ def test_symlink_escape_and_size_bounds(tmp_path):
     (tmp_path / "huge.yaml").write_bytes(b"a" * (MAX_FILE_BYTES + 1))
     with pytest.raises(ProgramError, match="1 MiB"):
         read_managed(str(tmp_path), "huge.yaml")
+
+
+def test_symlink_loop_is_a_validation_error(tmp_path):
+    (tmp_path / "loop.yaml").symlink_to("loop.yaml")
+    with pytest.raises(ProgramError, match="resolve"):
+        read_managed(str(tmp_path), "loop.yaml")
 
 
 async def test_default_diagnostics_do_not_expose_source_path_or_yaml(

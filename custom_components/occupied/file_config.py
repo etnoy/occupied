@@ -18,11 +18,14 @@ def managed_path(config_dir: str, relative: str) -> Path:
     """Resolve on every read so replaced symlinks cannot escape the config directory."""
     root = Path(config_dir).resolve()
     path = Path(relative)
-    if not relative.strip() or path.is_absolute() or ".." in path.parts:
+    if not relative.strip() or "\x00" in relative or path.is_absolute() or ".." in path.parts:
         raise ProgramError(
             [Issue("file_path", "Choose a relative path under the HA config directory")]
         )
-    resolved = (root / path).resolve()
+    try:
+        resolved = (root / path).resolve()
+    except (OSError, RuntimeError, ValueError) as err:
+        raise ProgramError([Issue("file_path", "Cannot resolve the managed file path")]) from err
     if not resolved.is_relative_to(root) or resolved == root:
         raise ProgramError(
             [Issue("file_path", "The managed file must remain under the HA config directory")]
@@ -125,6 +128,8 @@ def load_yaml(source: str) -> Program:
                 [Issue("yaml_root", "An Occupied program must be a mapping", line=1)]
             )
         return validate_program(data)
+    except RecursionError as err:
+        raise ProgramError([Issue("yaml_depth", "Configuration nesting is too deep")]) from err
     except yaml.YAMLError as err:
         mark = getattr(err, "problem_mark", None)
         raise ProgramError(

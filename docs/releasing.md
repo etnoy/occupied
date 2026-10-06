@@ -2,7 +2,7 @@
 
 Development and CI use Python 3.14.8. `uv.lock` pins the HA 2026.9.4 environment and plugin 0.13.367. `scripts/requirements-ha-2026.9.3.txt` independently pins/hashes HA 2026.9.3 and plugin 0.13.366. The older environment is resolved with the small explicit [override file](../scripts/ha-2026.9.3.overrides), without changing the baseline lock. The CLI has three direct dependencies and its installed wheel imports no HA module.
 
-The initial release passes **242 Python tests with 91% coverage on each HA version**, five Node tests, and thirteen production-editor browser workflows at 1280px and 390px. Tests use real HA entry setup, storage, entities, state conditions, HTTP/WebSocket APIs, repairs and timers, with virtual device handlers. This includes invalid file recovery, file authority, idempotence, source conflicts/switches, atomic rename/debounce, immutable cleanup and managed startup/session recovery. Tests make no calls to an existing HA installation or physical hardware.
+The initial release passes **245 Python tests with 91% coverage on each HA version**, five Node tests, and thirteen production-editor browser workflows at 1280px and 390px. Tests use real HA entry setup, storage, entities, state conditions, HTTP/WebSocket APIs, repairs and timers, with virtual device handlers. This includes invalid file recovery, file authority, idempotence, source conflicts/switches, atomic rename/debounce, immutable cleanup and managed startup/session recovery. Tests make no calls to an existing HA installation or physical hardware.
 
 ## Reproduce checks
 
