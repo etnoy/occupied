@@ -1,4 +1,4 @@
-"""Build the HACS zip from runtime files only; zip extracts into the domain directory."""
+"""Build the runtime zip for manual installs; it extracts into the domain directory."""
 
 import hashlib
 import json

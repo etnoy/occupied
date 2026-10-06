@@ -4,7 +4,7 @@ Occupied runs inside Home Assistant. Its editor, translations and brand images a
 
 ## HACS custom repository
 
-In HACS, open the three-dot menu → **Custom repositories**, add `https://github.com/etnoy/occupied`, and select **Integration**. Download the tagged release and restart HA. To install preview builds, enable the Occupied prerelease switch in HACS; prereleases appear as versions only after a matching GitHub prerelease is published. Occupied is distributed as a custom repository; these steps follow the [HACS custom repository instructions](https://www.hacs.dev/docs/faq/custom_repositories/).
+In HACS, open the three-dot menu → **Custom repositories**, add `https://github.com/etnoy/occupied`, and select **Integration**. In the version picker, choose `main` to download the latest commit from the default branch, then restart HA. Choose a release tag to install a pinned release instead. Occupied uses GitHub source archives for HACS installs, so the latest commit does not need a GitHub release asset. Custom repository steps follow the [HACS instructions](https://www.hacs.dev/docs/faq/custom_repositories/).
 
 Open **Settings → Devices & services → Add integration → Occupied**. Choose GUI storage, a YAML snapshot, or an authoritative managed file. A new entry starts with permission disabled. Configure and preview through the Occupied sidebar, then select dry run before enabling permission. Activation conditions continue to apply to both dry and live execution.
 
@@ -31,7 +31,7 @@ See [managed configuration and Puppet](managed-configuration.md) for reload, dep
 
 Back up HA before upgrading. GUI programs, permissions, random seed, sampled plans, journal and active activity snapshots are stored under HA's `.storage` and are included in HA config backups. Back up managed YAML separately with your configuration-management source. Never edit Occupied's stores directly.
 
-Disable permission before replacing integration files, update the complete release directory through HACS or manual extraction, then restart HA. Reloading the integration explicitly performs still-owned cleanup; a HA shutdown preserves active activity snapshots for restart recovery. Restore permission and review dry run after the upgrade. Source selection and GUI programs survive entry reload; unchanged managed programs retain deterministic saved plans and activity deadlines after restart. Preview rerolls never change the live seed.
+Disable permission before replacing integration files, update the complete integration through HACS or manual extraction, then restart HA. For HACS installs from `main`, updating HACS downloads the latest commit from the default branch. Reloading the integration explicitly performs still-owned cleanup; a HA shutdown preserves active activity snapshots for restart recovery. Restore permission and review dry run after the upgrade. Source selection and GUI programs survive entry reload; unchanged managed programs retain deterministic saved plans and activity deadlines after restart. Preview rerolls never change the live seed.
 
 Schema version 1 remains the supported program format. Unknown versions are rejected with actionable validation issues. Rename identifiers through the editor's **Migrate identifier** or `occupied-config rename-id`; labels can be changed without changing sampled times. Review emitted YAML before deploying it. Future schema/storage migrations must include tests and an upgrade note before release.
 

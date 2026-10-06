@@ -35,5 +35,6 @@ for name in ("icon.png", "icon@2x.png"):
 for path in integration.rglob("*.json"):
     json.loads(path.read_text())
 hacs = json.loads((ROOT / "hacs.json").read_text())
-assert hacs["zip_release"] and hacs["filename"] == "occupied.zip"
+assert hacs["name"] == "Occupied" and not hacs.get("hide_default_branch", False)
+assert not hacs.get("zip_release")
 print(f"Release {manifest['version']}: metadata, schema, equivalent examples and assets verified")
