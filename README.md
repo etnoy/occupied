@@ -1,7 +1,7 @@
 
 # Occupied
 
-<img src="media/occupied.svg" alt="Occupied: a smiling vintage occupied sign" height="200">
+<img src="media/occupied.svg" alt="Logo, a smiling occupied toilet sign" height="200">
 
 Occupied is a Home Assistant integration that simulated occupancy so that it looks like you are home when you are not. This integration is different than others because you create scenarios that can be run automatically with random variance.
 
