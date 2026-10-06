@@ -4,7 +4,7 @@ Occupied runs inside Home Assistant. Its editor, translations and brand images a
 
 ## HACS custom repository
 
-In HACS, open the three-dot menu → **Custom repositories**, add `https://github.com/etnoy/occupied`, and select **Integration**. Download the tagged release and restart HA. Occupied is distributed as a custom repository; these steps follow the [HACS custom repository instructions](https://www.hacs.dev/docs/faq/custom_repositories/).
+In HACS, open the three-dot menu → **Custom repositories**, add `https://github.com/etnoy/occupied`, and select **Integration**. Download the tagged release and restart HA. To install preview builds, enable the Occupied prerelease switch in HACS; prereleases appear as versions only after a matching GitHub prerelease is published. Occupied is distributed as a custom repository; these steps follow the [HACS custom repository instructions](https://www.hacs.dev/docs/faq/custom_repositories/).
 
 Open **Settings → Devices & services → Add integration → Occupied**. Choose GUI storage, a YAML snapshot, or an authoritative managed file. A new entry starts with permission disabled. Configure and preview through the Occupied sidebar, then select dry run before enabling permission. Activation conditions continue to apply to both dry and live execution.
 

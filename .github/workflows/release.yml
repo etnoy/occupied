@@ -38,4 +38,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$RELEASE_TAG" dist/* --verify-tag --title "Occupied $RELEASE_TAG" --notes-file "docs/releases/${RELEASE_TAG#v}.md"
+        run: |
+          if [[ "$RELEASE_TAG" =~ (a|b|rc)[0-9]+$ ]]; then
+            gh release create "$RELEASE_TAG" dist/* --verify-tag --prerelease --title "Occupied $RELEASE_TAG" --notes-file "docs/releases/${RELEASE_TAG#v}.md"
+          else
+            gh release create "$RELEASE_TAG" dist/* --verify-tag --title "Occupied $RELEASE_TAG" --notes-file "docs/releases/${RELEASE_TAG#v}.md"
+          fi
