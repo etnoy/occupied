@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" role="img" aria-labelledby="occupied-title" aria-describedby="occupied-desc">
+  <title id="occupied-title">Occupied</title>
+  <desc id="occupied-desc">A little vintage occupied sign with a coral red indicator, a cream frame, and a smiling round dial.</desc>
+
+  <!-- Rounded enamel housing. The surrounding canvas stays transparent. -->
+  <path d="M34 116a94 94 0 0 1 188 0v98a18 18 0 0 1-18 18H52a18 18 0 0 1-18-18Z" fill="#FFF3DE"/>
+  <path d="M38 207v7a14 14 0 0 0 14 14h152a14 14 0 0 0 14-14v-7a14 14 0 0 1-14 14H52a14 14 0 0 1-14-14Z" fill="#E8D5B8"/>
+  <path d="M34 116a94 94 0 0 1 188 0v98a18 18 0 0 1-18 18H52a18 18 0 0 1-18-18Z" stroke="#293E43" stroke-width="7" stroke-linejoin="round"/>
+
+  <!-- The red semicircle and its lower rim recall a mechanical door sign. -->
+  <path d="M47 119v-3a81 81 0 0 1 162 0v3Z" fill="#DF776C" stroke="#293E43" stroke-width="5" stroke-linejoin="round"/>
+
+  <!-- Font-free lettering follows the center of the red band, with proportional spacing. -->
+  <g stroke="#FFF3DE" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0-7.5c-3.5 0-5 2.5-5 7.5s1.5 7.5 5 7.5 5-2.5 5-7.5-1.5-7.5-5-7.5Z" transform="translate(79.46 78.26) rotate(-48.30)"/>
+    <path d="M4-6C2-8-1-8-3-6c-3 3-3 9 0 12 2 2 5 2 7 0" transform="translate(92.65 66.95) rotate(-32.95) translate(0.625 0)"/>
+    <path d="M4-6C2-8-1-8-3-6c-3 3-3 9 0 12 2 2 5 2 7 0" transform="translate(108.00 59.65) rotate(-17.92) translate(0.625 0)"/>
+    <path d="M-5-7.5V2.5a5 5 0 0 0 10 0v-10" transform="translate(125.10 56.56) rotate(-2.56)"/>
+    <path d="M-4 7.5v-15h4a4.5 4.5 0 0 1 0 9h-4" transform="translate(142.04 58.03) rotate(12.47) translate(-0.250 0)"/>
+    <path d="M0-7.5v15" transform="translate(153.50 61.71) rotate(23.09)"/>
+    <path d="M4-7.5h-8v15h8M-4 0h6" transform="translate(163.87 67.29) rotate(33.50)"/>
+    <path d="M-4-7.5v15h3c5 0 7-3 7-7.5S4-7.5-1-7.5Z" transform="translate(176.54 78.26) rotate(48.30) translate(-1.000 0)"/>
+  </g>
+
+  <!-- A friendly little turning dial, with a warm brass-colored bezel. -->
+  <circle cx="128" cy="127" r="49" fill="#E8D5B8" stroke="#293E43" stroke-width="5"/>
+  <circle cx="128" cy="125" r="38" fill="#FFF9EE" stroke="#293E43" stroke-width="5"/>
+  <ellipse cx="108" cy="129" rx="5.5" ry="3.5" fill="#EBA298"/>
+  <ellipse cx="148" cy="129" rx="5.5" ry="3.5" fill="#EBA298"/>
+  <g fill="#293E43">
+    <circle cx="115.5" cy="118" r="3.2"/>
+    <circle cx="140.5" cy="118" r="3.2"/>
+  </g>
+  <path d="M119 132q9 11 18 0" stroke="#293E43" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Four simple screw heads finish the little sign. -->
+  <g fill="#E8D5B8" stroke="#293E43" stroke-width="2.5" stroke-linecap="round">
+    <circle cx="54" cy="139" r="4.5"/>
+    <path d="m52 141 4-4"/>
+    <circle cx="202" cy="139" r="4.5"/>
+    <path d="m200 141 4-4"/>
+    <circle cx="54" cy="209" r="4.5"/>
+    <path d="m52 211 4-4"/>
+    <circle cx="202" cy="209" r="4.5"/>
+    <path d="m200 211 4-4"/>
+  </g>
+  <path d="M111 202h34" stroke="#E8D5B8" stroke-width="5" stroke-linecap="round"/>
+</svg>
