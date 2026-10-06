@@ -1,0 +1,131 @@
+.github/workflows/check.yml
+  s_0f346951ec0436::t_58af81c7707dd9 1-100
+.github/workflows/release.yml
+  s_0f346951ec0436::t_8282ff03746ea2 1-41
+.gitignore
+  s_0f346951ec0436::t_a17c885533c52f 10-13
+MANIFEST.in
+  s_0f346951ec0436::t_afa8c3a0ee0d9e 1-10
+README.md
+  s_0f346951ec0436::t_6677b4a81bfb41 10,14,17,20,26,30,56,59
+custom_components/occupied/__init__.py
+  s_9eae8be67d309b::t_1df2e4c6b72f87 16-28,47,55,61-70,83-85,93-104,122-141,150,159-162,176-177,190-202
+custom_components/occupied/cli.py
+  s_9eae8be67d309b::t_f2d7d52f5bce75 6,12,30-33,47-49,57,79-84,98-103,119-124,191-192
+custom_components/occupied/config_flow.py
+  s_9eae8be67d309b::t_337b0f6e0e9f9b 101-124,140-141,155,192-217,249-250
+custom_components/occupied/deployment.py
+  s_86c7598f28d501::t_2c09f9d3adb713 1-49
+custom_components/occupied/diagnostics.py
+  s_9eae8be67d309b::t_49bfb264dcd7f1 76-80
+custom_components/occupied/editor.py
+  s_9eae8be67d309b::t_a47f2ecb174665 121-124
+custom_components/occupied/engine_daily.py
+  s_0f346951ec0436::t_1af96ff7031d7f 122-123,300-301,1293,1317-1320,1324-1328,1331-1332,1337-1343,1370-1372
+custom_components/occupied/file_config.py
+  s_9eae8be67d309b::t_72ac114a8018fc 4,14-54
+custom_components/occupied/frontend/occupied-panel.js
+  s_9eae8be67d309b::t_8ecb0576780b12 118-121,259,285-288,429,789-827,829-857,888-922
+custom_components/occupied/managed.py
+  s_9eae8be67d309b::t_967123931ed83a 1-221
+custom_components/occupied/manifest.json
+  s_0f346951ec0436::t_3ddaba333415d9 4-6,8-14,17-22
+custom_components/occupied/panel.py
+  s_9eae8be67d309b::t_fa34f8ba46d7a9 16
+custom_components/occupied/sensor.py
+  s_86c7598f28d501::t_37460411fedf74 50-57
+custom_components/occupied/services.yaml
+  s_9eae8be67d309b::t_9e58a3c6700cea 50-59
+custom_components/occupied/strings.json
+  s_9eae8be67d309b::t_7060b8fe260293 7,37-43,48-49,53-54,116-117,120-129
+custom_components/occupied/translations/en.json
+  s_9eae8be67d309b::t_25a3afa5a8232e 7,37-43,48-49,53-54,116-117,120-129
+custom_components/occupied/websocket_api.py
+  s_9eae8be67d309b::t_d6361f8a2066db 29-30,181-185,228-280
+docs/editor.md
+  s_0f346951ec0436::t_f693e2a353f332 35,52,57,66,68
+docs/installation.md
+  s_9eae8be67d309b::t_c288c0a6fb88ac 1-58
+docs/managed-configuration.md
+  s_9eae8be67d309b::t_7673b98889961c 1-58
+docs/releases/0.1.0.md
+  s_9eae8be67d309b::t_2d55f30a51fdbc 1-15
+docs/releasing.md
+  s_0f346951ec0436::t_04e13a1e0b950c 1-50
+docs/runtime.md
+  s_0f346951ec0436::t_0aa5a8ccda8bd4 104
+examples/puppet/occupied.pp
+  s_9eae8be67d309b::t_98f8aeab1d2e4c 1-41
+hacs.json
+  s_0f346951ec0436::t_f2a3709d39e393 1-7
+package-lock.json
+  s_9eae8be67d309b::t_92be46e53903f5 1-59
+package.json
+  s_0f346951ec0436::t_90e279351c197a 1-14
+pyproject.toml
+  s_9eae8be67d309b::t_2d07d22caa1c0c 5-7,15,27,39
+schema/occupied.schema.json
+  s_0f346951ec0436::t_3bfecf6fb914b8 1-1846
+scripts/build_release.py
+  s_0f346951ec0436::t_2e6174169422e8 1-44
+scripts/check_artifacts.py
+  s_9eae8be67d309b::t_3b28b8c1c16a33 1-37
+scripts/check_release.py
+  s_0f346951ec0436::t_2e587fad11c4fb 1-39
+scripts/ha-2026.9.3.overrides
+  s_0f346951ec0436::t_d472d1fe5743e1 1-2
+scripts/requirements-ha-2026.9.3.txt
+  s_9eae8be67d309b::t_348b0c2a2de5ae 1-3709
+tests/frontend/run.mjs
+  s_9eae8be67d309b::t_6fd5f0e2c69b08 1-45
+tests/frontend/serve.py
+  s_0f346951ec0436::t_3bf9e10da6c0e8 39,49,68-69,128-129,145-179,213
+tests/frontend/workflows.js
+  s_9eae8be67d309b::t_4f3cd8823a0389 374-434
+tests/test_cli.py
+  s_0f346951ec0436::t_93acd38c3d22ff 85-99
+tests/test_config_flow.py
+  s_9eae8be67d309b::t_f6c24dd55288f9 19
+tests/test_daily_runtime.py
+  s_0f346951ec0436::t_7fa71545af34fc 274-322
+tests/test_deployment.py
+  s_86c7598f28d501::t_51a0beddb8235e 1-108
+tests/test_managed.py
+  s_0f346951ec0436::t_1e506cee94d916 1-404
+tests/test_panel.py
+  s_0f346951ec0436::t_adaf96c783cc06 66
+uv.lock
+  s_9eae8be67d309b::t_3278f4fb7d7790 1634
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "893cb8991f78561dc8983454e6cddb7a9fa1c7b4",
+  "prompts": {},
+  "sessions": {
+    "s_0f346951ec0436": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11271-f137-79a3-86ef-83a0894f88e0",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_86c7598f28d501": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11267-d4a4-78b0-9402-5ec37875a7fc",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_9eae8be67d309b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1111c-1aad-7330-bcac-ab43d7d7eb7e",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
