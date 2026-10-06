@@ -1,0 +1,51 @@
+custom_components/occupied/__init__.py
+  s_9eae8be67d309b::t_36219058065c02 11,13,16,34,49-52,59-64,78-79,82-97
+custom_components/occupied/actions.py
+  s_9eae8be67d309b::t_b4aae8f9fce080 1-113
+custom_components/occupied/activation.py
+  s_9eae8be67d309b::t_781bf7af4e9cdb 4,21,62,64,66,70,78
+custom_components/occupied/activities.py
+  s_9eae8be67d309b::t_66d2da6ef08bd1 1-81
+custom_components/occupied/config_flow.py
+  s_9eae8be67d309b::t_395934957231da 96-109,137-143
+custom_components/occupied/frontend/occupied-panel.js
+  s_9eae8be67d309b::t_0bd64f21ac8c72 41,45,77,79,86-89,94,110-129,137-140
+custom_components/occupied/handover.py
+  s_9eae8be67d309b::t_af2885805e87a7 1-68
+custom_components/occupied/runtime_planning.py
+  s_9eae8be67d309b::t_918cd02e65422e 1-102
+custom_components/occupied/sensor.py
+  s_9eae8be67d309b::t_f90bdccc17f19d 50-58
+custom_components/occupied/services.yaml
+  s_9eae8be67d309b::t_130f1637b84006 12,37-49
+custom_components/occupied/storage.py
+  s_9eae8be67d309b::t_99197c20095f6a 1-118
+custom_components/occupied/strings.json
+  s_9eae8be67d309b::t_2ca84e072f6087 28-29,55-57,64-66
+custom_components/occupied/switch.py
+  s_9eae8be67d309b::t_48a1e4cc87488b 16-19,39-57
+custom_components/occupied/translations/en.json
+  s_9eae8be67d309b::t_19baf57cf438d8 28-29,55-57,64-66
+custom_components/occupied/validation.py
+  s_9eae8be67d309b::t_753ee361f051ee 37
+custom_components/occupied/websocket_api.py
+  s_9eae8be67d309b::t_5e336a0899c63f 20-21,142-200
+docs/schema.md
+  s_9eae8be67d309b::t_04fef10f2ce973 3,84,86,126,132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a0c3ee9094dedf90a37770ade6b46e1b573deb8c",
+  "prompts": {},
+  "sessions": {
+    "s_9eae8be67d309b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1111c-1aad-7330-bcac-ab43d7d7eb7e",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
