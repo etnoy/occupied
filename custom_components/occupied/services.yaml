@@ -1,0 +1,36 @@
+start:
+  name: Enable
+  description: Enable permission and reevaluate activation conditions without bypassing them.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: occupied
+stop:
+  name: Disable
+  description: Persistently disable permission, cancel pending light actions, and end a still-owned remote activity.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: occupied
+pause:
+  name: Pause
+  description: Pause dispatch while retaining enabled permission.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: occupied
+resume:
+  name: Resume
+  description: Resume by reevaluating permission and activation conditions.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: occupied

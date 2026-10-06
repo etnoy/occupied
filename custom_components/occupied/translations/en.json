@@ -1,0 +1,80 @@
+{
+  "title": "Occupied",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Occupied caller proof",
+        "description": "Configure the milestone-one deterministic sequence. Permission starts disabled. Leave the activation entity empty for manual control. Each activation gradually brings the selected light to the configured brightness, then runs the light pair and optional remote activity.",
+        "data": {
+          "name": "Household name",
+          "light_entity": "Proof light",
+          "activation_entity": "Activation entity (optional)",
+          "allowed_states": "Allowed activation states",
+          "remote_entity": "Harmony remote (optional)",
+          "remote_activity": "Remote activity name",
+          "handover_seconds": "Lighting handover duration (seconds)",
+          "brightness_pct": "Target light brightness (%)",
+          "light_delay_seconds": "Light on delay after handover (seconds)",
+          "light_duration_seconds": "Light on duration (seconds)",
+          "remote_delay_seconds": "Remote start delay after handover (seconds)",
+          "remote_duration_seconds": "Remote activity duration (seconds)"
+        }
+      }
+    },
+    "error": {
+      "invalid_config": "Check the selected entities, allowed states, activity name, and duration bounds."
+    },
+    "abort": {
+      "already_configured": "One Occupied household is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Occupied caller proof",
+        "description": "Configure the milestone-one deterministic sequence. Permission starts disabled. Leave the activation entity empty for manual control. Each activation gradually brings the selected light to the configured brightness, then runs the light pair and optional remote activity.",
+        "data": {
+          "name": "Household name",
+          "light_entity": "Proof light",
+          "activation_entity": "Activation entity (optional)",
+          "allowed_states": "Allowed activation states",
+          "remote_entity": "Harmony remote (optional)",
+          "remote_activity": "Remote activity name",
+          "handover_seconds": "Lighting handover duration (seconds)",
+          "brightness_pct": "Target light brightness (%)",
+          "light_delay_seconds": "Light on delay after handover (seconds)",
+          "light_duration_seconds": "Light on duration (seconds)",
+          "remote_delay_seconds": "Remote start delay after handover (seconds)",
+          "remote_duration_seconds": "Remote activity duration (seconds)"
+        }
+      }
+    },
+    "error": {
+      "invalid_config": "Check the selected entities, allowed states, activity name, and duration bounds."
+    }
+  },
+  "entity": {
+    "switch": {
+      "enabled": {
+        "name": "Enabled"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status",
+        "state": {
+          "disabled": "Disabled",
+          "waiting": "Waiting",
+          "inactive": "Inactive",
+          "paused": "Paused",
+          "transitioning": "Transitioning",
+          "active": "Active",
+          "complete": "Complete"
+        }
+      },
+      "next_event": {
+        "name": "Next event"
+      }
+    }
+  }
+}

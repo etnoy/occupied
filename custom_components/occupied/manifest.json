@@ -1,0 +1,11 @@
+{
+  "domain": "occupied",
+  "name": "Occupied",
+  "version": "0.1.0",
+  "config_flow": true,
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "dependencies": ["frontend", "panel_custom", "websocket_api"],
+  "requirements": [],
+  "codeowners": []
+}
