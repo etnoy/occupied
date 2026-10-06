@@ -119,6 +119,8 @@ class DailyEngine:
         self._restoring = False
         self._saved_context = None
         self._storage_failed = False
+        self.configuration_ready = True
+        self.source_manager = None
 
     @property
     def remote_owned(self):
@@ -295,6 +297,8 @@ class DailyEngine:
             await self._reevaluate_locked()
 
     def _effective_gate(self):
+        if not self.configuration_ready:
+            return False, "Managed configuration unresolved; correct the file and reload"
         if self._storage_failed:
             return False, "Runtime persistence failed; reload or enable to retry"
         if self.closed or not self.started or not self.enabled or self.paused:
@@ -1286,7 +1290,7 @@ class DailyEngine:
                     await self._call(action, f"stop:{self.session}:{entity}", None, cleanup=True)
         self._owned.clear()
 
-    async def async_replace_program(self, program, *, expected_revision=None):
+    async def async_replace_program(self, program, *, expected_revision=None, persist_program=True):
         gate = ActivationGate(self.hass, [condition_data(c) for c in program.activation.conditions])
         await gate.async_prepare()
         today = simulation_date_at(program, dt_util.utcnow(), self._context())
@@ -1310,22 +1314,33 @@ class DailyEngine:
                 raise RevisionConflict(
                     "The program changed. Reload the saved program before saving."
                 )
-            await program_store(self.hass, self.entry_id).async_save(program_data(program))
+            if persist_program:
+                await program_store(self.hass, self.entry_id).async_save(program_data(program))
+            was_ready = self.configuration_ready
+            self.configuration_ready = True
             if behavior_hash(program) == behavior_hash(self.program):
                 self.program = program
                 self.config["name"] = program.name
-                await self._persist()
-                self._notify()
+                if not was_ready and self.started:
+                    await self._reevaluate_locked()
+                else:
+                    await self._persist()
+                    self._notify()
                 return
             self._invalidate()
-            await self._cancel_native_fades()
+            if self.started:
+                await self._cancel_native_fades()
             self.program, self.gate = program, gate
             self.config["name"] = program.name
             self._plans.clear()
             self._handover.clear()
-            self._restoring = True
-            self._listen_states()
-            await self._reevaluate_locked()
+            if self.started:
+                self._restoring = True
+                self._listen_states()
+                await self._reevaluate_locked()
+            else:
+                await self._persist()
+                self._notify()
 
     def _record(self, key, outcome, detail):
         self.outcomes.append(
@@ -1352,6 +1367,9 @@ class DailyEngine:
             "config_entry_id": self.entry_id,
             "name": self.program.name,
             "mode": "daily",
+            "configuration_source": self.source_manager.snapshot()
+            if self.source_manager
+            else {"mode": "gui", "status": "ready"},
             "enabled": self.enabled,
             "paused": self.paused,
             "dry_run": self.dry_run,

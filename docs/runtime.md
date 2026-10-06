@@ -101,4 +101,4 @@ const diagnostics = await hass.callWS({
 });
 ```
 
-`occupied/status` is also admin-only and includes household details used by the panel. Preview commands remain read-only and use separate seeds. Tests exercise real HA APIs with virtual devices; physical device behavior and broader version compatibility remain release verification work.
+`occupied/status` is also admin-only and includes household details used by the panel. Preview commands remain read-only and use separate seeds. Tests exercise real HA APIs with virtual devices on HA 2026.9.3 and 2026.9.4. Physical-device behavior and hardware soak remain deployment acceptance work. [Managed source reload](managed-configuration.md) uses this engine and preserves active immutable cleanup snapshots; [installation](installation.md) covers upgrades, troubleshooting and removal.

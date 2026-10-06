@@ -1,0 +1,10 @@
+include LICENSE README.md hacs.json uv.lock package.json package-lock.json
+recursive-include docs *.md
+recursive-include examples *.yaml *.pp
+recursive-include media *.svg
+recursive-include scripts *.py *.txt *.overrides
+recursive-include tests *.py *.js *.mjs *.html
+recursive-include .github/workflows *.yml
+recursive-include schema *.json
+recursive-include custom_components/occupied *.json *.yaml *.js *.png
+global-exclude __pycache__ *.py[cod] .DS_Store

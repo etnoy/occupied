@@ -32,7 +32,7 @@ The **Harmony television preset** selects a remote and its native activity name.
 
 **Preview** runs the same backend planner as the CLI against the draft. Choose a date, 1–31 days and a separate seed. Reroll changes only the preview seed. An optional aware ISO projection instant, such as `2026-10-06T18:00:00+02:00`, adds projected lighting and handover endpoints. Older results are marked after edits. Preview never changes runtime permission, plans or devices; saving does not adopt its seed.
 
-**Configuration** imports only Occupied YAML/JSON. Import validates and replaces the draft without applying it. Export normalizes defaults through the shared schema; comments are not retained. Download writes a local file. Imports are stored snapshots: Occupied neither watches nor changes the source file. Authoritative managed-file mode remains Milestone 5.
+**Configuration** imports only Occupied YAML/JSON. Import validates and replaces the draft without applying it. Export normalizes defaults through the shared schema; comments are not retained. Download writes a local file. Imports are draft snapshots. Configuration also selects authoritative managed files, reloads them, reports source errors, and explicitly copies the saved program to GUI storage. Managed drafts remain editable for preview/export; Save is disabled and enforced by the backend. See [managed configuration](managed-configuration.md).
 
 **Diagnostics** exports redacted counts by default. Explicit household details add plans, observations, lifecycles, journal and outcomes; known credential fields remain redacted. The panel also shows recent outcomes.
 
@@ -49,11 +49,12 @@ Commands require an authenticated admin and loaded `config_entry_id`:
 | `occupied/editor_validate` | Validate `program`, including installed service schemas |
 | `occupied/save` | Save `program` with required `expected_revision`; reject `revision_conflict` |
 | `occupied/timeline` | Read saved plans/outcomes for optional ISO `date` |
+| `occupied/source`, `occupied/reload` | Explicit guarded source selection and validated managed-file reload |
 | `occupied/subscribe` | Runtime snapshots through HA's connection subscription API |
 | `occupied/validate`, `preview`, `export`, `rename_id` | Shared pure draft operations in [the schema reference](schema.md) |
 | `occupied/diagnostics` | Optional `include_sensitive: true` for household details |
 
-Bundled local ES modules need no frontend build or extra runtime dependency. Static assets contain no household data. The editor follows HA's [custom-panel contract](https://developers.home-assistant.io/docs/frontend/custom-ui/creating-custom-panels/) and checks for `ha-selector` before using the [pinned selector interface](https://github.com/home-assistant/frontend/blob/20260826.7/src/components/ha-selector/ha-selector.ts); standard accessible controls are the fallback. English is complete; Swedish navigation/common controls have English fallback. Broader version/browser release checks remain Milestone 5.
+Bundled local ES modules need no frontend build or extra runtime dependency. Static assets contain no household data. The editor follows HA's [custom-panel contract](https://developers.home-assistant.io/docs/frontend/custom-ui/creating-custom-panels/) and checks for `ha-selector` before using the [pinned selector interface](https://github.com/home-assistant/frontend/blob/20260826.7/src/components/ha-selector/ha-selector.ts); standard accessible controls are the fallback. English is complete; Swedish navigation/common controls have English fallback. CI verifies the supported HA matrix and desktop/mobile workflows.
 
 ## Browser acceptance fixture
 
@@ -62,6 +63,6 @@ Bundled local ES modules need no frontend build or extra runtime dependency. Sta
 node --test tests/frontend/model.test.mjs
 ```
 
-Open `http://127.0.0.1:8765/tests/frontend/harness.html` and run `await window.runWorkflows()` in its browser console. All twelve results must have `passed: true`. Reload before repeating to reset the selector shim. For mobile checks, load it in a 390-pixel viewport or same-origin iframe and run its workflows; it also checks horizontal overflow.
+Open `http://127.0.0.1:8765/tests/frontend/harness.html` and run `await window.runWorkflows()` in its browser console. All thirteen results must have `passed: true`. Reload before repeating to reset the selector shim. For mobile checks, load it in a 390-pixel viewport or same-origin iframe and run its workflows; it also checks horizontal overflow.
 
-The fixture uses production modules, real pure backend validation/planning and a virtual runtime. It covers all screens, safe labels, state lists, round trips, validation focus, migration, Harmony, rendered diagrams, stale/in-flight saves, quick start, selector compatibility and cleanup, with zero device calls. Real HA tests separately verify authentication, schemas, storage failures, actual deadlines and static routes. Full running-HA browser/hardware soak and the release matrix remain later acceptance work.
+The fixture uses production modules, real pure backend validation/planning and a virtual runtime. It covers all screens, safe labels, state lists, round trips, validation focus, migration, Harmony, rendered diagrams, stale/in-flight saves, quick start, selector compatibility and cleanup, with zero device calls. Real HA tests separately verify authentication, schemas, storage failures, actual deadlines and static routes. Full running-HA browser/hardware soak remains deployment acceptance work. The HA compatibility matrix and browser CI are described in [release verification](releasing.md).

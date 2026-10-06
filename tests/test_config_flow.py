@@ -16,7 +16,7 @@ async def test_config_flow_and_single_entry(hass, config, devices):
     assert len(hass.config_entries.async_entries("occupied")) == 1
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
     assert result["type"] is FlowResultType.ABORT
-    assert result["reason"] == "already_configured"
+    assert result["reason"] in {"already_configured", "single_instance_allowed"}
 
 
 @pytest.mark.parametrize(

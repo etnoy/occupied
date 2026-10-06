@@ -49,6 +49,14 @@ class OccupiedStatusSensor(OccupiedEntity, SensorEntity):
             "last_error": self.engine.last_error,
             **(
                 {
+                    "configuration_source": self.engine.source_manager.mode,
+                    "configuration_status": self.engine.source_manager.status,
+                }
+                if getattr(self.engine, "source_manager", None)
+                else {}
+            ),
+            **(
+                {
                     "dry_run": self.engine.dry_run,
                     "active_activities": len(self.engine._activities),
                     "handover_targets": len(self.engine._handover),

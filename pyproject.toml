@@ -2,6 +2,9 @@
 name = "occupied"
 version = "0.1.0"
 description = "A native Home Assistant occupancy simulator and pure stochastic planner"
+readme = "README.md"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
 requires-python = ">=3.14.2"
 dependencies = ["pydantic==2.13.4", "PyYAML==6.0.3", "astral==2.2"]
 
@@ -9,7 +12,7 @@ dependencies = ["pydantic==2.13.4", "PyYAML==6.0.3", "astral==2.2"]
 occupied-config = "custom_components.occupied.cli:main"
 
 [build-system]
-requires = ["setuptools>=78"]
+requires = ["setuptools==84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -21,7 +24,7 @@ namespaces = true
 
 [tool.setuptools.package-data]
 "custom_components.occupied" = [
-  "manifest.json", "services.yaml", "strings.json", "translations/*.json", "frontend/*.js",
+  "manifest.json", "services.yaml", "strings.json", "translations/*.json", "frontend/*.js", "brand/*.png",
 ]
 
 [dependency-groups]
@@ -33,7 +36,7 @@ dev = [
   "ruff>=0.14,<1",
   "freezegun>=1.5,<2",
   "pytest-socket>=0.7,<1",
-  "pytest-homeassistant-custom-component>=0.13",
+  "pytest-homeassistant-custom-component==0.13.367",
   "home-assistant-frontend==20260826.7",
 ]
 

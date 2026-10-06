@@ -118,7 +118,10 @@ def program_document(engine):
         "program": program_data(program),
         "revision": current_revision(engine),
         "behavior_hash": behavior_hash(program),
-        "source": "gui",
+        "source": engine.source_manager.mode if getattr(engine, "source_manager", None) else "gui",
+        "configuration_source": engine.source_manager.snapshot()
+        if getattr(engine, "source_manager", None)
+        else {"mode": "gui", "status": "ready"},
         "needs_apply": not hasattr(engine, "program"),
         "simulation_date": simulation_date_at(program, dt_util.utcnow(), context).isoformat(),
         "timezone": program.timezone if program.timezone != "home_assistant" else context.timezone,

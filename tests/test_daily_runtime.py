@@ -271,6 +271,55 @@ async def test_program_replacement_preserves_started_immutable_end_snapshot(
     assert daily_entry.runtime_data.program.routines[0].activities == ()
 
 
+async def test_file_reload_and_gui_copy_preserve_started_activity_cleanup(
+    hass, daily_entry, daily_devices, daily_permission, freezer, runtime_program, tmp_path
+):
+    engine = await load(hass, daily_entry, freezer)
+    await advance(hass, freezer, 660)
+    lifecycle = next(iter(engine._activities.values()))
+    original_deadline = lifecycle.deadline
+    path = tmp_path / "managed.yaml"
+    path.write_text(export_yaml(validate_program(runtime_program)))
+    hass.config.config_dir = str(tmp_path)
+    await engine.source_manager.async_select(
+        "file", "managed.yaml", engine.snapshot()["source_revision"]
+    )
+    changed = deepcopy(runtime_program)
+    changed["routines"][0]["activities"] = []
+    path.write_text(export_yaml(validate_program(changed)))
+    assert (await engine.source_manager.async_reload())["valid"]
+    assert next(iter(engine._activities.values())).deadline == original_deadline
+    await engine.source_manager.async_select("gui", None, engine.snapshot()["source_revision"])
+    assert daily_entry.runtime_data is engine
+    assert next(iter(engine._activities.values())).deadline == original_deadline
+    await advance(hass, freezer, 45 * 60)
+    assert daily_devices[-1].domain == "remote" and daily_devices[-1].service == "turn_off"
+
+
+async def test_managed_file_restart_restores_plan_session_and_tv_deadline(
+    hass, daily_entry, daily_devices, daily_permission, freezer, runtime_program, tmp_path
+):
+    engine = await load(hass, daily_entry, freezer)
+    path = tmp_path / "managed.yaml"
+    path.write_text(export_yaml(validate_program(runtime_program)))
+    hass.config.config_dir = str(tmp_path)
+    await engine.source_manager.async_select(
+        "file", "managed.yaml", engine.snapshot()["source_revision"]
+    )
+    await advance(hass, freezer, 660)
+    deadline = next(iter(engine._activities.values())).deadline
+    plans = [p.to_dict() for p in engine._plans.values()]
+    await engine.async_close(cleanup=False)
+    assert await hass.config_entries.async_reload(daily_entry.entry_id)
+    restored = daily_entry.runtime_data
+    assert restored.active and restored.session == engine.session
+    assert [p.to_dict() for p in restored._plans.values()] == plans
+    assert next(iter(restored._activities.values())).deadline == deadline
+    assert sum(c.domain == "remote" and c.service == "turn_on" for c in daily_devices) == 1
+    await advance(hass, freezer, 45 * 60)
+    assert daily_devices[-1].domain == "remote" and daily_devices[-1].service == "turn_off"
+
+
 async def test_metadata_change_keeps_times_and_handover_deadline(
     hass, daily_entry, daily_devices, daily_permission, freezer, runtime_program
 ):

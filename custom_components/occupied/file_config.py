@@ -1,6 +1,7 @@
 """Read-only Occupied YAML loader shared by deployment CLI and backend drafts."""
 
 from dataclasses import replace
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +10,47 @@ from yaml.nodes import MappingNode, Node, SequenceNode
 
 from .models import Program
 from .validation import Issue, ModelPath, ProgramError, program_data, validate_program
+
+MAX_FILE_BYTES = 1_048_576
+
+
+def managed_path(config_dir: str, relative: str) -> Path:
+    """Resolve on every read so replaced symlinks cannot escape the config directory."""
+    root = Path(config_dir).resolve()
+    path = Path(relative)
+    if not relative.strip() or path.is_absolute() or ".." in path.parts:
+        raise ProgramError(
+            [Issue("file_path", "Choose a relative path under the HA config directory")]
+        )
+    resolved = (root / path).resolve()
+    if not resolved.is_relative_to(root) or resolved == root:
+        raise ProgramError(
+            [Issue("file_path", "The managed file must remain under the HA config directory")]
+        )
+    return resolved
+
+
+def file_fingerprint(config_dir: str, relative: str) -> tuple:
+    try:
+        stat = managed_path(config_dir, relative).stat()
+        return stat.st_dev, stat.st_ino, stat.st_mtime_ns, stat.st_size
+    except (OSError, ProgramError) as err:
+        return (type(err).__name__, str(err))
+
+
+def read_managed(config_dir: str, relative: str) -> tuple[str, str]:
+    """Bounded, read-only source snapshot; the raw hash differs from the program revision."""
+    path = managed_path(config_dir, relative)
+    try:
+        with path.open("rb") as stream:
+            data = stream.read(MAX_FILE_BYTES + 1)
+        if len(data) > MAX_FILE_BYTES:
+            raise ProgramError([Issue("file_size", "Managed files must be at most 1 MiB")])
+        return data.decode("utf-8"), sha256(data).hexdigest()
+    except (OSError, UnicodeError) as err:
+        raise ProgramError(
+            [Issue("file_read", f"Cannot read Occupied configuration: {err}")]
+        ) from err
 
 
 def load_yaml(source: str) -> Program:

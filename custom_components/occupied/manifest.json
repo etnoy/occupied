@@ -1,11 +1,23 @@
 {
   "domain": "occupied",
   "name": "Occupied",
-  "version": "0.1.0",
+  "codeowners": [
+    "@etnoy"
+  ],
   "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http",
+    "panel_custom",
+    "websocket_api"
+  ],
+  "documentation": "https://github.com/etnoy/occupied#readme",
   "integration_type": "service",
   "iot_class": "local_push",
-  "dependencies": ["frontend", "panel_custom", "websocket_api"],
-  "requirements": ["pydantic==2.13.4"],
-  "codeowners": []
+  "issue_tracker": "https://github.com/etnoy/occupied/issues",
+  "requirements": [
+    "pydantic>=2.13.4,<2.14"
+  ],
+  "single_config_entry": true,
+  "version": "0.1.0"
 }

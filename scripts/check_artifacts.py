@@ -1,0 +1,37 @@
+"""Check built installable artifacts, including complete runtime assets and source fixtures."""
+
+import hashlib
+import json
+import sys
+import tarfile
+from pathlib import Path
+from zipfile import ZipFile
+
+directory = Path(sys.argv[1] if len(sys.argv) > 1 else "dist")
+with ZipFile(directory / "occupied.zip") as integration:
+    version = json.loads(integration.read("manifest.json"))["version"]
+    names = set(integration.namelist())
+    assert "__init__.py" in names and "managed.py" in names and "LICENSE" in names
+    assert "frontend/occupied-panel.js" in names and "translations/en.json" in names
+    assert "brand/icon.png" in names and "brand/icon@2x.png" in names
+    assert not any("__pycache__" in name or name.startswith("custom_components/") for name in names)
+    with ZipFile(directory / f"occupied-{version}-py3-none-any.whl") as wheel:
+        for name in names - {"LICENSE"}:
+            assert wheel.read(f"custom_components/occupied/{name}") == integration.read(name)
+        assert any(name.endswith("/licenses/LICENSE") for name in wheel.namelist())
+with tarfile.open(directory / f"occupied-{version}.tar.gz") as source:
+    for relative in (
+        "pyproject.toml",
+        "uv.lock",
+        "tests/conftest.py",
+        "tests/frontend/harness.html",
+        "package-lock.json",
+        "schema/occupied.schema.json",
+        "examples/puppet/occupied.pp",
+        "scripts/check_artifacts.py",
+    ):
+        assert f"occupied-{version}/{relative}" in source.getnames()
+for line in (directory / "SHA256SUMS").read_text().splitlines():
+    expected, name = line.split("  ", 1)
+    assert hashlib.sha256((directory / name).read_bytes()).hexdigest() == expected
+print(f"Release {version}: zip, wheel, source distribution and checksums verified")

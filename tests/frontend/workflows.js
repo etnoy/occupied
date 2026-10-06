@@ -372,6 +372,67 @@ export async function runWorkflows() {
     },
   );
   await check(
+    "managed file authority, reload errors and explicit GUI copy preserve drafts",
+    async () => {
+      view("household");
+      input(["name"], "Temporary file draft");
+      await panel.selectSource("file", "occupied/house.yaml");
+      assert(
+        panel.document.source === "file" &&
+          panel.draft.name === "Temporary file draft",
+        "Source change lost the draft",
+      );
+      await panel.validate();
+      const saves = calls.filter((x) => x.type === "occupied/save").length;
+      await panel.save();
+      assert(
+        calls.filter((x) => x.type === "occupied/save").length === saves,
+        "File draft was applied",
+      );
+      const save = [...panel.shadowRoot.querySelectorAll("button")].find(
+        (x) => x.textContent === "Save program",
+      );
+      assert(save.disabled, "File save button is enabled");
+      const status = await fixtureWS({ type: "test/file-error" });
+      emit(status);
+      assert(
+        panel.shadowRoot
+          .getElementById("notice")
+          .textContent.includes("File error"),
+        "Source error was not visible",
+      );
+      view("configuration");
+      assert(
+        panel.shadowRoot
+          .getElementById("view")
+          .textContent.includes("Invalid virtual file"),
+        "File issue was not displayed",
+      );
+      await panel.reloadManaged();
+      assert(
+        panel.draft.name === "Temporary file draft" && panel.dirty,
+        "Reload discarded the draft",
+      );
+      await panel.exportYaml();
+      assert(
+        panel.yaml.includes("Temporary file draft"),
+        "File draft could not be exported",
+      );
+      await panel.selectSource("gui");
+      assert(
+        panel.document.source === "gui" &&
+          panel.draft.name === "Temporary file draft",
+        "GUI copy applied or lost draft edits",
+      );
+      await panel.validate();
+      await panel.save();
+      assert(
+        !panel.dirty && panel.saved.name === "Temporary file draft",
+        "Explicit GUI save failed",
+      );
+    },
+  );
+  await check(
     "empty GUI household can create and preview the evening template",
     async () => {
       const doc = await fixtureWS({ type: "occupied/program" });

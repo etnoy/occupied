@@ -26,6 +26,8 @@ def async_register_websocket(hass: HomeAssistant) -> None:
         websocket_save,
         websocket_timeline,
         websocket_subscribe,
+        websocket_source,
+        websocket_reload,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -176,6 +178,11 @@ async def _apply_program(hass, connection, msg, *, editor_save=False):
         lock = hass.data[DOMAIN].setdefault("editor_lock", asyncio.Lock())
         async with lock:
             engine = resolve_engine(hass, msg["config_entry_id"])
+            if getattr(engine, "source_manager", None) and engine.source_manager.mode == "file":
+                raise HomeAssistantError(
+                    "The managed file is authoritative. Export your draft "
+                    "or explicitly switch to GUI storage."
+                )
             expected = msg.get("expected_revision")
             if expected is not None and expected != current_revision(engine):
                 raise RevisionConflict(
@@ -216,6 +223,59 @@ async def _apply_program(hass, connection, msg, *, editor_save=False):
 
 
 _ENTRY_SCHEMA = {vol.Required("config_entry_id"): str}
+
+
+@websocket_api.websocket_command(
+    {
+        **_ENTRY_SCHEMA,
+        vol.Required("type"): "occupied/source",
+        vol.Required("source"): vol.In(["gui", "file"]),
+        vol.Optional("config_file"): str,
+        vol.Required("expected_revision"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_source(hass, connection, msg):
+    from . import resolve_engine
+    from .editor import program_document
+    from .validation import ProgramError, RevisionConflict
+
+    try:
+        engine = resolve_engine(hass, msg["config_entry_id"])
+        manager = getattr(engine, "source_manager", None)
+        if manager is None:
+            raise HomeAssistantError(
+                "Apply the daily starter program before selecting a managed file"
+            )
+        if msg["source"] == "file" and not msg.get("config_file"):
+            raise HomeAssistantError("Choose a relative managed-file path")
+        await manager.async_select(msg["source"], msg.get("config_file"), msg["expected_revision"])
+        connection.send_result(msg["id"], {"valid": True, **program_document(engine)})
+    except RevisionConflict as err:
+        connection.send_error(msg["id"], "revision_conflict", str(err))
+    except ProgramError as err:
+        connection.send_result(
+            msg["id"], {"valid": False, "issues": [i.to_dict() for i in err.issues]}
+        )
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "source_failed", str(err))
+
+
+@websocket_api.websocket_command({**_ENTRY_SCHEMA, vol.Required("type"): "occupied/reload"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_reload(hass, connection, msg):
+    from . import resolve_engine
+
+    try:
+        engine = resolve_engine(hass, msg["config_entry_id"])
+        manager = getattr(engine, "source_manager", None)
+        if manager is None:
+            raise HomeAssistantError("Select a managed file before reloading")
+        connection.send_result(msg["id"], await manager.async_reload())
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "reload_failed", str(err))
 
 
 @websocket_api.websocket_command({**_ENTRY_SCHEMA, vol.Required("type"): "occupied/program"})

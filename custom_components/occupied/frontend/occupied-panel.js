@@ -115,6 +115,10 @@ export class OccupiedPanel extends HTMLElement {
         (snapshot) => {
           if (epoch !== this._subscriptionEpoch || !this.isConnected) return;
           this.status = snapshot;
+          if (snapshot.configuration_source && this.document) {
+            this.document.configuration_source = snapshot.configuration_source;
+            this.document.source = snapshot.configuration_source.mode;
+          }
           this.stale = !!(
             snapshot.source_revision &&
             this.revision &&
@@ -252,6 +256,7 @@ export class OccupiedPanel extends HTMLElement {
     validate.disabled = this.busy || !this.draft;
     save.disabled =
       this.busy ||
+      this.document?.source === "file" ||
       this.stale ||
       this.validatedVersion !== this.version ||
       !this.dirty;
@@ -277,6 +282,10 @@ export class OccupiedPanel extends HTMLElement {
         : this.t("Saved");
     if (this.revision)
       notice.textContent += ` · ${this.t("Revision")}: ${this.revision.slice(0, 12)}`;
+    if (this.document?.source === "file")
+      notice.textContent += ` · ${this.t("Managed file is authoritative. Export draft changes to your file, then reload.")}`;
+    if (this.document?.configuration_source?.status === "error")
+      notice.textContent += ` · ${this.t("File error: see Configuration or Home Assistant Repairs")}`;
     if (
       this.previewVersion != null &&
       this.previewVersion !== this.version &&
@@ -417,6 +426,7 @@ export class OccupiedPanel extends HTMLElement {
   }
   save() {
     if (
+      this.document?.source === "file" ||
       this.validatedVersion !== this.version ||
       !this.checkLocal() ||
       this.stale
@@ -776,14 +786,75 @@ export class OccupiedPanel extends HTMLElement {
   }
   renderConfiguration() {
     const root = this.shadowRoot.getElementById("view"),
-      t = this.t,
-      box = section(
-        root,
-        t("Occupied YAML import/export"),
-        t(
-          "Import replaces only the draft. Export normalizes the draft. Comments are not retained. Imported YAML is stored as a snapshot; Occupied does not watch or change the source file.",
-        ),
+      t = this.t;
+    const source = this.document.configuration_source || {
+      mode: this.document.source || "gui",
+      status: "ready",
+    };
+    const settings = section(
+      root,
+      t("Configuration source"),
+      source.mode === "file"
+        ? t(
+            "The managed file is read only. You can edit, validate and preview a temporary draft; export it and update the file to apply those changes.",
+          )
+        : t(
+            "GUI storage is authoritative. Importing YAML creates a draft snapshot. Selecting a managed file below changes the saved program explicitly.",
+          ),
+    );
+    settings.append(
+      el(
+        "p",
+        `${source.mode === "file" ? t("Managed file") : t("GUI storage")} · ${source.status || "ready"}`,
+      ),
+    );
+    const path = el("input", null, {
+      type: "text",
+      "aria-label": t("Relative managed-file path"),
+      placeholder: "occupied/house.yaml",
+    });
+    path.value = this.sourcePath ?? source.config_file ?? "occupied/house.yaml";
+    path.addEventListener("input", () => {
+      this.sourcePath = path.value;
+    });
+    const useFile = button(t("Use managed file"), () =>
+      this.selectSource("file", path.value),
+    );
+    useFile.disabled = this.busy;
+    settings.append(path, useFile);
+    if (source.mode === "file") {
+      const reload = button(t("Reload managed file"), () =>
+        this.reloadManaged(),
       );
+      const useGui = button(t("Copy saved program to GUI storage"), () =>
+        this.selectSource("gui"),
+      );
+      reload.disabled = this.busy;
+      useGui.disabled = this.busy || source.has_valid_program === false;
+      settings.append(reload, useGui);
+      if (source.observed_hash)
+        settings.append(
+          el(
+            "p",
+            `${t("Observed file hash")}: ${source.observed_hash.slice(0, 16)}`,
+          ),
+        );
+      for (const issue of source.issues || [])
+        settings.append(
+          el(
+            "p",
+            `${issue.path || "$"}${issue.line ? ` · ${t("Line")} ${issue.line}` : ""}: ${issue.message}`,
+            { class: "error" },
+          ),
+        );
+    }
+    const box = section(
+      root,
+      t("Occupied YAML import/export"),
+      t(
+        "Import replaces only the draft. Export normalizes the draft. Comments are not retained. Importing a local file does not select it as the managed source.",
+      ),
+    );
     const input = el("textarea", null, {
       rows: 18,
       "aria-label": t("Occupied YAML"),
@@ -813,6 +884,41 @@ export class OccupiedPanel extends HTMLElement {
         this.download("occupied.yaml", this.yaml || "", "text/yaml"),
       ),
     );
+  }
+  selectSource(source, config_file) {
+    return this.run(async (epoch) => {
+      const result = await this.ws("source", {
+        source,
+        ...(config_file ? { config_file } : {}),
+        expected_revision: this.revision,
+      });
+      if (epoch !== this.epoch) return;
+      if (!result.valid) return this.showIssues(result);
+      this.document = { ...this.document, ...result };
+      this.saved = result.program;
+      this.revision = result.revision;
+      this.stale = false;
+      this.validatedVersion = -1;
+      if (!this.dirty) this.draft = copy(result.program);
+      this.renderView();
+    });
+  }
+  reloadManaged() {
+    return this.run(async (epoch) => {
+      const result = await this.ws("reload");
+      const doc = await this.ws("program");
+      if (epoch !== this.epoch) return;
+      this.document = doc;
+      this.saved = doc.program;
+      this.stale = doc.revision !== this.revision;
+      if (!this.dirty) {
+        this.revision = doc.revision;
+        this.draft = copy(doc.program);
+        this.stale = false;
+      }
+      if (!result.valid) this.showIssues(result);
+      this.renderView();
+    });
   }
   importYaml() {
     const version = this.version;

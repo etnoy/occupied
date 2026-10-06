@@ -47,3 +47,13 @@ set_dry_run:
       required: true
       selector:
         boolean:
+reload:
+  name: Reload managed file
+  description: Validate and atomically reload the selected managed file. Invalid updates retain the last valid program.
+  fields:
+    config_entry_id:
+      name: Config entry
+      required: true
+      selector:
+        config_entry:
+          integration: occupied

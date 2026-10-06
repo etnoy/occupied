@@ -98,6 +98,30 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         from .validation import ProgramError, program_data
 
         await self.async_set_unique_id(DOMAIN)
+        if isinstance(user_input, dict) and "config_file" in user_input:
+            existing = self._async_current_entries()
+            if existing:
+                entry = existing[0]
+                if (
+                    entry.data.get("source") != "file"
+                    or entry.data.get("config_file") != user_input["config_file"]
+                ):
+                    from homeassistant.helpers import issue_registry as ir
+
+                    ir.async_create_issue(
+                        self.hass,
+                        DOMAIN,
+                        "source_conflict",
+                        is_fixable=False,
+                        severity=ir.IssueSeverity.ERROR,
+                        translation_key="source_conflict",
+                    )
+                return self.async_abort(reason="already_configured")
+            self._abort_if_unique_id_configured()
+            return self.async_create_entry(
+                title="House",
+                data={"name": "House", "source": "file", "config_file": user_input["config_file"]},
+            )
         self._abort_if_unique_id_configured()
         try:
             program = await self.hass.async_add_executor_job(load_program, user_input)
@@ -113,6 +137,8 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             if user_input["method"] == "yaml":
                 return await self.async_step_yaml()
+            if user_input["method"] == "file":
+                return await self.async_step_file()
             from .validation import program_data, validate_program
 
             program = validate_program({"schema_version": 1, "name": user_input["name"]})
@@ -126,7 +152,7 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required("name", default="House"): vol.All(str, vol.Length(min=1)),
                     vol.Required("method", default="editor"): selector.SelectSelector(
                         selector.SelectSelectorConfig(
-                            options=["editor", "yaml"],
+                            options=["editor", "yaml", "file"],
                             translation_key="configuration_method",
                         )
                     ),
@@ -163,6 +189,32 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
         )
 
+    async def async_step_file(self, user_input=None):
+        from .file_config import load_yaml, read_managed
+        from .validation import ProgramError
+
+        errors = {}
+        if user_input is not None:
+            try:
+                source, _ = await self.hass.async_add_executor_job(
+                    read_managed, self.hass.config.config_dir, user_input["config_file"]
+                )
+                program = await self.hass.async_add_executor_job(load_yaml, source)
+            except ProgramError:
+                errors["config_file"] = "invalid_file"
+            else:
+                return self.async_create_entry(
+                    title=program.name,
+                    data={"name": program.name, "source": "file", **user_input},
+                )
+        return self.async_show_form(
+            step_id="file",
+            errors=errors,
+            data_schema=vol.Schema(
+                {vol.Required("config_file", default="occupied/house.yaml"): str}
+            ),
+        )
+
     async def async_step_proof(self, user_input=None):
         """Keep the original caller-proof configuration available for development."""
         await self.async_set_unique_id(DOMAIN)
@@ -194,7 +246,8 @@ class OccupiedOptionsFlow(config_entries.OptionsFlow):
         from .storage import program_store
 
         if (
-            self.config_entry.data.get("program")
+            self.config_entry.data.get("source") == "file"
+            or self.config_entry.data.get("program")
             or await program_store(self.hass, self.config_entry.entry_id).async_load()
         ):
             return self.async_abort(reason="daily_program")

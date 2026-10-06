@@ -82,6 +82,21 @@ def test_cli_invalid_file_and_infeasible_day_fail_with_diagnostics(
     assert not result["valid"]
 
 
+@pytest.mark.parametrize(
+    "at, expected",
+    [("2026-10-05T23:30:00+00:00", "2026-10-05"), ("2026-10-06T00:30:00+00:00", "2026-10-06")],
+)
+def test_today_uses_program_timezone_and_simulation_day(
+    program_file, program_dict, freezer, capsys, at, expected
+):
+    freezer.move_to(at)
+    program_dict["timezone"] = "Europe/Stockholm"
+    program_file.write_text(yaml.safe_dump(program_dict))
+    assert main(["validate", str(program_file), "--date", "today", "--json"]) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["plans"][0]["simulation_date"] == expected
+
+
 def test_cli_import_path_does_not_import_home_assistant(program_file):
     script = (
         "import sys; from custom_components.occupied.cli import main; "

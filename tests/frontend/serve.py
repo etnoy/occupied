@@ -36,6 +36,7 @@ DAY = datetime(2026, 10, 6, 18, tzinfo=UTC)
 class Handler(SimpleHTTPRequestHandler):
     program = None
     plan = None
+    source = {"mode": "gui", "status": "ready", "has_valid_program": True}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
@@ -45,6 +46,7 @@ class Handler(SimpleHTTPRequestHandler):
 
     @classmethod
     def reset(cls):
+        cls.source = {"mode": "gui", "status": "ready", "has_valid_program": True}
         cls.program = load_program((ROOT / "examples/house.yaml").read_text())
         cls.plan = generate_plan(
             cls.program, DAY.date(), "saved-live-seed", context=CONTEXT
@@ -63,7 +65,8 @@ class Handler(SimpleHTTPRequestHandler):
                     "program": program_data(cls.program),
                     "revision": program_revision(cls.program),
                     "needs_apply": False,
-                    "source": "gui",
+                    "source": cls.source["mode"],
+                    "configuration_source": cls.source,
                     "simulation_date": DAY.date().isoformat(),
                     "timezone": CONTEXT.timezone,
                 }
@@ -122,6 +125,8 @@ class Handler(SimpleHTTPRequestHandler):
                     datetime.fromisoformat(msg["at"]) if msg.get("at") else None,
                 )
             elif kind == "save":
+                if cls.source["mode"] == "file":
+                    raise ValueError("The managed file is authoritative")
                 if msg["expected_revision"] != program_revision(cls.program):
                     return self.respond(
                         {
@@ -137,6 +142,41 @@ class Handler(SimpleHTTPRequestHandler):
                     "program": program_data(cls.program),
                     "revision": program_revision(cls.program),
                 }
+            elif kind == "source":
+                if msg["expected_revision"] != program_revision(cls.program):
+                    return self.respond(
+                        {"error": {"code": "revision_conflict", "message": "The program changed"}}
+                    )
+                cls.source = {
+                    "mode": msg["source"],
+                    "status": "ready",
+                    "has_valid_program": True,
+                    "read_only": msg["source"] == "file",
+                    "config_file": msg.get("config_file"),
+                }
+                result = {
+                    "valid": True,
+                    "program": program_data(cls.program),
+                    "revision": program_revision(cls.program),
+                    "source": cls.source["mode"],
+                    "configuration_source": cls.source,
+                }
+            elif kind == "reload":
+                result = {"valid": cls.source["status"] == "ready", "changed": False, **cls.source}
+            elif kind == "test/file-error":
+                cls.source = {
+                    **cls.source,
+                    "status": "error",
+                    "issues": [
+                        {
+                            "code": "yaml_syntax",
+                            "message": "Invalid virtual file",
+                            "path": "$",
+                            "line": 3,
+                        }
+                    ],
+                }
+                result = self.status()
             elif kind == "timeline":
                 result = {
                     "snapshot": self.status(),
@@ -170,6 +210,7 @@ class Handler(SimpleHTTPRequestHandler):
         return {
             "name": type(self).program.name,
             "mode": "daily",
+            "configuration_source": type(self).source,
             "enabled": False,
             "active": False,
             "status": "disabled",

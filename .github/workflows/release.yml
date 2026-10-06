@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    uses: ./.github/workflows/check.yml
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: occupied-release
+          path: dist
+      - name: Verify tag and asset checksums
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import json, os, zipfile
+          with zipfile.ZipFile('dist/occupied.zip') as archive:
+              version = json.loads(archive.read('manifest.json'))['version']
+          assert os.environ['RELEASE_TAG'] == 'v' + version
+          PY
+          cd dist
+          sha256sum --check SHA256SUMS
+      - name: Publish installable assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" dist/* --verify-tag --title "Occupied $RELEASE_TAG" --notes-file "docs/releases/${RELEASE_TAG#v}.md"

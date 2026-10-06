@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "Create your household",
-        "description": "Create a program in the Occupied panel or import Occupied YAML. Permission starts disabled.",
+        "description": "Create a program in the Occupied panel, import a YAML snapshot, or select an authoritative managed file. Permission starts disabled.",
         "data": {
           "name": "Household name",
           "method": "Configuration method"
@@ -34,15 +34,24 @@
         "data": {
           "program": "Occupied YAML"
         }
+      },
+      "file": {
+        "title": "Use a managed file",
+        "description": "Choose YAML under the Home Assistant config directory. The file remains authoritative and read only; changes are detected automatically.",
+        "data": {
+          "config_file": "Relative configuration path"
+        }
       }
     },
     "error": {
       "invalid_config": "Check the selected entities, allowed states, activity name, and duration bounds.",
-      "invalid_program": "The YAML is not a valid Occupied program. Validate it with the Occupied CLI to see field and line details."
+      "invalid_program": "The YAML is not a valid Occupied program. Validate it with the Occupied CLI to see field and line details.",
+      "invalid_file": "Cannot load this file. Check the relative path, read permissions, and Occupied YAML; use the CLI for detailed validation."
     },
     "abort": {
       "already_configured": "One Occupied household is already configured.",
-      "invalid_program": "The canonical Occupied program is invalid."
+      "invalid_program": "The canonical Occupied program is invalid.",
+      "single_instance_allowed": "One Occupied household is already configured."
     }
   },
   "options": {
@@ -104,8 +113,19 @@
     "configuration_method": {
       "options": {
         "editor": "Create with the Occupied editor",
-        "yaml": "Import Occupied YAML"
+        "yaml": "Import Occupied YAML",
+        "file": "Use an authoritative managed file"
       }
+    }
+  },
+  "issues": {
+    "managed_file": {
+      "title": "Occupied managed configuration could not be loaded",
+      "description": "File: {path}\n\n{error}\n\nCorrect the file and call occupied.reload or wait for change detection. The last valid running program is retained; an invalid initial file remains inactive."
+    },
+    "source_conflict": {
+      "title": "Occupied bootstrap conflicts with the existing household",
+      "description": "configuration.yaml selects a different source from the existing Occupied entry. Choose the source explicitly in Occupied \u2192 Configuration, or remove the bootstrap declaration. Occupied has kept the existing source."
     }
   }
 }

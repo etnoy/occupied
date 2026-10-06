@@ -3,13 +3,13 @@
 import argparse
 import json
 import sys
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 from .file_config import export_yaml, read_program
 from .lighting import preview_handover, project_lighting
 from .planner import preview_dates
-from .time_utils import PlanningContext
+from .time_utils import PlanningContext, simulation_date_at
 from .validation import (
     ProgramError,
     behavior_hash,
@@ -27,6 +27,10 @@ def _context_options(parser):
     parser.add_argument("--elevation", type=float, default=0)
 
 
+def _date(value):
+    return value if value == "today" else date.fromisoformat(value)
+
+
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(
         prog="occupied-config",
@@ -40,7 +44,9 @@ def parser() -> argparse.ArgumentParser:
     )
     validate.add_argument("file", type=Path)
     validate.add_argument("--json", action="store_true")
-    validate.add_argument("--date", type=date.fromisoformat)
+    validate.add_argument(
+        "--date", type=_date, help="ISO simulation date, or today in the program timezone"
+    )
     validate.add_argument("--days", type=int, default=1)
     validate.add_argument("--seed", default="0")
     _context_options(validate)
@@ -48,7 +54,7 @@ def parser() -> argparse.ArgumentParser:
         "preview", help="Export sampled UTC/local events, intervals, and explanations"
     )
     preview.add_argument("file", type=Path)
-    preview.add_argument("--date", type=date.fromisoformat, required=True)
+    preview.add_argument("--date", type=_date, required=True)
     preview.add_argument("--days", type=int, default=1)
     preview.add_argument("--seed", required=True)
     preview.add_argument(
@@ -70,6 +76,12 @@ def parser() -> argparse.ArgumentParser:
     export = commands.add_parser("export", help="Emit normalized YAML with shared schema defaults")
     export.add_argument("file", type=Path)
     export.add_argument("--output", type=Path)
+    reload = commands.add_parser("reload", help="Reload the selected managed file through HA's API")
+    reload.add_argument(
+        "--url", required=True, help="Home Assistant origin, for example https://ha.example"
+    )
+    reload.add_argument("--entry-id", required=True)
+    reload.add_argument("--token-file", type=Path, required=True)
     return root
 
 
@@ -83,6 +95,12 @@ def _emit(text: str, output: Path | None = None):
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
+        if args.command == "reload":
+            from .deployment import reload_file
+
+            result = reload_file(args.url, args.entry_id, args.token_file)
+            _emit(json.dumps(result) + "\n")
+            return 0 if result["valid"] else 2
         program = read_program(args.file)
         if args.command in {"rename-id", "export"}:
             if args.command == "rename-id":
@@ -98,7 +116,12 @@ def main(argv: list[str] | None = None) -> int:
             if not 1 <= args.days <= 31:
                 raise ValueError("--days must be between 1 and 31")
             context = PlanningContext(args.timezone, args.latitude, args.longitude, args.elevation)
-            dates = [args.date + timedelta(days=index) for index in range(args.days)]
+            first = (
+                simulation_date_at(program, datetime.now(UTC), context)
+                if args.date == "today"
+                else args.date
+            )
+            dates = [first + timedelta(days=index) for index in range(args.days)]
             plans = preview_dates(program, dates, args.seed, context=context)
             result["plans"] = [plan.to_dict() for plan in plans]
             result["valid"] = all(plan.feasible for plan in plans)
@@ -165,7 +188,8 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"valid": False, "issues": issues}, indent=2), file=sys.stderr)
         else:
             for issue in issues:
-                location = f"{args.file}:{issue['line']}" if issue.get("line") else str(args.file)
+                file = getattr(args, "file", args.command)
+                location = f"{file}:{issue['line']}" if issue.get("line") else str(file)
                 print(f"{location} {issue['path']}: {issue['message']}", file=sys.stderr)
         return 2
 

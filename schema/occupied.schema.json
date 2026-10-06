@@ -1,0 +1,1846 @@
+{
+  "$defs": {
+    "Action": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "pattern": "^(?:turn_on|turn_off|safety_off|[a-z_][a-z0-9_]*\\.[a-z_][a-z0-9_]*)$",
+          "title": "Action",
+          "type": "string"
+        },
+        "targets": {
+          "$ref": "#/$defs/Targets"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        },
+        "resources": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
+            "type": "string"
+          },
+          "title": "Resources",
+          "type": "array"
+        },
+        "target_order": {
+          "anyOf": [
+            {
+              "enum": [
+                "ordered",
+                "shuffled"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Order"
+        },
+        "stagger": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DurationRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "replay_safe": {
+          "default": false,
+          "title": "Replay Safe",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "Action",
+      "type": "object"
+    },
+    "Activation": {
+      "additionalProperties": false,
+      "properties": {
+        "conditions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "title": "Conditions",
+          "type": "array"
+        }
+      },
+      "title": "Activation",
+      "type": "object"
+    },
+    "Activity": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "days": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Day"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Days"
+        },
+        "probability": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Probability"
+        },
+        "time_distribution": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Distribution"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "missing_anchor": {
+          "default": "error",
+          "enum": [
+            "error",
+            "skip"
+          ],
+          "title": "Missing Anchor",
+          "type": "string"
+        },
+        "allow_cross_boundary": {
+          "default": false,
+          "title": "Allow Cross Boundary",
+          "type": "boolean"
+        },
+        "when": {
+          "$ref": "#/$defs/When"
+        },
+        "duration": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DurationRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "resources": {
+          "items": {
+            "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
+            "type": "string"
+          },
+          "title": "Resources",
+          "type": "array"
+        },
+        "on_start": {
+          "items": {
+            "$ref": "#/$defs/Action"
+          },
+          "title": "On Start",
+          "type": "array"
+        },
+        "on_end": {
+          "items": {
+            "$ref": "#/$defs/Action"
+          },
+          "title": "On End",
+          "type": "array"
+        },
+        "start_conditions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "title": "Start Conditions",
+          "type": "array"
+        },
+        "ownership_conditions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "title": "Ownership Conditions",
+          "type": "array"
+        },
+        "stop_behavior": {
+          "anyOf": [
+            {
+              "enum": [
+                "end_if_owned",
+                "leave_running"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stop Behavior"
+        },
+        "within": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Between"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "when",
+        "resources",
+        "on_start",
+        "on_end"
+      ],
+      "title": "Activity",
+      "type": "object"
+    },
+    "ActivityDefaults": {
+      "additionalProperties": false,
+      "properties": {
+        "duration": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DurationRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "stop_behavior": {
+          "default": "end_if_owned",
+          "enum": [
+            "end_if_owned",
+            "leave_running"
+          ],
+          "title": "Stop Behavior",
+          "type": "string"
+        }
+      },
+      "title": "ActivityDefaults",
+      "type": "object"
+    },
+    "ActivityWindow": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "days": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Day"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Days"
+        },
+        "probability": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Probability"
+        },
+        "time_distribution": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Distribution"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "missing_anchor": {
+          "default": "error",
+          "enum": [
+            "error",
+            "skip"
+          ],
+          "title": "Missing Anchor",
+          "type": "string"
+        },
+        "allow_cross_boundary": {
+          "default": false,
+          "title": "Allow Cross Boundary",
+          "type": "boolean"
+        },
+        "between": {
+          "$ref": "#/$defs/Between"
+        },
+        "cycles": {
+          "$ref": "#/$defs/CountRange"
+        },
+        "targets": {
+          "$ref": "#/$defs/Targets"
+        },
+        "on_duration": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DurationRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "min_gap": {
+          "anyOf": [
+            {
+              "ge": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Gap"
+        },
+        "overlap": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Overlap"
+        },
+        "target_mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TargetMode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "subset_size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CountRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "weights": {
+          "patternProperties": {
+            "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            }
+          },
+          "title": "Weights",
+          "type": "object"
+        },
+        "max_simultaneous": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1000,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Simultaneous"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "between",
+        "cycles",
+        "targets"
+      ],
+      "title": "ActivityWindow",
+      "type": "object"
+    },
+    "Anchor": {
+      "additionalProperties": false,
+      "properties": {
+        "step": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Step"
+        },
+        "clock": {
+          "anyOf": [
+            {
+              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Clock"
+        },
+        "sun": {
+          "anyOf": [
+            {
+              "enum": [
+                "sunrise",
+                "sunset"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sun"
+        },
+        "offset": {
+          "default": "0s",
+          "title": "Offset",
+          "type": "number"
+        },
+        "day_offset": {
+          "default": 0,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Day Offset",
+          "type": "integer"
+        },
+        "fallback": {
+          "anyOf": [
+            {
+              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fallback"
+        }
+      },
+      "title": "Anchor",
+      "type": "object"
+    },
+    "Baseline": {
+      "additionalProperties": false,
+      "properties": {
+        "targets": {
+          "$ref": "#/$defs/Targets"
+        },
+        "state": {
+          "enum": [
+            "on",
+            "off"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "brightness_pct": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 100,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Brightness Pct"
+        },
+        "color_temp_kelvin": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Color Temp Kelvin"
+        },
+        "hs_color": {
+          "anyOf": [
+            {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hs Color"
+        },
+        "rgb_color": {
+          "anyOf": [
+            {
+              "maxItems": 3,
+              "minItems": 3,
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rgb Color"
+        }
+      },
+      "required": [
+        "targets",
+        "state"
+      ],
+      "title": "Baseline",
+      "type": "object"
+    },
+    "Between": {
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/Anchor"
+        },
+        "end": {
+          "$ref": "#/$defs/Anchor"
+        },
+        "cross_midnight": {
+          "default": false,
+          "title": "Cross Midnight",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Between",
+      "type": "object"
+    },
+    "ClockRange": {
+      "additionalProperties": false,
+      "properties": {
+        "earliest": {
+          "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$",
+          "title": "Earliest",
+          "type": "string"
+        },
+        "latest": {
+          "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$",
+          "title": "Latest",
+          "type": "string"
+        },
+        "cross_midnight": {
+          "default": false,
+          "title": "Cross Midnight",
+          "type": "boolean"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode"
+        }
+      },
+      "required": [
+        "earliest",
+        "latest"
+      ],
+      "title": "ClockRange",
+      "type": "object"
+    },
+    "Condition": {
+      "additionalProperties": false,
+      "properties": {
+        "condition": {
+          "enum": [
+            "state",
+            "and",
+            "or",
+            "not"
+          ],
+          "title": "Condition",
+          "type": "string"
+        },
+        "entity_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
+              "type": "string"
+            },
+            {
+              "items": {
+                "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entity Id"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "State"
+        },
+        "attribute": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attribute"
+        },
+        "match": {
+          "anyOf": [
+            {
+              "enum": [
+                "all",
+                "any"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Match"
+        },
+        "conditions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "title": "Conditions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "condition"
+      ],
+      "title": "Condition",
+      "type": "object"
+    },
+    "Constraints": {
+      "additionalProperties": false,
+      "properties": {
+        "max_simultaneous_groups": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1000,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Simultaneous Groups"
+        },
+        "generation_attempts": {
+          "default": 64,
+          "maximum": 256,
+          "minimum": 1,
+          "title": "Generation Attempts",
+          "type": "integer"
+        }
+      },
+      "title": "Constraints",
+      "type": "object"
+    },
+    "CountRange": {
+      "additionalProperties": false,
+      "properties": {
+        "fixed": {
+          "anyOf": [
+            {
+              "maximum": 1000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fixed"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "maximum": 1000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "maximum": 1000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max"
+        }
+      },
+      "title": "CountRange",
+      "type": "object"
+    },
+    "Day": {
+      "enum": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+        "sat",
+        "sun"
+      ],
+      "type": "string"
+    },
+    "Defaults": {
+      "additionalProperties": false,
+      "properties": {
+        "time_distribution": {
+          "$ref": "#/$defs/Distribution",
+          "default": "uniform"
+        },
+        "probability": {
+          "default": 1,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Probability",
+          "type": "number"
+        },
+        "target_order": {
+          "default": "ordered",
+          "enum": [
+            "ordered",
+            "shuffled"
+          ],
+          "title": "Target Order",
+          "type": "string"
+        },
+        "stagger": {
+          "$ref": "#/$defs/DurationRange"
+        },
+        "activity_windows": {
+          "$ref": "#/$defs/WindowDefaults"
+        },
+        "activities": {
+          "$ref": "#/$defs/ActivityDefaults"
+        },
+        "handover": {
+          "$ref": "#/$defs/Handover"
+        }
+      },
+      "title": "Defaults",
+      "type": "object"
+    },
+    "Distribution": {
+      "enum": [
+        "uniform",
+        "triangular"
+      ],
+      "type": "string"
+    },
+    "DurationRange": {
+      "additionalProperties": false,
+      "properties": {
+        "fixed": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fixed"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode"
+        }
+      },
+      "title": "DurationRange",
+      "type": "object"
+    },
+    "Group": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "entities": {
+          "items": {
+            "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
+            "type": "string"
+          },
+          "title": "Entities",
+          "type": "array"
+        },
+        "handover": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PartialHandover"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "entities"
+      ],
+      "title": "Group",
+      "type": "object"
+    },
+    "Handover": {
+      "additionalProperties": false,
+      "properties": {
+        "duration": {
+          "default": "10m",
+          "ge": 0,
+          "title": "Duration",
+          "type": "number"
+        },
+        "target": {
+          "const": "projected_state_at_completion",
+          "default": "projected_state_at_completion",
+          "title": "Target",
+          "type": "string"
+        },
+        "dimming": {
+          "default": "auto",
+          "enum": [
+            "auto",
+            "stepped_only"
+          ],
+          "title": "Dimming",
+          "type": "string"
+        },
+        "non_dimmable": {
+          "const": "stagger",
+          "default": "stagger",
+          "title": "Non Dimmable",
+          "type": "string"
+        },
+        "step_interval": {
+          "default": "30s",
+          "gt": 0,
+          "title": "Step Interval",
+          "type": "number"
+        },
+        "cancel_behavior": {
+          "const": "hold_current",
+          "default": "hold_current",
+          "title": "Cancel Behavior",
+          "type": "string"
+        }
+      },
+      "title": "Handover",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "Lighting": {
+      "additionalProperties": false,
+      "properties": {
+        "managed_targets": {
+          "$ref": "#/$defs/Targets"
+        },
+        "default_brightness_pct": {
+          "default": 70,
+          "exclusiveMinimum": 0,
+          "maximum": 100,
+          "title": "Default Brightness Pct",
+          "type": "number"
+        },
+        "baseline": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Baseline"
+          },
+          "title": "Baseline",
+          "type": "array"
+        },
+        "handover": {
+          "$ref": "#/$defs/PartialHandover"
+        }
+      },
+      "title": "Lighting",
+      "type": "object"
+    },
+    "Location": {
+      "additionalProperties": false,
+      "properties": {
+        "latitude": {
+          "maximum": 90,
+          "minimum": -90,
+          "title": "Latitude",
+          "type": "number"
+        },
+        "longitude": {
+          "maximum": 180,
+          "minimum": -180,
+          "title": "Longitude",
+          "type": "number"
+        },
+        "elevation": {
+          "default": 0,
+          "title": "Elevation",
+          "type": "number"
+        }
+      },
+      "required": [
+        "latitude",
+        "longitude"
+      ],
+      "title": "Location",
+      "type": "object"
+    },
+    "PartialActivityDefaults": {
+      "additionalProperties": false,
+      "properties": {
+        "duration": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DurationRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "stop_behavior": {
+          "anyOf": [
+            {
+              "enum": [
+                "end_if_owned",
+                "leave_running"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stop Behavior"
+        }
+      },
+      "title": "PartialActivityDefaults",
+      "type": "object"
+    },
+    "PartialDefaults": {
+      "additionalProperties": false,
+      "properties": {
+        "time_distribution": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Distribution"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "probability": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Probability"
+        },
+        "target_order": {
+          "anyOf": [
+            {
+              "enum": [
+                "ordered",
+                "shuffled"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Order"
+        },
+        "stagger": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DurationRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "activity_windows": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PartialWindowDefaults"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "activities": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PartialActivityDefaults"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "PartialDefaults",
+      "type": "object"
+    },
+    "PartialHandover": {
+      "additionalProperties": false,
+      "properties": {
+        "duration": {
+          "anyOf": [
+            {
+              "ge": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duration"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "const": "projected_state_at_completion",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target"
+        },
+        "dimming": {
+          "anyOf": [
+            {
+              "enum": [
+                "auto",
+                "stepped_only"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dimming"
+        },
+        "non_dimmable": {
+          "anyOf": [
+            {
+              "const": "stagger",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Non Dimmable"
+        },
+        "step_interval": {
+          "anyOf": [
+            {
+              "gt": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Step Interval"
+        },
+        "cancel_behavior": {
+          "anyOf": [
+            {
+              "const": "hold_current",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cancel Behavior"
+        }
+      },
+      "title": "PartialHandover",
+      "type": "object"
+    },
+    "PartialWindowDefaults": {
+      "additionalProperties": false,
+      "properties": {
+        "on_duration": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DurationRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "min_gap": {
+          "anyOf": [
+            {
+              "ge": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Gap"
+        },
+        "overlap": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Overlap"
+        },
+        "target_mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TargetMode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "PartialWindowDefaults",
+      "type": "object"
+    },
+    "Policies": {
+      "additionalProperties": false,
+      "properties": {
+        "late_start": {
+          "const": "future_only",
+          "default": "future_only",
+          "title": "Late Start",
+          "type": "string"
+        },
+        "lighting_stop_behavior": {
+          "default": "leave_states",
+          "enum": [
+            "leave_states",
+            "turn_off_owned"
+          ],
+          "title": "Lighting Stop Behavior",
+          "type": "string"
+        },
+        "manual_override": {
+          "default": "yield_entity_until_next_activation",
+          "enum": [
+            "yield_entity_until_next_activation",
+            "authoritative_simulation"
+          ],
+          "title": "Manual Override",
+          "type": "string"
+        }
+      },
+      "title": "Policies",
+      "type": "object"
+    },
+    "Routine": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "days": {
+          "default": [
+            "mon",
+            "tue",
+            "wed",
+            "thu",
+            "fri",
+            "sat",
+            "sun"
+          ],
+          "items": {
+            "$ref": "#/$defs/Day"
+          },
+          "title": "Days",
+          "type": "array"
+        },
+        "probability": {
+          "default": 1,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Probability",
+          "type": "number"
+        },
+        "defaults": {
+          "$ref": "#/$defs/PartialDefaults"
+        },
+        "steps": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Step"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "activities": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Activity"
+          },
+          "title": "Activities",
+          "type": "array"
+        },
+        "activity_windows": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ActivityWindow"
+          },
+          "title": "Activity Windows",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "Routine",
+      "type": "object"
+    },
+    "Step": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "days": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Day"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Days"
+        },
+        "probability": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Probability"
+        },
+        "time_distribution": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Distribution"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "missing_anchor": {
+          "default": "error",
+          "enum": [
+            "error",
+            "skip"
+          ],
+          "title": "Missing Anchor",
+          "type": "string"
+        },
+        "allow_cross_boundary": {
+          "default": false,
+          "title": "Allow Cross Boundary",
+          "type": "boolean"
+        },
+        "when": {
+          "$ref": "#/$defs/When"
+        },
+        "actions": {
+          "items": {
+            "$ref": "#/$defs/Action"
+          },
+          "title": "Actions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "when",
+        "actions"
+      ],
+      "title": "Step",
+      "type": "object"
+    },
+    "SunRange": {
+      "additionalProperties": false,
+      "properties": {
+        "sun": {
+          "enum": [
+            "sunrise",
+            "sunset"
+          ],
+          "title": "Sun",
+          "type": "string"
+        },
+        "offset_range": {
+          "$ref": "#/$defs/DurationRange"
+        },
+        "fallback": {
+          "anyOf": [
+            {
+              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fallback"
+        }
+      },
+      "required": [
+        "sun"
+      ],
+      "title": "SunRange",
+      "type": "object"
+    },
+    "TargetMode": {
+      "enum": [
+        "all",
+        "one",
+        "subset",
+        "weighted_subset"
+      ],
+      "type": "string"
+    },
+    "Targets": {
+      "additionalProperties": false,
+      "properties": {
+        "groups": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_-]*$",
+            "type": "string"
+          },
+          "title": "Groups",
+          "type": "array"
+        },
+        "entities": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
+            "type": "string"
+          },
+          "title": "Entities",
+          "type": "array"
+        }
+      },
+      "title": "Targets",
+      "type": "object"
+    },
+    "When": {
+      "additionalProperties": false,
+      "properties": {
+        "clock_range": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClockRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sun_range": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SunRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "relative_to": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relative To"
+        },
+        "offset_range": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DurationRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "distribution": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Distribution"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "When",
+      "type": "object"
+    },
+    "WindowDefaults": {
+      "additionalProperties": false,
+      "properties": {
+        "on_duration": {
+          "$ref": "#/$defs/DurationRange"
+        },
+        "min_gap": {
+          "default": "0s",
+          "ge": 0,
+          "title": "Min Gap",
+          "type": "number"
+        },
+        "overlap": {
+          "default": false,
+          "title": "Overlap",
+          "type": "boolean"
+        },
+        "target_mode": {
+          "$ref": "#/$defs/TargetMode",
+          "default": "all"
+        }
+      },
+      "title": "WindowDefaults",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "timezone": {
+      "default": "home_assistant",
+      "title": "Timezone",
+      "type": "string"
+    },
+    "location": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Location"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "day_boundary": {
+      "default": "02:00",
+      "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$",
+      "title": "Day Boundary",
+      "type": "string"
+    },
+    "activation": {
+      "$ref": "#/$defs/Activation"
+    },
+    "policies": {
+      "$ref": "#/$defs/Policies"
+    },
+    "defaults": {
+      "$ref": "#/$defs/Defaults"
+    },
+    "lighting": {
+      "$ref": "#/$defs/Lighting"
+    },
+    "constraints": {
+      "$ref": "#/$defs/Constraints"
+    },
+    "groups": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Group"
+      },
+      "title": "Groups",
+      "type": "array"
+    },
+    "routines": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Routine"
+      },
+      "title": "Routines",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "name"
+  ],
+  "title": "Program",
+  "type": "object"
+}

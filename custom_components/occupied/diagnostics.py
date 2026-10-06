@@ -73,6 +73,11 @@ def diagnostics_data(engine, *, include_sensitive=False):
         "handover_targets": len(snapshot.get("handover", {})),
         "yielded_targets": len(snapshot.get("yielded", [])),
     }
+    if source := snapshot.get("configuration_source"):
+        result["configuration_source"] = {
+            key: source[key] for key in ("mode", "status", "has_valid_program") if key in source
+        }
+        result["counts"]["source_issues"] = len(source.get("issues", []))
     if include_sensitive:
         result["status"] = snapshot
         if hasattr(engine, "_plans"):

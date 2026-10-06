@@ -1,0 +1,14 @@
+{
+  "name": "occupied-development",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/frontend/model.test.mjs",
+    "test:browser": "node tests/frontend/run.mjs",
+    "format:check": "prettier --check custom_components/occupied/frontend tests/frontend .github/workflows"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "prettier": "3.6.2"
+  }
+}

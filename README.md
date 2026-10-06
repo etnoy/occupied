@@ -7,26 +7,27 @@ Occupied is a Home Assistant integration that simulated occupancy so that it loo
 
 It is the spiritual successor of https://github.com/acockburn/occusim
 
-Milestones 1–4 are implemented: the complete editor and timeline, canonical daily programs, durable plans/journals, gradual lighting handover, owned activity cleanup and restart recovery, dry run, and diagnostics. See [the editor guide](docs/editor.md) to configure routines, activities, windows and previews, and [the daily runtime guide](docs/runtime.md) for recovery and runtime limits. Managed-file/release work remains Milestone 5.
+Occupied includes the complete editor and timeline, canonical daily programs, durable plans/journals, gradual lighting handover, owned activity cleanup and restart recovery, dry run, diagnostics, and authoritative managed YAML. See [the editor guide](docs/editor.md), [daily runtime guide](docs/runtime.md), and [managed/Puppet guide](docs/managed-configuration.md).
 
 ## Installation
 
-1. Copy `custom_components/occupied/` into `<HA config>/custom_components/occupied/`, including `frontend/` and `translations/`.
+1. Add `https://github.com/etnoy/occupied` as a HACS custom repository of type **Integration** and download its release, or extract release `occupied.zip` inside `<HA config>/custom_components/occupied/`. See [installation, upgrades and uninstall](docs/installation.md).
 2. Restart Home Assistant.
 3. Open **Settings → Devices & services → Add integration → Occupied**.
-4. Choose the editor or import an Occupied YAML snapshot. Keep permission off while configuring through the sidebar panel, then **Validate draft → Save program**. Existing proof settings remain supported and open with an editable daily starter program.
+4. Choose the editor, import an Occupied YAML snapshot, or select an authoritative managed file. Keep permission off while configuring through the sidebar panel, then **Validate draft → Save program**. Existing proof settings remain supported and open with an editable daily starter program.
 5. Select **Dry run** in the sidebar panel to inspect simulated calls before selecting live execution. Enable permission when ready; activation conditions still apply.
 
-There is one household entry. Applying a program stores a snapshot; it does not watch or modify the source YAML. No frontend build, AppDaemon, separate daemon, or open browser is required. The supported/tested baseline is Home Assistant Core **2026.9.4**, on Python **3.14.8** (HA requires Python >=3.14.2).
+There is one household entry. GUI/import mode stores snapshots. Managed-file mode detects changes and supports validated `occupied.reload`; invalid updates retain the running program, and invalid initial files remain inactive. Occupied never writes the managed file. No frontend build, AppDaemon, separate daemon, or open browser is required. The tested matrix is Home Assistant Core **2026.9.3 and 2026.9.4**, on Python **3.14.8** (HA requires Python >=3.14.2).
 
 ## Canonical programs and offline previews
 
 See [the schema reference](docs/schema.md), [the household example](examples/house.yaml) and [the GUI export](examples/gui-house.yaml). YAML files and JSON drafts use the same versioned model, defaults, graph validation, and planner. Labels and resource list order do not affect sampled times. Explicit ID migration rewrites typed references atomically.
 
-The CLI requires Python 3.14.2 or later and its three direct planner dependencies. Install without HA using `uv sync --no-dev --locked`, or use the development environment below. You can also invoke it with `python -m custom_components.occupied.cli`.
+The CLI requires Python 3.14.2 or later and its three direct planner dependencies. Install the release wheel without HA using `pip install ./occupied-0.1.0-py3-none-any.whl`, use `uv sync --no-dev --locked`, or use the development environment below. You can also invoke it with `python -m custom_components.occupied.cli`.
 
 ```sh
 occupied-config validate examples/house.yaml
+occupied-config validate examples/house.yaml --date today --days 7 --timezone Europe/Stockholm
 occupied-config validate examples/house.yaml --date 2026-10-06 --days 7 --seed example
 occupied-config preview examples/house.yaml --date 2026-10-06 --days 7 --seed example --output preview.json
 occupied-config preview examples/house.yaml --date 2026-10-06 --seed example --handover-at 2026-10-06T18:00:00+02:00
@@ -52,6 +53,7 @@ uv run pytest
 uv run ruff check custom_components tests
 uv run ruff format --check custom_components tests
 node --test tests/frontend/model.test.mjs
+uv run python scripts/check_release.py
 ```
 
-`uv.lock` pins the complete test environment, including the HA frontend package. All **203 Python tests pass with 91% coverage**, including 23 new editor/setup/asset cases and all prior runtime regressions. Five Node tests and twelve automated browser workflows pass; the browser workflows also pass at 390-pixel width. See [the editor guide](docs/editor.md) to run them. Tests use real HA config entries, entities, native conditions, storage, timers, HTTP, and WebSocket APIs, with virtual physical-device handlers. They cover restart/overdue cleanup, immutable ends after apply, manual control, late/staggered starts, cross-day leases, persistence failure, capability fallbacks, dry run, bounded retries, authenticated apply/diagnostics, and preview isolation. Pure tests cover canonical round trips, ID migration, sampled bounds, resource conflicts, midnight/DST, and handover projection. No existing HA installation or physical devices are modified. Hardware and broader HA-version checks remain release work.
+`uv.lock` pins the complete test environment, including the HA frontend package. All **242 Python tests pass with 91% coverage** on both supported HA versions, using virtual device handlers. Five Node tests and thirteen browser workflows cover desktop and 390-pixel layouts. CI checks the generated schema, examples, hassfest/HACS metadata and installable artifacts; it uses locked Python and development-only browser dependencies. See [release verification](docs/releasing.md) and [the editor guide](docs/editor.md). Tests use real HA config entries, entities, native conditions, storage, timers, HTTP, and WebSocket APIs, with virtual physical-device handlers. They cover restart/overdue cleanup, immutable ends after apply, manual control, late/staggered starts, cross-day leases, persistence failure, capability fallbacks, dry run, bounded retries, authenticated apply/diagnostics, and preview isolation. Pure tests cover canonical round trips, ID migration, sampled bounds, resource conflicts, midnight/DST, and handover projection. No existing HA installation or physical devices are modified. Physical-device timing and a hardware soak remain deployment acceptance work.
