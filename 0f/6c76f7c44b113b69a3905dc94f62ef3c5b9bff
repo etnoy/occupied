@@ -1,0 +1,25 @@
+README.md
+  s_0f346951ec0436::t_d2b449a0a1fdda 59
+custom_components/occupied/file_config.py
+  s_0f346951ec0436::t_d9ec93231a001f 21,25-28,131-132
+docs/releasing.md
+  s_0f346951ec0436::t_d0fc4a439ebde6 5
+tests/test_managed.py
+  s_0f346951ec0436::t_b4b25f1ab18f5f 109,126-127,330,345-350
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0f6c76f7c44b113b69a3905dc94f62ef3c5b9bff",
+  "prompts": {},
+  "sessions": {
+    "s_0f346951ec0436": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11271-f137-79a3-86ef-83a0894f88e0",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
