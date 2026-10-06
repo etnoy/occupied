@@ -1,0 +1,351 @@
+schema_version: 1
+name: GUI household example
+description: Exported by the production editor acceptance workflow; replace virtual
+  entity IDs before use.
+timezone: Europe/Stockholm
+location:
+  latitude: 59.3293
+  longitude: 18.0686
+  elevation: 0.0
+day_boundary: 02:00
+activation:
+  conditions:
+  - condition: state
+    entity_id: sensor.alarm
+    state:
+    - armed
+    - armed away
+    - armed_away
+policies:
+  late_start: future_only
+  lighting_stop_behavior: leave_states
+  manual_override: yield_entity_until_next_activation
+defaults:
+  time_distribution: uniform
+  probability: 1.0
+  target_order: ordered
+  stagger:
+    fixed: 0s
+  activity_windows:
+    on_duration:
+      min: 5m
+      max: 25m
+    min_gap: 10m
+    overlap: false
+    target_mode: all
+  activities:
+    stop_behavior: end_if_owned
+  handover:
+    duration: 10m
+    target: projected_state_at_completion
+    dimming: auto
+    non_dimmable: stagger
+    step_interval: 30s
+    cancel_behavior: hold_current
+lighting:
+  managed_targets:
+    groups:
+    - bedrooms
+    - kitchen
+    - living_room
+    entities: []
+  default_brightness_pct: 70.0
+  baseline:
+  - targets:
+      groups:
+      - bedrooms
+      - kitchen
+      - living_room
+      entities: []
+    state: 'off'
+  handover:
+    duration: 10m
+    step_interval: 30s
+constraints:
+  generation_attempts: 64
+groups:
+- id: bedrooms
+  name: Bedroom lights
+  entities:
+  - light.bedroom
+  - light.hall
+- id: kitchen
+  name: Kitchen lights
+  entities:
+  - light.kitchen
+- id: living_room
+  name: Living room
+  entities:
+  - light.living_room
+  handover:
+    duration: 5m
+routines:
+- id: weekday_mornings
+  name: Weekday mornings
+  days:
+  - mon
+  - tue
+  - wed
+  - thu
+  - fri
+  probability: 1.0
+  defaults: {}
+  steps:
+  - id: wake_up
+    name: Wake up
+    missing_anchor: error
+    allow_cross_boundary: false
+    when:
+      clock_range:
+        earliest: 06:40
+        latest: 07:20
+        cross_midnight: false
+    actions:
+    - action: turn_on
+      targets:
+        groups:
+        - bedrooms
+        entities: []
+      data:
+        brightness_pct: 60
+        color_temp_kelvin: 2700
+      resources: []
+      replay_safe: false
+  - id: breakfast
+    name: Breakfast
+    missing_anchor: error
+    allow_cross_boundary: false
+    when:
+      relative_to: wake_up
+      offset_range:
+        min: 5m
+        max: 20m
+    actions:
+    - action: turn_on
+      targets:
+        groups:
+        - kitchen
+        entities: []
+      data: {}
+      resources: []
+      replay_safe: false
+  - id: leave
+    name: Leave for work
+    missing_anchor: error
+    allow_cross_boundary: false
+    when:
+      relative_to: breakfast
+      offset_range:
+        min: 15m
+        max: 30m
+    actions:
+    - action: turn_off
+      targets:
+        groups:
+        - bedrooms
+        - kitchen
+        entities: []
+      data: {}
+      resources: []
+      replay_safe: false
+  activities: []
+  activity_windows: []
+- id: weekend_mornings
+  name: Weekend mornings
+  days:
+  - sat
+  - sun
+  probability: 1.0
+  defaults:
+    time_distribution: triangular
+  steps:
+  - id: weekend_wake
+    name: Slow morning
+    missing_anchor: error
+    allow_cross_boundary: false
+    when:
+      clock_range:
+        earliest: 08:00
+        latest: '10:00'
+        cross_midnight: false
+        mode: 09:00
+    actions:
+    - action: turn_on
+      targets:
+        groups:
+        - kitchen
+        entities: []
+      data: {}
+      resources: []
+      replay_safe: false
+  - id: weekend_leave
+    name: Morning lights off
+    missing_anchor: error
+    allow_cross_boundary: false
+    when:
+      relative_to: weekend_wake
+      offset_range:
+        min: 30m
+        max: 1h
+    actions:
+    - action: turn_off
+      targets:
+        groups:
+        - kitchen
+        entities: []
+      data: {}
+      resources: []
+      replay_safe: false
+  activities: []
+  activity_windows: []
+- id: evenings
+  name: Evening routine
+  days:
+  - mon
+  - tue
+  - wed
+  - thu
+  - fri
+  - sat
+  - sun
+  probability: 1.0
+  defaults: {}
+  steps:
+  - id: evening
+    name: Sunset lighting
+    missing_anchor: error
+    allow_cross_boundary: false
+    when:
+      sun_range:
+        sun: sunset
+        offset_range:
+          min: -30m
+          max: 30m
+        fallback: '18:00'
+    actions:
+    - action: turn_on
+      targets:
+        groups:
+        - living_room
+        entities: []
+      data:
+        brightness_pct: 50
+      resources: []
+      replay_safe: false
+  - id: bedtime
+    name: Go to bed
+    missing_anchor: error
+    allow_cross_boundary: false
+    when:
+      clock_range:
+        earliest: '21:30'
+        latest: '22:45'
+        cross_midnight: false
+    actions:
+    - action: turn_on
+      targets:
+        groups: []
+        entities:
+        - light.bedroom
+      data:
+        brightness_pct: 30
+      resources: []
+      replay_safe: false
+    - action: turn_off
+      targets:
+        groups:
+        - kitchen
+        - living_room
+        entities: []
+      data: {}
+      resources: []
+      replay_safe: false
+  - id: lights_out
+    name: Lights out
+    missing_anchor: error
+    allow_cross_boundary: false
+    when:
+      relative_to: bedtime
+      offset_range:
+        min: 5m
+        max: 20m
+    actions:
+    - action: safety_off
+      targets:
+        groups:
+        - bedrooms
+        - kitchen
+        - living_room
+        entities: []
+      data: {}
+      resources: []
+      replay_safe: false
+  activities:
+  - id: evening_tv
+    name: Evening television
+    missing_anchor: error
+    allow_cross_boundary: false
+    when:
+      clock_range:
+        earliest: '19:45'
+        latest: '20:15'
+        cross_midnight: false
+    duration:
+      fixed: 45m
+    resources:
+    - remote.living_room_harmony
+    on_start:
+    - action: remote.turn_on
+      targets:
+        groups: []
+        entities:
+        - remote.living_room_harmony
+      data:
+        activity: Watch TV
+      resources: []
+      replay_safe: false
+    on_end:
+    - action: remote.turn_off
+      targets:
+        groups: []
+        entities:
+        - remote.living_room_harmony
+      data: {}
+      resources: []
+      replay_safe: false
+    start_conditions:
+    - condition: state
+      entity_id: remote.living_room_harmony
+      state: 'off'
+    ownership_conditions:
+    - condition: state
+      entity_id: remote.living_room_harmony
+      state: Watch TV
+      attribute: current_activity
+    stop_behavior: end_if_owned
+  activity_windows:
+  - id: kitchen_evening
+    name: Occasional kitchen use
+    missing_anchor: error
+    allow_cross_boundary: false
+    between:
+      start:
+        sun: sunset
+        offset: -1h
+        day_offset: 0
+        fallback: '18:00'
+      end:
+        step: bedtime
+        offset: 0s
+        day_offset: 0
+      cross_midnight: false
+    cycles:
+      min: 2
+      max: 4
+    targets:
+      groups:
+      - kitchen
+      entities: []
+    target_mode: all
+    weights: {}
+    data: {}

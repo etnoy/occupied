@@ -1,5 +1,6 @@
 """Authenticated status and pure canonical draft/preview operations."""
 
+import asyncio
 from datetime import date, datetime
 from functools import partial
 
@@ -19,6 +20,12 @@ def async_register_websocket(hass: HomeAssistant) -> None:
         websocket_rename_id,
         websocket_apply,
         websocket_diagnostics,
+        websocket_program,
+        websocket_catalog,
+        websocket_editor_validate,
+        websocket_save,
+        websocket_timeline,
+        websocket_subscribe,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -141,40 +148,197 @@ async def websocket_rename_id(
     await _draft_operation(hass, connection, msg, rename_draft, msg["kind"], msg["old"], msg["new"])
 
 
-@websocket_api.websocket_command({**_DRAFT_SCHEMA, vol.Required("type"): "occupied/apply"})
+@websocket_api.websocket_command(
+    {
+        **_DRAFT_SCHEMA,
+        vol.Required("type"): "occupied/apply",
+        vol.Optional("expected_revision"): str,
+    }
+)
 @websocket_api.require_admin
 @websocket_api.async_response
 async def websocket_apply(hass, connection, msg):
+    await _apply_program(hass, connection, msg)
+
+
+async def _apply_program(hass, connection, msg, *, editor_save=False):
     from . import resolve_engine
     from .activation import ActivationGate
+    from .const import DOMAIN
+    from .editor import current_revision, installed_issues, program_document
     from .engine_daily import DailyEngine
     from .file_config import load_program
     from .storage import program_store
-    from .validation import ProgramError, condition_data, program_data
+    from .validation import ProgramError, RevisionConflict, condition_data, program_data
 
     try:
-        engine = resolve_engine(hass, msg["config_entry_id"])
         program = await hass.async_add_executor_job(load_program, msg["program"])
-        gate = ActivationGate(hass, [condition_data(c) for c in program.activation.conditions])
-        await gate.async_prepare()
-        if hasattr(engine, "async_replace_program"):
-            await engine.async_replace_program(program)
-        else:
-            candidate = DailyEngine(hass, engine.entry_id, program)
-            await candidate.async_prepare()
-            await candidate._ensure_plans()
-            if candidate._storage_failed:
-                raise HomeAssistantError(candidate.last_error)
-            await program_store(hass, engine.entry_id).async_save(program_data(program))
-            if not await hass.config_entries.async_reload(engine.entry_id):
-                raise HomeAssistantError("Could not load the saved daily program")
-        connection.send_result(msg["id"], {"valid": True, "program": program_data(program)})
+        lock = hass.data[DOMAIN].setdefault("editor_lock", asyncio.Lock())
+        async with lock:
+            engine = resolve_engine(hass, msg["config_entry_id"])
+            expected = msg.get("expected_revision")
+            if expected is not None and expected != current_revision(engine):
+                raise RevisionConflict(
+                    "The program changed. Reload the saved program before saving."
+                )
+            if editor_save:
+                errors = [
+                    issue for issue in installed_issues(hass, program) if issue.severity == "error"
+                ]
+                if errors:
+                    raise ProgramError(errors)
+            gate = ActivationGate(hass, [condition_data(c) for c in program.activation.conditions])
+            await gate.async_prepare()
+            if hasattr(engine, "async_replace_program"):
+                await engine.async_replace_program(program, expected_revision=expected)
+            else:
+                candidate = DailyEngine(hass, engine.entry_id, program)
+                await candidate.async_prepare()
+                await candidate._ensure_plans()
+                if candidate._storage_failed:
+                    raise HomeAssistantError(candidate.last_error)
+                await program_store(hass, engine.entry_id).async_save(program_data(program))
+                if not await hass.config_entries.async_reload(engine.entry_id):
+                    raise HomeAssistantError("Could not load the saved daily program")
+            engine = resolve_engine(hass, msg["config_entry_id"])
+            connection.send_result(
+                msg["id"],
+                {"valid": True, **program_document(engine)},
+            )
     except ProgramError as err:
         connection.send_result(
             msg["id"], {"valid": False, "issues": [i.to_dict() for i in err.issues]}
         )
+    except RevisionConflict as err:
+        connection.send_error(msg["id"], "revision_conflict", str(err))
     except (HomeAssistantError, ValueError, vol.Invalid) as err:
         connection.send_error(msg["id"], "apply_failed", str(err))
+
+
+_ENTRY_SCHEMA = {vol.Required("config_entry_id"): str}
+
+
+@websocket_api.websocket_command({**_ENTRY_SCHEMA, vol.Required("type"): "occupied/program"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_program(hass, connection, msg):
+    from . import resolve_engine
+    from .editor import program_document
+
+    try:
+        result = program_document(resolve_engine(hass, msg["config_entry_id"]))
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "not_loaded", str(err))
+        return
+    connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command({**_ENTRY_SCHEMA, vol.Required("type"): "occupied/catalog"})
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_catalog(hass, connection, msg):
+    from . import resolve_engine
+    from .editor import async_catalog
+
+    try:
+        resolve_engine(hass, msg["config_entry_id"])
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "not_loaded", str(err))
+        return
+    connection.send_result(msg["id"], await async_catalog(hass))
+
+
+@websocket_api.websocket_command(
+    {**_DRAFT_SCHEMA, vol.Required("type"): "occupied/editor_validate"}
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_editor_validate(hass, connection, msg):
+    from .editor import installed_issues
+    from .file_config import load_program
+    from .preview import validate_draft
+
+    def validate(source):
+        return validate_draft(source)
+
+    # Pure loading runs in the executor; registry/state checks stay on HA's loop.
+    from . import resolve_engine
+    from .validation import ProgramError
+
+    try:
+        resolve_engine(hass, msg["config_entry_id"])
+        result = await hass.async_add_executor_job(validate, msg["program"])
+        program = await hass.async_add_executor_job(load_program, result["program"])
+        result["issues"].extend(issue.to_dict() for issue in installed_issues(hass, program))
+        result["valid"] = not any(i["severity"] == "error" for i in result["issues"])
+    except ProgramError as err:
+        result = {"valid": False, "issues": [i.to_dict() for i in err.issues]}
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "not_loaded", str(err))
+        return
+    connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command(
+    {
+        **_DRAFT_SCHEMA,
+        vol.Required("type"): "occupied/save",
+        vol.Required("expected_revision"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_save(hass, connection, msg):
+    await _apply_program(hass, connection, msg, editor_save=True)
+
+
+@websocket_api.websocket_command(
+    {
+        **_ENTRY_SCHEMA,
+        vol.Required("type"): "occupied/timeline",
+        vol.Optional("date"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_timeline(hass, connection, msg):
+    from . import resolve_engine
+    from .editor import timeline_document
+
+    try:
+        day = date.fromisoformat(msg["date"]) if "date" in msg else None
+        result = timeline_document(resolve_engine(hass, msg["config_entry_id"]), day)
+    except (HomeAssistantError, ValueError) as err:
+        connection.send_error(msg["id"], "timeline_failed", str(err))
+        return
+    connection.send_result(msg["id"], result)
+
+
+@websocket_api.websocket_command({**_ENTRY_SCHEMA, vol.Required("type"): "occupied/subscribe"})
+@websocket_api.require_admin
+@callback
+def websocket_subscribe(hass, connection, msg):
+    from homeassistant.helpers.dispatcher import async_dispatcher_connect
+
+    from . import resolve_engine
+
+    try:
+        engine = resolve_engine(hass, msg["config_entry_id"])
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "not_loaded", str(err))
+        return
+
+    @callback
+    def changed():
+        try:
+            data = resolve_engine(hass, msg["config_entry_id"]).snapshot()
+        except HomeAssistantError:
+            data = {"loaded": False}
+        connection.send_event(msg["id"], data)
+
+    connection.subscriptions[msg["id"]] = async_dispatcher_connect(hass, engine.signal, changed)
+    connection.send_result(msg["id"])
+    changed()
 
 
 @websocket_api.websocket_command(

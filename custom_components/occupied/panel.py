@@ -13,11 +13,7 @@ async def async_register_panel(hass: HomeAssistant, entry_id: str) -> None:
     data = hass.data.setdefault(DOMAIN, {})
     if not data.get("static_registered"):
         await hass.http.async_register_static_paths(
-            [
-                StaticPathConfig(
-                    PANEL_URL, str(Path(__file__).parent / "frontend" / "occupied-panel.js"), True
-                )
-            ]
+            [StaticPathConfig("/occupied_static", str(Path(__file__).parent / "frontend"), True)]
         )
         # HA's static-route API has no unregister operation. Keep this single
         # public, configuration-free asset route and reuse it after reload.

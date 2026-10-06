@@ -1,6 +1,6 @@
 # Occupied program schema, version 1
 
-The CLI, backend draft APIs, and daily runtime accept this canonical model. Apply a program using [the runtime guide](runtime.md). The full editor is Milestone 4; authoritative managed-file reloads are Milestone 5. Preview does not evaluate HA state or invoke services.
+The editor, CLI, backend draft APIs and daily runtime accept this canonical model. Configure it using [the editor guide](editor.md) or apply through [the runtime API](runtime.md). Authoritative managed-file reloads remain Milestone 5. Preview does not evaluate HA state or invoke services.
 
 Start with [the household example](../examples/house.yaml). `occupied-config export FILE` emits normalized YAML with shared defaults. JSON drafts and YAML normalize through the same models and validators. Unknown fields, duplicate YAML keys, unsafe tags, recursive aliases, and YAML merge keys are rejected. Use schema defaults for sharing settings. Issues include a model path and, for YAML input, source line/column.
 

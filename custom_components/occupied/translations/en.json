@@ -3,7 +3,15 @@
   "config": {
     "step": {
       "user": {
-        "title": "Occupied caller proof",
+        "title": "Create your household",
+        "description": "Create a program in the Occupied panel or import Occupied YAML. Permission starts disabled.",
+        "data": {
+          "name": "Household name",
+          "method": "Configuration method"
+        }
+      },
+      "proof": {
+        "title": "Original caller proof",
         "description": "Configure the milestone-one deterministic sequence. Permission starts disabled. Leave the activation entity empty for manual control. Each activation gradually brings the selected light to the configured brightness, then runs the light pair and optional remote activity.",
         "data": {
           "name": "Household name",
@@ -19,10 +27,18 @@
           "remote_delay_seconds": "Remote start delay after handover (seconds)",
           "remote_duration_seconds": "Remote activity duration (seconds)"
         }
+      },
+      "yaml": {
+        "title": "Import Occupied YAML",
+        "description": "Import a snapshot of your Occupied program. The source file is not watched or modified.",
+        "data": {
+          "program": "Occupied YAML"
+        }
       }
     },
     "error": {
-      "invalid_config": "Check the selected entities, allowed states, activity name, and duration bounds."
+      "invalid_config": "Check the selected entities, allowed states, activity name, and duration bounds.",
+      "invalid_program": "The YAML is not a valid Occupied program. Validate it with the Occupied CLI to see field and line details."
     },
     "abort": {
       "already_configured": "One Occupied household is already configured.",
@@ -54,7 +70,7 @@
       "invalid_config": "Check the selected entities, allowed states, activity name, and duration bounds."
     },
     "abort": {
-      "daily_program": "This entry uses a daily program. Apply changes through the Occupied API."
+      "daily_program": "Edit this household in the Occupied sidebar panel."
     }
   },
   "entity": {
@@ -81,6 +97,14 @@
       },
       "next_event": {
         "name": "Next event"
+      }
+    }
+  },
+  "selector": {
+    "configuration_method": {
+      "options": {
+        "editor": "Create with the Occupied editor",
+        "yaml": "Import Occupied YAML"
       }
     }
   }

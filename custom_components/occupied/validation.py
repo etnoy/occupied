@@ -43,6 +43,15 @@ class ProgramError(ValueError):
         super().__init__("; ".join(f"{format_path(item.path)}: {item.message}" for item in issues))
 
 
+class RevisionConflict(ValueError):
+    """The editor's base revision no longer matches the live program."""
+
+
+def program_revision(program: Program) -> str:
+    """Identify the normalized source, including presentation metadata."""
+    return hashlib.sha256(json.dumps(program_data(program), sort_keys=True).encode()).hexdigest()
+
+
 def format_path(path: ModelPath) -> str:
     result = "$"
     for part in path:

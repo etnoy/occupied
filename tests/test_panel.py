@@ -1,7 +1,9 @@
 """Public HA panel registration, authenticated API, and browser-independent dispatch."""
 
 from datetime import timedelta
+from pathlib import Path
 
+import pytest
 from homeassistant.components.frontend import DATA_PANELS
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
@@ -51,13 +53,19 @@ async def test_unknown_entry_status_is_actionable(hass, entry, devices, hass_ws_
     assert response["error"]["code"] == "not_loaded"
 
 
-async def test_bundled_asset_is_served_without_household_data(hass, entry, devices, hass_client):
+@pytest.mark.parametrize(
+    "asset", [path.name for path in Path("custom_components/occupied/frontend").glob("*.js")]
+)
+async def test_bundled_asset_is_served_without_household_data(
+    hass, entry, devices, hass_client, asset
+):
     assert await hass.config_entries.async_setup(entry.entry_id)
     client = await hass_client()
-    response = await client.get("/occupied_static/occupied-panel.js")
+    response = await client.get(f"/occupied_static/{asset}")
     assert response.status == 200
     source = await response.text()
-    assert 'customElements.define("occupied-panel"' in source
+    if asset == "occupied-panel.js":
+        assert 'customElements.define("occupied-panel"' in source
     assert "light.proof" not in source
     assert "remote.harmony" not in source
     assert entry.entry_id not in source

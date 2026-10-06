@@ -1,10 +1,10 @@
 # Daily runtime
 
-Occupied runs inside Home Assistant Core 2026.9.4. Canonical daily programs, the pure planner, and the offline CLI share [schema version 1](schema.md). The routine editor and authoritative file watching/reload remain future milestones.
+Occupied runs inside Home Assistant Core 2026.9.4. Canonical daily programs, the pure planner, and the offline CLI share [schema version 1](schema.md). Configure routines through [the editor](editor.md). Authoritative file watching/reload remains Milestone 5.
 
 ## Apply a program
 
-Install Occupied and create its single household entry as described in the README. Permission starts disabled. Prepare a program from [examples/house.yaml](../examples/house.yaml), replace its entities and activity names, and validate/preview it with `occupied-config`. Validation and preview do not control devices.
+Install Occupied and create its single household entry as described in the README. Permission starts disabled. Use the sidebar editor to validate/save a draft, or prepare a program from [examples/house.yaml](../examples/house.yaml), replace its entities and activity names, and validate/preview it with `occupied-config`. Validation and preview do not control devices.
 
 The authenticated HA WebSocket API accepts `occupied/apply` with `config_entry_id` and `program` (a JSON object or YAML string). This admin-only command stores a canonical snapshot. It upgrades a proof entry to the daily engine, or replaces a daily program in place. It neither modifies nor watches the source file. For example, from the HA frontend's browser console:
 
@@ -49,7 +49,7 @@ await hass.callWS({ type: "occupied/validate", config_entry_id: entryId, program
 await hass.callWS({ type: "occupied/apply", config_entry_id: entryId, program: yaml });
 ```
 
-An HA integration can also start Occupied's `import` config flow with canonical JSON/YAML as its data to create the household directly. The ordinary options form remains for proof settings; daily programs are changed through apply. Invalid schema or an infeasible replacement leaves an existing daily program and its queue intact. Metadata-only changes retain sampled times, session, and handover deadlines. Behavior changes replace future work and retain immutable end actions for already-started activities, even if removed from the new program.
+An HA integration can also start Occupied's `import` config flow with canonical JSON/YAML as its data to create the household directly. The ordinary options form remains for proof settings; daily programs are changed through the sidebar editor or apply. Editor saves require the read revision; `occupied/apply` also accepts optional `expected_revision` for API clients. Invalid schema or an infeasible replacement leaves an existing daily program and its queue intact. Metadata-only changes retain sampled times, session, and handover deadlines. Behavior changes replace future work and retain immutable end actions for already-started activities, even if removed from the new program.
 
 ## Permission, dry run and status
 

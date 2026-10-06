@@ -1,144 +1,902 @@
-// Dependency-free bundled checkpoint panel. HA owns every device timer.
-class OccupiedPanel extends HTMLElement {
+import { copy, get, set, resources } from "./model.js";
+import { button, el, section } from "./forms.js";
+import { editView } from "./views.js";
+import { timeline, stamp } from "./timeline.js";
+import { styles } from "./styles.js";
+import { translator } from "./translations.js";
+
+const tabs = {
+  overview: "Overview",
+  household: "Household",
+  groups: "Groups",
+  routines: "Routines",
+  handover: "Handover",
+  defaults: "Defaults",
+  dependencies: "Dependencies",
+  timeline: "Timeline",
+  preview: "Preview",
+  configuration: "Configuration",
+  diagnostics: "Diagnostics",
+};
+
+export class OccupiedPanel extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this._busy = false;
-    this._status = null;
-    this._error = "";
+    this.tab = "overview";
+    this.catalog = { entities: [], services: {} };
+    this.selection = new Map();
+    this.raw = new Map();
+    this.localErrors = new Map();
+    this.t = translator("en");
+    this.version = 0;
+    this.validatedVersion = -1;
+    this.dirty = false;
+    this.busy = false;
+    this.epoch = 0;
+    this.error = "";
+    this.previewSettings = { date: "", days: 7, seed: "preview-1", at: "" };
+    this._beforeUnload = (e) => {
+      if (this.dirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
   }
-
   set hass(value) {
+    const changed = this._hass?.connection !== value?.connection;
     this._hass = value;
-    this._refresh();
+    this.t = translator(value?.language);
+    for (const selector of this.shadowRoot.querySelectorAll("ha-selector"))
+      selector.hass = value;
+    if (changed) {
+      this._disposeSubscription();
+      this._subscribe();
+    }
+    this._load();
   }
-
   set panel(value) {
     this._panel = value;
-    this._refresh();
+    this._load();
   }
-
+  set narrow(value) {
+    this.toggleAttribute("narrow", !!value);
+  }
   connectedCallback() {
-    this._render();
-    this._refresh();
+    this.shell();
+    this._load();
+    window.addEventListener("beforeunload", this._beforeUnload);
+    this._timer = setInterval(() => {
+      for (const progress of this.shadowRoot.querySelectorAll(
+        "progress[data-start]",
+      ))
+        progress.value = Math.max(
+          0,
+          Math.min(
+            1,
+            (Date.now() - Date.parse(progress.dataset.start)) /
+              Math.max(
+                1,
+                Date.parse(progress.dataset.deadline) -
+                  Date.parse(progress.dataset.start),
+              ),
+          ),
+        );
+    }, 1000);
   }
-
-  async _refresh() {
-    const entry = this._panel?.config?.config_entry_id;
-    if (!this.isConnected || !this._hass || !entry || this._busy) return;
-    this._busy = true;
+  disconnectedCallback() {
+    this.epoch++;
+    this._loadedEntry = null;
+    this._loading = false;
+    this._disposeSubscription();
+    clearInterval(this._timer);
+    clearTimeout(this._timelineTimer);
+    window.removeEventListener("beforeunload", this._beforeUnload);
+  }
+  _disposeSubscription() {
+    this._subscriptionEpoch = (this._subscriptionEpoch || 0) + 1;
+    this._unsubscribe?.();
+    this._unsubscribe = null;
+    this._subscribing = false;
+  }
+  async _subscribe() {
+    if (
+      !this.isConnected ||
+      !this._loadedEntry ||
+      !this._hass?.connection ||
+      this._unsubscribe ||
+      this._subscribing
+    )
+      return;
+    this._subscribing = true;
+    const epoch = this._subscriptionEpoch;
     try {
-      this._status = await this._hass.callWS({ type: "occupied/status", config_entry_id: entry });
-      this._error = "";
+      const unsubscribe = await this._hass.connection.subscribeMessage(
+        (snapshot) => {
+          if (epoch !== this._subscriptionEpoch || !this.isConnected) return;
+          this.status = snapshot;
+          this.stale = !!(
+            snapshot.source_revision &&
+            this.revision &&
+            snapshot.source_revision !== this.revision
+          );
+          this.toolbar();
+          if (this.tab === "overview") this.renderOverview();
+          if (this.tab === "timeline" && !this._timelineTimer)
+            this._timelineTimer = setTimeout(() => {
+              this._timelineTimer = null;
+              this.loadTimeline();
+            }, 1000);
+          if (this.stale && !this.dirty && !this.busy) this.reloadSaved();
+        },
+        { type: "occupied/subscribe", config_entry_id: this._loadedEntry },
+      );
+      if (epoch !== this._subscriptionEpoch || !this.isConnected) unsubscribe();
+      else this._unsubscribe = unsubscribe;
     } catch (error) {
-      this._error = error.message || "Unable to load Occupied status";
+      if (epoch === this._subscriptionEpoch) this.fail(error);
     } finally {
-      this._busy = false;
-      if (this.isConnected) this._render();
+      if (epoch === this._subscriptionEpoch) this._subscribing = false;
     }
   }
-
-  async _control(service, extra = {}) {
+  ws(type, data = {}) {
+    return this._hass.callWS({
+      type: `occupied/${type}`,
+      config_entry_id: this._loadedEntry,
+      ...data,
+    });
+  }
+  async _load() {
+    const entry = this._panel?.config?.config_entry_id;
+    if (
+      !this.isConnected ||
+      !this._hass ||
+      !entry ||
+      this._loading ||
+      this._loadedEntry === entry
+    )
+      return;
+    this._loading = true;
+    this._disposeSubscription();
+    const epoch = ++this.epoch;
+    this._loadedEntry = entry;
     try {
-      await this._hass.callService("occupied", service, {
-        config_entry_id: this._panel.config.config_entry_id,
-        ...extra,
-      });
-      await this._refresh();
+      const [doc, catalog, status] = await Promise.all([
+        this.ws("program"),
+        this.ws("catalog"),
+        this.ws("status"),
+      ]);
+      if (epoch !== this.epoch) return;
+      this.document = doc;
+      this.saved = doc.program;
+      this.draft = copy(doc.program);
+      this.revision = doc.revision;
+      this.catalog = catalog;
+      this.status = status;
+      this.dirty = !!doc.needs_apply;
+      this.stale = false;
+      this.previewSettings.date = doc.simulation_date;
+      this.error = "";
+      this.raw.clear();
+      this.localErrors.clear();
+      this.shell();
+      this.renderView();
+      this._subscribe();
     } catch (error) {
-      this._error = error.message || "Unable to change simulation state";
-      this._render();
+      if (epoch === this.epoch) {
+        this._loadedEntry = null;
+        this.fail(error);
+      }
+    } finally {
+      if (epoch === this.epoch) this._loading = false;
     }
   }
-
-  _render() {
-    this.shadowRoot.innerHTML = `
-      <style>
-        :host { display: block; color: var(--primary-text-color); background: var(--primary-background-color); min-height: 100%; }
-        main { max-width: 760px; padding: 24px; margin: auto; font: 16px/1.5 system-ui, sans-serif; }
-        h1 { margin-bottom: 4px; } p { margin-top: 4px; }
-        section { background: var(--card-background-color); border: 1px solid var(--divider-color); border-radius: 12px; padding: 20px; margin: 20px 0; }
-        dl { display: grid; grid-template-columns: minmax(120px, 1fr) 2fr; gap: 12px; }
-        dd { margin: 0; overflow-wrap: anywhere; } dt { color: var(--secondary-text-color); }
-        nav { display: flex; gap: 12px; flex-wrap: wrap; }
-        button, a { font: inherit; } button { padding: 10px 16px; border-radius: 8px; border: 1px solid var(--divider-color); background: var(--card-background-color); color: var(--primary-text-color); cursor: pointer; }
-        button:focus-visible, a:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 3px; }
-        a { color: var(--primary-color); } .error { color: var(--error-color, #b3261e); }
-        ol { padding-left: 24px; } li { margin: 8px 0; }
-        @media (max-width: 480px) { main { padding: 16px; } dl { grid-template-columns: 1fr; gap: 4px; } dd { margin-bottom: 12px; } }
-      </style>
-      <main>
-        <h1>Occupied</h1>
-        <p id="house"></p>
-        <p class="error" id="error" role="alert"></p>
-        <section aria-label="Simulation status" aria-live="polite"><dl id="status"></dl></section>
-        <nav aria-label="Simulation controls" id="controls"></nav>
-        <section><h2>Upcoming actions</h2><ol id="events"></ol></section>
-        <section id="daily-details" hidden><h2>Active activities</h2><ul id="activities"></ul><h2>Lighting convergence</h2><ul id="handover"></ul></section>
-        <p><a href="/config/integrations/integration/occupied">Configure Occupied</a></p>
-        <p id="checkpoint"></p>
-      </main>`;
-    const root = this.shadowRoot;
-    root.getElementById("error").textContent = this._error;
-    const state = this._status;
-    root.getElementById("house").textContent = state?.name || "Loading household…";
+  shell() {
+    this.shadowRoot.replaceChildren(el("style", styles));
+    const main = el("main"),
+      header = el("header"),
+      title = el("div");
+    title.append(
+      el("h1", "Occupied"),
+      el("p", this.draft?.name || this.t("Loading household…"), {
+        id: "house",
+      }),
+    );
+    header.append(
+      title,
+      el("span", "", { id: "badge", class: "badge", "aria-live": "polite" }),
+    );
+    main.append(
+      header,
+      el("div", "", { id: "toolbar", class: "toolbar" }),
+      el("div", "", { id: "notice", class: "banner", role: "status" }),
+      el("div", "", { id: "error", class: "error", role: "alert" }),
+    );
+    const nav = el("nav", null, { "aria-label": "Occupied" });
+    for (const [id, label] of Object.entries(tabs))
+      nav.append(
+        button(
+          this.t(label),
+          () => {
+            this.tab = id;
+            this.renderView();
+          },
+          { "data-tab": id },
+        ),
+      );
+    main.append(
+      nav,
+      el("div", null, { id: "issues" }),
+      el("div", null, { id: "view" }),
+    );
+    this.shadowRoot.append(main);
+    this.toolbar();
+  }
+  toolbar() {
+    const node = this.shadowRoot.getElementById("toolbar");
+    if (!node) return;
+    const validate = button(this.t("Validate draft"), () => this.validate()),
+      save = button(this.t("Save program"), () => this.save(), {
+        class: "primary",
+      }),
+      discard = button(this.t("Discard edits"), () => {
+        this.draft = copy(this.saved);
+        this.dirty = !!this.document.needs_apply;
+        this.version++;
+        this.validatedVersion = -1;
+        this.raw.clear();
+        this.localErrors.clear();
+        this.issues = [];
+        this.renderView();
+      });
+    validate.disabled = this.busy || !this.draft;
+    save.disabled =
+      this.busy ||
+      this.stale ||
+      this.validatedVersion !== this.version ||
+      !this.dirty;
+    discard.disabled = this.busy || !this.draft;
+    node.replaceChildren(validate, save, discard);
+    if (this.stale)
+      node.append(
+        button(this.t("Reload saved program"), () => this.reloadSaved(true)),
+      );
+    const error = this.shadowRoot.getElementById("error");
+    error.textContent = this.error;
+    error.hidden = !this.error;
+    this.shadowRoot.getElementById("badge").textContent = this.status
+      ? `${this.status.status || "unloaded"} · ${this.status.dry_run ? this.t("Dry run") : this.t("Live")}`
+      : "";
+    const notice = this.shadowRoot.getElementById("notice");
+    notice.textContent = this.stale
+      ? this.t(
+          "The saved program changed. Your draft is preserved; reload the saved program before saving.",
+        )
+      : this.dirty
+        ? this.t("Unsaved edits")
+        : this.t("Saved");
+    if (this.revision)
+      notice.textContent += ` · ${this.t("Revision")}: ${this.revision.slice(0, 12)}`;
+    if (
+      this.previewVersion != null &&
+      this.previewVersion !== this.version &&
+      this.tab === "preview"
+    )
+      notice.textContent += ` · ${this.t("Preview belongs to an earlier draft")}`;
+    this.shadowRoot.getElementById("house").textContent =
+      this.draft?.name || this.t("Loading household…");
+  }
+  change(path, value) {
+    if (!path.length) this.draft = value;
+    else set(this.draft, path, value);
+    this.edited();
+  }
+  edited(render = false) {
+    this.version++;
+    this.dirty = true;
+    this.validatedVersion = -1;
+    const active = this.shadowRoot.activeElement;
+    for (const [key] of this.raw)
+      if (active?.dataset.jsonPath !== key && !this.localErrors.has(key))
+        this.raw.delete(key);
+    for (const input of this.shadowRoot.querySelectorAll(
+      "textarea[data-json-path]",
+    ))
+      if (input !== active && !this.localErrors.has(input.dataset.jsonPath))
+        input.value = JSON.stringify(
+          get(this.draft, JSON.parse(input.dataset.jsonPath)) ?? {},
+          null,
+          2,
+        );
+    this.toolbar();
+    if (render) this.renderView();
+  }
+  fail(error) {
+    this.error =
+      typeof error === "string" ? error : error.message || String(error);
+    this.toolbar();
+  }
+  attempt(action) {
+    try {
+      action();
+    } catch (error) {
+      this.fail(error);
+    }
+  }
+  async run(action) {
+    if (this.busy) return;
+    this.busy = true;
+    this.error = "";
+    this.toolbar();
+    const epoch = this.epoch;
+    try {
+      return await action(epoch);
+    } catch (error) {
+      if (epoch === this.epoch) {
+        if (error.code === "revision_conflict") this.stale = true;
+        this.fail(error);
+      }
+    } finally {
+      if (epoch === this.epoch) {
+        this.busy = false;
+        this.toolbar();
+      }
+    }
+  }
+  checkLocal() {
+    if (this.localErrors.size) {
+      this.fail([...this.localErrors.values()].join("\n"));
+      return false;
+    }
+    return true;
+  }
+  showIssues(result) {
+    this.issues = result.issues || [];
+    this.renderIssues();
+    if (result.valid === false && !this.issues.length)
+      this.fail(
+        this.t("Preview contains infeasible dates. Review timeline issues."),
+      );
+  }
+  renderIssues() {
+    const node = this.shadowRoot.getElementById("issues");
+    if (!node) return;
+    node.replaceChildren();
+    for (const issue of this.issues || [])
+      node.append(
+        button(
+          `${issue.severity || "error"} · ${issue.path || "$"}: ${issue.message}`,
+          () => this.focusIssue(issue),
+          { class: issue.severity === "warning" ? "hint" : "error" },
+        ),
+      );
+  }
+  focusIssue(issue) {
+    const path = issue.model_path || [];
+    this.tab =
+      path[0] === "groups"
+        ? "groups"
+        : path[0] === "routines"
+          ? "routines"
+          : path[0] === "lighting"
+            ? "handover"
+            : ["defaults", "policies", "constraints"].includes(path[0])
+              ? "defaults"
+              : "household";
+    if (path[0] === "groups") this.selection.set('["groups"]', path[1]);
+    if (path[0] === "routines") {
+      this.selection.set('["routines"]', path[1]);
+      if (typeof path[3] === "number")
+        this.selection.set(JSON.stringify(path.slice(0, 3)), path[3]);
+    }
+    this.renderView();
+    let target;
+    for (let n = path.length; n >= 0 && !target; n--)
+      target = [...this.shadowRoot.querySelectorAll("[data-path]")].find(
+        (x) => x.dataset.path === JSON.stringify(path.slice(0, n)),
+      );
+    if (target) {
+      for (let a = target.parentElement; a; a = a.parentElement)
+        if (a.tagName === "DETAILS") a.open = true;
+      target.scrollIntoView({ block: "center" });
+      (
+        target.querySelector("input,textarea,select,ha-selector") || target
+      ).focus();
+    }
+  }
+  validate() {
+    if (!this.checkLocal()) return;
+    const version = this.version,
+      draft = copy(this.draft);
+    return this.run(async (epoch) => {
+      const result = await this.ws("editor_validate", { program: draft });
+      if (epoch !== this.epoch || version !== this.version) return;
+      this.showIssues(result);
+      if (result.valid) this.validatedVersion = version;
+    });
+  }
+  save() {
+    if (
+      this.validatedVersion !== this.version ||
+      !this.checkLocal() ||
+      this.stale
+    )
+      return;
+    const version = this.version,
+      draft = copy(this.draft),
+      expected = this.revision;
+    return this.run(async (epoch) => {
+      const result = await this.ws("save", {
+        program: draft,
+        expected_revision: expected,
+      });
+      if (epoch !== this.epoch) return;
+      if (!result.valid) return this.showIssues(result);
+      this.saved = result.program;
+      this.document = { ...this.document, ...result };
+      this.revision = result.revision;
+      this.stale = false;
+      this.document.needs_apply = false;
+      if (version === this.version) {
+        this.draft = copy(result.program);
+        this.dirty = false;
+        this.raw.clear();
+        this.localErrors.clear();
+        this.renderView();
+      } else this.dirty = true;
+    });
+  }
+  async reloadSaved(discard = false) {
+    if (this.busy || (this.dirty && !discard)) return;
+    const version = this.version;
+    return this.run(async (epoch) => {
+      const doc = await this.ws("program");
+      if (epoch !== this.epoch || version !== this.version) return;
+      this.document = doc;
+      this.saved = doc.program;
+      this.draft = copy(doc.program);
+      this.revision = doc.revision;
+      this.dirty = !!doc.needs_apply;
+      this.stale = false;
+      this.version++;
+      this.validatedVersion = -1;
+      this.raw.clear();
+      this.localErrors.clear();
+      this.issues = [];
+      this.renderView();
+    });
+  }
+  migrate(kind, old, next) {
+    if (!this.checkLocal() || !next) return;
+    const version = this.version;
+    return this.run(async (epoch) => {
+      const result = await this.ws("rename_id", {
+        program: copy(this.draft),
+        kind,
+        old,
+        new: next,
+      });
+      if (epoch !== this.epoch || version !== this.version) return;
+      this.showIssues(result);
+      if (result.valid) {
+        this.draft = result.program;
+        this.edited(true);
+      }
+    });
+  }
+  control(service, data = {}) {
+    return this.run(async () => {
+      await this._hass.callService("occupied", service, {
+        config_entry_id: this._loadedEntry,
+        ...data,
+      });
+      this.status = await this.ws("status");
+      if (this.tab === "overview") this.renderOverview();
+    });
+  }
+  renderView() {
+    const root = this.shadowRoot.getElementById("view");
+    if (!root) return;
+    root.replaceChildren();
+    for (const node of this.shadowRoot.querySelectorAll("[data-tab]"))
+      node.setAttribute(
+        "aria-current",
+        node.dataset.tab === this.tab ? "page" : "false",
+      );
+    if (!this.draft) {
+      root.append(button(this.t("Retry"), () => this._load()));
+      return;
+    }
+    if (this.tab === "overview") this.renderOverview();
+    else if (this.tab === "timeline") {
+      this.renderTimeline();
+      this.loadTimeline();
+    } else if (this.tab === "preview") this.renderPreview();
+    else if (this.tab === "configuration") this.renderConfiguration();
+    else if (this.tab === "diagnostics") this.renderDiagnostics();
+    else {
+      try {
+        editView(this, root);
+      } catch (error) {
+        root.replaceChildren();
+        this.fail(
+          this.t(
+            "The advanced draft cannot be shown in forms. Correct the JSON below or discard edits.",
+          ),
+        );
+        const input = el("textarea", null, {
+          rows: 20,
+          "aria-label": this.t("Advanced full program"),
+          "data-json-path": "[]",
+        });
+        input.value = this.raw.get("[]") ?? JSON.stringify(this.draft, null, 2);
+        input.addEventListener("input", () => {
+          this.raw.set("[]", input.value);
+          try {
+            this.localErrors.delete("[]");
+            this.change([], JSON.parse(input.value));
+          } catch (parseError) {
+            this.localErrors.set("[]", parseError.message);
+            this.edited();
+          }
+        });
+        root.append(
+          input,
+          button(this.t("Refresh forms"), () => this.renderView()),
+        );
+      }
+    }
+    this.toolbar();
+    this.renderIssues();
+  }
+  renderOverview() {
+    const root = this.shadowRoot.getElementById("view");
+    if (this.tab !== "overview" || !root) return;
+    root.replaceChildren();
+    const t = this.t,
+      state = this.status;
     if (!state) return;
-    const daily = state.mode === "daily";
-    root.getElementById("checkpoint").textContent = daily
-      ? "The daily program runs in Home Assistant while this panel is closed. Apply program changes through the Occupied API; routine editing is planned for a later stage."
-      : "This development checkpoint runs one light sequence and an optional timed remote activity each time activation begins. Apply a daily program to use routines and recovery.";
-    const time = (value) => value ? new Date(value).toLocaleString() : "None";
+    const box = section(root, t("Overview")),
+      controls = el("div", null, { class: "row" });
+    controls.append(
+      button(t(state.enabled ? "Disable" : "Enable"), () =>
+        this.control(state.enabled ? "stop" : "start"),
+      ),
+      button(t(state.paused ? "Resume" : "Pause"), () =>
+        this.control(state.paused ? "resume" : "pause"),
+      ),
+    );
+    if (state.mode === "daily")
+      controls.append(
+        button(
+          t(state.dry_run ? "Select live execution" : "Select dry run"),
+          () => this.control("set_dry_run", { dry_run: !state.dry_run }),
+        ),
+      );
+    for (const b of controls.children) b.disabled = this.busy;
+    box.append(controls);
     const fields = [
-      ["Status", state.status], ["Reason", state.reason],
-      ["Permission", state.enabled ? "Enabled" : "Disabled"],
-      ...(daily ? [["Execution", state.dry_run ? "Dry run" : "Live"]] : []),
-      ["Next action", time(state.next_event)],
-      ["Lighting handover ends", time(state.handover_deadline)],
-      ["Remote activity ends", time(state.remote_deadline)],
+      ["Status", state.status],
+      ["Reason", state.reason],
+      ["Next action", stamp(state.next_event, this.document.timezone)],
+      ["Execution", state.dry_run ? t("Dry run") : t("Live")],
+      [
+        "Saved revision",
+        state.source_revision?.slice(0, 12) || this.revision?.slice(0, 12),
+      ],
+      [
+        "Routines",
+        (this.saved.routines || []).map((x) => x.name).join(", ") || t("None"),
+      ],
+      ["Yielded targets", (state.yielded || []).join(", ") || t("None")],
     ];
-    for (const [label, value] of fields) {
-      const dt = document.createElement("dt"); dt.textContent = label;
-      const dd = document.createElement("dd"); dd.textContent = value;
-      root.getElementById("status").append(dt, dd);
+    const dl = el("dl");
+    for (const [label, value] of fields)
+      dl.append(el("dt", t(label)), el("dd", value));
+    box.append(dl);
+    const labels = new Map(resources(this.saved).map((x) => [x.id, x.name])),
+      active = section(root, t("Active activities"));
+    for (const a of state.activities || [])
+      active.append(
+        el(
+          "p",
+          `${labels.get(a.source_id) || a.source_id} · ${a.phase} · ${t("Runtime deadline")}: ${stamp(a.deadline, this.document.timezone)} · ${a.resources.join(", ")}`,
+        ),
+      );
+    if (!state.activities?.length) active.append(el("p", t("None")));
+    const hbox = section(root, t("Lighting convergence"));
+    for (const [entity, h] of Object.entries(state.handover || {})) {
+      const progress = el("progress", null, {
+        max: 1,
+        "aria-label": entity,
+        "data-start": h.start,
+        "data-deadline": h.deadline,
+      });
+      progress.value = Math.max(
+        0,
+        Math.min(
+          1,
+          (Date.now() - Date.parse(h.start)) /
+            Math.max(1, Date.parse(h.deadline) - Date.parse(h.start)),
+        ),
+      );
+      hbox.append(
+        el(
+          "p",
+          `${entity} · ${stamp(h.deadline, this.document.timezone)} · ${JSON.stringify(h.observed)} → ${JSON.stringify(h.target)}`,
+        ),
+        progress,
+      );
     }
-    for (const [label, service] of [[state.enabled ? "Disable" : "Enable", state.enabled ? "stop" : "start"], [state.paused ? "Resume" : "Pause", state.paused ? "resume" : "pause"]]) {
-      const button = document.createElement("button");
-      button.textContent = label;
-      button.addEventListener("click", () => this._control(service));
-      root.getElementById("controls").append(button);
+    if (!Object.keys(state.handover || {}).length)
+      hbox.append(el("p", t("None")));
+    const next = section(root, t("Upcoming actions"));
+    for (const event of (state.events || []).slice(0, 30))
+      next.append(
+        el(
+          "p",
+          `${stamp(event.time, this.document.timezone)} · ${event.event} · ${event.id}`,
+        ),
+      );
+    if (!state.events?.length) next.append(el("p", t("None")));
+    if (state.last_error)
+      root.append(el("p", state.last_error, { class: "error" }));
+    root.append(
+      el(
+        "p",
+        t(
+          "Home Assistant runs the program while this panel is closed. Draft edits and previews do not control devices.",
+        ),
+      ),
+    );
+  }
+  async loadTimeline() {
+    if (this._timelineLoading) return;
+    this._timelineLoading = true;
+    const epoch = this.epoch;
+    try {
+      const doc = await this.ws(
+        "timeline",
+        this.timelineDate ? { date: this.timelineDate } : {},
+      );
+      if (epoch !== this.epoch) return;
+      this.actual = doc;
+      if (this.tab === "timeline") this.renderTimeline();
+    } catch (error) {
+      if (epoch === this.epoch) this.fail(error);
+    } finally {
+      this._timelineLoading = false;
     }
-    if (daily) {
-      const button = document.createElement("button");
-      button.textContent = state.dry_run ? "Select live execution" : "Select dry run";
-      button.addEventListener("click", () => this._control("set_dry_run", { dry_run: !state.dry_run }));
-      root.getElementById("controls").append(button);
-      root.getElementById("daily-details").hidden = false;
-      for (const activity of state.activities) {
-        const li = document.createElement("li");
-        li.textContent = `${activity.source_id} · ${activity.phase} · ends ${time(activity.deadline)}`;
-        root.getElementById("activities").append(li);
+  }
+  renderTimeline() {
+    const root = this.shadowRoot.getElementById("view");
+    root.replaceChildren();
+    const box = section(
+      root,
+      this.t("Actual timeline"),
+      this.t(
+        "This view reads saved runtime plans and dispatch outcomes. It never samples a replacement plan.",
+      ),
+    );
+    const select = el("select", null, {
+      "aria-label": this.t("Saved simulation date"),
+    });
+    for (const date of this.actual?.dates || [])
+      select.append(el("option", date, { value: date }));
+    select.value =
+      this.timelineDate || this.actual?.plan?.simulation_date || "";
+    select.addEventListener("change", () => {
+      this.timelineDate = select.value;
+      this.loadTimeline();
+    });
+    box.append(
+      select,
+      button(this.t("Refresh"), () => this.loadTimeline()),
+      button(this.t("Download"), () =>
+        this.download(
+          "occupied-timeline.json",
+          JSON.stringify(this.actual, null, 2),
+        ),
+      ),
+    );
+    if (this.actual) timeline(root, this.actual, this.saved, this.t);
+  }
+  renderPreview() {
+    const root = this.shadowRoot.getElementById("view"),
+      t = this.t;
+    root.replaceChildren();
+    const box = section(
+      root,
+      t("Draft preview"),
+      t(
+        "Preview uses a separate seed and the backend planner. Reroll changes only this preview; saving does not apply this seed to the runtime.",
+      ),
+    );
+    for (const [key, label, type] of [
+      ["date", "Date", "date"],
+      ["days", "Days", "number"],
+      ["seed", "Seed", "text"],
+      ["at", "Projection instant (ISO time with offset, optional)", "text"],
+    ]) {
+      const field = el("label", t(label)),
+        input = el("input", null, { type });
+      input.value = this.previewSettings[key];
+      if (key === "days") {
+        input.min = 1;
+        input.max = 31;
       }
-      if (!state.activities.length) root.getElementById("activities").textContent = "None";
-      for (const [entity, handover] of Object.entries(state.handover)) {
-        const li = document.createElement("li");
-        li.textContent = `${entity} · ${Math.round(handover.progress * 100)}% · ends ${time(handover.deadline)}`;
-        root.getElementById("handover").append(li);
+      input.addEventListener("input", () => {
+        this.previewSettings[key] =
+          key === "days" ? Number(input.value) : input.value;
+      });
+      field.append(input);
+      box.append(field);
+    }
+    box.append(
+      button(t("Run preview"), () => this.runPreview()),
+      button(t("Reroll preview"), () => {
+        this.previewSettings.seed = crypto.randomUUID();
+        this.renderPreview();
+        this.runPreview();
+      }),
+    );
+    if (this.preview) {
+      box.append(
+        button(t("Download"), () =>
+          this.download(
+            "occupied-preview.json",
+            JSON.stringify(this.preview, null, 2),
+          ),
+        ),
+      );
+      for (const plan of this.preview.plans || [])
+        timeline(root, { plan }, this.previewProgram, t);
+      if (this.preview.handover)
+        section(root, t("Projected handover endpoints")).append(
+          el("pre", JSON.stringify(this.preview.handover, null, 2)),
+        );
+    }
+    this.toolbar();
+  }
+  runPreview() {
+    if (!this.checkLocal()) return;
+    const version = this.version,
+      draft = copy(this.draft),
+      options = { ...this.previewSettings };
+    if (!options.at) delete options.at;
+    return this.run(async (epoch) => {
+      const result = await this.ws("preview", { program: draft, ...options });
+      if (epoch !== this.epoch) return;
+      this.preview = result;
+      this.previewVersion = version;
+      this.previewProgram = draft;
+      this.showIssues(result);
+      if (this.tab === "preview") this.renderPreview();
+    });
+  }
+  renderConfiguration() {
+    const root = this.shadowRoot.getElementById("view"),
+      t = this.t,
+      box = section(
+        root,
+        t("Occupied YAML import/export"),
+        t(
+          "Import replaces only the draft. Export normalizes the draft. Comments are not retained. Imported YAML is stored as a snapshot; Occupied does not watch or change the source file.",
+        ),
+      );
+    const input = el("textarea", null, {
+      rows: 18,
+      "aria-label": t("Occupied YAML"),
+    });
+    input.value = this.yaml || "";
+    input.style.width = "100%";
+    input.addEventListener("input", () => {
+      this.yaml = input.value;
+    });
+    const file = el("input", null, {
+      type: "file",
+      accept: ".yaml,.yml,.json",
+      "aria-label": t("Choose configuration file"),
+    });
+    file.addEventListener("change", async () => {
+      if (file.files[0]) {
+        this.yaml = await file.files[0].text();
+        input.value = this.yaml;
       }
-      if (!Object.keys(state.handover).length) root.getElementById("handover").textContent = "None";
-    }
-    for (const event of state.events.slice(0, 50)) {
-      const li = document.createElement("li");
-      li.textContent = `${time(event.time)} · ${event.event.replaceAll("_", " ")}`;
-      root.getElementById("events").append(li);
-    }
-    if (!state.events.length) {
-      const li = document.createElement("li"); li.textContent = "No pending actions";
-      root.getElementById("events").append(li);
-    } else if (state.events.length > 50) {
-      const li = document.createElement("li");
-      li.textContent = `${state.events.length - 50} more actions in the daily plan`;
-      root.getElementById("events").append(li);
-    }
+    });
+    box.append(
+      file,
+      input,
+      button(t("Import as draft"), () => this.importYaml()),
+      button(t("Export YAML"), () => this.exportYaml()),
+      button(t("Download"), () =>
+        this.download("occupied.yaml", this.yaml || "", "text/yaml"),
+      ),
+    );
+  }
+  importYaml() {
+    const version = this.version;
+    return this.run(async (epoch) => {
+      const result = await this.ws("validate", { program: this.yaml || "" });
+      if (epoch !== this.epoch || version !== this.version) return;
+      this.showIssues(result);
+      if (result.valid) {
+        this.draft = result.program;
+        this.raw.clear();
+        this.localErrors.clear();
+        this.edited(true);
+      }
+    });
+  }
+  exportYaml() {
+    if (!this.checkLocal()) return;
+    return this.run(async (epoch) => {
+      const result = await this.ws("export", { program: copy(this.draft) });
+      if (epoch !== this.epoch) return;
+      this.showIssues(result);
+      if (result.valid) {
+        this.yaml = result.yaml;
+        if (this.tab === "configuration") {
+          this.shadowRoot.getElementById("view").replaceChildren();
+          this.renderConfiguration();
+        }
+      }
+    });
+  }
+  renderDiagnostics() {
+    const root = this.shadowRoot.getElementById("view"),
+      t = this.t;
+    root.replaceChildren();
+    const box = section(
+      root,
+      t("Diagnostics"),
+      t(
+        "Default exports contain counts and runtime status. Include household details explicitly to export entities, sampled plans, observations and outcomes. Credential fields remain redacted.",
+      ),
+    );
+    const label = el("label"),
+      input = el("input", null, { type: "checkbox" });
+    input.checked = !!this.includeSensitive;
+    input.addEventListener("change", () => {
+      this.includeSensitive = input.checked;
+    });
+    label.append(
+      input,
+      document.createTextNode(t("Include household details")),
+    );
+    box.append(
+      label,
+      button(t("Refresh"), () =>
+        this.run(async (epoch) => {
+          const result = await this.ws("diagnostics", {
+            include_sensitive: !!this.includeSensitive,
+          });
+          if (epoch !== this.epoch) return;
+          this.diagnostics = result;
+          this.renderDiagnostics();
+        }),
+      ),
+    );
+    if (this.diagnostics)
+      box.append(
+        button(t("Download"), () =>
+          this.download(
+            "occupied-diagnostics.json",
+            JSON.stringify(this.diagnostics, null, 2),
+          ),
+        ),
+        el("pre", JSON.stringify(this.diagnostics, null, 2)),
+      );
+    const outcomes = section(root, t("Recent runtime outcomes"));
+    for (const item of (this.status?.outcomes || []).slice(-50).reverse())
+      outcomes.append(el("pre", JSON.stringify(item)));
+  }
+  download(name, text, type = "application/json") {
+    const url = URL.createObjectURL(new Blob([text], { type })),
+      a = el("a", null, { href: url, download: name });
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 }
-if (!customElements.get("occupied-panel")) customElements.define("occupied-panel", OccupiedPanel);
+if (!customElements.get("occupied-panel"))
+  customElements.define("occupied-panel", OccupiedPanel);

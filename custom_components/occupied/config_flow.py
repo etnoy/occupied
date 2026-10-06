@@ -1,4 +1,4 @@
-"""One household entry and a deliberately small milestone-one configuration UI."""
+"""Create a GUI/imported household and retain options for existing proof entries."""
 
 from typing import Any
 
@@ -110,6 +110,63 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
+        if user_input is not None:
+            if user_input["method"] == "yaml":
+                return await self.async_step_yaml()
+            from .validation import program_data, validate_program
+
+            program = validate_program({"schema_version": 1, "name": user_input["name"]})
+            return self.async_create_entry(
+                title=program.name, data={"name": program.name, "program": program_data(program)}
+            )
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("name", default="House"): vol.All(str, vol.Length(min=1)),
+                    vol.Required("method", default="editor"): selector.SelectSelector(
+                        selector.SelectSelectorConfig(
+                            options=["editor", "yaml"],
+                            translation_key="configuration_method",
+                        )
+                    ),
+                }
+            ),
+        )
+
+    async def async_step_yaml(self, user_input=None):
+        from .file_config import load_program
+        from .validation import ProgramError, program_data
+
+        errors = {}
+        if user_input is not None:
+            try:
+                program = await self.hass.async_add_executor_job(
+                    load_program, user_input["program"]
+                )
+            except ProgramError:
+                errors["base"] = "invalid_program"
+            else:
+                return self.async_create_entry(
+                    title=program.name,
+                    data={"name": program.name, "program": program_data(program)},
+                )
+        return self.async_show_form(
+            step_id="yaml",
+            errors=errors,
+            data_schema=vol.Schema(
+                {
+                    vol.Required("program"): selector.TextSelector(
+                        selector.TextSelectorConfig(multiline=True)
+                    )
+                }
+            ),
+        )
+
+    async def async_step_proof(self, user_input=None):
+        """Keep the original caller-proof configuration available for development."""
+        await self.async_set_unique_id(DOMAIN)
+        self._abort_if_unique_id_configured()
         errors = {}
         if user_input is not None:
             try:
@@ -119,7 +176,7 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 return self.async_create_entry(title=data["name"], data=data)
         return self.async_show_form(
-            step_id="user", data_schema=config_schema(user_input or {}), errors=errors
+            step_id="proof", data_schema=config_schema(user_input or {}), errors=errors
         )
 
     @staticmethod

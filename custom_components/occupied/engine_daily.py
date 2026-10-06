@@ -1,9 +1,7 @@
 """Durable UTC daily dispatch, projected handover, and explicit owned lifecycles."""
 
 import asyncio
-import hashlib
 import heapq
-import json
 import logging
 import secrets
 from collections import deque
@@ -39,16 +37,22 @@ from .planner import DailyPlan, PlanEvent, ResolvedAction, preview_dates
 from .runtime_planning import MAX_EVENTS, MAX_INTERVALS, runtime_dates
 from .storage import DurableStore, instant, plan_from_data, program_store
 from .time_utils import PlanningContext, SimulationDay, simulation_date_at
-from .validation import ProgramError, behavior_hash, condition_data, program_data, resolve_targets
+from .validation import (
+    ProgramError,
+    RevisionConflict,
+    behavior_hash,
+    condition_data,
+    program_data,
+    resolve_targets,
+)
+from .validation import (
+    program_revision as revision,
+)
 
 _LOGGER = logging.getLogger(__name__)
 SERVICE_TIMEOUT = 10
 DISPATCH_BATCH = 64
 MAX_JOURNAL = 50000
-
-
-def revision(program):
-    return hashlib.sha256(json.dumps(program_data(program), sort_keys=True).encode()).hexdigest()
 
 
 @dataclass(order=True)
@@ -1282,7 +1286,7 @@ class DailyEngine:
                     await self._call(action, f"stop:{self.session}:{entity}", None, cleanup=True)
         self._owned.clear()
 
-    async def async_replace_program(self, program):
+    async def async_replace_program(self, program, *, expected_revision=None):
         gate = ActivationGate(self.hass, [condition_data(c) for c in program.activation.conditions])
         await gate.async_prepare()
         today = simulation_date_at(program, dt_util.utcnow(), self._context())
@@ -1300,6 +1304,12 @@ class DailyEngine:
                 [issue for plan in plans for issue in plan.issues if issue.severity == "error"]
             )
         async with self._lock:
+            if self.closed:
+                raise HomeAssistantError("Occupied is unloaded; refresh before saving")
+            if expected_revision is not None and expected_revision != revision(self.program):
+                raise RevisionConflict(
+                    "The program changed. Reload the saved program before saving."
+                )
             await program_store(self.hass, self.entry_id).async_save(program_data(program))
             if behavior_hash(program) == behavior_hash(self.program):
                 self.program = program
