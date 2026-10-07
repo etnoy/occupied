@@ -50,6 +50,9 @@ export class Forms {
       input.setAttribute("aria-label", label);
       input.addEventListener("value-changed", (e) => {
         if (!e.detail || !("value" in e.detail)) return;
+        // Native pickers emit changes without updating their ha-selector
+        // wrapper. Feed the value back before the next hass update renders it.
+        input.value = e.detail.value;
         panel.change(path, e.detail.value);
       });
     } else if (options.choices) {

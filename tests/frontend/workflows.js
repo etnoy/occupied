@@ -489,7 +489,40 @@ export async function runWorkflows() {
     "optional HA selector contract uses explicit values and accessible labels",
     async () => {
       if (!customElements.get("ha-selector"))
-        customElements.define("ha-selector", class extends HTMLElement {});
+        customElements.define(
+          "ha-selector",
+          class extends HTMLElement {
+            constructor() {
+              super();
+              this.attachShadow({ mode: "open" });
+              this.picker = document.createElement("div");
+              this.shadowRoot.append(this.picker);
+            }
+            set hass(value) {
+              this._hass = value;
+              // HA forwards the outer selector's value to its inner picker
+              // whenever a state update causes the selector to render.
+              queueMicrotask(() => {
+                this.picker.value = this.value;
+              });
+            }
+            get hass() {
+              return this._hass;
+            }
+            select(value) {
+              // Native pickers update themselves and emit a composed event;
+              // their parent ha-selector does not update its own value.
+              this.picker.value = value;
+              this.picker.dispatchEvent(
+                new CustomEvent("value-changed", {
+                  detail: { value },
+                  bubbles: true,
+                  composed: true,
+                }),
+              );
+            }
+          },
+        );
       view("groups");
       const picker = panel.shadowRoot.querySelector("ha-selector");
       assert(
@@ -500,11 +533,7 @@ export async function runWorkflows() {
           picker.getAttribute("aria-label"),
         "HA selector compatibility contract missing",
       );
-      picker.dispatchEvent(
-        new CustomEvent("value-changed", {
-          detail: { value: ["light.living_room"] },
-        }),
-      );
+      picker.select(["light.living_room"]);
       assert(
         panel.draft.groups[0].entities.join(",") === "light.living_room",
         "Selector did not update draft",
@@ -513,6 +542,98 @@ export async function runWorkflows() {
       assert(
         panel.validatedVersion === panel.version,
         "Selector-authored draft invalid",
+      );
+      panel.hass = { ...panel._hass };
+      await Promise.resolve();
+      assert(
+        picker.picker.value.join(",") === "light.living_room",
+        "HA state update cleared the selected group entity",
+      );
+    },
+  );
+  await check(
+    "native window and condition selections survive HA updates and tab changes",
+    async () => {
+      await fixtureWS({ type: "test/reset" });
+      await panel.reloadSaved(true);
+      panel.status = await panel.ws("status");
+      view("routines");
+      click("Add routine");
+      const routineIndex = panel.draft.routines.length - 1;
+      click("Add window");
+      const path = [
+        "routines",
+        routineIndex,
+        "activity_windows",
+        0,
+        "targets",
+        "entities",
+      ];
+      const picker = [...panel.shadowRoot.querySelectorAll("[data-path]")]
+        .find((x) => x.dataset.path === JSON.stringify(path))
+        .querySelector("ha-selector");
+      for (const ids of [
+        ["light.kitchen"],
+        ["light.kitchen", "light.hall"],
+        ["light.hall"],
+        [],
+        ["light.kitchen"],
+      ]) {
+        picker.select(ids);
+        panel.hass = { ...panel._hass };
+        emit({ ...panel.status });
+        await Promise.resolve();
+        assert(
+          JSON.stringify(picker.picker.value) === JSON.stringify(ids) &&
+            JSON.stringify(
+              panel.draft.routines[routineIndex].activity_windows[0].targets
+                .entities,
+            ) === JSON.stringify(ids),
+          "Window selection was lost after a HA update",
+        );
+        assert(picker.isConnected, "HA update replaced the open picker");
+      }
+      view("household");
+      click("Add Activation conditions");
+      const conditionPath = [
+        "activation",
+        "conditions",
+        panel.draft.activation.conditions.length - 1,
+        "entity_id",
+      ];
+      const condition = [...panel.shadowRoot.querySelectorAll("[data-path]")]
+        .find((x) => x.dataset.path === JSON.stringify(conditionPath))
+        .querySelector("ha-selector");
+      assert(
+        !condition.selector.entity.multiple,
+        "Expected single entity condition",
+      );
+      condition.select("sensor.alarm");
+      panel.hass = { ...panel._hass };
+      await Promise.resolve();
+      assert(
+        condition.picker.value === "sensor.alarm",
+        "Single entity selection was reset",
+      );
+      view("routines");
+      const restored = [...panel.shadowRoot.querySelectorAll("[data-path]")]
+        .find((x) => x.dataset.path === JSON.stringify(path))
+        .querySelector("ha-selector");
+      assert(
+        restored.value.join(",") === "light.kitchen",
+        "Tab change lost the window selection",
+      );
+      await panel.validate();
+      assert(
+        panel.validatedVersion === panel.version,
+        "Window draft failed validation",
+      );
+      await panel.save();
+      assert(
+        panel.saved.routines[
+          routineIndex
+        ].activity_windows[0].targets.entities.join(",") === "light.kitchen",
+        "Saved window lost the selection",
       );
     },
   );
