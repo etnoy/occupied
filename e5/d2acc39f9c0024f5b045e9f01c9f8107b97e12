@@ -1,0 +1,21 @@
+custom_components/occupied/frontend/forms.js
+  s_7781dee1fb4d9e::t_c5fd5efae05c50 53-55
+tests/frontend/workflows.js
+  s_7781dee1fb4d9e::t_7d28a4c3f6d142 492-525,536,546-637
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "e5d2acc39f9c0024f5b045e9f01c9f8107b97e12",
+  "prompts": {},
+  "sessions": {
+    "s_7781dee1fb4d9e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11542-6f01-7d32-88fd-ce09eb3b49c4",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
