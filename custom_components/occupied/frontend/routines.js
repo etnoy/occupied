@@ -264,7 +264,10 @@ function renderEditor(panel, root) {
   const editor = panel.routineEditor,
     form = editor.form,
     t = panel.t,
-    editing = editor.editing;
+    // `existing` controls the title and is the source of truth for edit mode.
+    // Keeping a second `editing` flag can make a mixed or restored editor state
+    // show the create wizard inside an edit flow.
+    editing = editor.existing;
   const shell = section(
     root,
     t(editor.existing ? "Edit routine" : "Create routine"),

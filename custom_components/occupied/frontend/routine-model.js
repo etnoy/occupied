@@ -173,7 +173,6 @@ export function routineEditor(program, entry, parent) {
   return {
     id: entry?.id || identifier(program, "routine"),
     existing: !!entry,
-    editing: !!entry,
     stage: 0,
     form,
     original: copy(form),
