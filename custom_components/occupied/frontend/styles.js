@@ -49,6 +49,7 @@ nav button[aria-current="page"] { border-bottom-color:var(--primary-color,#167b9
 .builder-steps .complete { color:var(--primary-text-color,#202c37); }
 .entity-search { width:100%; margin:16px 0 0; }
 .selection-count { font-size:12px; color:var(--secondary-text-color,#596773); }
+.entity-native-selector { display:block; width:100%; }
 .entity-picker { max-height:330px; overflow:auto; border:1px solid var(--divider-color,#d5dce3); border-radius:8px; }
 .entity-option { display:flex; align-items:center; gap:14px; padding:14px; cursor:pointer; border-bottom:1px solid var(--divider-color,#d5dce3); }
 .entity-option:last-child { border-bottom:0; }

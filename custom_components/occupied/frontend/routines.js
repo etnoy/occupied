@@ -363,87 +363,121 @@ function renderEditor(panel, root) {
       class: "selection-count",
       "aria-live": "polite",
     });
-    const search = el("input", null, {
-      type: "search",
-      placeholder: t("Search entities or rooms"),
-      "aria-label": t("Search entities or rooms"),
-      class: "entity-search",
-    });
-    search.value = editor.search || "";
-    const list = el("div", null, {
-      class: "entity-picker",
-      "data-builder-field": "entities",
-      role: "group",
-      "aria-label": t("Entities"),
-      tabindex: -1,
-    });
-    if (editor.errors.entities) list.setAttribute("aria-invalid", "true");
-    const draw = () => {
-      count.textContent = `${form.entities.length} ${t("selected")}`;
-      list.replaceChildren();
-      const catalog = panel.catalog.entities.filter((e) =>
-        /^(light|switch)\./.test(e.entity_id),
-      );
-      for (const id of form.entities)
-        if (!catalog.some((e) => e.entity_id === id))
-          catalog.push({ entity_id: id, name: id, state: "unavailable" });
-      const query = search.value.toLowerCase();
-      const filtered = catalog.filter((e) =>
-        `${e.name} ${e.area || ""} ${e.entity_id}`
-          .toLowerCase()
-          .includes(query),
-      );
-      for (const entity of filtered) {
-        const label = el("label", null, { class: "entity-option" });
-        const check = el("input", null, {
-          type: "checkbox",
-          value: entity.entity_id,
-        });
-        check.checked = form.entities.includes(entity.entity_id);
-        check.addEventListener("change", () => {
-          form.entities = check.checked
-            ? [...new Set([...form.entities, entity.entity_id])]
-            : form.entities.filter((e) => e !== entity.entity_id);
-          changed("entities");
-          count.textContent = `${form.entities.length} ${t("selected")}`;
-          if (editing) {
-            const scrollTop = list.scrollTop;
-            panel.renderView();
-            const picker = panel.shadowRoot.querySelector(".entity-picker");
-            picker.scrollTop = scrollTop;
-            [...picker.querySelectorAll("input")]
-              .find((input) => input.value === entity.entity_id)
-              ?.focus({ preventScroll: true });
-          }
-        });
-        const text = el("span");
-        text.append(
-          el("strong", entity.name || entity.entity_id),
-          el(
-            "small",
-            [
-              entity.area,
-              entity.entity_id,
-              entity.state === "unavailable" ? t("Unavailable") : "",
-            ]
-              .filter(Boolean)
-              .join(" · "),
-          ),
+    count.textContent = `${form.entities.length} ${t("selected")}`;
+    if (customElements.get("ha-selector")) {
+      const selector = el("ha-selector", null, {
+        class: "entity-native-selector",
+        "data-builder-field": "entities",
+        "aria-label": t("Entities"),
+      });
+      selector.hass = panel._hass;
+      selector.selector = {
+        entity: { multiple: true, filter: { domain: ["light", "switch"] } },
+      };
+      selector.value = [...form.entities];
+      selector.label = t("Entities");
+      selector.required = true;
+      selector.narrow = panel.hasAttribute("narrow");
+      if (editor.errors.entities) selector.setAttribute("aria-invalid", "true");
+      selector.addEventListener("value-changed", (event) => {
+        if (!event.detail || !("value" in event.detail)) return;
+        selector.value = event.detail.value;
+        form.entities = Array.isArray(event.detail.value)
+          ? event.detail.value
+          : [];
+        changed("entities");
+        count.textContent = `${form.entities.length} ${t("selected")}`;
+      });
+      entitySection.append(count, selector);
+    } else {
+      const search = el("input", null, {
+        type: "search",
+        placeholder: t("Search entities or rooms"),
+        "aria-label": t("Search entities or rooms"),
+        class: "entity-search",
+      });
+      search.value = editor.search || "";
+      const list = el("div", null, {
+        class: "entity-picker",
+        "data-builder-field": "entities",
+        role: "group",
+        "aria-label": t("Entities"),
+        tabindex: -1,
+      });
+      if (editor.errors.entities) list.setAttribute("aria-invalid", "true");
+      const draw = () => {
+        count.textContent = `${form.entities.length} ${t("selected")}`;
+        list.replaceChildren();
+        const selected = new Set(form.entities);
+        const catalog = panel.catalog.entities.filter((e) =>
+          /^(light|switch)\./.test(e.entity_id),
         );
-        label.append(check, text);
-        list.append(label);
-      }
-      if (!filtered.length)
-        list.append(
-          el("p", t("No matching lights or switches."), { class: "hint" }),
+        for (const id of form.entities)
+          if (!catalog.some((e) => e.entity_id === id))
+            catalog.push({ entity_id: id, name: id, state: "unavailable" });
+        catalog.sort(
+          (a, b) =>
+            Number(selected.has(b.entity_id)) -
+            Number(selected.has(a.entity_id)),
         );
-    };
-    search.addEventListener("input", () => {
-      editor.search = search.value;
+        const query = search.value.toLowerCase();
+        const filtered = catalog.filter((e) =>
+          `${e.name} ${e.area || ""} ${e.entity_id}`
+            .toLowerCase()
+            .includes(query),
+        );
+        for (const entity of filtered) {
+          const label = el("label", null, { class: "entity-option" });
+          const check = el("input", null, {
+            type: "checkbox",
+            value: entity.entity_id,
+          });
+          check.checked = form.entities.includes(entity.entity_id);
+          check.addEventListener("change", () => {
+            form.entities = check.checked
+              ? [...new Set([...form.entities, entity.entity_id])]
+              : form.entities.filter((e) => e !== entity.entity_id);
+            changed("entities");
+            count.textContent = `${form.entities.length} ${t("selected")}`;
+            if (editing) {
+              const scrollTop = list.scrollTop;
+              panel.renderView();
+              const picker = panel.shadowRoot.querySelector(".entity-picker");
+              picker.scrollTop = scrollTop;
+              [...picker.querySelectorAll("input")]
+                .find((input) => input.value === entity.entity_id)
+                ?.focus({ preventScroll: true });
+            }
+          });
+          const text = el("span");
+          text.append(
+            el("strong", entity.name || entity.entity_id),
+            el(
+              "small",
+              [
+                entity.area,
+                entity.entity_id,
+                entity.state === "unavailable" ? t("Unavailable") : "",
+              ]
+                .filter(Boolean)
+                .join(" · "),
+            ),
+          );
+          label.append(check, text);
+          list.append(label);
+        }
+        if (!filtered.length)
+          list.append(
+            el("p", t("No matching lights or switches."), { class: "hint" }),
+          );
+      };
+      search.addEventListener("input", () => {
+        editor.search = search.value;
+        draw();
+      });
       draw();
-    });
-    draw();
-    entitySection.append(search, count, list);
+      entitySection.append(search, count, list);
+    }
     error(entitySection, "entities");
     if (form.entities.some((e) => !/^(light|switch)\./.test(e)))
       entitySection.append(

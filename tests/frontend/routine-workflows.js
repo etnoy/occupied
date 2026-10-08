@@ -32,6 +32,13 @@ export async function runRoutineWorkflows(panel, check) {
     return node;
   };
   const choose = (ids) => {
+    const selector = root.querySelector(
+      '[data-editor-section="entities"] ha-selector',
+    );
+    if (selector?.select) {
+      selector.select(ids);
+      return;
+    }
     for (const node of root.querySelectorAll(
       '.entity-picker input[type="checkbox"]',
     )) {
@@ -203,9 +210,15 @@ export async function runRoutineWorkflows(panel, check) {
         "Dependent delete was not explained",
       );
       click("Edit routine");
+      const entityPicker = root.querySelector(
+        '[data-editor-section="entities"] [data-builder-field="entities"]',
+      );
       assert(
         root.querySelectorAll("[data-editor-section]").length === 3 &&
-          root.querySelector(".entity-picker input:checked") &&
+          entityPicker?.tagName === "HA-SELECTOR" &&
+          entityPicker.value.length > 0 &&
+          entityPicker.selector.entity.filter.domain.join(",") ===
+            "light,switch" &&
           root.querySelector('[data-builder-field="action"]') &&
           root.querySelector('[data-builder-field="time"]'),
         "Existing routine does not show entities, action and timing together",
