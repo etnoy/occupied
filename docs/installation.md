@@ -8,7 +8,7 @@ In HACS, open the three-dot menu → **Custom repositories**, add `https://githu
 
 Open **Settings → Devices & services → Add integration → Occupied**. Choose GUI storage, a YAML snapshot, or an authoritative managed file. A new entry starts with permission disabled. Open the Occupied integration and select **Configure** to edit and preview routines, then select dry run before enabling permission. Activation conditions continue to apply to both dry and live execution.
 
-HACS installs the compiled `occupied.zip` release asset. Development branch installs are disabled because the repository contains TypeScript sources; for development, run `npm ci` and `npm run build` before copying the integration.
+HACS installs the compiled `occupied.zip` release asset. Development branch installs are disabled because the repository contains TypeScript sources; for development, run `pnpm install --frozen-lockfile` and `pnpm run build` before copying the integration.
 
 ## Manual installation
 

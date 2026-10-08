@@ -27,7 +27,7 @@ with tarfile.open(directory / f"occupied-{version}.tar.gz") as source:
         "uv.lock",
         "tests/conftest.py",
         "tests/frontend/harness.html",
-        "package-lock.json",
+        "pnpm-lock.yaml",
         "tsconfig.json",
         "scripts/build-frontend.ts",
         "custom_components/occupied/frontend/occupied-panel.ts",

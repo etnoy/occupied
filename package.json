@@ -2,15 +2,16 @@
   "name": "occupied-development",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.25.0",
   "scripts": {
     "build": "node scripts/build-frontend.ts",
     "build:check": "node scripts/build-frontend.ts --check",
-    "lint": "npm run build && eslint \"custom_components/occupied/frontend/dist/**/*.js\" --max-warnings 0",
+    "lint": "pnpm run build && eslint \"custom_components/occupied/frontend/dist/**/*.js\" --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && node --test tests/frontend/generated/model.test.js",
-    "test:browser": "npm run build && node tests/frontend/generated/run.js",
+    "test": "pnpm run build && node --test tests/frontend/generated/model.test.js",
+    "test:browser": "pnpm run build && node tests/frontend/generated/run.js",
     "format:check": "prettier --check custom_components/occupied/frontend tests/frontend scripts/*.ts eslint.config.mjs tsconfig.json package.json .github/workflows",
-    "format:fix": "prettier --write \"custom_components/occupied/frontend/*.ts\" \"tests/frontend/src/*.ts\" scripts/*.ts eslint.config.mjs tsconfig.json package.json .github/workflows && npm run build"
+    "format:fix": "prettier --write \"custom_components/occupied/frontend/*.ts\" \"tests/frontend/src/*.ts\" scripts/*.ts eslint.config.mjs tsconfig.json package.json .github/workflows && pnpm run build"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

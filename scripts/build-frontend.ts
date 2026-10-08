@@ -49,7 +49,7 @@ for (const directory of [
         '"../../../custom_components/occupied/frontend/dist/',
       );
     }
-    const banner = `// Generated from ${name} by npm run build. Do not edit.\n`;
+    const banner = `// Generated from ${name} by pnpm run build. Do not edit.\n`;
     const options = await resolveConfig(resolve(root, relative));
     const content = await format(banner + emitted, {
       ...options,
@@ -68,7 +68,7 @@ for (const directory of [
 }
 if (stale.length) {
   throw new Error(
-    `Generated frontend assets are out of date. Run npm run build:\n${stale.join("\n")}`,
+    `Generated frontend assets are out of date. Run pnpm run build:\n${stale.join("\n")}`,
   );
 }
 console.log(

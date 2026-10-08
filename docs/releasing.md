@@ -12,15 +12,15 @@ uv run ruff check custom_components tests scripts
 uv run ruff format --check custom_components tests scripts
 uv run pytest --cov=custom_components.occupied --cov-fail-under=88
 uv run python scripts/check_release.py
-npm ci --ignore-scripts
-npm run lint
-npm run typecheck
-npm run build
-npm run build:check
-npm run format:check
-npm test
-npx playwright install --with-deps chromium
-npm run test:browser
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm run lint
+pnpm run typecheck
+pnpm run build
+pnpm run build:check
+pnpm run format:check
+pnpm test
+pnpm exec playwright install --with-deps chromium
+pnpm run test:browser
 ```
 
 The browser runner is a development/CI dependency, not a shipped runtime. It serves the production panel modules and real pure backend with a virtual runtime, runs the same workflow suite at two viewport widths, and fails on workflow or uncaught page errors. For interactive review, use the [browser fixture](editor.md#browser-acceptance-fixture). Stop any existing fixture server before starting the CI runner.
@@ -42,8 +42,8 @@ JSON schema generation is checked against `Program.model_json_schema()`; semanti
 The package includes a deterministic `occupied.zip` (integration-root contents), a pure Python wheel, a source distribution with source fixtures/docs/locks, and `SHA256SUMS`. Build the frontend before packaging. Compiled JavaScript lives in ignored `custom_components/occupied/frontend/dist/`; HACS installs `occupied.zip` from tagged releases rather than the source branch. The zip/wheel contain all generated frontend modules, translations and local brand images. No user frontend build is involved. Build and inspect locally with:
 
 ```sh
-npm ci --ignore-scripts
-npm run build
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm run build
 uv build --out-dir dist
 uv run python scripts/build_release.py
 uv run python scripts/check_artifacts.py dist

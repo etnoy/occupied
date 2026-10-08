@@ -1,13 +1,14 @@
 [tools]
 python = "3.14.8"
 node = "24"
+pnpm = "11.25.0"
 
 [env]
 _.python.venv = { path = ".venv", create = true }
 
 [tasks.dev]
 description = "Serve the local editor preview"
-run = ["npm run build", "python tests/frontend/serve.py"]
+run = ["pnpm run build", "python tests/frontend/serve.py"]
 
 [tasks.test]
 description = "Run the Python test suite"
@@ -17,29 +18,29 @@ run = "python -m pytest"
 description = "Lint Python and frontend JavaScript; type check TypeScript"
 run = [
   "ruff check custom_components tests scripts",
-  "npm run lint",
-  "npm run typecheck",
+  "pnpm run lint",
+  "pnpm run typecheck",
 ]
 
 [tasks."lint-fix"]
 description = "Fix Python lint issues, rebuild JavaScript, and check frontend code"
 run = [
   "ruff check --fix custom_components tests scripts",
-  "npm run build",
-  "npm run lint",
-  "npm run typecheck",
+  "pnpm run build",
+  "pnpm run lint",
+  "pnpm run typecheck",
 ]
 
 [tasks.format]
 description = "Check formatting across Python and frontend sources"
 run = [
   "ruff format --check custom_components tests scripts",
-  "npm run format:check",
+  "pnpm run format:check",
 ]
 
 [tasks."format-fix"]
 description = "Format Python and frontend sources"
 run = [
   "ruff format custom_components tests scripts",
-  "npm run format:fix",
+  "pnpm run format:fix",
 ]

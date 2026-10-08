@@ -53,19 +53,22 @@ jobs:
         with:
           version: "0.12.23"
           python-version: "3.14.8"
+      - uses: pnpm/action-setup@d15e628ca66d93ee5f352c71671a7bc6a97af5c9 # v6.0.8
+        with:
+          version: "11.25.0"
+          cache: true
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
-          cache: npm
       - run: uv sync --no-dev --locked
-      - run: npm ci --ignore-scripts
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run build:check
-      - run: npm run format:check
-      - run: npm test
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:browser
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm run lint
+      - run: pnpm run typecheck
+      - run: pnpm run build:check
+      - run: pnpm run format:check
+      - run: pnpm test
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm run test:browser
 
   hassfest:
     runs-on: ubuntu-latest

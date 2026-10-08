@@ -72,10 +72,10 @@ The editor is written in strict TypeScript. Its generated local ES modules are i
 ## Browser acceptance fixture
 
 ```sh
-npm ci --ignore-scripts
-npm run build
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm run build
 .venv/bin/python tests/frontend/serve.py
-npm test
+pnpm test
 ```
 
 Open `http://127.0.0.1:8765/tests/frontend/harness.html` and run `await window.runWorkflows()` in its browser console. All workflow results must have `passed: true`. Reload before repeating to reset the selector shim. For mobile checks, load it in a 390-pixel viewport or same-origin iframe and run its workflows; it also checks horizontal overflow.

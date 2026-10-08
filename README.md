@@ -54,7 +54,7 @@ mise install
 mise exec -- python -m ensurepip --upgrade
 mise exec -- python -m pip install --upgrade pip
 mise exec -- python -m pip install -e . --group dev
-npm ci --ignore-scripts
+pnpm install --frozen-lockfile --ignore-scripts
 mise test
 mise dev
 mise lint
@@ -69,7 +69,7 @@ exact dependency versions in `uv.lock`.
 `mise lint` runs Ruff, ESLint on the shipped frontend JavaScript, and the TypeScript type
 check; `mise format` checks Ruff and Prettier formatting. Use `mise lint-fix` and
 `mise format-fix` to apply automatic fixes and rebuild generated frontend files. Install the
-Node development dependencies with `npm ci --ignore-scripts` before running these tasks.
+Node development dependencies with `pnpm install --frozen-lockfile --ignore-scripts` before running these tasks.
 Home Assistant itself depends on the `uv` Python package, so pip installs it inside
 the virtual environment even though these development commands use mise and pip.
 
@@ -80,16 +80,16 @@ uv sync --python 3.14 --locked
 uv run pytest
 uv run ruff check custom_components tests scripts
 uv run ruff format --check custom_components tests scripts
-npm ci --ignore-scripts
-npm run lint
-npm run typecheck
-npm run build
-npm run build:check
-npm run format:check
-npm test
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm run lint
+pnpm run typecheck
+pnpm run build
+pnpm run build:check
+pnpm run format:check
+pnpm test
 uv run python scripts/check_release.py
 ```
 
-Frontend sources and tests are TypeScript with `strict: true`; all strict checks are enabled. Run `npm run build` after editing `.ts` files, or `npm test` to build and run the Node tests. Only TypeScript sources are checked in. `npm run build` writes JavaScript to ignored `custom_components/occupied/frontend/dist/` and test output to ignored `tests/frontend/generated/`. Release ZIPs and wheels include the built frontend, so installations need no Node tooling. `npm run lint` checks the shipped JavaScript, `npm run build:check` verifies the local build matches the TypeScript sources, and CI runs both alongside `npm run typecheck` and `npm run format:check`. Run `npm ci --ignore-scripts` before `mise dev`. Browser acceptance tests use `npm run test:browser`.
+Frontend sources and tests are TypeScript with `strict: true`; all strict checks are enabled. Run `pnpm run build` after editing `.ts` files, or `pnpm test` to build and run the Node tests. Only TypeScript sources are checked in. `pnpm run build` writes JavaScript to ignored `custom_components/occupied/frontend/dist/` and test output to ignored `tests/frontend/generated/`. Release ZIPs and wheels include the built frontend, so installations need no Node tooling. `pnpm run lint` checks the shipped JavaScript, `pnpm run build:check` verifies the local build matches the TypeScript sources, and CI runs both alongside `pnpm run typecheck` and `pnpm run format:check`. Run `pnpm install --frozen-lockfile --ignore-scripts` before `mise dev`. Browser acceptance tests use `pnpm run test:browser`.
 
 `uv.lock` pins the complete test environment, including the HA frontend package. Python tests use virtual device handlers. Node tests and browser workflows cover the step builder, advanced compatibility, and desktop and 390-pixel layouts. CI checks the supported HA matrix, generated schema, examples, hassfest/HACS metadata and installable artifacts; it uses locked Python and development-only browser dependencies. See [release verification](docs/releasing.md) and [the editor guide](docs/editor.md). Tests use real HA config entries, entities, native conditions, storage, timers, HTTP, and WebSocket APIs, with virtual physical-device handlers. They cover restart/overdue cleanup, immutable ends after apply, manual control, late/staggered starts, cross-day leases, persistence failure, capability fallbacks, dry run, bounded retries, authenticated apply/diagnostics, and preview isolation. Pure tests cover canonical round trips, ID migration, sampled bounds, resource conflicts, midnight/DST, and handover projection. No existing HA installation or physical devices are modified. Physical-device timing and a hardware soak remain deployment acceptance work.
