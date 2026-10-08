@@ -263,12 +263,13 @@ export function renderRoutines(panel, root) {
 function renderEditor(panel, root) {
   const editor = panel.routineEditor,
     form = editor.form,
-    t = panel.t;
+    t = panel.t,
+    editing = editor.editing;
   const shell = section(
     root,
     t(editor.existing ? "Edit routine" : "Create routine"),
   );
-  shell.className = "routine-editor";
+  shell.className = editing ? "routine-editor editing" : "routine-editor";
   shell.querySelector("h2").tabIndex = -1;
   const steps = el("ol", null, {
     class: "builder-steps",
@@ -282,7 +283,9 @@ function renderEditor(panel, root) {
       }),
     ),
   );
-  shell.append(steps);
+  if (!editing) shell.append(steps);
+  const sections = el("div", null, { class: "editor-sections" });
+  shell.append(sections);
   const changed = (key) => {
     editor.changed = true;
     panel.version++;
@@ -340,9 +343,13 @@ function renderEditor(panel, root) {
     parent.append(box);
     return input;
   };
-  if (editor.stage === 0) {
-    shell.append(
-      el("h3", t("Which entities should take part?")),
+  if (editing || editor.stage === 0) {
+    const entitySection = el("div", null, {
+      "data-editor-section": "entities",
+    });
+    sections.append(entitySection);
+    entitySection.append(
+      el("h3", t(editing ? "Entities" : "Which entities should take part?")),
       el(
         "p",
         t("Select one or more lights and switches. Search by name or room."),
@@ -396,6 +403,15 @@ function renderEditor(panel, root) {
             : form.entities.filter((e) => e !== entity.entity_id);
           changed("entities");
           count.textContent = `${form.entities.length} ${t("selected")}`;
+          if (editing) {
+            const scrollTop = list.scrollTop;
+            panel.renderView();
+            const picker = panel.shadowRoot.querySelector(".entity-picker");
+            picker.scrollTop = scrollTop;
+            [...picker.querySelectorAll("input")]
+              .find((input) => input.value === entity.entity_id)
+              ?.focus({ preventScroll: true });
+          }
         });
         const text = el("span");
         text.append(
@@ -424,10 +440,10 @@ function renderEditor(panel, root) {
       draw();
     });
     draw();
-    shell.append(search, count, list);
-    error(shell, "entities");
+    entitySection.append(search, count, list);
+    error(entitySection, "entities");
     if (form.entities.some((e) => !/^(light|switch)\./.test(e)))
-      shell.append(
+      entitySection.append(
         el(
           "p",
           t(
@@ -436,15 +452,18 @@ function renderEditor(panel, root) {
           { class: "hint" },
         ),
       );
-  } else if (editor.stage === 1) {
-    shell.append(
-      el("h3", t("What should happen?")),
+  }
+  if (editing || editor.stage === 1) {
+    const actionSection = el("div", null, { "data-editor-section": "action" });
+    sections.append(actionSection);
+    actionSection.append(
+      el("h3", t(editing ? "Action" : "What should happen?")),
       el("p", form.entities.map((id) => entityName(panel, id)).join(", "), {
         class: "hint",
       }),
     );
     field(
-      shell,
+      actionSection,
       "action",
       "Action",
       form.action,
@@ -459,7 +478,7 @@ function renderEditor(panel, root) {
         render: true,
       },
     );
-    field(shell, "name", "Routine name", form.name, (v) => {
+    field(actionSection, "name", "Routine name", form.name, (v) => {
       form.name = v;
     });
     if (
@@ -470,7 +489,7 @@ function renderEditor(panel, root) {
       )
     ) {
       field(
-        shell,
+        actionSection,
         "brightness",
         "Brightness (%)",
         form.brightness,
@@ -479,7 +498,7 @@ function renderEditor(panel, root) {
         },
         { type: "number", min: 1, max: 100 },
       );
-      shell.append(
+      actionSection.append(
         el(
           "p",
           t(
@@ -489,14 +508,17 @@ function renderEditor(panel, root) {
         ),
       );
     }
-  } else {
+  }
+  if (editing || editor.stage === 2) {
+    const timingSection = el("div", null, { "data-editor-section": "time" });
+    sections.append(timingSection);
     const time = form.timing;
-    shell.append(
-      el("h3", t("When should it happen?")),
+    timingSection.append(
+      el("h3", t(editing ? "Time" : "When should it happen?")),
       el("p", form.name, { class: "hint" }),
     );
     field(
-      shell,
+      timingSection,
       "mode",
       "Timing",
       time.mode,
@@ -524,7 +546,7 @@ function renderEditor(panel, root) {
     );
     if (time.mode === "clock")
       field(
-        shell,
+        timingSection,
         "time",
         "Time",
         time.time,
@@ -537,7 +559,7 @@ function renderEditor(panel, root) {
       if (time.mode === "relative") {
         const parents = parentSteps(panel.draft, editor.id);
         field(
-          shell,
+          timingSection,
           "parent",
           "Related routine",
           time.parent,
@@ -551,7 +573,7 @@ function renderEditor(panel, root) {
             ],
           },
         );
-        shell.append(
+        timingSection.append(
           el(
             "p",
             t(
@@ -562,7 +584,7 @@ function renderEditor(panel, root) {
         );
       } else
         field(
-          shell,
+          timingSection,
           "sun",
           "Sun event",
           time.sun,
@@ -602,9 +624,9 @@ function renderEditor(panel, root) {
           ],
         },
       );
-      shell.append(row);
+      timingSection.append(row);
     }
-    const variance = details(shell, t("Add time variation"));
+    const variance = details(timingSection, t("Add time variation"));
     variance.open = Number(time.variation) > 0 || !!editor.errors.variation;
     field(
       variance,
@@ -634,7 +656,7 @@ function renderEditor(panel, root) {
             ? "weekends"
             : "custom";
     field(
-      shell,
+      timingSection,
       "days",
       "Repeat",
       preset,
@@ -673,10 +695,13 @@ function renderEditor(panel, root) {
         label.append(input, document.createTextNode(t(day)));
         checks.append(label);
       }
-      shell.append(checks);
+      timingSection.append(checks);
     }
     if (time.mode === "sun") {
-      const fallback = details(shell, t("If the sun event is unavailable"));
+      const fallback = details(
+        timingSection,
+        t("If the sun event is unavailable"),
+      );
       field(
         fallback,
         "fallback",
@@ -689,7 +714,7 @@ function renderEditor(panel, root) {
       );
     }
     if (panel.document?.source === "file")
-      shell.append(
+      timingSection.append(
         el(
           "p",
           t(
@@ -709,7 +734,7 @@ function renderEditor(panel, root) {
   });
   cancel.disabled = panel.busy;
   footer.append(cancel);
-  if (editor.stage > 0) {
+  if (!editing && editor.stage > 0) {
     const back = button(t("Back"), () => {
       editor.stage--;
       rerender();
@@ -719,16 +744,20 @@ function renderEditor(panel, root) {
   }
   const next = button(
     t(
-      editor.stage < 2
+      !editing && editor.stage < 2
         ? "Continue"
         : panel.document?.source === "file"
           ? "Add to draft"
           : "Save routine",
     ),
     async () => {
-      editor.errors = editorErrors(panel.draft, editor, editor.stage);
+      editor.errors = editorErrors(
+        panel.draft,
+        editor,
+        editing ? 2 : editor.stage,
+      );
       if (Object.keys(editor.errors).length) return rerender();
-      if (editor.stage < 2) {
+      if (!editing && editor.stage < 2) {
         if (editor.stage === 0 && !form.name)
           form.name = `${entityName(panel, form.entities[0])}${form.entities.length > 1 ? ` +${form.entities.length - 1}` : ""} ${t("on")}`;
         editor.stage++;

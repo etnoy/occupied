@@ -63,6 +63,13 @@ nav button[aria-current="page"] { border-bottom-color:var(--primary-color,#167b9
 .routine-editor details { padding:8px 0; }
 .routine-editor .field { margin:18px 0; }
 .routine-editor .error { font-size:13px; }
+.routine-editor.editing { max-width:none; }
+.editing .editor-sections { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.1fr); gap:28px; }
+.editing .editor-sections > div { min-width:0; }
+.editing h3 { margin:16px 0 8px; font-size:20px; }
+.editing .entity-picker { max-height:280px; }
+.editing .field { margin:14px 0; }
+@media (max-width:900px) { .editing .editor-sections { grid-template-columns:1fr; gap:20px; } .editing .editor-sections > div + div { border-top:1px solid var(--divider-color,#d5dce3); padding-top:12px; } }
 #issues:empty { display:none; } #issues button { margin:0 6px 8px 0; text-align:left; }
 @media (max-width:800px) { .routine-layout:has(.routine-detail) { grid-template-columns:1fr; } .routine-detail { margin-bottom:24px; } }
 @media (max-width:600px) {

@@ -203,9 +203,25 @@ export async function runRoutineWorkflows(panel, check) {
         "Dependent delete was not explained",
       );
       click("Edit routine");
-      click("Continue");
+      assert(
+        root.querySelectorAll("[data-editor-section]").length === 3 &&
+          root.querySelector(".entity-picker input:checked") &&
+          root.querySelector('[data-builder-field="action"]') &&
+          root.querySelector('[data-builder-field="time"]'),
+        "Existing routine does not show entities, action and timing together",
+      );
+      assert(
+        !root.querySelector(".builder-steps") &&
+          ![...root.querySelectorAll("button")].some((b) =>
+            ["Continue", "Back"].includes(b.textContent),
+          ),
+        "Existing routine still requires wizard navigation",
+      );
+      fit();
+      choose(["light.living_room", "switch.floor_lamp", "light.hall"]);
+      field("brightness", "55");
+      field("time", "18:20");
       field("name", "Evening glow");
-      click("Continue");
       field("mode", "relative");
       const parents = [
         ...root.querySelector('[data-builder-field="parent"]').options,
@@ -226,6 +242,13 @@ export async function runRoutineWorkflows(panel, check) {
       );
       field("days", "all");
       await save();
+      const edited = routineEntries(panel.saved).find((e) => e.id === parentId);
+      assert(
+        edited.entities.includes("light.hall") &&
+          edited.actions[0].data.brightness_pct === 55 &&
+          edited.when.clock_range.earliest === "18:05",
+        "Single-page save lost edits made across multiple sections",
+      );
       assert(
         routineEntries(panel.saved)[1].when.relative_to === parentId,
         "Rename broke stable anchor",
@@ -241,8 +264,6 @@ export async function runRoutineWorkflows(panel, check) {
     async () => {
       select(parentId);
       click("Edit routine");
-      click("Continue");
-      click("Continue");
       field("mode", "sun");
       field("direction", "before");
       field("offset", "30");
@@ -257,8 +278,6 @@ export async function runRoutineWorkflows(panel, check) {
       assert(panel.preview.valid, "Sun timing failed planner validation");
       select(parentId);
       click("Edit routine");
-      click("Continue");
-      click("Continue");
       field("mode", "clock");
       field("time", "00:05");
       field("variation", "15");
@@ -276,8 +295,6 @@ export async function runRoutineWorkflows(panel, check) {
     async () => {
       select(parentId);
       click("Edit routine");
-      click("Continue");
-      click("Continue");
       const original = panel._hass.callWS,
         saveCount = calls.filter((c) => c.type === "occupied/save").length;
       panel._hass.callWS = async (message) =>
@@ -321,6 +338,10 @@ export async function runRoutineWorkflows(panel, check) {
         panel._hass.callWS = original;
       }
       click("Cancel");
+      assert(
+        !panel.routineEditor && !panel.dirty,
+        "Cancel did not discard the existing routine's pending edits",
+      );
     },
   );
   await check(
@@ -328,8 +349,6 @@ export async function runRoutineWorkflows(panel, check) {
     async () => {
       select(parentId);
       click("Edit routine");
-      click("Continue");
-      click("Continue");
       field("time", "20:00");
       const original = panel._hass.callWS;
       let release,
