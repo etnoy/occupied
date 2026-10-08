@@ -1,0 +1,41 @@
+.github/workflows/check.yml
+  s_dca6cd18faed58::t_838be2d505a0d9 56-59,64-71
+MANIFEST.in
+  s_dca6cd18faed58::t_fc0cdb8a5c3ee7 1
+README.md
+  s_dca6cd18faed58::t_b630fb210d74ba 57,72,83-89,93
+docs/editor.md
+  s_dca6cd18faed58::t_dd2c0c671b8e32 75-76,78
+docs/installation.md
+  s_dca6cd18faed58::t_8c187322bea47e 11
+docs/releasing.md
+  s_dca6cd18faed58::t_98df16fafab2a7 15-23,45-46
+mise.toml
+  s_dca6cd18faed58::t_f06e3673a0c6e3 4,11,21-22,29-31,38,45
+package.json
+  s_dca6cd18faed58::t_0333629b7202c3 5,9,11-12,14
+pnpm-lock.yaml
+  s_dca6cd18faed58::t_6f050bb11af27a 1-833
+scripts/build-frontend.ts
+  s_dca6cd18faed58::t_4c7c07a3a2066a 52,71
+scripts/build_release.py
+  s_dca6cd18faed58::t_36d0fa0afd8199 15
+scripts/check_artifacts.py
+  s_dca6cd18faed58::t_0624af23dbfb5d 30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f4c4338a2e15f645de52f1629da98761d584fdc6",
+  "prompts": {},
+  "sessions": {
+    "s_dca6cd18faed58": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11d78-8271-7730-942a-ac0bd2ac1bdf",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
