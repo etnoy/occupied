@@ -1,0 +1,21 @@
+custom_components/occupied/panel.py
+  s_24a58996e5c8f7::t_7d132dcf27eb73 3,10-20,25-29,31,33-35,40-43
+tests/test_panel.py
+  s_24a58996e5c8f7::t_3a7c8cacfe84f4 3,20-21,66-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "6f87f31766beab11811f37c0ae801fe9f932f7c6",
+  "prompts": {},
+  "sessions": {
+    "s_24a58996e5c8f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a20-8b1b-75f2-95cd-c786681cd9e8",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
