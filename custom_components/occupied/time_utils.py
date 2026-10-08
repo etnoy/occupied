@@ -1,13 +1,13 @@
 """Pure timezone/sun resolution for one local simulation date."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from astral import Observer
-from astral.sun import sunrise, sunset
+from astral.sun import dawn, dusk, midnight, noon, sunrise, sunset
 
-from .models import Anchor, Between, ClockRange, Program, SunRange
+from .models import Anchor, Between, ClockRange, EntityRange, Program, SunRange
 from .validation import Issue, ModelPath, ProgramError
 
 
@@ -17,6 +17,7 @@ class PlanningContext:
     latitude: float | None = None
     longitude: float | None = None
     elevation: float = 0
+    time_sources: dict[str, dict[str, str | None]] = field(default_factory=dict)
 
 
 def resolve_local(naive: datetime, zone: ZoneInfo) -> tuple[datetime, str | None]:
@@ -53,6 +54,7 @@ class SimulationDay:
     def __init__(
         self, program: Program, simulation_date: date, context: PlanningContext, issues: list[Issue]
     ):
+        self.context = context
         self.program = program
         self.date = simulation_date
         self.issues = issues
@@ -101,14 +103,15 @@ class SimulationDay:
         self.observer = Observer(latitude, longitude, elevation) if latitude is not None else None
         self._sun_cache: dict[tuple[str, date], datetime | None] = {}
 
-    def _local(self, value: datetime, path: ModelPath) -> datetime:
-        instant, adjustment = resolve_local(value, self.zone)
+    def _local(self, value: datetime, path: ModelPath, zone: ZoneInfo | None = None) -> datetime:
+        zone = zone or self.zone
+        instant, adjustment = resolve_local(value, zone)
         if adjustment:
             self.issues.append(
                 Issue(
                     adjustment,
-                    f"{value.isoformat()} in {self.zone.key} resolves to "
-                    f"{instant.astimezone(self.zone).isoformat()}; "
+                    f"{value.isoformat()} in {zone.key} resolves to "
+                    f"{instant.astimezone(zone).isoformat()}; "
                     "first valid/first repeated instant policy",
                     path,
                     "info",
@@ -128,7 +131,14 @@ class SimulationDay:
         key = event, calendar_date
         if key not in self._sun_cache:
             try:
-                function = sunrise if event == "sunrise" else sunset
+                function = {
+                    "sunrise": sunrise,
+                    "sunset": sunset,
+                    "dawn": dawn,
+                    "dusk": dusk,
+                    "noon": noon,
+                    "midnight": midnight,
+                }[event]
                 self._sun_cache[key] = (
                     function(self.observer, date=calendar_date, tzinfo=self.zone).astimezone(UTC)
                     if self.observer
@@ -212,6 +222,59 @@ class SimulationDay:
     ) -> tuple[datetime, datetime, datetime | None] | None:
         anchor = self.sun(spec.sun, path, spec.fallback)
         if anchor is None:
+            return None
+        offsets = spec.offset_range
+        return (
+            anchor + timedelta(seconds=offsets.lower),
+            anchor + timedelta(seconds=offsets.upper),
+            anchor + timedelta(seconds=offsets.mode) if offsets.mode is not None else None,
+        )
+
+    def entity_bounds(
+        self, spec: EntityRange, path: ModelPath
+    ) -> tuple[datetime, datetime, datetime | None] | None:
+        source = self.context.time_sources.get(spec.entity_id, {})
+        value = source.get(spec.attribute or "state")
+        anchor = None
+        try:
+            if source.get("kind") == "time" and spec.attribute is None and value:
+                anchor = self.clock(value, path)
+            elif value and value not in {"unknown", "unavailable"}:
+                candidate = datetime.fromisoformat(value)
+                # Calendar attributes can be local datetimes; timestamp sensors
+                # must include a timezone, as required by Home Assistant.
+                if candidate.tzinfo is None and spec.attribute:
+                    candidate = self._local(
+                        candidate,
+                        path,
+                        ZoneInfo(self.context.timezone) if self.context.timezone else self.zone,
+                    )
+                if candidate.tzinfo is not None:
+                    candidate = candidate.astimezone(UTC)
+                    if self.start <= candidate < self.end:
+                        anchor = candidate
+                    else:
+                        self.issues.append(
+                            Issue(
+                                "time_source_other_date",
+                                f"{spec.entity_id} has no reported occurrence on this "
+                                "simulation date; item skipped",
+                                path,
+                                "info",
+                            )
+                        )
+                        return None
+        except ValueError, TypeError:
+            pass
+        if anchor is None:
+            self.issues.append(
+                Issue(
+                    "time_source_unavailable",
+                    f"{spec.entity_id} has no usable time; item skipped",
+                    path,
+                    "warning",
+                )
+            )
             return None
         offsets = spec.offset_range
         return (

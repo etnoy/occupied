@@ -1328,3 +1328,50 @@ async def test_disarm_during_pre_dispatch_commit_prevents_the_service_call(
     assert not engine.active and not engine._activities
     assert not any(c.domain == "remote" for c in daily_devices)
     assert any(o["outcome"] == "cancelled_before_dispatch" for o in engine.outcomes)
+
+
+async def test_changed_time_source_reschedules_pending_step_without_replaying_completed_step(
+    hass, daily_entry, daily_devices, daily_permission, freezer, runtime_program
+):
+    runtime_program["routines"][0]["steps"] = [
+        {
+            "id": "alarm_step",
+            "name": "Alarm step",
+            "when": {
+                "entity_range": {
+                    "entity_id": "input_datetime.alarm",
+                    "offset_range": {"fixed": "0s"},
+                }
+            },
+            "actions": [{"action": "remote.turn_off", "targets": {"entities": ["remote.harmony"]}}],
+        }
+    ]
+    hass.states.async_set("input_datetime.alarm", "18:30:00", {"has_time": True, "has_date": False})
+    hass.states.async_set("remote.harmony", "on")
+    engine = await load(hass, daily_entry, freezer)
+    handover_events = [event.key for event in engine._queue if event.kind.startswith("handover")]
+    deadline = engine.handover_deadline
+    assert engine._plans[dt_util.utcnow().date()].step_times["alarm_step"].hour == 18
+    hass.states.async_set("input_datetime.alarm", "18:01:00", {"has_time": True, "has_date": False})
+    await hass.async_block_till_done()
+    assert engine._plans[dt_util.utcnow().date()].step_times["alarm_step"].minute == 1
+    assert all(any(event.key == key for event in engine._queue) for key in handover_events)
+    assert engine.handover_deadline == deadline
+    await advance(hass, freezer, 60)
+    off_calls = [
+        call for call in daily_devices if call.domain == "remote" and call.service == "turn_off"
+    ]
+    assert len(off_calls) == 1
+    hass.states.async_set("input_datetime.alarm", "18:02:00", {"has_time": True, "has_date": False})
+    await hass.async_block_till_done()
+    await advance(hass, freezer, 60)
+    assert (
+        len(
+            [
+                call
+                for call in daily_devices
+                if call.domain == "remote" and call.service == "turn_off"
+            ]
+        )
+        == 1
+    )

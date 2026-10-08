@@ -13,7 +13,7 @@ Create Occupied through **Settings → Devices & services → Add integration**.
 
 Select a saved step and choose **Add related step** to create what happens before or after it. The parent, entities and days are prefilled; change the timing and entities as needed. Weekdays remain available in Advanced settings. For example, turn on living-room lights around 18:00, turn on kitchen lights 30 minutes later, then turn everything off two hours after the kitchen step. Offsets follow the parent's sampled scheduled time, including its sampled window, rather than actual device-call completion. Circular choices are excluded. Incompatible weekdays are explained inline.
 
-Selecting a row also exposes **Edit step**, which opens timing, entities and action together on one page. Change any combination of fields and select **Save step**; errors appear beside their fields. New steps use the guided creation flow. **More options** contains duplicate, delete and advanced settings. Deletion is blocked while other steps depend on the selected step, with those steps named. Duplicate/delete create draft changes; **Save changes** validates and applies them. **Discard edits** restores the saved program. **Cancel** discards only that editor's pending changes.
+Each step card has a three-dot menu with **Edit step** and **Add related step**, plus duplicate, delete and advanced settings. **Edit step** opens timing, entities and action together on one page. Change any combination of fields and select **Save step**; errors appear beside their fields. New steps use the guided creation flow. Delete opens a confirmation dialog. If other steps depend on the selected step, the dialog names them and blocks deletion until those relationships are changed. Cancel or Escape leaves the draft unchanged. Duplicate/delete create draft changes; **Save changes** validates and applies them. **Discard edits** restores the saved program. **Cancel** discards only that editor's pending changes.
 
 **Preview schedule** opens a planner preview without controlling devices. Saving does not enable execution. Use **Settings** to configure activation conditions and dry-run mode, then **Turn on simulation** when ready.
 
@@ -33,7 +33,7 @@ In advanced forms, **Migrate identifier** asks the backend to validate and rewri
 
 ## Timing and activities
 
-Steps/activities support clock ranges, sunrise/sunset offsets with clock fallbacks, and offsets from another step. The builder edits start and optional end bounds directly and handles midnight crossings. Clearing an end returns to a fixed start time or offset. New builder steps allow crossing the simulation-day boundary so related steps can follow an overnight parent. Existing boundary policies remain unchanged. Relationships are shown directly in **Your steps**; the backend validates the full graph.
+Steps/activities support clock ranges, solar offsets with clock fallbacks, Home Assistant time sources, and offsets from another step. **Relative to** uses Home Assistant’s generic picker when loaded, with live matching results and source details for steps, solar events, Home Assistant times and calendar bounds. A keyboard-accessible live-results fallback shows matching sources and an explicit no-results message when the native picker is unavailable. It discovers time-bearing datetime helpers and timestamp sensors, including next-alarm sensors; calendars offer start and end. Solar options include sunrise, sunset, dawn, dusk, solar noon and solar midnight. Time-only helpers repeat daily; dated sources use the occurrence HA currently reports. Unknown future calendar events are not guessed. Unavailable sources remain visible when reopening a saved step. The builder edits start and optional end bounds directly and handles midnight crossings. Clearing an end returns to a fixed start time or offset. New builder steps allow crossing the simulation-day boundary so related steps can follow an overnight parent. Existing boundary policies remain unchanged. Relationships are shown directly in **Your steps**; the backend validates the full graph.
 
 Random windows offer clock/sun/step anchors, cycle counts, duration bounds, gaps, overlap, all/one/subset/weighted targets and concurrency limits. Item weekdays intersect their routine's days. Defaults inherit household → routine → item; **Inherit** removes an override. Preview reports infeasible schedules instead of silently extending windows.
 
@@ -58,7 +58,7 @@ Commands require an authenticated admin and loaded `config_entry_id`:
 | Command | Purpose / additional fields |
 | --- | --- |
 | `occupied/program` | Normalized program, revision, source, resolved date/timezone |
-| `occupied/catalog` | Entity names/areas/capabilities and native service descriptions/selectors |
+| `occupied/catalog` | Entity names/areas/capabilities, discovered time sources and native service descriptions/selectors |
 | `occupied/editor_validate` | Validate `program`, including installed service schemas |
 | `occupied/save` | Save `program` with required `expected_revision`; reject `revision_conflict` |
 | `occupied/timeline` | Read saved plans/outcomes for optional ISO `date` |
@@ -67,15 +67,17 @@ Commands require an authenticated admin and loaded `config_entry_id`:
 | `occupied/validate`, `preview`, `export`, `rename_id` | Shared pure draft operations in [the schema reference](schema.md) |
 | `occupied/diagnostics` | Optional `include_sensitive: true` for household details |
 
-Bundled local ES modules need no frontend build or extra runtime dependency. Static assets contain no household data. The editor follows HA's [custom-panel contract](https://developers.home-assistant.io/docs/frontend/custom-ui/creating-custom-panels/) and checks for `ha-selector` before using the [pinned selector interface](https://github.com/home-assistant/frontend/blob/20260826.7/src/components/ha-selector/ha-selector.ts); standard accessible controls are the fallback. English is complete; Swedish navigation/common controls have English fallback. CI verifies the supported HA matrix and desktop/mobile workflows.
+The editor is written in strict TypeScript. Its generated local ES modules are included in the integration, so installation needs no frontend build or extra runtime dependency. Static assets contain no household data. The editor follows HA's [custom-panel contract](https://developers.home-assistant.io/docs/frontend/custom-ui/creating-custom-panels/) and checks for `ha-selector` before using the [pinned selector interface](https://github.com/home-assistant/frontend/blob/20260826.7/src/components/ha-selector/ha-selector.ts); standard accessible controls are the fallback. English is complete; Swedish navigation/common controls have English fallback. CI verifies the supported HA matrix and desktop/mobile workflows.
 
 ## Browser acceptance fixture
 
 ```sh
+npm ci --ignore-scripts
+npm run build
 .venv/bin/python tests/frontend/serve.py
-node --test tests/frontend/model.test.mjs
+npm test
 ```
 
-Open `http://127.0.0.1:8765/tests/frontend/harness.html` and run `await window.runWorkflows()` in its browser console. All twenty-two results must have `passed: true`. Reload before repeating to reset the selector shim. For mobile checks, load it in a 390-pixel viewport or same-origin iframe and run its workflows; it also checks horizontal overflow.
+Open `http://127.0.0.1:8765/tests/frontend/harness.html` and run `await window.runWorkflows()` in its browser console. All workflow results must have `passed: true`. Reload before repeating to reset the selector shim. For mobile checks, load it in a 390-pixel viewport or same-origin iframe and run its workflows; it also checks horizontal overflow.
 
 The fixture uses production modules, real pure backend validation/planning and a virtual runtime. It covers the step builder, mixed light/switch actions, chained steps, weekday/cycle/delete protection, sun and overnight timing, inline errors, edits during validation/save, and managed-file drafts. It also retains coverage of advanced forms, safe labels, exact state lists, round trips, migration, Harmony, diagrams, stale saves, selector compatibility and cleanup, with zero device calls. Real HA tests separately verify authentication, schemas, storage failures, actual deadlines and static routes. Full running-HA browser/hardware soak remains deployment acceptance work. The HA compatibility matrix and browser CI are described in [release verification](releasing.md).

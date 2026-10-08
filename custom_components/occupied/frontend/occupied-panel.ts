@@ -1,3 +1,20 @@
+import type {
+  Program,
+  Catalog,
+  RuntimeSnapshot,
+  ProgramDocument,
+  StepEditor,
+  Path,
+  Issue,
+  HomeAssistant,
+  HaSelector,
+  HaGenericPicker,
+  WebSocketResponses,
+  TimelineDocument,
+  PreviewResult,
+  JsonObject,
+} from "./types.js";
+import { errorMessage, required } from "./types.js";
 import { copy, get, set, resources } from "./model.js";
 import { button, el, section, details } from "./forms.js";
 import { editView } from "./views.js";
@@ -13,6 +30,49 @@ const tabs = {
 };
 
 export class OccupiedPanel extends HTMLElement {
+  declare shadowRoot: ShadowRoot;
+  draft!: Program;
+  saved!: Program;
+  document!: ProgramDocument;
+  status!: RuntimeSnapshot;
+  catalog: Catalog;
+  stepEditor: StepEditor | null = null;
+  selectedStep: string | null = null;
+  issues: Issue[] = [];
+  revision = "";
+  stale = false;
+  _hass!: HomeAssistant;
+  _panel?: { config?: { config_entry_id?: string } };
+  _timer?: ReturnType<typeof setInterval>;
+  _timelineTimer: ReturnType<typeof setTimeout> | null = null;
+  _loadedEntry: string | null = null;
+  _loading = false;
+  _timelineLoading = false;
+  _subscriptionEpoch = 0;
+  _unsubscribe: (() => void) | null = null;
+  _subscribing = false;
+  actual?: TimelineDocument;
+  timelineDate = "";
+  preview?: PreviewResult;
+  previewProgram!: Program;
+  previewVersion?: number;
+  sourcePath?: string;
+  yaml = "";
+  includeSensitive = false;
+  diagnostics?: JsonObject;
+  tab: string;
+  selection: Map<string, number>;
+  raw: Map<string, string>;
+  localErrors: Map<string, string>;
+  t: (text: string) => string;
+  version: number;
+  validatedVersion: number;
+  dirty: boolean;
+  busy: boolean;
+  epoch: number;
+  error: string;
+  previewSettings: { date: string; days: number; seed: string; at?: string };
+  _beforeUnload: (event: BeforeUnloadEvent) => void;
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -36,11 +96,13 @@ export class OccupiedPanel extends HTMLElement {
       }
     };
   }
-  set hass(value) {
+  set hass(value: HomeAssistant) {
     const changed = this._hass?.connection !== value?.connection;
     this._hass = value;
     this.t = translator(value?.language);
-    for (const selector of this.shadowRoot.querySelectorAll("ha-selector"))
+    for (const selector of this.shadowRoot.querySelectorAll<
+      HaSelector | HaGenericPicker
+    >("ha-selector,ha-generic-picker"))
       selector.hass = value;
     if (changed) {
       this._disposeSubscription();
@@ -48,11 +110,11 @@ export class OccupiedPanel extends HTMLElement {
     }
     this._load();
   }
-  set panel(value) {
+  set panel(value: { config?: { config_entry_id?: string } }) {
     this._panel = value;
     this._load();
   }
-  set narrow(value) {
+  set narrow(value: boolean) {
     this.toggleAttribute("narrow", !!value);
   }
   connectedCallback() {
@@ -60,18 +122,18 @@ export class OccupiedPanel extends HTMLElement {
     this._load();
     window.addEventListener("beforeunload", this._beforeUnload);
     this._timer = setInterval(() => {
-      for (const progress of this.shadowRoot.querySelectorAll(
+      for (const progress of this.shadowRoot.querySelectorAll<HTMLProgressElement>(
         "progress[data-start]",
       ))
         progress.value = Math.max(
           0,
           Math.min(
             1,
-            (Date.now() - Date.parse(progress.dataset.start)) /
+            (Date.now() - Date.parse(progress.dataset.start!)) /
               Math.max(
                 1,
-                Date.parse(progress.dataset.deadline) -
-                  Date.parse(progress.dataset.start),
+                Date.parse(progress.dataset.deadline!) -
+                  Date.parse(progress.dataset.start!),
               ),
           ),
         );
@@ -83,7 +145,7 @@ export class OccupiedPanel extends HTMLElement {
     this._loading = false;
     this._disposeSubscription();
     clearInterval(this._timer);
-    clearTimeout(this._timelineTimer);
+    if (this._timelineTimer) clearTimeout(this._timelineTimer);
     window.removeEventListener("beforeunload", this._beforeUnload);
   }
   _disposeSubscription() {
@@ -104,31 +166,33 @@ export class OccupiedPanel extends HTMLElement {
     this._subscribing = true;
     const epoch = this._subscriptionEpoch;
     try {
-      const unsubscribe = await this._hass.connection.subscribeMessage(
-        (snapshot) => {
-          if (epoch !== this._subscriptionEpoch || !this.isConnected) return;
-          this.status = snapshot;
-          if (snapshot.configuration_source && this.document) {
-            this.document.configuration_source = snapshot.configuration_source;
-            this.document.source = snapshot.configuration_source.mode;
-          }
-          this.stale = !!(
-            snapshot.source_revision &&
-            this.revision &&
-            snapshot.source_revision !== this.revision
-          );
-          this.toolbar();
-          if (this.tab === "overview") this.renderOverview();
-          if (this.tab === "timeline" && !this._timelineTimer)
-            this._timelineTimer = setTimeout(() => {
-              this._timelineTimer = null;
-              this.loadTimeline();
-            }, 1000);
-          if (this.stale && !this.dirty && !this.busy && !this.stepEditor)
-            this.reloadSaved();
-        },
-        { type: "occupied/subscribe", config_entry_id: this._loadedEntry },
-      );
+      const unsubscribe =
+        await this._hass.connection.subscribeMessage<RuntimeSnapshot>(
+          (snapshot) => {
+            if (epoch !== this._subscriptionEpoch || !this.isConnected) return;
+            this.status = snapshot;
+            if (snapshot.configuration_source && this.document) {
+              this.document.configuration_source =
+                snapshot.configuration_source;
+              this.document.source = snapshot.configuration_source.mode;
+            }
+            this.stale = !!(
+              snapshot.source_revision &&
+              this.revision &&
+              snapshot.source_revision !== this.revision
+            );
+            this.toolbar();
+            if (this.tab === "overview") this.renderOverview();
+            if (this.tab === "timeline" && !this._timelineTimer)
+              this._timelineTimer = setTimeout(() => {
+                this._timelineTimer = null;
+                this.loadTimeline();
+              }, 1000);
+            if (this.stale && !this.dirty && !this.busy && !this.stepEditor)
+              this.reloadSaved();
+          },
+          { type: "occupied/subscribe", config_entry_id: this._loadedEntry },
+        );
       if (epoch !== this._subscriptionEpoch || !this.isConnected) unsubscribe();
       else this._unsubscribe = unsubscribe;
     } catch (error) {
@@ -137,8 +201,11 @@ export class OccupiedPanel extends HTMLElement {
       if (epoch === this._subscriptionEpoch) this._subscribing = false;
     }
   }
-  ws(type, data = {}) {
-    return this._hass.callWS({
+  ws<K extends keyof WebSocketResponses>(
+    type: K,
+    data: Record<string, unknown> = {},
+  ): Promise<WebSocketResponses[K]> {
+    return this._hass.callWS<WebSocketResponses[K]>({
       type: `occupied/${type}`,
       config_entry_id: this._loadedEntry,
       ...data,
@@ -263,18 +330,20 @@ export class OccupiedPanel extends HTMLElement {
         }),
       );
     node.hidden = !node.childElementCount;
-    for (const button of this.shadowRoot.querySelectorAll("nav [data-tab]"))
+    for (const button of this.shadowRoot.querySelectorAll<HTMLButtonElement>(
+      "nav [data-tab]",
+    ))
       button.disabled = !!this.stepEditor;
-    for (const button of this.shadowRoot.querySelectorAll(
+    for (const button of this.shadowRoot.querySelectorAll<HTMLButtonElement>(
       ".builder-footer button",
     ))
       button.disabled =
         this.busy ||
         (!!this.stale && button.hasAttribute("data-routine-submit"));
-    const error = this.shadowRoot.getElementById("error");
+    const error = required(this.shadowRoot.getElementById("error"));
     error.textContent = this.error;
     error.hidden = !this.error;
-    const runtime = this.shadowRoot.getElementById("runtime");
+    const runtime = required(this.shadowRoot.getElementById("runtime"));
     runtime.replaceChildren();
     if (this.status) {
       const label = this.status.paused
@@ -312,7 +381,7 @@ export class OccupiedPanel extends HTMLElement {
           ));
       runtime.append(control);
     }
-    const notice = this.shadowRoot.getElementById("notice");
+    const notice = required(this.shadowRoot.getElementById("notice"));
     notice.textContent = this.stale
       ? this.t(
           "The saved program changed. Your draft is preserved; reload the saved program before saving.",
@@ -332,11 +401,11 @@ export class OccupiedPanel extends HTMLElement {
       notice.textContent += ` · ${this.t("Preview belongs to an earlier draft")}`;
     notice.textContent = notice.textContent.replace(/^ · /, "");
     notice.hidden = !notice.textContent;
-    this.shadowRoot.getElementById("house").textContent =
+    required(this.shadowRoot.getElementById("house")).textContent =
       this.draft?.name || this.t("Loading household…");
   }
-  change(path, value) {
-    if (!path.length) this.draft = value;
+  change(path: Path, value: unknown) {
+    if (!path.length) this.draft = value as Program;
     else set(this.draft, path, value);
     this.edited();
   }
@@ -344,35 +413,37 @@ export class OccupiedPanel extends HTMLElement {
     this.version++;
     this.dirty = true;
     this.validatedVersion = -1;
-    const active = this.shadowRoot.activeElement;
+    const active =
+      this.shadowRoot.activeElement instanceof HTMLElement
+        ? this.shadowRoot.activeElement
+        : null;
     for (const [key] of this.raw)
       if (active?.dataset.jsonPath !== key && !this.localErrors.has(key))
         this.raw.delete(key);
-    for (const input of this.shadowRoot.querySelectorAll(
+    for (const input of this.shadowRoot.querySelectorAll<HTMLTextAreaElement>(
       "textarea[data-json-path]",
     ))
-      if (input !== active && !this.localErrors.has(input.dataset.jsonPath))
+      if (input !== active && !this.localErrors.has(input.dataset.jsonPath!))
         input.value = JSON.stringify(
-          get(this.draft, JSON.parse(input.dataset.jsonPath)) ?? {},
+          get(this.draft, JSON.parse(input.dataset.jsonPath!)) ?? {},
           null,
           2,
         );
     this.toolbar();
     if (render) this.renderView();
   }
-  fail(error) {
-    this.error =
-      typeof error === "string" ? error : error.message || String(error);
+  fail(error: unknown) {
+    this.error = errorMessage(error);
     this.toolbar();
   }
-  attempt(action) {
+  attempt(action: () => unknown) {
     try {
       action();
     } catch (error) {
       this.fail(error);
     }
   }
-  async run(action) {
+  async run<T>(action: (epoch: number) => Promise<T>): Promise<T | undefined> {
     if (this.busy) return;
     this.busy = true;
     this.error = "";
@@ -382,7 +453,13 @@ export class OccupiedPanel extends HTMLElement {
       return await action(epoch);
     } catch (error) {
       if (epoch === this.epoch) {
-        if (error.code === "revision_conflict") this.stale = true;
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          error.code === "revision_conflict"
+        )
+          this.stale = true;
         this.fail(error);
       }
     } finally {
@@ -399,7 +476,7 @@ export class OccupiedPanel extends HTMLElement {
     }
     return true;
   }
-  showIssues(result) {
+  showIssues(result: { valid?: boolean; issues?: Issue[] }) {
     this.issues = result.issues || [];
     this.renderIssues();
     if (result.valid === false && !this.issues.length)
@@ -422,7 +499,7 @@ export class OccupiedPanel extends HTMLElement {
         ),
       );
   }
-  focusIssue(issue) {
+  focusIssue(issue: Issue) {
     const path = issue.model_path || [];
     const editor = this.stepEditor;
     if (editor) {
@@ -464,7 +541,7 @@ export class OccupiedPanel extends HTMLElement {
               : 0;
         this.renderView();
         this.shadowRoot
-          .querySelector('.routine-editor [aria-invalid="true"]')
+          .querySelector<HTMLElement>('.routine-editor [aria-invalid="true"]')
           ?.focus();
       } else
         this.fail(
@@ -481,27 +558,29 @@ export class OccupiedPanel extends HTMLElement {
           ? "advanced_routines"
           : path[0] === "lighting"
             ? "handover"
-            : ["defaults", "policies", "constraints"].includes(path[0])
+            : ["defaults", "policies", "constraints"].includes(String(path[0]))
               ? "defaults"
               : "household";
-    if (path[0] === "groups") this.selection.set('["groups"]', path[1]);
+    if (path[0] === "groups") this.selection.set('["groups"]', Number(path[1]));
     if (path[0] === "routines") {
-      this.selection.set('["routines"]', path[1]);
+      this.selection.set('["routines"]', Number(path[1]));
       if (typeof path[3] === "number")
         this.selection.set(JSON.stringify(path.slice(0, 3)), path[3]);
     }
     this.renderView();
     let target;
     for (let n = path.length; n >= 0 && !target; n--)
-      target = [...this.shadowRoot.querySelectorAll("[data-path]")].find(
-        (x) => x.dataset.path === JSON.stringify(path.slice(0, n)),
-      );
+      target = [
+        ...this.shadowRoot.querySelectorAll<HTMLElement>("[data-path]"),
+      ].find((x) => x.dataset.path === JSON.stringify(path.slice(0, n)));
     if (target) {
       for (let a = target.parentElement; a; a = a.parentElement)
-        if (a.tagName === "DETAILS") a.open = true;
+        if (a instanceof HTMLDetailsElement) a.open = true;
       target.scrollIntoView({ block: "center" });
       (
-        target.querySelector("input,textarea,select,ha-selector") || target
+        target.querySelector<HTMLElement>(
+          "input,textarea,select,ha-selector,ha-generic-picker",
+        ) || target
       ).focus();
     }
   }
@@ -516,7 +595,7 @@ export class OccupiedPanel extends HTMLElement {
       if (result.valid) this.validatedVersion = version;
     });
   }
-  save(candidate) {
+  save(candidate?: Program) {
     if (this.document?.source === "file" || !this.checkLocal() || this.stale)
       return;
     const version = this.version,
@@ -562,7 +641,7 @@ export class OccupiedPanel extends HTMLElement {
         editor.existing = true;
         // Future patches compare against what was actually saved. This also
         // preserves a user reverting a field while its previous value saves.
-        editor.original = submittedForm;
+        editor.original = submittedForm!;
         if (version !== this.version) {
           this.fail(
             this.t("Earlier changes saved. Your newer edits are still open."),
@@ -601,7 +680,7 @@ export class OccupiedPanel extends HTMLElement {
       this.renderView();
     });
   }
-  migrate(kind, old, next) {
+  migrate(kind: string, old: string, next: string) {
     if (!this.checkLocal() || !next) return;
     const version = this.version;
     return this.run(async (epoch) => {
@@ -619,7 +698,7 @@ export class OccupiedPanel extends HTMLElement {
       }
     });
   }
-  control(service, data = {}) {
+  control(service: string, data: Record<string, unknown> = {}) {
     return this.run(async () => {
       await this._hass.callService("occupied", service, {
         config_entry_id: this._loadedEntry,
@@ -630,10 +709,12 @@ export class OccupiedPanel extends HTMLElement {
     });
   }
   renderView() {
-    const root = this.shadowRoot.getElementById("view");
+    const root = required(this.shadowRoot.getElementById("view"));
     if (!root) return;
     root.replaceChildren();
-    for (const node of this.shadowRoot.querySelectorAll("[data-tab]"))
+    for (const node of this.shadowRoot.querySelectorAll<HTMLElement>(
+      "[data-tab]",
+    ))
       node.setAttribute(
         "aria-current",
         node.dataset.tab === this.tab ? "page" : "false",
@@ -642,7 +723,9 @@ export class OccupiedPanel extends HTMLElement {
       root.append(button(this.t("Retry"), () => this._load()));
       return;
     }
-    const secondaryNav = this.shadowRoot.getElementById("secondary-nav");
+    const secondaryNav = required(
+      this.shadowRoot.getElementById("secondary-nav"),
+    );
     secondaryNav.replaceChildren();
     if (!["routines", "settings"].includes(this.tab))
       secondaryNav.append(
@@ -681,7 +764,7 @@ export class OccupiedPanel extends HTMLElement {
     else {
       try {
         editView(this, root);
-      } catch (error) {
+      } catch {
         root.replaceChildren();
         this.fail(
           this.t(
@@ -700,7 +783,7 @@ export class OccupiedPanel extends HTMLElement {
             this.localErrors.delete("[]");
             this.change([], JSON.parse(input.value));
           } catch (parseError) {
-            this.localErrors.set("[]", parseError.message);
+            this.localErrors.set("[]", errorMessage(parseError));
             this.edited();
           }
         });
@@ -714,7 +797,7 @@ export class OccupiedPanel extends HTMLElement {
     this.renderIssues();
   }
   renderOverview() {
-    const root = this.shadowRoot.getElementById("view");
+    const root = required(this.shadowRoot.getElementById("view"));
     if (this.tab !== "overview" || !root) return;
     root.replaceChildren();
     const t = this.t,
@@ -737,7 +820,8 @@ export class OccupiedPanel extends HTMLElement {
           () => this.control("set_dry_run", { dry_run: !state.dry_run }),
         ),
       );
-    for (const b of controls.children) b.disabled = this.busy;
+    for (const b of controls.querySelectorAll<HTMLButtonElement>("button"))
+      b.disabled = this.busy;
     box.append(controls);
     const fields = [
       ["Status", state.status],
@@ -758,7 +842,7 @@ export class OccupiedPanel extends HTMLElement {
     ];
     const dl = el("dl");
     for (const [label, value] of fields)
-      dl.append(el("dt", t(label)), el("dd", value));
+      dl.append(el("dt", t(label || "")), el("dd", value));
     box.append(dl);
     const labels = new Map(resources(this.saved).map((x) => [x.id, x.name])),
       active = section(root, t("Active activities"));
@@ -835,7 +919,7 @@ export class OccupiedPanel extends HTMLElement {
     }
   }
   renderTimeline() {
-    const root = this.shadowRoot.getElementById("view");
+    const root = required(this.shadowRoot.getElementById("view"));
     root.replaceChildren();
     const box = section(
       root,
@@ -868,7 +952,7 @@ export class OccupiedPanel extends HTMLElement {
     if (this.actual) timeline(root, this.actual, this.saved, this.t);
   }
   renderPreview() {
-    const root = this.shadowRoot.getElementById("view"),
+    const root = required(this.shadowRoot.getElementById("view")),
       t = this.t;
     root.replaceChildren();
     const box = section(
@@ -884,17 +968,17 @@ export class OccupiedPanel extends HTMLElement {
       ["days", "Days", "number"],
       ["seed", "Seed", "text"],
       ["at", "Projection instant (ISO time with offset, optional)", "text"],
-    ]) {
+    ] as const) {
       const field = el("label", t(label)),
         input = el("input", null, { type });
-      input.value = this.previewSettings[key];
+      input.value = String(this.previewSettings[key] ?? "");
       if (key === "days") {
-        input.min = 1;
-        input.max = 31;
+        input.min = "1";
+        input.max = "31";
       }
       input.addEventListener("input", () => {
-        this.previewSettings[key] =
-          key === "days" ? Number(input.value) : input.value;
+        if (key === "days") this.previewSettings.days = Number(input.value);
+        else this.previewSettings[key] = input.value;
       });
       field.append(input);
       field.className = "field";
@@ -943,7 +1027,7 @@ export class OccupiedPanel extends HTMLElement {
     });
   }
   renderConfiguration() {
-    const root = this.shadowRoot.getElementById("view"),
+    const root = required(this.shadowRoot.getElementById("view")),
       t = this.t;
     const source = this.document.configuration_source || {
       mode: this.document.source || "gui",
@@ -1028,8 +1112,9 @@ export class OccupiedPanel extends HTMLElement {
       "aria-label": t("Choose configuration file"),
     });
     file.addEventListener("change", async () => {
-      if (file.files[0]) {
-        this.yaml = await file.files[0].text();
+      const selected = file.files?.[0];
+      if (selected) {
+        this.yaml = await selected.text();
         input.value = this.yaml;
       }
     });
@@ -1043,7 +1128,7 @@ export class OccupiedPanel extends HTMLElement {
       ),
     );
   }
-  selectSource(source, config_file) {
+  selectSource(source: string, config_file?: string) {
     return this.run(async (epoch) => {
       const result = await this.ws("source", {
         source,
@@ -1101,14 +1186,14 @@ export class OccupiedPanel extends HTMLElement {
       if (result.valid) {
         this.yaml = result.yaml;
         if (this.tab === "configuration") {
-          this.shadowRoot.getElementById("view").replaceChildren();
+          required(this.shadowRoot.getElementById("view")).replaceChildren();
           this.renderConfiguration();
         }
       }
     });
   }
   renderDiagnostics() {
-    const root = this.shadowRoot.getElementById("view"),
+    const root = required(this.shadowRoot.getElementById("view")),
       t = this.t;
     root.replaceChildren();
     const box = section(
@@ -1155,7 +1240,7 @@ export class OccupiedPanel extends HTMLElement {
     for (const item of (this.status?.outcomes || []).slice(-50).reverse())
       outcomes.append(el("pre", JSON.stringify(item)));
   }
-  download(name, text, type = "application/json") {
+  download(name: string, text: string, type = "application/json") {
     const url = URL.createObjectURL(new Blob([text], { type })),
       a = el("a", null, { href: url, download: name });
     a.click();

@@ -22,7 +22,7 @@ def _asset_version(frontend_path: Path) -> str:
 
 async def async_register_panel(hass: HomeAssistant, entry_id: str) -> None:
     data = hass.data.setdefault(DOMAIN, {})
-    frontend_path = Path(__file__).parent / "frontend"
+    frontend_path = Path(__file__).parent / "frontend" / "dist"
     version = await hass.async_add_executor_job(_asset_version, frontend_path)
     asset_url = f"/occupied_static/{version}"
     registered_paths = data.setdefault("static_registered_paths", set())

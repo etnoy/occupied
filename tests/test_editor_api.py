@@ -286,3 +286,49 @@ async def test_all_editor_endpoints_require_admin(
     client = await hass_ws_client(hass, access_token=hass_read_only_access_token)
     result = await request(client, command, entry, **extra)
     assert not result["success"] and result["error"]["code"] == "unauthorized"
+
+
+async def test_catalog_discovers_time_entities_and_calendar_bounds(hass):
+    from custom_components.occupied.editor import async_catalog
+    from custom_components.occupied.time_sources import planning_context
+
+    hass.states.async_set(
+        "sensor.next_alarm",
+        "2026-10-06T06:00:00+00:00",
+        {"device_class": "timestamp", "friendly_name": "Phone alarm"},
+    )
+    hass.states.async_set("input_datetime.wake", "08:00:00", {"has_time": True, "has_date": False})
+    hass.states.async_set(
+        "input_datetime.dated",
+        "2026-10-06 08:00:00",
+        {"has_time": True, "has_date": True, "timestamp": 1791266400},
+    )
+    hass.states.async_set(
+        "calendar.work",
+        "off",
+        {"start_time": "2026-10-06 09:00:00", "end_time": "2026-10-06 10:00:00"},
+    )
+    hass.states.async_set("sensor.temperature", "20", {"device_class": "temperature"})
+    hass.states.async_set(
+        "input_datetime.date_only", "2026-10-06", {"has_time": False, "has_date": True}
+    )
+    catalog = await async_catalog(hass)
+    values = {option["value"] for option in catalog["time_sources"]}
+    assert {
+        "sun:dawn",
+        "sun:dusk",
+        "sun:noon",
+        "sun:midnight",
+        "entity:sensor.next_alarm",
+        "entity:input_datetime.wake",
+        "entity:calendar.work:start_time",
+        "entity:calendar.work:end_time",
+    } <= values
+    assert "entity:sensor.temperature" not in values
+    assert "entity:input_datetime.date_only" not in values
+    context = planning_context(hass)
+    assert context.time_sources["input_datetime.wake"]["kind"] == "time"
+    assert context.time_sources["input_datetime.dated"]["state"].endswith("+00:00")
+    assert context.time_sources["calendar.work"]["end_time"] == "2026-10-06 10:00:00"
+    hass.states.async_set("calendar.work", "unavailable", {"start_time": "2026-10-06 09:00:00"})
+    assert planning_context(hass).time_sources["calendar.work"]["start_time"] is None

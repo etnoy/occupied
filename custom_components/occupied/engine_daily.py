@@ -36,7 +36,8 @@ from .models import Activity, effective_handover, merge_defaults
 from .planner import DailyPlan, PlanEvent, ResolvedAction, preview_dates
 from .runtime_planning import MAX_EVENTS, MAX_INTERVALS, runtime_dates
 from .storage import DurableStore, instant, plan_from_data, program_store
-from .time_utils import PlanningContext, SimulationDay, simulation_date_at
+from .time_sources import planning_context, source_entities
+from .time_utils import SimulationDay, simulation_date_at
 from .validation import (
     ProgramError,
     RevisionConflict,
@@ -137,15 +138,10 @@ class DailyEngine:
         return max((instant(v["deadline"]) for v in self._handover.values()), default=None)
 
     def _context(self):
-        return PlanningContext(
-            self.hass.config.time_zone,
-            self.hass.config.latitude,
-            self.hass.config.longitude,
-            self.hass.config.elevation,
-        )
+        return planning_context(self.hass)
 
-    def _context_identity(self):
-        context = self._context()
+    def _context_identity(self, context=None):
+        context = context or self._context()
         location = self.program.location
         return [
             self.program.timezone
@@ -154,6 +150,10 @@ class DailyEngine:
             location.latitude if location else context.latitude,
             location.longitude if location else context.longitude,
             location.elevation if location else context.elevation,
+            {
+                entity: context.time_sources.get(entity)
+                for entity in sorted(source_entities(self.program))
+            },
         ]
 
     def _observe(self, entity):
@@ -247,7 +247,8 @@ class DailyEngine:
     def _listen_states(self):
         if self._state_unsub:
             self._state_unsub()
-        entities = set(self.gate.entities)
+        self._time_source_entities = source_entities(self.program)
+        entities = set(self.gate.entities) | self._time_source_entities
         self._ownership_observers.clear()
 
         def observe_conditions(conditions):
@@ -289,6 +290,31 @@ class DailyEngine:
             self._invalidate()
             self.hass.async_create_task(self._async_reconfigure())
 
+    async def _async_time_sources_changed(self):
+        async with self._lock:
+            if self.closed or self._saved_context == self._context_identity():
+                return
+            try:
+                await self._ensure_plans()
+            except (ProgramError, ValueError) as err:
+                self._invalidate()
+                await self._stop_owned()
+                self.status, self.reason = "inactive", f"Cannot compile daily plan: {err}"
+                self.last_error = str(err)
+                await self._persist()
+                self._notify()
+                return
+            if self.active:
+                retained = [
+                    event for event in self._queue if event.kind not in {"plan", "boundary"}
+                ]
+                self._queue_plans()
+                queued = {event.key for event in self._queue}
+                self._queue.extend(event for event in retained if event.key not in queued)
+                heapq.heapify(self._queue)
+                self._arm_timer()
+            self._notify()
+
     async def _async_reconfigure(self):
         async with self._lock:
             await self._cancel_native_fades()
@@ -316,6 +342,11 @@ class DailyEngine:
     @callback
     def _state_changed(self, event):
         entity = event.data["entity_id"]
+        if entity in self._time_source_entities:
+            if self._saved_context != self._context_identity():
+                self.hass.async_create_task(self._async_time_sources_changed())
+            if entity not in self.gate.entities:
+                return
         if entity in self.gate.entities:
             if not self._effective_gate()[0]:
                 self._invalidate()
@@ -516,14 +547,16 @@ class DailyEngine:
         self._notify()
 
     async def _ensure_plans(self, *, force=False):
-        today = simulation_date_at(self.program, dt_util.utcnow(), self._context())
+        context = self._context()
+        identity = self._context_identity(context)
+        today = simulation_date_at(self.program, dt_util.utcnow(), context)
         dates = runtime_dates(self.program, today)
-        if force or self._saved_context != self._context_identity():
+        if force or self._saved_context != identity:
             self._plans.clear()
         missing = [day for day in dates if day not in self._plans]
         if missing:
             plans = await self.hass.async_add_executor_job(
-                partial(preview_dates, self.program, missing, self._seed, context=self._context())
+                partial(preview_dates, self.program, missing, self._seed, context=context)
             )
             for plan in plans:
                 if (
@@ -538,7 +571,7 @@ class DailyEngine:
             for day, plan in self._plans.items()
             if day in dates or any(e.at >= dt_util.utcnow() for e in plan.events)
         }
-        self._saved_context = self._context_identity()
+        self._saved_context = identity
         cutoff = (today - timedelta(days=2)).isoformat()
         self._journal = {
             key: value

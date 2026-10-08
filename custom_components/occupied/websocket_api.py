@@ -102,7 +102,7 @@ async def websocket_preview(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ):
     from .preview import preview_draft
-    from .time_utils import PlanningContext
+    from .time_sources import planning_context
 
     def prepare(source):
         return preview_draft(
@@ -114,9 +114,7 @@ async def websocket_preview(
             datetime.fromisoformat(msg["at"]) if "at" in msg else None,
         )
 
-    context = PlanningContext(
-        hass.config.time_zone, hass.config.latitude, hass.config.longitude, hass.config.elevation
-    )
+    context = planning_context(hass)
     await _draft_operation(hass, connection, msg, prepare)
 
 

@@ -17,7 +17,7 @@ Occupied includes the complete editor and timeline, canonical daily programs, du
 4. Open **Occupied** under **Settings → Devices & services** and select **Configure**. Choose the editor, import an Occupied YAML snapshot, or select an authoritative managed file. Select **Create your first step**, choose entity actions or a Home Assistant scene, and a start time or interval, then **Save step**. Select a step and **Add related step** to schedule what happens before or after it. Saving validates automatically. Existing proof settings remain supported and open with an editable daily starter program.
 5. Use **Preview schedule** to review your steps. **Settings** contains activation conditions and dry-run mode; **Advanced settings** contains custom activities, import/export, and managed files. Turn on the simulation when ready; activation conditions still apply.
 
-There is one household entry. GUI/import mode stores snapshots. Managed-file mode detects changes and supports validated `occupied.reload`; invalid updates retain the running program, and invalid initial files remain inactive. Occupied never writes the managed file. No frontend build, AppDaemon, separate daemon, or open browser is required. The tested matrix is Home Assistant Core **2026.9.3 and 2026.9.4**, on Python **3.14.8** (HA requires Python >=3.14.2).
+There is one household entry. GUI/import mode stores snapshots. Managed-file mode detects changes and supports validated `occupied.reload`; invalid updates retain the running program, and invalid initial files remain inactive. Occupied never writes the managed file. No frontend build at installation, AppDaemon, separate daemon, or open browser is required. The tested matrix is Home Assistant Core **2026.9.3 and 2026.9.4**, on Python **3.14.8** (HA requires Python >=3.14.2).
 
 ## Canonical programs and offline previews
 
@@ -54,8 +54,11 @@ mise install
 mise exec -- python -m ensurepip --upgrade
 mise exec -- python -m pip install --upgrade pip
 mise exec -- python -m pip install -e . --group dev
+npm ci --ignore-scripts
 mise test
 mise dev
+mise lint
+mise format
 ```
 
 `mise dev` serves the local editor at
@@ -63,6 +66,10 @@ mise dev
 additional arguments, for example `mise test tests/test_planner.py`. The setup commands
 install the dependencies declared in `pyproject.toml`; pip does not reproduce the
 exact dependency versions in `uv.lock`.
+`mise lint` runs Ruff, ESLint on the shipped frontend JavaScript, and the TypeScript type
+check; `mise format` checks Ruff and Prettier formatting. Use `mise lint-fix` and
+`mise format-fix` to apply automatic fixes and rebuild generated frontend files. Install the
+Node development dependencies with `npm ci --ignore-scripts` before running these tasks.
 Home Assistant itself depends on the `uv` Python package, so pip installs it inside
 the virtual environment even though these development commands use mise and pip.
 
@@ -71,10 +78,18 @@ For the locked environment used by CI, install [uv](https://docs.astral.sh/uv/) 
 ```sh
 uv sync --python 3.14 --locked
 uv run pytest
-uv run ruff check custom_components tests
-uv run ruff format --check custom_components tests
-node --test tests/frontend/model.test.mjs
+uv run ruff check custom_components tests scripts
+uv run ruff format --check custom_components tests scripts
+npm ci --ignore-scripts
+npm run lint
+npm run typecheck
+npm run build
+npm run build:check
+npm run format:check
+npm test
 uv run python scripts/check_release.py
 ```
 
-`uv.lock` pins the complete test environment, including the HA frontend package. Python tests use virtual device handlers. Eighteen Node tests and twenty-two browser workflows cover the step builder, advanced compatibility, and desktop and 390-pixel layouts. CI checks the supported HA matrix, generated schema, examples, hassfest/HACS metadata and installable artifacts; it uses locked Python and development-only browser dependencies. See [release verification](docs/releasing.md) and [the editor guide](docs/editor.md). Tests use real HA config entries, entities, native conditions, storage, timers, HTTP, and WebSocket APIs, with virtual physical-device handlers. They cover restart/overdue cleanup, immutable ends after apply, manual control, late/staggered starts, cross-day leases, persistence failure, capability fallbacks, dry run, bounded retries, authenticated apply/diagnostics, and preview isolation. Pure tests cover canonical round trips, ID migration, sampled bounds, resource conflicts, midnight/DST, and handover projection. No existing HA installation or physical devices are modified. Physical-device timing and a hardware soak remain deployment acceptance work.
+Frontend sources and tests are TypeScript with `strict: true`; all strict checks are enabled. Run `npm run build` after editing `.ts` files, or `npm test` to build and run the Node tests. Only TypeScript sources are checked in. `npm run build` writes JavaScript to ignored `custom_components/occupied/frontend/dist/` and test output to ignored `tests/frontend/generated/`. Release ZIPs and wheels include the built frontend, so installations need no Node tooling. `npm run lint` checks the shipped JavaScript, `npm run build:check` verifies the local build matches the TypeScript sources, and CI runs both alongside `npm run typecheck` and `npm run format:check`. Run `npm ci --ignore-scripts` before `mise dev`. Browser acceptance tests use `npm run test:browser`.
+
+`uv.lock` pins the complete test environment, including the HA frontend package. Python tests use virtual device handlers. Node tests and browser workflows cover the step builder, advanced compatibility, and desktop and 390-pixel layouts. CI checks the supported HA matrix, generated schema, examples, hassfest/HACS metadata and installable artifacts; it uses locked Python and development-only browser dependencies. See [release verification](docs/releasing.md) and [the editor guide](docs/editor.md). Tests use real HA config entries, entities, native conditions, storage, timers, HTTP, and WebSocket APIs, with virtual physical-device handlers. They cover restart/overdue cleanup, immutable ends after apply, manual control, late/staggered starts, cross-day leases, persistence failure, capability fallbacks, dry run, bounded retries, authenticated apply/diagnostics, and preview isolation. Pure tests cover canonical round trips, ID migration, sampled bounds, resource conflicts, midnight/DST, and handover projection. No existing HA installation or physical devices are modified. Physical-device timing and a hardware soak remain deployment acceptance work.

@@ -1,10 +1,25 @@
+import type {
+  Program,
+  Targets,
+  When,
+  TimingForm,
+  StepEntry,
+  StepEditor,
+  StepForm,
+  FieldErrors,
+  TimeSource,
+  Catalog,
+  Routine,
+  Translate,
+} from "./types.js";
 // The builder edits canonical steps in place. Containers, defaults and opaque
 // configuration remain intact unless the user explicitly changes their behavior.
 import { copy, days, identifier, parentSteps, references } from "./model.js";
 
-const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-const sorted = (values) => [...new Set(values)].sort();
-export function targetEntities(program, targets = {}) {
+const same = (a: unknown, b: unknown) =>
+  JSON.stringify(a) === JSON.stringify(b);
+const sorted = (values: string[]) => [...new Set(values)].sort();
+export function targetEntities(program: Program, targets: Targets = {}) {
   return sorted([
     ...(targets.entities || []),
     ...(targets.groups || []).flatMap(
@@ -12,9 +27,9 @@ export function targetEntities(program, targets = {}) {
     ),
   ]);
 }
-export function stepEntries(program) {
+export function stepEntries(program: Program): StepEntry[] {
   return (program.routines || []).flatMap((routine, ri) =>
-    ["steps", "activities", "activity_windows"].flatMap((kind) =>
+    (["steps", "activities", "activity_windows"] as const).flatMap((kind) =>
       (routine[kind] || []).map((item, index) => ({
         ...item,
         kind,
@@ -35,7 +50,8 @@ export function stepEntries(program) {
     ),
   );
 }
-function minutes(value) {
+function minutes(value: string | number | undefined) {
+  if (value === "0") return 0;
   if (typeof value === "number") return value / 60;
   const text = String(value || "0s");
   if (
@@ -47,22 +63,49 @@ function minutes(value) {
     return NaN;
   const total = [...text.matchAll(/(\d+(?:\.\d+)?)([hms])/g)].reduce(
     (n, [, amount, unit]) =>
-      n + Number(amount) * { h: 60, m: 1, s: 1 / 60 }[unit],
+      n +
+      Number(amount) *
+        ({ h: 60, m: 1, s: 1 / 60 } as Record<string, number>)[unit],
     0,
   );
   return text.startsWith("-") ? -total : total;
 }
-function rangeCenter(range = {}) {
-  const low = minutes(range.fixed ?? range.min),
-    high = minutes(range.fixed ?? range.max);
-  return { center: (low + high) / 2, spread: (high - low) / 2 };
-}
-function clockMinutes(value) {
+function clockMinutes(value: string) {
   const [h, m, s = 0] = (value || "").split(":").map(Number);
   return h * 60 + m + s / 60;
 }
-export function timingForm(when = {}) {
-  const range = when.offset_range || when.sun_range?.offset_range;
+export const solarEvents = [
+  "sunrise",
+  "sunset",
+  "dawn",
+  "dusk",
+  "noon",
+  "midnight",
+];
+export function timeSourceChoices(
+  program: Program,
+  id?: string,
+  catalog: Partial<Catalog> = {},
+): TimeSource[] {
+  return [
+    ...parentSteps(program, id).map((step) => ({
+      value: `step:${step.id}`,
+      name: step.name,
+      group: "Steps",
+    })),
+    ...(catalog.time_sources ||
+      solarEvents.map((event) => ({
+        value: `sun:${event}`,
+        name: event,
+        group: "Solar events",
+      }))),
+  ];
+}
+export function timingForm(when: When = {}): TimingForm {
+  const range =
+    when.offset_range ||
+    when.sun_range?.offset_range ||
+    when.entity_range?.offset_range;
   const clock = when.clock_range;
   return {
     mode: clock || !range ? "absolute" : "relative",
@@ -72,14 +115,18 @@ export function timingForm(when = {}) {
       ? `step:${when.relative_to}`
       : when.sun_range
         ? `sun:${when.sun_range.sun}`
-        : "",
+        : when.entity_range
+          ? `entity:${when.entity_range.entity_id}${when.entity_range.attribute ? `:${when.entity_range.attribute}` : ""}`
+          : "",
     startOffset: range?.fixed ?? range?.min ?? "0s",
     endOffset:
-      range && range.fixed == null && range.min !== range.max ? range.max : "",
+      range && range.fixed == null && range.min !== range.max
+        ? (range.max ?? "")
+        : "",
     fallback: when.sun_range?.fallback || "",
   };
 }
-export function simpleStep(entry) {
+export function simpleStep(entry: StepEntry) {
   if (entry.kind !== "steps" || !entry.actions?.length) return false;
   const actions = entry.actions;
   if (actions.length === 1 && actions[0].action.includes(".")) {
@@ -129,9 +176,13 @@ export function simpleStep(entry) {
     return false;
   return !!entry.when;
 }
-export function stepEditor(program, entry, parent) {
+export function stepEditor(
+  program: Program,
+  entry?: StepEntry | null,
+  parent?: StepEntry,
+): StepEditor {
   const source = entry || parent;
-  const form = {
+  const form: StepForm = {
     name: entry?.name || "",
     kind:
       source?.actions?.[0]?.action === "scene.turn_on"
@@ -172,8 +223,11 @@ export function stepEditor(program, entry, parent) {
     errors: {},
   };
 }
-export function offsetErrors(time) {
-  const errors = {},
+export function offsetErrors(
+  time: Pick<TimingForm, "startOffset"> &
+    Partial<Pick<TimingForm, "endOffset">>,
+) {
+  const errors: FieldErrors = {},
     low = minutes(time.startOffset);
   const formatError = "Use h, m or s, for example 30m, 1h, 1h30m or -10m.";
   if (!time.startOffset || !Number.isFinite(low))
@@ -190,9 +244,9 @@ export function offsetErrors(time) {
   }
   return errors;
 }
-export function editorErrors(program, editor, stage = 2) {
+export function editorErrors(program: Program, editor: StepEditor, stage = 2) {
   const { form, id } = editor,
-    errors = {};
+    errors: FieldErrors = {};
   if (!form.entities.length)
     errors.entities =
       form.kind === "scene"
@@ -248,8 +302,13 @@ export function editorErrors(program, editor, stage = 2) {
           "Choose another step without creating a circular relationship.";
       else if (form.days.some((d) => !parent.days.includes(d)))
         errors.anchor = `This step runs on days when ${parent.name} does not. Adjust weekdays in Advanced settings.`;
-    } else if (!["sun:sunrise", "sun:sunset"].includes(time.anchor))
-      errors.anchor = "Choose a step, sunrise, or sunset.";
+    } else if (
+      !solarEvents.map((event) => `sun:${event}`).includes(time.anchor) &&
+      !/^entity:[a-z_][a-z0-9_]*\.[a-z0-9_]+(?::(?:start_time|end_time))?$/.test(
+        time.anchor,
+      )
+    )
+      errors.anchor = "Choose a step or Home Assistant time source.";
     if (
       time.anchor.startsWith("sun:") &&
       time.fallback &&
@@ -284,7 +343,7 @@ export function editorErrors(program, editor, stage = 2) {
   }
   return errors;
 }
-export function formWhen(time) {
+export function formWhen(time: TimingForm): When {
   if (time.mode === "absolute") {
     const end = time.end || time.start;
     return {
@@ -295,11 +354,23 @@ export function formWhen(time) {
       },
     };
   }
-  const range = time.endOffset
-    ? { min: time.startOffset, max: time.endOffset }
-    : { fixed: time.startOffset };
+  const startOffset = time.startOffset === "0" ? "0s" : time.startOffset;
+  const endOffset = time.endOffset === "0" ? "0s" : time.endOffset;
+  const range = endOffset
+    ? { min: startOffset, max: endOffset }
+    : { fixed: startOffset };
   if (time.anchor.startsWith("step:"))
     return { relative_to: time.anchor.slice(5), offset_range: range };
+  if (time.anchor.startsWith("entity:")) {
+    const [, entity_id, attribute] = time.anchor.split(":");
+    return {
+      entity_range: {
+        entity_id,
+        ...(attribute ? { attribute } : {}),
+        offset_range: range,
+      },
+    };
+  }
   return {
     sun_range: {
       sun: time.anchor.slice(4),
@@ -308,7 +379,7 @@ export function formWhen(time) {
     },
   };
 }
-export function buildStep(program, editor) {
+export function buildStep(program: Program, editor: StepEditor) {
   const errors = editorErrors(program, editor);
   if (Object.keys(errors).length) throw new Error(Object.values(errors)[0]);
   const next = copy(program),
@@ -319,7 +390,7 @@ export function buildStep(program, editor) {
       "This step changed elsewhere. Cancel and reopen it before saving.",
     );
   if (!entry) {
-    const container = {
+    const container: Routine = {
       id: identifier(next, `${editor.id}_schedule`),
       name: form.name.trim(),
       days: [...days],
@@ -337,7 +408,10 @@ export function buildStep(program, editor) {
     (next.routines ||= []).push(container);
     entry = stepEntries(next).find((e) => e.id === editor.id);
   }
-  const item = next.routines[entry.path[1]].steps[entry.path[3]];
+  if (!entry || !next.routines) throw new Error("Step could not be created");
+  const container = next.routines[entry.path[1]];
+  const item = container.steps![entry.path[3]];
+  item.actions ||= [];
   const isNew = !item.when;
   item.name = form.name.trim();
   if (isNew || !same(form.timing, original.timing))
@@ -353,7 +427,7 @@ export function buildStep(program, editor) {
       container.steps = [item];
       container.activities = [];
       container.activity_windows = [];
-      next.routines[entry.path[1]].steps.splice(entry.path[3], 1);
+      next.routines[entry.path[1]].steps!.splice(entry.path[3], 1);
       next.routines.push(container);
     }
   }
@@ -368,7 +442,7 @@ export function buildStep(program, editor) {
   const brightnessChanged = form.brightness !== original.brightness;
   if (form.kind !== "entities") {
     if (isNew || targetsChanged || kindChanged || serviceChanged) {
-      const action = copy(item.actions[0] || {});
+      const action = copy(item.actions[0] || { action: form.service });
       action.action = form.kind === "scene" ? "scene.turn_on" : form.service;
       if (isNew || targetsChanged || kindChanged)
         action.targets = { entities: [...form.entities] };
@@ -446,32 +520,112 @@ export function buildStep(program, editor) {
   }
   return next;
 }
-export function dependentNames(program, id) {
+export function dependentNames(program: Program, id: string) {
   const paths = references(program, id);
   return stepEntries(program)
     .filter((e) => paths.some((p) => e.path.every((k, i) => p[i] === k)))
     .map((e) => e.name);
 }
-export function timingSummary(entry, entries, t = (v) => v) {
+export function timingSummary(
+  entry: Pick<StepEntry, "when">,
+  entries: Pick<StepEntry, "id" | "name">[],
+  t: Translate = (v) => v,
+  sources: Pick<TimeSource, "value" | "name">[] = [],
+) {
   if (!entry.when) return t("Repeated activity window");
-  const when = entry.when;
-  if (when.clock_range) {
-    const { earliest, latest, cross_midnight } = when.clock_range;
-    return earliest === latest
-      ? `${t("At")} ${earliest}`
-      : `${earliest}–${latest}${cross_midnight ? ` · ${t("overnight")}` : ""}`;
+  return timingExplanation(timingForm(entry.when), entries, t, sources, {
+    includeHints: false,
+  });
+}
+
+export function timingExplanation(
+  input: Pick<TimingForm, "mode"> & Partial<Omit<TimingForm, "mode">>,
+  entries: Pick<StepEntry, "id" | "name">[] = [],
+  t: Translate = (value) => value,
+  sources: Pick<TimeSource, "value" | "name">[] = [],
+  { includeHints = true } = {},
+) {
+  const time: TimingForm = {
+    start: "",
+    end: "",
+    anchor: "",
+    startOffset: "0s",
+    endOffset: "",
+    fallback: "",
+    ...input,
+  };
+  if (time.mode === "absolute") {
+    const valid = (value: string) =>
+      /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value);
+    const display = (value: string) =>
+      value.replace(/:00$/, value.length === 8 ? "" : ":00");
+    const seconds = (value: string) =>
+      value
+        .split(":")
+        .reduce(
+          (sum, part, index) => sum + Number(part) * [3600, 60, 1][index],
+          0,
+        );
+    if (!valid(time.start) || (time.end && !valid(time.end)))
+      return t("Choose valid start and end times.");
+    if (!time.end)
+      return `${t("Runs at")} ${display(time.start)}.${includeHints ? ` ${t("Add an end of window to introduce randomness.")}` : ""}`;
+    if (seconds(time.end) === seconds(time.start))
+      return `${t("Runs at")} ${display(time.start)}.${includeHints ? ` ${t("Start and end are the same, so the time is fixed.")}` : ""}`;
+    const nextDay =
+      seconds(time.end) < seconds(time.start) ? ` ${t("the next day")}` : "";
+    return `${t("Runs at a random time between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}.`;
   }
-  const range = when.offset_range || when.sun_range?.offset_range;
-  const { center, spread } = rangeCenter(range);
-  const name = when.relative_to
-    ? entries.find((e) => e.id === when.relative_to)?.name || when.relative_to
-    : t(when.sun_range.sun === "sunset" ? "sunset" : "sunrise");
-  if (center === 0 && spread === 0) return name;
-  if (spread && Math.abs(center) >= spread) {
-    const low = Math.abs(center) - spread,
-      high = Math.abs(center) + spread;
-    return `${low}–${high} ${t("min")} ${t(center < 0 ? "before" : "after")} ${name}`;
-  }
-  if (center === 0) return `${t("Around")} ${name} ±${spread} ${t("min")}`;
-  return `${Math.abs(center)} ${t("min")} ${t(center < 0 ? "before" : "after")} ${name}${spread ? ` ±${spread} ${t("min")}` : ""}`;
+  if (Object.keys(offsetErrors(time)).length)
+    return t("Enter valid offsets to see when this step runs.");
+  if (!time.anchor) return t("Choose a step or event.");
+  const step = time.anchor.startsWith("step:");
+  const name = step
+    ? `${entries.find((entry) => entry.id === time.anchor.slice(5))?.name || time.anchor.slice(5)} ${t("step")}`
+    : time.anchor.startsWith("sun:")
+      ? t(time.anchor.slice(4))
+      : sources.find((source) => source.value === time.anchor)?.name ||
+        time.anchor
+          .slice(7)
+          .replace(
+            /:(start_time|end_time)$/,
+            (_, attribute) =>
+              ` · ${t(attribute === "start_time" ? "start" : "end")}`,
+          );
+  const low = minutes(time.startOffset),
+    high = time.endOffset ? minutes(time.endOffset) : low;
+  const duration = (offset: number) => {
+    let remaining = Math.round(Math.abs(offset) * 60 * 1e6) / 1e6;
+    const hours = Math.floor(remaining / 3600);
+    remaining -= hours * 3600;
+    const mins = Math.floor(remaining / 60);
+    const seconds = Math.round((remaining - mins * 60) * 1e6) / 1e6;
+    return (
+      [
+        [hours, "hour", "hours"],
+        [mins, "minute", "minutes"],
+        [seconds, "second", "seconds"],
+      ] as [number, string, string][]
+    )
+      .filter(([amount]) => amount)
+      .map(
+        ([amount, singular, plural]) =>
+          `${amount} ${t(amount === 1 ? singular : plural)}`,
+      )
+      .join(" ");
+  };
+  const offsetLabel = (offset: number) =>
+    `${duration(offset)} ${t(offset < 0 ? "before" : "after")}`;
+  if (low === high)
+    return low === 0
+      ? `${t("Runs at the same time as")} ${name}.`
+      : `${t("Runs")} ${offsetLabel(low)} ${name}.`;
+  const anchorStart = step ? `${t("the start of")} ${name}` : name;
+  if (low === 0)
+    return `${t("Runs at a random time between")} ${anchorStart} ${t("and")} ${offsetLabel(high)} ${name}.`;
+  if (high === 0)
+    return `${t("Runs at a random time between")} ${offsetLabel(low)} ${name} ${t("and")} ${anchorStart}.`;
+  const firstBound =
+    Math.sign(low) === Math.sign(high) ? duration(low) : offsetLabel(low);
+  return `${t("Runs at a random time between")} ${firstBound} ${t("and")} ${offsetLabel(high)} ${name}.`;
 }

@@ -513,7 +513,11 @@
             {
               "enum": [
                 "sunrise",
-                "sunset"
+                "sunset",
+                "dawn",
+                "dusk",
+                "noon",
+                "midnight"
               ],
               "type": "string"
             },
@@ -992,6 +996,40 @@
         }
       },
       "title": "DurationRange",
+      "type": "object"
+    },
+    "EntityRange": {
+      "additionalProperties": false,
+      "properties": {
+        "entity_id": {
+          "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "attribute": {
+          "anyOf": [
+            {
+              "enum": [
+                "start_time",
+                "end_time"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attribute"
+        },
+        "offset_range": {
+          "$ref": "#/$defs/DurationRange"
+        }
+      },
+      "required": [
+        "entity_id"
+      ],
+      "title": "EntityRange",
       "type": "object"
     },
     "Group": {
@@ -1623,7 +1661,11 @@
         "sun": {
           "enum": [
             "sunrise",
-            "sunset"
+            "sunset",
+            "dawn",
+            "dusk",
+            "noon",
+            "midnight"
           ],
           "title": "Sun",
           "type": "string"
@@ -1703,6 +1745,17 @@
           "anyOf": [
             {
               "$ref": "#/$defs/SunRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "entity_range": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntityRange"
             },
             {
               "type": "null"

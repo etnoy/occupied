@@ -24,7 +24,7 @@ namespaces = true
 
 [tool.setuptools.package-data]
 "custom_components.occupied" = [
-  "manifest.json", "services.yaml", "strings.json", "translations/*.json", "frontend/*.js", "brand/*.png",
+  "manifest.json", "services.yaml", "strings.json", "translations/*.json", "frontend/dist/*.js", "brand/*.png",
 ]
 
 [dependency-groups]

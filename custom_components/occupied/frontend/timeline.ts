@@ -1,7 +1,8 @@
+import type { TimelineDocument, Program, Translate } from "./types.js";
 import { button, el, section } from "./forms.js";
 import { resources } from "./model.js";
 
-export function stamp(value, zone) {
+export function stamp(value?: string | null, zone?: string) {
   if (!value) return "—";
   try {
     return new Date(value).toLocaleString(undefined, {
@@ -11,7 +12,12 @@ export function stamp(value, zone) {
     return value;
   }
 }
-export function timeline(parent, doc, program, t = (x) => x) {
+export function timeline(
+  parent: HTMLElement,
+  doc: TimelineDocument,
+  program: Program,
+  t: Translate = (x) => x,
+) {
   const plan = doc.plan;
   if (!plan) {
     parent.append(
@@ -41,7 +47,7 @@ export function timeline(parent, doc, program, t = (x) => x) {
   const start = Date.parse(plan.start),
     end = Date.parse(plan.end),
     width = end - start;
-  const position = (time) =>
+  const position = (time: string) =>
     Math.max(0, Math.min(100, ((Date.parse(time) - start) / width) * 100));
   const chart = el("div", null, {
     class: "timeline",
@@ -58,8 +64,8 @@ export function timeline(parent, doc, program, t = (x) => x) {
     ruler.append(label);
   }
   chart.append(ruler);
-  const laneMap = new Map();
-  const lane = (id) => {
+  const laneMap = new Map<string, HTMLElement>();
+  const lane = (id: string) => {
     if (!laneMap.has(id)) {
       const row = el("div", null, { class: "lane" }),
         label = el("span", labels.get(id) || id, { class: "lane-label" }),
@@ -68,7 +74,7 @@ export function timeline(parent, doc, program, t = (x) => x) {
       chart.append(row);
       laneMap.set(id, track);
     }
-    return laneMap.get(id);
+    return laneMap.get(id)!;
   };
   let drawn = 0;
   for (const interval of plan.intervals) {
@@ -101,7 +107,7 @@ export function timeline(parent, doc, program, t = (x) => x) {
     if (
       !activity.deadline ||
       Date.parse(activity.deadline) < start ||
-      Date.parse(actualStart) > end
+      Date.parse(actualStart!) > end
     )
       continue;
     const mark = el("span", null, {
@@ -109,8 +115,8 @@ export function timeline(parent, doc, program, t = (x) => x) {
       tabindex: "0",
       title: `${t("Runtime deadline")}: ${stamp(activity.deadline, plan.timezone)} · ${activity.phase}`,
     });
-    mark.style.left = `${position(actualStart)}%`;
-    mark.style.width = `${Math.max(0.25, position(activity.deadline) - position(actualStart))}%`;
+    mark.style.left = `${position(actualStart!)}%`;
+    mark.style.width = `${Math.max(0.25, position(activity.deadline) - position(actualStart!))}%`;
     lane(activity.source_id).append(mark);
   }
   for (const [entity, h] of Object.entries(doc.snapshot?.handover || {})) {

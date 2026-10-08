@@ -1,5 +1,5 @@
 // CI runner for the same production-module workflows used in the collaborative preview.
-import { chromium } from "playwright";
+import { chromium, type Browser } from "playwright";
 import { spawn } from "node:child_process";
 import { setTimeout } from "node:timers/promises";
 
@@ -8,7 +8,7 @@ const server = spawn(
   ["tests/frontend/serve.py"],
   { stdio: ["ignore", "pipe", "inherit"] },
 );
-let browser;
+let browser: Browser | undefined;
 try {
   let ready = false;
   for (let n = 0; n < 100; n++) {
@@ -29,7 +29,7 @@ try {
     { width: 390, height: 844 },
   ]) {
     const page = await browser.newPage({ viewport });
-    const errors = [];
+    const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto("http://127.0.0.1:8765/tests/frontend/harness.html");
     await page.waitForFunction(() => typeof window.runWorkflows === "function");

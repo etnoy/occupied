@@ -1,5 +1,28 @@
 // English is the complete fallback; HA's selected language supplies localized UI chrome.
-const sv = {
+const sv: Record<string, string> = {
+  "Steps and time sources": "Steg och tidskällor",
+  "matching sources": "matchande tidskällor",
+  "No matching steps or time sources.": "Inga matchande steg eller tidskällor.",
+  Steps: "Steg",
+  "Solar events": "Solhändelser",
+  "Home Assistant times": "Home Assistant-tider",
+  Calendars: "Kalendrar",
+  "Unavailable sources": "Otillgängliga tidskällor",
+  "Search steps or time sources": "Sök efter steg eller tidskällor",
+  "Time source": "Tidskälla",
+  "Calendar time": "Kalendertid",
+  start: "start",
+  end: "slut",
+  dawn: "gryning",
+  dusk: "skymning",
+  noon: "solmiddag",
+  midnight: "solmidnatt",
+  Dawn: "Gryning",
+  Dusk: "Skymning",
+  "Solar noon": "Solmiddag",
+  "Solar midnight": "Solmidnatt",
+  "Uses the time currently reported by Home Assistant. Time-only helpers repeat daily; dated sources run only on their reported date.":
+    "Använder tiden som Home Assistant rapporterar. Hjälpare med enbart tid upprepas dagligen; daterade tidskällor körs bara på det rapporterade datumet.",
   "Your steps": "Dina steg",
   "Step type": "Typ av steg",
   "Home Assistant scene": "Home Assistant-scen",
@@ -20,6 +43,8 @@ const sv = {
   "Save step": "Spara steg",
   "Save changes": "Spara ändringar",
   "Step name": "Stegets namn",
+  "Optional, leave blank for auto-generated":
+    "Valfritt, lämna tomt för automatisk generering",
   "Advanced settings": "Avancerade inställningar",
   "Preview schedule": "Förhandsvisa schema",
   "Back to steps": "Tillbaka till steg",
@@ -34,6 +59,27 @@ const sv = {
   Timing: "Tidpunkt",
   "Absolute time": "Absolut tid",
   "Relative to": "Relativt till",
+  "Start time window": "Tidsintervallets start",
+  "Runs at": "Körs kl.",
+  "Runs at a random time between": "Körs vid en slumpmässig tid mellan",
+  and: "och",
+  "the next day": "nästa dag",
+  Runs: "Körs",
+  step: "steg",
+  hour: "timme",
+  hours: "timmar",
+  minute: "minut",
+  minutes: "minuter",
+  second: "sekund",
+  seconds: "sekunder",
+  "Runs at the same time as": "Körs samtidigt som",
+  "the start of": "starten av",
+  "Add an end of window to introduce randomness.":
+    "Lägg till ett slut på tidsintervallet för att variera tiden.",
+  "Add an end offset to introduce randomness.":
+    "Lägg till en slutförskjutning för att variera tiden.",
+  "Start and end are the same, so the time is fixed.":
+    "Start och slut är samma, så tiden är fast.",
   "Start time": "Starttid",
   "Start of window": "Start på tidsintervall",
   "End of window (optional)": "Slut på tidsintervall (valfritt)",
@@ -79,7 +125,6 @@ const sv = {
   Overview: "Översikt",
   Household: "Hushåll",
   Groups: "Grupper",
-  Steps: "Steg",
   Routines: "Rutiner",
   Handover: "Övergång",
   Defaults: "Standardvärden",
@@ -113,6 +158,13 @@ const sv = {
   Add: "Lägg till",
   Remove: "Ta bort",
   Delete: "Radera",
+  "Delete step?": "Radera steg?",
+  "Delete step": "Radera steg",
+  "Used by": "Används av",
+  "Change those relationships before deleting.":
+    "Ändra dessa relationer innan du raderar steget.",
+  "This step will be removed when you save changes.":
+    "Steget tas bort när du sparar ändringarna.",
   Duplicate: "Duplicera",
   Inherit: "Ärv",
   Fixed: "Fast",
@@ -140,7 +192,6 @@ const sv = {
   Yes: "Ja",
   group: "grupp",
   routine: "rutin",
-  step: "steg",
   activity: "aktivitet",
   window: "fönster",
   mon: "mån",
@@ -151,6 +202,7 @@ const sv = {
   sat: "lör",
   sun: "sön",
 };
-export function translator(language) {
-  return (key) => (language?.startsWith("sv") ? sv[key] : undefined) || key;
+export function translator(language?: string) {
+  return (key: string) =>
+    (language?.startsWith("sv") ? sv[key] : undefined) || key;
 }

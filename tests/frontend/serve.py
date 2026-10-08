@@ -22,6 +22,7 @@ from custom_components.occupied.preview import (  # noqa: E402
     rename_draft,
     validate_draft,
 )
+from custom_components.occupied.time_sources import SOLAR_EVENTS  # noqa: E402
 from custom_components.occupied.time_utils import PlanningContext  # noqa: E402
 from custom_components.occupied.validation import (  # noqa: E402
     ProgramError,
@@ -29,7 +30,48 @@ from custom_components.occupied.validation import (  # noqa: E402
     program_revision,
 )
 
-CONTEXT = PlanningContext("Europe/Stockholm", 59.3293, 18.0686, 0)
+CONTEXT = PlanningContext(
+    "Europe/Stockholm",
+    59.3293,
+    18.0686,
+    0,
+    time_sources={
+        "input_datetime.wake_up": {"kind": "time", "state": "07:00:00"},
+        "sensor.phone_next_alarm": {"kind": "timestamp", "state": "2026-10-06T05:30:00+00:00"},
+        "calendar.work": {
+            "kind": "calendar",
+            "start_time": "2026-10-06 09:00:00",
+            "end_time": "2026-10-06 17:00:00",
+        },
+    },
+)
+TIME_SOURCES = [
+    *(
+        {"value": f"sun:{event}", "name": name, "group": "Solar events"}
+        for event, name in SOLAR_EVENTS.items()
+    ),
+    {
+        "value": "entity:input_datetime.wake_up",
+        "name": "Wake-up time",
+        "entity_id": "input_datetime.wake_up",
+        "group": "Home Assistant times",
+    },
+    {
+        "value": "entity:sensor.phone_next_alarm",
+        "name": "Phone next alarm",
+        "entity_id": "sensor.phone_next_alarm",
+        "group": "Home Assistant times",
+    },
+    *(
+        {
+            "value": f"entity:calendar.work:{attribute}",
+            "name": f"Work · {label}",
+            "entity_id": "calendar.work",
+            "group": "Calendars",
+        }
+        for attribute, label in (("start_time", "start"), ("end_time", "end"))
+    ),
+]
 DAY = datetime(2026, 10, 6, 18, tzinfo=UTC)
 
 
@@ -78,6 +120,7 @@ class Handler(SimpleHTTPRequestHandler):
                 result = self.status()
             elif kind == "catalog":
                 result = {
+                    "time_sources": TIME_SOURCES,
                     "entities": [
                         {
                             "entity_id": e,

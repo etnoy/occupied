@@ -172,15 +172,25 @@ class ClockRange(Model):
     mode: Clock | None = None
 
 
+SolarEvent = Literal["sunrise", "sunset", "dawn", "dusk", "noon", "midnight"]
+
+
 class SunRange(Model):
-    sun: Literal["sunrise", "sunset"]
+    sun: SolarEvent
     offset_range: DurationRange = Field(default_factory=lambda: DurationRange(fixed="0s"))
     fallback: Clock | None = None
+
+
+class EntityRange(Model):
+    entity_id: EntityId
+    attribute: Literal["start_time", "end_time"] | None = None
+    offset_range: DurationRange = Field(default_factory=lambda: DurationRange(fixed="0s"))
 
 
 class When(Model):
     clock_range: ClockRange | None = None
     sun_range: SunRange | None = None
+    entity_range: EntityRange | None = None
     relative_to: Identifier | None = None
     offset_range: DurationRange | None = None
     distribution: Distribution | None = None
@@ -188,10 +198,15 @@ class When(Model):
     @model_validator(mode="after")
     def one_anchor(self):
         if (
-            sum(value is not None for value in (self.clock_range, self.sun_range, self.relative_to))
+            sum(
+                value is not None
+                for value in (self.clock_range, self.sun_range, self.entity_range, self.relative_to)
+            )
             != 1
         ):
-            raise ValueError("Choose exactly one clock_range, sun_range, or relative_to")
+            raise ValueError(
+                "Choose exactly one clock_range, sun_range, entity_range, or relative_to"
+            )
         if (self.relative_to is None) != (self.offset_range is None):
             raise ValueError("relative_to and offset_range must be supplied together")
         return self
@@ -200,7 +215,7 @@ class When(Model):
 class Anchor(Model):
     step: Identifier | None = None
     clock: Clock | None = None
-    sun: Literal["sunrise", "sunset"] | None = None
+    sun: SolarEvent | None = None
     offset: SignedDuration = "0s"
     day_offset: Annotated[int, Field(ge=0, le=1, strict=True)] = 0
     fallback: Clock | None = None

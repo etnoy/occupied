@@ -4,9 +4,11 @@ Occupied runs inside Home Assistant. Its editor, translations and brand images a
 
 ## HACS custom repository
 
-In HACS, open the three-dot menu → **Custom repositories**, add `https://github.com/etnoy/occupied`, and select **Integration**. In the version picker, choose `main` to download the latest commit from the default branch, then restart HA. Choose a release tag to install a pinned release instead. Occupied uses GitHub source archives for HACS installs, so the latest commit does not need a GitHub release asset. Custom repository steps follow the [HACS instructions](https://www.hacs.dev/docs/faq/custom_repositories/).
+In HACS, open the three-dot menu → **Custom repositories**, add `https://github.com/etnoy/occupied`, and select **Integration**. Choose a published release and restart HA. HACS downloads the compiled `occupied.zip` release asset using its [ZIP release support](https://www.hacs.dev/docs/publish/start/). Custom repository steps follow the [HACS instructions](https://www.hacs.dev/docs/faq/custom_repositories/).
 
 Open **Settings → Devices & services → Add integration → Occupied**. Choose GUI storage, a YAML snapshot, or an authoritative managed file. A new entry starts with permission disabled. Open the Occupied integration and select **Configure** to edit and preview routines, then select dry run before enabling permission. Activation conditions continue to apply to both dry and live execution.
+
+HACS installs the compiled `occupied.zip` release asset. Development branch installs are disabled because the repository contains TypeScript sources; for development, run `npm ci` and `npm run build` before copying the integration.
 
 ## Manual installation
 
@@ -47,7 +49,7 @@ Schema version 1 remains the supported program format. Unknown versions are reje
 | Permission enabled, no activity | Inspect status reason, pause/dry mode, exact native activation states, unavailable resources, start/ownership predicates and the actual timeline. Past discrete starts are skipped. |
 | Device cleanup was skipped or failed | Inspect ownership/manual changes and recorded outcomes. Cleanup never guesses inverse actions; failed or uncertain physical dispatch remains visible. |
 | Runtime persistence failure | Resolve disk/storage permissions or capacity, then enable/resume to retry, or reload the entry. New dispatch stops while persistence is failing. |
-| Editor assets look stale | Reload the browser after an integration upgrade; verify that all seven bundled frontend modules were replaced. |
+| Editor assets look stale | Reload the browser after an integration upgrade; verify that all bundled frontend modules were replaced. |
 
 Default diagnostics expose status and counts, including source mode/status, without household names, entity IDs, file paths or raw error text. Detailed diagnostics require an explicit admin-sensitive export; known credential fields remain redacted. Source errors are visible to admins through Configuration and HA Repairs.
 

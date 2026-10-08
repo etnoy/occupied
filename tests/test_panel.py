@@ -56,7 +56,7 @@ async def test_unknown_entry_status_is_actionable(hass, entry, devices, hass_ws_
 
 
 @pytest.mark.parametrize(
-    "asset", [path.name for path in Path("custom_components/occupied/frontend").glob("*.js")]
+    "asset", [path.name for path in Path("custom_components/occupied/frontend/dist").glob("*.js")]
 )
 async def test_bundled_asset_is_served_without_household_data(
     hass, entry, devices, hass_client, asset

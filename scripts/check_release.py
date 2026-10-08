@@ -29,7 +29,7 @@ assert schema == Program.model_json_schema(), "Regenerate schema/occupied.schema
 for name in ("house.yaml", "gui-house.yaml", "steps.yaml"):
     program = read_program(ROOT / "examples" / name)
     assert behavior_hash(load_yaml(export_yaml(program))) == behavior_hash(program)
-assert {path.name for path in (integration / "frontend").glob("*.js")} == {
+assert {path.name for path in (integration / "frontend" / "dist").glob("*.js")} == {
     "occupied-panel.js",
     "forms.js",
     "model.js",
@@ -39,12 +39,16 @@ assert {path.name for path in (integration / "frontend").glob("*.js")} == {
     "timeline.js",
     "translations.js",
     "views.js",
+    "source-picker.js",
+    "types.js",
 }, "Missing or unexpected frontend assets"
 for name in ("icon.png", "icon@2x.png"):
     assert (integration / "brand" / name).read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
 for path in integration.rglob("*.json"):
     json.loads(path.read_text())
 hacs = json.loads((ROOT / "hacs.json").read_text())
-assert hacs["name"] == "Occupied" and not hacs.get("hide_default_branch", False)
-assert not hacs.get("zip_release")
+assert hacs["name"] == "Occupied"
+assert hacs.get("zip_release") is True
+assert hacs.get("filename") == "occupied.zip"
+assert hacs.get("hide_default_branch") is True
 print(f"Release {manifest['version']}: metadata, schema, equivalent examples and assets verified")

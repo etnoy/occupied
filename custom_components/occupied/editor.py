@@ -12,7 +12,8 @@ from homeassistant.util import dt as dt_util
 from .actions import light_capabilities, service_payload
 from .models import merge_defaults
 from .planner import ResolvedAction
-from .time_utils import PlanningContext, simulation_date_at
+from .time_sources import planning_context, time_source_options
+from .time_utils import simulation_date_at
 from .validation import (
     Issue,
     behavior_hash,
@@ -108,12 +109,7 @@ def current_revision(engine):
 
 def program_document(engine):
     program = engine.program if hasattr(engine, "program") else starter_program(engine.config)
-    context = PlanningContext(
-        engine.hass.config.time_zone,
-        engine.hass.config.latitude,
-        engine.hass.config.longitude,
-        engine.hass.config.elevation,
-    )
+    context = planning_context(engine.hass)
     return {
         "program": program_data(program),
         "revision": current_revision(engine),
@@ -153,7 +149,11 @@ async def async_catalog(hass):
                 "activities": list(state.attributes.get("activity_list", [])),
             }
         )
-    return {"entities": result, "services": await async_get_all_descriptions(hass)}
+    return {
+        "entities": result,
+        "services": await async_get_all_descriptions(hass),
+        "time_sources": time_source_options(hass),
+    }
 
 
 def installed_issues(hass, program):

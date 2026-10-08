@@ -1,50 +1,67 @@
+import { required } from "@occupied/types.js";
+import type { OccupiedPanel } from "@occupied/occupied-panel.js";
+import type { Path, HomeAssistant } from "@occupied/types.js";
+import { errorMessage } from "@occupied/types.js";
+import {
+  assert,
+  type TestSelector,
+  type WorkflowResult,
+  type Check,
+} from "./types.js";
 // Browser acceptance against production modules + canonical Python API fixture.
 import { runRoutineWorkflows } from "./routine-workflows.js";
-const assert = (value, message) => {
-  if (!value) throw new Error(message);
-};
-const wait = async (predicate) => {
+const wait = async (predicate: () => unknown) => {
   for (let n = 0; n < 100; n++) {
     if (predicate()) return;
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise<void>((r) => setTimeout(r, 20));
   }
   throw new Error("Timed out waiting for editor state");
 };
 export async function runWorkflows() {
-  const results = [],
+  const results: WorkflowResult[] = [],
     output = document.getElementById("results");
-  const check = async (name, work) => {
+  const check: Check = async (name, work) => {
     try {
       await work();
       results.push({ name, passed: true });
     } catch (error) {
-      results.push({ name, passed: false, error: error.stack });
+      results.push({
+        name,
+        passed: false,
+        error: error instanceof Error ? error.stack : errorMessage(error),
+      });
     }
-    output.textContent = JSON.stringify(results, null, 2);
+    required(output).textContent = JSON.stringify(results, null, 2);
   };
   await fixtureWS({ type: "test/reset" });
-  let panel = document.querySelector("occupied-panel");
+  let panel = required(document.querySelector<OccupiedPanel>("occupied-panel"));
   panel.remove();
   panel = document.createElement("occupied-panel");
   document.body.prepend(panel);
   mount();
   await wait(() => panel.draft && !panel._loading);
-  const view = (tab) => {
+  const view = (tab: string) => {
     panel.tab = tab === "routines" ? "advanced_routines" : tab;
     panel.renderView();
   };
-  const click = (text) => {
-    const node = [...panel.shadowRoot.querySelectorAll("button")].find(
-      (x) => x.textContent === text,
-    );
+  const click = (text: string) => {
+    const node = [
+      ...required(panel.shadowRoot).querySelectorAll<HTMLButtonElement>(
+        "button",
+      ),
+    ].find((x) => x.textContent === text);
     assert(node, `Missing button: ${text}`);
     node.click();
     return node;
   };
-  const input = (path, value) => {
-    const node = [...panel.shadowRoot.querySelectorAll("[data-path]")]
+  const input = (path: Path, value: string) => {
+    const node = [
+      ...required(panel.shadowRoot).querySelectorAll<HTMLElement>(
+        "[data-path]",
+      ),
+    ]
       .find((x) => x.dataset.path === JSON.stringify(path))
-      ?.querySelector("input,textarea,select,ha-selector");
+      ?.querySelector<TestSelector>("input,textarea,select,ha-selector");
     assert(node, `Missing field ${JSON.stringify(path)}`);
     node.focus();
     node.value =
@@ -83,12 +100,14 @@ export async function runWorkflows() {
       ]) {
         view(tab);
         assert(
-          panel.shadowRoot.getElementById("view").textContent.trim(),
+          required(
+            required(panel.shadowRoot).getElementById("view"),
+          ).textContent.trim(),
           `${tab} is blank`,
         );
       }
       view("groups");
-      const search = panel.shadowRoot.querySelector(
+      const search = required(panel.shadowRoot).querySelector<HTMLInputElement>(
         'input[aria-label="Find entity · Entities"]',
       );
       if (search) {
@@ -96,15 +115,17 @@ export async function runWorkflows() {
         search.dispatchEvent(new Event("input"));
         click("Add entity");
         assert(
-          panel.draft.groups[0].entities.includes("light.kitchen"),
+          required(panel.draft.groups)[0].entities.includes("light.kitchen"),
           "Fallback picker did not select by friendly name/area",
         );
-        const selected = [...panel.shadowRoot.querySelectorAll("li")].find(
-          (x) => x.textContent.startsWith("kitchen ·"),
-        );
-        selected.querySelector("button").click();
+        const selected = [
+          ...required(panel.shadowRoot).querySelectorAll<HTMLElement>("li"),
+        ].find((x) => x.textContent.startsWith("kitchen ·"));
+        required(
+          required(selected).querySelector<HTMLButtonElement>("button"),
+        ).click();
         assert(
-          !panel.draft.groups[0].entities.includes("light.kitchen"),
+          !required(panel.draft.groups)[0].entities.includes("light.kitchen"),
           "Fallback picker did not remove selected entity",
         );
       }
@@ -115,11 +136,17 @@ export async function runWorkflows() {
       const node = field;
       emit({ ...panel.status, status: "active" });
       assert(
-        panel.shadowRoot.activeElement === node,
+        required(panel.shadowRoot).activeElement === node,
         "Runtime update replaced focused field",
       );
-      assert(panel.draft.groups[0].name.includes("<script>"), "Draft lost");
-      assert(!panel.shadowRoot.querySelector("script"), "Unsafe HTML rendered");
+      assert(
+        required(panel.draft.groups)[0].name.includes("<script>"),
+        "Draft lost",
+      );
+      assert(
+        !required(panel.shadowRoot).querySelector<HTMLElement>("script"),
+        "Unsafe HTML rendered",
+      );
     },
   );
   await check(
@@ -131,7 +158,8 @@ export async function runWorkflows() {
         "armed\narmed away\narmed_away",
       );
       assert(
-        panel.draft.activation.conditions[0].state[1] === "armed away",
+        required(required(panel.draft.activation).conditions[0].state)[1] ===
+          "armed away",
         "State split at whitespace",
       );
       const original = structuredClone(panel.draft);
@@ -167,25 +195,36 @@ export async function runWorkflows() {
   await check(
     "identifier migration rewrites references and keeps opaque service data",
     async () => {
-      const ri = panel.draft.routines.findIndex(
+      const ri = required(panel.draft.routines).findIndex(
           (r) => r.id === "weekday_mornings",
         ),
-        tv = panel.draft.routines.findIndex((r) => r.id === "evenings");
-      panel.draft.routines[tv].activities[0].on_start[0].data.reference_label =
-        "wake";
+        tv = required(panel.draft.routines).findIndex(
+          (r) => r.id === "evenings",
+        );
+      required(
+        required(
+          required(required(panel.draft.routines)[tv].activities)[0].on_start,
+        )[0].data,
+      ).reference_label = "wake";
       await panel.migrate("step", "wake", "wake_up");
-      const routine = panel.draft.routines[ri];
+      const routine = required(panel.draft.routines)[ri];
       assert(
-        routine.steps[1].when.relative_to === "wake_up",
+        required(required(routine.steps)[1].when).relative_to === "wake_up",
         "Typed dependency did not migrate",
       );
       assert(
-        panel.draft.routines[tv].activities[0].on_start[0].data
-          .reference_label === "wake",
+        required(
+          required(
+            required(required(panel.draft.routines)[tv].activities)[0].on_start,
+          )[0].data,
+        ).reference_label === "wake",
         "Opaque data rewritten",
       );
-      delete panel.draft.routines[tv].activities[0].on_start[0].data
-        .reference_label;
+      delete required(
+        required(
+          required(required(panel.draft.routines)[tv].activities)[0].on_start,
+        )[0].data,
+      ).reference_label;
       panel.edited();
     },
   );
@@ -193,29 +232,34 @@ export async function runWorkflows() {
     "Harmony preset uses 20:00±15 minutes, 45 minutes, explicit cleanup and ownership",
     async () => {
       view("routines");
-      const ri = panel.draft.routines.findIndex((r) => r.id === "evenings");
+      const ri = required(panel.draft.routines).findIndex(
+        (r) => r.id === "evenings",
+      );
       panel.selection.set('["routines"]', ri);
       panel.renderView();
-      const remote = panel.shadowRoot.querySelector(
-        'select[aria-label="Remote"]',
-      );
+      const remote = required(
+        panel.shadowRoot,
+      ).querySelector<HTMLSelectElement>('select[aria-label="Remote"]');
       assert(remote, "TV preset missing");
       remote.value = "remote.living_room_harmony";
       click("Use TV preset");
-      const activity = panel.draft.routines[ri].activities[0];
+      const activity = required(
+        required(panel.draft.routines)[ri].activities,
+      )[0];
       assert(
-        activity.when.clock_range.earliest === "19:45" &&
-          activity.when.clock_range.latest === "20:15",
+        required(required(activity.when).clock_range).earliest === "19:45" &&
+          required(required(activity.when).clock_range).latest === "20:15",
         "Approximate start mismatch",
       );
       assert(
-        activity.duration.fixed === "45m" &&
-          activity.on_end[0].action === "remote.turn_off",
+        required(activity.duration).fixed === "45m" &&
+          required(activity.on_end)[0].action === "remote.turn_off",
         "Missing duration/end action",
       );
       assert(
-        activity.ownership_conditions[0].attribute === "current_activity" &&
-          activity.start_conditions[0].state === "off",
+        required(activity.ownership_conditions)[0].attribute ===
+          "current_activity" &&
+          required(activity.start_conditions)[0].state === "off",
         "Missing native ownership/start condition",
       );
     },
@@ -228,16 +272,18 @@ export async function runWorkflows() {
       panel.previewSettings.seed = "browser-acceptance";
       await panel.runPreview();
       assert(
-        panel.preview.plans.length === 7 && panel.preview.valid,
+        required(panel.preview).plans.length === 7 &&
+          required(panel.preview).valid,
         "Weekly preview infeasible",
       );
       assert(
         !panel.error &&
-          panel.shadowRoot.querySelectorAll(".timeline").length === 7,
+          required(panel.shadowRoot).querySelectorAll<HTMLElement>(".timeline")
+            .length === 7,
         "Preview diagrams failed to render",
       );
       assert(
-        panel.shadowRoot.querySelector(".marker"),
+        required(panel.shadowRoot).querySelector<HTMLElement>(".marker"),
         "Step times missing from preview diagram",
       );
       panel.previewSettings.seed = "reroll-only";
@@ -251,13 +297,14 @@ export async function runWorkflows() {
       view("timeline");
       await panel.loadTimeline();
       assert(
-        !panel.error && panel.shadowRoot.querySelector(".timeline"),
+        !panel.error &&
+          required(panel.shadowRoot).querySelector<HTMLElement>(".timeline"),
         "Saved timeline failed to render",
       );
       assert(
-        panel.shadowRoot
-          .querySelector("tbody")
-          .textContent.includes("historical_skipped"),
+        required(
+          required(panel.shadowRoot).querySelector<HTMLElement>("tbody"),
+        ).textContent.includes("historical_skipped"),
         "Saved dispatch outcomes missing",
       );
     },
@@ -297,7 +344,7 @@ export async function runWorkflows() {
       );
       await panel.reloadSaved(true);
       assert(
-        panel.draft.name === "Concurrent editor" && !panel.stale,
+        String(panel.draft.name) === "Concurrent editor" && !panel.stale,
         "Explicit reload failed",
       );
     },
@@ -311,9 +358,11 @@ export async function runWorkflows() {
       view("groups");
       view("household");
       const raw = [
-        ...panel.shadowRoot.querySelectorAll("textarea[data-json-path]"),
+        ...required(panel.shadowRoot).querySelectorAll<HTMLTextAreaElement>(
+          "textarea[data-json-path]",
+        ),
       ].find((x) => x.dataset.jsonPath === "[]");
-      assert(raw.value === '{"schema_version":', "Invalid text lost");
+      assert(required(raw).value === '{"schema_version":', "Invalid text lost");
       await panel.validate();
       assert(
         panel.error.includes("JSON"),
@@ -329,10 +378,11 @@ export async function runWorkflows() {
       view("household");
       input(["name"], "First submitted label");
       const originalWS = panel._hass.callWS;
-      let release;
+      let release: (() => void) | undefined;
+      const releaseGate = () => required(release)();
       panel._hass.callWS = async (msg) => {
         if (msg.type === "occupied/editor_validate")
-          await new Promise((resolve) => {
+          await new Promise<void>((resolve) => {
             release = resolve;
           });
         return originalWS(msg);
@@ -340,7 +390,7 @@ export async function runWorkflows() {
       const validation = panel.validate();
       await wait(() => release);
       input(["name"], "Edited during validation");
-      release();
+      releaseGate();
       await validation;
       assert(
         panel.validatedVersion !== panel.version,
@@ -351,7 +401,7 @@ export async function runWorkflows() {
       release = undefined;
       panel._hass.callWS = async (msg) => {
         if (msg.type === "occupied/save")
-          await new Promise((resolve) => {
+          await new Promise<void>((resolve) => {
             release = resolve;
           });
         return originalWS(msg);
@@ -359,7 +409,7 @@ export async function runWorkflows() {
       const save = panel.save();
       await wait(() => release);
       input(["name"], "Edited during save");
-      release();
+      releaseGate();
       await save;
       panel._hass.callWS = originalWS;
       assert(
@@ -389,23 +439,25 @@ export async function runWorkflows() {
         calls.filter((x) => x.type === "occupied/save").length === saves,
         "File draft was applied",
       );
-      const save = [...panel.shadowRoot.querySelectorAll("button")].find(
-        (x) => x.textContent === "Save changes",
-      );
-      assert(save.disabled, "File save button is enabled");
+      const save = [
+        ...required(panel.shadowRoot).querySelectorAll<HTMLButtonElement>(
+          "button",
+        ),
+      ].find((x) => x.textContent === "Save changes");
+      assert(required(save).disabled, "File save button is enabled");
       const status = await fixtureWS({ type: "test/file-error" });
       emit(status);
       assert(
-        panel.shadowRoot
-          .getElementById("notice")
-          .textContent.includes("File error"),
+        required(
+          required(panel.shadowRoot).getElementById("notice"),
+        ).textContent.includes("File error"),
         "Source error was not visible",
       );
       view("configuration");
       assert(
-        panel.shadowRoot
-          .getElementById("view")
-          .textContent.includes("Invalid virtual file"),
+        required(
+          required(panel.shadowRoot).getElementById("view"),
+        ).textContent.includes("Invalid virtual file"),
         "File issue was not displayed",
       );
       await panel.reloadManaged();
@@ -420,7 +472,7 @@ export async function runWorkflows() {
       );
       await panel.selectSource("gui");
       assert(
-        panel.document.source === "gui" &&
+        String(panel.document.source) === "gui" &&
           panel.draft.name === "Temporary file draft",
         "GUI copy applied or lost draft edits",
       );
@@ -443,15 +495,17 @@ export async function runWorkflows() {
       });
       await panel.reloadSaved(true);
       view("household");
-      const lights = panel.shadowRoot.querySelector(
+      const lights = required(
+        panel.shadowRoot,
+      ).querySelector<HTMLTextAreaElement>(
         'textarea[aria-label="Quick start light entities"]',
       );
-      lights.value = "light.living_room\nlight.hall";
+      required(lights).value = "light.living_room\nlight.hall";
       click("Add evening template");
       assert(
-        panel.draft.groups.length === 1 &&
-          panel.draft.routines[0].steps.length === 2 &&
-          panel.draft.lighting.baseline[0].state === "off",
+        required(panel.draft.groups).length === 1 &&
+          required(required(panel.draft.routines)[0].steps).length === 2 &&
+          required(required(panel.draft.lighting).baseline)[0].state === "off",
         "Template did not create managed baseline and steps",
       );
       await panel.validate();
@@ -459,9 +513,9 @@ export async function runWorkflows() {
       view("preview");
       await panel.runPreview();
       assert(
-        panel.preview.valid &&
+        required(panel.preview).valid &&
           !panel.error &&
-          panel.shadowRoot.querySelector(".marker"),
+          required(panel.shadowRoot).querySelector<HTMLElement>(".marker"),
         "New template preview failed",
       );
       if (innerWidth <= 600) {
@@ -490,14 +544,24 @@ export async function runWorkflows() {
       if (!customElements.get("ha-selector"))
         customElements.define(
           "ha-selector",
-          class extends HTMLElement {
+          class extends HTMLElement implements TestSelector {
+            declare shadowRoot: ShadowRoot;
+            picker: HTMLElement & { value: unknown };
+            _hass?: HomeAssistant;
+            value: unknown;
+            selector = {};
+            label = "";
+            required = false;
+            narrow = false;
             constructor() {
               super();
               this.attachShadow({ mode: "open" });
-              this.picker = document.createElement("div");
-              this.shadowRoot.append(this.picker);
+              this.picker = Object.assign(document.createElement("div"), {
+                value: undefined as unknown,
+              });
+              required(this.shadowRoot).append(this.picker);
             }
-            set hass(value) {
+            set hass(value: HomeAssistant | undefined) {
               this._hass = value;
               // HA forwards the outer selector's value to its inner picker
               // whenever a state update causes the selector to render.
@@ -508,7 +572,7 @@ export async function runWorkflows() {
             get hass() {
               return this._hass;
             }
-            select(value) {
+            select(value: unknown) {
               // Native pickers update themselves and emit a composed event;
               // their parent ha-selector does not update its own value.
               this.picker.value = value;
@@ -523,18 +587,21 @@ export async function runWorkflows() {
           },
         );
       view("groups");
-      const picker = panel.shadowRoot.querySelector("ha-selector");
+      const picker = required(panel.shadowRoot).querySelector<TestSelector>(
+        "ha-selector",
+      );
       assert(
         picker &&
           picker.hass === panel._hass &&
-          picker.selector.entity.multiple &&
+          required(picker.selector.entity).multiple &&
           picker.label === "Entities" &&
           picker.getAttribute("aria-label"),
         "HA selector compatibility contract missing",
       );
       picker.select(["light.living_room"]);
       assert(
-        panel.draft.groups[0].entities.join(",") === "light.living_room",
+        required(panel.draft.groups)[0].entities.join(",") ===
+          "light.living_room",
         "Selector did not update draft",
       );
       await panel.validate();
@@ -545,7 +612,7 @@ export async function runWorkflows() {
       panel.hass = { ...panel._hass };
       await Promise.resolve();
       assert(
-        picker.picker.value.join(",") === "light.living_room",
+        (picker.picker.value as string[]).join(",") === "light.living_room",
         "HA state update cleared the selected group entity",
       );
     },
@@ -558,7 +625,7 @@ export async function runWorkflows() {
       panel.status = await panel.ws("status");
       view("routines");
       click("Add routine");
-      const routineIndex = panel.draft.routines.length - 1;
+      const routineIndex = required(panel.draft.routines).length - 1;
       click("Add window");
       const path = [
         "routines",
@@ -568,9 +635,13 @@ export async function runWorkflows() {
         "targets",
         "entities",
       ];
-      const picker = [...panel.shadowRoot.querySelectorAll("[data-path]")]
-        .find((x) => x.dataset.path === JSON.stringify(path))
-        .querySelector("ha-selector");
+      const picker = required(
+        [
+          ...required(panel.shadowRoot).querySelectorAll<HTMLElement>(
+            "[data-path]",
+          ),
+        ].find((x) => x.dataset.path === JSON.stringify(path)),
+      ).querySelector<TestSelector>("ha-selector");
       for (const ids of [
         ["light.kitchen"],
         ["light.kitchen", "light.hall"],
@@ -578,48 +649,63 @@ export async function runWorkflows() {
         [],
         ["light.kitchen"],
       ]) {
-        picker.select(ids);
+        required(picker).select(ids);
         panel.hass = { ...panel._hass };
         emit({ ...panel.status });
         await Promise.resolve();
         assert(
-          JSON.stringify(picker.picker.value) === JSON.stringify(ids) &&
+          JSON.stringify(required(picker).picker.value) ===
+            JSON.stringify(ids) &&
             JSON.stringify(
-              panel.draft.routines[routineIndex].activity_windows[0].targets
-                .entities,
+              required(
+                required(
+                  required(panel.draft.routines)[routineIndex].activity_windows,
+                )[0].targets,
+              ).entities,
             ) === JSON.stringify(ids),
           "Window selection was lost after a HA update",
         );
-        assert(picker.isConnected, "HA update replaced the open picker");
+        assert(
+          required(picker).isConnected,
+          "HA update replaced the open picker",
+        );
       }
       view("household");
       click("Add Activation conditions");
       const conditionPath = [
         "activation",
         "conditions",
-        panel.draft.activation.conditions.length - 1,
+        required(panel.draft.activation).conditions.length - 1,
         "entity_id",
       ];
-      const condition = [...panel.shadowRoot.querySelectorAll("[data-path]")]
-        .find((x) => x.dataset.path === JSON.stringify(conditionPath))
-        .querySelector("ha-selector");
+      const condition = required(
+        [
+          ...required(panel.shadowRoot).querySelectorAll<HTMLElement>(
+            "[data-path]",
+          ),
+        ].find((x) => x.dataset.path === JSON.stringify(conditionPath)),
+      ).querySelector<TestSelector>("ha-selector");
       assert(
-        !condition.selector.entity.multiple,
+        !required(required(condition).selector.entity).multiple,
         "Expected single entity condition",
       );
-      condition.select("sensor.alarm");
+      required(condition).select("sensor.alarm");
       panel.hass = { ...panel._hass };
       await Promise.resolve();
       assert(
-        condition.picker.value === "sensor.alarm",
+        required(condition).picker.value === "sensor.alarm",
         "Single entity selection was reset",
       );
       view("routines");
-      const restored = [...panel.shadowRoot.querySelectorAll("[data-path]")]
-        .find((x) => x.dataset.path === JSON.stringify(path))
-        .querySelector("ha-selector");
+      const restored = required(
+        [
+          ...required(panel.shadowRoot).querySelectorAll<HTMLElement>(
+            "[data-path]",
+          ),
+        ].find((x) => x.dataset.path === JSON.stringify(path)),
+      ).querySelector<TestSelector>("ha-selector");
       assert(
-        restored.value.join(",") === "light.kitchen",
+        (required(restored).value as string[]).join(",") === "light.kitchen",
         "Tab change lost the window selection",
       );
       await panel.validate();
@@ -629,9 +715,13 @@ export async function runWorkflows() {
       );
       await panel.save();
       assert(
-        panel.saved.routines[
-          routineIndex
-        ].activity_windows[0].targets.entities.join(",") === "light.kitchen",
+        required(
+          required(
+            required(
+              required(panel.saved.routines)[routineIndex].activity_windows,
+            )[0].targets,
+          ).entities,
+        ).join(",") === "light.kitchen",
         "Saved window lost the selection",
       );
     },

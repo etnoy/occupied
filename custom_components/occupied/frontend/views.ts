@@ -1,20 +1,37 @@
+import type { OccupiedPanel } from "./occupied-panel.js";
+import type {
+  Path,
+  ResourceKind,
+  When,
+  Item,
+  Anchor,
+  Action,
+  Condition,
+  ScheduledItem,
+  Routine,
+  ResourceFor,
+  Group,
+} from "./types.js";
+import { solarEvents } from "./step-model.js";
 import { button, el, section, details, Forms } from "./forms.js";
 import {
-  copy,
   get,
   newItem,
-  resources,
   parentSteps,
   around,
   removeResource,
   duplicate,
 } from "./model.js";
 
-export function editView(panel, root) {
+export function editView(panel: OccupiedPanel, root: HTMLElement) {
   const f = new Forms(panel),
     p = panel.draft,
-    t = (x) => panel.t(x);
-  const advanced = (parent, path, title = "Advanced configuration") => {
+    t = (x: string) => panel.t(x);
+  const advanced = (
+    parent: HTMLElement,
+    path: Path,
+    title = "Advanced configuration",
+  ) => {
     const node = details(parent, t(title));
     node.append(
       el(
@@ -28,10 +45,10 @@ export function editView(panel, root) {
     f.json(node, path, title);
     node.append(button(t("Refresh forms"), () => panel.renderView()));
   };
-  const identity = (parent, path, kind) => {
+  const identity = (parent: HTMLElement, path: Path, kind: ResourceKind) => {
     f.text(parent, [...path, "name"], "Name");
     f.text(parent, [...path, "description"], "Description", { optional: true });
-    const item = get(p, path),
+    const item = get<Item>(p, path),
       row = el("div", null, { class: "row" });
     row.append(el("code", item.id));
     const input = el("input", null, {
@@ -55,7 +72,7 @@ export function editView(panel, root) {
       ),
     );
   };
-  const itemMeta = (parent, path) => {
+  const itemMeta = (parent: HTMLElement, path: Path) => {
     f.weekdays(parent, [...path, "days"], true);
     const box = details(parent, t("Probability and boundary policies"));
     f.number(box, [...path, "probability"], "Probability", {
@@ -81,28 +98,36 @@ export function editView(panel, root) {
       { type: "checkbox" },
     );
   };
-  const stepChoices = (child) =>
+  const stepChoices = (child?: string): [string, string][] =>
     parentSteps(p, child).map((s) => [s.id, `${s.name} · ${s.id}`]);
-  const when = (parent, path, child) => {
-    const value = get(p, path) || {},
-      mode = value.sun_range ? "sun" : value.relative_to ? "relative" : "clock";
+  const when = (parent: HTMLElement, path: Path, child?: string) => {
+    const value = get<When>(p, path) || {},
+      mode = value.entity_range
+        ? "entity"
+        : value.sun_range
+          ? "sun"
+          : value.relative_to
+            ? "relative"
+            : "clock";
     const box = el("fieldset");
     box.append(el("legend", t("Start time")));
     const select = el("select", null, { "aria-label": t("Time anchor") });
-    for (const k of ["clock", "sun", "relative"])
+    for (const k of ["clock", "sun", "relative", "entity"])
       select.append(el("option", t(k), { value: k }));
     select.value = mode;
     select.addEventListener("change", () => {
       panel.change(
         path,
-        select.value === "sun"
-          ? { sun_range: { sun: "sunset", offset_range: { fixed: "0s" } } }
-          : select.value === "relative"
-            ? {
-                relative_to: stepChoices(child)[0]?.[0] || "",
-                offset_range: { fixed: "30m" },
-              }
-            : { clock_range: { earliest: "20:00", latest: "20:00" } },
+        select.value === "entity"
+          ? { entity_range: { entity_id: "", offset_range: { fixed: "0s" } } }
+          : select.value === "sun"
+            ? { sun_range: { sun: "sunset", offset_range: { fixed: "0s" } } }
+            : select.value === "relative"
+              ? {
+                  relative_to: stepChoices(child)[0]?.[0] || "",
+                  offset_range: { fixed: "30m" },
+                }
+              : { clock_range: { earliest: "20:00", latest: "20:00" } },
       );
       panel.renderView();
     });
@@ -153,16 +178,32 @@ export function editView(panel, root) {
         }),
       );
     } else if (mode === "sun") {
-      f.select(box, [...path, "sun_range", "sun"], "Sun event", [
-        "sunrise",
-        "sunset",
-      ]);
+      f.select(box, [...path, "sun_range", "sun"], "Sun event", solarEvents);
       f.range(box, [...path, "sun_range", "offset_range"], "Sun offset");
       f.text(
         box,
         [...path, "sun_range", "fallback"],
         "Clock fallback when sun event is absent",
         { optional: true, type: "time", step: 1 },
+      );
+    } else if (mode === "entity") {
+      f.entities(
+        box,
+        [...path, "entity_range", "entity_id"],
+        "Time source",
+        false,
+      );
+      f.select(
+        box,
+        [...path, "entity_range", "attribute"],
+        "Calendar time",
+        ["start_time", "end_time"],
+        { optional: true },
+      );
+      f.range(
+        box,
+        [...path, "entity_range", "offset_range"],
+        "Relative offset",
       );
     } else {
       f.select(box, [...path, "relative_to"], "After step", stepChoices(child));
@@ -177,8 +218,8 @@ export function editView(panel, root) {
     );
     parent.append(box);
   };
-  const anchor = (parent, path, title) => {
-    const a = get(p, path) || {},
+  const anchor = (parent: HTMLElement, path: Path, title: string) => {
+    const a = get<Anchor>(p, path) || {},
       mode = a.step ? "step" : a.sun ? "sun" : "clock",
       box = el("fieldset");
     box.append(el("legend", t(title)));
@@ -203,7 +244,7 @@ export function editView(panel, root) {
     if (mode === "clock")
       f.text(box, [...path, "clock"], "Clock time", { type: "time", step: 1 });
     if (mode === "sun") {
-      f.select(box, [...path, "sun"], "Sun event", ["sunrise", "sunset"]);
+      f.select(box, [...path, "sun"], "Sun event", solarEvents);
       f.text(
         box,
         [...path, "fallback"],
@@ -226,15 +267,15 @@ export function editView(panel, root) {
       );
     parent.append(box);
   };
-  const between = (parent, path) => {
+  const between = (parent: HTMLElement, path: Path) => {
     anchor(parent, [...path, "start"], "Window start");
     anchor(parent, [...path, "end"], "Window end");
     f.text(parent, [...path, "cross_midnight"], "Cross midnight", {
       type: "checkbox",
     });
   };
-  const conditions = (parent, path, title) => {
-    f.list(
+  const conditions = (parent: HTMLElement, path: Path, title: string) => {
+    f.list<Condition>(
       parent,
       path,
       title,
@@ -265,7 +306,7 @@ export function editView(panel, root) {
                 panel.change(
                   [...cp, "entity_id"],
                   multi
-                    ? condition.entity_id[0] || ""
+                    ? condition.entity_id?.[0] || ""
                     : [condition.entity_id].filter(Boolean),
                 );
                 panel.renderView();
@@ -288,7 +329,7 @@ export function editView(panel, root) {
       },
     );
   };
-  const handover = (parent, path, partial = true) => {
+  const handover = (parent: HTMLElement, path: Path, partial = true) => {
     f.text(parent, [...path, "duration"], "Handover duration", {
       optional: partial,
       placeholder: "10m",
@@ -327,7 +368,7 @@ export function editView(panel, root) {
       { optional: partial },
     );
   };
-  const defaults = (parent, path, partial) => {
+  const defaults = (parent: HTMLElement, path: Path, partial: boolean) => {
     f.select(
       parent,
       [...path, "time_distribution"],
@@ -391,8 +432,8 @@ export function editView(panel, root) {
       handover(h, [...path, "handover"], false);
     }
   };
-  const actions = (parent, path, title) =>
-    f.list(
+  const actions = (parent: HTMLElement, path: Path, title: string) =>
+    f.list<Action>(
       parent,
       path,
       title,
@@ -494,7 +535,7 @@ export function editView(panel, root) {
         );
       },
     );
-  const activity = (parent, path, item) => {
+  const activity = (parent: HTMLElement, path: Path, item: ScheduledItem) => {
     when(parent, [...path, "when"], item.id);
     f.range(parent, [...path, "duration"], "Duration", { optional: true });
     f.entities(parent, [...path, "resources"], "Exclusive resources");
@@ -594,8 +635,8 @@ export function editView(panel, root) {
         }),
       );
   };
-  const window = (parent, path) => {
-    const item = get(p, path) || {};
+  const window = (parent: HTMLElement, path: Path) => {
+    const item = get<ScheduledItem>(p, path) || {};
     between(parent, [...path, "between"]);
     f.range(parent, [...path, "cycles"], "Cycle count", { count: true });
     const generic = !!(item.on_start?.length || item.on_end?.length);
@@ -672,8 +713,13 @@ export function editView(panel, root) {
         initial: {},
       });
   };
-  const collection = (parent, path, kind, render) => {
-    const values = get(p, path) || [],
+  const collection = <K extends ResourceKind>(
+    parent: HTMLElement,
+    path: Path,
+    kind: K,
+    render: (parent: HTMLElement, path: Path, value: ResourceFor<K>) => void,
+  ) => {
+    const values = get<ResourceFor<K>[]>(p, path) || [],
       nav = el("div", null, { class: "resource-nav" });
     values.forEach((item, i) =>
       nav.append(
@@ -687,8 +733,11 @@ export function editView(panel, root) {
       button(`${t("Add")} ${t(kind)}`, () => {
         const item = newItem(p, kind);
         if (!get(p, path)) panel.change(path, []);
-        get(p, path).push(item);
-        panel.selection.set(JSON.stringify(path), get(p, path).length - 1);
+        get<(Group | Routine | ScheduledItem)[]>(p, path).push(item);
+        panel.selection.set(
+          JSON.stringify(path),
+          get<unknown[]>(p, path).length - 1,
+        );
         panel.edited(true);
       }),
     );
@@ -869,10 +918,10 @@ export function editView(panel, root) {
           const group = newItem(p, "group");
           group.name = "Evening lights";
           group.entities = entities;
-          p.groups.push(group);
+          (p.groups ||= []).push(group);
           const routine = newItem(p, "routine");
           routine.name = "Evening";
-          p.routines.push(routine);
+          (p.routines ||= []).push(routine);
           const on = newItem(p, "step");
           on.name = "Evening on";
           on.actions[0].targets = { groups: [group.id] };
@@ -885,8 +934,9 @@ export function editView(panel, root) {
             { action: "safety_off", targets: { groups: [group.id] } },
           ];
           routine.steps.push(off);
+          ((p.lighting ||= {}).managed_targets ||= {}).groups ||= [];
           p.lighting.managed_targets.groups.push(group.id);
-          p.lighting.baseline.push({
+          (p.lighting.baseline ||= []).push({
             targets: { groups: [group.id] },
             state: "off",
           });
@@ -969,12 +1019,12 @@ export function editView(panel, root) {
         advanced(b, path, "Advanced baseline color");
       },
     );
-    for (const group of p.groups) {
+    for (const group of p.groups || []) {
       const box = details(
         root,
         `${group.name} · ${t("Group handover overrides")}`,
       );
-      handover(box, ["groups", p.groups.indexOf(group), "handover"]);
+      handover(box, ["groups", p.groups!.indexOf(group), "handover"]);
     }
   } else if (panel.tab === "defaults") {
     defaults(section(root, t("Household defaults")), ["defaults"], false);

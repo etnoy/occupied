@@ -37,7 +37,7 @@ from .validation import (
     validation_warnings,
 )
 
-PLANNER_VERSION = 3
+PLANNER_VERSION = 4
 
 
 class RandomStreams:
@@ -299,6 +299,8 @@ class _Planner:
             )
         if spec.clock_range is not None:
             bounds = self.day.clock_bounds(spec.clock_range, path + ("when", "clock_range"))
+        elif spec.entity_range is not None:
+            bounds = self.day.entity_bounds(spec.entity_range, path + ("when", "entity_range"))
         else:
             bounds = self.day.sun_bounds(spec.sun_range, path + ("when", "sun_range"))
         if bounds is None:

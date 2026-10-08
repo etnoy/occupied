@@ -1,6 +1,6 @@
 # Occupied program schema, version 1
 
-The editor, CLI, backend draft APIs and daily runtime accept this canonical model. Configure it using [the editor guide](editor.md) or apply through [the runtime API](runtime.md). Authoritative managed-file reloads remain Milestone 5. Preview does not evaluate HA state or invoke services.
+The editor, CLI, backend draft APIs and daily runtime accept this canonical model. Configure it using [the editor guide](editor.md) or apply through [the runtime API](runtime.md). Authoritative managed-file reloads remain Milestone 5. Preview never invokes services. In Home Assistant it reads a snapshot of known time sources; it does not evaluate activation conditions.
 
 Start with [the household example](../examples/house.yaml). `occupied-config export FILE` emits normalized YAML with shared defaults. JSON drafts and YAML normalize through the same models and validators. Unknown fields, duplicate YAML keys, unsafe tags, recursive aliases, and YAML merge keys are rejected. Use schema defaults for sharing settings. Issues include a model path and, for YAML input, source line/column.
 
@@ -47,7 +47,22 @@ when:
 when:
   relative_to: wake
   offset_range: {min: 5m, max: 20m}
+# or: a time helper or timestamp sensor
+when:
+  entity_range:
+    entity_id: sensor.phone_next_alarm
+    offset_range: {min: -30m, max: -10m}
+# or: the start/end of the calendar event currently reported by HA
+when:
+  entity_range:
+    entity_id: calendar.work
+    attribute: start_time # or end_time
+    offset_range: {fixed: -15m}
 ```
+
+`sun_range.sun` and sun window anchors support `sunrise`, `sunset`, `dawn`, `dusk`, `noon` and `midnight`. Dawn/dusk use civil twilight (sun 6° below the horizon). Solar events are calculated for each requested date, independent of HA's next-event sensors.
+
+`entity_range` accepts a time-bearing `input_datetime`, a sensor with `device_class: timestamp`, or a calendar with `attribute: start_time`/`end_time`. Time-only helpers repeat every simulation day. Dated helpers, timestamp sensors and calendar bounds refer only to the occurrence HA currently reports; they are not extrapolated onto other dates. Missing, unavailable or invalid values skip the item with a warning, and other dates report no known occurrence. Offsets can cross the boundary when the item permits it. The HA runtime reschedules pending work when a source changes, preserves ongoing handover/cleanup, and does not replay a completed step on the same simulation date. Calendar event lists and reactive triggers are not part of this source model. CLI previews have no HA snapshot, so entity sources are skipped with a warning.
 
 Step start times always use uniform sampling, including clock, sun and relative intervals. Equal bounds give a fixed start time. Legacy `when.distribution`, `time_distribution` and range `mode` fields remain accepted for compatibility but do not change step start sampling. Timed activities still allow `when.distribution` to select `uniform` or `triangular`. Relative instants retain their parent step's dependency date and add elapsed UTC duration. A missing/skipped parent suppresses dependent work with an explanation. Cycles and dangling anchors are errors. If a parent is unavailable on some selected weekdays, narrow the dependent days or explicitly choose `missing_anchor: skip`.
 

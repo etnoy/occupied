@@ -12,7 +12,9 @@ with ZipFile(directory / "occupied.zip") as integration:
     version = json.loads(integration.read("manifest.json"))["version"]
     names = set(integration.namelist())
     assert "__init__.py" in names and "managed.py" in names and "LICENSE" in names
-    assert "frontend/occupied-panel.js" in names and "translations/en.json" in names
+    assert "frontend/dist/occupied-panel.js" in names and "translations/en.json" in names
+    assert not any(name.endswith(".ts") for name in names)
+    assert all(name.startswith("frontend/dist/") for name in names if name.endswith(".js"))
     assert "brand/icon.png" in names and "brand/icon@2x.png" in names
     assert not any("__pycache__" in name or name.startswith("custom_components/") for name in names)
     with ZipFile(directory / f"occupied-{version}-py3-none-any.whl") as wheel:
@@ -26,6 +28,10 @@ with tarfile.open(directory / f"occupied-{version}.tar.gz") as source:
         "tests/conftest.py",
         "tests/frontend/harness.html",
         "package-lock.json",
+        "tsconfig.json",
+        "scripts/build-frontend.ts",
+        "custom_components/occupied/frontend/occupied-panel.ts",
+        "tests/frontend/src/model.test.ts",
         "schema/occupied.schema.json",
         "examples/puppet/occupied.pp",
         "scripts/check_artifacts.py",

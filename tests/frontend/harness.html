@@ -18,44 +18,5 @@
   <pre id="results" aria-live="polite">
 Production editor with a virtual runtime. Run window.runWorkflows() for acceptance tests.</pre
   >
-  <script type="module">
-    import "/custom_components/occupied/frontend/occupied-panel.js";
-    window.calls = [];
-    window.deviceCalls = [];
-    window.subscribers = new Set();
-    window.fixtureWS = async (msg) => {
-      calls.push(structuredClone(msg));
-      const response = await fetch("/fixture", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(msg),
-      });
-      const result = await response.json();
-      if (result.error) throw result.error;
-      return result;
-    };
-    window.mount = () => {
-      const panel = document.querySelector("occupied-panel");
-      panel.panel = { config: { config_entry_id: "fixture-house" } };
-      panel.hass = {
-        language: "en",
-        callWS: fixtureWS,
-        callService: async (...args) => {
-          deviceCalls.push(args);
-        },
-        connection: {
-          subscribeMessage: async (callback) => {
-            subscribers.add(callback);
-            return () => subscribers.delete(callback);
-          },
-        },
-      };
-      return panel;
-    };
-    window.emit = (snapshot) =>
-      subscribers.forEach((callback) => callback(snapshot));
-    mount();
-    const { runWorkflows } = await import("./workflows.js");
-    window.runWorkflows = runWorkflows;
-  </script>
+  <script type="module" src="./generated/harness.js"></script>
 </html>

@@ -388,3 +388,135 @@ def test_step_start_intervals_always_sample_uniformly(program_dict, anchor):
                 UTC,
             )
         assert plan.step_times[step["id"]] == expected
+
+
+def time_source_program():
+    return {
+        "schema_version": 1,
+        "name": "Times",
+        "timezone": "Europe/Stockholm",
+        "routines": [
+            {
+                "id": "daily",
+                "name": "Daily",
+                "steps": [
+                    {
+                        "id": "run",
+                        "name": "Run",
+                        "allow_cross_boundary": True,
+                        "when": {
+                            "entity_range": {
+                                "entity_id": "sensor.alarm",
+                                "offset_range": {
+                                    "min": "-30m",
+                                    "max": "-10m",
+                                },
+                            }
+                        },
+                        "actions": [
+                            {"action": "scene.turn_on", "targets": {"entities": ["scene.morning"]}}
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def test_timestamp_time_sources_apply_signed_uniform_offsets_only_on_reported_date():
+    raw = time_source_program()
+    program = validate_program(raw)
+    context = PlanningContext(
+        time_sources={
+            "sensor.alarm": {
+                "kind": "timestamp",
+                "state": "2026-10-06T06:00:00+00:00",
+            }
+        }
+    )
+    times = set()
+    for seed in range(50):
+        plan = generate_plan(program, date(2026, 10, 6), seed, context=context)
+        times.add(plan.step_times["run"])
+        assert (
+            datetime(2026, 10, 6, 5, 30, tzinfo=UTC)
+            <= plan.step_times["run"]
+            <= datetime(2026, 10, 6, 5, 50, tzinfo=UTC)
+        )
+    assert len(times) == 50
+    other = generate_plan(program, date(2026, 10, 7), 1, context=context)
+    assert not other.events
+    assert any(issue.code == "time_source_other_date" for issue in other.issues)
+
+
+def test_time_only_helper_repeats_and_calendar_local_time_uses_program_timezone():
+    raw = time_source_program()
+    spec = raw["routines"][0]["steps"][0]["when"]["entity_range"]
+    spec.update(entity_id="input_datetime.wake", offset_range={"fixed": "0s"})
+    context = PlanningContext(
+        time_sources={"input_datetime.wake": {"kind": "time", "state": "08:00:00"}}
+    )
+    for day in (6, 7):
+        plan = generate_plan(validate_program(raw), date(2026, 10, day), 1, context=context)
+        assert plan.step_times["run"] == datetime(2026, 10, day, 6, tzinfo=UTC)
+    spec.update(entity_id="calendar.work", attribute="start_time")
+    context = PlanningContext(
+        time_sources={"calendar.work": {"kind": "calendar", "start_time": "2026-10-06 08:00:00"}}
+    )
+    plan = generate_plan(validate_program(raw), date(2026, 10, 6), 1, context=context)
+    assert plan.step_times["run"] == datetime(2026, 10, 6, 6, tzinfo=UTC)
+    spec["attribute"] = "end_time"
+    context = PlanningContext(
+        time_sources={"calendar.work": {"kind": "calendar", "end_time": "2026-10-06 09:00:00"}}
+    )
+    plan = generate_plan(validate_program(raw), date(2026, 10, 6), 1, context=context)
+    assert plan.step_times["run"] == datetime(2026, 10, 6, 7, tzinfo=UTC)
+
+
+@pytest.mark.parametrize(
+    "value", [None, "unknown", "unavailable", "invalid", "2026-10-06T08:00:00"]
+)
+def test_unavailable_or_invalid_time_source_skips_with_warning(value):
+    context = PlanningContext(time_sources={"sensor.alarm": {"kind": "timestamp", "state": value}})
+    plan = generate_plan(
+        validate_program(time_source_program()), date(2026, 10, 6), 1, context=context
+    )
+    assert not plan.events
+    assert any(issue.code == "time_source_unavailable" for issue in plan.issues)
+
+
+@pytest.mark.parametrize("event", ["sunrise", "sunset", "dawn", "dusk", "noon", "midnight"])
+def test_all_solar_events_are_resolved_for_each_preview_date(event):
+    from astral import sun
+
+    raw = time_source_program()
+    raw["location"] = {"latitude": 59.3, "longitude": 18.1}
+    raw["routines"][0]["steps"][0]["when"] = {"sun_range": {"sun": event}}
+    for day in (6, 7):
+        plan = generate_plan(validate_program(raw), date(2026, 10, day), 1)
+        expected = getattr(sun, event)(
+            Observer(59.3, 18.1), date=date(2026, 10, day), tzinfo=ZoneInfo("Europe/Stockholm")
+        )
+        assert plan.step_times["run"] == expected.astimezone(UTC)
+
+
+def test_calendar_local_times_use_ha_timezone_when_program_timezone_differs():
+    raw = time_source_program()
+    raw["timezone"] = "UTC"
+    raw["routines"][0]["steps"][0]["when"] = {
+        "entity_range": {
+            "entity_id": "calendar.work",
+            "attribute": "start_time",
+        }
+    }
+    context = PlanningContext(
+        timezone="Europe/Stockholm",
+        time_sources={
+            "calendar.work": {
+                "kind": "calendar",
+                "start_time": "2026-10-06 08:00:00",
+            }
+        },
+    )
+    plan = generate_plan(validate_program(raw), date(2026, 10, 6), 1, context=context)
+    assert plan.step_times["run"] == datetime(2026, 10, 6, 6, tzinfo=UTC)

@@ -1,35 +1,68 @@
+import type { OccupiedPanel } from "./occupied-panel.js";
+import type {
+  Path,
+  Attributes,
+  FieldOptions,
+  HaSelector,
+  Range,
+} from "./types.js";
+import { errorMessage } from "./types.js";
 import { get, set, copy } from "./model.js";
 let serial = 0;
-export function el(tag, text, attrs = {}) {
+export function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  text?: string | number | null,
+  attrs?: Attributes,
+): HTMLElementTagNameMap[K];
+export function el(
+  tag: string,
+  text?: string | number | null,
+  attrs?: Attributes,
+): HTMLElement;
+export function el(
+  tag: string,
+  text?: string | number | null,
+  attrs: Attributes = {},
+) {
   const node = document.createElement(tag);
-  if (text !== undefined && text !== null) node.textContent = text;
+  if (text !== undefined && text !== null) node.textContent = String(text);
   for (const [k, v] of Object.entries(attrs))
-    if (v !== undefined) node.setAttribute(k, v);
+    if (v !== undefined) node.setAttribute(k, String(v));
   return node;
 }
-export function button(label, action, attrs = {}) {
+export function button(
+  label: string,
+  action: (event: MouseEvent) => unknown,
+  attrs: Attributes = {},
+) {
   const node = el("button", label, { type: "button", ...attrs });
   node.addEventListener("click", action);
   return node;
 }
-export function section(parent, title, help) {
+export function section(parent: HTMLElement, title: string, help?: string) {
   const node = el("section");
   node.append(el("h2", title));
   if (help) node.append(el("p", help, { class: "hint" }));
   parent.append(node);
   return node;
 }
-export function details(parent, title) {
+export function details(parent: HTMLElement, title: string) {
   const node = el("details");
   node.append(el("summary", title));
   parent.append(node);
   return node;
 }
 export class Forms {
-  constructor(panel) {
+  p: OccupiedPanel;
+  constructor(panel: OccupiedPanel) {
     this.p = panel;
   }
-  field(parent, path, label, options = {}) {
+  field(
+    parent: HTMLElement,
+    path: Path,
+    label: string,
+    options: FieldOptions = {},
+  ) {
     const panel = this.p,
       value = get(panel.draft, path),
       key = JSON.stringify(path);
@@ -37,71 +70,81 @@ export class Forms {
     const id = `occupied-field-${++serial}`,
       caption = el("label", label, { for: id });
     wrap.append(caption);
-    let input;
+    let input:
+      | HTMLInputElement
+      | HTMLTextAreaElement
+      | HTMLSelectElement
+      | HaSelector;
     // Public panel contract; optional private selector is used only when already registered.
     if (options.selector && customElements.get("ha-selector")) {
-      input = el("ha-selector", null, { id });
-      input.hass = panel._hass;
-      input.selector = options.selector;
-      input.value = value;
-      input.label = label;
-      input.required = !options.optional;
-      input.narrow = panel.hasAttribute("narrow");
-      input.setAttribute("aria-label", label);
-      input.addEventListener("value-changed", (e) => {
+      const selector = el("ha-selector", null, { id });
+      input = selector;
+      selector.hass = panel._hass;
+      selector.selector = options.selector;
+      selector.value = value;
+      selector.label = label;
+      selector.required = !options.optional;
+      selector.narrow = panel.hasAttribute("narrow");
+      selector.setAttribute("aria-label", label);
+      selector.addEventListener("value-changed", (e) => {
         if (!e.detail || !("value" in e.detail)) return;
         // Native pickers emit changes without updating their ha-selector
         // wrapper. Feed the value back before the next hass update renders it.
-        input.value = e.detail.value;
+        selector.value = e.detail.value;
         panel.change(path, e.detail.value);
       });
     } else if (options.choices) {
-      input = el("select", null, { id });
+      const select = el("select", null, { id });
+      input = select;
       if (options.optional)
-        input.append(el("option", panel.t("Inherit"), { value: "" }));
-      const choices = options.choices.map((x) =>
+        select.append(el("option", panel.t("Inherit"), { value: "" }));
+      const choices: [string | number, string][] = options.choices.map((x) =>
         typeof x === "string" ? [x, x] : x,
       );
       if (value != null && !choices.some((x) => String(x[0]) === String(value)))
-        choices.push([value, String(value)]);
+        choices.push([String(value), String(value)]);
       for (const [v, name] of choices)
-        input.append(el("option", panel.t(name), { value: String(v) }));
-      input.value = value == null ? "" : String(value);
-      input.addEventListener("change", () => {
-        let next =
-          input.value === "" && options.optional ? undefined : input.value;
+        select.append(el("option", panel.t(name), { value: String(v) }));
+      select.value = value == null ? "" : String(value);
+      select.addEventListener("change", () => {
+        let next: string | boolean | undefined =
+          select.value === "" && options.optional ? undefined : select.value;
         if (options.boolean && next !== undefined) next = next === "true";
         panel.change(path, next);
         if (options.rerender) panel.renderView();
       });
     } else if (options.type === "checkbox") {
-      input = el("input", null, { type: "checkbox", id });
-      input.checked = !!value;
-      input.addEventListener("change", () => {
-        panel.change(path, input.checked);
+      const checkbox = el("input", null, { type: "checkbox", id });
+      input = checkbox;
+      checkbox.checked = !!value;
+      checkbox.addEventListener("change", () => {
+        panel.change(path, checkbox.checked);
         if (options.rerender) panel.renderView();
       });
     } else {
-      input = el(
+      const control = el(
         options.json || options.multiline ? "textarea" : "input",
         null,
         { id, type: options.type || "text" },
       );
+      input = control;
       if (options.json)
-        input.value =
+        control.value =
           panel.raw.get(key) ??
           JSON.stringify(value ?? options.initial ?? {}, null, 2);
       else if (options.list)
-        input.value = (
+        control.value = (
           Array.isArray(value) ? value : value == null ? [] : [value]
         ).join("\n");
-      else input.value = value ?? "";
-      if (options.json || options.list) input.rows = options.json ? 5 : 3;
-      if (options.json) input.dataset.jsonPath = key;
-      if (options.min != null) input.min = options.min;
-      if (options.max != null) input.max = options.max;
-      if (options.step != null) input.step = options.step;
-      if (options.placeholder) input.placeholder = options.placeholder;
+      else control.value = String(value ?? "");
+      if (control instanceof HTMLTextAreaElement)
+        control.rows = options.json ? 5 : 3;
+      if (options.json) control.dataset.jsonPath = key;
+      if (options.min != null) control.setAttribute("min", String(options.min));
+      if (options.max != null) control.setAttribute("max", String(options.max));
+      if (options.step != null)
+        control.setAttribute("step", String(options.step));
+      if (options.placeholder) control.placeholder = options.placeholder;
       if (options.suggestions) {
         const list = el("datalist", null, { id: id + "-options" });
         for (const suggestion of options.suggestions)
@@ -113,16 +156,17 @@ export class Forms {
                 typeof suggestion === "string" ? suggestion : suggestion[1],
             }),
           );
-        input.setAttribute("list", list.id);
+        control.setAttribute("list", list.id);
         wrap.append(list);
       }
-      input.addEventListener("input", () => {
-        let next = input.value;
+      control.addEventListener("input", () => {
+        const text = control.value;
+        let next: unknown = text;
         try {
           if (options.json) {
-            panel.raw.set(key, next);
-            next = next.trim()
-              ? JSON.parse(next)
+            panel.raw.set(key, text);
+            next = text.trim()
+              ? JSON.parse(text)
               : options.optional
                 ? undefined
                 : copy(options.initial ?? {});
@@ -132,7 +176,7 @@ export class Forms {
             )
               throw new Error("The program must be a JSON object");
           } else if (options.list)
-            next = next
+            next = text
               .split("\n")
               .map((x) => x.trim())
               .filter(Boolean);
@@ -144,11 +188,11 @@ export class Forms {
             }
           } else if (options.optional && next === "") next = undefined;
           panel.localErrors.delete(key);
-          input.removeAttribute("aria-invalid");
+          control.removeAttribute("aria-invalid");
           panel.change(path, next);
         } catch (error) {
-          panel.localErrors.set(key, `${label}: ${error.message}`);
-          input.setAttribute("aria-invalid", "true");
+          panel.localErrors.set(key, `${label}: ${errorMessage(error)}`);
+          control.setAttribute("aria-invalid", "true");
           panel.edited();
         }
       });
@@ -163,24 +207,45 @@ export class Forms {
     parent.append(wrap);
     return input;
   }
-  text(parent, path, label, opts = {}) {
+  text(
+    parent: HTMLElement,
+    path: Path,
+    label: string,
+    opts: FieldOptions = {},
+  ) {
     return this.field(parent, path, this.p.t(label), opts);
   }
-  number(parent, path, label, opts = {}) {
+  number(
+    parent: HTMLElement,
+    path: Path,
+    label: string,
+    opts: FieldOptions = {},
+  ) {
     return this.text(parent, path, label, {
       type: "number",
       step: "any",
       ...opts,
     });
   }
-  select(parent, path, label, choices, opts = {}) {
+  select(
+    parent: HTMLElement,
+    path: Path,
+    label: string,
+    choices: NonNullable<FieldOptions["choices"]>,
+    opts: FieldOptions = {},
+  ) {
     return this.text(parent, path, label, { choices, ...opts });
   }
-  json(parent, path, label, opts = {}) {
+  json(
+    parent: HTMLElement,
+    path: Path,
+    label: string,
+    opts: FieldOptions = {},
+  ) {
     return this.text(parent, path, label, { json: true, ...opts });
   }
-  entities(parent, path, label, multiple = true) {
-    const options = {
+  entities(parent: HTMLElement, path: Path, label: string, multiple = true) {
+    const options: FieldOptions = {
       list: multiple,
       multiline: multiple,
       selector: { entity: { multiple } },
@@ -205,7 +270,7 @@ export class Forms {
     const manual = details(box, this.p.t("Exact entity IDs"));
     const input = this.text(manual, path, label, options);
     const draw = () => {
-      const value = get(this.p.draft, path),
+      const value = get<string | string[] | undefined>(this.p.draft, path),
         ids = Array.isArray(value) ? value : value ? [value] : [];
       selected.replaceChildren();
       for (const id of ids) {
@@ -225,8 +290,8 @@ export class Forms {
       }
     };
     const sync = () => {
-      const value = get(this.p.draft, path);
-      input.value = multiple ? (value || []).join("\n") : value || "";
+      const value = get<string | string[] | undefined>(this.p.draft, path);
+      input.value = Array.isArray(value) ? value.join("\n") : value || "";
       draw();
     };
     const filter = () => {
@@ -261,7 +326,12 @@ export class Forms {
           this.p.change(
             path,
             multiple
-              ? [...new Set([...(get(this.p.draft, path) || []), picker.value])]
+              ? [
+                  ...new Set([
+                    ...(get<string[]>(this.p.draft, path) || []),
+                    picker.value,
+                  ]),
+                ]
               : picker.value,
           );
           sync();
@@ -276,8 +346,13 @@ export class Forms {
     draw();
     return input;
   }
-  range(parent, path, label, { optional = false, count = false } = {}) {
-    const value = get(this.p.draft, path),
+  range(
+    parent: HTMLElement,
+    path: Path,
+    label: string,
+    { optional = false, count = false } = {},
+  ) {
+    const value = get<Range | undefined>(this.p.draft, path),
       node = el("fieldset");
     node.append(el("legend", this.p.t(label)));
     const mode = el("select", null, {
@@ -320,7 +395,7 @@ export class Forms {
             min: "Minimum",
             max: "Maximum",
             mode: "Triangular peak",
-          }[k],
+          }[k as "fixed" | "min" | "max" | "mode"],
           {
             optional: k === "mode",
             type: count ? "number" : "text",
@@ -336,7 +411,7 @@ export class Forms {
     }
     parent.append(node);
   }
-  targets(parent, path) {
+  targets(parent: HTMLElement, path: Path) {
     const box = el("fieldset");
     box.append(el("legend", this.p.t("Targets")));
     this.entities(box, [...path, "entities"], "Entities");
@@ -347,11 +422,13 @@ export class Forms {
     for (const group of this.p.draft.groups || []) {
       const label = el("label"),
         input = el("input", null, { type: "checkbox" });
-      input.checked = (get(this.p.draft, [...path, "groups"]) || []).includes(
-        group.id,
-      );
+      input.checked = (
+        get<string[]>(this.p.draft, [...path, "groups"]) || []
+      ).includes(group.id);
       input.addEventListener("change", () => {
-        const selected = new Set(get(this.p.draft, [...path, "groups"]) || []);
+        const selected = new Set(
+          get<string[]>(this.p.draft, [...path, "groups"]) || [],
+        );
         input.checked ? selected.add(group.id) : selected.delete(group.id);
         this.p.change([...path, "groups"], [...selected]);
       });
@@ -361,7 +438,7 @@ export class Forms {
     box.append(el("p", this.p.t("Groups")), groupBox);
     parent.append(box);
   }
-  weekdays(parent, path, optional = false) {
+  weekdays(parent: HTMLElement, path: Path, optional = false) {
     const box = el("fieldset");
     box.append(el("legend", this.p.t("Weekdays")));
     if (optional)
@@ -371,14 +448,14 @@ export class Forms {
           this.p.renderView();
         }),
       );
-    const selected = get(this.p.draft, path);
+    const selected = get<string[] | undefined>(this.p.draft, path);
     for (const day of ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]) {
       const label = el("label", null, { class: "check" }),
         input = el("input", null, { type: "checkbox" });
       input.checked = selected == null ? true : selected.includes(day);
       input.addEventListener("change", () => {
         const next = new Set(
-          get(this.p.draft, path) || [
+          get<string[]>(this.p.draft, path) || [
             "mon",
             "tue",
             "wed",
@@ -396,15 +473,21 @@ export class Forms {
     }
     parent.append(box);
   }
-  list(parent, path, title, create, render) {
+  list<T>(
+    parent: HTMLElement,
+    path: Path,
+    title: string,
+    create: () => T,
+    render: (parent: HTMLElement, path: Path, value: T) => void,
+  ) {
     const box = section(parent, this.p.t(title));
-    for (const [i, value] of (get(this.p.draft, path) || []).entries()) {
+    for (const [i, value] of (get<T[]>(this.p.draft, path) || []).entries()) {
       const item = el("article"),
         toolbar = el("div", null, { class: "row" });
       toolbar.append(
         el("h3", `${this.p.t(title)} ${i + 1}`),
         button(this.p.t("Remove"), () => {
-          get(this.p.draft, path).splice(i, 1);
+          get<T[]>(this.p.draft, path).splice(i, 1);
           this.p.edited(true);
         }),
       );
@@ -413,7 +496,7 @@ export class Forms {
           button(
             "↑",
             () => {
-              const list = get(this.p.draft, path);
+              const list = get<T[]>(this.p.draft, path);
               [list[i - 1], list[i]] = [list[i], list[i - 1]];
               this.p.edited(true);
             },
@@ -426,7 +509,10 @@ export class Forms {
     }
     box.append(
       button(`${this.p.t("Add")} ${this.p.t(title)}`, () => {
-        set(this.p.draft, path, [...(get(this.p.draft, path) || []), create()]);
+        set(this.p.draft, path, [
+          ...(get<T[]>(this.p.draft, path) || []),
+          create(),
+        ]);
         this.p.edited(true);
       }),
     );

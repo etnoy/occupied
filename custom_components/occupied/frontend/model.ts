@@ -1,34 +1,63 @@
+import type {
+  Program,
+  Path,
+  Resource,
+  ResourceKind,
+  EditableResource,
+  ScheduledItem,
+  Routine,
+  Group,
+} from "./types.js";
 // Draft operations only. Sampling, validation and identifier migration stay in HA.
-export const copy = (value) => structuredClone(value);
+export const copy = <T>(value: T): T => structuredClone(value);
 export const days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
-export function get(object, path) {
-  return path.reduce((v, k) => v?.[k], object);
+export function get<T = unknown>(object: unknown, path: Path): T {
+  let value: unknown = object;
+  for (const key of path)
+    value =
+      value == null
+        ? undefined
+        : (value as Record<string | number, unknown>)[key];
+  // Dynamic JSON paths are the boundary of the advanced editor. Callers supply
+  // the expected field type; the backend validates edited values before saving.
+  return value as T;
 }
-export function set(object, path, value) {
-  let parent = object;
+export function set(object: unknown, path: Path, value: unknown) {
+  if (!path.length) throw new Error("Cannot set an empty path");
+  let parent = object as Record<string | number, unknown>;
   path.slice(0, -1).forEach((key, i) => {
-    parent = parent[key] ??= typeof path[i + 1] === "number" ? [] : {};
+    parent = (parent[key] ??=
+      typeof path[i + 1] === "number" ? [] : {}) as Record<
+      string | number,
+      unknown
+    >;
   });
-  if (value === undefined) delete parent[path.at(-1)];
-  else parent[path.at(-1)] = value;
+  const last = path[path.length - 1];
+  if (value === undefined) delete parent[last];
+  else parent[last] = value;
 }
-export function resources(program) {
+
+export function resources(program: Program): Resource[] {
   return [
-    ...(program.groups || []).map((x) => ({ ...x, kind: "group" })),
+    ...(program.groups || []).map((x) => ({ ...x, kind: "group" as const })),
     ...(program.routines || []).flatMap((r) => [
-      { ...r, kind: "routine" },
-      ...["steps", "activities", "activity_windows"].flatMap((k) =>
+      { ...r, kind: "routine" as const },
+      ...(["steps", "activities", "activity_windows"] as const).flatMap((k) =>
         (r[k] || []).map((x) => ({
           ...x,
           kind:
-            k === "steps" ? "step" : k === "activities" ? "activity" : "window",
+            k === "steps"
+              ? ("step" as const)
+              : k === "activities"
+                ? ("activity" as const)
+                : ("window" as const),
           routine: r.id,
         })),
       ),
     ]),
   ];
 }
-export function identifier(program, name) {
+export function identifier(program: Program, name: string) {
   let base = name
     .toLowerCase()
     .normalize("NFKD")
@@ -42,9 +71,9 @@ export function identifier(program, name) {
   while (used.has(id)) id = `${base}_${n++}`;
   return id;
 }
-export function references(program, id) {
-  const found = [];
-  function visit(value, path) {
+export function references(program: Program, id: string) {
+  const found: Path[] = [];
+  function visit(value: unknown, path: Path) {
     if (!value || typeof value !== "object") return;
     for (const [key, child] of Object.entries(value)) {
       if (key === "data" || key === "weights") continue; // Opaque service payloads are never typed references.
@@ -59,12 +88,12 @@ export function references(program, id) {
   visit(program, []);
   return found;
 }
-export function removeResource(program, path) {
-  const item = get(program, path),
+export function removeResource(program: Program, path: Path) {
+  const item = get<EditableResource>(program, path),
     ids = [item.id];
   if (path[0] === "routines" && path.length === 2)
     ids.push(
-      ...["steps", "activities", "activity_windows"].flatMap((k) =>
+      ...(["steps", "activities", "activity_windows"] as const).flatMap((k) =>
         (item[k] || []).map((x) => x.id),
       ),
     );
@@ -75,38 +104,42 @@ export function removeResource(program, path) {
     throw new Error(
       `Referenced by ${outside.map((p) => p.join(" → ")).join(", ")}. Remove these references first.`,
     );
-  get(program, path.slice(0, -1)).splice(path.at(-1), 1);
+  get<unknown[]>(program, path.slice(0, -1)).splice(Number(path.at(-1)), 1);
 }
-export function duplicate(program, path) {
-  const item = copy(get(program, path)),
-    map = new Map();
+export function duplicate(program: Program, path: Path): EditableResource {
+  const item = copy(get<EditableResource>(program, path)),
+    map = new Map<string, string>();
   item.name += " copy";
   map.set(item.id, identifier(program, item.name));
-  item.id = map.get(item.id);
+  item.id = map.get(item.id)!;
   const staged = copy(program);
-  get(staged, path.slice(0, -1)).push(item);
+  get<unknown[]>(staged, path.slice(0, -1)).push(item);
   if (path[0] === "routines" && path.length === 2) {
-    for (const k of ["steps", "activities", "activity_windows"])
+    for (const k of ["steps", "activities", "activity_windows"] as const)
       for (const child of item[k] || []) {
         const next = identifier(staged, `${child.id}_copy`);
         map.set(child.id, next);
         child.id = next;
       }
-    const rewrite = (value) => {
+    const rewrite = (value: unknown) => {
       if (!value || typeof value !== "object") return;
       for (const [k, v] of Object.entries(value)) {
         if (k === "data" || k === "weights") continue;
-        if ((k === "step" || k === "relative_to") && map.has(v))
-          value[k] = map.get(v);
+        if (
+          (k === "step" || k === "relative_to") &&
+          typeof v === "string" &&
+          map.has(v)
+        )
+          (value as Record<string, unknown>)[k] = map.get(v);
         else if (typeof v === "object") rewrite(v);
       }
     };
     rewrite(item);
   }
-  get(program, path.slice(0, -1)).push(item);
+  get<unknown[]>(program, path.slice(0, -1)).push(item);
   return item;
 }
-export function parentSteps(program, child) {
+export function parentSteps(program: Program, child?: string) {
   const steps = resources(program).filter((x) => x.kind === "step");
   const blocked = new Set([child]);
   let changed = true;
@@ -120,7 +153,7 @@ export function parentSteps(program, child) {
   }
   return steps.filter((x) => !blocked.has(x.id));
 }
-export function around(clock, minutes) {
+export function around(clock: string, minutes: number) {
   const [h, m, s = 0] = clock.split(":").map(Number),
     center = h * 3600 + m * 60 + s;
   if (
@@ -131,7 +164,7 @@ export function around(clock, minutes) {
     minutes >= 720
   )
     throw new Error("Choose a clock time and a spread below 720 minutes.");
-  const format = (n) => {
+  const format = (n: number) => {
     n = (Math.round(n) + 86400) % 86400;
     const value = `${String(Math.floor(n / 3600)).padStart(2, "0")}:${String(Math.floor(n / 60) % 60).padStart(2, "0")}`;
     return n % 60 ? `${value}:${String(n % 60).padStart(2, "0")}` : value;
@@ -143,7 +176,31 @@ export function around(clock, minutes) {
     cross_midnight: center - spread < 0 || center + spread >= 86400,
   };
 }
-export function newItem(program, kind) {
+export function newItem(program: Program, kind: "group"): Group;
+export function newItem(
+  program: Program,
+  kind: "routine",
+): Routine & {
+  steps: ScheduledItem[];
+  activities: ScheduledItem[];
+  activity_windows: ScheduledItem[];
+};
+export function newItem(
+  program: Program,
+  kind: "step",
+): ScheduledItem & { actions: NonNullable<ScheduledItem["actions"]> };
+export function newItem(
+  program: Program,
+  kind: "activity" | "window",
+): ScheduledItem;
+export function newItem(
+  program: Program,
+  kind: ResourceKind,
+): Group | Routine | ScheduledItem;
+export function newItem(
+  program: Program,
+  kind: ResourceKind,
+): Group | Routine | ScheduledItem {
   const name = {
     group: "New group",
     routine: "New routine",

@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noEmitOnError": true,
+    "verbatimModuleSyntax": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": false,
+    "types": ["node"],
+    "rootDir": ".",
+    "outDir": "build/typescript",
+    "allowJs": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "paths": {
+      "@occupied/*": ["./custom_components/occupied/frontend/*"]
+    }
+  },
+  "include": [
+    "custom_components/occupied/frontend/**/*.ts",
+    "tests/frontend/**/*.ts",
+    "scripts/*.ts"
+  ]
+}

@@ -22,8 +22,8 @@ def runtime_dates(program, today):
         if when.relative_to:
             low, high = bounds[when.relative_to]
             return low + when.offset_range.lower, high + when.offset_range.upper
-        if when.sun_range:
-            return when.sun_range.offset_range.lower, DAY + when.sun_range.offset_range.upper
+        if source := when.sun_range or when.entity_range:
+            return source.offset_range.lower, DAY + source.offset_range.upper
         return 0, DAY * (2 if when.clock_range.cross_midnight else 1)
 
     for identifier in step_order(program):
