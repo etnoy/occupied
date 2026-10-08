@@ -1,0 +1,13 @@
+[tools]
+python = "3.14.8"
+
+[env]
+_.python.venv = { path = ".venv", create = true }
+
+[tasks.dev]
+description = "Serve the local editor preview"
+run = "python tests/frontend/serve.py"
+
+[tasks.test]
+description = "Run the Python test suite"
+run = "python -m pytest"

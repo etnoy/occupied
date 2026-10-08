@@ -44,6 +44,10 @@ class Handler(SimpleHTTPRequestHandler):
     def log_message(self, *_args):
         pass
 
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
     @classmethod
     def reset(cls):
         cls.source = {"mode": "gui", "status": "ready", "has_valid_program": True}
@@ -90,12 +94,14 @@ class Handler(SimpleHTTPRequestHandler):
                             "light.hall",
                             "light.kitchen",
                             "light.living_room",
+                            "switch.floor_lamp",
                             "remote.living_room_harmony",
                             "sensor.alarm",
                         ]
                     ],
                     "services": {
                         "light": {"turn_on": {"fields": {}}, "turn_off": {"fields": {}}},
+                        "switch": {"turn_on": {"fields": {}}, "turn_off": {"fields": {}}},
                         "remote": {
                             "turn_on": {
                                 "fields": {

@@ -1,29 +1,21 @@
 import { copy, get, set, resources } from "./model.js";
-import { button, el, section } from "./forms.js";
+import { button, el, section, details } from "./forms.js";
 import { editView } from "./views.js";
 import { timeline, stamp } from "./timeline.js";
 import { styles } from "./styles.js";
 import { translator } from "./translations.js";
+import { renderRoutines } from "./routines.js";
 
 const tabs = {
-  overview: "Overview",
-  household: "Household",
-  groups: "Groups",
-  routines: "Routines",
-  handover: "Handover",
-  defaults: "Defaults",
-  dependencies: "Dependencies",
-  timeline: "Timeline",
-  preview: "Preview",
-  configuration: "Configuration",
-  diagnostics: "Diagnostics",
+  routines: "Your routines",
+  settings: "Settings",
 };
 
 export class OccupiedPanel extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this.tab = "overview";
+    this.tab = "routines";
     this.catalog = { entities: [], services: {} };
     this.selection = new Map();
     this.raw = new Map();
@@ -37,7 +29,7 @@ export class OccupiedPanel extends HTMLElement {
     this.error = "";
     this.previewSettings = { date: "", days: 7, seed: "preview-1", at: "" };
     this._beforeUnload = (e) => {
-      if (this.dirty) {
+      if (this.dirty || this.routineEditor?.changed) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -131,7 +123,8 @@ export class OccupiedPanel extends HTMLElement {
               this._timelineTimer = null;
               this.loadTimeline();
             }, 1000);
-          if (this.stale && !this.dirty && !this.busy) this.reloadSaved();
+          if (this.stale && !this.dirty && !this.busy && !this.routineEditor)
+            this.reloadSaved();
         },
         { type: "occupied/subscribe", config_entry_id: this._loadedEntry },
       );
@@ -206,10 +199,7 @@ export class OccupiedPanel extends HTMLElement {
         id: "house",
       }),
     );
-    header.append(
-      title,
-      el("span", "", { id: "badge", class: "badge", "aria-live": "polite" }),
-    );
+    header.append(title, el("div", null, { id: "runtime", class: "row" }));
     main.append(
       header,
       el("div", "", { id: "toolbar", class: "toolbar" }),
@@ -222,6 +212,7 @@ export class OccupiedPanel extends HTMLElement {
         button(
           this.t(label),
           () => {
+            if (this.routineEditor) return;
             this.tab = id;
             this.renderView();
           },
@@ -230,6 +221,7 @@ export class OccupiedPanel extends HTMLElement {
       );
     main.append(
       nav,
+      el("div", null, { id: "secondary-nav" }),
       el("div", null, { id: "issues" }),
       el("div", null, { id: "view" }),
     );
@@ -239,8 +231,7 @@ export class OccupiedPanel extends HTMLElement {
   toolbar() {
     const node = this.shadowRoot.getElementById("toolbar");
     if (!node) return;
-    const validate = button(this.t("Validate draft"), () => this.validate()),
-      save = button(this.t("Save program"), () => this.save(), {
+    const save = button(this.t("Save changes"), () => this.save(), {
         class: "primary",
       }),
       discard = button(this.t("Discard edits"), () => {
@@ -251,37 +242,81 @@ export class OccupiedPanel extends HTMLElement {
         this.raw.clear();
         this.localErrors.clear();
         this.issues = [];
+        this.error = "";
         this.renderView();
       });
-    validate.disabled = this.busy || !this.draft;
     save.disabled =
       this.busy ||
       this.document?.source === "file" ||
       this.stale ||
-      this.validatedVersion !== this.version ||
       !this.dirty;
     discard.disabled = this.busy || !this.draft;
-    node.replaceChildren(validate, save, discard);
+    node.replaceChildren();
+    if (this.dirty && !this.routineEditor) node.append(save, discard);
     if (this.stale)
       node.append(
-        button(this.t("Reload saved program"), () => this.reloadSaved(true)),
+        button(this.t("Reload saved program"), () => this.reloadSaved(true), {
+          disabled: this.busy ? "" : undefined,
+        }),
       );
+    node.hidden = !node.childElementCount;
+    for (const button of this.shadowRoot.querySelectorAll("nav [data-tab]"))
+      button.disabled = !!this.routineEditor;
+    for (const button of this.shadowRoot.querySelectorAll(
+      ".builder-footer button",
+    ))
+      button.disabled =
+        this.busy ||
+        (!!this.stale && button.hasAttribute("data-routine-submit"));
     const error = this.shadowRoot.getElementById("error");
     error.textContent = this.error;
     error.hidden = !this.error;
-    this.shadowRoot.getElementById("badge").textContent = this.status
-      ? `${this.status.status || "unloaded"} · ${this.status.dry_run ? this.t("Dry run") : this.t("Live")}`
-      : "";
+    const runtime = this.shadowRoot.getElementById("runtime");
+    runtime.replaceChildren();
+    if (this.status) {
+      const label = this.status.paused
+        ? "Paused"
+        : !this.status.enabled
+          ? "Off"
+          : this.status.active
+            ? "Running"
+            : "Waiting";
+      runtime.append(
+        el(
+          "span",
+          `${this.t(label)}${this.status.dry_run ? ` · ${this.t("Dry run")}` : ""}`,
+          {
+            id: "badge",
+            class: "badge",
+            "aria-live": "polite",
+            title: this.status.reason || "",
+          },
+        ),
+      );
+      const control = button(
+        this.t(
+          this.status.enabled ? "Turn off simulation" : "Turn on simulation",
+        ),
+        () => this.control(this.status.enabled ? "stop" : "start"),
+        { class: "text-button" },
+      );
+      control.disabled =
+        this.busy ||
+        !!this.routineEditor ||
+        (!this.status.enabled &&
+          !resources(this.saved).some((r) =>
+            ["step", "activity", "window"].includes(r.kind),
+          ));
+      runtime.append(control);
+    }
     const notice = this.shadowRoot.getElementById("notice");
     notice.textContent = this.stale
       ? this.t(
           "The saved program changed. Your draft is preserved; reload the saved program before saving.",
         )
-      : this.dirty
+      : this.dirty && !this.routineEditor
         ? this.t("Unsaved edits")
-        : this.t("Saved");
-    if (this.revision)
-      notice.textContent += ` · ${this.t("Revision")}: ${this.revision.slice(0, 12)}`;
+        : "";
     if (this.document?.source === "file")
       notice.textContent += ` · ${this.t("Managed file is authoritative. Export draft changes to your file, then reload.")}`;
     if (this.document?.configuration_source?.status === "error")
@@ -292,6 +327,8 @@ export class OccupiedPanel extends HTMLElement {
       this.tab === "preview"
     )
       notice.textContent += ` · ${this.t("Preview belongs to an earlier draft")}`;
+    notice.textContent = notice.textContent.replace(/^ · /, "");
+    notice.hidden = !notice.textContent;
     this.shadowRoot.getElementById("house").textContent =
       this.draft?.name || this.t("Loading household…");
   }
@@ -374,7 +411,9 @@ export class OccupiedPanel extends HTMLElement {
     for (const issue of this.issues || [])
       node.append(
         button(
-          `${issue.severity || "error"} · ${issue.path || "$"}: ${issue.message}`,
+          ["routines", "settings"].includes(this.tab)
+            ? issue.message
+            : `${issue.severity || "error"} · ${issue.path || "$"}: ${issue.message}`,
           () => this.focusIssue(issue),
           { class: issue.severity === "warning" ? "hint" : "error" },
         ),
@@ -382,11 +421,51 @@ export class OccupiedPanel extends HTMLElement {
   }
   focusIssue(issue) {
     const path = issue.model_path || [];
+    const editor = this.routineEditor;
+    if (editor) {
+      const prefix = editor.candidatePath || [];
+      if (prefix.length && prefix.every((key, i) => path[i] === key)) {
+        const tail = path.slice(prefix.length);
+        const field =
+          tail[0] === "name"
+            ? "name"
+            : tail[0] === "days"
+              ? "days"
+              : tail[0] === "actions"
+                ? tail.includes("targets")
+                  ? "entities"
+                  : "brightness"
+                : tail.includes("relative_to")
+                  ? "parent"
+                  : tail.includes("fallback")
+                    ? "fallback"
+                    : editor.form.timing.mode === "clock"
+                      ? "time"
+                      : "offset";
+        editor.errors[field] = issue.message;
+        editor.stage =
+          field === "entities"
+            ? 0
+            : ["name", "brightness"].includes(field)
+              ? 1
+              : 2;
+        this.renderView();
+        this.shadowRoot
+          .querySelector('.routine-editor [aria-invalid="true"]')
+          ?.focus();
+      } else
+        this.fail(
+          this.t(
+            "Finish or cancel this routine to edit other configuration issues.",
+          ),
+        );
+      return;
+    }
     this.tab =
       path[0] === "groups"
         ? "groups"
         : path[0] === "routines"
-          ? "routines"
+          ? "advanced_routines"
           : path[0] === "lighting"
             ? "handover"
             : ["defaults", "policies", "constraints"].includes(path[0])
@@ -424,18 +503,34 @@ export class OccupiedPanel extends HTMLElement {
       if (result.valid) this.validatedVersion = version;
     });
   }
-  save() {
-    if (
-      this.document?.source === "file" ||
-      this.validatedVersion !== this.version ||
-      !this.checkLocal() ||
-      this.stale
-    )
+  save(candidate) {
+    if (this.document?.source === "file" || !this.checkLocal() || this.stale)
       return;
     const version = this.version,
-      draft = copy(this.draft),
+      draft = copy(candidate || this.draft),
       expected = this.revision;
+    const editor = this.routineEditor;
+    const submittedForm = editor ? copy(editor.form) : null;
     return this.run(async (epoch) => {
+      const validation = await this.ws("editor_validate", { program: draft });
+      if (epoch !== this.epoch) return;
+      if (version !== this.version) {
+        this.fail(
+          this.t(
+            "Your changes are kept. Save again to include the latest edits.",
+          ),
+        );
+        return;
+      }
+      this.showIssues(validation);
+      if (!validation.valid) {
+        if (editor && this.issues?.length)
+          this.focusIssue(
+            this.issues.find((i) => i.severity !== "warning") || this.issues[0],
+          );
+        return;
+      }
+      this.validatedVersion = version;
       const result = await this.ws("save", {
         program: draft,
         expected_revision: expected,
@@ -447,6 +542,22 @@ export class OccupiedPanel extends HTMLElement {
       this.revision = result.revision;
       this.stale = false;
       this.document.needs_apply = false;
+      if (editor && this.routineEditor === editor) {
+        this.draft = copy(result.program);
+        this.dirty = false;
+        this.selectedRoutine = editor.id;
+        editor.existing = true;
+        // Future patches compare against what was actually saved. This also
+        // preserves a user reverting a field while its previous value saves.
+        editor.original = submittedForm;
+        if (version !== this.version) {
+          this.fail(
+            this.t("Earlier changes saved. Your newer edits are still open."),
+          );
+          return;
+        }
+        this.routineEditor = null;
+      }
       if (version === this.version) {
         this.draft = copy(result.program);
         this.dirty = false;
@@ -457,7 +568,7 @@ export class OccupiedPanel extends HTMLElement {
     });
   }
   async reloadSaved(discard = false) {
-    if (this.busy || (this.dirty && !discard)) return;
+    if (this.busy || ((this.dirty || this.routineEditor) && !discard)) return;
     const version = this.version;
     return this.run(async (epoch) => {
       const doc = await this.ws("program");
@@ -473,6 +584,7 @@ export class OccupiedPanel extends HTMLElement {
       this.raw.clear();
       this.localErrors.clear();
       this.issues = [];
+      this.routineEditor = null;
       this.renderView();
     });
   }
@@ -517,7 +629,38 @@ export class OccupiedPanel extends HTMLElement {
       root.append(button(this.t("Retry"), () => this._load()));
       return;
     }
-    if (this.tab === "overview") this.renderOverview();
+    const secondaryNav = this.shadowRoot.getElementById("secondary-nav");
+    secondaryNav.replaceChildren();
+    if (!["routines", "settings"].includes(this.tab))
+      secondaryNav.append(
+        button(
+          this.t(
+            this.tab === "preview" ? "Back to routines" : "Back to settings",
+          ),
+          () => {
+            this.tab = this.tab === "preview" ? "routines" : "settings";
+            this.renderView();
+          },
+          { class: "text-button" },
+        ),
+      );
+    if (this.tab === "routines") {
+      try {
+        renderRoutines(this, root);
+      } catch (error) {
+        root.replaceChildren();
+        root.append(
+          el("p", this.t("This draft needs attention in Advanced settings."), {
+            class: "error",
+          }),
+          button(this.t("Open advanced editor"), () => {
+            this.tab = "household";
+            this.renderView();
+          }),
+        );
+        this.fail(error);
+      }
+    } else if (this.tab === "overview") this.renderOverview();
     else if (this.tab === "timeline") {
       this.renderTimeline();
       this.loadTimeline();
@@ -717,11 +860,12 @@ export class OccupiedPanel extends HTMLElement {
     root.replaceChildren();
     const box = section(
       root,
-      t("Draft preview"),
+      t("Preview schedule"),
       t(
-        "Preview uses a separate seed and the backend planner. Reroll changes only this preview; saving does not apply this seed to the runtime.",
+        "See how your routines could play out. Previewing never controls devices or changes the running schedule.",
       ),
     );
+    const advanced = details(box, t("Preview options"));
     for (const [key, label, type] of [
       ["date", "Date", "date"],
       ["days", "Days", "number"],
@@ -740,7 +884,8 @@ export class OccupiedPanel extends HTMLElement {
           key === "days" ? Number(input.value) : input.value;
       });
       field.append(input);
-      box.append(field);
+      field.className = "field";
+      (key === "date" ? box : advanced).append(field);
     }
     box.append(
       button(t("Run preview"), () => this.runPreview()),

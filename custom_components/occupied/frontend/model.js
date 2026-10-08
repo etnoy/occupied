@@ -121,9 +121,10 @@ export function parentSteps(program, child) {
   return steps.filter((x) => !blocked.has(x.id));
 }
 export function around(clock, minutes) {
-  const [h, m] = clock.split(":").map(Number),
-    center = h * 60 + m;
+  const [h, m, s = 0] = clock.split(":").map(Number),
+    center = h * 3600 + m * 60 + s;
   if (
+    !/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(clock) ||
     !Number.isInteger(center) ||
     !Number.isFinite(minutes) ||
     minutes < 0 ||
@@ -131,13 +132,15 @@ export function around(clock, minutes) {
   )
     throw new Error("Choose a clock time and a spread below 720 minutes.");
   const format = (n) => {
-    n = (n + 1440) % 1440;
-    return `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
+    n = (Math.round(n) + 86400) % 86400;
+    const value = `${String(Math.floor(n / 3600)).padStart(2, "0")}:${String(Math.floor(n / 60) % 60).padStart(2, "0")}`;
+    return n % 60 ? `${value}:${String(n % 60).padStart(2, "0")}` : value;
   };
+  const spread = Math.round(minutes * 60);
   return {
-    earliest: format(center - minutes),
-    latest: format(center + minutes),
-    cross_midnight: center - minutes < 0 || center + minutes >= 1440,
+    earliest: format(center - spread),
+    latest: format(center + spread),
+    cross_midnight: center - spread < 0 || center + spread >= 86400,
   };
 }
 export function newItem(program, kind) {

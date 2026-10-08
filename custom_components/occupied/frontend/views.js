@@ -673,7 +673,81 @@ export function editView(panel, root) {
     render(box, itemPath, values[i]);
     advanced(box, itemPath);
   };
-  if (panel.tab === "household") {
+  if (panel.tab === "settings") {
+    const box = section(
+      root,
+      t("Settings"),
+      t(
+        "Choose when Occupied may run. Home Assistant supplies your location and timezone.",
+      ),
+    );
+    conditions(box, ["activation", "conditions"], "Only run when");
+    box.append(
+      el(
+        "p",
+        t(
+          "With no conditions, turning on the simulation allows it to run. All configured conditions must match.",
+        ),
+        { class: "hint" },
+      ),
+    );
+    const execution = section(root, t("Simulation"));
+    execution.append(
+      el(
+        "p",
+        panel.status?.dry_run
+          ? t("Dry run is on. Devices are not controlled.")
+          : t("Live mode controls devices when the simulation is on."),
+        { class: "hint" },
+      ),
+    );
+    const dry = button(
+      t(panel.status?.dry_run ? "Use live mode" : "Use dry run"),
+      () =>
+        panel
+          .control("set_dry_run", { dry_run: !panel.status?.dry_run })
+          .then(() => panel.renderView()),
+    );
+    dry.disabled = panel.busy;
+    execution.append(
+      dry,
+      button(t("Runtime details"), () => {
+        panel.tab = "overview";
+        panel.renderView();
+      }),
+    );
+    const advancedBox = details(root, t("Advanced settings"));
+    advancedBox.append(
+      el(
+        "p",
+        t(
+          "Existing custom routines and installation settings remain available here.",
+        ),
+        { class: "hint" },
+      ),
+    );
+    const select = el("select", null, {
+      "aria-label": t("Advanced settings section"),
+    });
+    for (const [value, label] of [
+      ["configuration", "Import, export and managed files"],
+      ["advanced_routines", "Custom routines and activities"],
+      ["groups", "Reusable entity groups"],
+      ["household", "Household and location"],
+      ["handover", "Lighting handover"],
+      ["defaults", "Defaults and policies"],
+      ["timeline", "Execution history"],
+      ["diagnostics", "Diagnostics"],
+    ])
+      select.append(el("option", t(label), { value }));
+    advancedBox.append(
+      select,
+      button(t("Open"), () => {
+        panel.tab = select.value;
+        panel.renderView();
+      }),
+    );
+  } else if (panel.tab === "household") {
     const box = section(
       root,
       t("Household"),
@@ -786,7 +860,7 @@ export function editView(panel, root) {
       const h = details(box, t("Group handover overrides"));
       handover(h, [...path, "handover"]);
     });
-  } else if (panel.tab === "routines") {
+  } else if (panel.tab === "advanced_routines") {
     collection(root, ["routines"], "routine", (box, path) => {
       f.weekdays(box, [...path, "days"]);
       f.number(box, [...path, "probability"], "Probability", {
@@ -877,25 +951,6 @@ export function editView(panel, root) {
       "Bounded generation attempts",
       { min: 1, max: 256, step: 1 },
     );
-  } else if (panel.tab === "dependencies") {
-    section(
-      root,
-      t("Dependencies"),
-      t(
-        "Relationships use stable step identifiers. Names and order may change without changing sampled times. Circular parent choices are excluded.",
-      ),
-    );
-    for (const [ri, routine] of p.routines.entries())
-      for (const kind of ["steps", "activities"])
-        for (const [i, item] of (routine[kind] || []).entries()) {
-          const b = section(root, `${routine.name} → ${item.name}`);
-          when(b, ["routines", ri, kind, i, "when"], item.id);
-        }
-    for (const routine of p.routines)
-      for (const w of routine.activity_windows || [])
-        root.append(
-          el("p", `${routine.name} → ${w.name}: ${JSON.stringify(w.between)}`),
-        );
   }
   // Explicit escape hatch for future schema fields and uncommon native service payloads.
   if (["household", "defaults", "handover"].includes(panel.tab))

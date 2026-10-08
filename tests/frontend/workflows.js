@@ -1,4 +1,5 @@
 // Browser acceptance against production modules + canonical Python API fixture.
+import { runRoutineWorkflows } from "./routine-workflows.js";
 const assert = (value, message) => {
   if (!value) throw new Error(message);
 };
@@ -29,7 +30,7 @@ export async function runWorkflows() {
   mount();
   await wait(() => panel.draft && !panel._loading);
   const view = (tab) => {
-    panel.tab = tab;
+    panel.tab = tab === "routines" ? "advanced_routines" : tab;
     panel.renderView();
   };
   const click = (text) => {
@@ -75,7 +76,6 @@ export async function runWorkflows() {
         "routines",
         "handover",
         "defaults",
-        "dependencies",
         "configuration",
         "diagnostics",
         "preview",
@@ -390,7 +390,7 @@ export async function runWorkflows() {
         "File draft was applied",
       );
       const save = [...panel.shadowRoot.querySelectorAll("button")].find(
-        (x) => x.textContent === "Save program",
+        (x) => x.textContent === "Save changes",
       );
       assert(save.disabled, "File save button is enabled");
       const status = await fixtureWS({ type: "test/file-error" });
@@ -471,7 +471,6 @@ export async function runWorkflows() {
           "routines",
           "handover",
           "defaults",
-          "dependencies",
           "preview",
           "configuration",
           "diagnostics",
@@ -637,6 +636,7 @@ export async function runWorkflows() {
       );
     },
   );
+  await runRoutineWorkflows(panel, check);
   await check(
     "disconnect unsubscribes and leaves virtual runtime independent",
     async () => {

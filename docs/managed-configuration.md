@@ -4,9 +4,9 @@ GUI storage, YAML snapshot import and managed-file authority are explicit choice
 
 ## Read, preview and change the source
 
-Choose a file during native setup, use [unattended bootstrap](installation.md#unattended-managed-setup), or open **Occupied → Configuration → Use managed file** and enter its relative path. The complete candidate must validate and compile before replacing the saved program. Absolute paths, traversal and symlinks outside the config directory are rejected; files are bounded to 1 MiB and read in HA's executor.
+Choose a file during native setup, use [unattended bootstrap](installation.md#unattended-managed-setup), or open **Occupied → Settings → Advanced settings**, select **Import, export and managed files**, and choose **Use managed file**. Enter its relative path. The complete candidate must validate and compile before replacing the saved program. Absolute paths, traversal and symlinks outside the config directory are rejected; files are bounded to 1 MiB and read in HA's executor.
 
-File mode exposes the complete saved program. Forms, validation, seeded previews, ID migration and export can create a temporary draft. **Save program** is disabled and both backend save/apply APIs enforce file authority. Export the draft, review/deploy the resulting YAML, then reload the managed source. Importing a local browser file does not select it as the managed source.
+File mode exposes the complete saved program. The routine builder finishes with **Add to draft**; forms, previews, ID migration and export can create a temporary draft. **Save changes** is disabled and both backend save/apply APIs enforce file authority. Export the draft, review/deploy the resulting YAML, then reload the managed source. Importing a local browser file does not select it as the managed source.
 
 **Copy saved program to GUI storage** explicitly copies the current valid running program and changes authority. It leaves temporary draft edits separate; validate/save them afterward if desired. Invalid initial files must be corrected before they can be copied. Invalid source-switch candidates and stale revisions leave the existing source unchanged. Source switches keep one running engine and preserve already-started activity cleanup snapshots and deadlines.
 

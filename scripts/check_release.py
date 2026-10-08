@@ -29,7 +29,17 @@ assert schema == Program.model_json_schema(), "Regenerate schema/occupied.schema
 for name in ("house.yaml", "gui-house.yaml"):
     program = read_program(ROOT / "examples" / name)
     assert behavior_hash(load_yaml(export_yaml(program))) == behavior_hash(program)
-assert len(list((integration / "frontend").glob("*.js"))) == 7
+assert {path.name for path in (integration / "frontend").glob("*.js")} == {
+    "occupied-panel.js",
+    "forms.js",
+    "model.js",
+    "routine-model.js",
+    "routines.js",
+    "styles.js",
+    "timeline.js",
+    "translations.js",
+    "views.js",
+}, "Missing or unexpected frontend assets"
 for name in ("icon.png", "icon@2x.png"):
     assert (integration / "brand" / name).read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
 for path in integration.rglob("*.json"):
