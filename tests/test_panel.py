@@ -1,5 +1,6 @@
 """Public HA panel registration, authenticated API, and browser-independent dispatch."""
 
+import re
 from datetime import timedelta
 from pathlib import Path
 
@@ -16,7 +17,8 @@ async def test_panel_and_status_then_browser_closure(
     await hass.async_block_till_done()
     panel = hass.data[DATA_PANELS]["occupied"]
     assert panel.require_admin
-    assert panel.config["_panel_custom"]["module_url"] == "/occupied_static/occupied-panel.js"
+    module_url = panel.config["_panel_custom"]["module_url"]
+    assert re.fullmatch(r"/occupied_static/[0-9a-f]{16}/occupied-panel\.js", module_url)
     assert panel.config["config_entry_id"] == entry.entry_id
     client = await hass_ws_client(hass)
     await client.send_json({"id": 1, "type": "occupied/status", "config_entry_id": entry.entry_id})
@@ -61,7 +63,9 @@ async def test_bundled_asset_is_served_without_household_data(
 ):
     assert await hass.config_entries.async_setup(entry.entry_id)
     client = await hass_client()
-    response = await client.get(f"/occupied_static/{asset}")
+    module_url = hass.data[DATA_PANELS]["occupied"].config["_panel_custom"]["module_url"]
+    asset_url = f"{module_url.rsplit('/', 1)[0]}/{asset}"
+    response = await client.get(asset_url)
     assert response.status == 200
     assert "max-age" not in response.headers.get("Cache-Control", "")
     source = await response.text()

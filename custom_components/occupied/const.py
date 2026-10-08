@@ -5,7 +5,6 @@ from homeassistant.const import Platform
 DOMAIN = "occupied"
 PLATFORMS = (Platform.SWITCH, Platform.SENSOR)
 SUPPORTED_HA_VERSION = "2026.9.4"
-PANEL_URL = "/occupied_static/occupied-panel.js"
 SIGNAL_PREFIX = "occupied_updated"
 CONF_LIGHT = "light_entity"
 CONF_ACTIVATION_ENTITY = "activation_entity"
