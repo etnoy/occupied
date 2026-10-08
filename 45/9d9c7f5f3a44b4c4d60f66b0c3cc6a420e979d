@@ -1,0 +1,25 @@
+.github/workflows/check.yml
+  s_93150058f911ee::t_a89270d635dc5f 26-29,33-34,101-104,108-109
+README.md
+  s_93150058f911ee::t_9403ca3ac109ab 14
+docs/installation.md
+  s_93150058f911ee::t_e5ffe5a8d317f2 7,11
+docs/releasing.md
+  s_93150058f911ee::t_65dbe4b7a1d0ef 54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "459d9c7f5f3a44b4c4d60f66b0c3cc6a420e979d",
+  "prompts": {},
+  "sessions": {
+    "s_93150058f911ee": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ee2728531ffeBqs87DXSYqlrYO",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
