@@ -1,0 +1,55 @@
+README.md
+  s_e9d0bfbe517192::t_a330b6633035e4 17-18,80
+custom_components/occupied/frontend/occupied-panel.js
+  s_e9d0bfbe517192::t_a0ea6e24f72388 7-8,11,33,127,218,258,267,308,320,427,440-446,451-461,466,476,529,562,565,576,588,604,654,664,756-759,882
+custom_components/occupied/frontend/step-model.js
+  s_e9d0bfbe517192::t_aaa32b690d78c0 22,48-54,82-83,87-89,106-113,116-117,126,129-138,183-184,187-197,217,231-245,247-258,260,271-276,285-286,293-310,312,317,322,328,332-339,344-349,360,365,368,387,413-416,418-432,470,475-478,500
+custom_components/occupied/frontend/steps.js
+  s_e9d0bfbe517192::t_7f97ab7a34c5d5 4-6,8,11,13-14,31-40,47,53-54,56,60,68,81,90,100,102,127,143,176,191-193,197,199-201,210,222,238,240,258,265,270,315-326,349-367,372-376,393-403,405-406,416-418,443-448,473-475,479,507,517-520,525,540-579,583,626-629,636,643,645,650-676,693,700,709,731-734,736,740-741,743,746-802,804-830,833-835,920,942,953,958-959,964-965
+custom_components/occupied/frontend/translations.js
+  s_b8b179bbabaaad::t_c52d10ac78f0c4 3-14,16-20,22,25,39-41,70
+custom_components/occupied/frontend/views.js
+  s_e9d0bfbe517192::t_e73c9258ec354a 785
+custom_components/occupied/planner.py
+  s_e9d0bfbe517192::t_1a6b1fbbba36f0 40,275-281,295-299
+docs/editor.md
+  s_e9d0bfbe517192::t_0167cde2165147 5,7,9-12,14,16,24,26,36,48,52,79,81
+docs/schema.md
+  s_e9d0bfbe517192::t_6bd58dc25f113e 52
+examples/steps.yaml
+  s_e9d0bfbe517192::t_f3ca439e15a4f4 1-46
+scripts/check_release.py
+  s_b8b179bbabaaad::t_fda7e3052f8a00 29,36-37
+tests/frontend/model.test.mjs
+  s_b8b179bbabaaad::t_5d4e87dd8f2943 12-15,19,115,117,121,127-128,139,151,153,158,183,185,189,199,201,219,221,224,231,235,248,254,264,267-269,271,280-281,283,290,294-400
+tests/frontend/routine-workflows.js
+  s_b8b179bbabaaad::t_81a77d41cdcac6 2,60,63,92,110,144,146,159,161,169,171,183,198,212,250,252,257,265,278,285,291,299,308,332,353,362,376,382,388,394,404,411-486,493,500,502-503
+tests/frontend/serve.py
+  s_e9d0bfbe517192::t_feb30bad5dfcb9 100-101,105-106
+tests/test_planner.py
+  s_e9d0bfbe517192::t_69e717d2d0a882 338-390
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "e9dd997533417e54f34a0d2770cb246cfbdd0b40",
+  "prompts": {},
+  "sessions": {
+    "s_b8b179bbabaaad": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11cd9-b362-7b23-89b5-3674176646fe",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_e9d0bfbe517192": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11cd7-6c80-7051-9089-5e4734710069",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
