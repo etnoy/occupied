@@ -5,7 +5,7 @@ import json
 import math
 import random
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, timedelta
 from typing import Any, Literal
 
@@ -37,7 +37,7 @@ from .validation import (
     validation_warnings,
 )
 
-PLANNER_VERSION = 1
+PLANNER_VERSION = 2
 
 
 class RandomStreams:
@@ -57,8 +57,9 @@ def sample_range(
     distribution: str = "uniform",
     *,
     maximum: float | None = None,
+    minimum: float | None = None,
 ) -> float:
-    low = bounds.lower
+    low = max(bounds.lower, minimum or 0)
     high = bounds.upper if maximum is None else min(bounds.upper, maximum)
     if high < low:
         raise ValueError("Infeasible duration bounds")
@@ -97,7 +98,15 @@ class PlanEvent:
     id: str
     at: datetime
     source_id: str
-    kind: Literal["step", "activity_start", "activity_end", "window_start", "window_end"]
+    kind: Literal[
+        "step",
+        "activity_start",
+        "activity_end",
+        "window_start",
+        "window_end",
+        "window_action_start",
+        "window_action_end",
+    ]
     action: ResolvedAction
     sequence: int = 0
     priority: int = 20
@@ -105,7 +114,7 @@ class PlanEvent:
 
     @property
     def order_key(self):
-        ending = self.kind in {"activity_end", "window_end"}
+        ending = self.kind in {"activity_end", "window_end", "window_action_end"}
         return self.at, self.priority, 0 if ending else 1, self.source_id, self.sequence, self.id
 
     def to_dict(self, zone=None):
@@ -524,8 +533,29 @@ class _Planner:
         gap = item.min_gap if item.min_gap is not None else defaults.activity_windows.min_gap
         distribution = item.time_distribution or defaults.time_distribution
         span = (end - start).total_seconds()
-        if bounds.lower > span or (
-            not overlap and count * bounds.lower + max(0, count - 1) * gap > span
+        start_delay = sum(
+            max(0, len(resolve_targets(self.program, action.targets)) - 1)
+            * (action.stagger or defaults.stagger).upper
+            for action in item.on_start
+        )
+        end_delay = sum(
+            max(0, len(resolve_targets(self.program, action.targets)) - 1)
+            * (action.stagger or defaults.stagger).upper
+            for action in item.on_end
+        )
+        minimum_duration = max(bounds.lower, start_delay + (0.001 if item.on_start else 0))
+        if minimum_duration > bounds.upper:
+            raise ProgramError(
+                [
+                    Issue(
+                        "window_start_actions",
+                        f"Window {item.id}: start actions cannot finish within the maximum "
+                        "cycle duration",
+                    )
+                ]
+            )
+        if minimum_duration > span or (
+            not overlap and count * (minimum_duration + end_delay) + max(0, count - 1) * gap > span
         ):
             raise ProgramError(
                 [
@@ -537,14 +567,15 @@ class _Planner:
                 ]
             )
         durations = []
-        remaining = span - max(0, count - 1) * gap
+        remaining = span - count * end_delay - max(0, count - 1) * gap
         for index in range(count):
-            maximum = span if overlap else remaining - (count - index - 1) * bounds.lower
+            maximum = span if overlap else remaining - (count - index - 1) * minimum_duration
             duration = sample_range(
                 bounds,
                 self.streams.rng("window", item.id, "duration", index),
                 distribution,
                 maximum=maximum,
+                minimum=minimum_duration,
             )
             durations.append(duration)
             remaining -= duration
@@ -557,7 +588,10 @@ class _Planner:
                 for index, duration in enumerate(durations)
             ]
         else:
-            slack = max(0, span - sum(durations) - max(0, count - 1) * gap)
+            slack = max(
+                0,
+                span - sum(durations) - count * end_delay - max(0, count - 1) * gap,
+            )
             weights = [
                 -math.log(
                     max(self.streams.rng("window", item.id, "gap", attempt, index).random(), 1e-300)
@@ -570,7 +604,9 @@ class _Planner:
             cursor = extra_gaps[0]
             for index, duration in enumerate(durations):
                 offsets.append(cursor)
-                cursor += duration + (gap if index < count - 1 else 0) + extra_gaps[index + 1]
+                cursor += (
+                    duration + end_delay + (gap if index < count - 1 else 0) + extra_gaps[index + 1]
+                )
         for index, (offset, duration) in enumerate(zip(offsets, durations, strict=True)):
             interval_start = start + timedelta(seconds=offset)
             interval_end = min(end, interval_start + timedelta(seconds=duration))
@@ -678,6 +714,37 @@ class _Planner:
                     continue
                 self.intervals.extend(chosen)
                 for interval in chosen:
+                    if item.on_start:
+                        planned_events = []
+                        for kind, at, actions in (
+                            ("window_action_start", interval.start, item.on_start),
+                            ("window_action_end", interval.end, item.on_end),
+                        ):
+                            planned = self.action_events(
+                                f"{item.id}:{interval.id}", kind, at, actions, defaults, path
+                            )
+                            planned_events.extend(
+                                replace(
+                                    event,
+                                    source_id=item.id,
+                                    lease_id=interval.id,
+                                    priority=10,
+                                )
+                                for event in planned
+                            )
+                        if not item.allow_cross_boundary and any(
+                            not self.day.contains(event.at) for event in planned_events
+                        ):
+                            self.issues.append(
+                                Issue(
+                                    "outside_day",
+                                    f"Window {item.id} actions extend outside the simulation day",
+                                    path,
+                                )
+                            )
+                            continue
+                        self.events.extend(planned_events)
+                        continue
                     for index, entity in enumerate(interval.resources):
                         domain = entity.split(".")[0]
                         for kind, at, service, payload in (

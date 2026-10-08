@@ -76,6 +76,19 @@ def runtime_dates(program, today):
         for window in routine.activity_windows:
             if window.probability == 0:
                 continue
+            if window.on_start:
+                start_size, _ = action_size(window.on_start, defaults)
+                end_size, end_delay = action_size(window.on_end, defaults)
+                interval_count += window.cycles.upper
+                event_count += window.cycles.upper * (start_size + end_size)
+                if window.allow_cross_boundary:
+                    low = anchor_bounds(window.between.start)[0]
+                    high = anchor_bounds(window.between.end)[1]
+                    include(
+                        low,
+                        high + (DAY if window.between.cross_midnight else 0) + end_delay,
+                    )
+                continue
             size = len(resolve_targets(program, window.targets))
             mode = window.target_mode or defaults.activity_windows.target_mode
             if mode == "one":

@@ -53,7 +53,7 @@ An HA integration can also start Occupied's `import` config flow with canonical 
 
 ## Permission, dry run and status
 
-The Occupied configuration panel exposes enable/disable, pause/resume, and live/dry selection. Dashboard entities include enabled and dry-run switches, status/reason, and the next event. Start/resume reevaluates native HA activation conditions; it cannot bypass them. Missing, unknown, or unavailable dependencies block dispatch, including dependencies inside negated predicates. Changes between two allowed states retain the same session.
+The Occupied configuration panel exposes enable/disable, pause/resume, and live/dry selection. Random windows can repeat arbitrary service start/end action lists, including scenes and scripts, and `event.fire` emits native HA events. These generic effects are opaque, so interruption cannot infer a compensating action; define an explicit end action for normal cycle completion. Dashboard entities include enabled and dry-run switches, status/reason, and the next event. Start/resume reevaluates native HA activation conditions; it cannot bypass them. Missing, unknown, or unavailable dependencies block dispatch, including dependencies inside negated predicates. Changes between two allowed states retain the same session.
 
 Select **Dry run** before enabling a new daily program to inspect its behavior. It uses real activation state and a private virtual device-state overlay for typed controls, leases, handover, and activity conditions. Journal entries record `would_dispatch`; no simulation service calls reach devices. Opaque scripts/scenes have no inferred effects, so conditions dependent on those effects cannot be confirmed automatically in dry run.
 

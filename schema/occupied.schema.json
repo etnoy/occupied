@@ -364,6 +364,22 @@
         "targets": {
           "$ref": "#/$defs/Targets"
         },
+        "on_start": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Action"
+          },
+          "title": "On Start",
+          "type": "array"
+        },
+        "on_end": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Action"
+          },
+          "title": "On End",
+          "type": "array"
+        },
         "on_duration": {
           "anyOf": [
             {
@@ -458,8 +474,7 @@
         "id",
         "name",
         "between",
-        "cycles",
-        "targets"
+        "cycles"
       ],
       "title": "ActivityWindow",
       "type": "object"

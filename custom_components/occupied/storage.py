@@ -87,7 +87,16 @@ def plan_from_data(data: dict) -> DailyPlan:
     if start >= end or len(events) > 50000 or len(intervals) > 10000:
         raise ValueError("Invalid or oversized saved plan")
     if any(
-        item.kind not in {"step", "activity_start", "activity_end", "window_start", "window_end"}
+        item.kind
+        not in {
+            "step",
+            "activity_start",
+            "activity_end",
+            "window_start",
+            "window_end",
+            "window_action_start",
+            "window_action_end",
+        }
         for item in events
     ):
         raise ValueError("Unknown saved event kind")

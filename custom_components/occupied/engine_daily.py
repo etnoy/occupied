@@ -855,12 +855,14 @@ class DailyEngine:
             return False
         if (set(action.targets) | set(action.resources)) & self._yielded:
             return False
-        if any(self._observe(entity) is None for entity in action.targets):
+        if action.action.startswith(("light.", "switch.")) and any(
+            self._observe(entity) is None for entity in action.targets
+        ):
             self._finish(key, "unavailable", action)
             return False
         domain, service = action.action.split(".")
         data = service_payload(self.hass, action)
-        if not self.hass.services.has_service(domain, service):
+        if action.action != "event.fire" and not self.hass.services.has_service(domain, service):
             self._finish(key, "service_missing", action)
             return False
         context = Context()
@@ -895,9 +897,14 @@ class DailyEngine:
             return True
         try:
             async with asyncio.timeout(SERVICE_TIMEOUT):
-                await self.hass.services.async_call(
-                    domain, service, data, blocking=True, context=context
-                )
+                if action.action == "event.fire":
+                    self.hass.bus.async_fire(
+                        data["event_type"], data.get("event_data", {}), context=context
+                    )
+                else:
+                    await self.hass.services.async_call(
+                        domain, service, data, blocking=True, context=context
+                    )
         except Exception as err:
             self.last_error = f"{action.action}: {err}"
             self._finish(key, "failed", action, self.last_error)
@@ -964,7 +971,7 @@ class DailyEngine:
             await self._start_activity(plan, event, key, generation)
             return
         targets = action.targets
-        if event.kind.startswith("window_"):
+        if event.kind in {"window_start", "window_end"}:
             interval = next(item for item in plan.intervals if item.id == event.lease_id)
             entity = targets[0]
             lease_id = f"{plan.simulation_date}:{event.lease_id}"

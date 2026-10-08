@@ -410,7 +410,15 @@ export function editView(panel, root) {
           box,
           [...ap, "action"],
           "Service or typed action",
-          { suggestions: ["turn_on", "turn_off", "safety_off", ...services] },
+          {
+            suggestions: [
+              "turn_on",
+              "turn_off",
+              "safety_off",
+              "event.fire",
+              ...services,
+            ],
+          },
         );
         actionInput.addEventListener("change", () => panel.renderView());
         f.targets(box, [...ap, "targets"]);
@@ -456,6 +464,12 @@ export function editView(panel, root) {
               optional: true,
               selector: description.selector,
               help: description.description,
+            });
+          }
+          if (action.action === "event.fire") {
+            f.text(data, [...ap, "data", "event_type"], "Event type");
+            f.json(data, [...ap, "data", "event_data"], "Event data", {
+              initial: {},
             });
           }
         }
@@ -581,9 +595,41 @@ export function editView(panel, root) {
       );
   };
   const window = (parent, path) => {
+    const item = get(p, path) || {};
     between(parent, [...path, "between"]);
-    f.targets(parent, [...path, "targets"]);
     f.range(parent, [...path, "cycles"], "Cycle count", { count: true });
+    const generic = !!(item.on_start?.length || item.on_end?.length);
+    if (generic) {
+      actions(parent, [...path, "on_start"], "Start actions");
+      actions(parent, [...path, "on_end"], "End actions");
+      parent.append(
+        button(t("Use light/switch targets instead"), () => {
+          panel.change([...path, "on_start"], []);
+          panel.change([...path, "on_end"], []);
+          panel.change([...path, "targets"], { groups: [], entities: [] });
+          panel.renderView();
+        }),
+      );
+    } else {
+      f.targets(parent, [...path, "targets"]);
+      parent.append(
+        button(t("Use generic start/end actions"), () => {
+          panel.change([...path, "targets"], { groups: [], entities: [] });
+          panel.change([...path, "data"], {});
+          panel.change([...path, "target_mode"], undefined);
+          panel.change([...path, "subset_size"], undefined);
+          panel.change([...path, "weights"], undefined);
+          const sceneAction = {
+            action: "scene.turn_on",
+            targets: { entities: [] },
+            data: {},
+          };
+          panel.change([...path, "on_start"], [{ ...sceneAction }]);
+          panel.change([...path, "on_end"], [{ ...sceneAction }]);
+          panel.renderView();
+        }),
+      );
+    }
     f.range(parent, [...path, "on_duration"], "On duration", {
       optional: true,
     });
@@ -601,25 +647,30 @@ export function editView(panel, root) {
       ],
       { optional: true, boolean: true },
     );
-    f.select(
-      parent,
-      [...path, "target_mode"],
-      "Target mode",
-      ["all", "one", "subset", "weighted_subset"],
-      { optional: true },
-    );
-    f.range(parent, [...path, "subset_size"], "Subset size", {
-      count: true,
-      optional: true,
-    });
-    f.json(parent, [...path, "weights"], "Entity weights", { initial: {} });
+    if (!generic) {
+      f.select(
+        parent,
+        [...path, "target_mode"],
+        "Target mode",
+        ["all", "one", "subset", "weighted_subset"],
+        { optional: true },
+      );
+      f.range(parent, [...path, "subset_size"], "Subset size", {
+        count: true,
+        optional: true,
+      });
+      f.json(parent, [...path, "weights"], "Entity weights", { initial: {} });
+    }
     f.number(
       parent,
       [...path, "max_simultaneous"],
       "Maximum simultaneous intervals",
       { optional: true, min: 1, max: 1000, step: 1 },
     );
-    f.json(parent, [...path, "data"], "Light-on service data", { initial: {} });
+    if (!generic)
+      f.json(parent, [...path, "data"], "Light-on service data", {
+        initial: {},
+      });
   };
   const collection = (parent, path, kind, render) => {
     const values = get(p, path) || [],

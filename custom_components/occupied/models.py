@@ -344,7 +344,9 @@ class Activity(Item):
 class ActivityWindow(Item):
     between: Between
     cycles: CountRange
-    targets: Targets
+    targets: Targets = Field(default_factory=Targets)
+    on_start: tuple[Action, ...] = ()
+    on_end: tuple[Action, ...] = ()
     on_duration: DurationRange | None = None
     min_gap: Duration | None = None
     overlap: bool | None = None

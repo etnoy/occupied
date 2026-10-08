@@ -87,7 +87,7 @@ The nominal end deadline is the sampled duration after completion of the planned
 
 ## Bounded activity windows
 
-A window requires `between`, `cycles`, and light/switch `targets`. It can override on-duration, gap, overlap, probability, distribution, and target mode. Optional `data` describes light on-intents; switch targets cannot receive brightness/color data.
+A window requires `between` and `cycles`. The existing `targets` form repeats light/switch on/off leases. For service-based cycles, provide ordered `on_start` and `on_end` action lists instead; these use the same action format as steps and timed activities, so scenes and scripts work as targets. The two forms are mutually exclusive. Each sampled cycle dispatches its start list at the interval start and its end list at the interval end. Generic actions are opaque and Occupied cannot infer or clean up their effects if a cycle is interrupted.
 
 ```yaml
 between:
@@ -98,6 +98,32 @@ on_duration: {min: 5m, max: 25m}
 min_gap: 10m
 overlap: false
 targets: {groups: [kitchen]}
+```
+
+Generic cycles can repeat arbitrary service actions. For example, to activate an on-scene and later activate an off-scene:
+
+```yaml
+between:
+  start: {clock: "17:00"}
+  end: {clock: "23:00"}
+cycles: {fixed: 4}
+on_duration: {min: 5m, max: 2h30m}
+on_start:
+  - action: scene.turn_on
+    targets: {entities: [scene.office_on]}
+on_end:
+  - action: scene.turn_on
+    targets: {entities: [scene.office_off]}
+```
+
+`event.fire` emits a native Home Assistant event without a script workaround. Put its event name in `data.event_type` and an optional payload object in `data.event_data`. This action can appear in any supported action list:
+
+```yaml
+actions:
+  - action: event.fire
+    data:
+      event_type: occupied_presence
+      event_data: {room: office, state: active}
 ```
 
 An anchor chooses exactly one `step`, `clock`, or `sun` (`sunrise`/`sunset`), plus optional signed `offset`. Clock/sun anchors support `day_offset: 1`; step anchors preserve the dependency date and use offsets instead. Sun anchors alone accept a quoted clock `fallback`. Windows must have positive elapsed length.

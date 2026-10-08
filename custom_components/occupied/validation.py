@@ -83,6 +83,8 @@ def actions_with_paths(program: Program):
             if isinstance(item, Step)
             else ("on_start", "on_end")
             if isinstance(item, Activity)
+            else ("on_start", "on_end")
+            if isinstance(item, ActivityWindow)
             else ()
         )
         for field in fields:
@@ -340,6 +342,31 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
                         path + ("data",),
                     )
                 )
+        elif action.action == "event.fire":
+            event_type = action.data.get("event_type")
+            event_data = action.data.get("event_data", {})
+            if not isinstance(event_type, str) or not event_type.strip():
+                errors.append(
+                    Issue(
+                        "event_type",
+                        "event.fire requires a nonempty event_type",
+                        path + ("data", "event_type"),
+                    )
+                )
+            if not isinstance(event_data, dict):
+                errors.append(
+                    Issue(
+                        "event_data", "event_data must be an object", path + ("data", "event_data")
+                    )
+                )
+            if targets or action.resources or set(action.data) - {"event_type", "event_data"}:
+                errors.append(
+                    Issue(
+                        "event_action",
+                        "event.fire accepts event_type/event_data only and has no targets",
+                        path,
+                    )
+                )
         elif any(key in action.data for key in ("entity_id", "device_id", "area_id")):
             errors.append(
                 Issue(
@@ -372,14 +399,32 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
                 )
         elif isinstance(item, ActivityWindow):
             targets = resolve_targets(program, item.targets)
+            generic = bool(item.on_start or item.on_end)
             duration = item.on_duration or defaults.activity_windows.on_duration
             overlap = (
                 item.overlap if item.overlap is not None else defaults.activity_windows.overlap
             )
             gap = item.min_gap if item.min_gap is not None else defaults.activity_windows.min_gap
             mode = item.target_mode or defaults.activity_windows.target_mode
-            if not targets or any(
-                entity.split(".")[0] not in {"light", "switch"} for entity in targets
+            if generic and (targets or not item.on_start or not item.on_end):
+                errors.append(
+                    Issue(
+                        "window_actions",
+                        "Generic windows need on_start/on_end and cannot use targets",
+                        path,
+                    )
+                )
+            if generic and item.data:
+                errors.append(
+                    Issue(
+                        "window_action_data",
+                        "Put service data on the window's individual actions",
+                        path + ("data",),
+                    )
+                )
+            if not generic and (
+                not targets
+                or any(entity.split(".")[0] not in {"light", "switch"} for entity in targets)
             ):
                 errors.append(
                     Issue(
@@ -404,7 +449,7 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
                         path + ("min_gap",),
                     )
                 )
-            if mode in {"subset", "weighted_subset"}:
+            if not generic and mode in {"subset", "weighted_subset"}:
                 size = item.subset_size
                 if size is None or size.lower < 1 or size.upper > len(targets):
                     errors.append(
@@ -414,7 +459,7 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
                             path + ("subset_size",),
                         )
                     )
-            elif item.subset_size is not None:
+            elif not generic and item.subset_size is not None:
                 errors.append(
                     Issue(
                         "subset_size",
@@ -422,7 +467,7 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
                         path + ("subset_size",),
                     )
                 )
-            if set(item.weights) - set(targets):
+            if not generic and set(item.weights) - set(targets):
                 errors.append(
                     Issue(
                         "target_weights",
@@ -430,9 +475,21 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
                         path + ("weights",),
                     )
                 )
-            if problem := validate_light_data(item.data):
+            if not generic and (problem := validate_light_data(item.data)):
                 errors.append(Issue("control_data", problem, path + ("data",)))
-            if any(entity.startswith("switch.") for entity in targets) and item.data:
+            if generic and (item.subset_size is not None or item.weights or item.target_mode):
+                errors.append(
+                    Issue(
+                        "window_target_mode",
+                        "Target selection settings apply only to light/switch windows",
+                        path,
+                    )
+                )
+            if (
+                not generic
+                and any(entity.startswith("switch.") for entity in targets)
+                and item.data
+            ):
                 errors.append(
                     Issue(
                         "switch_light_data",
@@ -500,6 +557,7 @@ def validation_warnings(program: Program) -> tuple[Issue, ...]:
             "light.turn_off",
             "switch.turn_on",
             "switch.turn_off",
+            "event.fire",
         }:
             warnings.append(
                 Issue(
