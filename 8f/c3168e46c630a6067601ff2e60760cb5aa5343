@@ -1,0 +1,27 @@
+custom_components/occupied/frontend/routine-model.js
+  s_24a58996e5c8f7::t_2f7ca207932b88 176
+custom_components/occupied/frontend/routines.js
+  s_24a58996e5c8f7::t_a1935daa16b2d0 266-267,272,286-288,346-352,406-414,443-444,446,455-460,466,481,492,501,511-514,516-517,521,549,562,576,587,627,629,659,698,701-704,717,737,747,754-758,760
+custom_components/occupied/frontend/styles.js
+  s_24a58996e5c8f7::t_e8f594c647e64c 66-72
+docs/editor.md
+  s_24a58996e5c8f7::t_256f6956962696 16
+tests/frontend/routine-workflows.js
+  s_24a58996e5c8f7::t_e9720616e2f93d 206-223,245-251,341-344
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "8fc3168e46c630a6067601ff2e60760cb5aa5343",
+  "prompts": {},
+  "sessions": {
+    "s_24a58996e5c8f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a20-8b1b-75f2-95cd-c786681cd9e8",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
