@@ -4,10 +4,11 @@ import { editView } from "./views.js";
 import { timeline, stamp } from "./timeline.js";
 import { styles } from "./styles.js";
 import { translator } from "./translations.js";
-import { renderRoutines } from "./routines.js";
+import { renderSteps } from "./steps.js";
+import { stepEntries } from "./step-model.js";
 
 const tabs = {
-  routines: "Your routines",
+  routines: "Your steps",
   settings: "Settings",
 };
 
@@ -29,7 +30,7 @@ export class OccupiedPanel extends HTMLElement {
     this.error = "";
     this.previewSettings = { date: "", days: 7, seed: "preview-1", at: "" };
     this._beforeUnload = (e) => {
-      if (this.dirty || this.routineEditor?.changed) {
+      if (this.dirty || this.stepEditor?.changed) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -123,7 +124,7 @@ export class OccupiedPanel extends HTMLElement {
               this._timelineTimer = null;
               this.loadTimeline();
             }, 1000);
-          if (this.stale && !this.dirty && !this.busy && !this.routineEditor)
+          if (this.stale && !this.dirty && !this.busy && !this.stepEditor)
             this.reloadSaved();
         },
         { type: "occupied/subscribe", config_entry_id: this._loadedEntry },
@@ -214,7 +215,7 @@ export class OccupiedPanel extends HTMLElement {
         button(
           this.t(label),
           () => {
-            if (this.routineEditor) return;
+            if (this.stepEditor) return;
             this.tab = id;
             this.renderView();
           },
@@ -254,7 +255,7 @@ export class OccupiedPanel extends HTMLElement {
       !this.dirty;
     discard.disabled = this.busy || !this.draft;
     node.replaceChildren();
-    if (this.dirty && !this.routineEditor) node.append(save, discard);
+    if (this.dirty && !this.stepEditor) node.append(save, discard);
     if (this.stale)
       node.append(
         button(this.t("Reload saved program"), () => this.reloadSaved(true), {
@@ -263,7 +264,7 @@ export class OccupiedPanel extends HTMLElement {
       );
     node.hidden = !node.childElementCount;
     for (const button of this.shadowRoot.querySelectorAll("nav [data-tab]"))
-      button.disabled = !!this.routineEditor;
+      button.disabled = !!this.stepEditor;
     for (const button of this.shadowRoot.querySelectorAll(
       ".builder-footer button",
     ))
@@ -304,7 +305,7 @@ export class OccupiedPanel extends HTMLElement {
       );
       control.disabled =
         this.busy ||
-        !!this.routineEditor ||
+        !!this.stepEditor ||
         (!this.status.enabled &&
           !resources(this.saved).some((r) =>
             ["step", "activity", "window"].includes(r.kind),
@@ -316,7 +317,7 @@ export class OccupiedPanel extends HTMLElement {
       ? this.t(
           "The saved program changed. Your draft is preserved; reload the saved program before saving.",
         )
-      : this.dirty && !this.routineEditor
+      : this.dirty && !this.stepEditor
         ? this.t("Unsaved edits")
         : "";
     if (this.document?.source === "file")
@@ -423,7 +424,7 @@ export class OccupiedPanel extends HTMLElement {
   }
   focusIssue(issue) {
     const path = issue.model_path || [];
-    const editor = this.routineEditor;
+    const editor = this.stepEditor;
     if (editor) {
       const prefix = editor.candidatePath || [];
       if (prefix.length && prefix.every((key, i) => path[i] === key)) {
@@ -436,19 +437,33 @@ export class OccupiedPanel extends HTMLElement {
               : tail[0] === "actions"
                 ? tail.includes("targets")
                   ? "entities"
-                  : "brightness"
+                  : editor.form.kind === "service"
+                    ? tail.includes("data")
+                      ? "data"
+                      : "service"
+                    : editor.form.kind === "scene"
+                      ? "entities"
+                      : "brightness"
                 : tail.includes("relative_to")
                   ? "parent"
                   : tail.includes("fallback")
                     ? "fallback"
-                    : editor.form.timing.mode === "clock"
-                      ? "time"
-                      : "offset";
+                    : editor.form.timing.mode === "interval"
+                      ? tail.includes("latest")
+                        ? "latest"
+                        : "earliest"
+                      : editor.form.timing.mode === "clock"
+                        ? "time"
+                        : editor.form.timing.offsetMode === "interval"
+                          ? tail.includes("max")
+                            ? "maxOffset"
+                            : "minOffset"
+                          : "offset";
         editor.errors[field] = issue.message;
         editor.stage =
           field === "entities"
             ? 0
-            : ["name", "brightness"].includes(field)
+            : ["name", "brightness", "service", "data"].includes(field)
               ? 1
               : 2;
         this.renderView();
@@ -458,7 +473,7 @@ export class OccupiedPanel extends HTMLElement {
       } else
         this.fail(
           this.t(
-            "Finish or cancel this routine to edit other configuration issues.",
+            "Finish or cancel this step to edit other configuration issues.",
           ),
         );
       return;
@@ -511,7 +526,7 @@ export class OccupiedPanel extends HTMLElement {
     const version = this.version,
       draft = copy(candidate || this.draft),
       expected = this.revision;
-    const editor = this.routineEditor;
+    const editor = this.stepEditor;
     const submittedForm = editor ? copy(editor.form) : null;
     return this.run(async (epoch) => {
       const validation = await this.ws("editor_validate", { program: draft });
@@ -544,10 +559,10 @@ export class OccupiedPanel extends HTMLElement {
       this.revision = result.revision;
       this.stale = false;
       this.document.needs_apply = false;
-      if (editor && this.routineEditor === editor) {
+      if (editor && this.stepEditor === editor) {
         this.draft = copy(result.program);
         this.dirty = false;
-        this.selectedRoutine = editor.id;
+        this.selectedStep = editor.id;
         editor.existing = true;
         // Future patches compare against what was actually saved. This also
         // preserves a user reverting a field while its previous value saves.
@@ -558,7 +573,7 @@ export class OccupiedPanel extends HTMLElement {
           );
           return;
         }
-        this.routineEditor = null;
+        this.stepEditor = null;
       }
       if (version === this.version) {
         this.draft = copy(result.program);
@@ -570,7 +585,7 @@ export class OccupiedPanel extends HTMLElement {
     });
   }
   async reloadSaved(discard = false) {
-    if (this.busy || ((this.dirty || this.routineEditor) && !discard)) return;
+    if (this.busy || ((this.dirty || this.stepEditor) && !discard)) return;
     const version = this.version;
     return this.run(async (epoch) => {
       const doc = await this.ws("program");
@@ -586,7 +601,7 @@ export class OccupiedPanel extends HTMLElement {
       this.raw.clear();
       this.localErrors.clear();
       this.issues = [];
-      this.routineEditor = null;
+      this.stepEditor = null;
       this.renderView();
     });
   }
@@ -636,9 +651,7 @@ export class OccupiedPanel extends HTMLElement {
     if (!["routines", "settings"].includes(this.tab))
       secondaryNav.append(
         button(
-          this.t(
-            this.tab === "preview" ? "Back to routines" : "Back to settings",
-          ),
+          this.t(this.tab === "preview" ? "Back to steps" : "Back to settings"),
           () => {
             this.tab = this.tab === "preview" ? "routines" : "settings";
             this.renderView();
@@ -648,7 +661,7 @@ export class OccupiedPanel extends HTMLElement {
       );
     if (this.tab === "routines") {
       try {
-        renderRoutines(this, root);
+        renderSteps(this, root);
       } catch (error) {
         root.replaceChildren();
         root.append(
@@ -740,8 +753,10 @@ export class OccupiedPanel extends HTMLElement {
         state.source_revision?.slice(0, 12) || this.revision?.slice(0, 12),
       ],
       [
-        "Routines",
-        (this.saved.routines || []).map((x) => x.name).join(", ") || t("None"),
+        "Steps",
+        stepEntries(this.saved)
+          .map((x) => x.name)
+          .join(", ") || t("None"),
       ],
       ["Yielded targets", (state.yielded || []).join(", ") || t("None")],
     ];
@@ -864,7 +879,7 @@ export class OccupiedPanel extends HTMLElement {
       root,
       t("Preview schedule"),
       t(
-        "See how your routines could play out. Previewing never controls devices or changes the running schedule.",
+        "See how your steps could play out. Previewing never controls devices or changes the running schedule.",
       ),
     );
     const advanced = details(box, t("Preview options"));

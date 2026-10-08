@@ -49,7 +49,7 @@ when:
   offset_range: {min: 5m, max: 20m}
 ```
 
-`when.distribution` optionally selects `uniform` or `triangular`. Relative instants retain their parent step's dependency date and add elapsed UTC duration. A missing/skipped parent suppresses dependent work with an explanation. Cycles and dangling anchors are errors. If a parent is unavailable on some selected weekdays, narrow the dependent days or explicitly choose `missing_anchor: skip`.
+Step start times always use uniform sampling, including clock, sun and relative intervals. Equal bounds give a fixed start time. Legacy `when.distribution`, `time_distribution` and range `mode` fields remain accepted for compatibility but do not change step start sampling. Timed activities still allow `when.distribution` to select `uniform` or `triangular`. Relative instants retain their parent step's dependency date and add elapsed UTC duration. A missing/skipped parent suppresses dependent work with an explanation. Cycles and dangling anchors are errors. If a parent is unavailable on some selected weekdays, narrow the dependent days or explicitly choose `missing_anchor: skip`.
 
 Clock ranges crossing midnight require `cross_midnight: true` inside `clock_range`. Windows use the same flag inside `between`/`within`. Crossing the simulation-day boundary additionally requires `allow_cross_boundary: true` on the item. These are separate choices: 23:00–01:00 crosses midnight but stays within a default 02:00 day.
 

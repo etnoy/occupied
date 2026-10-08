@@ -1,0 +1,46 @@
+schema_version: 1
+name: Morning steps
+# Version 1 retains routines as schedule containers; each behavior is a step.
+routines:
+  - id: weekday_morning
+    name: Weekday morning
+    days: [mon, tue, wed, thu, fri]
+    steps:
+      - id: morning
+        name: Morning
+        when:
+          clock_range: {earliest: '06:40:00', latest: '07:20:00'}
+        actions:
+          - action: turn_on
+            targets:
+              entities: [light.bedroom, light.childrens_room]
+      - id: breakfast
+        name: Breakfast
+        when:
+          relative_to: morning
+          offset_range: {min: 10s, max: 20m}
+        actions:
+          - action: turn_on
+            targets:
+              entities: [light.hall, light.kitchen]
+      - id: breakfast_scene
+        name: Breakfast scene
+        when:
+          relative_to: breakfast
+          offset_range: {fixed: 0s}
+        actions:
+          - action: scene.turn_on
+            targets:
+              entities: [scene.breakfast]
+      - id: sunrise_blinds
+        name: Sunrise blinds
+        when:
+          sun_range:
+            sun: sunrise
+            offset_range: {min: -10m, max: 10m}
+            fallback: '07:00'
+        actions:
+          - action: cover.set_cover_position
+            targets:
+              entities: [cover.kitchen, cover.living_room]
+            data: {position: 75}

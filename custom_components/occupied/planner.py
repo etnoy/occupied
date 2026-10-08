@@ -37,7 +37,7 @@ from .validation import (
     validation_warnings,
 )
 
-PLANNER_VERSION = 2
+PLANNER_VERSION = 3
 
 
 class RandomStreams:
@@ -272,7 +272,13 @@ class _Planner:
         self, item: Step | Activity, defaults: Defaults, path: ModelPath, attempt: int = 0
     ) -> datetime | None:
         spec = item.when
-        distribution = spec.distribution or item.time_distribution or defaults.time_distribution
+        # A step always picks uniformly within its start interval. Activity
+        # timing retains its configurable distribution for compatibility.
+        distribution = (
+            "uniform"
+            if isinstance(item, Step)
+            else spec.distribution or item.time_distribution or defaults.time_distribution
+        )
         kind = "step" if isinstance(item, Step) else "activity"
         rng = self.streams.rng(kind, item.id, "start", attempt)
         if spec.relative_to is not None:
@@ -286,7 +292,11 @@ class _Planner:
                     )
                 )
                 return None
-            return anchor + timedelta(seconds=sample_range(spec.offset_range, rng, distribution))
+            return anchor + timedelta(
+                seconds=sample_range(
+                    spec.offset_range, rng, distribution, minimum=spec.offset_range.lower
+                )
+            )
         if spec.clock_range is not None:
             bounds = self.day.clock_bounds(spec.clock_range, path + ("when", "clock_range"))
         else:

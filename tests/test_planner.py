@@ -335,3 +335,56 @@ def test_subset_concurrency_counts_only_groups_with_selected_targets(
     assert plan.feasible is feasible
     first = next(item for item in plan.intervals if item.source_id == "room_use")
     assert first.groups == ("room",)
+
+
+@pytest.mark.parametrize("anchor", ["clock", "sun", "relative"])
+def test_step_start_intervals_always_sample_uniformly(program_dict, anchor):
+    from custom_components.occupied.planner import RandomStreams
+
+    program_dict["location"] = {"latitude": 59.3293, "longitude": 18.0686}
+    program_dict["defaults"] = {"time_distribution": "triangular"}
+    routine = program_dict["routines"][0]
+    routine["defaults"] = {"time_distribution": "triangular"}
+    step = routine["steps"][1]
+    step["time_distribution"] = "triangular"
+    if anchor == "relative":
+        step["when"] = {
+            "relative_to": "wake",
+            "offset_range": {"min": "-20m", "max": "-10s", "mode": "-15m"},
+            "distribution": "triangular",
+        }
+    elif anchor == "sun":
+        step["when"] = {
+            "sun_range": {"sun": "sunrise", "offset_range": {"min": "10s", "max": "20m"}},
+            "distribution": "triangular",
+        }
+    else:
+        step["when"] = {
+            "clock_range": {"earliest": "06:40:00", "latest": "07:20:00", "mode": "06:45"},
+            "distribution": "triangular",
+        }
+    program = validate_program(program_dict)
+    for seed in range(20):
+        plan = generate_plan(program, date(2026, 10, 6), seed)
+        rng = RandomStreams(seed).rng("step", step["id"], "start", 0)
+        if anchor == "relative":
+            expected = plan.step_times["wake"] + timedelta(seconds=rng.uniform(-1200, -10))
+        elif anchor == "sun":
+            from astral.sun import sunrise
+
+            location = program.location
+            sun = sunrise(
+                Observer(location.latitude, location.longitude), date=date(2026, 10, 6), tzinfo=UTC
+            )
+            expected = datetime.fromtimestamp(
+                rng.uniform(sun.timestamp() + 10, sun.timestamp() + 1200), UTC
+            )
+        else:
+            expected = datetime.fromtimestamp(
+                rng.uniform(
+                    datetime(2026, 10, 6, 6, 40, tzinfo=UTC).timestamp(),
+                    datetime(2026, 10, 6, 7, 20, tzinfo=UTC).timestamp(),
+                ),
+                UTC,
+            )
+        assert plan.step_times[step["id"]] == expected

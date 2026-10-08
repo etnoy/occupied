@@ -9,14 +9,14 @@ import {
   removeResource,
 } from "../../custom_components/occupied/frontend/model.js";
 import {
-  buildRoutine,
-  routineEditor,
-  routineEntries,
-  simpleRoutine,
+  buildStep,
+  stepEditor,
+  stepEntries,
+  simpleStep,
   editorErrors,
   dependentNames,
   timingSummary,
-} from "../../custom_components/occupied/frontend/routine-model.js";
+} from "../../custom_components/occupied/frontend/step-model.js";
 
 const program = () => ({
   groups: [{ id: "room", name: "Room", entities: ["light.a"] }],
@@ -112,20 +112,20 @@ const empty = () => ({
   lighting: { managed_targets: { entities: [], groups: [] }, baseline: [] },
 });
 function create(program, name, entities = ["light.living_room"], parent) {
-  const editor = routineEditor(program, null, parent);
+  const editor = stepEditor(program, null, parent);
   Object.assign(editor.form, { name, entities });
-  return { editor, program: buildRoutine(program, editor) };
+  return { editor, program: buildStep(program, editor) };
 }
 test("entity-first creation supports mixed domains with brightness and manages only lights", () => {
   const p = empty(),
-    editor = routineEditor(p);
+    editor = stepEditor(p);
   Object.assign(editor.form, {
     name: "Evening",
     entities: ["light.a", "switch.b"],
     brightness: 60,
   });
-  const next = buildRoutine(p, editor),
-    entry = routineEntries(next)[0];
+  const next = buildStep(p, editor),
+    entry = stepEntries(next)[0];
   assert.equal(
     p.routines.length,
     0,
@@ -136,7 +136,7 @@ test("entity-first creation supports mixed domains with brightness and manages o
     0,
     "entity selection must not require groups",
   );
-  assert.equal(simpleRoutine(entry), true);
+  assert.equal(simpleStep(entry), true);
   assert.deepEqual(
     entry.actions.map((a) => a.data),
     [{ brightness_pct: 60 }, {}],
@@ -148,14 +148,14 @@ test("entity-first creation supports mixed domains with brightness and manages o
 });
 test("related routines use stable step anchors and reject cycles and incompatible days", () => {
   const { program: first } = create(empty(), "Evening");
-  const parent = routineEntries(first)[0];
+  const parent = stepEntries(first)[0];
   const { program: next } = create(first, "Kitchen", ["light.kitchen"], parent);
-  const child = routineEntries(next)[1];
+  const child = stepEntries(next)[1];
   assert.equal(child.when.relative_to, parent.id);
   assert.equal(child.when.offset_range.fixed, "30m");
   assert.deepEqual(child.days, parent.days);
   assert.deepEqual(dependentNames(next, parent.id), ["Kitchen"]);
-  const edit = routineEditor(next, routineEntries(next)[0]);
+  const edit = stepEditor(next, stepEntries(next)[0]);
   edit.form.timing = {
     ...edit.form.timing,
     mode: "relative",
@@ -180,13 +180,13 @@ test("renaming preserves group references, all advanced settings and existing li
   step.actions[0].data = { brightness_pct: 60, color_temp_kelvin: 2700 };
   step.description = "Keep this";
   step.probability = 0.9;
-  const editor = routineEditor(p, routineEntries(p)[0]);
+  const editor = stepEditor(p, stepEntries(p)[0]);
   editor.form.name = "Renamed";
-  const next = buildRoutine(p, editor),
+  const next = buildStep(p, editor),
     expected = structuredClone(p);
   expected.routines[0].steps[0].name = "Renamed";
   assert.deepEqual(next, expected);
-  assert.equal(simpleRoutine(routineEntries(next)[0]), true);
+  assert.equal(simpleStep(stepEntries(next)[0]), true);
 });
 test("editing entity selection does not modify a shared group or replace existing baselines", () => {
   const { program: p } = create(empty(), "Evening");
@@ -196,9 +196,9 @@ test("editing entity selection does not modify a shared group or replace existin
   p.routines[0].steps[0].actions[0].targets = { groups: ["living"] };
   p.lighting.baseline[0].state = "on";
   p.lighting.baseline[0].brightness_pct = 40;
-  const editor = routineEditor(p, routineEntries(p)[0]);
+  const editor = stepEditor(p, stepEntries(p)[0]);
   editor.form.entities.push("light.kitchen");
-  const next = buildRoutine(p, editor);
+  const next = buildStep(p, editor);
   assert.deepEqual(next.groups, p.groups);
   assert.deepEqual(next.lighting.baseline[0], p.lighting.baseline[0]);
   assert.deepEqual(next.lighting.baseline[1], {
@@ -216,23 +216,23 @@ test("widening a legacy item's weekdays retains siblings and inherited defaults"
     id: "sibling",
     name: "Sibling",
   });
-  const editor = routineEditor(p, routineEntries(p)[0]);
+  const editor = stepEditor(p, stepEntries(p)[0]);
   editor.form.days = ["mon", "tue"];
-  const next = buildRoutine(p, editor);
+  const next = buildStep(p, editor);
   assert.deepEqual(next.routines[0].steps, [p.routines[0].steps[1]]);
   assert.deepEqual(next.routines[1].defaults, p.routines[0].defaults);
-  assert.deepEqual(routineEntries(next).find((e) => e.id === editor.id).days, [
+  assert.deepEqual(stepEntries(next).find((e) => e.id === editor.id).days, [
     "mon",
     "tue",
   ]);
 });
 test("clock variation, signed sun offsets and before/after preserve overnight semantics", () => {
   const p = empty(),
-    editor = routineEditor(p);
+    editor = stepEditor(p);
   Object.assign(editor.form, { name: "Night", entities: ["light.a"] });
   editor.form.timing.time = "00:05";
   editor.form.timing.variation = 15;
-  let next = buildRoutine(p, editor);
+  let next = buildStep(p, editor);
   assert.deepEqual(next.routines[0].steps[0].when.clock_range, {
     earliest: "23:50",
     latest: "00:20",
@@ -245,13 +245,13 @@ test("clock variation, signed sun offsets and before/after preserve overnight se
     offset: 30,
     variation: 5,
   });
-  next = buildRoutine(p, editor);
+  next = buildStep(p, editor);
   assert.deepEqual(next.routines[0].steps[0].when.sun_range.offset_range, {
     min: "-35m",
     max: "-25m",
   });
   assert.equal(
-    timingSummary(routineEntries(next)[0], []),
+    timingSummary(stepEntries(next)[0], []),
     "25–35 min before sunset",
   );
 });
@@ -261,17 +261,14 @@ test("existing fractional-minute ranges remain editable and untouched on rename"
     first,
     "Breakfast",
     ["light.kitchen"],
-    routineEntries(first)[0],
+    stepEntries(first)[0],
   );
   p.routines[1].steps[0].when.offset_range = { min: "5m", max: "20m" };
-  const entry = routineEntries(p)[1];
-  assert.equal(simpleRoutine(entry), true);
-  const editor = routineEditor(p, entry);
+  const entry = stepEntries(p)[1];
+  assert.equal(simpleStep(entry), true);
+  const editor = stepEditor(p, entry);
   editor.form.name = "New breakfast";
-  assert.deepEqual(
-    buildRoutine(p, editor).routines[1].steps[0].when,
-    entry.when,
-  );
+  assert.deepEqual(buildStep(p, editor).routines[1].steps[0].when, entry.when);
   assert.deepEqual(around("20:00:30", 7.5), {
     earliest: "19:53",
     latest: "20:08",
@@ -280,17 +277,124 @@ test("existing fractional-minute ranges remain editable and untouched on rename"
 });
 test("complex activities and mixed actions stay outside the simple editor", () => {
   const { program: p } = create(empty(), "Evening");
-  const entry = routineEntries(p)[0];
-  assert.equal(simpleRoutine({ ...entry, kind: "activities" }), false);
+  const entry = stepEntries(p)[0];
+  assert.equal(simpleStep({ ...entry, kind: "activities" }), false);
   assert.equal(
-    simpleRoutine({
+    simpleStep({
       ...entry,
       actions: [...entry.actions, { action: "turn_off" }],
     }),
     false,
   );
   assert.equal(
-    simpleRoutine({ ...entry, actions: [{ action: "safety_off" }] }),
+    simpleStep({ ...entry, actions: [{ action: "safety_off" }] }),
     false,
   );
+});
+
+test("scene steps round-trip without adding managed lights", () => {
+  const p = empty(),
+    editor = stepEditor(p);
+  Object.assign(editor.form, {
+    name: "Morning",
+    kind: "scene",
+    entities: ["scene.morning"],
+  });
+  const next = buildStep(p, editor),
+    entry = stepEntries(next)[0];
+  assert.equal(simpleStep(entry), true);
+  assert.deepEqual(entry.actions, [
+    {
+      action: "scene.turn_on",
+      targets: { entities: ["scene.morning"] },
+      data: {},
+    },
+  ]);
+  assert.deepEqual(next.lighting, p.lighting);
+  const edit = stepEditor(next, entry);
+  assert.equal(edit.form.kind, "scene");
+  edit.form.name = "Wake up";
+  assert.deepEqual(
+    stepEntries(buildStep(next, edit))[0].actions,
+    entry.actions,
+  );
+  edit.form.entities.push("scene.other");
+  assert.match(editorErrors(next, edit).entities, /one Home Assistant scene/);
+});
+
+test("entity service steps validate data and preserve group targets on action edits", () => {
+  const p = empty(),
+    editor = stepEditor(p);
+  Object.assign(editor.form, {
+    name: "Blinds",
+    kind: "service",
+    service: "cover.set_cover_position",
+    entities: ["cover.a", "cover.b"],
+    data: '{"position": 50}',
+  });
+  const next = buildStep(p, editor),
+    entry = stepEntries(next)[0];
+  assert.equal(simpleStep(entry), true);
+  assert.equal(entry.actions[0].action, "cover.set_cover_position");
+  assert.deepEqual(entry.actions[0].targets.entities, ["cover.a", "cover.b"]);
+  assert.deepEqual(entry.actions[0].data, { position: 50 });
+  next.groups.push({
+    id: "blinds",
+    name: "Blinds",
+    entities: ["cover.a", "cover.b"],
+  });
+  next.routines[0].steps[0].actions[0].targets = { groups: ["blinds"] };
+  const edit = stepEditor(next, stepEntries(next)[0]);
+  edit.form.data = '{"position": 75}';
+  assert.deepEqual(stepEntries(buildStep(next, edit))[0].actions[0].targets, {
+    groups: ["blinds"],
+  });
+  edit.form.data = "[]";
+  assert.match(editorErrors(next, edit).data, /JSON object/);
+  edit.form.service = "invalid";
+  assert.match(editorErrors(next, edit).service, /domain.service/);
+});
+
+test("explicit step start intervals and second-precision relative offsets", () => {
+  const editor = stepEditor(empty());
+  Object.assign(editor.form, {
+    name: "Morning",
+    entities: ["light.bedroom"],
+    days: ["mon", "tue", "wed", "thu", "fri"],
+  });
+  Object.assign(editor.form.timing, {
+    mode: "interval",
+    earliest: "06:40:00",
+    latest: "07:20:00",
+  });
+  const first = buildStep(empty(), editor),
+    parent = stepEntries(first)[0];
+  assert.deepEqual(parent.when.clock_range, {
+    earliest: "06:40:00",
+    latest: "07:20:00",
+    cross_midnight: false,
+  });
+  const child = stepEditor(first, null, parent);
+  Object.assign(child.form, { name: "Breakfast", entities: ["light.kitchen"] });
+  Object.assign(child.form.timing, {
+    offsetMode: "interval",
+    minOffset: "10s",
+    maxOffset: "20m",
+  });
+  const next = buildStep(first, child),
+    breakfast = stepEntries(next)[1];
+  assert.deepEqual(breakfast.when, {
+    relative_to: parent.id,
+    offset_range: { min: "10s", max: "20m" },
+  });
+  child.form.timing.minOffset = "30m";
+  assert.match(editorErrors(first, child).maxOffset, /at least/);
+  editor.form.timing.earliest = "23:50";
+  editor.form.timing.latest = "00:20";
+  assert.equal(
+    stepEntries(buildStep(empty(), editor))[0].when.clock_range.cross_midnight,
+    true,
+  );
+  editor.form.timing.latest = "25:00";
+  assert.match(editorErrors(empty(), editor).latest, /valid/);
 });

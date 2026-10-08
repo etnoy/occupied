@@ -1,5 +1,5 @@
 // Exercise the builder through its rendered controls and the real pure planner.
-import { routineEntries } from "../../custom_components/occupied/frontend/routine-model.js";
+import { stepEntries } from "../../custom_components/occupied/frontend/step-model.js";
 
 export async function runRoutineWorkflows(panel, check) {
   const assert = (condition, message) => {
@@ -57,10 +57,10 @@ export async function runRoutineWorkflows(panel, check) {
     root.querySelector(`[data-routine-id="${id}"]`).click();
   };
   const save = async () => {
-    click("Save routine");
+    click("Save step");
     await wait(() => !panel.busy);
     assert(
-      !panel.routineEditor,
+      !panel.stepEditor,
       `Routine did not save: ${panel.error} ${JSON.stringify(panel.issues)}`,
     );
   };
@@ -89,7 +89,7 @@ export async function runRoutineWorkflows(panel, check) {
         !root.textContent.includes("Validate draft"),
         "Separate validation remains in normal flow",
       );
-      click("Create your first routine");
+      click("Create your first step");
       fit();
       click("Continue");
       assert(
@@ -107,7 +107,7 @@ export async function runRoutineWorkflows(panel, check) {
       field("variation", "15");
       const before = calls.length;
       await save();
-      const entry = routineEntries(panel.saved)[0];
+      const entry = stepEntries(panel.saved)[0];
       parentId = entry.id;
       assert(
         entry.entities.length === 2 && entry.actions.length === 2,
@@ -141,9 +141,9 @@ export async function runRoutineWorkflows(panel, check) {
     "three related routines preview using their parent's sampled times",
     async () => {
       select(parentId);
-      click("Add related routine");
+      click("Add related step");
       assert(
-        panel.routineEditor.form.entities.length === 2,
+        panel.stepEditor.form.entities.length === 2,
         "Parent entities not prefilled",
       );
       choose(["light.kitchen"]);
@@ -156,9 +156,9 @@ export async function runRoutineWorkflows(panel, check) {
       );
       field("offset", "30");
       await save();
-      childId = panel.selectedRoutine;
+      childId = panel.selectedStep;
       select(childId);
-      click("Add related routine");
+      click("Add related step");
       choose(["light.kitchen", "light.living_room", "switch.floor_lamp"]);
       click("Continue");
       field("action", "turn_off");
@@ -166,9 +166,9 @@ export async function runRoutineWorkflows(panel, check) {
       click("Continue");
       field("offset", "120");
       await save();
-      endId = panel.selectedRoutine;
+      endId = panel.selectedStep;
       assert(
-        routineEntries(panel.saved).length === 3,
+        stepEntries(panel.saved).length === 3,
         "Extra user-facing routines created",
       );
       assert(
@@ -180,7 +180,7 @@ export async function runRoutineWorkflows(panel, check) {
       await wait(() => !panel.busy && panel.preview);
       assert(
         panel.preview.valid,
-        `Related routine preview infeasible: ${JSON.stringify(panel.preview)}`,
+        `Related step preview infeasible: ${JSON.stringify(panel.preview)}`,
       );
       for (const plan of panel.preview.plans) {
         assert(
@@ -195,7 +195,7 @@ export async function runRoutineWorkflows(panel, check) {
         );
       }
       fit();
-      click("Back to routines");
+      click("Back to steps");
     },
   );
   await check(
@@ -209,7 +209,7 @@ export async function runRoutineWorkflows(panel, check) {
         remove.disabled && root.textContent.includes("Used by: Kitchen lights"),
         "Dependent delete was not explained",
       );
-      click("Edit routine");
+      click("Edit step");
       const entityPicker = root.querySelector(
         '[data-editor-section="entities"] [data-builder-field="entities"]',
       );
@@ -247,15 +247,14 @@ export async function runRoutineWorkflows(panel, check) {
       );
       field("mode", "clock");
       field("days", "weekdays");
-      click("Save routine");
+      click("Save step");
       assert(
-        panel.routineEditor &&
-          root.textContent.includes("Kitchen lights depends"),
+        panel.stepEditor && root.textContent.includes("Kitchen lights depends"),
         "Downstream day conflict not shown inline",
       );
       field("days", "all");
       await save();
-      const edited = routineEntries(panel.saved).find((e) => e.id === parentId);
+      const edited = stepEntries(panel.saved).find((e) => e.id === parentId);
       assert(
         edited.entities.includes("light.hall") &&
           edited.actions[0].data.brightness_pct === 55 &&
@@ -263,7 +262,7 @@ export async function runRoutineWorkflows(panel, check) {
         "Single-page save lost edits made across multiple sections",
       );
       assert(
-        routineEntries(panel.saved)[1].when.relative_to === parentId,
+        stepEntries(panel.saved)[1].when.relative_to === parentId,
         "Rename broke stable anchor",
       );
       assert(
@@ -276,21 +275,20 @@ export async function runRoutineWorkflows(panel, check) {
     "sun offsets and midnight schedules remain feasible through the real planner",
     async () => {
       select(parentId);
-      click("Edit routine");
+      click("Edit step");
       field("mode", "sun");
       field("direction", "before");
       field("offset", "30");
       field("variation", "10");
       await save();
       assert(
-        routineEntries(panel.saved)[0].when.sun_range.offset_range.min ===
-          "-40m",
+        stepEntries(panel.saved)[0].when.sun_range.offset_range.min === "-40m",
         "Before-sunset offset sign was lost",
       );
       await panel.runPreview();
       assert(panel.preview.valid, "Sun timing failed planner validation");
       select(parentId);
-      click("Edit routine");
+      click("Edit step");
       field("mode", "clock");
       field("time", "00:05");
       field("variation", "15");
@@ -298,7 +296,7 @@ export async function runRoutineWorkflows(panel, check) {
       await panel.runPreview();
       assert(
         panel.preview.valid &&
-          routineEntries(panel.saved)[0].when.clock_range.cross_midnight,
+          stepEntries(panel.saved)[0].when.clock_range.cross_midnight,
         "Overnight routine chain failed",
       );
     },
@@ -307,7 +305,7 @@ export async function runRoutineWorkflows(panel, check) {
     "backend errors point into the routine form and do not submit an invalid save",
     async () => {
       select(parentId);
-      click("Edit routine");
+      click("Edit step");
       const original = panel._hass.callWS,
         saveCount = calls.filter((c) => c.type === "occupied/save").length;
       panel._hass.callWS = async (message) =>
@@ -331,7 +329,7 @@ export async function runRoutineWorkflows(panel, check) {
             }
           : original(message);
       try {
-        click("Save routine");
+        click("Save step");
         await wait(() => !panel.busy);
         assert(
           root.querySelector(
@@ -352,7 +350,7 @@ export async function runRoutineWorkflows(panel, check) {
       }
       click("Cancel");
       assert(
-        !panel.routineEditor && !panel.dirty,
+        !panel.stepEditor && !panel.dirty,
         "Cancel did not discard the existing routine's pending edits",
       );
     },
@@ -361,7 +359,7 @@ export async function runRoutineWorkflows(panel, check) {
     "in-flight validation and save preserve newer routine edits without duplicating routines",
     async () => {
       select(parentId);
-      click("Edit routine");
+      click("Edit step");
       field("time", "20:00");
       const original = panel._hass.callWS;
       let release,
@@ -375,25 +373,25 @@ export async function runRoutineWorkflows(panel, check) {
       };
       try {
         const saves = calls.filter((c) => c.type === "occupied/save").length;
-        click("Save routine");
+        click("Save step");
         await wait(() => release);
         field("time", "21:00");
         release();
         await wait(() => !panel.busy);
         assert(
-          panel.routineEditor.form.timing.time === "21:00" &&
+          panel.stepEditor.form.timing.time === "21:00" &&
             calls.filter((c) => c.type === "occupied/save").length === saves,
           "Stale validation saved or overwrote new edits",
         );
         gate = "occupied/save";
         release = undefined;
-        click("Save routine");
+        click("Save step");
         await wait(() => release);
         field("time", "00:05"); // Revert to the value from before editing.
         release();
         await wait(() => !panel.busy);
         assert(
-          panel.routineEditor.form.timing.time === "00:05" &&
+          panel.stepEditor.form.timing.time === "00:05" &&
             panel.saved.routines[0].steps[0].when.clock_range.earliest ===
               "20:45",
           "Save response replaced newer edits",
@@ -403,11 +401,87 @@ export async function runRoutineWorkflows(panel, check) {
       }
       await save();
       assert(
-        routineEntries(panel.saved).length === 3 &&
+        stepEntries(panel.saved).length === 3 &&
           panel.saved.routines[0].steps[0].when.clock_range.earliest ===
             "23:50",
         "Saving retained edits duplicated the routine or lost the time",
       );
+    },
+  );
+  await check(
+    "scene and service steps use explicit intervals and relative offset bounds",
+    async () => {
+      click("Create step");
+      field("kind", "scene");
+      choose(["scene.morning"]);
+      click("Continue");
+      field("name", "Morning scene");
+      click("Continue");
+      field("mode", "interval");
+      field("earliest", "06:40:00");
+      field("latest", "07:20:00");
+      await save();
+      const morning = stepEntries(panel.saved).find(
+        (e) => e.name === "Morning scene",
+      );
+      assert(
+        morning.actions[0].action === "scene.turn_on",
+        "Scene was not saved as a scene call",
+      );
+      select(morning.id);
+      click("Add related step");
+      field("kind", "service");
+      choose(["cover.blinds"]);
+      click("Continue");
+      field("service", "cover.set_cover_position");
+      field("data", '{"position": 75}');
+      field("name", "Breakfast blinds");
+      click("Continue");
+      field("offsetMode", "interval");
+      field("minOffset", "10s");
+      field("maxOffset", "20m");
+      await save();
+      const breakfast = stepEntries(panel.saved).find(
+        (e) => e.name === "Breakfast blinds",
+      );
+      assert(
+        breakfast.when.relative_to === morning.id &&
+          breakfast.when.offset_range.min === "10s",
+        "Relative bounds were lost",
+      );
+      const preview = await fixtureWS({
+        type: "occupied/preview",
+        program: panel.saved,
+        date: "2026-10-06",
+        days: 1,
+        seed: "step-intervals",
+      });
+      const times = preview.plans[0].steps;
+      const delta =
+        (Date.parse(times[breakfast.id]) - Date.parse(times[morning.id])) /
+        1000;
+      assert(
+        delta >= 10 && delta <= 1200,
+        "Breakfast did not follow the sampled Morning time",
+      );
+      select(breakfast.id);
+      click("Edit step");
+      field("name", "Breakfast shades");
+      await save();
+      assert(
+        stepEntries(panel.saved).find((e) => e.id === breakfast.id).actions[0]
+          .data.position === 75,
+        "Service data was lost while editing",
+      );
+      // Remove these independent examples to retain the following managed-draft fixture.
+      const next = structuredClone(panel.saved);
+      next.routines = next.routines.filter(
+        (r) => !r.steps.some((e) => [morning.id, breakfast.id].includes(e.id)),
+      );
+      await panel.save(next);
+      home();
+      fit();
+      assert(deviceCalls.length === 0, "Step editing controlled devices");
     },
   );
   await check(
@@ -416,17 +490,17 @@ export async function runRoutineWorkflows(panel, check) {
       await panel.selectSource("file", "occupied/house.yaml");
       home();
       const saves = calls.filter((c) => c.type === "occupied/save").length;
-      click("Create routine");
+      click("Create step");
       choose(["light.hall"]);
       click("Continue");
       field("name", "Hall light");
       click("Continue");
       click("Add to draft");
       assert(
-        !panel.routineEditor &&
+        !panel.stepEditor &&
           panel.dirty &&
-          routineEntries(panel.draft).length === 4 &&
-          routineEntries(panel.saved).length === 3,
+          stepEntries(panel.draft).length === 4 &&
+          stepEntries(panel.saved).length === 3,
         "Managed creation was applied or lost",
       );
       await panel.exportYaml();

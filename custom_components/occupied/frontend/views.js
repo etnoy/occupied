@@ -782,7 +782,7 @@ export function editView(panel, root) {
     });
     for (const [value, label] of [
       ["configuration", "Import, export and managed files"],
-      ["advanced_routines", "Custom routines and activities"],
+      ["advanced_routines", "Custom steps and activities"],
       ["groups", "Reusable entity groups"],
       ["household", "Household and location"],
       ["handover", "Lighting handover"],

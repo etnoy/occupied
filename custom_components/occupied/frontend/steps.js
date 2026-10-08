@@ -1,17 +1,17 @@
 import { button, el, section, details } from "./forms.js";
 import { copy, days, duplicate, parentSteps, removeResource } from "./model.js";
 import {
-  routineEntries,
-  simpleRoutine,
-  routineEditor,
+  stepEntries,
+  simpleStep,
+  stepEditor,
   editorErrors,
-  buildRoutine,
+  buildStep,
   dependentNames,
   timingSummary,
-} from "./routine-model.js";
+} from "./step-model.js";
 
-export function startRoutine(panel, entry, parent) {
-  panel.routineEditor = routineEditor(panel.draft, entry, parent);
+export function startStep(panel, entry, parent) {
+  panel.stepEditor = stepEditor(panel.draft, entry, parent);
   panel.tab = "routines";
   panel.error = "";
   panel.issues = [];
@@ -28,27 +28,36 @@ function focusEditor(panel) {
 function entityName(panel, id) {
   return panel.catalog.entities.find((e) => e.entity_id === id)?.name || id;
 }
+function actionSummary(entry, t) {
+  const action = entry.actions?.[0]?.action;
+  if (action === "scene.turn_on") return t("Activate scene");
+  if (simpleStep(entry)) {
+    if (/^(?:(?:light|switch)\.)?turn_(on|off)$/.test(action))
+      return t(action.endsWith("turn_off") ? "Turn off" : "Turn on");
+    return action;
+  }
+  return t("Custom actions");
+}
 function daySummary(selected, t) {
   if (selected.length === 7) return t("Every day");
   if (selected.join() === days.slice(0, 5).join()) return t("Weekdays");
   if (selected.join() === days.slice(5).join()) return t("Weekends");
   return selected.map((d) => t(d)).join(", ");
 }
-function advancedRoutine(panel, entry) {
+function advancedStep(panel, entry) {
   panel.tab = "advanced_routines";
   panel.selection.set('["routines"]', entry.path[1]);
   panel.selection.set(JSON.stringify(entry.path.slice(0, 3)), entry.path[3]);
   panel.renderView();
 }
-export function renderRoutines(panel, root) {
-  if (panel.routineEditor) return renderEditor(panel, root);
+export function renderSteps(panel, root) {
+  if (panel.stepEditor) return renderEditor(panel, root);
   const t = panel.t,
-    entries = routineEntries(panel.draft);
+    entries = stepEntries(panel.draft);
   const heading = el("div", null, { class: "page-heading" });
   const title = el("div");
   title.append(
-    el("p", t("MAKE IT FEEL LIKE HOME"), { class: "eyebrow" }),
-    el("h2", t("Your routines")),
+    el("h2", t("Your steps")),
     el("p", t("Choose what happens, when it happens, and what follows."), {
       class: "hint",
     }),
@@ -56,7 +65,7 @@ export function renderRoutines(panel, root) {
   heading.append(title);
   if (entries.length)
     heading.append(
-      button(t("Create routine"), () => startRoutine(panel), {
+      button(t("Create step"), () => startStep(panel), {
         class: "primary",
         "data-create-routine": "",
       }),
@@ -69,7 +78,7 @@ export function renderRoutines(panel, root) {
       el(
         "p",
         t(
-          "Start with a light or switch. Give it a routine, then add whatever should happen next.",
+          "Start with an entity action or a scene, then add whatever should happen next.",
         ),
         { class: "hint" },
       ),
@@ -78,7 +87,7 @@ export function renderRoutines(panel, root) {
         t("1. Select entities   →   2. Choose an action   →   3. Set a time"),
         { class: "empty-steps" },
       ),
-      button(t("Create your first routine"), () => startRoutine(panel), {
+      button(t("Create your first step"), () => startStep(panel), {
         class: "primary",
         "data-create-routine": "",
       }),
@@ -88,9 +97,9 @@ export function renderRoutines(panel, root) {
   const layout = el("div", null, { class: "routine-layout" }),
     list = el("div", null, {
       class: "routine-list",
-      "aria-label": t("Your routines"),
+      "aria-label": t("Your steps"),
     });
-  const selected = entries.find((e) => e.id === panel.selectedRoutine);
+  const selected = entries.find((e) => e.id === panel.selectedStep);
   // Keep related items adjacent without depending on saved list order. The seen
   // set also makes malformed imported drafts safe to inspect.
   const seen = new Set(),
@@ -115,7 +124,7 @@ export function renderRoutines(panel, root) {
     const row = button(
       "",
       () => {
-        panel.selectedRoutine = entry.id;
+        panel.selectedStep = entry.id;
         panel.renderView();
         panel.shadowRoot.querySelector(".routine-detail h2")?.focus();
       },
@@ -131,7 +140,7 @@ export function renderRoutines(panel, root) {
       el("strong", entry.name),
       el(
         "span",
-        `${simpleRoutine(entry) ? t(entry.actions[0].action.endsWith("turn_off") ? "Turn off" : "Turn on") : t("Custom actions")} · ${entry.entities.map((id) => entityName(panel, id)).join(", ")}`,
+        `${actionSummary(entry, t)} · ${entry.entities.map((id) => entityName(panel, id)).join(", ")}`,
         { class: "hint" },
       ),
     );
@@ -164,16 +173,7 @@ export function renderRoutines(panel, root) {
       el("p", timingSummary(selected, entries, t)),
       el("p", daySummary(selected.days, t), { class: "hint" }),
     );
-    const action = selected.actions?.[0]?.action;
-    info.append(
-      el(
-        "p",
-        simpleRoutine(selected)
-          ? t(action?.endsWith("turn_off") ? "Turn off" : "Turn on")
-          : t("Custom routine"),
-        { class: "eyebrow" },
-      ),
-    );
+    info.append(el("p", actionSummary(selected, t), { class: "eyebrow" }));
     const entities = el("ul", null, { class: "entity-summary" });
     for (const id of selected.entities)
       entities.append(el("li", entityName(panel, id)));
@@ -188,23 +188,17 @@ export function renderRoutines(panel, root) {
     const controls = el("div", null, { class: "routine-detail-actions" });
     if (selected.kind === "steps")
       controls.append(
-        button(
-          t("Add related routine"),
-          () => startRoutine(panel, null, selected),
-          { class: "primary" },
-        ),
+        button(t("Add related step"), () => startStep(panel, null, selected), {
+          class: "primary",
+        }),
       );
     controls.append(
       button(
-        t(
-          simpleRoutine(selected)
-            ? "Edit routine"
-            : "Edit in Advanced settings",
-        ),
+        t(simpleStep(selected) ? "Edit step" : "Edit in Advanced settings"),
         () =>
-          simpleRoutine(selected)
-            ? startRoutine(panel, selected)
-            : advancedRoutine(panel, selected),
+          simpleStep(selected)
+            ? startStep(panel, selected)
+            : advancedStep(panel, selected),
       ),
     );
     info.append(controls);
@@ -213,7 +207,7 @@ export function renderRoutines(panel, root) {
       button(t("Duplicate"), () => {
         const next = copy(panel.draft),
           item = duplicate(next, selected.path);
-        panel.selectedRoutine = item.id;
+        panel.selectedStep = item.id;
         panel.change([], next);
         panel.renderView();
       }),
@@ -225,7 +219,7 @@ export function renderRoutines(panel, root) {
         panel.attempt(() => {
           const next = copy(panel.draft);
           removeResource(next, selected.path);
-          panel.selectedRoutine = null;
+          panel.selectedStep = null;
           panel.change([], next);
           panel.renderView();
         }),
@@ -241,9 +235,9 @@ export function renderRoutines(panel, root) {
           { class: "hint" },
         ),
       );
-    if (simpleRoutine(selected))
+    if (simpleStep(selected))
       more.append(
-        button(t("Advanced settings"), () => advancedRoutine(panel, selected)),
+        button(t("Advanced settings"), () => advancedStep(panel, selected)),
       );
   }
   root.append(layout);
@@ -261,22 +255,19 @@ export function renderRoutines(panel, root) {
 }
 
 function renderEditor(panel, root) {
-  const editor = panel.routineEditor,
+  const editor = panel.stepEditor,
     form = editor.form,
     t = panel.t,
     // `existing` controls the title and is the source of truth for edit mode.
     // Keeping a second `editing` flag can make a mixed or restored editor state
     // show the create wizard inside an edit flow.
     editing = editor.existing;
-  const shell = section(
-    root,
-    t(editor.existing ? "Edit routine" : "Create routine"),
-  );
+  const shell = section(root, t(editor.existing ? "Edit step" : "Create step"));
   shell.className = editing ? "routine-editor editing" : "routine-editor";
   shell.querySelector("h2").tabIndex = -1;
   const steps = el("ol", null, {
     class: "builder-steps",
-    "aria-label": t("Routine setup"),
+    "aria-label": t("Step setup"),
   });
   ["Entities", "Action", "Time"].forEach((label, i) =>
     steps.append(
@@ -321,14 +312,18 @@ function renderEditor(panel, root) {
     const box = el("div", null, { class: "field" }),
       id = `routine-${key}`;
     box.append(el("label", t(label), { for: id }));
-    const input = el(options.choices ? "select" : "input", null, {
-      id,
-      type: options.type || "text",
-      "data-builder-field": key,
-      min: options.min,
-      max: options.max,
-      step: options.step,
-    });
+    const input = el(
+      options.choices ? "select" : options.multiline ? "textarea" : "input",
+      null,
+      {
+        id,
+        type: options.type || "text",
+        "data-builder-field": key,
+        min: options.min,
+        max: options.max,
+        step: options.step,
+      },
+    );
     for (const [v, name] of options.choices || [])
       input.append(el("option", t(name), { value: v }));
     input.value = value;
@@ -351,11 +346,34 @@ function renderEditor(panel, root) {
       "data-editor-section": "entities",
     });
     sections.append(entitySection);
+    field(
+      entitySection,
+      "kind",
+      "Step type",
+      form.kind,
+      (v) => {
+        form.kind = v;
+        form.entities = [];
+        changed("entities");
+      },
+      {
+        choices: [
+          ["entities", "Lights and switches"],
+          ["service", "Entity service action"],
+          ["scene", "Home Assistant scene"],
+        ],
+        render: true,
+      },
+    );
     entitySection.append(
       el("h3", t(editing ? "Entities" : "Which entities should take part?")),
       el(
         "p",
-        t("Select one or more lights and switches. Search by name or room."),
+        t(
+          form.kind === "scene"
+            ? "Select a scene to activate."
+            : "Select one or more entities. Search by name or room.",
+        ),
         { class: "hint" },
       ),
     );
@@ -372,9 +390,20 @@ function renderEditor(panel, root) {
       });
       selector.hass = panel._hass;
       selector.selector = {
-        entity: { multiple: true, filter: { domain: ["light", "switch"] } },
+        entity: {
+          multiple: form.kind !== "scene",
+          ...(form.kind === "service"
+            ? {}
+            : {
+                filter: {
+                  domain:
+                    form.kind === "scene" ? ["scene"] : ["light", "switch"],
+                },
+              }),
+        },
       };
-      selector.value = [...form.entities];
+      selector.value =
+        form.kind === "scene" ? form.entities[0] || "" : [...form.entities];
       selector.label = t("Entities");
       selector.required = true;
       selector.narrow = panel.hasAttribute("narrow");
@@ -384,7 +413,9 @@ function renderEditor(panel, root) {
         selector.value = event.detail.value;
         form.entities = Array.isArray(event.detail.value)
           ? event.detail.value
-          : [];
+          : event.detail.value
+            ? [event.detail.value]
+            : [];
         changed("entities");
         count.textContent = `${form.entities.length} ${t("selected")}`;
       });
@@ -409,8 +440,12 @@ function renderEditor(panel, root) {
         count.textContent = `${form.entities.length} ${t("selected")}`;
         list.replaceChildren();
         const selected = new Set(form.entities);
-        const catalog = panel.catalog.entities.filter((e) =>
-          /^(light|switch)\./.test(e.entity_id),
+        const catalog = panel.catalog.entities.filter(
+          (e) =>
+            form.kind === "service" ||
+            (form.kind === "scene" ? /^scene\./ : /^(light|switch)\./).test(
+              e.entity_id,
+            ),
         );
         for (const id of form.entities)
           if (!catalog.some((e) => e.entity_id === id))
@@ -435,11 +470,13 @@ function renderEditor(panel, root) {
           check.checked = form.entities.includes(entity.entity_id);
           check.addEventListener("change", () => {
             form.entities = check.checked
-              ? [...new Set([...form.entities, entity.entity_id])]
+              ? form.kind === "scene"
+                ? [entity.entity_id]
+                : [...new Set([...form.entities, entity.entity_id])]
               : form.entities.filter((e) => e !== entity.entity_id);
             changed("entities");
             count.textContent = `${form.entities.length} ${t("selected")}`;
-            if (editing) {
+            if (editing || form.kind === "scene") {
               const scrollTop = list.scrollTop;
               panel.renderView();
               const picker = panel.shadowRoot.querySelector(".entity-picker");
@@ -467,9 +504,7 @@ function renderEditor(panel, root) {
           list.append(label);
         }
         if (!filtered.length)
-          list.append(
-            el("p", t("No matching lights or switches."), { class: "hint" }),
-          );
+          list.append(el("p", t("No matching entities."), { class: "hint" }));
       };
       search.addEventListener("input", () => {
         editor.search = search.value;
@@ -479,12 +514,15 @@ function renderEditor(panel, root) {
       entitySection.append(search, count, list);
     }
     error(entitySection, "entities");
-    if (form.entities.some((e) => !/^(light|switch)\./.test(e)))
+    if (
+      form.kind === "entities" &&
+      form.entities.some((e) => !/^(light|switch)\./.test(e))
+    )
       entitySection.append(
         el(
           "p",
           t(
-            "This selection includes a custom entity. Select lights or switches for this routine.",
+            "This selection includes a custom entity. Select lights or switches for this step.",
           ),
           { class: "hint" },
         ),
@@ -499,26 +537,50 @@ function renderEditor(panel, root) {
         class: "hint",
       }),
     );
-    field(
-      actionSection,
-      "action",
-      "Action",
-      form.action,
-      (v) => {
-        form.action = v;
-      },
-      {
-        choices: [
-          ["turn_on", "Turn on"],
-          ["turn_off", "Turn off"],
-        ],
-        render: true,
-      },
-    );
-    field(actionSection, "name", "Routine name", form.name, (v) => {
+    if (form.kind === "scene")
+      actionSection.append(el("p", t("Activate scene")));
+    else if (form.kind === "service") {
+      field(
+        actionSection,
+        "service",
+        "Service (domain.service)",
+        form.service,
+        (v) => {
+          form.service = v;
+        },
+      );
+      field(
+        actionSection,
+        "data",
+        "Service data (JSON)",
+        form.data,
+        (v) => {
+          form.data = v;
+        },
+        { multiline: true },
+      );
+    } else
+      field(
+        actionSection,
+        "action",
+        "Action",
+        form.action,
+        (v) => {
+          form.action = v;
+        },
+        {
+          choices: [
+            ["turn_on", "Turn on"],
+            ["turn_off", "Turn off"],
+          ],
+          render: true,
+        },
+      );
+    field(actionSection, "name", "Step name", form.name, (v) => {
       form.name = v;
     });
     if (
+      form.kind === "entities" &&
       form.action === "turn_on" &&
       form.entities.some(
         (id) =>
@@ -561,27 +623,57 @@ function renderEditor(panel, root) {
       time.mode,
       (v) => {
         time.mode = v;
+        if (v === "interval") {
+          time.earliest ||= time.time;
+          time.latest ||= time.time;
+        }
         if (v === "sun") time.offset = 0;
         if (v === "relative" && !time.parent) {
           const parent = parentSteps(panel.draft, editor.id)[0];
           time.parent = parent?.id || "";
           if (parent)
             form.days = [
-              ...routineEntries(panel.draft).find((e) => e.id === parent.id)
-                .days,
+              ...stepEntries(panel.draft).find((e) => e.id === parent.id).days,
             ];
         }
       },
       {
         choices: [
           ["clock", "At a time"],
+          ["interval", "Between times"],
           ["sun", "Sunrise or sunset"],
-          ["relative", "Before or after a routine"],
+          ["relative", "Before or after a step"],
         ],
         render: true,
       },
     );
-    if (time.mode === "clock")
+    if (time.mode === "interval") {
+      field(
+        timingSection,
+        "earliest",
+        "Earliest start",
+        time.earliest,
+        (v) => {
+          time.earliest = v;
+        },
+        { type: "time", step: 1 },
+      );
+      field(
+        timingSection,
+        "latest",
+        "Latest start",
+        time.latest,
+        (v) => {
+          time.latest = v;
+        },
+        { type: "time", step: 1 },
+      );
+      timingSection.append(
+        el("p", t("An end earlier than the start crosses midnight."), {
+          class: "hint",
+        }),
+      );
+    } else if (time.mode === "clock")
       field(
         timingSection,
         "time",
@@ -598,14 +690,14 @@ function renderEditor(panel, root) {
         field(
           timingSection,
           "parent",
-          "Related routine",
+          "Related step",
           time.parent,
           (v) => {
             time.parent = v;
           },
           {
             choices: [
-              ["", "Choose a routine"],
+              ["", "Choose a step"],
               ...parents.map((e) => [e.id, e.name]),
             ],
           },
@@ -614,7 +706,7 @@ function renderEditor(panel, root) {
           el(
             "p",
             t(
-              "Follows the routine’s scheduled time, including its daily variation.",
+              "Follows the step’s scheduled time, including its daily variation.",
             ),
             { class: "hint" },
           ),
@@ -635,50 +727,112 @@ function renderEditor(panel, root) {
             ],
           },
         );
-      const row = el("div", null, { class: "timing-offset" });
       field(
-        row,
-        "offset",
-        "Minutes",
-        time.offset,
+        timingSection,
+        "offsetMode",
+        "Offset timing",
+        time.offsetMode,
         (v) => {
-          time.offset = v;
-        },
-        { type: "number", min: 0, max: 10080, step: 1 },
-      );
-      field(
-        row,
-        "direction",
-        "Before or after",
-        time.direction,
-        (v) => {
-          time.direction = v;
+          time.offsetMode = v;
         },
         {
           choices: [
-            ["after", "After"],
-            ["before", "Before"],
+            ["around", "Fixed offset with optional variation"],
+            ["interval", "Between offsets"],
           ],
+          render: true,
         },
       );
-      timingSection.append(row);
+      if (time.offsetMode === "interval") {
+        field(
+          timingSection,
+          "minOffset",
+          "Earliest offset",
+          time.minOffset,
+          (v) => {
+            time.minOffset = v;
+          },
+        );
+        field(
+          timingSection,
+          "maxOffset",
+          "Latest offset",
+          time.maxOffset,
+          (v) => {
+            time.maxOffset = v;
+          },
+        );
+        timingSection.append(
+          el(
+            "p",
+            t(
+              "Use 10s or 20m after the anchor, or negative offsets such as -30m before it.",
+            ),
+            { class: "hint" },
+          ),
+        );
+      } else {
+        const row = el("div", null, { class: "timing-offset" });
+        field(
+          row,
+          "offset",
+          "Minutes",
+          time.offset,
+          (v) => {
+            time.offset = v;
+          },
+          { type: "number", min: 0, max: 10080, step: 1 },
+        );
+        field(
+          row,
+          "direction",
+          "Before or after",
+          time.direction,
+          (v) => {
+            time.direction = v;
+          },
+          {
+            choices: [
+              ["after", "After"],
+              ["before", "Before"],
+            ],
+          },
+        );
+        timingSection.append(row);
+      }
     }
-    const variance = details(timingSection, t("Add time variation"));
-    variance.open = Number(time.variation) > 0 || !!editor.errors.variation;
-    field(
-      variance,
-      "variation",
-      "Minutes either side",
-      time.variation,
-      (v) => {
-        time.variation = v;
-      },
-      { type: "number", min: 0, max: 719, step: 1 },
-    );
-    variance.append(
+    if (
+      time.mode !== "interval" &&
+      (time.mode === "clock" || time.offsetMode !== "interval")
+    ) {
+      const variance = details(timingSection, t("Add time variation"));
+      variance.open = Number(time.variation) > 0 || !!editor.errors.variation;
+      field(
+        variance,
+        "variation",
+        "Minutes either side",
+        time.variation,
+        (v) => {
+          time.variation = v;
+        },
+        { type: "number", min: 0, max: 719, step: 1 },
+      );
+      variance.append(
+        el(
+          "p",
+          t(
+            "For example, 15 means up to 15 minutes earlier or later each day.",
+          ),
+          { class: "hint" },
+        ),
+      );
+    }
+    timingSection.append(
       el(
         "p",
-        t("For example, 15 means up to 15 minutes earlier or later each day."),
+        t(
+          "The start time is chosen uniformly at random from the interval each day.",
+        ),
         { class: "hint" },
       ),
     );
@@ -763,7 +917,7 @@ function renderEditor(panel, root) {
   }
   const footer = el("div", null, { class: "builder-footer" });
   const cancel = button(t("Cancel"), () => {
-    panel.routineEditor = null;
+    panel.stepEditor = null;
     panel.error = "";
     panel.issues = [];
     panel.version++;
@@ -785,7 +939,7 @@ function renderEditor(panel, root) {
         ? "Continue"
         : panel.document?.source === "file"
           ? "Add to draft"
-          : "Save routine",
+          : "Save step",
     ),
     async () => {
       editor.errors = editorErrors(
@@ -796,19 +950,19 @@ function renderEditor(panel, root) {
       if (Object.keys(editor.errors).length) return rerender();
       if (!editing && editor.stage < 2) {
         if (editor.stage === 0 && !form.name)
-          form.name = `${entityName(panel, form.entities[0])}${form.entities.length > 1 ? ` +${form.entities.length - 1}` : ""} ${t("on")}`;
+          form.name = `${entityName(panel, form.entities[0])}${form.entities.length > 1 ? ` +${form.entities.length - 1}` : ""}${form.kind === "entities" ? ` ${t("on")}` : ""}`;
         editor.stage++;
         return rerender();
       }
       try {
-        const candidate = buildRoutine(panel.draft, editor);
-        editor.candidatePath = routineEntries(candidate).find(
+        const candidate = buildStep(panel.draft, editor);
+        editor.candidatePath = stepEntries(candidate).find(
           (e) => e.id === editor.id,
         ).path;
         if (panel.document?.source === "file") {
           panel.change([], candidate);
-          panel.selectedRoutine = editor.id;
-          panel.routineEditor = null;
+          panel.selectedStep = editor.id;
+          panel.stepEditor = null;
           panel.renderView();
         } else await panel.save(candidate);
       } catch (error) {

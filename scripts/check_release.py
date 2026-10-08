@@ -26,15 +26,15 @@ assert manifest["documentation"].startswith("https://github.com/etnoy/occupied")
 assert manifest["issue_tracker"] == "https://github.com/etnoy/occupied/issues"
 schema = json.loads((ROOT / "schema" / "occupied.schema.json").read_text())
 assert schema == Program.model_json_schema(), "Regenerate schema/occupied.schema.json"
-for name in ("house.yaml", "gui-house.yaml"):
+for name in ("house.yaml", "gui-house.yaml", "steps.yaml"):
     program = read_program(ROOT / "examples" / name)
     assert behavior_hash(load_yaml(export_yaml(program))) == behavior_hash(program)
 assert {path.name for path in (integration / "frontend").glob("*.js")} == {
     "occupied-panel.js",
     "forms.js",
     "model.js",
-    "routine-model.js",
-    "routines.js",
+    "step-model.js",
+    "steps.js",
     "styles.js",
     "timeline.js",
     "translations.js",

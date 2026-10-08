@@ -97,9 +97,13 @@ class Handler(SimpleHTTPRequestHandler):
                             "switch.floor_lamp",
                             "remote.living_room_harmony",
                             "sensor.alarm",
+                            "scene.morning",
+                            "cover.blinds",
                         ]
                     ],
                     "services": {
+                        "scene": {"turn_on": {"fields": {}}},
+                        "cover": {"set_cover_position": {"fields": {}}},
                         "light": {"turn_on": {"fields": {}}, "turn_off": {"fields": {}}},
                         "switch": {"turn_on": {"fields": {}}, "turn_off": {"fields": {}}},
                         "remote": {

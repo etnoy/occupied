@@ -19,7 +19,7 @@ export function targetEntities(program, targets = {}) {
     ),
   ]);
 }
-export function routineEntries(program) {
+export function stepEntries(program) {
   return (program.routines || []).flatMap((routine, ri) =>
     ["steps", "activities", "activity_windows"].flatMap((kind) =>
       (routine[kind] || []).map((item, index) => ({
@@ -45,7 +45,13 @@ export function routineEntries(program) {
 function minutes(value) {
   if (typeof value === "number") return value / 60;
   const text = String(value || "0s");
-  if (!/^-?(?:\d+(?:\.\d+)?[hms])+$/.test(text)) return NaN;
+  if (
+    !/^[+-]?(?:\d+(?:\.\d+)?h)?(?:\d+(?:\.\d+)?m)?(?:\d+(?:\.\d+)?s)?$/.test(
+      text,
+    ) ||
+    ["", "+", "-"].includes(text)
+  )
+    return NaN;
   const total = [...text.matchAll(/(\d+(?:\.\d+)?)([hms])/g)].reduce(
     (n, [, amount, unit]) =>
       n + Number(amount) * { h: 60, m: 1, s: 1 / 60 }[unit],
@@ -73,9 +79,14 @@ export function timingForm(when = {}) {
   const value = {
     mode: "clock",
     time: "18:00",
+    earliest: "18:00",
+    latest: "18:00",
     variation: 0,
     sun: "sunset",
     offset: 30,
+    offsetMode: "around",
+    minOffset: "0s",
+    maxOffset: "30m",
     direction: "after",
     parent: "",
     fallback: "",
@@ -92,8 +103,18 @@ export function timingForm(when = {}) {
       direction: center < 0 ? "before" : "after",
       variation: spread,
       fallback: when.sun_range?.fallback || "",
+      minOffset:
+        (when.offset_range || when.sun_range?.offset_range)?.fixed ??
+        (when.offset_range || when.sun_range?.offset_range)?.min ??
+        "0s",
+      maxOffset:
+        (when.offset_range || when.sun_range?.offset_range)?.fixed ??
+        (when.offset_range || when.sun_range?.offset_range)?.max ??
+        "30m",
     });
   } else if (when.clock_range) {
+    value.earliest = when.clock_range.earliest;
+    value.latest = when.clock_range.latest;
     const start = clockMinutes(when.clock_range.earliest);
     let end = clockMinutes(when.clock_range.latest);
     if (when.clock_range.cross_midnight) end += 1440;
@@ -102,9 +123,19 @@ export function timingForm(when = {}) {
   }
   return value;
 }
-export function simpleRoutine(entry) {
+export function simpleStep(entry) {
   if (entry.kind !== "steps" || !entry.actions?.length) return false;
   const actions = entry.actions;
+  if (actions.length === 1 && actions[0].action.includes(".")) {
+    const action = actions[0];
+    if (!/^(light|switch)\.turn_(on|off)$/.test(action.action))
+      return (
+        entry.entities.length > 0 &&
+        !action.stagger &&
+        !action.target_order &&
+        !action.resources?.length
+      );
+  }
   if (
     !actions.every((a) =>
       /^(?:(?:light|switch)\.)?turn_(on|off)$/.test(a.action),
@@ -149,9 +180,21 @@ export function simpleRoutine(entry) {
     /^\d{2}:\d{2}(?::\d{2})?$/.test(time.time)
   );
 }
-export function routineEditor(program, entry, parent) {
+export function stepEditor(program, entry, parent) {
+  const source = entry || parent;
   const form = {
     name: entry?.name || "",
+    kind:
+      source?.actions?.[0]?.action === "scene.turn_on"
+        ? "scene"
+        : source?.actions?.[0]?.action &&
+            !/^(?:(?:light|switch)\.)?turn_(on|off)$/.test(
+              source.actions[0].action,
+            )
+          ? "service"
+          : "entities",
+    service: source?.actions?.[0]?.action || "homeassistant.turn_on",
+    data: JSON.stringify(source?.actions?.[0]?.data || {}, null, 2),
     entities: [...(entry?.entities || parent?.entities || [])],
     action: entry?.actions?.[0]?.action.endsWith("turn_off")
       ? "turn_off"
@@ -171,7 +214,7 @@ export function routineEditor(program, entry, parent) {
       offset: 30,
     });
   return {
-    id: entry?.id || identifier(program, "routine"),
+    id: entry?.id || identifier(program, "step"),
     existing: !!entry,
     stage: 0,
     form,
@@ -184,13 +227,37 @@ export function editorErrors(program, editor, stage = 2) {
   const { form, id } = editor,
     errors = {};
   if (!form.entities.length)
-    errors.entities = "Select at least one light or switch.";
-  if (form.entities.some((e) => !/^(light|switch)\.[a-z0-9_]+$/.test(e)))
     errors.entities =
-      "The routine builder supports lights and switches. Other entities use Advanced settings.";
-  if (stage < 1) return errors;
-  if (!form.name.trim()) errors.name = "Give this routine a name.";
+      form.kind === "scene"
+        ? "Select a Home Assistant scene."
+        : "Select at least one entity.";
+  if (form.entities.some((e) => !/^[a-z_][a-z0-9_]*\.[a-z0-9_]+$/.test(e)))
+    errors.entities = "Choose valid Home Assistant entity IDs.";
   if (
+    form.kind === "scene" &&
+    (form.entities.length !== 1 || !form.entities[0]?.startsWith("scene."))
+  )
+    errors.entities = "Select one Home Assistant scene.";
+  if (
+    form.kind === "entities" &&
+    form.entities.some((e) => !/^(light|switch)\./.test(e))
+  )
+    errors.entities = "Choose lights and switches, or select a service action.";
+  if (stage < 1) return errors;
+  if (form.kind === "service") {
+    if (!/^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$/.test(form.service))
+      errors.service = "Choose a service using domain.service.";
+    try {
+      const data = JSON.parse(form.data);
+      if (!data || Array.isArray(data) || typeof data !== "object")
+        throw new Error();
+    } catch {
+      errors.data = "Service data must be a JSON object.";
+    }
+  }
+  if (!form.name.trim()) errors.name = "Give this step a name.";
+  if (
+    form.kind === "entities" &&
     form.brightness !== "" &&
     (!Number.isFinite(Number(form.brightness)) ||
       Number(form.brightness) <= 0 ||
@@ -201,10 +268,12 @@ export function editorErrors(program, editor, stage = 2) {
   if (!form.days.length) errors.days = "Choose at least one day.";
   const time = form.timing;
   if (
-    !Number.isFinite(Number(time.variation)) ||
-    time.variation === "" ||
-    Number(time.variation) < 0 ||
-    Number(time.variation) >= 720
+    time.mode !== "interval" &&
+    time.offsetMode !== "interval" &&
+    (!Number.isFinite(Number(time.variation)) ||
+      time.variation === "" ||
+      Number(time.variation) < 0 ||
+      Number(time.variation) >= 720)
   )
     errors.variation = "Choose between 0 and 719 minutes of variation.";
   if (
@@ -213,41 +282,71 @@ export function editorErrors(program, editor, stage = 2) {
   )
     errors.time = "Choose a time.";
   if (
-    time.mode !== "clock" &&
+    !["clock", "interval"].includes(time.mode) &&
+    time.offsetMode !== "interval" &&
     (time.offset === "" ||
       !Number.isFinite(Number(time.offset)) ||
       Number(time.offset) < 0 ||
       Number(time.offset) > 10080)
   )
     errors.offset = "Choose an offset between 0 and 10080 minutes.";
+  if (
+    ["sun", "relative"].includes(time.mode) &&
+    time.offsetMode === "interval"
+  ) {
+    const low = minutes(time.minOffset),
+      high = minutes(time.maxOffset);
+    if (!Number.isFinite(low) || Math.abs(low) > 10080)
+      errors.minOffset =
+        "Use an offset such as 10s, 20m, or -30m (up to seven days).";
+    if (!Number.isFinite(high) || Math.abs(high) > 10080 || high < low)
+      errors.maxOffset =
+        "The latest offset must be at least the earliest offset.";
+  }
+  if (time.mode === "interval") {
+    for (const key of ["earliest", "latest"])
+      if (!/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(time[key]))
+        errors[key] = "Choose a valid start time.";
+  }
   if (time.mode === "relative") {
-    const parent = routineEntries(program).find(
+    const parent = stepEntries(program).find(
       (e) => e.id === time.parent && e.kind === "steps",
     );
     if (!parent || !parentSteps(program, id).some((e) => e.id === parent.id))
       errors.parent =
-        "Choose another routine without creating a circular relationship.";
+        "Choose another step without creating a circular relationship.";
     else if (form.days.some((d) => !parent.days.includes(d)))
       errors.days = `Choose days when ${parent.name} runs: ${parent.days.join(", ")}.`;
   }
   // Explain downstream day conflicts here, before backend validation.
-  for (const child of routineEntries(program))
+  for (const child of stepEntries(program))
     if (
       child.when?.relative_to === id &&
       child.missing_anchor !== "skip" &&
       child.days.some((d) => !form.days.includes(d))
     )
-      errors.days = `${child.name} depends on this routine. Keep its days (${child.days.join(", ")}) or edit it first.`;
+      errors.days = `${child.name} depends on this step. Keep its days (${child.days.join(", ")}) or edit it first.`;
   return errors;
 }
 export function formWhen(time) {
+  if (time.mode === "interval")
+    return {
+      clock_range: {
+        earliest: time.earliest,
+        latest: time.latest,
+        cross_midnight: clockMinutes(time.latest) < clockMinutes(time.earliest),
+      },
+    };
   if (time.mode === "clock")
     return { clock_range: around(time.time, Number(time.variation)) };
   const offset = Number(time.offset) * (time.direction === "before" ? -1 : 1),
     spread = Number(time.variation);
-  const range = spread
-    ? { min: `${offset - spread}m`, max: `${offset + spread}m` }
-    : { fixed: `${offset}m` };
+  const range =
+    time.offsetMode === "interval"
+      ? { min: time.minOffset, max: time.maxOffset }
+      : spread
+        ? { min: `${offset - spread}m`, max: `${offset + spread}m` }
+        : { fixed: `${offset}m` };
   if (time.mode === "relative")
     return { relative_to: time.parent, offset_range: range };
   return {
@@ -258,15 +357,15 @@ export function formWhen(time) {
     },
   };
 }
-export function buildRoutine(program, editor) {
+export function buildStep(program, editor) {
   const errors = editorErrors(program, editor);
   if (Object.keys(errors).length) throw new Error(Object.values(errors)[0]);
   const next = copy(program),
     { form, original } = editor;
-  let entry = routineEntries(next).find((e) => e.id === editor.id);
+  let entry = stepEntries(next).find((e) => e.id === editor.id);
   if (editor.existing && !entry)
     throw new Error(
-      "This routine changed elsewhere. Cancel and reopen it before saving.",
+      "This step changed elsewhere. Cancel and reopen it before saving.",
     );
   if (!entry) {
     const container = {
@@ -285,7 +384,7 @@ export function buildRoutine(program, editor) {
       activity_windows: [],
     };
     (next.routines ||= []).push(container);
-    entry = routineEntries(next).find((e) => e.id === editor.id);
+    entry = stepEntries(next).find((e) => e.id === editor.id);
   }
   const item = next.routines[entry.path[1]].steps[entry.path[3]];
   const isNew = !item.when;
@@ -311,9 +410,26 @@ export function buildRoutine(program, editor) {
     sorted(form.entities),
     sorted(original.entities),
   );
-  const actionChanged = form.action !== original.action;
+  const kindChanged = form.kind !== original.kind;
+  const actionChanged = form.action !== original.action || kindChanged;
+  const serviceChanged =
+    form.service !== original.service || form.data !== original.data;
   const brightnessChanged = form.brightness !== original.brightness;
-  if (isNew || targetsChanged || actionChanged || brightnessChanged) {
+  if (form.kind !== "entities") {
+    if (isNew || targetsChanged || kindChanged || serviceChanged) {
+      const action = copy(item.actions[0] || {});
+      action.action = form.kind === "scene" ? "scene.turn_on" : form.service;
+      if (isNew || targetsChanged || kindChanged)
+        action.targets = { entities: [...form.entities] };
+      action.data =
+        form.kind === "scene"
+          ? kindChanged
+            ? {}
+            : action.data || {}
+          : JSON.parse(form.data);
+      item.actions = [action];
+    }
+  } else if (isNew || targetsChanged || actionChanged || brightnessChanged) {
     const action = copy(
       item.actions[0] || { action: form.action, targets: {}, data: {} },
     );
@@ -351,12 +467,15 @@ export function buildRoutine(program, editor) {
     }
   }
   // Only newly managed lights receive an off baseline. Existing baselines and
-  // handover overrides are never replaced by routine edits.
+  // handover overrides are never replaced by step edits.
   const lighting = (next.lighting ||= {});
   const managed = new Set(targetEntities(next, lighting.managed_targets));
   const newLights = form.entities.filter(
     (e) =>
-      (isNew || targetsChanged) && e.startsWith("light.") && !managed.has(e),
+      form.kind === "entities" &&
+      (isNew || targetsChanged || kindChanged) &&
+      e.startsWith("light.") &&
+      !managed.has(e),
   );
   if (newLights.length) {
     lighting.managed_targets ||= { entities: [], groups: [] };
@@ -378,7 +497,7 @@ export function buildRoutine(program, editor) {
 }
 export function dependentNames(program, id) {
   const paths = references(program, id);
-  return routineEntries(program)
+  return stepEntries(program)
     .filter((e) => paths.some((p) => e.path.every((k, i) => p[i] === k)))
     .map((e) => e.name);
 }
