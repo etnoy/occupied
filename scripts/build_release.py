@@ -12,7 +12,9 @@ INTEGRATION = ROOT / "custom_components" / "occupied"
 
 def build(destination: Path):
     if not (INTEGRATION / "frontend" / "dist" / "occupied-panel.js").is_file():
-        raise RuntimeError("Frontend assets are missing. Run pnpm install and pnpm run build first.")
+        raise RuntimeError(
+            "Frontend assets are missing. Run pnpm install and pnpm run build first."
+        )
     destination.mkdir(parents=True, exist_ok=True)
     archive = destination / "occupied.zip"
     with ZipFile(archive, "w", compression=ZIP_DEFLATED) as bundle:
