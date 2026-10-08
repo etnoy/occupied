@@ -1,0 +1,53 @@
+custom_components/occupied/editor.py
+  s_e9d0bfbe517192::t_762abcdcac892e 15-16,112,152-156
+custom_components/occupied/engine_daily.py
+  s_d226db17d34716::t_93455e4f7da4fc 39-40,141,143-144,153-156,250-251,293-317,345-349,550-552,554,559,574
+custom_components/occupied/frontend/styles.ts
+  s_e9d0bfbe517192::t_9b3b51dc72cc0c 20-21,32-34,37-46,70-76,78-84,86-87,100
+custom_components/occupied/models.py
+  s_e9d0bfbe517192::t_d4b01b442ddc1a 175-177,179,184-189,193,201-204,207-209,218
+custom_components/occupied/planner.py
+  s_e9d0bfbe517192::t_ba29596a643391 40,302-303
+custom_components/occupied/runtime_planning.py
+  s_e9d0bfbe517192::t_7f27ca4304a6d3 25-26
+custom_components/occupied/time_sources.py
+  s_d226db17d34716::t_29edfe717b361a 1-96
+custom_components/occupied/time_utils.py
+  s_e9d0bfbe517192::t_57b30fe0b347df 3,8,10,20,57,106-108,113-114,134-141,233-285
+custom_components/occupied/websocket_api.py
+  s_e9d0bfbe517192::t_1eceb39f4361ca 105,117
+docs/schema.md
+  s_e9d0bfbe517192::t_87f2455f8472a0 3,50-60,63-66
+tests/frontend/serve.py
+  s_e9d0bfbe517192::t_c41b4b3c4af1b5 25,33-74,123
+tests/test_daily_runtime.py
+  s_e9d0bfbe517192::t_9a505b46e2a6de 1331-1377
+tests/test_editor_api.py
+  s_e9d0bfbe517192::t_8daafa900a0a30 289-334
+tests/test_planner.py
+  s_e9d0bfbe517192::t_46cc113872c3c7 391-522
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "5c478a26073a750adc75a2ee8ab4dd037d155512",
+  "prompts": {},
+  "sessions": {
+    "s_d226db17d34716": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11d23-938b-7961-ab04-118e0dcdf991",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_e9d0bfbe517192": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11cd7-6c80-7051-9089-5e4734710069",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
