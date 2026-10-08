@@ -1,0 +1,23 @@
+custom_components/occupied/frontend/routines.js
+  s_24a58996e5c8f7::t_27ffee861ac7d5 366-421,423-427,429-477,479-480
+custom_components/occupied/frontend/styles.js
+  s_24a58996e5c8f7::t_9b8cfe25db27e7 52
+tests/frontend/routine-workflows.js
+  s_24a58996e5c8f7::t_982f13d7408c47 35-41,213-215,218-221
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "1e5f9f7650608b6c4da3e7ea89249dca9d52a195",
+  "prompts": {},
+  "sessions": {
+    "s_24a58996e5c8f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a20-8b1b-75f2-95cd-c786681cd9e8",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
