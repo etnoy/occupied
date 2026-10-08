@@ -6,7 +6,7 @@ Occupied runs inside Home Assistant. Its editor, translations and brand images a
 
 In HACS, open the three-dot menu → **Custom repositories**, add `https://github.com/etnoy/occupied`, and select **Integration**. In the version picker, choose `main` to download the latest commit from the default branch, then restart HA. Choose a release tag to install a pinned release instead. Occupied uses GitHub source archives for HACS installs, so the latest commit does not need a GitHub release asset. Custom repository steps follow the [HACS instructions](https://www.hacs.dev/docs/faq/custom_repositories/).
 
-Open **Settings → Devices & services → Add integration → Occupied**. Choose GUI storage, a YAML snapshot, or an authoritative managed file. A new entry starts with permission disabled. Configure and preview through the Occupied sidebar, then select dry run before enabling permission. Activation conditions continue to apply to both dry and live execution.
+Open **Settings → Devices & services → Add integration → Occupied**. Choose GUI storage, a YAML snapshot, or an authoritative managed file. A new entry starts with permission disabled. Open the Occupied integration and select **Configure** to edit and preview routines, then select dry run before enabling permission. Activation conditions continue to apply to both dry and live execution.
 
 ## Manual installation
 
@@ -53,6 +53,6 @@ Default diagnostics expose status and counts, including source mode/status, with
 
 ## Uninstall
 
-Remove the `occupied:` bootstrap declaration first so restart cannot recreate the entry. Stop permission and remove the entry through **Settings → Devices & services** while the integration code and device services are still available. Normal unload runs configured still-owned cleanup, cancels timers/watchers, removes the sidebar and entities. Entry removal deletes its private program/permission/runtime stores and Repairs. The managed source file is retained.
+Remove the `occupied:` bootstrap declaration first so restart cannot recreate the entry. Stop permission and remove the entry through **Settings → Devices & services** while the integration code and device services are still available. Normal unload runs configured still-owned cleanup, cancels timers/watchers, removes the configuration panel and entities. Entry removal deletes its private program/permission/runtime stores and Repairs. The managed source file is retained.
 
 Remove the integration through HACS or delete only `<HA config>/custom_components/occupied/`, then restart HA. Remove managed YAML and the optional CLI environment separately if no longer needed. A source file is never changed or deleted by Occupied.

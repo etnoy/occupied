@@ -144,7 +144,9 @@ export class OccupiedPanel extends HTMLElement {
     });
   }
   async _load() {
-    const entry = this._panel?.config?.config_entry_id;
+    const entry =
+      this._panel?.config?.config_entry_id ||
+      new URLSearchParams(window.location.search).get("config_entry");
     if (
       !this.isConnected ||
       !this._hass ||

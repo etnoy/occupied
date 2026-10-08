@@ -1,6 +1,6 @@
 # Occupied editor
 
-Create Occupied through **Settings → Devices & services → Add integration**. Choose **Create with Occupied editor** for an empty household, or **Import Occupied YAML** for a stored snapshot. Permission starts disabled. Open **Occupied** in the sidebar. Existing development-proof entries open with an editable daily starter program; saving upgrades them to the daily runtime.
+Create Occupied through **Settings → Devices & services → Add integration**. Choose **Create with Occupied editor** for an empty household, or **Import Occupied YAML** for a stored snapshot. Permission starts disabled. Open Occupied under **Settings → Devices & services** and select **Configure**. Existing development-proof entries open with an editable daily starter program; saving upgrades them to the daily runtime.
 
 ## Create a routine
 

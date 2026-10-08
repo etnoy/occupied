@@ -79,7 +79,7 @@
       "invalid_config": "Check the selected entities, allowed states, activity name, and duration bounds."
     },
     "abort": {
-      "daily_program": "Edit this household in the Occupied sidebar panel."
+      "daily_program": "Edit this household from Occupied under Settings > Devices & services."
     }
   },
   "entity": {

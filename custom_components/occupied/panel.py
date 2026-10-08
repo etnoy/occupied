@@ -22,10 +22,9 @@ async def async_register_panel(hass: HomeAssistant, entry_id: str) -> None:
         hass,
         frontend_url_path=DOMAIN,
         webcomponent_name="occupied-panel",
-        sidebar_title="Occupied",
-        sidebar_icon="mdi:home-clock",
         module_url=PANEL_URL,
         require_admin=True,
+        config_panel_domain=DOMAIN,
         config={"config_entry_id": entry_id},
     )
 
