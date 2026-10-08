@@ -1,0 +1,33 @@
+README.md
+  s_9b0bd3556eb9f1::t_141520324c3b50 17
+custom_components/occupied/frontend/occupied-panel.js
+  s_9b0bd3556eb9f1::t_50c7ee1e7202f1 147-149
+custom_components/occupied/panel.py
+  s_9b0bd3556eb9f1::t_279931e3e8b87e 27
+custom_components/occupied/strings.json
+  s_9b0bd3556eb9f1::t_2e620067209f86 82
+custom_components/occupied/translations/en.json
+  s_9b0bd3556eb9f1::t_e3ad8ce05e3853 82
+docs/editor.md
+  s_9b0bd3556eb9f1::t_ffec6d3a71080d 3
+docs/installation.md
+  s_9b0bd3556eb9f1::t_7ebf12d5f99f52 9,56
+docs/runtime.md
+  s_9b0bd3556eb9f1::t_1c3f519feaa1c0 7,52,56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "aa3d567a3f78b8c4e8585b8b6de7e9470a322927",
+  "prompts": {},
+  "sessions": {
+    "s_9b0bd3556eb9f1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a46-6fc9-7460-a72d-1af77d3b0020",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
