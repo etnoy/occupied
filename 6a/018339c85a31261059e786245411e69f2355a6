@@ -1,0 +1,19 @@
+custom_components/occupied/frontend/routines.js
+  s_24a58996e5c8f7::t_c5073c49bec486 267-270
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "6a018339c85a31261059e786245411e69f2355a6",
+  "prompts": {},
+  "sessions": {
+    "s_24a58996e5c8f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a20-8b1b-75f2-95cd-c786681cd9e8",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
