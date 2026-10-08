@@ -4,11 +4,11 @@ Occupied runs inside Home Assistant. Its editor, translations and brand images a
 
 ## HACS custom repository
 
-In HACS, open the three-dot menu → **Custom repositories**, add `https://github.com/etnoy/occupied`, and select **Integration**. Choose a published release and restart HA. HACS downloads the compiled `occupied.zip` release asset using its [ZIP release support](https://www.hacs.dev/docs/publish/start/). Custom repository steps follow the [HACS instructions](https://www.hacs.dev/docs/faq/custom_repositories/).
+In HACS, open the three-dot menu → **Custom repositories**, add `https://github.com/etnoy/occupied`, and select **Integration**. Choose a published release and restart HA. To follow development, enable **Show beta versions** for Occupied: every verified push to `main` is published as a `dev-<run>-<commit>` prerelease, so HACS offers each new commit as an update. HACS downloads the compiled `occupied.zip` release asset using its [ZIP release support](https://www.hacs.dev/docs/publish/start/). Custom repository steps follow the [HACS instructions](https://www.hacs.dev/docs/faq/custom_repositories/).
 
 Open **Settings → Devices & services → Add integration → Occupied**. Choose GUI storage, a YAML snapshot, or an authoritative managed file. A new entry starts with permission disabled. Open the Occupied integration and select **Configure** to edit and preview routines, then select dry run before enabling permission. Activation conditions continue to apply to both dry and live execution.
 
-HACS installs the compiled `occupied.zip` release asset. Development branch installs are disabled because the repository contains TypeScript sources; for development, run `pnpm install --frozen-lockfile` and `pnpm run build` before copying the integration.
+HACS installs the compiled `occupied.zip` release asset. Branch installs are disabled because the repository contains only TypeScript sources; for development, run `pnpm install --frozen-lockfile` and `pnpm run build` before copying the integration.
 
 ## Manual installation
 

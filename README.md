@@ -11,7 +11,7 @@ Occupied includes the complete editor and timeline, canonical daily programs, du
 
 ## Installation
 
-1. Add `https://github.com/etnoy/occupied` as a HACS custom repository of type **Integration**. Choose `main` to install the latest commit, or choose a release version. As an alternative, extract release `occupied.zip` inside `<HA config>/custom_components/occupied/`. See [installation, upgrades and uninstall](docs/installation.md).
+1. Add `https://github.com/etnoy/occupied` as a HACS custom repository of type **Integration**. Choose a release version, or enable **Show beta versions** to get an automatic `dev-…` prerelease for every commit on `main`. As an alternative, extract release `occupied.zip` inside `<HA config>/custom_components/occupied/`. See [installation, upgrades and uninstall](docs/installation.md).
 2. Restart Home Assistant.
 3. Open **Settings → Devices & services → Add integration → Occupied**.
 4. Open **Occupied** under **Settings → Devices & services** and select **Configure**. Choose the editor, import an Occupied YAML snapshot, or select an authoritative managed file. Select **Create your first step**, choose entity actions or a Home Assistant scene, and a start time or interval, then **Save step**. Select a step and **Add related step** to schedule what happens before or after it. Saving validates automatically. Existing proof settings remain supported and open with an editable daily starter program.
