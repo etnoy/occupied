@@ -5,6 +5,7 @@ import {
   simpleStep,
   stepEditor,
   editorErrors,
+  offsetErrors,
   buildStep,
   dependentNames,
   timingSummary,
@@ -84,7 +85,7 @@ export function renderSteps(panel, root) {
       ),
       el(
         "p",
-        t("1. Select entities   →   2. Choose an action   →   3. Set a time"),
+        t("1. Set timing   →   2. Select entities   →   3. Choose an action"),
         { class: "empty-steps" },
       ),
       button(t("Create your first step"), () => startStep(panel), {
@@ -269,7 +270,7 @@ function renderEditor(panel, root) {
     class: "builder-steps",
     "aria-label": t("Step setup"),
   });
-  ["Entities", "Action", "Time"].forEach((label, i) =>
+  ["Timing", "Entities", "Action"].forEach((label, i) =>
     steps.append(
       el("li", `${i + 1}. ${t(label)}`, {
         "aria-current": i === editor.stage ? "step" : "false",
@@ -290,6 +291,7 @@ function renderEditor(panel, root) {
       .querySelector(`[data-builder-field="${key}"]`)
       ?.removeAttribute("aria-invalid");
     panel.toolbar();
+    if (["startOffset", "endOffset"].includes(key)) validateOffsets();
   };
   const rerender = (key) => {
     panel.renderView();
@@ -308,12 +310,45 @@ function renderEditor(panel, root) {
         }),
       );
   };
+  const validateOffsets = () => {
+    const errors = offsetErrors(form.timing);
+    for (const key of ["startOffset", "endOffset"]) {
+      const input = shell.querySelector(`[data-builder-field="${key}"]`);
+      if (!input) continue;
+      const message = errors[key];
+      shell.querySelector(`[data-builder-error="${key}"]`)?.remove();
+      input.setCustomValidity(message || "");
+      if (message) {
+        editor.errors[key] = message;
+        input.setAttribute("aria-invalid", "true");
+        input.setAttribute("aria-describedby", `routine-error-${key}`);
+        error(input.closest(".field"), key);
+      } else {
+        delete editor.errors[key];
+        input.removeAttribute("aria-invalid");
+        input.removeAttribute("aria-describedby");
+      }
+    }
+  };
   const field = (parent, key, label, value, update, options = {}) => {
     const box = el("div", null, { class: "field" }),
       id = `routine-${key}`;
-    box.append(el("label", t(label), { for: id }));
+    // The selector wrapper alone may be registered while its time picker is
+    // unavailable. Keep a usable browser control until the full picker is loaded.
+    const nativeTime =
+      options.type === "time" &&
+      customElements.get("ha-selector") &&
+      customElements.get("ha-selector-time") &&
+      customElements.get("ha-time-input");
+    if (!nativeTime) box.append(el("label", t(label), { for: id }));
     const input = el(
-      options.choices ? "select" : options.multiline ? "textarea" : "input",
+      nativeTime
+        ? "ha-selector"
+        : options.choices
+          ? "select"
+          : options.multiline
+            ? "textarea"
+            : "input",
       null,
       {
         id,
@@ -322,26 +357,52 @@ function renderEditor(panel, root) {
         min: options.min,
         max: options.max,
         step: options.step,
+        placeholder: options.placeholder,
       },
     );
     for (const [v, name] of options.choices || [])
       input.append(el("option", t(name), { value: v }));
     input.value = value;
+    if (nativeTime) {
+      input.hass = panel._hass;
+      input.selector = { time: {} };
+      input.label = t(label);
+      input.required = !options.optional;
+      input.value = value || undefined;
+      input.setAttribute("aria-label", t(label));
+      input.tabIndex = 0;
+    }
     if (editor.errors[key]) {
       input.setAttribute("aria-invalid", "true");
       input.setAttribute("aria-describedby", `routine-error-${key}`);
     }
-    input.addEventListener(options.choices ? "change" : "input", () => {
-      update(input.value);
-      changed(key);
-      if (options.render) rerender(key);
-    });
+    input.addEventListener(
+      nativeTime ? "value-changed" : options.choices ? "change" : "input",
+      (event) => {
+        if (nativeTime) {
+          if (!event.detail || !("value" in event.detail)) return;
+          input.value = event.detail.value || "";
+        }
+        update(input.value);
+        changed(key);
+        if (options.render) rerender(key);
+      },
+    );
+    if (["startOffset", "endOffset"].includes(key)) {
+      input.addEventListener("blur", validateOffsets);
+      input.setCustomValidity(editor.errors[key] || "");
+    }
     box.append(input);
     error(box, key);
     parent.append(box);
     return input;
   };
-  if (editing || editor.stage === 0) {
+  const nameSection = el("div", null, { class: "step-name-editor" });
+  shell.insertBefore(nameSection, sections);
+  field(nameSection, "name", "Step name", form.name, (v) => {
+    form.name = v;
+  });
+  if (editing || editor.stage === 1) {
     const entitySection = el("div", null, {
       "data-editor-section": "entities",
     });
@@ -528,7 +589,7 @@ function renderEditor(panel, root) {
         ),
       );
   }
-  if (editing || editor.stage === 1) {
+  if (editing || editor.stage === 2) {
     const actionSection = el("div", null, { "data-editor-section": "action" });
     sections.append(actionSection);
     actionSection.append(
@@ -576,9 +637,6 @@ function renderEditor(panel, root) {
           render: true,
         },
       );
-    field(actionSection, "name", "Step name", form.name, (v) => {
-      form.name = v;
-    });
     if (
       form.kind === "entities" &&
       form.action === "turn_on" &&
@@ -608,13 +666,12 @@ function renderEditor(panel, root) {
       );
     }
   }
-  if (editing || editor.stage === 2) {
+  if (editing || editor.stage === 0) {
     const timingSection = el("div", null, { "data-editor-section": "time" });
-    sections.append(timingSection);
+    sections.prepend(timingSection);
     const time = form.timing;
     timingSection.append(
-      el("h3", t(editing ? "Time" : "When should it happen?")),
-      el("p", form.name, { class: "hint" }),
+      el("h3", t(editing ? "Timing" : "When should it happen?")),
     );
     field(
       timingSection,
@@ -623,287 +680,178 @@ function renderEditor(panel, root) {
       time.mode,
       (v) => {
         time.mode = v;
-        if (v === "interval") {
-          time.earliest ||= time.time;
-          time.latest ||= time.time;
-        }
-        if (v === "sun") time.offset = 0;
-        if (v === "relative" && !time.parent) {
-          const parent = parentSteps(panel.draft, editor.id)[0];
-          time.parent = parent?.id || "";
-          if (parent)
-            form.days = [
-              ...stepEntries(panel.draft).find((e) => e.id === parent.id).days,
-            ];
-        }
+        if (v === "relative" && !time.anchor) time.anchor = "sun:sunrise";
       },
       {
         choices: [
-          ["clock", "At a time"],
-          ["interval", "Between times"],
-          ["sun", "Sunrise or sunset"],
-          ["relative", "Before or after a step"],
+          ["absolute", "Absolute time"],
+          ["relative", "Relative to"],
         ],
         render: true,
       },
     );
-    if (time.mode === "interval") {
+    if (time.mode === "absolute") {
       field(
         timingSection,
-        "earliest",
-        "Earliest start",
-        time.earliest,
+        "start",
+        time.end || editor.showEndTime ? "Start of window" : "Start time",
+        time.start,
         (v) => {
-          time.earliest = v;
+          time.start = v;
         },
         { type: "time", step: 1 },
       );
-      field(
-        timingSection,
-        "latest",
-        "Latest start",
-        time.latest,
-        (v) => {
-          time.latest = v;
-        },
-        { type: "time", step: 1 },
-      );
-      timingSection.append(
-        el("p", t("An end earlier than the start crosses midnight."), {
-          class: "hint",
-        }),
-      );
-    } else if (time.mode === "clock")
-      field(
-        timingSection,
-        "time",
-        "Time",
-        time.time,
-        (v) => {
-          time.time = v;
-        },
-        { type: "time", step: 1 },
-      );
-    else {
-      if (time.mode === "relative") {
-        const parents = parentSteps(panel.draft, editor.id);
+      if (time.end || editor.showEndTime || editor.errors.end) {
         field(
           timingSection,
-          "parent",
-          "Related step",
-          time.parent,
+          "end",
+          "End of window (optional)",
+          time.end,
           (v) => {
-            time.parent = v;
+            time.end = v;
           },
-          {
-            choices: [
-              ["", "Choose a step"],
-              ...parents.map((e) => [e.id, e.name]),
-            ],
-          },
+          { type: "time", step: 1, optional: true },
         );
         timingSection.append(
-          el(
-            "p",
-            t(
-              "Follows the step’s scheduled time, including its daily variation.",
-            ),
-            { class: "hint" },
+          button(
+            t("Remove end of window"),
+            () => {
+              time.end = "";
+              editor.showEndTime = false;
+              changed("end");
+              rerender("start");
+            },
+            { class: "text-button" },
           ),
         );
       } else
-        field(
-          timingSection,
-          "sun",
-          "Sun event",
-          time.sun,
-          (v) => {
-            time.sun = v;
-          },
-          {
-            choices: [
-              ["sunset", "Sunset"],
-              ["sunrise", "Sunrise"],
-            ],
-          },
-        );
-      field(
-        timingSection,
-        "offsetMode",
-        "Offset timing",
-        time.offsetMode,
-        (v) => {
-          time.offsetMode = v;
-        },
-        {
-          choices: [
-            ["around", "Fixed offset with optional variation"],
-            ["interval", "Between offsets"],
-          ],
-          render: true,
-        },
-      );
-      if (time.offsetMode === "interval") {
-        field(
-          timingSection,
-          "minOffset",
-          "Earliest offset",
-          time.minOffset,
-          (v) => {
-            time.minOffset = v;
-          },
-        );
-        field(
-          timingSection,
-          "maxOffset",
-          "Latest offset",
-          time.maxOffset,
-          (v) => {
-            time.maxOffset = v;
-          },
-        );
         timingSection.append(
-          el(
-            "p",
-            t(
-              "Use 10s or 20m after the anchor, or negative offsets such as -30m before it.",
-            ),
-            { class: "hint" },
+          button(
+            t("Add end of window"),
+            () => {
+              editor.showEndTime = true;
+              rerender("end");
+            },
+            { class: "text-button" },
           ),
         );
-      } else {
-        const row = el("div", null, { class: "timing-offset" });
-        field(
-          row,
-          "offset",
-          "Minutes",
-          time.offset,
-          (v) => {
-            time.offset = v;
-          },
-          { type: "number", min: 0, max: 10080, step: 1 },
-        );
-        field(
-          row,
-          "direction",
-          "Before or after",
-          time.direction,
-          (v) => {
-            time.direction = v;
-          },
-          {
-            choices: [
-              ["after", "After"],
-              ["before", "Before"],
-            ],
-          },
-        );
-        timingSection.append(row);
-      }
-    }
-    if (
-      time.mode !== "interval" &&
-      (time.mode === "clock" || time.offsetMode !== "interval")
-    ) {
-      const variance = details(timingSection, t("Add time variation"));
-      variance.open = Number(time.variation) > 0 || !!editor.errors.variation;
-      field(
-        variance,
-        "variation",
-        "Minutes either side",
-        time.variation,
-        (v) => {
-          time.variation = v;
-        },
-        { type: "number", min: 0, max: 719, step: 1 },
-      );
-      variance.append(
+      timingSection.append(
         el(
           "p",
           t(
-            "For example, 15 means up to 15 minutes earlier or later each day.",
+            "Leave the end blank for a fixed start time. An end before the start crosses midnight.",
           ),
           { class: "hint" },
         ),
       );
+    } else {
+      field(
+        timingSection,
+        "anchor",
+        "Relative to",
+        time.anchor,
+        (v) => {
+          time.anchor = v;
+          if (!editor.existing && v.startsWith("step:")) {
+            const parent = stepEntries(panel.draft).find(
+              (e) => e.id === v.slice(5),
+            );
+            if (parent) form.days = [...parent.days];
+          }
+        },
+        {
+          choices: [
+            ["", "Choose a step or event"],
+            ["sun:sunrise", "Sunrise"],
+            ["sun:sunset", "Sunset"],
+            ...parentSteps(panel.draft, editor.id).map((e) => [
+              `step:${e.id}`,
+              e.name,
+            ]),
+          ],
+          render: true,
+        },
+      );
+      field(
+        timingSection,
+        "startOffset",
+        "Start offset",
+        time.startOffset,
+        (v) => {
+          time.startOffset = v;
+        },
+        { placeholder: "30m or 1h" },
+      );
+      if (time.endOffset || editor.showEndOffset || editor.errors.endOffset) {
+        field(
+          timingSection,
+          "endOffset",
+          "End offset (optional)",
+          time.endOffset,
+          (v) => {
+            time.endOffset = v;
+          },
+          { placeholder: "1h30m" },
+        );
+        timingSection.append(
+          button(
+            t("Remove end offset"),
+            () => {
+              time.endOffset = "";
+              editor.showEndOffset = false;
+              changed("endOffset");
+              rerender("startOffset");
+            },
+            { class: "text-button" },
+          ),
+        );
+      } else
+        timingSection.append(
+          button(
+            t("Add end offset"),
+            () => {
+              editor.showEndOffset = true;
+              rerender("endOffset");
+            },
+            { class: "text-button" },
+          ),
+        );
+      timingSection.append(
+        el(
+          "p",
+          t(
+            "Use 10s or 20m for a delay, or -30m for an earlier start. Leave the end blank for a fixed offset.",
+          ),
+          { class: "hint" },
+        ),
+      );
+      if (time.anchor.startsWith("sun:")) {
+        const fallback = details(
+          timingSection,
+          t("If the sun event is unavailable"),
+        );
+        fallback.open = !!time.fallback || !!editor.errors.fallback;
+        field(
+          fallback,
+          "fallback",
+          "Fallback time (optional)",
+          time.fallback,
+          (v) => {
+            time.fallback = v;
+          },
+          { type: "time", optional: true },
+        );
+      }
     }
     timingSection.append(
       el(
         "p",
         t(
-          "The start time is chosen uniformly at random from the interval each day.",
+          "With an end value, the start is chosen uniformly at random between the two bounds.",
         ),
         { class: "hint" },
       ),
     );
-    const chosenDays = form.days.join();
-    const preset = editor.customDays
-      ? "custom"
-      : chosenDays === days.join()
-        ? "all"
-        : chosenDays === days.slice(0, 5).join()
-          ? "weekdays"
-          : chosenDays === days.slice(5).join()
-            ? "weekends"
-            : "custom";
-    field(
-      timingSection,
-      "days",
-      "Repeat",
-      preset,
-      (v) => {
-        editor.customDays = v === "custom";
-        if (v !== "custom")
-          form.days =
-            v === "all"
-              ? [...days]
-              : v === "weekdays"
-                ? days.slice(0, 5)
-                : days.slice(5);
-      },
-      {
-        choices: [
-          ["all", "Every day"],
-          ["weekdays", "Weekdays"],
-          ["weekends", "Weekends"],
-          ["custom", "Choose days"],
-        ],
-        render: true,
-      },
-    );
-    if (preset === "custom") {
-      const checks = el("div", null, { class: "checks" });
-      for (const day of days) {
-        const label = el("label", null, { class: "check" }),
-          input = el("input", null, { type: "checkbox" });
-        input.checked = form.days.includes(day);
-        input.addEventListener("change", () => {
-          form.days = days.filter((d) =>
-            d === day ? input.checked : form.days.includes(d),
-          );
-          changed("days");
-        });
-        label.append(input, document.createTextNode(t(day)));
-        checks.append(label);
-      }
-      timingSection.append(checks);
-    }
-    if (time.mode === "sun") {
-      const fallback = details(
-        timingSection,
-        t("If the sun event is unavailable"),
-      );
-      field(
-        fallback,
-        "fallback",
-        "Fallback time (optional)",
-        time.fallback,
-        (v) => {
-          time.fallback = v;
-        },
-        { type: "time" },
-      );
-    }
     if (panel.document?.source === "file")
       timingSection.append(
         el(
@@ -949,7 +897,7 @@ function renderEditor(panel, root) {
       );
       if (Object.keys(editor.errors).length) return rerender();
       if (!editing && editor.stage < 2) {
-        if (editor.stage === 0 && !form.name)
+        if (editor.stage === 1 && !form.name)
           form.name = `${entityName(panel, form.entities[0])}${form.entities.length > 1 ? ` +${form.entities.length - 1}` : ""}${form.kind === "entities" ? ` ${t("on")}` : ""}`;
         editor.stage++;
         return rerender();

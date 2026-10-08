@@ -21,8 +21,17 @@ export async function runRoutineWorkflows(panel, check) {
     node.click();
   };
   const field = (key, value) => {
+    if (
+      ["end", "endOffset"].includes(key) &&
+      !root.querySelector(`[data-builder-field="${key}"]`)
+    )
+      click(key === "end" ? "Add end of window" : "Add end offset");
     const node = root.querySelector(`[data-builder-field="${key}"]`);
     assert(node, `Missing builder field: ${key}`);
+    if (node.tagName === "HA-SELECTOR") {
+      node.select(value);
+      return node;
+    }
     node.value = value;
     node.dispatchEvent(
       new Event(node.tagName === "SELECT" ? "change" : "input", {
@@ -71,7 +80,7 @@ export async function runRoutineWorkflows(panel, check) {
     );
   let parentId, childId, endId;
   await check(
-    "guided entity-first creation validates and saves without separate validation",
+    "guided timing-first creation validates and saves without separate validation",
     async () => {
       const doc = await fixtureWS({ type: "occupied/program" });
       await fixtureWS({
@@ -91,6 +100,20 @@ export async function runRoutineWorkflows(panel, check) {
       );
       click("Create your first step");
       fit();
+      assert(
+        root.querySelector('[data-builder-field="start"]').type === "time" &&
+          root
+            .querySelector('[data-builder-field="start"]')
+            .getBoundingClientRect().height > 0 &&
+          root.textContent.includes("Start time") &&
+          !root.querySelector('[data-builder-field="end"]') &&
+          !root.querySelector('[data-builder-field="variation"]') &&
+          !root.querySelector('[data-builder-field="days"]'),
+        "Start time is missing when only the HA selector wrapper is loaded, or removed controls are still shown",
+      );
+      field("start", "17:45");
+      field("end", "18:15");
+      click("Continue");
       click("Continue");
       assert(
         root.textContent.includes("Select at least one"),
@@ -101,10 +124,7 @@ export async function runRoutineWorkflows(panel, check) {
       fit();
       field("name", "Evening lights");
       field("brightness", "60");
-      click("Continue");
       fit();
-      field("time", "18:00");
-      field("variation", "15");
       const before = calls.length;
       await save();
       const entry = stepEntries(panel.saved)[0];
@@ -146,25 +166,26 @@ export async function runRoutineWorkflows(panel, check) {
         panel.stepEditor.form.entities.length === 2,
         "Parent entities not prefilled",
       );
-      choose(["light.kitchen"]);
-      click("Continue");
-      field("name", "Kitchen lights");
-      click("Continue");
+
       assert(
         root.querySelector('[data-builder-field="mode"]').value === "relative",
         "Related timing not selected",
       );
-      field("offset", "30");
+      field("startOffset", "30m");
+      click("Continue");
+      choose(["light.kitchen"]);
+      click("Continue");
+      field("name", "Kitchen lights");
       await save();
       childId = panel.selectedStep;
       select(childId);
       click("Add related step");
+      field("startOffset", "120m");
+      click("Continue");
       choose(["light.kitchen", "light.living_room", "switch.floor_lamp"]);
       click("Continue");
       field("action", "turn_off");
       field("name", "Lights out");
-      click("Continue");
-      field("offset", "120");
       await save();
       endId = panel.selectedStep;
       assert(
@@ -220,7 +241,7 @@ export async function runRoutineWorkflows(panel, check) {
           entityPicker.selector.entity.filter.domain.join(",") ===
             "light,switch" &&
           root.querySelector('[data-builder-field="action"]') &&
-          root.querySelector('[data-builder-field="time"]'),
+          root.querySelector('[data-builder-field="start"]'),
         "Existing routine does not show entities, action and timing together",
       );
       assert(
@@ -233,26 +254,20 @@ export async function runRoutineWorkflows(panel, check) {
       fit();
       choose(["light.living_room", "switch.floor_lamp", "light.hall"]);
       field("brightness", "55");
-      field("time", "18:20");
+      field("start", "18:05");
+      field("end", "18:35");
       field("name", "Evening glow");
       field("mode", "relative");
       const parents = [
-        ...root.querySelector('[data-builder-field="parent"]').options,
+        ...root.querySelector('[data-builder-field="anchor"]').options,
       ].map((o) => o.value);
       assert(
-        !parents.includes(parentId) &&
-          !parents.includes(childId) &&
-          !parents.includes(endId),
+        !parents.includes(`step:${parentId}`) &&
+          !parents.includes(`step:${childId}`) &&
+          !parents.includes(`step:${endId}`),
         "Cycle-producing parents offered",
       );
-      field("mode", "clock");
-      field("days", "weekdays");
-      click("Save step");
-      assert(
-        panel.stepEditor && root.textContent.includes("Kitchen lights depends"),
-        "Downstream day conflict not shown inline",
-      );
-      field("days", "all");
+      field("mode", "absolute");
       await save();
       const edited = stepEntries(panel.saved).find((e) => e.id === parentId);
       assert(
@@ -276,10 +291,10 @@ export async function runRoutineWorkflows(panel, check) {
     async () => {
       select(parentId);
       click("Edit step");
-      field("mode", "sun");
-      field("direction", "before");
-      field("offset", "30");
-      field("variation", "10");
+      field("mode", "relative");
+      field("anchor", "sun:sunset");
+      field("startOffset", "-40m");
+      field("endOffset", "-20m");
       await save();
       assert(
         stepEntries(panel.saved)[0].when.sun_range.offset_range.min === "-40m",
@@ -289,9 +304,9 @@ export async function runRoutineWorkflows(panel, check) {
       assert(panel.preview.valid, "Sun timing failed planner validation");
       select(parentId);
       click("Edit step");
-      field("mode", "clock");
-      field("time", "00:05");
-      field("variation", "15");
+      field("mode", "absolute");
+      field("start", "23:50");
+      field("end", "00:20");
       await save();
       await panel.runPreview();
       assert(
@@ -333,7 +348,7 @@ export async function runRoutineWorkflows(panel, check) {
         await wait(() => !panel.busy);
         assert(
           root.querySelector(
-            '[data-builder-field="time"][aria-invalid="true"]',
+            '[data-builder-field="start"][aria-invalid="true"]',
           ),
           "Backend error did not reach the time field",
         );
@@ -360,7 +375,7 @@ export async function runRoutineWorkflows(panel, check) {
     async () => {
       select(parentId);
       click("Edit step");
-      field("time", "20:00");
+      field("start", "20:00");
       const original = panel._hass.callWS;
       let release,
         gate = "occupied/editor_validate";
@@ -375,11 +390,11 @@ export async function runRoutineWorkflows(panel, check) {
         const saves = calls.filter((c) => c.type === "occupied/save").length;
         click("Save step");
         await wait(() => release);
-        field("time", "21:00");
+        field("start", "21:00");
         release();
         await wait(() => !panel.busy);
         assert(
-          panel.stepEditor.form.timing.time === "21:00" &&
+          panel.stepEditor.form.timing.start === "21:00" &&
             calls.filter((c) => c.type === "occupied/save").length === saves,
           "Stale validation saved or overwrote new edits",
         );
@@ -387,13 +402,13 @@ export async function runRoutineWorkflows(panel, check) {
         release = undefined;
         click("Save step");
         await wait(() => release);
-        field("time", "00:05"); // Revert to the value from before editing.
+        field("start", "23:50"); // Revert to the value from before editing.
         release();
         await wait(() => !panel.busy);
         assert(
-          panel.stepEditor.form.timing.time === "00:05" &&
+          panel.stepEditor.form.timing.start === "23:50" &&
             panel.saved.routines[0].steps[0].when.clock_range.earliest ===
-              "20:45",
+              "21:00",
           "Save response replaced newer edits",
         );
       } finally {
@@ -412,14 +427,13 @@ export async function runRoutineWorkflows(panel, check) {
     "scene and service steps use explicit intervals and relative offset bounds",
     async () => {
       click("Create step");
+      field("start", "06:40:00");
+      field("end", "07:20:00");
+      click("Continue");
       field("kind", "scene");
       choose(["scene.morning"]);
       click("Continue");
       field("name", "Morning scene");
-      click("Continue");
-      field("mode", "interval");
-      field("earliest", "06:40:00");
-      field("latest", "07:20:00");
       await save();
       const morning = stepEntries(panel.saved).find(
         (e) => e.name === "Morning scene",
@@ -430,16 +444,39 @@ export async function runRoutineWorkflows(panel, check) {
       );
       select(morning.id);
       click("Add related step");
+      const offset = field("startOffset", "30");
+      assert(
+        offset.getAttribute("aria-invalid") === "true" &&
+          !offset.checkValidity() &&
+          root.textContent.includes("Use h, m or s"),
+        "Invalid offset format was not explained as typed",
+      );
+      field("startOffset", "10s");
+      assert(
+        offset === root.querySelector('[data-builder-field="startOffset"]') &&
+          !offset.hasAttribute("aria-invalid") &&
+          offset.checkValidity(),
+        "Correcting an offset did not clear validation or replaced the input",
+      );
+      const endOffset = field("endOffset", "5s");
+      assert(
+        !endOffset.checkValidity() &&
+          root.textContent.includes("at least the start offset"),
+        "End bound ordering was not validated live",
+      );
+      field("endOffset", "20m");
+      assert(
+        endOffset.checkValidity() && !endOffset.hasAttribute("aria-invalid"),
+        "Corrected end offset remained invalid",
+      );
+      click("Continue");
       field("kind", "service");
       choose(["cover.blinds"]);
       click("Continue");
       field("service", "cover.set_cover_position");
       field("data", '{"position": 75}');
       field("name", "Breakfast blinds");
-      click("Continue");
-      field("offsetMode", "interval");
-      field("minOffset", "10s");
-      field("maxOffset", "20m");
+
       await save();
       const breakfast = stepEntries(panel.saved).find(
         (e) => e.name === "Breakfast blinds",
@@ -491,10 +528,10 @@ export async function runRoutineWorkflows(panel, check) {
       home();
       const saves = calls.filter((c) => c.type === "occupied/save").length;
       click("Create step");
+      click("Continue");
       choose(["light.hall"]);
       click("Continue");
       field("name", "Hall light");
-      click("Continue");
       click("Add to draft");
       assert(
         !panel.stepEditor &&

@@ -64,6 +64,10 @@ nav button[aria-current="page"] { border-bottom-color:var(--primary-color,#167b9
 .routine-editor details { padding:8px 0; }
 .routine-editor .field { margin:18px 0; }
 .routine-editor .error { font-size:13px; }
+.routine-editor .step-name-editor .field { max-width:none; margin:20px 0 28px; }
+.step-name-editor label { font-weight:600; }
+.step-name-editor input { font-family:inherit; font-size:22px; font-weight:600; line-height:1.4; padding:14px; }
+
 .routine-editor.editing { max-width:none; }
 .editing .editor-sections { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.1fr); gap:28px; }
 .editing .editor-sections > div { min-width:0; }

@@ -14,6 +14,7 @@ import {
   stepEntries,
   simpleStep,
   editorErrors,
+  offsetErrors,
   dependentNames,
   timingSummary,
 } from "../../custom_components/occupied/frontend/step-model.js";
@@ -159,10 +160,10 @@ test("related routines use stable step anchors and reject cycles and incompatibl
   edit.form.timing = {
     ...edit.form.timing,
     mode: "relative",
-    parent: child.id,
+    anchor: `step:${child.id}`,
   };
-  assert.match(editorErrors(next, edit).parent, /circular/);
-  edit.form.timing.mode = "clock";
+  assert.match(editorErrors(next, edit).anchor, /circular/);
+  edit.form.timing.mode = "absolute";
   edit.form.days = ["mon"];
   assert.match(editorErrors(next, edit).days, /Kitchen depends/);
 });
@@ -226,12 +227,12 @@ test("widening a legacy item's weekdays retains siblings and inherited defaults"
     "tue",
   ]);
 });
-test("clock variation, signed sun offsets and before/after preserve overnight semantics", () => {
+test("start/end bounds and signed sun offsets preserve overnight semantics", () => {
   const p = empty(),
     editor = stepEditor(p);
   Object.assign(editor.form, { name: "Night", entities: ["light.a"] });
-  editor.form.timing.time = "00:05";
-  editor.form.timing.variation = 15;
+  editor.form.timing.start = "23:50";
+  editor.form.timing.end = "00:20";
   let next = buildStep(p, editor);
   assert.deepEqual(next.routines[0].steps[0].when.clock_range, {
     earliest: "23:50",
@@ -240,10 +241,10 @@ test("clock variation, signed sun offsets and before/after preserve overnight se
   });
   assert.equal(next.routines[0].steps[0].allow_cross_boundary, true);
   Object.assign(editor.form.timing, {
-    mode: "sun",
-    direction: "before",
-    offset: 30,
-    variation: 5,
+    mode: "relative",
+    anchor: "sun:sunset",
+    startOffset: "-35m",
+    endOffset: "-25m",
   });
   next = buildStep(p, editor);
   assert.deepEqual(next.routines[0].steps[0].when.sun_range.offset_range, {
@@ -363,9 +364,9 @@ test("explicit step start intervals and second-precision relative offsets", () =
     days: ["mon", "tue", "wed", "thu", "fri"],
   });
   Object.assign(editor.form.timing, {
-    mode: "interval",
-    earliest: "06:40:00",
-    latest: "07:20:00",
+    mode: "absolute",
+    start: "06:40:00",
+    end: "07:20:00",
   });
   const first = buildStep(empty(), editor),
     parent = stepEntries(first)[0];
@@ -377,9 +378,8 @@ test("explicit step start intervals and second-precision relative offsets", () =
   const child = stepEditor(first, null, parent);
   Object.assign(child.form, { name: "Breakfast", entities: ["light.kitchen"] });
   Object.assign(child.form.timing, {
-    offsetMode: "interval",
-    minOffset: "10s",
-    maxOffset: "20m",
+    startOffset: "10s",
+    endOffset: "20m",
   });
   const next = buildStep(first, child),
     breakfast = stepEntries(next)[1];
@@ -387,14 +387,86 @@ test("explicit step start intervals and second-precision relative offsets", () =
     relative_to: parent.id,
     offset_range: { min: "10s", max: "20m" },
   });
-  child.form.timing.minOffset = "30m";
-  assert.match(editorErrors(first, child).maxOffset, /at least/);
-  editor.form.timing.earliest = "23:50";
-  editor.form.timing.latest = "00:20";
+  child.form.timing.startOffset = "30m";
+  assert.match(editorErrors(first, child).endOffset, /at least/);
+  editor.form.timing.start = "23:50";
+  editor.form.timing.end = "00:20";
   assert.equal(
     stepEntries(buildStep(empty(), editor))[0].when.clock_range.cross_midnight,
     true,
   );
-  editor.form.timing.latest = "25:00";
-  assert.match(editorErrors(empty(), editor).latest, /valid/);
+  editor.form.timing.end = "25:00";
+  assert.match(editorErrors(empty(), editor).end, /valid/);
+});
+
+test("clearing optional ends restores fixed timing and retains existing weekdays", () => {
+  const { program: p } = create(empty(), "Morning");
+  p.routines[0].steps[0].days = ["mon", "wed"];
+  p.routines[0].steps[0].when.clock_range = {
+    earliest: "06:40:10",
+    latest: "07:20:30",
+  };
+  const edit = stepEditor(p, stepEntries(p)[0]);
+  assert.equal(edit.form.timing.start, "06:40:10");
+  assert.equal(edit.form.timing.end, "07:20:30");
+  edit.form.timing.end = "";
+  const fixed = buildStep(p, edit);
+  assert.deepEqual(fixed.routines[0].steps[0].when.clock_range, {
+    earliest: "06:40:10",
+    latest: "06:40:10",
+    cross_midnight: false,
+  });
+  assert.deepEqual(fixed.routines[0].steps[0].days, ["mon", "wed"]);
+  Object.assign(edit.form.timing, {
+    mode: "relative",
+    anchor: "sun:sunrise",
+    startOffset: "-10s",
+    endOffset: "20m",
+  });
+  const window = buildStep(p, edit);
+  const reopened = stepEditor(window, stepEntries(window)[0]);
+  assert.equal(reopened.form.timing.startOffset, "-10s");
+  assert.equal(reopened.form.timing.endOffset, "20m");
+  reopened.form.timing.endOffset = "";
+  assert.deepEqual(
+    buildStep(window, reopened).routines[0].steps[0].when.sun_range
+      .offset_range,
+    { fixed: "-10s" },
+  );
+});
+
+test("offset form validation explains format, range and ordering errors", () => {
+  for (const value of [
+    "30m",
+    "1h",
+    "1h30m",
+    "10s",
+    "-30m",
+    "+30m",
+    "1.5s",
+    "0s",
+  ])
+    assert.deepEqual(offsetErrors({ startOffset: value, endOffset: "" }), {});
+  for (const value of ["", "30", "00:30", "1m2h", "30minutes", "-", "1h 30m"])
+    assert.match(
+      offsetErrors({ startOffset: value, endOffset: "" }).startOffset,
+      /Use h, m or s/,
+    );
+  assert.match(offsetErrors({ startOffset: "169h" }).startOffset, /seven days/);
+  assert.match(
+    offsetErrors({ startOffset: "1h", endOffset: "abc" }).endOffset,
+    /Use h, m or s/,
+  );
+  assert.match(
+    offsetErrors({ startOffset: "1h", endOffset: "169h" }).endOffset,
+    /seven days/,
+  );
+  assert.match(
+    offsetErrors({ startOffset: "1h", endOffset: "30m" }).endOffset,
+    /at least/,
+  );
+  assert.deepEqual(
+    offsetErrors({ startOffset: "-30m", endOffset: "-10m" }),
+    {},
+  );
 });

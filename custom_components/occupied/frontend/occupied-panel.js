@@ -444,28 +444,24 @@ export class OccupiedPanel extends HTMLElement {
                     : editor.form.kind === "scene"
                       ? "entities"
                       : "brightness"
-                : tail.includes("relative_to")
-                  ? "parent"
+                : tail.includes("relative_to") || tail.includes("sun")
+                  ? "anchor"
                   : tail.includes("fallback")
                     ? "fallback"
-                    : editor.form.timing.mode === "interval"
+                    : editor.form.timing.mode === "absolute"
                       ? tail.includes("latest")
-                        ? "latest"
-                        : "earliest"
-                      : editor.form.timing.mode === "clock"
-                        ? "time"
-                        : editor.form.timing.offsetMode === "interval"
-                          ? tail.includes("max")
-                            ? "maxOffset"
-                            : "minOffset"
-                          : "offset";
+                        ? "end"
+                        : "start"
+                      : tail.includes("max")
+                        ? "endOffset"
+                        : "startOffset";
         editor.errors[field] = issue.message;
         editor.stage =
           field === "entities"
-            ? 0
+            ? 1
             : ["name", "brightness", "service", "data"].includes(field)
-              ? 1
-              : 2;
+              ? 2
+              : 0;
         this.renderView();
         this.shadowRoot
           .querySelector('.routine-editor [aria-invalid="true"]')

@@ -1,13 +1,6 @@
 // The builder edits canonical steps in place. Containers, defaults and opaque
 // configuration remain intact unless the user explicitly changes their behavior.
-import {
-  copy,
-  days,
-  identifier,
-  around,
-  parentSteps,
-  references,
-} from "./model.js";
+import { copy, days, identifier, parentSteps, references } from "./model.js";
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const sorted = (values) => [...new Set(values)].sort();
@@ -68,60 +61,23 @@ function clockMinutes(value) {
   const [h, m, s = 0] = (value || "").split(":").map(Number);
   return h * 60 + m + s / 60;
 }
-function clockText(value) {
-  const seconds = ((Math.round(value * 60) % 86400) + 86400) % 86400;
-  const text = `${String(Math.floor(seconds / 3600)).padStart(2, "0")}:${String(Math.floor(seconds / 60) % 60).padStart(2, "0")}`;
-  return seconds % 60
-    ? `${text}:${String(seconds % 60).padStart(2, "0")}`
-    : text;
-}
 export function timingForm(when = {}) {
-  const value = {
-    mode: "clock",
-    time: "18:00",
-    earliest: "18:00",
-    latest: "18:00",
-    variation: 0,
-    sun: "sunset",
-    offset: 30,
-    offsetMode: "around",
-    minOffset: "0s",
-    maxOffset: "30m",
-    direction: "after",
-    parent: "",
-    fallback: "",
+  const range = when.offset_range || when.sun_range?.offset_range;
+  const clock = when.clock_range;
+  return {
+    mode: clock || !range ? "absolute" : "relative",
+    start: clock?.earliest || "18:00",
+    end: clock && clock.latest !== clock.earliest ? clock.latest : "",
+    anchor: when.relative_to
+      ? `step:${when.relative_to}`
+      : when.sun_range
+        ? `sun:${when.sun_range.sun}`
+        : "",
+    startOffset: range?.fixed ?? range?.min ?? "0s",
+    endOffset:
+      range && range.fixed == null && range.min !== range.max ? range.max : "",
+    fallback: when.sun_range?.fallback || "",
   };
-  if (when.relative_to || when.sun_range) {
-    const { center, spread } = rangeCenter(
-      when.offset_range || when.sun_range.offset_range,
-    );
-    Object.assign(value, {
-      mode: when.relative_to ? "relative" : "sun",
-      parent: when.relative_to || "",
-      sun: when.sun_range?.sun || "sunset",
-      offset: Math.abs(center),
-      direction: center < 0 ? "before" : "after",
-      variation: spread,
-      fallback: when.sun_range?.fallback || "",
-      minOffset:
-        (when.offset_range || when.sun_range?.offset_range)?.fixed ??
-        (when.offset_range || when.sun_range?.offset_range)?.min ??
-        "0s",
-      maxOffset:
-        (when.offset_range || when.sun_range?.offset_range)?.fixed ??
-        (when.offset_range || when.sun_range?.offset_range)?.max ??
-        "30m",
-    });
-  } else if (when.clock_range) {
-    value.earliest = when.clock_range.earliest;
-    value.latest = when.clock_range.latest;
-    const start = clockMinutes(when.clock_range.earliest);
-    let end = clockMinutes(when.clock_range.latest);
-    if (when.clock_range.cross_midnight) end += 1440;
-    value.time = clockText((start + end) / 2);
-    value.variation = (end - start) / 2;
-  }
-  return value;
 }
 export function simpleStep(entry) {
   if (entry.kind !== "steps" || !entry.actions?.length) return false;
@@ -171,14 +127,7 @@ export function simpleStep(entry) {
       actions.some((a) => a.stagger || a.target_order || a.resources?.length))
   )
     return false;
-  const time = timingForm(entry.when);
-  return (
-    Number.isFinite(time.variation) &&
-    time.variation >= 0 &&
-    time.variation < 720 &&
-    Number.isFinite(time.offset) &&
-    /^\d{2}:\d{2}(?::\d{2})?$/.test(time.time)
-  );
+  return !!entry.when;
 }
 export function stepEditor(program, entry, parent) {
   const source = entry || parent;
@@ -210,8 +159,8 @@ export function stepEditor(program, entry, parent) {
   if (parent)
     Object.assign(form.timing, {
       mode: "relative",
-      parent: parent.id,
-      offset: 30,
+      anchor: `step:${parent.id}`,
+      startOffset: "30m",
     });
   return {
     id: entry?.id || identifier(program, "step"),
@@ -222,6 +171,24 @@ export function stepEditor(program, entry, parent) {
     changed: !entry,
     errors: {},
   };
+}
+export function offsetErrors(time) {
+  const errors = {},
+    low = minutes(time.startOffset);
+  const formatError = "Use h, m or s, for example 30m, 1h, 1h30m or -10m.";
+  if (!time.startOffset || !Number.isFinite(low))
+    errors.startOffset = formatError;
+  else if (Math.abs(low) > 10080)
+    errors.startOffset = "Offsets must be within seven days.";
+  if (time.endOffset) {
+    const high = minutes(time.endOffset);
+    if (!Number.isFinite(high)) errors.endOffset = formatError;
+    else if (Math.abs(high) > 10080)
+      errors.endOffset = "Offsets must be within seven days.";
+    else if (Number.isFinite(low) && high < low)
+      errors.endOffset = "The end offset must be at least the start offset.";
+  }
+  return errors;
 }
 export function editorErrors(program, editor, stage = 2) {
   const { form, id } = editor,
@@ -243,7 +210,6 @@ export function editorErrors(program, editor, stage = 2) {
     form.entities.some((e) => !/^(light|switch)\./.test(e))
   )
     errors.entities = "Choose lights and switches, or select a service action.";
-  if (stage < 1) return errors;
   if (form.kind === "service") {
     if (!/^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$/.test(form.service))
       errors.service = "Choose a service using domain.service.";
@@ -264,60 +230,33 @@ export function editorErrors(program, editor, stage = 2) {
       Number(form.brightness) > 100)
   )
     errors.brightness = "Choose a brightness between 1 and 100%.";
-  if (stage < 2) return errors;
   if (!form.days.length) errors.days = "Choose at least one day.";
   const time = form.timing;
-  if (
-    time.mode !== "interval" &&
-    time.offsetMode !== "interval" &&
-    (!Number.isFinite(Number(time.variation)) ||
-      time.variation === "" ||
-      Number(time.variation) < 0 ||
-      Number(time.variation) >= 720)
-  )
-    errors.variation = "Choose between 0 and 719 minutes of variation.";
-  if (
-    time.mode === "clock" &&
-    !/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(time.time)
-  )
-    errors.time = "Choose a time.";
-  if (
-    !["clock", "interval"].includes(time.mode) &&
-    time.offsetMode !== "interval" &&
-    (time.offset === "" ||
-      !Number.isFinite(Number(time.offset)) ||
-      Number(time.offset) < 0 ||
-      Number(time.offset) > 10080)
-  )
-    errors.offset = "Choose an offset between 0 and 10080 minutes.";
-  if (
-    ["sun", "relative"].includes(time.mode) &&
-    time.offsetMode === "interval"
-  ) {
-    const low = minutes(time.minOffset),
-      high = minutes(time.maxOffset);
-    if (!Number.isFinite(low) || Math.abs(low) > 10080)
-      errors.minOffset =
-        "Use an offset such as 10s, 20m, or -30m (up to seven days).";
-    if (!Number.isFinite(high) || Math.abs(high) > 10080 || high < low)
-      errors.maxOffset =
-        "The latest offset must be at least the earliest offset.";
-  }
-  if (time.mode === "interval") {
-    for (const key of ["earliest", "latest"])
-      if (!/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(time[key]))
-        errors[key] = "Choose a valid start time.";
-  }
-  if (time.mode === "relative") {
-    const parent = stepEntries(program).find(
-      (e) => e.id === time.parent && e.kind === "steps",
-    );
-    if (!parent || !parentSteps(program, id).some((e) => e.id === parent.id))
-      errors.parent =
-        "Choose another step without creating a circular relationship.";
-    else if (form.days.some((d) => !parent.days.includes(d)))
-      errors.days = `Choose days when ${parent.name} runs: ${parent.days.join(", ")}.`;
-  }
+  const clockPattern = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
+  if (time.mode === "absolute") {
+    if (!clockPattern.test(time.start)) errors.start = "Choose a start time.";
+    if (time.end && !clockPattern.test(time.end))
+      errors.end = "Choose a valid end time or leave it blank.";
+  } else if (time.mode === "relative") {
+    Object.assign(errors, offsetErrors(time));
+    if (time.anchor.startsWith("step:")) {
+      const parent = stepEntries(program).find(
+        (e) => e.id === time.anchor.slice(5) && e.kind === "steps",
+      );
+      if (!parent || !parentSteps(program, id).some((e) => e.id === parent.id))
+        errors.anchor =
+          "Choose another step without creating a circular relationship.";
+      else if (form.days.some((d) => !parent.days.includes(d)))
+        errors.anchor = `This step runs on days when ${parent.name} does not. Adjust weekdays in Advanced settings.`;
+    } else if (!["sun:sunrise", "sun:sunset"].includes(time.anchor))
+      errors.anchor = "Choose a step, sunrise, or sunset.";
+    if (
+      time.anchor.startsWith("sun:") &&
+      time.fallback &&
+      !clockPattern.test(time.fallback)
+    )
+      errors.fallback = "Choose a valid fallback time or leave it blank.";
+  } else errors.mode = "Choose absolute time or relative to.";
   // Explain downstream day conflicts here, before backend validation.
   for (const child of stepEntries(program))
     if (
@@ -326,32 +265,44 @@ export function editorErrors(program, editor, stage = 2) {
       child.days.some((d) => !form.days.includes(d))
     )
       errors.days = `${child.name} depends on this step. Keep its days (${child.days.join(", ")}) or edit it first.`;
+  if (stage < 2) {
+    const fields =
+      stage === 0
+        ? [
+            "mode",
+            "start",
+            "end",
+            "anchor",
+            "startOffset",
+            "endOffset",
+            "fallback",
+          ]
+        : ["entities"];
+    return Object.fromEntries(
+      Object.entries(errors).filter(([key]) => fields.includes(key)),
+    );
+  }
   return errors;
 }
 export function formWhen(time) {
-  if (time.mode === "interval")
+  if (time.mode === "absolute") {
+    const end = time.end || time.start;
     return {
       clock_range: {
-        earliest: time.earliest,
-        latest: time.latest,
-        cross_midnight: clockMinutes(time.latest) < clockMinutes(time.earliest),
+        earliest: time.start,
+        latest: end,
+        cross_midnight: clockMinutes(end) < clockMinutes(time.start),
       },
     };
-  if (time.mode === "clock")
-    return { clock_range: around(time.time, Number(time.variation)) };
-  const offset = Number(time.offset) * (time.direction === "before" ? -1 : 1),
-    spread = Number(time.variation);
-  const range =
-    time.offsetMode === "interval"
-      ? { min: time.minOffset, max: time.maxOffset }
-      : spread
-        ? { min: `${offset - spread}m`, max: `${offset + spread}m` }
-        : { fixed: `${offset}m` };
-  if (time.mode === "relative")
-    return { relative_to: time.parent, offset_range: range };
+  }
+  const range = time.endOffset
+    ? { min: time.startOffset, max: time.endOffset }
+    : { fixed: time.startOffset };
+  if (time.anchor.startsWith("step:"))
+    return { relative_to: time.anchor.slice(5), offset_range: range };
   return {
     sun_range: {
-      sun: time.sun,
+      sun: time.anchor.slice(4),
       offset_range: range,
       ...(time.fallback ? { fallback: time.fallback } : {}),
     },
