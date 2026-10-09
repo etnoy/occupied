@@ -1,7 +1,8 @@
 import type { OccupiedPanel } from "@occupied/occupied-panel.js";
-import { required } from "@occupied/types.js";
+import { required } from "@occupied/util.js";
 import {
   assert,
+  fireValueChanged,
   type TestSelector,
   type TestSourcePicker,
   type Check,
@@ -20,7 +21,7 @@ export async function runRoutineWorkflows(panel: OccupiedPanel, check: Check) {
   const root = panel.shadowRoot;
   const click = (label: string) => {
     const node = [...root.querySelectorAll<HTMLButtonElement>("button")].find(
-      (b) => b.textContent === label && !b.closest("[hidden]"),
+      (b) => b.textContent.trim() === label && !b.closest("[hidden]"),
     );
     assert(node && !node.disabled, `Missing or disabled button: ${label}`);
     node.click();
@@ -44,9 +45,7 @@ export async function runRoutineWorkflows(panel: OccupiedPanel, check: Check) {
     );
     assert(node, `Missing builder field: ${key}`);
     if (key === "anchor") {
-      node.dispatchEvent(
-        new CustomEvent("value-changed", { detail: { value } }),
-      );
+      fireValueChanged(node, value);
       return node;
     }
     if (node.tagName === "HA-SELECTOR") {
@@ -66,7 +65,9 @@ export async function runRoutineWorkflows(panel: OccupiedPanel, check: Check) {
       '[data-editor-section="entities"] ha-selector',
     );
     if (selector?.select) {
-      selector.select(ids);
+      selector.select(
+        selector.selector.entity?.multiple ? ids : ids[0] || undefined,
+      );
       return;
     }
     for (const node of root.querySelectorAll<HTMLInputElement>(
@@ -79,10 +80,7 @@ export async function runRoutineWorkflows(panel: OccupiedPanel, check: Check) {
       }
     }
   };
-  const home = () => {
-    panel.tab = "routines";
-    panel.renderView();
-  };
+  const home = () => panel.navigate("routines");
   const select = (id: string) => {
     const trigger = root.querySelector<HTMLButtonElement>(
       `[data-step-menu="${id}"]`,
@@ -170,6 +168,19 @@ export async function runRoutineWorkflows(panel: OccupiedPanel, check: Check) {
         "Empty selection did not explain the problem",
       );
       choose(["light.living_room", "switch.floor_lamp"]);
+      const entityPicker = required(
+        root.querySelector<TestSelector>(".entity-native-selector"),
+      );
+      panel.hass = { ...panel._hass };
+      await Promise.resolve();
+      assert(
+        JSON.stringify(required(panel.stepEditor).form.entities) ===
+          '["light.living_room","switch.floor_lamp"]' &&
+          JSON.stringify(entityPicker.picker.value) ===
+            '["light.living_room","switch.floor_lamp"]' &&
+          entityPicker.isConnected,
+        "HA update cleared the entities selected for a new step",
+      );
       click("Continue");
       fit();
       field("brightness", "60");
@@ -280,7 +291,9 @@ export async function runRoutineWorkflows(panel: OccupiedPanel, check: Check) {
       select(parentId);
       const remove = [
         ...root.querySelectorAll<HTMLButtonElement>("button"),
-      ].find((b) => b.textContent === "Delete" && !b.closest("[hidden]"));
+      ].find(
+        (b) => b.textContent.trim() === "Delete" && !b.closest("[hidden]"),
+      );
       assert(
         !required(remove).disabled &&
           !required(
@@ -306,7 +319,7 @@ export async function runRoutineWorkflows(panel: OccupiedPanel, check: Check) {
       );
       const confirm = [
         ...dialog.querySelectorAll<HTMLButtonElement>("button"),
-      ].find((b) => b.textContent === "Delete step");
+      ].find((b) => b.textContent.trim() === "Delete step");
       assert(required(confirm).disabled, "Dependent step can be deleted");
       required(confirm).click();
       assert(
@@ -347,12 +360,34 @@ export async function runRoutineWorkflows(panel: OccupiedPanel, check: Check) {
       assert(
         !root.querySelector<HTMLElement>(".builder-steps") &&
           ![...root.querySelectorAll<HTMLButtonElement>("button")].some((b) =>
-            ["Continue", "Back"].includes(b.textContent),
+            ["Continue", "Back"].includes(b.textContent.trim()),
           ),
         "Existing routine still requires wizard navigation",
       );
       fit();
-      choose(["light.living_room", "switch.floor_lamp", "light.hall"]);
+      for (const ids of [
+        ["light.living_room"],
+        ["light.living_room", "light.hall"],
+        ["light.hall"],
+        [],
+        ["light.living_room", "switch.floor_lamp", "light.hall"],
+      ]) {
+        choose(ids);
+        panel.hass = { ...panel._hass };
+        emit({ ...panel.status, source_revision: panel.revision });
+        await Promise.resolve();
+        assert(
+          JSON.stringify(required(panel.stepEditor).form.entities) ===
+            JSON.stringify(ids) &&
+            JSON.stringify(required(entityPicker).picker.value) ===
+              JSON.stringify(ids) &&
+            root
+              .querySelector<HTMLElement>(".selection-count")
+              ?.textContent?.trim() === `${ids.length} selected` &&
+            required(entityPicker).isConnected,
+          "HA update lost the step's entity selection or replaced the picker",
+        );
+      }
       field("brightness", "55");
       field("start", "18:05");
       field("end", "18:35");
@@ -753,6 +788,17 @@ export async function runRoutineWorkflows(panel: OccupiedPanel, check: Check) {
           .hidden,
         "Selection left results open",
       );
+      const chosenSource = required(
+        root.querySelector<HTMLInputElement>('[data-builder-field="anchor"]'),
+      );
+      chosenSource.blur();
+      chosenSource.focus();
+      assert(
+        !required(root.querySelector<HTMLElement>("#relative-source-results"))
+          .hidden,
+        "Selected source picker did not reopen on focus",
+      );
+      chosenSource.blur();
       field("startOffset", "-30m");
       field("endOffset", "-10m");
       assert(
@@ -836,6 +882,49 @@ export async function runRoutineWorkflows(panel: OccupiedPanel, check: Check) {
       home();
       assert(deviceCalls.length === 0, "Routine editing controlled devices");
       fit();
+    },
+  );
+  await check(
+    "native time events update the builder and survive HA refreshes",
+    async () => {
+      const get = customElements.get;
+      try {
+        customElements.get = function (name) {
+          return ["ha-selector-time", "ha-time-input"].includes(name)
+            ? HTMLElement
+            : get.call(this, name);
+        };
+        home();
+        click("Create step");
+        const start = field("start", "06:30") as unknown as TestSelector;
+        const end = field("end", "07:15") as unknown as TestSelector;
+        panel.hass = { ...panel._hass };
+        await Promise.resolve();
+        assert(
+          start.tagName === "HA-SELECTOR" &&
+            required(panel.stepEditor).form.timing.start === "06:30" &&
+            required(panel.stepEditor).form.timing.end === "07:15" &&
+            start.picker.value === "06:30" &&
+            end.picker.value === "07:15",
+          "Native time selection was ignored or lost after a HA update",
+        );
+        end.select(undefined);
+        assert(
+          required(panel.stepEditor).form.timing.end === "",
+          "Clearing an optional native time was ignored",
+        );
+        field("mode", "relative");
+        field("anchor", "sun:sunrise");
+        field("fallback", "06:45");
+        assert(
+          required(panel.stepEditor).form.timing.fallback === "06:45",
+          "Native fallback time was ignored",
+        );
+      } finally {
+        customElements.get = get;
+        panel.stepEditor = null;
+        home();
+      }
     },
   );
   await check(
@@ -925,9 +1014,7 @@ export async function runRoutineWorkflows(panel: OccupiedPanel, check: Check) {
             "headline",
           "Native selected name does not use headline slot",
         );
-        required(picker).dispatchEvent(
-          new CustomEvent("value-changed", { detail: { value: "invented" } }),
-        );
+        fireValueChanged(required(picker), "invented");
         assert(
           required(panel.stepEditor).form.timing.anchor === "sun:sunset",
           "Invalid native option changed anchor",
@@ -963,14 +1050,14 @@ export async function runRoutineWorkflows(panel: OccupiedPanel, check: Check) {
         "Menu did not open",
       );
       assert(
-        String(root.activeElement?.textContent) === "Edit step",
+        String(root.activeElement?.textContent).trim() === "Edit step",
         "Menu did not focus first action",
       );
       required(menu).dispatchEvent(
         new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
       );
       assert(
-        root.activeElement?.textContent === "Add related step",
+        root.activeElement?.textContent?.trim() === "Add related step",
         "Menu keyboard navigation failed",
       );
       required(menu).dispatchEvent(
@@ -1013,7 +1100,8 @@ export async function runRoutineWorkflows(panel: OccupiedPanel, check: Check) {
       click("Delete");
       let dialog = root.querySelector<HTMLDialogElement>(".step-delete-dialog");
       assert(
-        dialog?.open && required(root.activeElement).textContent === "Cancel",
+        dialog?.open &&
+          required(root.activeElement).textContent.trim() === "Cancel",
         "Confirmation should initially focus Cancel",
       );
       assert(
@@ -1046,7 +1134,7 @@ export async function runRoutineWorkflows(panel: OccupiedPanel, check: Check) {
         !required(
           [
             ...required(dialog).querySelectorAll<HTMLButtonElement>("button"),
-          ].find((b) => b.textContent === "Delete step"),
+          ].find((b) => b.textContent.trim() === "Delete step"),
         ).disabled,
         "Independent step deletion is blocked",
       );

@@ -29,6 +29,15 @@ export type TestSourcePicker = HTMLInputElement &
 export function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
+export function fireValueChanged(target: HTMLElement, value: unknown) {
+  // HA's fireEvent attaches detail to a plain Event, not a CustomEvent.
+  target.dispatchEvent(
+    Object.assign(
+      new Event("value-changed", { bubbles: true, composed: true }),
+      { detail: { value } },
+    ),
+  );
+}
 declare global {
   var calls: FixtureMessage[];
   var deviceCalls: unknown[][];

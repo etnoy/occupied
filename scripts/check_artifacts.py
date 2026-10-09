@@ -12,7 +12,11 @@ with ZipFile(directory / "occupied.zip") as integration:
     version = json.loads(integration.read("manifest.json"))["version"]
     names = set(integration.namelist())
     assert "__init__.py" in names and "managed.py" in names and "LICENSE" in names
-    assert "frontend/dist/occupied-panel.js" in names and "translations/en.json" in names
+    assert {
+        "frontend/dist/occupied-panel.js",
+        "frontend/dist/lit.js",
+        "translations/en.json",
+    } <= names
     assert not any(name.endswith(".ts") for name in names)
     assert all(name.startswith("frontend/dist/") for name in names if name.endswith(".js"))
     assert "brand/icon.png" in names and "brand/icon@2x.png" in names
@@ -28,6 +32,7 @@ with tarfile.open(directory / f"occupied-{version}.tar.gz") as source:
         "tests/conftest.py",
         "tests/frontend/harness.html",
         "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
         "tsconfig.json",
         "scripts/build-frontend.ts",
         "custom_components/occupied/frontend/occupied-panel.ts",

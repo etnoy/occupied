@@ -1,8 +1,7 @@
-import type { TimelineDocument, Program, Translate } from "./types.js";
-import { html, render, ref, nothing, type TemplateResult } from "./lit.js";
+// Generated from timeline.ts by pnpm run build. Do not edit.
+import { html, render, ref, nothing } from "./lit.js";
 import { resources } from "./model.js";
-
-export function stamp(value?: string | null, zone?: string) {
+export function stamp(value, zone) {
   if (!value) return "—";
   try {
     return new Date(value).toLocaleString(undefined, {
@@ -12,11 +11,7 @@ export function stamp(value?: string | null, zone?: string) {
     return value;
   }
 }
-export function timeline(
-  doc: TimelineDocument,
-  program: Program,
-  t: Translate = (text) => text,
-) {
+export function timeline(doc, program, t = (text) => text) {
   const plan = doc.plan;
   if (!plan)
     return html`<p>
@@ -30,14 +25,14 @@ export function timeline(
   const start = Date.parse(plan.start),
     end = Date.parse(plan.end),
     width = end - start;
-  const position = (time: string) =>
+  const position = (time) =>
     Math.max(0, Math.min(100, ((Date.parse(time) - start) / width) * 100));
-  const lanes = new Map<string, TemplateResult[]>();
-  const lane = (id: string, mark: TemplateResult) => {
+  const lanes = new Map();
+  const lane = (id, mark) => {
     if (!lanes.has(id)) lanes.set(id, []);
-    lanes.get(id)!.push(mark);
+    lanes.get(id).push(mark);
   };
-  const bar = (kind: string, from: string, to: string, title: string) =>
+  const bar = (kind, from, to, title) =>
     html`<span
       class=${`bar ${kind}`}
       tabindex="0"
@@ -108,7 +103,7 @@ export function timeline(
   const events = doc.events || plan.events;
   let query = "",
     page = 0,
-    table: HTMLElement;
+    table;
   const draw = () => {
     const filtered = events.filter(
       (event) =>
@@ -220,8 +215,8 @@ export function timeline(
       type="search"
       placeholder=${t("Filter events")}
       aria-label=${t("Filter events")}
-      @input=${(event: Event) => {
-        query = (event.currentTarget as HTMLInputElement).value.toLowerCase();
+      @input=${(event) => {
+        query = event.currentTarget.value.toLowerCase();
         page = 0;
         draw();
       }}
@@ -229,7 +224,7 @@ export function timeline(
     <div
       ${ref((node) => {
         if (node) {
-          table = node as HTMLElement;
+          table = node;
           draw();
         }
       })}

@@ -1,13 +1,6 @@
-import type {
-  HomeAssistant,
-  TimeSource,
-  Translate,
-  PickerItem,
-  SourcePickerState,
-} from "./types.js";
+// Generated from source-picker.ts by pnpm run build. Do not edit.
 import { isValueChangedEvent } from "./util.js";
 import { html, render, ref, ifDefined, nothing } from "./lit.js";
-
 export function sourcePicker({
   hass,
   choices,
@@ -15,21 +8,13 @@ export function sourcePicker({
   t,
   onChange,
   error = "",
-}: {
-  hass: HomeAssistant;
-  choices: TimeSource[];
-  value: string;
-  t: Translate;
-  onChange: (value: string) => void;
-  error?: string;
 }) {
-  const select = (event: Event) => {
+  const select = (event) => {
     if (!isValueChangedEvent(event)) return;
     const next =
       typeof event.detail.value === "string" ? event.detail.value : "";
     if (next && !choices.some((choice) => choice.value === next)) return;
-    const control = event.currentTarget as HTMLElement &
-      SourcePickerState & { value: unknown };
+    const control = event.currentTarget;
     control.selectedValue = next;
     control.value = next || undefined;
     onChange(next);
@@ -45,7 +30,7 @@ export function sourcePicker({
       </p>`
     : nothing;
   if (customElements.get("ha-generic-picker")) {
-    const items: (string | PickerItem)[] = [];
+    const items = [];
     let group;
     for (const choice of choices) {
       if (group !== choice.group) {
@@ -78,7 +63,7 @@ export function sourcePicker({
         .notFoundLabel=${t("No matching steps or time sources.")}
         .getItems=${() => items}
         .searchKeys=${["primary", "secondary", "id", "group"]}
-        .valueRenderer=${(id: string) => {
+        .valueRenderer=${(id) => {
           // HA's renderer contract takes an HTMLElement, rather than a template.
           const headline = document.createElement("span");
           headline.slot = "headline";
@@ -100,10 +85,10 @@ export function sourcePicker({
       >${message}
     </div>`;
   }
-  let picker: HTMLInputElement & SourcePickerState;
-  let results: HTMLElement;
-  let status: HTMLElement;
-  let matches: TimeSource[] = [],
+  let picker;
+  let results;
+  let status;
+  let matches = [],
     active = -1,
     open = false;
   const selectedName = () =>
@@ -134,7 +119,7 @@ export function sourcePicker({
               role="option"
               aria-selected=${String(index === active)}
               data-source-value=${choice.value}
-              @pointerdown=${(event: PointerEvent) => event.preventDefault()}
+              @pointerdown=${(event) => event.preventDefault()}
               @click=${() => {
                 close();
                 onChange(choice.value);
@@ -173,7 +158,7 @@ export function sourcePicker({
     <label for="routine-anchor">${t("Relative to")}</label>
     <input
       ${ref((node) => {
-        if (node) picker = node as typeof picker;
+        if (node) picker = node;
       })}
       id="routine-anchor"
       type="search"
@@ -200,7 +185,7 @@ export function sourcePicker({
       }}
       @input=${() => show(picker.value)}
       @blur=${close}
-      @keydown=${(event: KeyboardEvent) => {
+      @keydown=${(event) => {
         if (["ArrowDown", "ArrowUp"].includes(event.key)) {
           event.preventDefault();
           if (!open) show();
@@ -224,7 +209,7 @@ export function sourcePicker({
     />
     <div
       ${ref((node) => {
-        if (node) results = node as HTMLElement;
+        if (node) results = node;
       })}
       id="relative-source-results"
       class="source-results"
@@ -234,7 +219,7 @@ export function sourcePicker({
     ></div>
     <small
       ${ref((node) => {
-        if (node) status = node as HTMLElement;
+        if (node) status = node;
       })}
       aria-live="polite"
       data-source-status

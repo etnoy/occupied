@@ -11,7 +11,7 @@ Occupied includes the complete editor and timeline, canonical daily programs, du
 
 ## Installation
 
-1. Add `https://github.com/etnoy/occupied` as a HACS custom repository of type **Integration**. Choose a release version, or enable **Show beta versions** to get an automatic `dev-…` prerelease for every commit on `main`. As an alternative, extract release `occupied.zip` inside `<HA config>/custom_components/occupied/`. See [installation, upgrades and uninstall](docs/installation.md).
+1. Add `https://github.com/etnoy/occupied` as a HACS custom repository of type **Integration**. Choose a tagged release, or select `main` to follow development directly. The repository includes the compiled frontend. As an alternative, extract release `occupied.zip` inside `<HA config>/custom_components/occupied/`. See [installation, upgrades and uninstall](docs/installation.md).
 2. Restart Home Assistant.
 3. Open **Settings → Devices & services → Add integration → Occupied**.
 4. Open **Occupied** under **Settings → Devices & services** and select **Configure**. Choose the editor, import an Occupied YAML snapshot, or select an authoritative managed file. Select **Create your first step**, choose entity actions or a Home Assistant scene, and a start time or interval, then **Save step**. Select a step and **Add related step** to schedule what happens before or after it. Saving validates automatically. Existing proof settings remain supported and open with an editable daily starter program.
@@ -81,15 +81,14 @@ uv run pytest
 uv run ruff check custom_components tests scripts
 uv run ruff format --check custom_components tests scripts
 pnpm install --frozen-lockfile --ignore-scripts
+pnpm run build:check
 pnpm run lint
 pnpm run typecheck
-pnpm run build
-pnpm run build:check
 pnpm run format:check
 pnpm test
 uv run python scripts/check_release.py
 ```
 
-Frontend sources and tests are TypeScript with `strict: true`; all strict checks are enabled. Run `pnpm run build` after editing `.ts` files, or `pnpm test` to build and run the Node tests. Only TypeScript sources are checked in. `pnpm run build` writes JavaScript to ignored `custom_components/occupied/frontend/dist/` and test output to ignored `tests/frontend/generated/`. Release ZIPs and wheels include the built frontend, so installations need no Node tooling. `pnpm run lint` checks the shipped JavaScript, `pnpm run build:check` verifies the local build matches the TypeScript sources, and CI runs both alongside `pnpm run typecheck` and `pnpm run format:check`. Run `pnpm install --frozen-lockfile --ignore-scripts` before `mise dev`. Browser acceptance tests use `pnpm run test:browser`.
+The frontend uses TypeScript and Lit, with `OccupiedPanel` as HA’s custom element. HTML lives in Lit templates; styles, step editing, advanced forms, and timeline views have separate modules. Model and validation logic remain independent of rendering. Sources and tests use `strict: true`; all strict checks are enabled. Run `pnpm run build` after editing `.ts` files and commit the generated `custom_components/occupied/frontend/dist/*.js` alongside their sources. Test output in `tests/frontend/generated/` stays ignored. `pnpm test` and `pnpm run test:browser` compile only their test harness and exercise the committed frontend without rebuilding it. The build bundles Lit into a local `lit.js` asset. Release ZIPs and wheels include the built frontend, so installations need no Node tooling or external CDN. `pnpm run lint` checks the shipped JavaScript, `pnpm run build:check` rejects missing, stale or unexpected runtime assets without rewriting them, and CI runs it before lint and tests, alongside `pnpm run typecheck` and `pnpm run format:check`. Run `pnpm install --frozen-lockfile --ignore-scripts` before `mise dev`. Browser acceptance tests use `pnpm run test:browser`.
 
 `uv.lock` pins the complete test environment, including the HA frontend package. Python tests use virtual device handlers. Node tests and browser workflows cover the step builder, advanced compatibility, and desktop and 390-pixel layouts. CI checks the supported HA matrix, generated schema, examples, hassfest/HACS metadata and installable artifacts; it uses locked Python and development-only browser dependencies. See [release verification](docs/releasing.md) and [the editor guide](docs/editor.md). Tests use real HA config entries, entities, native conditions, storage, timers, HTTP, and WebSocket APIs, with virtual physical-device handlers. They cover restart/overdue cleanup, immutable ends after apply, manual control, late/staggered starts, cross-day leases, persistence failure, capability fallbacks, dry run, bounded retries, authenticated apply/diagnostics, and preview isolation. Pure tests cover canonical round trips, ID migration, sampled bounds, resource conflicts, midnight/DST, and handover projection. No existing HA installation or physical devices are modified. Physical-device timing and a hardware soak remain deployment acceptance work.

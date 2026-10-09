@@ -450,13 +450,20 @@ export interface FieldOptions {
   suggestions?: (string | [string, string])[];
   help?: string;
 }
-export function errorMessage(error: unknown): string {
-  return error instanceof Error
-    ? error.message
-    : typeof error === "object" && error !== null && "message" in error
-      ? String(error.message)
-      : String(error);
-}
+// Primary navigation tabs plus the secondary pages reached from them.
+export type Tab =
+  | "routines"
+  | "settings"
+  | "overview"
+  | "timeline"
+  | "preview"
+  | "configuration"
+  | "diagnostics"
+  | "household"
+  | "groups"
+  | "advanced_routines"
+  | "handover"
+  | "defaults";
 declare global {
   interface HTMLElementTagNameMap {
     "occupied-panel": import("./occupied-panel.js").OccupiedPanel;
@@ -464,14 +471,10 @@ declare global {
     "ha-generic-picker": HaGenericPicker;
   }
   interface HTMLElementEventMap {
-    "value-changed": CustomEvent<{ value: unknown }>;
+    // HA's fireEvent uses a plain Event with detail attached. CustomEvent
+    // implements the same contract, but cannot be required at runtime.
+    "value-changed": Event & { detail: { value: unknown } };
   }
-}
-
-export function required<T>(value: T | null | undefined): T {
-  if (value == null)
-    throw new Error("Required editor element or value is missing");
-  return value;
 }
 
 export type ResourceFor<K extends ResourceKind> = {

@@ -1,9 +1,9 @@
-import { required } from "@occupied/types.js";
 import type { OccupiedPanel } from "@occupied/occupied-panel.js";
-import type { Path, HomeAssistant } from "@occupied/types.js";
-import { errorMessage } from "@occupied/types.js";
+import type { Path, HomeAssistant, Tab } from "@occupied/types.js";
+import { errorMessage, required } from "@occupied/util.js";
 import {
   assert,
+  fireValueChanged,
   type TestSelector,
   type WorkflowResult,
   type Check,
@@ -40,16 +40,14 @@ export async function runWorkflows() {
   document.body.prepend(panel);
   mount();
   await wait(() => panel.draft && !panel._loading);
-  const view = (tab: string) => {
-    panel.tab = tab === "routines" ? "advanced_routines" : tab;
-    panel.renderView();
-  };
+  const view = (tab: Tab) =>
+    panel.navigate(tab === "routines" ? "advanced_routines" : tab);
   const click = (text: string) => {
     const node = [
       ...required(panel.shadowRoot).querySelectorAll<HTMLButtonElement>(
         "button",
       ),
-    ].find((x) => x.textContent === text);
+    ].find((x) => x.textContent.trim() === text);
     assert(node, `Missing button: ${text}`);
     node.click();
     return node;
@@ -69,12 +67,7 @@ export async function runWorkflows() {
         ? value.split("\n")
         : value;
     if (node.tagName === "HA-SELECTOR") {
-      node.dispatchEvent(
-        new CustomEvent("value-changed", {
-          detail: { value: node.value },
-          bubbles: true,
-        }),
-      );
+      fireValueChanged(node, node.value);
       return node;
     }
     node.dispatchEvent(
@@ -97,7 +90,7 @@ export async function runWorkflows() {
         "diagnostics",
         "preview",
         "timeline",
-      ]) {
+      ] as Tab[]) {
         view(tab);
         assert(
           required(
@@ -120,7 +113,7 @@ export async function runWorkflows() {
         );
         const selected = [
           ...required(panel.shadowRoot).querySelectorAll<HTMLElement>("li"),
-        ].find((x) => x.textContent.startsWith("kitchen ·"));
+        ].find((x) => x.textContent.trim().startsWith("kitchen ·"));
         required(
           required(selected).querySelector<HTMLButtonElement>("button"),
         ).click();
@@ -134,10 +127,18 @@ export async function runWorkflows() {
         "Bedroom & <script>label</script>",
       );
       const node = field;
+      assert(
+        node.value === "Bedroom & <script>label</script>",
+        "Lit reset an edited field to its previous value",
+      );
       emit({ ...panel.status, status: "active" });
       assert(
         required(panel.shadowRoot).activeElement === node,
         "Runtime update replaced focused field",
+      );
+      assert(
+        node.value === "Bedroom & <script>label</script>",
+        "Runtime update reset the current field value",
       );
       assert(
         required(panel.draft.groups)[0].name.includes("<script>"),
@@ -242,6 +243,7 @@ export async function runWorkflows() {
       ).querySelector<HTMLSelectElement>('select[aria-label="Remote"]');
       assert(remote, "TV preset missing");
       remote.value = "remote.living_room_harmony";
+      remote.dispatchEvent(new Event("change", { bubbles: true }));
       click("Use TV preset");
       const activity = required(
         required(panel.draft.routines)[ri].activities,
@@ -443,7 +445,7 @@ export async function runWorkflows() {
         ...required(panel.shadowRoot).querySelectorAll<HTMLButtonElement>(
           "button",
         ),
-      ].find((x) => x.textContent === "Save changes");
+      ].find((x) => x.textContent.trim() === "Save changes");
       assert(required(save).disabled, "File save button is enabled");
       const status = await fixtureWS({ type: "test/file-error" });
       emit(status);
@@ -528,7 +530,7 @@ export async function runWorkflows() {
           "preview",
           "configuration",
           "diagnostics",
-        ]) {
+        ] as Tab[]) {
           view(tab);
           assert(
             document.documentElement.scrollWidth <= innerWidth,
@@ -576,13 +578,7 @@ export async function runWorkflows() {
               // Native pickers update themselves and emit a composed event;
               // their parent ha-selector does not update its own value.
               this.picker.value = value;
-              this.picker.dispatchEvent(
-                new CustomEvent("value-changed", {
-                  detail: { value },
-                  bubbles: true,
-                  composed: true,
-                }),
-              );
+              fireValueChanged(this.picker, value);
             }
           },
         );

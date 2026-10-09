@@ -13,10 +13,9 @@ uv run ruff format --check custom_components tests scripts
 uv run pytest --cov=custom_components.occupied --cov-fail-under=88
 uv run python scripts/check_release.py
 pnpm install --frozen-lockfile --ignore-scripts
+pnpm run build:check
 pnpm run lint
 pnpm run typecheck
-pnpm run build
-pnpm run build:check
 pnpm run format:check
 pnpm test
 pnpm exec playwright install --with-deps chromium
@@ -37,13 +36,13 @@ JSON schema generation is checked against `Program.model_json_schema()`; semanti
 
 ## Artifacts and publication
 
-`check.yml` runs the HA matrix, browser/Node tests, schema/assets/example checks, official hassfest and HACS validation. Only passing checks build/upload the release artifact. Official actions and development tools are pinned; hassfest/HACS validators track their upstream container images so newly incompatible HA requirements are reported. HACS validation does not post PR comments.
+`check.yml` runs the HA matrix, browser/Node tests, schema/assets/example checks, official hassfest and HACS validation. CI checks the committed frontend against a fresh build before lint or tests can run; Node/browser tests compile only their harness and use the committed assets. Only passing checks package/upload the release artifact. Official actions and development tools are pinned; hassfest/HACS validators track their upstream container images so newly incompatible HA requirements are reported. HACS validation does not post PR comments.
 
-The package includes a deterministic `occupied.zip` (integration-root contents), a pure Python wheel, a source distribution with source fixtures/docs/locks, and `SHA256SUMS`. Build the frontend before packaging. Compiled JavaScript lives in ignored `custom_components/occupied/frontend/dist/`; HACS installs `occupied.zip` from tagged releases rather than the source branch. The zip/wheel contain all generated frontend modules, translations and local brand images. No user frontend build is involved. Build and inspect locally with:
+The package includes a deterministic `occupied.zip` (integration-root contents), a pure Python wheel, a source distribution with source fixtures/docs/locks, and `SHA256SUMS`. Compiled JavaScript in `custom_components/occupied/frontend/dist/` is committed alongside its TypeScript sources. Run `pnpm run build` and include updated assets in the same commit after changing the frontend. HACS installs the integration directory from a tagged release or `main`; development installs do not require a release. The zip/wheel contain all generated frontend modules, translations and local brand images. No user frontend build is involved. Build and inspect locally with:
 
 ```sh
 pnpm install --frozen-lockfile --ignore-scripts
-pnpm run build
+pnpm run build:check
 uv build --out-dir dist
 uv run python scripts/build_release.py
 uv run python scripts/check_artifacts.py dist
@@ -51,6 +50,6 @@ uv run python scripts/check_artifacts.py dist
 
 Install the wheel in a clean environment and invoke its CLI from outside the repository to verify it does not accidentally import editable source. Verify a clean HA setup using the extracted zip. The built zip and wheel must contain identical runtime files. The source distribution must contain the fixtures/locks needed to reproduce checks.
 
-Set matching manifest/project versions and add `docs/releases/<version>.md` before publication. Push an ordinary commit and confirm the Verify workflow passes. Then create/push `v<version>`. `release.yml` reruns all verification, checks tag/version and artifact checksums, and creates the GitHub release with those tested assets. Versions ending in `aN`, `bN`, or `rcN` are published as GitHub prereleases, which HACS can include when prereleases are enabled for Occupied. For example, version `0.2.0b1` uses tag `v0.2.0b1` and notes at `docs/releases/0.2.0b1.md`. HACS users select a tagged release containing the compiled `occupied.zip`; default-branch installation is disabled. Separately, `dev-release.yml` publishes the tested Verify artifacts of every push to `main` as a `dev-<run>-<commit>` prerelease and keeps only the newest five; these are development builds, not supported releases. The `occupied.zip` artifact remains available for manual installs. This workflow does not upload to PyPI or submit a HACS default-repository listing.
+Set matching manifest/project versions and add `docs/releases/<version>.md` before publication. Push an ordinary commit and confirm the Verify workflow passes. Then create/push `v<version>`. `release.yml` reruns all verification, checks tag/version and artifact checksums, and creates the GitHub release with those tested assets. Versions ending in `aN`, `bN`, or `rcN` are published as GitHub prereleases, which HACS can include when prereleases are enabled for Occupied. For example, version `0.2.0b1` uses tag `v0.2.0b1` and notes at `docs/releases/0.2.0b1.md`. HACS users can select a tagged release or the default branch, both of which contain the compiled frontend. Automatic per-commit development releases are no longer published. The `occupied.zip` artifact remains available for manual installs. This workflow does not upload to PyPI or submit a HACS default-repository listing.
 
 Physical-device timing, a full running-HA browser soak, and a hardware household-day soak remain deployment acceptance work. The checked matrix bounds compatibility claims; extend it with an independently pinned environment and actual test results when supporting another HA release.

@@ -9,7 +9,7 @@ htmlcov/
 *.egg-info/
 .DS_Store
 node_modules/
-dist/
+/dist/
 build/
 playwright-report/
 tests/frontend/generated/

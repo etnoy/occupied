@@ -1,44 +1,28 @@
-import type { OccupiedPanel } from "./occupied-panel.js";
-import type { Path, FieldOptions, HaSelector, Range } from "./types.js";
+// Generated from forms.ts by pnpm run build. Do not edit.
 import { errorMessage, isValueChangedEvent } from "./util.js";
 import { get, set, copy, days } from "./model.js";
-import {
-  html,
-  nothing,
-  ifDefined,
-  live,
-  render,
-  ref,
-  type TemplateResult,
-} from "./lit.js";
-import {
-  layout,
-  section,
-  button,
-  currentValue,
-  type FormLayout,
-} from "./form-layout.js";
-
-type Options = FieldOptions & { onChange?: () => void; onInput?: () => void };
+import { html, nothing, ifDefined, live, render, ref } from "./lit.js";
+import { layout, section, button, currentValue } from "./form-layout.js";
 export class Forms {
-  constructor(private readonly panel: OccupiedPanel) {}
-  field(parent: FormLayout, path: Path, label: string, options: Options = {}) {
+  panel;
+  constructor(panel) {
+    this.panel = panel;
+  }
+  field(parent, path, label, options = {}) {
     const panel = this.panel,
       value = get(panel.draft, path),
       key = JSON.stringify(path),
       id = `occupied-field-${path.map(String).join("-") || "program"}`;
     const invalid = ifDefined(panel.localErrors.has(key) ? "true" : undefined),
       help = ifDefined(options.help ? id + "-help" : undefined);
-    const changed = (next: unknown) => {
+    const changed = (next) => {
       panel.change(path, next);
       options.onInput?.();
     };
-    const onInput = (event: Event) => {
-      const control = event.currentTarget as
-          | HTMLInputElement
-          | HTMLTextAreaElement,
+    const onInput = (event) => {
+      const control = event.currentTarget,
         text = control.value;
-      let next: unknown = text;
+      let next = text;
       try {
         if (options.json) {
           panel.raw.set(key, text);
@@ -73,7 +57,7 @@ export class Forms {
         panel.edited();
       }
     };
-    let control: TemplateResult;
+    let control;
     if (options.selector && customElements.get("ha-selector"))
       control = html`<ha-selector
         id=${id}
@@ -86,15 +70,15 @@ export class Forms {
         .label=${label}
         .required=${!options.optional}
         .narrow=${panel.hasAttribute("narrow")}
-        @value-changed=${(event: Event) => {
+        @value-changed=${(event) => {
           if (!isValueChangedEvent(event)) return;
-          (event.currentTarget as HaSelector).value = event.detail.value;
+          event.currentTarget.value = event.detail.value;
           changed(event.detail.value);
         }}
       ></ha-selector>`;
     else if (options.choices) {
       const choices = options.choices.map((choice) =>
-        typeof choice === "string" ? ([choice, choice] as const) : choice,
+        typeof choice === "string" ? [choice, choice] : choice,
       );
       if (
         value != null &&
@@ -112,10 +96,9 @@ export class Forms {
               : String(get(panel.draft, path)),
           ),
         )}
-        @change=${(event: Event) => {
-          const selected = (event.currentTarget as HTMLSelectElement).value;
-          let next: string | boolean | undefined =
-            selected === "" && options.optional ? undefined : selected;
+        @change=${(event) => {
+          const selected = event.currentTarget.value;
+          let next = selected === "" && options.optional ? undefined : selected;
           if (options.boolean && next !== undefined) next = next === "true";
           changed(next);
           if (options.rerender) panel.renderView();
@@ -136,8 +119,8 @@ export class Forms {
         aria-invalid=${invalid}
         aria-describedby=${help}
         .checked=${currentValue(() => !!get(panel.draft, path))}
-        @change=${(event: Event) => {
-          changed((event.currentTarget as HTMLInputElement).checked);
+        @change=${(event) => {
+          changed(event.currentTarget.checked);
           if (options.rerender) panel.renderView();
           options.onChange?.();
         }}
@@ -211,30 +194,24 @@ export class Forms {
     parent.append(template);
     return template;
   }
-  text(parent: FormLayout, path: Path, label: string, opts: Options = {}) {
+  text(parent, path, label, opts = {}) {
     return this.field(parent, path, this.panel.t(label), opts);
   }
-  number(parent: FormLayout, path: Path, label: string, opts: Options = {}) {
+  number(parent, path, label, opts = {}) {
     return this.text(parent, path, label, {
       type: "number",
       step: "any",
       ...opts,
     });
   }
-  select(
-    parent: FormLayout,
-    path: Path,
-    label: string,
-    choices: NonNullable<FieldOptions["choices"]>,
-    opts: Options = {},
-  ) {
+  select(parent, path, label, choices, opts = {}) {
     return this.text(parent, path, label, { choices, ...opts });
   }
-  json(parent: FormLayout, path: Path, label: string, opts: Options = {}) {
+  json(parent, path, label, opts = {}) {
     return this.text(parent, path, label, { json: true, ...opts });
   }
-  entities(parent: FormLayout, path: Path, label: string, multiple = true) {
-    const options: Options = {
+  entities(parent, path, label, multiple = true) {
+    const options = {
       list: multiple,
       multiline: multiple,
       selector: { entity: { multiple } },
@@ -248,17 +225,15 @@ export class Forms {
       return this.text(parent, path, label, options);
     const t = this.panel.t;
     let query = "",
-      picker: HTMLSelectElement,
-      selected: HTMLElement,
-      manual: HTMLElement;
+      picker,
+      selected,
+      manual;
     const selectedIds = () => {
-      const value = get<string | string[] | undefined>(this.panel.draft, path);
+      const value = get(this.panel.draft, path);
       return Array.isArray(value) ? value : value ? [value] : [];
     };
     const sync = () => {
-      const input = manual.querySelector<
-        HTMLInputElement | HTMLTextAreaElement
-      >("input,textarea");
+      const input = manual.querySelector("input,textarea");
       if (input)
         input.value = multiple
           ? selectedIds().join("\n")
@@ -321,17 +296,15 @@ export class Forms {
           type="search"
           aria-label=${`${t("Find entity")} · ${t(label)}`}
           placeholder=${t("Filter by name, area or entity ID")}
-          @input=${(event: Event) => {
-            query = (
-              event.currentTarget as HTMLInputElement
-            ).value.toLowerCase();
+          @input=${(event) => {
+            query = event.currentTarget.value.toLowerCase();
             filter();
           }}
         />
         <select
           ${ref((node) => {
             if (node) {
-              picker = node as HTMLSelectElement;
+              picker = node;
               filter();
             }
           })}
@@ -356,7 +329,7 @@ export class Forms {
       </div>
       <details
         ${ref((node) => {
-          if (node) manual = node as HTMLElement;
+          if (node) manual = node;
         })}
       >
         <summary>${t("Exact entity IDs")}</summary>
@@ -365,7 +338,7 @@ export class Forms {
       <ul
         ${ref((node) => {
           if (node) {
-            selected = node as HTMLElement;
+            selected = node;
             draw();
           }
         })}
@@ -374,13 +347,8 @@ export class Forms {
     parent.append(template);
     return template;
   }
-  range(
-    parent: FormLayout,
-    path: Path,
-    label: string,
-    { optional = false, count = false } = {},
-  ) {
-    const value = get<Range | undefined>(this.panel.draft, path),
+  range(parent, path, label, { optional = false, count = false } = {}) {
+    const value = get(this.panel.draft, path),
       node = layout("fieldset");
     const mode = !value
       ? optional
@@ -394,8 +362,8 @@ export class Forms {
         <select
           aria-label=${this.panel.t(label) + " " + this.panel.t("Mode")}
           .value=${mode}
-          @change=${(event: Event) => {
-            const next = (event.currentTarget as HTMLSelectElement).value;
+          @change=${(event) => {
+            const next = event.currentTarget.value;
             this.panel.change(
               path,
               next === "inherit"
@@ -429,7 +397,7 @@ export class Forms {
             min: "Minimum",
             max: "Maximum",
             mode: "Triangular peak",
-          }[key as "fixed" | "min" | "max" | "mode"],
+          }[key],
           {
             optional: key === "mode",
             type: count ? "number" : "text",
@@ -443,7 +411,7 @@ export class Forms {
         );
     parent.append(node);
   }
-  targets(parent: FormLayout, path: Path) {
+  targets(parent, path) {
     const box = layout("fieldset");
     box.append(html`<legend>${this.panel.t("Targets")}</legend>`);
     this.entities(box, [...path, "entities"], "Entities");
@@ -456,16 +424,15 @@ export class Forms {
                 ><input
                   type="checkbox"
                   .checked=${currentValue(() =>
-                    (
-                      get<string[]>(this.panel.draft, [...path, "groups"]) || []
-                    ).includes(group.id),
+                    (get(this.panel.draft, [...path, "groups"]) || []).includes(
+                      group.id,
+                    ),
                   )}
-                  @change=${(event: Event) => {
+                  @change=${(event) => {
                     const selected = new Set(
-                      get<string[]>(this.panel.draft, [...path, "groups"]) ||
-                        [],
+                      get(this.panel.draft, [...path, "groups"]) || [],
                     );
-                    (event.currentTarget as HTMLInputElement).checked
+                    event.currentTarget.checked
                       ? selected.add(group.id)
                       : selected.delete(group.id);
                     this.panel.change([...path, "groups"], [...selected]);
@@ -477,7 +444,7 @@ export class Forms {
     );
     parent.append(box);
   }
-  weekdays(parent: FormLayout, path: Path, optional = false) {
+  weekdays(parent, path, optional = false) {
     parent.append(
       html`<fieldset>
         <legend>${this.panel.t("Weekdays")}</legend>
@@ -492,17 +459,12 @@ export class Forms {
               ><input
                 type="checkbox"
                 .checked=${currentValue(() => {
-                  const selected = get<string[] | undefined>(
-                    this.panel.draft,
-                    path,
-                  );
+                  const selected = get(this.panel.draft, path);
                   return selected == null || selected.includes(day);
                 })}
-                @change=${(event: Event) => {
-                  const next = new Set(
-                    get<string[]>(this.panel.draft, path) || days,
-                  );
-                  (event.currentTarget as HTMLInputElement).checked
+                @change=${(event) => {
+                  const next = new Set(get(this.panel.draft, path) || days);
+                  event.currentTarget.checked
                     ? next.add(day)
                     : next.delete(day);
                   this.panel.change(path, [...next]);
@@ -513,23 +475,17 @@ export class Forms {
       </fieldset>`,
     );
   }
-  list<T>(
-    parent: FormLayout,
-    path: Path,
-    title: string,
-    create: () => T,
-    renderItem: (parent: FormLayout, path: Path, value: T) => void,
-  ) {
+  list(parent, path, title, create, renderItem) {
     const box = section(parent, this.panel.t(title));
     for (const [index, value] of (
-      get<T[]>(this.panel.draft, path) || []
+      get(this.panel.draft, path) || []
     ).entries()) {
       const item = layout("article"),
         toolbar = layout("div", null, { class: "row" });
       toolbar.append(
         html`<h3>${this.panel.t(title)} ${index + 1}</h3>`,
         button(this.panel.t("Remove"), () => {
-          get<T[]>(this.panel.draft, path).splice(index, 1);
+          get(this.panel.draft, path).splice(index, 1);
           this.panel.edited(true);
         }),
       );
@@ -538,7 +494,7 @@ export class Forms {
           button(
             "↑",
             () => {
-              const values = get<T[]>(this.panel.draft, path);
+              const values = get(this.panel.draft, path);
               [values[index - 1], values[index]] = [
                 values[index],
                 values[index - 1],
@@ -555,7 +511,7 @@ export class Forms {
     box.append(
       button(`${this.panel.t("Add")} ${this.panel.t(title)}`, () => {
         set(this.panel.draft, path, [
-          ...(get<T[]>(this.panel.draft, path) || []),
+          ...(get(this.panel.draft, path) || []),
           create(),
         ]);
         this.panel.edited(true);

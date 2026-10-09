@@ -1,4 +1,4 @@
-import { required } from "@occupied/types.js";
+import { required } from "@occupied/util.js";
 import type { Program, StepEntry, When } from "@occupied/types.js";
 import test from "node:test";
 import assert from "node:assert/strict";

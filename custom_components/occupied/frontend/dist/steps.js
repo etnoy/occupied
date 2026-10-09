@@ -1,5 +1,4 @@
-import type { OccupiedPanel } from "./occupied-panel.js";
-import type { StepEntry, Translate } from "./types.js";
+// Generated from steps.ts by pnpm run build. Do not edit.
 import { html, nothing, render, repeat, ref } from "./lit.js";
 import { copy, days, duplicate, removeResource } from "./model.js";
 import {
@@ -11,12 +10,7 @@ import {
 } from "./step-model.js";
 import { focusEditor } from "./step-editor.js";
 import { entityName } from "./util.js";
-
-export function startStep(
-  panel: OccupiedPanel,
-  entry?: StepEntry | null,
-  parent?: StepEntry,
-) {
+export function startStep(panel, entry, parent) {
   panel.stepEditor = stepEditor(panel.draft, entry, parent);
   panel.tab = "routines";
   panel.error = "";
@@ -24,7 +18,7 @@ export function startStep(
   panel.renderView();
   focusEditor(panel);
 }
-function actionSummary(entry: StepEntry, t: Translate) {
+function actionSummary(entry, t) {
   const action = entry.actions?.[0]?.action || "";
   if (action === "scene.turn_on") return t("Activate scene");
   if (simpleStep(entry))
@@ -33,29 +27,29 @@ function actionSummary(entry: StepEntry, t: Translate) {
       : action;
   return t("Custom actions");
 }
-function daySummary(selected: string[], t: Translate) {
+function daySummary(selected, t) {
   if (selected.length === 7) return t("Every day");
   if (selected.join() === days.slice(0, 5).join()) return t("Weekdays");
   if (selected.join() === days.slice(5).join()) return t("Weekends");
   return selected.map((day) => t(day)).join(", ");
 }
-function advancedStep(panel: OccupiedPanel, entry: StepEntry) {
+function advancedStep(panel, entry) {
   panel.selection.set('["routines"]', entry.path[1]);
   panel.selection.set(JSON.stringify(entry.path.slice(0, 3)), entry.path[3]);
   panel.navigate("advanced_routines");
 }
 /** Order steps depth-first so related steps follow the step they depend on. */
-function stepTree(entries: StepEntry[]) {
-  const seen = new Set<string>(),
-    ordered: { entry: StepEntry; depth: number }[] = [];
-  const append = (entry: StepEntry, depth: number) => {
+function stepTree(entries) {
+  const seen = new Set(),
+    ordered = [];
+  const append = (entry, depth) => {
     if (seen.has(entry.id)) return;
     seen.add(entry.id);
     ordered.push({ entry, depth });
     for (const child of entries)
       if (child.when?.relative_to === entry.id) append(child, depth + 1);
   };
-  const isRoot = (step: StepEntry) =>
+  const isRoot = (step) =>
     !step.when?.relative_to ||
     !entries.some((parent) => parent.id === step.when?.relative_to);
   for (const step of entries) if (isRoot(step)) append(step, 0);
@@ -63,25 +57,21 @@ function stepTree(entries: StepEntry[]) {
   for (const step of entries) append(step, 0);
   return ordered;
 }
-function stepSymbol(entry: StepEntry) {
+function stepSymbol(entry) {
   if (entry.kind !== "steps") return "◷";
   return entry.actions?.every((action) => action.action.endsWith("turn_off"))
     ? "○"
     : "●";
 }
-function confirmDeleteStep(
-  panel: OccupiedPanel,
-  entry: StepEntry,
-  trigger: HTMLButtonElement,
-) {
+function confirmDeleteStep(panel, entry, trigger) {
   const t = panel.t,
     dependents = dependentNames(panel.draft, entry.id);
   const host = document.createElement("div");
-  let dialog: HTMLDialogElement;
+  let dialog;
   render(
     html`<dialog
       ${ref((node) => {
-        if (node) dialog = node as HTMLDialogElement;
+        if (node) dialog = node;
       })}
       class="step-delete-dialog"
       aria-labelledby="step-delete-title"
@@ -135,19 +125,19 @@ function confirmDeleteStep(
     host,
   );
   panel.shadowRoot.append(host);
-  dialog!.showModal();
-  dialog!.querySelector<HTMLButtonElement>("button")?.focus();
+  dialog.showModal();
+  dialog.querySelector("button")?.focus();
 }
-function stepMenu(panel: OccupiedPanel, entry: StepEntry) {
+function stepMenu(panel, entry) {
   const t = panel.t;
-  let menu: HTMLElement, trigger: HTMLButtonElement;
+  let menu, trigger;
   const native = "showPopover" in HTMLElement.prototype;
   const close = () => {
     if (native && menu.matches(":popover-open")) menu.hidePopover();
     menu.hidden = true;
     trigger.setAttribute("aria-expanded", "false");
   };
-  const action = (label: string, run: () => unknown, danger = false) =>
+  const action = (label, run, danger = false) =>
     html`<button
       type="button"
       role="menuitem"
@@ -161,7 +151,7 @@ function stepMenu(panel: OccupiedPanel, entry: StepEntry) {
     </button>`;
   return html`<button
       ${ref((node) => {
-        if (node) trigger = node as HTMLButtonElement;
+        if (node) trigger = node;
       })}
       type="button"
       class="step-menu-trigger"
@@ -173,9 +163,7 @@ function stepMenu(panel: OccupiedPanel, entry: StepEntry) {
       @click=${() => {
         if (trigger.getAttribute("aria-expanded") === "true") return close();
         panel.selectedStep = entry.id;
-        for (const other of panel.shadowRoot.querySelectorAll<HTMLElement>(
-          ".step-menu",
-        ))
+        for (const other of panel.shadowRoot.querySelectorAll(".step-menu"))
           if (other !== menu && !other.hidden) {
             if (native && other.matches(":popover-open")) other.hidePopover();
             other.hidden = true;
@@ -190,14 +178,14 @@ function stepMenu(panel: OccupiedPanel, entry: StepEntry) {
         menu.style.left = `${Math.max(12, Math.min(rect.right - menu.offsetWidth, innerWidth - menu.offsetWidth - 12))}px`;
         menu.style.top = `${Math.max(12, Math.min(rect.bottom + 6, innerHeight - menu.offsetHeight - 12))}px`;
         trigger.setAttribute("aria-expanded", "true");
-        menu.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
+        menu.querySelector("button:not(:disabled)")?.focus();
       }}
     >
       ⋮
     </button>
     <div
       ${ref((node) => {
-        if (node) menu = node as HTMLElement;
+        if (node) menu = node;
       })}
       id=${`step-actions-${entry.id}`}
       class="step-menu"
@@ -205,21 +193,15 @@ function stepMenu(panel: OccupiedPanel, entry: StepEntry) {
       aria-label=${`${t("More options")}: ${entry.name}`}
       hidden
       popover=${native ? "auto" : nothing}
-      @toggle=${(event: ToggleEvent) => {
+      @toggle=${(event) => {
         if (event.newState === "closed") {
           menu.hidden = true;
           trigger.setAttribute("aria-expanded", "false");
         }
       }}
-      @keydown=${(event: KeyboardEvent) => {
-        const buttons = [
-            ...menu.querySelectorAll<HTMLButtonElement>(
-              "button:not(:disabled)",
-            ),
-          ],
-          current = buttons.indexOf(
-            panel.shadowRoot.activeElement as HTMLButtonElement,
-          );
+      @keydown=${(event) => {
+        const buttons = [...menu.querySelectorAll("button:not(:disabled)")],
+          current = buttons.indexOf(panel.shadowRoot.activeElement);
         if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
           event.preventDefault();
           const next =
@@ -262,7 +244,7 @@ function stepMenu(panel: OccupiedPanel, entry: StepEntry) {
         : nothing}
     </div>`;
 }
-export function renderSteps(panel: OccupiedPanel) {
+export function renderSteps(panel) {
   const t = panel.t,
     entries = stepEntries(panel.draft);
   return html`<div class="page-heading">

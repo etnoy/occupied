@@ -1,21 +1,4 @@
-import type {
-  Program,
-  Catalog,
-  RuntimeSnapshot,
-  ProgramDocument,
-  StepEditor,
-  StepForm,
-  Path,
-  Issue,
-  HomeAssistant,
-  HaSelector,
-  HaGenericPicker,
-  WebSocketResponses,
-  TimelineDocument,
-  PreviewResult,
-  JsonObject,
-  Tab,
-} from "./types.js";
+// Generated from occupied-panel.ts by pnpm run build. Do not edit.
 import { errorMessage, progress } from "./util.js";
 import { copy, get, set, resources } from "./model.js";
 import { editView } from "./advanced-views.js";
@@ -30,100 +13,87 @@ import { styles } from "./styles.js";
 import { translator } from "./translations.js";
 import { renderSteps } from "./steps.js";
 import { stepEditorView } from "./step-editor.js";
-import { LitElement, html, nothing, type TemplateResult } from "./lit.js";
-
-const primaryTabs: [Tab, string][] = [
+import { LitElement, html, nothing } from "./lit.js";
+const primaryTabs = [
   ["routines", "Your steps"],
   ["settings", "Settings"],
 ];
-
 // These views read panel state directly and are rebuilt on every render. The
 // remaining tabs build forms holding local state (filters, pending inputs), so
 // their templates are rebuilt only when renderView() is called explicitly.
-const liveViews: Partial<
-  Record<Tab, (panel: OccupiedPanel) => TemplateResult>
-> = {
+const liveViews = {
   overview: overviewView,
   preview: previewView,
   configuration: configurationView,
   diagnostics: diagnosticsView,
 };
-
-type PanelConfig = { config?: { config_entry_id?: string } };
-
 export class OccupiedPanel extends LitElement {
-  static override styles = styles;
-  declare shadowRoot: ShadowRoot;
-
+  static styles = styles;
   // Program state
-  draft!: Program;
-  saved!: Program;
-  document!: ProgramDocument;
-  status!: RuntimeSnapshot;
-  catalog: Catalog = { entities: [], services: {} };
+  draft;
+  saved;
+  document;
+  status;
+  catalog = { entities: [], services: {} };
   revision = "";
   stale = false;
   dirty = false;
   // Draft edits bump version; validatedVersion records the last valid one.
   version = 0;
   validatedVersion = -1;
-  issues: Issue[] = [];
+  issues = [];
   error = "";
   busy = false;
   // Incremented on reload/disconnect so late responses are discarded.
   epoch = 0;
-
   // View state
-  tab: Tab = "routines";
+  tab = "routines";
   t = translator("en");
-  stepEditor: StepEditor | null = null;
-  selectedStep: string | null = null;
-  selection = new Map<string, number>();
-  raw = new Map<string, string>();
-  localErrors = new Map<string, string>();
-  actual?: TimelineDocument;
+  stepEditor = null;
+  selectedStep = null;
+  selection = new Map();
+  raw = new Map();
+  localErrors = new Map();
+  actual;
   timelineDate = "";
-  preview?: PreviewResult;
-  previewProgram!: Program;
-  previewVersion?: number;
-  previewSettings: { date: string; days: number; seed: string; at?: string } = {
+  preview;
+  previewProgram;
+  previewVersion;
+  previewSettings = {
     date: "",
     days: 7,
     seed: "preview-1",
     at: "",
   };
-  sourcePath?: string;
+  sourcePath;
   yaml = "";
   includeSensitive = false;
-  diagnostics?: JsonObject;
-
-  _hass!: HomeAssistant;
+  diagnostics;
+  _hass;
   _loading = false;
-  private _panel?: PanelConfig;
-  private _loadedEntry: string | null = null;
-  private _timer?: ReturnType<typeof setInterval>;
-  private _timelineTimer: ReturnType<typeof setTimeout> | null = null;
-  private _timelineLoading = false;
-  private _subscriptionEpoch = 0;
-  private _unsubscribe: (() => void) | null = null;
-  private _subscribing = false;
-  private stableView: TemplateResult | typeof nothing = nothing;
-
+  _panel;
+  _loadedEntry = null;
+  _timer;
+  _timelineTimer = null;
+  _timelineLoading = false;
+  _subscriptionEpoch = 0;
+  _unsubscribe = null;
+  _subscribing = false;
+  stableView = nothing;
   constructor() {
     super();
     // Lit reuses an existing root. Creating it eagerly lets HA assign hass
     // before the panel is connected.
     this.attachShadow({ mode: "open" });
   }
-
-  set hass(value: HomeAssistant) {
+  set hass(value) {
     const changed = this._hass?.connection !== value?.connection;
     this._hass = value;
     this.t = translator(value?.language);
     // Stable views capture hass when built; keep their HA elements current.
-    for (const selector of this.shadowRoot.querySelectorAll<
-      HaSelector | HaGenericPicker
-    >("ha-selector,ha-generic-picker"))
+    for (const selector of this.shadowRoot.querySelectorAll(
+      "ha-selector,ha-generic-picker",
+    ))
       selector.hass = value;
     if (changed) {
       this._disposeSubscription();
@@ -131,26 +101,25 @@ export class OccupiedPanel extends LitElement {
     }
     this._load();
   }
-  set panel(value: PanelConfig) {
+  set panel(value) {
     this._panel = value;
     this._load();
   }
-  set narrow(value: boolean) {
+  set narrow(value) {
     this.toggleAttribute("narrow", !!value);
   }
-
-  override connectedCallback() {
+  connectedCallback() {
     super.connectedCallback();
     this._load();
     window.addEventListener("beforeunload", this._beforeUnload);
     this._timer = setInterval(() => {
-      for (const bar of this.shadowRoot.querySelectorAll<HTMLProgressElement>(
+      for (const bar of this.shadowRoot.querySelectorAll(
         "progress[data-start]",
       ))
-        bar.value = progress(bar.dataset.start!, bar.dataset.deadline!);
+        bar.value = progress(bar.dataset.start, bar.dataset.deadline);
     }, 1000);
   }
-  override disconnectedCallback() {
+  disconnectedCallback() {
     super.disconnectedCallback();
     this.epoch++;
     this._loadedEntry = null;
@@ -160,32 +129,27 @@ export class OccupiedPanel extends LitElement {
     if (this._timelineTimer) clearTimeout(this._timelineTimer);
     window.removeEventListener("beforeunload", this._beforeUnload);
   }
-  private _beforeUnload = (event: BeforeUnloadEvent) => {
+  _beforeUnload = (event) => {
     if (this.dirty || this.stepEditor?.changed) {
       event.preventDefault();
       event.returnValue = "";
     }
   };
-
   // --- Backend connection -------------------------------------------------
-
-  ws<K extends keyof WebSocketResponses>(
-    type: K,
-    data: Record<string, unknown> = {},
-  ): Promise<WebSocketResponses[K]> {
-    return this._hass.callWS<WebSocketResponses[K]>({
+  ws(type, data = {}) {
+    return this._hass.callWS({
       type: `occupied/${type}`,
       config_entry_id: this._loadedEntry,
       ...data,
     });
   }
-  private _disposeSubscription() {
+  _disposeSubscription() {
     this._subscriptionEpoch++;
     this._unsubscribe?.();
     this._unsubscribe = null;
     this._subscribing = false;
   }
-  private async _subscribe() {
+  async _subscribe() {
     if (
       !this.isConnected ||
       !this._loadedEntry ||
@@ -197,14 +161,13 @@ export class OccupiedPanel extends LitElement {
     this._subscribing = true;
     const epoch = this._subscriptionEpoch;
     try {
-      const unsubscribe =
-        await this._hass.connection.subscribeMessage<RuntimeSnapshot>(
-          (snapshot) => {
-            if (epoch === this._subscriptionEpoch && this.isConnected)
-              this._onSnapshot(snapshot);
-          },
-          { type: "occupied/subscribe", config_entry_id: this._loadedEntry },
-        );
+      const unsubscribe = await this._hass.connection.subscribeMessage(
+        (snapshot) => {
+          if (epoch === this._subscriptionEpoch && this.isConnected)
+            this._onSnapshot(snapshot);
+        },
+        { type: "occupied/subscribe", config_entry_id: this._loadedEntry },
+      );
       if (epoch !== this._subscriptionEpoch || !this.isConnected) unsubscribe();
       else this._unsubscribe = unsubscribe;
     } catch (error) {
@@ -213,7 +176,7 @@ export class OccupiedPanel extends LitElement {
       if (epoch === this._subscriptionEpoch) this._subscribing = false;
     }
   }
-  private _onSnapshot(snapshot: RuntimeSnapshot) {
+  _onSnapshot(snapshot) {
     this.status = snapshot;
     if (snapshot.configuration_source && this.document) {
       this.document.configuration_source = snapshot.configuration_source;
@@ -233,7 +196,7 @@ export class OccupiedPanel extends LitElement {
     if (this.stale && !this.dirty && !this.busy && !this.stepEditor)
       this.reloadSaved();
   }
-  private async _load() {
+  async _load() {
     const entry =
       this._panel?.config?.config_entry_id ||
       new URLSearchParams(window.location.search).get("config_entry");
@@ -273,9 +236,7 @@ export class OccupiedPanel extends LitElement {
       if (epoch === this.epoch) this._loading = false;
     }
   }
-
   // --- Rendering ----------------------------------------------------------
-
   /**
    * Render synchronously so callers can focus the resulting field immediately.
    * Lit still owns the nodes and updates only changed parts.
@@ -291,12 +252,12 @@ export class OccupiedPanel extends LitElement {
     if (this.tab === "timeline") this.loadTimeline();
     this.flush();
   }
-  navigate(tab: Tab) {
+  navigate(tab) {
     if (this.stepEditor) return;
     this.tab = tab;
     this.renderView();
   }
-  private buildStableView(): TemplateResult {
+  buildStableView() {
     try {
       if (this.tab === "routines") return renderSteps(this);
       if (this.tab === "timeline") return timelineView(this);
@@ -305,7 +266,7 @@ export class OccupiedPanel extends LitElement {
       return this.fallbackView(error);
     }
   }
-  private fallbackView(error: unknown) {
+  fallbackView(error) {
     const t = this.t;
     if (this.tab === "routines") {
       this.error = errorMessage(error);
@@ -324,11 +285,11 @@ export class OccupiedPanel extends LitElement {
         aria-label=${t("Advanced full program")}
         data-json-path="[]"
         .value=${this.raw.get("[]") ?? JSON.stringify(this.draft, null, 2)}
-        @input=${(event: Event) => {
-          const value = (event.currentTarget as HTMLTextAreaElement).value;
+        @input=${(event) => {
+          const value = event.currentTarget.value;
           this.raw.set("[]", value);
           try {
-            const parsed: unknown = JSON.parse(value);
+            const parsed = JSON.parse(value);
             if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
               throw new Error("The program must be a JSON object");
             this.localErrors.delete("[]");
@@ -343,7 +304,7 @@ export class OccupiedPanel extends LitElement {
         ${t("Refresh forms")}
       </button>`;
   }
-  private currentView() {
+  currentView() {
     if (!this.draft)
       return this.error && !this._loading
         ? html`<button type="button" @click=${() => this._load()}>
@@ -353,7 +314,7 @@ export class OccupiedPanel extends LitElement {
     if (this.stepEditor) return stepEditorView(this);
     return liveViews[this.tab]?.(this) ?? this.stableView;
   }
-  private notices() {
+  notices() {
     const t = this.t;
     return [
       this.stale
@@ -380,7 +341,7 @@ export class OccupiedPanel extends LitElement {
       .filter(Boolean)
       .join(" · ");
   }
-  private runtimeControls() {
+  runtimeControls() {
     const t = this.t,
       state = this.status;
     if (!state) return nothing;
@@ -412,7 +373,7 @@ export class OccupiedPanel extends LitElement {
         ${t(state.enabled ? "Turn off simulation" : "Turn on simulation")}
       </button>`;
   }
-  private toolbar() {
+  toolbar() {
     const t = this.t,
       unsaved = this.dirty && !this.stepEditor;
     return html`<div
@@ -450,7 +411,7 @@ export class OccupiedPanel extends LitElement {
         : nothing}
     </div>`;
   }
-  override render() {
+  render() {
     const t = this.t,
       notices = this.notices(),
       primary = primaryTabs.some(([id]) => id === this.tab);
@@ -514,18 +475,16 @@ export class OccupiedPanel extends LitElement {
       <div id="view">${this.currentView()}</div>
     </main>`;
   }
-
   // --- Draft editing ------------------------------------------------------
-
   /** Record the saved program from a backend document. */
-  private adopt(doc: ProgramDocument) {
+  adopt(doc) {
     this.document = doc;
     this.saved = doc.program;
     this.revision = doc.revision;
     this.stale = false;
   }
   /** Replace the draft with the saved program, dropping local edits. */
-  private resetDraft() {
+  resetDraft() {
     this.draft = copy(this.saved);
     this.dirty = !!this.document.needs_apply;
     this.version++;
@@ -539,8 +498,8 @@ export class OccupiedPanel extends LitElement {
     this.error = "";
     this.renderView();
   }
-  change(path: Path, value: unknown, rerender = false) {
-    if (!path.length) this.draft = value as Program;
+  change(path, value, rerender = false) {
+    if (!path.length) this.draft = value;
     else set(this.draft, path, value);
     this.edited(rerender);
   }
@@ -556,23 +515,23 @@ export class OccupiedPanel extends LitElement {
     for (const [key] of this.raw)
       if (active?.dataset.jsonPath !== key && !this.localErrors.has(key))
         this.raw.delete(key);
-    for (const input of this.shadowRoot.querySelectorAll<HTMLTextAreaElement>(
+    for (const input of this.shadowRoot.querySelectorAll(
       "textarea[data-json-path]",
     ))
-      if (input !== active && !this.localErrors.has(input.dataset.jsonPath!))
+      if (input !== active && !this.localErrors.has(input.dataset.jsonPath))
         input.value = JSON.stringify(
-          get(this.draft, JSON.parse(input.dataset.jsonPath!)) ?? {},
+          get(this.draft, JSON.parse(input.dataset.jsonPath)) ?? {},
           null,
           2,
         );
     if (rerender) this.renderView();
     else this.flush();
   }
-  fail(error: unknown) {
+  fail(error) {
     this.error = errorMessage(error);
     this.flush();
   }
-  attempt(action: () => unknown) {
+  attempt(action) {
     try {
       action();
     } catch (error) {
@@ -580,7 +539,7 @@ export class OccupiedPanel extends LitElement {
     }
   }
   /** Run one backend action at a time; failures are shown, not thrown. */
-  async run<T>(action: (epoch: number) => Promise<T>): Promise<T | undefined> {
+  async run(action) {
     if (this.busy) return;
     this.busy = true;
     this.error = "";
@@ -600,12 +559,12 @@ export class OccupiedPanel extends LitElement {
       }
     }
   }
-  private checkLocal() {
+  checkLocal() {
     if (!this.localErrors.size) return true;
     this.fail([...this.localErrors.values()].join("\n"));
     return false;
   }
-  private showIssues(result: { valid?: boolean; issues?: Issue[] }) {
+  showIssues(result) {
     this.issues = result.issues || [];
     this.flush();
     if (result.valid === false && !this.issues.length)
@@ -613,7 +572,7 @@ export class OccupiedPanel extends LitElement {
         this.t("Preview contains infeasible dates. Review timeline issues."),
       );
   }
-  focusIssue(issue: Issue) {
+  focusIssue(issue) {
     const path = issue.model_path || [];
     const editor = this.stepEditor;
     if (editor) {
@@ -631,7 +590,7 @@ export class OccupiedPanel extends LitElement {
       editor.stage = editorStage(field);
       this.renderView();
       this.shadowRoot
-        .querySelector<HTMLElement>('.routine-editor [aria-invalid="true"]')
+        .querySelector('.routine-editor [aria-invalid="true"]')
         ?.focus();
       return;
     }
@@ -644,10 +603,8 @@ export class OccupiedPanel extends LitElement {
     }
     this.renderView();
     // Focus the deepest rendered field along the issue path.
-    const fields = [
-      ...this.shadowRoot.querySelectorAll<HTMLElement>("[data-path]"),
-    ];
-    let target: HTMLElement | undefined;
+    const fields = [...this.shadowRoot.querySelectorAll("[data-path]")];
+    let target;
     for (let n = path.length; n >= 0 && !target; n--) {
       const key = JSON.stringify(path.slice(0, n));
       target = fields.find((node) => node.dataset.path === key);
@@ -657,14 +614,12 @@ export class OccupiedPanel extends LitElement {
       if (node instanceof HTMLDetailsElement) node.open = true;
     target.scrollIntoView({ block: "center" });
     (
-      target.querySelector<HTMLElement>(
+      target.querySelector(
         "input,textarea,select,ha-selector,ha-generic-picker",
       ) || target
     ).focus();
   }
-
   // --- Backend actions ----------------------------------------------------
-
   validate() {
     if (!this.checkLocal()) return;
     const version = this.version,
@@ -676,7 +631,7 @@ export class OccupiedPanel extends LitElement {
       if (result.valid) this.validatedVersion = version;
     });
   }
-  save(candidate?: Program) {
+  save(candidate) {
     if (this.document?.source === "file" || !this.checkLocal() || this.stale)
       return;
     const version = this.version,
@@ -718,7 +673,7 @@ export class OccupiedPanel extends LitElement {
         editor.existing = true;
         // Future patches compare against what was actually saved. This also
         // preserves a user reverting a field while its previous value saves.
-        editor.original = submittedForm!;
+        editor.original = submittedForm;
         if (version !== this.version) {
           this.fail(
             this.t("Earlier changes saved. Your newer edits are still open."),
@@ -748,7 +703,7 @@ export class OccupiedPanel extends LitElement {
       this.renderView();
     });
   }
-  migrate(kind: string, old: string, next: string) {
+  migrate(kind, old, next) {
     if (!this.checkLocal() || !next) return;
     const version = this.version;
     return this.run(async (epoch) => {
@@ -766,7 +721,7 @@ export class OccupiedPanel extends LitElement {
       }
     });
   }
-  control(service: string, data: Record<string, unknown> = {}) {
+  control(service, data = {}) {
     return this.run(async () => {
       await this._hass.callService("occupied", service, {
         config_entry_id: this._loadedEntry,
@@ -819,7 +774,7 @@ export class OccupiedPanel extends LitElement {
       if (epoch === this.epoch) this.diagnostics = result;
     });
   }
-  selectSource(source: string, config_file?: string) {
+  selectSource(source, config_file) {
     return this.run(async (epoch) => {
       const result = await this.ws("source", {
         source,
@@ -875,8 +830,7 @@ export class OccupiedPanel extends LitElement {
     });
   }
 }
-
-function isRevisionConflict(error: unknown) {
+function isRevisionConflict(error) {
   return (
     typeof error === "object" &&
     error !== null &&
@@ -884,10 +838,9 @@ function isRevisionConflict(error: unknown) {
     error.code === "revision_conflict"
   );
 }
-
 /** Map a backend issue path inside a step to the step editor field. */
-function editorField(tail: Path, form: StepForm): string {
-  const has = (key: string) => tail.includes(key),
+function editorField(tail, form) {
+  const has = (key) => tail.includes(key),
     head = tail[0];
   if (head === "name" || head === "days") return head;
   if (head === "actions") {
@@ -900,14 +853,12 @@ function editorField(tail: Path, form: StepForm): string {
   if (form.timing.mode === "absolute") return has("latest") ? "end" : "start";
   return has("max") ? "endOffset" : "startOffset";
 }
-
 /** Builder stage (timing, entities, action) that shows a field. */
-function editorStage(field: string) {
+function editorStage(field) {
   if (field === "entities") return 1;
   return ["name", "brightness", "service", "data"].includes(field) ? 2 : 0;
 }
-
-function tabForPath(path: Path): Tab {
+function tabForPath(path) {
   switch (path[0]) {
     case "groups":
       return "groups";
@@ -923,6 +874,5 @@ function tabForPath(path: Path): Tab {
       return "household";
   }
 }
-
 if (!customElements.get("occupied-panel"))
   customElements.define("occupied-panel", OccupiedPanel);

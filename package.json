@@ -6,16 +6,18 @@
   "scripts": {
     "build": "node scripts/build-frontend.ts",
     "build:check": "node scripts/build-frontend.ts --check",
-    "lint": "pnpm run build && eslint \"custom_components/occupied/frontend/dist/**/*.js\" --max-warnings 0",
+    "lint": "eslint \"custom_components/occupied/frontend/dist/**/*.js\" --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "test": "pnpm run build && node --test tests/frontend/generated/model.test.js",
-    "test:browser": "pnpm run build && node tests/frontend/generated/run.js",
+    "test": "pnpm run build:tests && node --test tests/frontend/generated/model.test.js",
+    "test:browser": "pnpm run build:tests && node tests/frontend/generated/run.js",
     "format:check": "prettier --check custom_components/occupied/frontend tests/frontend scripts/*.ts eslint.config.mjs tsconfig.json package.json .github/workflows",
-    "format:fix": "prettier --write \"custom_components/occupied/frontend/*.ts\" \"tests/frontend/src/*.ts\" scripts/*.ts eslint.config.mjs tsconfig.json package.json .github/workflows && pnpm run build"
+    "format:fix": "prettier --write \"custom_components/occupied/frontend/*.ts\" \"tests/frontend/src/*.ts\" scripts/*.ts eslint.config.mjs tsconfig.json package.json .github/workflows && pnpm run build",
+    "build:tests": "node scripts/build-frontend.ts --tests-only"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "24.19.1",
+    "esbuild": "0.28.2",
     "eslint": "10.9.1",
     "globals": "17.11.0",
     "playwright": "1.63.0",
@@ -24,5 +26,8 @@
   },
   "engines": {
     "node": ">=24"
+  },
+  "dependencies": {
+    "lit": "3.3.3"
   }
 }
