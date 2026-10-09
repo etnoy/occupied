@@ -1,0 +1,41 @@
+custom_components/occupied/frontend/dist/editor-fields.js
+  s_f52ea3dda3ee7d::t_1f69a71dc4c26f 1-112
+custom_components/occupied/frontend/dist/step-editor-action.js
+  s_f52ea3dda3ee7d::t_c36286833e0c24 1-61
+custom_components/occupied/frontend/dist/step-editor-controller.js
+  s_f52ea3dda3ee7d::t_8bb2be8388c072 1-109
+custom_components/occupied/frontend/dist/step-editor-entities.js
+  s_f52ea3dda3ee7d::t_f634aad744549b 1-158
+custom_components/occupied/frontend/dist/step-editor-timing.js
+  s_f52ea3dda3ee7d::t_b2fce5a2e9ace3 1-200
+custom_components/occupied/frontend/dist/step-editor.js
+  s_f52ea3dda3ee7d::t_3b460774158033 2-7,9-10,45-51,54,58
+custom_components/occupied/frontend/editor-fields.ts
+  s_f52ea3dda3ee7d::t_f380ac2b1c5fa7 1-145
+custom_components/occupied/frontend/step-editor-action.ts
+  s_f52ea3dda3ee7d::t_4a1be43b4e0684 1-62
+custom_components/occupied/frontend/step-editor-controller.ts
+  s_f52ea3dda3ee7d::t_d4b0d6f0ce1d16 1-116
+custom_components/occupied/frontend/step-editor-entities.ts
+  s_f52ea3dda3ee7d::t_eb0cdb3e5981a3 1-161
+custom_components/occupied/frontend/step-editor-timing.ts
+  s_f52ea3dda3ee7d::t_e64d679697a07d 1-205
+custom_components/occupied/frontend/step-editor.ts
+  s_f52ea3dda3ee7d::t_23b9ac46832c05 2-6,8,11-12,47-53,56,60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "bd0a4f1af93f9b5e3a0cb5bb7f02817b37088ae9",
+  "prompts": {},
+  "sessions": {
+    "s_f52ea3dda3ee7d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11fb1-5697-76a2-afb7-c899c7af8b87",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
