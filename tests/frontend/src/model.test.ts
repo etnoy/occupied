@@ -3,7 +3,6 @@ import type { Program, StepEntry, When } from "@occupied/types.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  around,
   duplicate,
   identifier,
   parentSteps,
@@ -105,19 +104,6 @@ test("parent picker excludes self and descendants", () => {
     parentSteps(p, "bed").map((x) => x.id),
     ["dinner"],
   );
-});
-test("approximate clock configuration handles midnight explicitly", () => {
-  assert.deepEqual(around("20:00", 15), {
-    earliest: "19:45",
-    latest: "20:15",
-    cross_midnight: false,
-  });
-  assert.deepEqual(around("00:05", 15), {
-    earliest: "23:50",
-    latest: "00:20",
-    cross_midnight: true,
-  });
-  assert.throws(() => around("20:00", 720));
 });
 
 const empty = () => ({
@@ -322,11 +308,6 @@ test("existing fractional-minute ranges remain editable and untouched on rename"
     required(required(buildStep(p, editor).routines)[1].steps)[0].when,
     entry.when,
   );
-  assert.deepEqual(around("20:00:30", 7.5), {
-    earliest: "19:53",
-    latest: "20:08",
-    cross_midnight: false,
-  });
 });
 test("complex activities and mixed actions stay outside the simple editor", () => {
   const { program: p } = create(empty(), "Evening");

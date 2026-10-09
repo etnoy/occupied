@@ -1,13 +1,13 @@
 // Generated from occupied-panel.ts by pnpm run build. Do not edit.
 import { errorMessage, progress } from "./util.js";
-import { copy, get, set, resources } from "./model.js";
-import { editView } from "./advanced-views.js";
+import { copy, set, resources } from "./model.js";
 import {
   overviewView,
   timelineView,
   previewView,
   configurationView,
   diagnosticsView,
+  settingsView,
 } from "./panel-views.js";
 import { styles } from "./styles.js";
 import { translator } from "./translations.js";
@@ -19,9 +19,10 @@ const primaryTabs = [
   ["settings", "Settings"],
 ];
 // These views read panel state directly and are rebuilt on every render. The
-// remaining tabs build forms holding local state (filters, pending inputs), so
+// step list and timeline keep local state (open menus, table filters), so
 // their templates are rebuilt only when renderView() is called explicitly.
 const liveViews = {
+  settings: settingsView,
   overview: overviewView,
   preview: previewView,
   configuration: configurationView,
@@ -51,9 +52,6 @@ export class OccupiedPanel extends LitElement {
   t = translator("en");
   stepEditor = null;
   selectedStep = null;
-  selection = new Map();
-  raw = new Map();
-  localErrors = new Map();
   actual;
   timelineDate = "";
   preview;
@@ -259,50 +257,15 @@ export class OccupiedPanel extends LitElement {
   }
   buildStableView() {
     try {
-      if (this.tab === "routines") return renderSteps(this);
-      if (this.tab === "timeline") return timelineView(this);
-      return editView(this);
+      return this.tab === "timeline" ? timelineView(this) : renderSteps(this);
     } catch (error) {
-      return this.fallbackView(error);
-    }
-  }
-  fallbackView(error) {
-    const t = this.t;
-    if (this.tab === "routines") {
       this.error = errorMessage(error);
       return html`<p class="error">
-          ${t("This draft needs attention in Advanced settings.")}
-        </p>
-        <button type="button" @click=${() => this.navigate("household")}>
-          ${t("Open advanced editor")}
-        </button>`;
+        ${this.t(
+          "This draft cannot be shown. Discard edits or import a corrected program from Settings.",
+        )}
+      </p>`;
     }
-    this.error = t(
-      "The advanced draft cannot be shown in forms. Correct the JSON below or discard edits.",
-    );
-    return html`<textarea
-        rows="20"
-        aria-label=${t("Advanced full program")}
-        data-json-path="[]"
-        .value=${this.raw.get("[]") ?? JSON.stringify(this.draft, null, 2)}
-        @input=${(event) => {
-          const value = event.currentTarget.value;
-          this.raw.set("[]", value);
-          try {
-            const parsed = JSON.parse(value);
-            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-              throw new Error("The program must be a JSON object");
-            this.localErrors.delete("[]");
-            this.change([], parsed);
-          } catch (parseError) {
-            this.localErrors.set("[]", errorMessage(parseError));
-            this.edited();
-          }
-        }}
-      ></textarea
-      ><button type="button" @click=${() => this.renderView()}>
-        ${t("Refresh forms")}
-      </button>`;
   }
   currentView() {
     if (!this.draft)
@@ -411,6 +374,22 @@ export class OccupiedPanel extends LitElement {
         : nothing}
     </div>`;
   }
+  issue(issue, primary) {
+    const className = issue.severity === "warning" ? "hint" : "error",
+      text = primary
+        ? issue.message
+        : `${issue.severity || "error"} · ${issue.path || "$"}: ${issue.message}`;
+    // Only issues inside the open step editor have a field to focus.
+    return this.stepEditor
+      ? html`<button
+          type="button"
+          class=${className}
+          @click=${() => this.focusIssue(issue)}
+        >
+          ${text}
+        </button>`
+      : html`<p class=${className}>${text}</p>`;
+  }
   render() {
     const t = this.t,
       notices = this.notices(),
@@ -459,18 +438,7 @@ export class OccupiedPanel extends LitElement {
           : nothing}
       </div>
       <div id="issues">
-        ${this.issues.map(
-          (issue) =>
-            html`<button
-              type="button"
-              class=${issue.severity === "warning" ? "hint" : "error"}
-              @click=${() => this.focusIssue(issue)}
-            >
-              ${primary
-                ? issue.message
-                : `${issue.severity || "error"} · ${issue.path || "$"}: ${issue.message}`}
-            </button>`,
-        )}
+        ${this.issues.map((issue) => this.issue(issue, primary))}
       </div>
       <div id="view">${this.currentView()}</div>
     </main>`;
@@ -489,8 +457,6 @@ export class OccupiedPanel extends LitElement {
     this.dirty = !!this.document.needs_apply;
     this.version++;
     this.validatedVersion = -1;
-    this.raw.clear();
-    this.localErrors.clear();
     this.issues = [];
   }
   discardEdits() {
@@ -507,23 +473,6 @@ export class OccupiedPanel extends LitElement {
     this.version++;
     this.dirty = true;
     this.validatedVersion = -1;
-    const active =
-      this.shadowRoot.activeElement instanceof HTMLElement
-        ? this.shadowRoot.activeElement
-        : null;
-    // Drop raw JSON text that parsed cleanly, except in the focused editor.
-    for (const [key] of this.raw)
-      if (active?.dataset.jsonPath !== key && !this.localErrors.has(key))
-        this.raw.delete(key);
-    for (const input of this.shadowRoot.querySelectorAll(
-      "textarea[data-json-path]",
-    ))
-      if (input !== active && !this.localErrors.has(input.dataset.jsonPath))
-        input.value = JSON.stringify(
-          get(this.draft, JSON.parse(input.dataset.jsonPath)) ?? {},
-          null,
-          2,
-        );
     if (rerender) this.renderView();
     else this.flush();
   }
@@ -559,11 +508,6 @@ export class OccupiedPanel extends LitElement {
       }
     }
   }
-  checkLocal() {
-    if (!this.localErrors.size) return true;
-    this.fail([...this.localErrors.values()].join("\n"));
-    return false;
-  }
   showIssues(result) {
     this.issues = result.issues || [];
     this.flush();
@@ -572,56 +516,30 @@ export class OccupiedPanel extends LitElement {
         this.t("Preview contains infeasible dates. Review timeline issues."),
       );
   }
+  /** Show a backend issue on the step editor field it belongs to. */
   focusIssue(issue) {
-    const path = issue.model_path || [];
     const editor = this.stepEditor;
-    if (editor) {
-      const prefix = editor.candidatePath || [];
-      if (!prefix.length || !prefix.every((key, i) => path[i] === key)) {
-        this.fail(
-          this.t(
-            "Finish or cancel this step to edit other configuration issues.",
-          ),
-        );
-        return;
-      }
-      const field = editorField(path.slice(prefix.length), editor.form);
-      editor.errors[field] = issue.message;
-      editor.stage = editorStage(field);
-      this.renderView();
-      this.shadowRoot
-        .querySelector('.routine-editor [aria-invalid="true"]')
-        ?.focus();
+    if (!editor) return;
+    const path = issue.model_path || [],
+      prefix = editor.candidatePath || [];
+    if (!prefix.length || !prefix.every((key, i) => path[i] === key)) {
+      this.fail(
+        this.t(
+          "Finish or cancel this step to edit other configuration issues.",
+        ),
+      );
       return;
     }
-    this.tab = tabForPath(path);
-    if (path[0] === "groups") this.selection.set('["groups"]', Number(path[1]));
-    if (path[0] === "routines") {
-      this.selection.set('["routines"]', Number(path[1]));
-      if (typeof path[3] === "number")
-        this.selection.set(JSON.stringify(path.slice(0, 3)), path[3]);
-    }
+    const field = editorField(path.slice(prefix.length), editor.form);
+    editor.errors[field] = issue.message;
+    editor.stage = editorStage(field);
     this.renderView();
-    // Focus the deepest rendered field along the issue path.
-    const fields = [...this.shadowRoot.querySelectorAll("[data-path]")];
-    let target;
-    for (let n = path.length; n >= 0 && !target; n--) {
-      const key = JSON.stringify(path.slice(0, n));
-      target = fields.find((node) => node.dataset.path === key);
-    }
-    if (!target) return;
-    for (let node = target.parentElement; node; node = node.parentElement)
-      if (node instanceof HTMLDetailsElement) node.open = true;
-    target.scrollIntoView({ block: "center" });
-    (
-      target.querySelector(
-        "input,textarea,select,ha-selector,ha-generic-picker",
-      ) || target
-    ).focus();
+    this.shadowRoot
+      .querySelector('.routine-editor [aria-invalid="true"]')
+      ?.focus();
   }
   // --- Backend actions ----------------------------------------------------
   validate() {
-    if (!this.checkLocal()) return;
     const version = this.version,
       draft = copy(this.draft);
     return this.run(async (epoch) => {
@@ -632,8 +550,7 @@ export class OccupiedPanel extends LitElement {
     });
   }
   save(candidate) {
-    if (this.document?.source === "file" || !this.checkLocal() || this.stale)
-      return;
+    if (this.document?.source === "file" || this.stale) return;
     const version = this.version,
       draft = copy(candidate || this.draft),
       expected = this.revision,
@@ -685,8 +602,6 @@ export class OccupiedPanel extends LitElement {
       if (version === this.version) {
         this.draft = copy(result.program);
         this.dirty = false;
-        this.raw.clear();
-        this.localErrors.clear();
         this.renderView();
       } else this.dirty = true;
     });
@@ -701,24 +616,6 @@ export class OccupiedPanel extends LitElement {
       this.resetDraft();
       this.stepEditor = null;
       this.renderView();
-    });
-  }
-  migrate(kind, old, next) {
-    if (!this.checkLocal() || !next) return;
-    const version = this.version;
-    return this.run(async (epoch) => {
-      const result = await this.ws("rename_id", {
-        program: copy(this.draft),
-        kind,
-        old,
-        new: next,
-      });
-      if (epoch !== this.epoch || version !== this.version) return;
-      this.showIssues(result);
-      if (result.valid) {
-        this.draft = result.program;
-        this.edited(true);
-      }
     });
   }
   control(service, data = {}) {
@@ -752,7 +649,6 @@ export class OccupiedPanel extends LitElement {
     }
   }
   runPreview() {
-    if (!this.checkLocal()) return;
     const version = this.version,
       draft = copy(this.draft),
       options = { ...this.previewSettings };
@@ -814,14 +710,11 @@ export class OccupiedPanel extends LitElement {
       this.showIssues(result);
       if (result.valid) {
         this.draft = result.program;
-        this.raw.clear();
-        this.localErrors.clear();
         this.edited(true);
       }
     });
   }
   exportYaml() {
-    if (!this.checkLocal()) return;
     return this.run(async (epoch) => {
       const result = await this.ws("export", { program: copy(this.draft) });
       if (epoch !== this.epoch) return;
@@ -857,22 +750,6 @@ function editorField(tail, form) {
 function editorStage(field) {
   if (field === "entities") return 1;
   return ["name", "brightness", "service", "data"].includes(field) ? 2 : 0;
-}
-function tabForPath(path) {
-  switch (path[0]) {
-    case "groups":
-      return "groups";
-    case "routines":
-      return "advanced_routines";
-    case "lighting":
-      return "handover";
-    case "defaults":
-    case "policies":
-    case "constraints":
-      return "defaults";
-    default:
-      return "household";
-  }
 }
 if (!customElements.get("occupied-panel"))
   customElements.define("occupied-panel", OccupiedPanel);

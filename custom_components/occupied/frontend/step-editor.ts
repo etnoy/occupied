@@ -1,5 +1,5 @@
 import type { OccupiedPanel } from "./occupied-panel.js";
-import type { FieldOptions, HaSelector, SourcePickerState } from "./types.js";
+import type { HaSelector, SourcePickerState } from "./types.js";
 import { entityName, isValueChangedEvent, required } from "./util.js";
 import { html, nothing, ifDefined, live, repeat, ref } from "./lit.js";
 import { sourcePicker } from "./source-picker.js";
@@ -11,6 +11,21 @@ import {
   timingExplanation,
   timeSourceChoices,
 } from "./step-model.js";
+
+interface FieldOptions {
+  type?: string;
+  optional?: boolean;
+  choices?: [string, string][];
+  multiline?: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
+  placeholder?: string;
+  /** Move focus back to this field after the change renders. */
+  render?: boolean;
+  hideLabel?: boolean;
+  trailing?: unknown;
+}
 
 export function focusEditor(panel: OccupiedPanel, key?: string) {
   const target = key
@@ -64,11 +79,7 @@ export function stepEditorView(panel: OccupiedPanel) {
     label: string,
     value: string | number,
     update: (value: string) => void,
-    options: FieldOptions & {
-      render?: boolean;
-      hideLabel?: boolean;
-      trailing?: unknown;
-    } = {},
+    options: FieldOptions = {},
   ) => {
     const id = `routine-${key}`,
       invalid = ifDefined(editor.errors[key] ? "true" : undefined),
@@ -124,11 +135,9 @@ export function stepEditorView(panel: OccupiedPanel) {
               .value=${live(String(value))}
               @change=${input}
             >
-              ${options.choices.map((choice) => {
-                const [v, name] =
-                  typeof choice === "string" ? [choice, choice] : choice;
-                return html`<option value=${String(v)}>${t(name)}</option>`;
-              })}
+              ${options.choices.map(
+                ([v, name]) => html`<option value=${v}>${t(name)}</option>`,
+              )}
             </select>`
           : options.multiline
             ? html`<textarea
@@ -345,7 +354,7 @@ export function stepEditorView(panel: OccupiedPanel) {
       ${panel.document?.source === "file"
         ? html`<p class="hint">
             ${t(
-              "This program is managed by a file. Add changes to your draft, then export them from Advanced settings.",
+              "This program is managed by a file. Add changes to your draft, then export them from Settings.",
             )}
           </p>`
         : nothing}

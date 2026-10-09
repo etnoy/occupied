@@ -104,11 +104,9 @@ export function stepEditorView(panel) {
               .value=${live(String(value))}
               @change=${input}
             >
-              ${options.choices.map((choice) => {
-                const [v, name] =
-                  typeof choice === "string" ? [choice, choice] : choice;
-                return html`<option value=${String(v)}>${t(name)}</option>`;
-              })}
+              ${options.choices.map(
+                ([v, name]) => html`<option value=${v}>${t(name)}</option>`,
+              )}
             </select>`
           : options.multiline
             ? html`<textarea
@@ -320,7 +318,7 @@ export function stepEditorView(panel) {
       ${panel.document?.source === "file"
         ? html`<p class="hint">
             ${t(
-              "This program is managed by a file. Add changes to your draft, then export them from Advanced settings.",
+              "This program is managed by a file. Add changes to your draft, then export them from Settings.",
             )}
           </p>`
         : nothing}

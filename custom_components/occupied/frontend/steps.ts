@@ -39,11 +39,6 @@ function daySummary(selected: string[], t: Translate) {
   if (selected.join() === days.slice(5).join()) return t("Weekends");
   return selected.map((day) => t(day)).join(", ");
 }
-function advancedStep(panel: OccupiedPanel, entry: StepEntry) {
-  panel.selection.set('["routines"]', entry.path[1]);
-  panel.selection.set(JSON.stringify(entry.path.slice(0, 3)), entry.path[3]);
-  panel.navigate("advanced_routines");
-}
 /** Order steps depth-first so related steps follow the step they depend on. */
 function stepTree(entries: StepEntry[]) {
   const seen = new Set<string>(),
@@ -139,7 +134,10 @@ function confirmDeleteStep(
   dialog!.querySelector<HTMLButtonElement>("button")?.focus();
 }
 function stepMenu(panel: OccupiedPanel, entry: StepEntry) {
-  const t = panel.t;
+  const t = panel.t,
+    // Steps the simple editor cannot represent can only be copied or removed.
+    editable = simpleStep(entry),
+    related = entry.kind === "steps";
   let menu: HTMLElement, trigger: HTMLButtonElement;
   const native = "showPopover" in HTMLElement.prototype;
   const close = () => {
@@ -239,17 +237,11 @@ function stepMenu(panel: OccupiedPanel, entry: StepEntry) {
         }
       }}
     >
-      ${action(
-        simpleStep(entry) ? "Edit step" : "Edit in Advanced settings",
-        () =>
-          simpleStep(entry)
-            ? startStep(panel, entry)
-            : advancedStep(panel, entry),
-      )}
-      ${entry.kind === "steps"
+      ${editable ? action("Edit step", () => startStep(panel, entry)) : nothing}
+      ${related
         ? action("Add related step", () => startStep(panel, null, entry))
         : nothing}
-      <hr role="separator" />
+      ${editable || related ? html`<hr role="separator" />` : nothing}
       ${action("Duplicate", () => {
         const next = copy(panel.draft),
           item = duplicate(next, entry.path);
@@ -257,9 +249,6 @@ function stepMenu(panel: OccupiedPanel, entry: StepEntry) {
         panel.change([], next, true);
       })}
       ${action("Delete", () => confirmDeleteStep(panel, entry, trigger), true)}
-      ${simpleStep(entry)
-        ? action("Advanced settings", () => advancedStep(panel, entry))
-        : nothing}
     </div>`;
 }
 export function renderSteps(panel: OccupiedPanel) {

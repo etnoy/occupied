@@ -273,7 +273,7 @@ export function editorErrors(program, editor, stage = 2) {
         errors.anchor =
           "Choose another step without creating a circular relationship.";
       else if (form.days.some((d) => !parent.days.includes(d)))
-        errors.anchor = `This step runs on days when ${parent.name} does not. Adjust weekdays in Advanced settings.`;
+        errors.anchor = `This step runs on days when ${parent.name} does not.`;
     } else if (
       !solarEvents.map((event) => `sun:${event}`).includes(time.anchor) &&
       !/^entity:[a-z_][a-z0-9_]*\.[a-z0-9_]+(?::(?:start_time|end_time))?$/.test(

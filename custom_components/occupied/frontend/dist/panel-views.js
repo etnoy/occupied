@@ -4,6 +4,42 @@ import { resources } from "./model.js";
 import { download, progress } from "./util.js";
 import { stepEntries } from "./step-model.js";
 import { timeline, stamp } from "./timeline.js";
+const tools = [
+  ["configuration", "Import, export and managed files"],
+  ["timeline", "Execution history"],
+  ["diagnostics", "Diagnostics"],
+];
+export function settingsView(panel) {
+  const t = panel.t,
+    dryRun = !!panel.status?.dry_run;
+  return html`<section>
+      <h2>${t("Simulation")}</h2>
+      <p class="hint">
+        ${dryRun
+          ? t("Dry run is on. Devices are not controlled.")
+          : t("Live mode controls devices when the simulation is on.")}
+      </p>
+      <button
+        type="button"
+        .disabled=${panel.busy}
+        @click=${() => panel.control("set_dry_run", { dry_run: !dryRun })}
+      >
+        ${t(dryRun ? "Use live mode" : "Use dry run")}
+      </button>
+      <button type="button" @click=${() => panel.navigate("overview")}>
+        ${t("Runtime details")}
+      </button>
+    </section>
+    <section>
+      <h2>${t("Tools")}</h2>
+      ${tools.map(
+        ([tab, label]) =>
+          html`<button type="button" @click=${() => panel.navigate(tab)}>
+            ${t(label)}
+          </button>`,
+      )}
+    </section>`;
+}
 export function overviewView(panel) {
   const t = panel.t,
     state = panel.status;

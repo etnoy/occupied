@@ -40,9 +40,6 @@ export const styles = css`
   .hint {
     color: var(--secondary-text-color, #596773);
   }
-  code {
-    overflow-wrap: anywhere;
-  }
   header {
     display: flex;
     align-items: center;
@@ -52,7 +49,6 @@ export const styles = css`
   }
   nav,
   .row,
-  .resource-nav,
   .toolbar {
     display: flex;
     align-items: center;
@@ -76,10 +72,6 @@ export const styles = css`
   }
   section section {
     border-radius: 8px;
-  }
-  article {
-    border-top: 1px solid var(--divider-color, #d5dce3);
-    padding: 12px 0;
   }
   details {
     padding: 12px 0;
@@ -164,21 +156,6 @@ export const styles = css`
     border-radius: 8px;
     margin: 12px 0;
     min-width: 0;
-  }
-  legend {
-    padding: 0 6px;
-    font-weight: 600;
-  }
-  .check {
-    display: inline-flex;
-    gap: 5px;
-    margin: 8px;
-    align-items: center;
-  }
-  .checks {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
   }
   .banner {
     padding: 12px 16px;
@@ -423,12 +400,6 @@ export const styles = css`
     letter-spacing: -0.8px;
     margin: 0;
   }
-  .eyebrow {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    color: var(--secondary-text-color, #596773);
-  }
   .page-heading .hint {
     max-width: 500px;
   }
@@ -562,10 +533,6 @@ export const styles = css`
     border-top: 1px solid var(--divider-color, #d5dce3);
     margin: 5px 0;
   }
-  .entity-summary {
-    padding-left: 18px;
-    font-size: 14px;
-  }
   .danger {
     color: var(--error-color, #b3261e);
   }
@@ -656,11 +623,6 @@ export const styles = css`
   }
   .builder-footer button:first-child {
     margin-right: auto;
-  }
-  .timing-offset {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
   }
   .routine-editor details {
     padding: 8px 0;
@@ -847,9 +809,6 @@ export const styles = css`
     }
     .empty-steps {
       line-height: 2;
-    }
-    .timing-offset {
-      gap: 10px;
     }
   }
 `;

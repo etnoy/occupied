@@ -431,25 +431,6 @@ export interface SourcePickerState {
   invalid?: boolean;
   errorMessage?: string;
 }
-export type Attributes = Record<string, string | number | undefined>;
-export interface FieldOptions {
-  optional?: boolean;
-  selector?: SelectorConfig;
-  choices?: (string | [string | number, string])[];
-  boolean?: boolean;
-  rerender?: boolean;
-  type?: string;
-  json?: boolean;
-  multiline?: boolean;
-  list?: boolean;
-  initial?: unknown;
-  min?: number;
-  max?: number;
-  step?: number | string;
-  placeholder?: string;
-  suggestions?: (string | [string, string])[];
-  help?: string;
-}
 // Primary navigation tabs plus the secondary pages reached from them.
 export type Tab =
   | "routines"
@@ -458,12 +439,7 @@ export type Tab =
   | "timeline"
   | "preview"
   | "configuration"
-  | "diagnostics"
-  | "household"
-  | "groups"
-  | "advanced_routines"
-  | "handover"
-  | "defaults";
+  | "diagnostics";
 declare global {
   interface HTMLElementTagNameMap {
     "occupied-panel": import("./occupied-panel.js").OccupiedPanel;
@@ -476,11 +452,3 @@ declare global {
     "value-changed": Event & { detail: { value: unknown } };
   }
 }
-
-export type ResourceFor<K extends ResourceKind> = {
-  group: Group;
-  routine: Routine;
-  step: ScheduledItem;
-  activity: ScheduledItem;
-  window: ScheduledItem;
-}[K];
