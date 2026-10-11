@@ -1,0 +1,101 @@
+.prettierrc.json
+  s_f52ea3dda3ee7d::t_4652145dc6800d 1-4
+MANIFEST.in
+  s_f52ea3dda3ee7d::t_f4703d0c338cfe 1,9
+README.md
+  s_f52ea3dda3ee7d::t_761cb977f13a19 92-94
+custom_components/occupied/frontend/ActionEditor.svelte
+  s_f52ea3dda3ee7d::t_6384f8c2d570d4 1-45,47-48,51-63,65-66,69-70
+custom_components/occupied/frontend/App.svelte
+  s_f52ea3dda3ee7d::t_4125afc74e77a4 1-5,7-47,49-84,87-91,93,95,97-98,100,102-104,106-107,109,111-147,150-153,155,157-161,163-165,167,169-188,190-212
+custom_components/occupied/frontend/ConfigurationView.svelte
+  s_f52ea3dda3ee7d::t_05eddfa5858c92 1-122
+custom_components/occupied/frontend/DeleteStepDialog.svelte
+  s_f52ea3dda3ee7d::t_e6c6f4eb9d4e9f 1-80
+custom_components/occupied/frontend/DiagnosticsView.svelte
+  s_f52ea3dda3ee7d::t_153eedee48eee1 1-55
+custom_components/occupied/frontend/EditorField.svelte
+  s_f52ea3dda3ee7d::t_54b920f1841bf4 1-9,11-49,52-139
+custom_components/occupied/frontend/EntitiesEditor.svelte
+  s_f52ea3dda3ee7d::t_dc81c447c184a6 1-20,22-27,29-31,33,35-68,71-77,80-123,125-171
+custom_components/occupied/frontend/FieldError.svelte
+  s_f52ea3dda3ee7d::t_20872577c8cfd4 1-15
+custom_components/occupied/frontend/OverviewView.svelte
+  s_f52ea3dda3ee7d::t_1fb4ac1d5ffa7f 1-2,4-7,9-50,54-55,57,59-68,70-133
+custom_components/occupied/frontend/PreviewView.svelte
+  s_f52ea3dda3ee7d::t_9918d115cd345d 1-86
+custom_components/occupied/frontend/SettingsView.svelte
+  s_f52ea3dda3ee7d::t_e133096fb91740 1-48
+custom_components/occupied/frontend/SourcePicker.svelte
+  s_f52ea3dda3ee7d::t_418d3f996b934f 1-12,14-40,55-63,65-92,97-108,110,112-158,160,164-165,169-181,184-185,189-191,194,198-228
+custom_components/occupied/frontend/StepEditor.svelte
+  s_f52ea3dda3ee7d::t_f2f59071cea314 1-48,50-66,68-85
+custom_components/occupied/frontend/StepMenu.svelte
+  s_f52ea3dda3ee7d::t_46f1e320b3de9f 1-142
+custom_components/occupied/frontend/StepsView.svelte
+  s_f52ea3dda3ee7d::t_fdc172b9cee0c4 1-2,4-43,45-50,52-107
+custom_components/occupied/frontend/Timeline.svelte
+  s_f52ea3dda3ee7d::t_299076620bedb1 1-19,21-22,24-29,31-32,35-38,40-112,114-140
+custom_components/occupied/frontend/TimelineView.svelte
+  s_f52ea3dda3ee7d::t_3ffe9ca6802e08 1-48
+custom_components/occupied/frontend/TimingEditor.svelte
+  s_f52ea3dda3ee7d::t_bef744636ca915 1-81,84-89,92,94-95,97-102,105,107-135,137-138,141-173,176-179,182,184-215
+custom_components/occupied/frontend/dist/dom.js
+  s_f52ea3dda3ee7d::t_47208006aed9ec 1-27
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_f52ea3dda3ee7d::t_d2ba0abd7bc727 2-1137,1139-13070,13118-13121,13148-13157,13165,13168-13172,13181,13183-13184,13214,13216,13228-13232,13235,13237,13244,13289,13291-13292,13295-13296,13304-13305,13332,13371,13373,13379,13386,13413,13528,13559,13562,13611,13621-13624,13640
+custom_components/occupied/frontend/dist/step-editor-controller.js
+  s_f52ea3dda3ee7d::t_624ababe8a1fac 92-95
+custom_components/occupied/frontend/dist/steps.js
+  s_f52ea3dda3ee7d::t_f8b4846efc96fb 2-4,13,22,28,46
+custom_components/occupied/frontend/dist/styles.js
+  s_f52ea3dda3ee7d::t_20512a8e4ce544 2
+custom_components/occupied/frontend/dist/timeline.js
+  s_f52ea3dda3ee7d::t_998bacd4717188 13,15,29-38,54-59,96-103
+custom_components/occupied/frontend/dom.ts
+  s_f52ea3dda3ee7d::t_6bdd950bf0c40c 1-32
+custom_components/occupied/frontend/events.d.ts
+  s_f52ea3dda3ee7d::t_a107f10feff3e2 1-7
+custom_components/occupied/frontend/occupied-panel.ts
+  s_f52ea3dda3ee7d::t_5cf3f58a38858e 20,23-25,29,81-84,88,115-125,135-140,265,267-268,271-272,280-281,283,509
+custom_components/occupied/frontend/step-editor-controller.ts
+  s_f52ea3dda3ee7d::t_681d0cc0d12aae 97-100
+custom_components/occupied/frontend/steps.ts
+  s_f52ea3dda3ee7d::t_a24b71d4934fe7 3-5,19-20,29-30,36-37,55-56
+custom_components/occupied/frontend/styles.ts
+  s_f52ea3dda3ee7d::t_f72c4fd290dfbc 1
+custom_components/occupied/frontend/timeline.ts
+  s_f52ea3dda3ee7d::t_a96187056f69b5 14-21,27,36-37,41-55,71-76,113-120
+docs/releasing.md
+  s_f52ea3dda3ee7d::t_4642195de91044 41
+eslint.config.mjs
+  s_f52ea3dda3ee7d::t_10cedf359cb553 5
+mise.toml
+  s_f52ea3dda3ee7d::t_cb95eba4279ced 18
+package.json
+  s_f52ea3dda3ee7d::t_3b78c999f69163 10,13-14,25-27,33
+pnpm-lock.yaml
+  s_f52ea3dda3ee7d::t_f6f2701c7170b1 11-13,36-41,43-44,263-264,266-286,313-320,329-336,353-355,387-389,398-405,427-435,475-477,497-498,504-506,511-514,541-543,558-564,574-581,590-601,606-608,630-632,763,765-766,768,770-771,773,775,777-780,782-784,786,788,790,792,794-796,811-814,821-826,839-840,918-919,930-933,948-949,982-985,1003,1009-1012,1017-1018,1044-1045,1054-1058,1063-1068,1075-1107,1112,1127-1128
+scripts/build-frontend.ts
+  s_f52ea3dda3ee7d::t_67b311612def87 8,23-33,65,73-89
+scripts/check_artifacts.py
+  s_f52ea3dda3ee7d::t_b37ceeed1fdc7a 17,20,38-40
+tests/frontend/src/workflows.ts
+  s_f52ea3dda3ee7d::t_5cf85f562bc68c 379-395
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "bf903000ae3776212c731953353e43687fdf34c2",
+  "prompts": {},
+  "sessions": {
+    "s_f52ea3dda3ee7d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11fb1-5697-76a2-afb7-c899c7af8b87",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
