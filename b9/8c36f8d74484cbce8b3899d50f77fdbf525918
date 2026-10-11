@@ -1,0 +1,41 @@
+MANIFEST.in
+  s_f52ea3dda3ee7d::t_434d91bd0647c6 6
+README.md
+  s_f52ea3dda3ee7d::t_d93e29243abad0 59,64,68-69,91,93,95
+custom_components/occupied/frontend/EditorField.svelte
+  s_f52ea3dda3ee7d::t_ecdce9c6e4c98e 48
+custom_components/occupied/frontend/EntitiesEditor.svelte
+  s_f52ea3dda3ee7d::t_2c28c4e0b97139 45-72,74-81
+custom_components/occupied/frontend/SourcePicker.svelte
+  s_f52ea3dda3ee7d::t_c8cdee47f89251 7,10,58,65-91
+custom_components/occupied/frontend/TimingEditor.svelte
+  s_f52ea3dda3ee7d::t_430b5c9c7120eb 124-126
+custom_components/occupied/frontend/dist/ha-controls.js
+  s_f52ea3dda3ee7d::t_2a8b37f13638ad 1-22
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_f52ea3dda3ee7d::t_7ed49d1253cef7 8743,8941-8943,8983-9026,9029,9037,9046,9050-9054,9147,9167,9199,9226,9257,9296,9330,9355,9402,9442-9445,9454,9485,9487-9518,9520-9530,9533,9540,9542-9544,9546,9554,9561-9562,9586-9595,9602-9604,9612,9629,9695,9760-9763,9779,9785,9827,9917,10026-10028,10043,10052,10084,10150-10151,10194,10233,10354,10357,10360,10364,10379,10407,10441,10452,10552,10571,10760-10764,10811,10861,10892,10922,10949,10979,11009,11029,11046,11101-11102,11105-11108,11188,11193,11216,11251,11270,11283,11312,11383,11408-11410,11449,11494,11539,11592-11593,11597,11615,11630,11665,11823-11824,11837,11891,11934,11947,12044,12048-12052,12141,12145,12173,12208,12218,12285,12309,12359,12388,12527-12547,12728,12746
+custom_components/occupied/frontend/ha-controls.ts
+  s_f52ea3dda3ee7d::t_1d032294343f92 1-29
+custom_components/occupied/frontend/occupied-panel.ts
+  s_f52ea3dda3ee7d::t_09c953c527b7a8 26,224,242
+docs/editor.md
+  s_f52ea3dda3ee7d::t_ef1544241b1977 9,36,70
+docs/releasing.md
+  s_f52ea3dda3ee7d::t_c28621e2b53309 5,23,37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b98c36f8d74484cbce8b3899d50f77fdbf525918",
+  "prompts": {},
+  "sessions": {
+    "s_f52ea3dda3ee7d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11fb1-5697-76a2-afb7-c899c7af8b87",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
