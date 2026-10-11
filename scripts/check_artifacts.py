@@ -30,7 +30,6 @@ with tarfile.open(directory / f"occupied-{version}.tar.gz") as source:
         "pyproject.toml",
         "uv.lock",
         "tests/conftest.py",
-        "tests/frontend/harness.html",
         "pnpm-lock.yaml",
         "pnpm-workspace.yaml",
         "tsconfig.json",

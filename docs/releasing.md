@@ -2,7 +2,7 @@
 
 Development and CI use Python 3.14.8. `uv.lock` pins the HA 2026.9.4 environment and plugin 0.13.367. `scripts/requirements-ha-2026.9.3.txt` independently pins/hashes HA 2026.9.3 and plugin 0.13.366. The older environment is resolved with the small explicit [override file](../scripts/ha-2026.9.3.overrides), without changing the baseline lock. The CLI has three direct dependencies and its installed wheel imports no HA module.
 
-The initial release passes **245 Python tests with 91% coverage on each HA version**, five Node tests, and thirteen production-editor browser workflows at 1280px and 390px. Tests use real HA entry setup, storage, entities, state conditions, HTTP/WebSocket APIs, repairs and timers, with virtual device handlers. This includes invalid file recovery, file authority, idempotence, source conflicts/switches, atomic rename/debounce, immutable cleanup and managed startup/session recovery. Tests make no calls to an existing HA installation or physical hardware.
+Automated checks cover the HA integration and pure frontend model and validation logic. Tests use real HA entry setup, storage, entities, state conditions, HTTP/WebSocket APIs, repairs and timers, with virtual device handlers. This includes invalid file recovery, file authority, idempotence, source conflicts/switches, atomic rename/debounce, immutable cleanup and managed startup/session recovery. Tests make no calls to an existing HA installation or physical hardware.
 
 ## Reproduce checks
 
@@ -18,11 +18,9 @@ pnpm run lint
 pnpm run typecheck
 pnpm run format:check
 pnpm test
-pnpm exec playwright install --with-deps chromium
-pnpm run test:browser
 ```
 
-The browser runner is a development/CI dependency, not a shipped runtime. It serves the production panel modules and real pure backend with a virtual runtime, runs the same workflow suite at two viewport widths, and fails on workflow or uncaught page errors. For interactive review, use the [browser fixture](editor.md#browser-acceptance-fixture). Stop any existing fixture server before starting the CI runner.
+Review the frontend in an installed Home Assistant instance. There is no standalone editor or browser fixture.
 
 To reproduce the minimum HA suite in an independent environment:
 
@@ -36,7 +34,7 @@ JSON schema generation is checked against `Program.model_json_schema()`; semanti
 
 ## Artifacts and publication
 
-`check.yml` runs the HA matrix, browser/Node tests, schema/assets/example checks, official hassfest and HACS validation. CI checks the committed frontend against a fresh build before lint or tests can run; Node/browser tests compile only their harness and use the committed assets. Only passing checks package/upload the release artifact. Official actions and development tools are pinned; hassfest/HACS validators track their upstream container images so newly incompatible HA requirements are reported. HACS validation does not post PR comments.
+`check.yml` runs the HA matrix, Node model tests, schema/assets/example checks, official hassfest and HACS validation. CI checks the committed frontend against a fresh build before lint or tests can run; Node tests compile only their model tests and use the committed assets. Only passing checks package/upload the release artifact. Official actions and development tools are pinned; hassfest/HACS validators track their upstream container images so newly incompatible HA requirements are reported. HACS validation does not post PR comments.
 
 The package includes a deterministic `occupied.zip` (integration-root contents), a pure Python wheel, a source distribution with source fixtures/docs/locks, and `SHA256SUMS`. Compiled JavaScript in `custom_components/occupied/frontend/dist/` is committed alongside its TypeScript and Svelte sources. Run `pnpm run build` and include updated assets in the same commit after changing the frontend. HACS installs the integration directory from a tagged release or `main`; development installs do not require a release. The zip/wheel contain all generated frontend modules, translations and local brand images. No user frontend build is involved. Build and inspect locally with:
 

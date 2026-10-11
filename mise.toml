@@ -6,10 +6,6 @@ pnpm = "11.25.0"
 [env]
 _.python.venv = { path = ".venv", create = true }
 
-[tasks.dev]
-description = "Serve the local editor preview"
-run = ["pnpm run build", "python tests/frontend/serve.py"]
-
 [tasks.test]
 description = "Run the Python test suite"
 run = "python -m pytest"

@@ -23,6 +23,7 @@ import { translator } from "./translations.js";
 import { mount, unmount, flushSync } from "svelte";
 import { writable } from "svelte/store";
 import App from "./App.svelte";
+import { loadHaControls } from "./ha-controls.js";
 
 type PanelConfig = { config?: { config_entry_id?: string } };
 
@@ -220,9 +221,7 @@ export class OccupiedPanel extends HTMLElement {
       this.reloadSaved();
   }
   private async _load() {
-    const entry =
-      this._panel?.config?.config_entry_id ||
-      new URLSearchParams(window.location.search).get("config_entry");
+    const entry = this._panel?.config?.config_entry_id;
     if (
       !this.isConnected ||
       !this._hass ||
@@ -240,6 +239,7 @@ export class OccupiedPanel extends HTMLElement {
         this.ws("program"),
         this.ws("catalog"),
         this.ws("status"),
+        loadHaControls(),
       ]);
       if (epoch !== this.epoch) return;
       this.adopt(doc);

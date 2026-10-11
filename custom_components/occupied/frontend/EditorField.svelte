@@ -45,12 +45,7 @@
   let described = $derived(
     editor.errors[key] ? `routine-error-${key}` : undefined,
   );
-  let nativeTime = $derived(
-    options.type === "time" &&
-      customElements.get("ha-selector") &&
-      customElements.get("ha-selector-time") &&
-      customElements.get("ha-time-input"),
-  );
+  let nativeTime = $derived(options.type === "time");
 
   function input(event: Event) {
     const control = event.currentTarget as

@@ -562,10 +562,6 @@ export const styles = `
   .builder-steps .complete {
     color: var(--primary-text-color, #202c37);
   }
-  .entity-search {
-    width: 100%;
-    margin: 16px 0 0;
-  }
   .selection-count {
     font-size: 12px;
     color: var(--secondary-text-color, #596773);
@@ -573,43 +569,6 @@ export const styles = `
   .entity-native-selector {
     display: block;
     width: 100%;
-  }
-  .entity-picker {
-    max-height: 330px;
-    overflow: auto;
-    border: 1px solid var(--divider-color, #d5dce3);
-    border-radius: 8px;
-  }
-  .entity-option {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px;
-    cursor: pointer;
-    border-bottom: 1px solid var(--divider-color, #d5dce3);
-  }
-  .entity-option:last-child {
-    border-bottom: 0;
-  }
-  .entity-option:has(:checked) {
-    background: var(--secondary-background-color, #e3eef2);
-  }
-  .entity-option input {
-    flex-shrink: 0;
-    accent-color: var(--primary-color, #167b94);
-  }
-  .entity-option span {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-  }
-  .entity-option strong {
-    font-weight: 550;
-    overflow-wrap: anywhere;
-  }
-  .entity-option small {
-    font-size: 12px;
-    overflow-wrap: anywhere;
   }
   .builder-footer {
     display: flex;
@@ -634,32 +593,6 @@ export const styles = `
   .source-picker ha-generic-picker {
     display: block;
     width: 100%;
-  }
-  .source-results {
-    max-height: 280px;
-    overflow: auto;
-    border: 1px solid var(--divider-color, #bdc9d2);
-    border-radius: 8px;
-    background: var(--card-background-color, #fff);
-  }
-  .source-group {
-    padding: 8px 12px;
-    color: var(--secondary-text-color, #596773);
-    font-size: 12px;
-    font-weight: 600;
-  }
-  .source-results [role="option"] {
-    padding: 10px 12px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-  }
-  .source-results [role="option"]:hover,
-  .source-results [aria-selected="true"] {
-    background: var(--secondary-background-color, #e3eef2);
-  }
-  .source-results p {
-    padding: 8px 12px;
   }
   .routine-editor .error {
     font-size: 13px;
@@ -727,9 +660,6 @@ export const styles = `
   .editing h3 {
     margin: 16px 0 8px;
     font-size: 20px;
-  }
-  .editing .entity-picker {
-    max-height: 280px;
   }
   .editing .field {
     margin: 14px 0;

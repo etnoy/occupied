@@ -4,7 +4,6 @@
   import EditorField from "./EditorField.svelte";
   import FieldError from "./FieldError.svelte";
 
-  import type { SourcePickerState } from "./types.js";
   import {
     stepEntries,
     timingExplanation,
@@ -122,11 +121,10 @@
             if (parent) form.days = [...parent.days];
           }
           changed("anchor");
-          const picker = panel.shadowRoot.querySelector<
-            HTMLElement & SourcePickerState
-          >('[data-builder-field="anchor"]');
+          const picker = panel.shadowRoot.querySelector<HTMLElement>(
+            '[data-builder-field="anchor"]',
+          );
           if (picker && panel.shadowRoot.activeElement !== picker) {
-            picker.suppressNextOpen = true;
             picker.focus();
           }
         },

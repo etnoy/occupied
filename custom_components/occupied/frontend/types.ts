@@ -214,7 +214,6 @@ export interface StepEditor {
   changed: boolean;
   errors: FieldErrors;
   candidatePath?: Path;
-  search?: string;
   showEndTime?: boolean;
   showEndOffset?: boolean;
 }
@@ -423,13 +422,6 @@ export interface HaGenericPicker extends HTMLElement {
   allowCustomValue: boolean;
   noSort: boolean;
   required: boolean;
-}
-export interface SourcePickerState {
-  sourceChoices: TimeSource[];
-  selectedValue: string;
-  suppressNextOpen?: boolean;
-  invalid?: boolean;
-  errorMessage?: string;
 }
 // Primary navigation tabs plus the secondary pages reached from them.
 export type Tab =
