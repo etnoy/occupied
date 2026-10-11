@@ -1,6 +1,4 @@
-import { css } from "./lit.js";
-
-export const styles = css`
+export const styles = `
   p,
   li {
     overflow-wrap: anywhere;

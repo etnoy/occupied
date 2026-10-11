@@ -376,7 +376,23 @@ export async function runWorkflows() {
       await wait(() => !subscribers.size);
       assert(deviceCalls.length === 0, "Editor issued device calls");
       document.body.prepend(panel);
-      await wait(() => panel.draft && !panel._loading);
+      await wait(
+        () => panel.draft && !panel._loading && subscribers.size === 1,
+      );
+      assert(
+        root.querySelectorAll("main").length === 1,
+        "Reconnect duplicated the mounted UI",
+      );
+      assert(
+        root.querySelectorAll("style").length === 1,
+        "Reconnect duplicated panel styles",
+      );
+      panel.navigate("settings");
+      assert(
+        root.textContent.includes("Tools"),
+        "Reconnected UI no longer responds to navigation",
+      );
+      panel.navigate("routines");
     },
   );
   window.workflowResults = results;

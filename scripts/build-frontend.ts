@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { format, resolveConfig } from "prettier";
 import { build } from "esbuild";
+import { compile } from "svelte/compiler";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const check = process.argv.includes("--check");
@@ -16,6 +17,17 @@ execFileSync(
     resolve(root, "node_modules/typescript/bin/tsc"),
     "--project",
     resolve(root, "tsconfig.json"),
+  ],
+  { cwd: root, stdio: "inherit" },
+);
+// Svelte templates participate in the same strict checks as TypeScript modules.
+execFileSync(
+  process.execPath,
+  [
+    resolve(root, "node_modules/svelte-check/bin/svelte-check"),
+    "--tsconfig",
+    resolve(root, "tsconfig.json"),
+    "--fail-on-warnings",
   ],
   { cwd: root, stdio: "inherit" },
 );
@@ -50,7 +62,7 @@ for (const directory of [
       resolve(root, "build/typescript", source),
       "utf8",
     );
-    if (!tests && name === "lit.ts") {
+    if (!tests && name === "occupied-panel.ts") {
       const bundle = await build({
         entryPoints: [resolve(root, directory, name)],
         bundle: true,
@@ -58,6 +70,23 @@ for (const directory of [
         target: "es2023",
         write: false,
         legalComments: "inline",
+        conditions: ["browser"],
+        plugins: [
+          {
+            name: "svelte",
+            setup(builder) {
+              builder.onLoad({ filter: /\.svelte$/ }, async ({ path }) => {
+                const source = await readFile(path, "utf8");
+                const compiled = compile(source, {
+                  filename: path,
+                  generate: "client",
+                  css: "injected",
+                });
+                return { contents: compiled.js.code, loader: "js" };
+              });
+            },
+          },
+        ],
       });
       emitted = bundle.outputFiles![0].text;
     }

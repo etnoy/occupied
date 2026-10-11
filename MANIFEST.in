@@ -1,4 +1,4 @@
-include LICENSE README.md hacs.json uv.lock package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json .prettierignore eslint.config.mjs
+include LICENSE README.md hacs.json uv.lock package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json .prettierignore .prettierrc.json eslint.config.mjs
 recursive-include docs *.md
 recursive-include examples *.yaml *.pp
 recursive-include media *.svg
@@ -6,5 +6,5 @@ recursive-include scripts *.py *.txt *.overrides *.ts
 recursive-include tests *.py *.ts *.html
 recursive-include .github/workflows *.yml
 recursive-include schema *.json
-recursive-include custom_components/occupied *.json *.yaml *.js *.ts *.png
+recursive-include custom_components/occupied *.json *.yaml *.js *.ts *.svelte *.png
 global-exclude __pycache__ *.py[cod] .DS_Store

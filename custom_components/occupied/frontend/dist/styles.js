@@ -1,6 +1,5 @@
 // Generated from styles.ts by pnpm run build. Do not edit.
-import { css } from "./lit.js";
-export const styles = css`
+export const styles = `
   p,
   li {
     overflow-wrap: anywhere;

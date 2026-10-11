@@ -17,43 +17,16 @@ import type {
   Tab,
 } from "./types.js";
 import { errorMessage, progress } from "./util.js";
-import { copy, set, resources } from "./model.js";
-import {
-  overviewView,
-  timelineView,
-  previewView,
-  configurationView,
-  diagnosticsView,
-  settingsView,
-} from "./panel-views.js";
+import { copy, set } from "./model.js";
 import { styles } from "./styles.js";
 import { translator } from "./translations.js";
-import { renderSteps } from "./steps.js";
-import { stepEditorView } from "./step-editor.js";
-import { LitElement, html, nothing, type TemplateResult } from "./lit.js";
-
-const primaryTabs: [Tab, string][] = [
-  ["routines", "Your steps"],
-  ["settings", "Settings"],
-];
-
-// These views read panel state directly and are rebuilt on every render. The
-// step list and timeline keep local state (open menus, table filters), so
-// their templates are rebuilt only when renderView() is called explicitly.
-const liveViews: Partial<
-  Record<Tab, (panel: OccupiedPanel) => TemplateResult>
-> = {
-  settings: settingsView,
-  overview: overviewView,
-  preview: previewView,
-  configuration: configurationView,
-  diagnostics: diagnosticsView,
-};
+import { mount, unmount, flushSync } from "svelte";
+import { writable } from "svelte/store";
+import App from "./App.svelte";
 
 type PanelConfig = { config?: { config_entry_id?: string } };
 
-export class OccupiedPanel extends LitElement {
-  static override styles = styles;
+export class OccupiedPanel extends HTMLElement {
   declare shadowRoot: ShadowRoot;
 
   // Program state
@@ -105,12 +78,14 @@ export class OccupiedPanel extends LitElement {
   private _subscriptionEpoch = 0;
   private _unsubscribe: (() => void) | null = null;
   private _subscribing = false;
-  private stableView: TemplateResult | typeof nothing = nothing;
+  viewRevision = 0;
+  private updates = writable(0);
+  private updateRevision = 0;
+  private component?: ReturnType<typeof mount>;
 
   constructor() {
     super();
-    // Lit reuses an existing root. Creating it eagerly lets HA assign hass
-    // before the panel is connected.
+    // HA may assign properties before connecting the panel.
     this.attachShadow({ mode: "open" });
   }
 
@@ -137,8 +112,17 @@ export class OccupiedPanel extends LitElement {
     this.toggleAttribute("narrow", !!value);
   }
 
-  override connectedCallback() {
-    super.connectedCallback();
+  connectedCallback() {
+    if (!this.component) {
+      const style = document.createElement("style");
+      style.textContent = styles;
+      this.shadowRoot.append(style);
+      this.component = mount(App, {
+        target: this.shadowRoot,
+        props: { panel: this, updates: this.updates },
+      });
+      this.flush();
+    }
     this._load();
     window.addEventListener("beforeunload", this._beforeUnload);
     this._timer = setInterval(() => {
@@ -148,8 +132,12 @@ export class OccupiedPanel extends LitElement {
         bar.value = progress(bar.dataset.start!, bar.dataset.deadline!);
     }, 1000);
   }
-  override disconnectedCallback() {
-    super.disconnectedCallback();
+  disconnectedCallback() {
+    if (this.component) {
+      void unmount(this.component);
+      this.component = undefined;
+    }
+    this.shadowRoot.replaceChildren();
     this.epoch++;
     this._loadedEntry = null;
     this._loading = false;
@@ -274,19 +262,14 @@ export class OccupiedPanel extends LitElement {
 
   // --- Rendering ----------------------------------------------------------
 
-  /**
-   * Render synchronously so callers can focus the resulting field immediately.
-   * Lit still owns the nodes and updates only changed parts.
-   */
+  /** Commit Svelte updates before callers focus a newly rendered field. */
   flush() {
-    this.requestUpdate();
-    if (this.isConnected) this.performUpdate();
+    if (this.component)
+      flushSync(() => this.updates.set(++this.updateRevision));
   }
-  /** Rebuild the current tab's stable view, then render. */
   renderView() {
-    if (this.draft && !this.stepEditor && !liveViews[this.tab])
-      this.stableView = this.buildStableView();
-    if (this.tab === "timeline") this.loadTimeline();
+    this.viewRevision++;
+    if (this.tab === "timeline") void this.loadTimeline();
     this.flush();
   }
   navigate(tab: Tab) {
@@ -294,29 +277,10 @@ export class OccupiedPanel extends LitElement {
     this.tab = tab;
     this.renderView();
   }
-  private buildStableView(): TemplateResult {
-    try {
-      return this.tab === "timeline" ? timelineView(this) : renderSteps(this);
-    } catch (error) {
-      this.error = errorMessage(error);
-      return html`<p class="error">
-        ${this.t(
-          "This draft cannot be shown. Discard edits or import a corrected program from Settings.",
-        )}
-      </p>`;
-    }
+  retry() {
+    void this._load();
   }
-  private currentView() {
-    if (!this.draft)
-      return this.error && !this._loading
-        ? html`<button type="button" @click=${() => this._load()}>
-            ${this.t("Retry")}
-          </button>`
-        : nothing;
-    if (this.stepEditor) return stepEditorView(this);
-    return liveViews[this.tab]?.(this) ?? this.stableView;
-  }
-  private notices() {
+  notices() {
     const t = this.t;
     return [
       this.stale
@@ -343,146 +307,6 @@ export class OccupiedPanel extends LitElement {
       .filter(Boolean)
       .join(" · ");
   }
-  private runtimeControls() {
-    const t = this.t,
-      state = this.status;
-    if (!state) return nothing;
-    const label = state.paused
-      ? "Paused"
-      : !state.enabled
-        ? "Off"
-        : state.active
-          ? "Running"
-          : "Waiting";
-    const schedulable = resources(this.saved).some((resource) =>
-      ["step", "activity", "window"].includes(resource.kind),
-    );
-    return html`<span
-        id="badge"
-        class="badge"
-        aria-live="polite"
-        title=${state.reason || ""}
-        >${t(label)}${state.dry_run ? ` · ${t("Dry run")}` : ""}</span
-      >
-      <button
-        type="button"
-        class="text-button"
-        .disabled=${this.busy ||
-        !!this.stepEditor ||
-        (!state.enabled && !schedulable)}
-        @click=${() => this.control(state.enabled ? "stop" : "start")}
-      >
-        ${t(state.enabled ? "Turn off simulation" : "Turn on simulation")}
-      </button>`;
-  }
-  private toolbar() {
-    const t = this.t,
-      unsaved = this.dirty && !this.stepEditor;
-    return html`<div
-      id="toolbar"
-      class="toolbar"
-      ?hidden=${!unsaved && !this.stale}
-    >
-      ${unsaved
-        ? html`<button
-              type="button"
-              class="primary"
-              .disabled=${this.busy ||
-              this.document?.source === "file" ||
-              this.stale}
-              @click=${() => this.save()}
-            >
-              ${t("Save changes")}
-            </button>
-            <button
-              type="button"
-              .disabled=${this.busy || !this.draft}
-              @click=${() => this.discardEdits()}
-            >
-              ${t("Discard edits")}
-            </button>`
-        : nothing}
-      ${this.stale
-        ? html`<button
-            type="button"
-            .disabled=${this.busy}
-            @click=${() => this.reloadSaved(true)}
-          >
-            ${t("Reload saved program")}
-          </button>`
-        : nothing}
-    </div>`;
-  }
-  private issue(issue: Issue, primary: boolean) {
-    const className = issue.severity === "warning" ? "hint" : "error",
-      text = primary
-        ? issue.message
-        : `${issue.severity || "error"} · ${issue.path || "$"}: ${issue.message}`;
-    // Only issues inside the open step editor have a field to focus.
-    return this.stepEditor
-      ? html`<button
-          type="button"
-          class=${className}
-          @click=${() => this.focusIssue(issue)}
-        >
-          ${text}
-        </button>`
-      : html`<p class=${className}>${text}</p>`;
-  }
-  override render() {
-    const t = this.t,
-      notices = this.notices(),
-      primary = primaryTabs.some(([id]) => id === this.tab);
-    return html`<main>
-      <header>
-        <div>
-          <h1>Occupied</h1>
-          <p id="house">${this.draft?.name || t("Loading household…")}</p>
-        </div>
-        <div id="runtime" class="row">${this.runtimeControls()}</div>
-      </header>
-      ${this.toolbar()}
-      <div id="notice" class="banner" role="status" ?hidden=${!notices}>
-        ${notices}
-      </div>
-      <div id="error" class="error" role="alert" ?hidden=${!this.error}>
-        ${this.error}
-      </div>
-      <nav aria-label="Occupied">
-        ${primaryTabs.map(
-          ([id, label]) =>
-            html`<button
-              type="button"
-              data-tab=${id}
-              aria-current=${this.tab === id ? "page" : "false"}
-              .disabled=${!!this.stepEditor}
-              @click=${() => this.navigate(id)}
-            >
-              ${t(label)}
-            </button>`,
-        )}
-      </nav>
-      <div id="secondary-nav">
-        ${!primary
-          ? html`<button
-              type="button"
-              class="text-button"
-              @click=${() =>
-                this.navigate(this.tab === "preview" ? "routines" : "settings")}
-            >
-              ${t(
-                this.tab === "preview" ? "Back to steps" : "Back to settings",
-              )}
-            </button>`
-          : nothing}
-      </div>
-      <div id="issues">
-        ${this.issues.map((issue) => this.issue(issue, primary))}
-      </div>
-      <div id="view">${this.currentView()}</div>
-    </main>`;
-  }
-
   // --- Draft editing ------------------------------------------------------
 
   /** Record the saved program from a backend document. */
@@ -682,7 +506,7 @@ export class OccupiedPanel extends LitElement {
       if (epoch !== this.epoch) return;
       this.actual = doc;
       if (this.tab === "timeline") {
-        this.stableView = timelineView(this);
+        this.viewRevision++;
         this.flush();
       }
     } catch (error) {

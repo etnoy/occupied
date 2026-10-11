@@ -6,7 +6,6 @@ import {
   offsetErrors,
   buildStep,
 } from "./step-model.js";
-import { createEditorFields } from "./editor-fields.js";
 
 export function focusEditor(panel: OccupiedPanel, key?: string) {
   const target = key
@@ -44,9 +43,6 @@ export function createStepEditorContext(panel: OccupiedPanel) {
     // Lit updates the existing inputs and HA selectors; typing retains focus.
     panel.flush();
   };
-  const { field, error } = createEditorFields(panel, changed, (key) =>
-    focusEditor(panel, key),
-  );
   const submit = async () => {
     if (
       !editing &&
@@ -98,15 +94,14 @@ export function createStepEditorContext(panel: OccupiedPanel) {
   };
   return {
     panel,
-    editor,
-    form,
-    time,
+    // New facades notify Svelte of in-place form and validation changes.
+    editor: new Proxy(editor, {}),
+    form: new Proxy(form, {}),
+    time: new Proxy(time, {}),
     t,
     editing,
     refresh,
     changed,
-    field,
-    error,
     submit,
     cancel,
     back,
