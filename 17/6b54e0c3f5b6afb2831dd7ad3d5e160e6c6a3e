@@ -1,0 +1,33 @@
+custom_components/occupied/config_flow.py
+  s_1787776c214d9f::t_ed18c61216b56f 151-165
+custom_components/occupied/frontend/App.svelte
+  s_1787776c214d9f::t_278ce5d5768a78 35-37,141-145
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_1787776c214d9f::t_05c3c616ec3c26 11974-11976,11980-11986,12180-12182,12198,12202,12205-12232,12234,12242-12243,12248,12272,12289-12290,12293,12295-12297,12299,12309,12311-12312,12317-12318,12321,12323,12328-12329,12333,12343,12346-12349,12351,12363,12373,12383,12385-12387,12389,12406-12407,12427,12429,12433,12436-12437,12439-12440,12443-12444,12456,12458,12460-12465,12468-12469,12482,12484,12486,12488,12490,12496,12498,12503,12513,12523,12533,12543,12553,12563,12573,12583,12588,12590,12595,12597,12599,12601,12603,12605,12607,12609,12620,12622,12629-12630,12633-12638
+custom_components/occupied/strings.json
+  s_1787776c214d9f::t_028d9a7f5e3c39 5-11,46-47
+custom_components/occupied/translations/en.json
+  s_1787776c214d9f::t_626863704da290 5-11,46-47
+docs/editor.md
+  s_1787776c214d9f::t_540443c4e90252 3
+tests/test_config_flow.py
+  s_1787776c214d9f::t_cb7f90582d5be9 19,85,88,96-122,126-127
+tests/test_managed.py
+  s_1787776c214d9f::t_2de0ba9c743bcf 315-316
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "176b54e0c3f5b6afb2831dd7ad3d5e160e6c6a3e",
+  "prompts": {},
+  "sessions": {
+    "s_1787776c214d9f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f21-c0c5-7380-93cb-d207db10e947",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
