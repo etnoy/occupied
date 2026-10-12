@@ -1,0 +1,21 @@
+custom_components/occupied/entity.py
+  s_1787776c214d9f::t_b5057595348a23 18
+docs/editor.md
+  s_1787776c214d9f::t_0524cfd1cb5e59 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ffe382e8dbe1ca25fcf76b324c7bcf4123d75766",
+  "prompts": {},
+  "sessions": {
+    "s_1787776c214d9f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f21-c0c5-7380-93cb-d207db10e947",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
