@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { OccupiedPanel } from "./occupied-panel.js";
 
+  import { stepEntries } from "./step-model.js";
+  import StepActions from "./StepActions.svelte";
   import EditorField from "./EditorField.svelte";
 
   import TimingEditor from "./TimingEditor.svelte";
@@ -57,6 +59,12 @@
       <ActionEditor {panel} {context} />
     {/if}
   </div>
+  {#if editing}
+    {@const entry = stepEntries(panel.draft).find(
+      (item) => item.id === editor.id,
+    )}
+    {#if entry}<StepActions {panel} {entry} />{/if}
+  {/if}
   <div class="builder-footer">
     <button type="button" disabled={panel.busy} onclick={cancel}>
       {t("Cancel")}

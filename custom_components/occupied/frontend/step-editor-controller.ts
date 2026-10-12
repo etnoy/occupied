@@ -87,6 +87,7 @@ export function createStepEditorContext(panel: OccupiedPanel) {
     panel.issues = [];
     panel.version++;
     panel.renderView();
+    panel.shadowRoot.getElementById(`step-card-${editor.id}`)?.focus();
   };
   const back = () => {
     editor.stage--;

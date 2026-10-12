@@ -71,6 +71,7 @@
           removeResource(next, current.path);
           dialog.close();
           panel.selectedStep = null;
+          panel.stepEditor = null;
           panel.change([], next, true);
         })}
     >

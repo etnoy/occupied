@@ -41,7 +41,6 @@ const sv: Record<string, string> = {
   "Preview schedule": "Förhandsvisa schema",
   "Back to steps": "Tillbaka till steg",
   "Back to settings": "Tillbaka till inställningar",
-  "More options": "Fler alternativ",
   Continue: "Fortsätt",
   Cancel: "Avbryt",
   Back: "Tillbaka",
@@ -123,7 +122,6 @@ const sv: Record<string, string> = {
     "Ändra dessa relationer innan du raderar steget.",
   "This step will be removed when you save changes.":
     "Steget tas bort när du sparar ändringarna.",
-  Duplicate: "Duplicera",
   Weekdays: "Veckodagar",
   Previous: "Föregående",
   Next: "Nästa",

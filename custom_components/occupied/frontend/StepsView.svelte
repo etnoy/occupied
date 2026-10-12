@@ -8,9 +8,10 @@
     stepTree,
     stepSymbol,
   } from "./steps.js";
-  import { stepEntries, timingSummary } from "./step-model.js";
+  import { stepEntries, timingSummary, simpleStep } from "./step-model.js";
   import { entityName } from "./util.js";
-  import StepMenu from "./StepMenu.svelte";
+  import StepEditor from "./StepEditor.svelte";
+  import StepActions from "./StepActions.svelte";
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
   let data = $derived.by(() => {
@@ -32,6 +33,7 @@
       type="button"
       class="primary"
       data-create-routine
+      disabled={!!panel.stepEditor}
       onclick={() => startStep(panel)}
     >
       {t("Create step")}
@@ -53,6 +55,7 @@
       type="button"
       class="primary"
       data-create-routine
+      disabled={!!panel.stepEditor}
       onclick={() => startStep(panel)}
     >
       {t("Create your first step")}
@@ -62,34 +65,70 @@
   <div class="routine-layout">
     <div class="routine-list" aria-label={t("Your steps")}>
       {#each stepTree(entries) as { entry, depth } (entry.id)}
+        {@const expanded =
+          (panel.stepEditor?.existing && panel.stepEditor.id === entry.id) ||
+          (!panel.stepEditor &&
+            !simpleStep(entry) &&
+            panel.selectedStep === entry.id)}
         <div
-          class="routine-row"
-          role="group"
-          aria-label={entry.name}
+          class="routine-card"
           data-routine-id={entry.id}
           style={`--depth:${Math.min(depth, 3)}`}
         >
-          <span class="routine-symbol" aria-hidden="true"
-            >{stepSymbol(entry)}</span
+          <button
+            type="button"
+            id={`step-card-${entry.id}`}
+            class="routine-row"
+            aria-label={entry.name}
+            disabled={!!panel.stepEditor}
+            aria-expanded={expanded}
+            aria-controls={`step-editor-${entry.id}`}
+            onclick={() => {
+              if (simpleStep(entry)) startStep(panel, entry);
+              else {
+                panel.selectedStep = expanded ? null : entry.id;
+                panel.flush();
+              }
+            }}
           >
-          <span class="routine-row-content"
-            ><strong>{entry.name}</strong><span class="hint"
-              >{actionSummary(entry, t)} ·
-              {entry.entities
-                .map((id) => entityName(panel.catalog, id))
-                .join(", ")}</span
-            ></span
-          >
-          <span class="routine-row-time"
-            ><span
-              >{timingSummary(
-                entry,
-                entries,
-                t,
-                panel.catalog.time_sources,
-              )}</span
-            ><small>{daySummary(entry.days, t)}</small></span
-          ><StepMenu {panel} {entry} />
+            <span class="routine-symbol" aria-hidden="true"
+              >{stepSymbol(entry)}</span
+            >
+            <span class="routine-row-content"
+              ><strong>{entry.name}</strong><span class="hint"
+                >{actionSummary(entry, t)} ·
+                {entry.entities
+                  .map((id) => entityName(panel.catalog, id))
+                  .join(", ")}</span
+              ></span
+            >
+            <span class="routine-row-time"
+              ><span
+                >{timingSummary(
+                  entry,
+                  entries,
+                  t,
+                  panel.catalog.time_sources,
+                )}</span
+              ><small>{daySummary(entry.days, t)}</small></span
+            >
+          </button>
+          {#if expanded}
+            <div id={`step-editor-${entry.id}`}>
+              {#if panel.stepEditor}
+                <StepEditor {panel} {revision} />
+              {:else}
+                <section class="routine-editor editing">
+                  <p class="hint">
+                    {t(
+                      "Custom actions cannot be edited with the simple step editor.",
+                    )}
+                  </p>
+                  <StepActions {panel} {entry} />
+                </section>
+              {/if}
+            </div>
+          {/if}
         </div>
       {/each}
     </div>
@@ -97,6 +136,7 @@
   <button
     type="button"
     class="text-button"
+    disabled={!!panel.stepEditor}
     onclick={() => {
       panel.navigate("preview");
       panel.runPreview();

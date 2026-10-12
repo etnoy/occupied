@@ -174,7 +174,7 @@
     {/each}
   </div>
   <div id="view">
-    {#key panel.viewRevision}
+    {#key panel.tab}
       <svelte:boundary>
         {#snippet failed(error)}
           <p class="error">{errorMessage(error)}</p>
@@ -189,10 +189,10 @@
               type="button"
               onclick={() => panel.retry()}>{t("Retry")}</button
             >{/if}
-        {:else if panel.stepEditor}
+        {:else if panel.stepEditor && !panel.stepEditor.existing}
           <StepEditor {panel} {revision} />
         {:else if panel.tab === "routines"}
-          <StepsView {panel} revision={panel.viewRevision} />
+          <StepsView {panel} {revision} />
         {:else if panel.tab === "settings"}
           <SettingsView {panel} {revision} />
         {:else if panel.tab === "overview"}

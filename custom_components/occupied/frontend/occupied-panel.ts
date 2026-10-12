@@ -470,6 +470,10 @@ export class OccupiedPanel extends HTMLElement {
         this.draft = copy(result.program);
         this.dirty = false;
         this.renderView();
+        if (editor)
+          this.shadowRoot
+            .getElementById(`step-card-${editor.id}`)
+            ?.focus({ preventScroll: true });
       } else this.dirty = true;
     });
   }
