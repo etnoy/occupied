@@ -15,7 +15,7 @@ class OccupiedEntity(Entity):
         self.engine = engine
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, engine.entry_id)},
-            name=f"Occupied {engine.config['name']}",
+            name="Occupied",
             manufacturer="Occupied",
             model="Household simulator",
         )
