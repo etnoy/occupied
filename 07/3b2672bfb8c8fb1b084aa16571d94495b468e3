@@ -1,0 +1,73 @@
+custom_components/occupied/config_flow.py
+  s_1787776c214d9f::t_b72d77801d6acd 92-103,157-166
+custom_components/occupied/frontend/OverviewView.svelte
+  s_167f5be30bc21b::t_730a0f781cd80c 14,23,37,39,85,97,118
+custom_components/occupied/frontend/PreviewView.svelte
+  s_167f5be30bc21b::t_a7f2a91d299b19 79-84
+custom_components/occupied/frontend/StepsView.svelte
+  s_167f5be30bc21b::t_aa42be43be4f20 107
+custom_components/occupied/frontend/Timeline.svelte
+  s_167f5be30bc21b::t_d65f0ea3860377 3,9-16,58,108
+custom_components/occupied/frontend/TimelineView.svelte
+  s_167f5be30bc21b::t_766e02e29c658a 47-52
+custom_components/occupied/frontend/TimingEditor.svelte
+  s_167f5be30bc21b::t_390015848bbdea 190
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_167f5be30bc21b::t_24250770cc8fc6 7987-8027,8270-8271,8495,8499,8507,8520,8683-8689,8713,9678,10346,10497,10500,10505,10540,10548,10566,10584,10614,10627,10643-10649,10654-10655,10761,10817-10822,10875-10879,10975,11030,11135-11139,11143,11396-11398,11863-11865,12711-12713,12721
+custom_components/occupied/frontend/dist/step-model.js
+  s_167f5be30bc21b::t_90fdf7ef8ffb8a 2,256-257,484-490,494,502,515
+custom_components/occupied/frontend/dist/steps.js
+  s_167f5be30bc21b::t_9a1f86ef178929 19-25,50
+custom_components/occupied/frontend/dist/time-format.js
+  s_167f5be30bc21b::t_9592f0e6d0cc24 1-43
+custom_components/occupied/frontend/dist/timeline.js
+  s_167f5be30bc21b::t_66dcce529255b8 2,4,7,12,47,55,73,91
+custom_components/occupied/frontend/occupied-panel.ts
+  s_167f5be30bc21b::t_5aeaa1819f81df 103-105,114
+custom_components/occupied/frontend/step-model.ts
+  s_167f5be30bc21b::t_82184c98a6d6ef 15-16,286-287,519,524,533-536,549
+custom_components/occupied/frontend/steps.ts
+  s_084f790f3e2949::t_7cbfca6d0976dc 30-37,64
+custom_components/occupied/frontend/time-format.ts
+  s_167f5be30bc21b::t_657eb449d1e163 1-56
+custom_components/occupied/frontend/timeline.ts
+  s_167f5be30bc21b::t_1e004f5028b28a 2-3,6-10,13,29,70,78,96,114
+custom_components/occupied/frontend/types.ts
+  s_167f5be30bc21b::t_c767f0fd6439fa 391-394
+docs/editor.md
+  s_1787776c214d9f::t_624b0b421f22c4 3
+tests/test_panel.py
+  s_167f5be30bc21b::t_04be6fa3fa9134 22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "073b2672bfb8c8fb1b084aa16571d94495b468e3",
+  "prompts": {},
+  "sessions": {
+    "s_084f790f3e2949": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f20-fbb3-74c3-a104-80086b131ee2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_167f5be30bc21b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f22-55bb-73e1-a05a-d471b0a85dc0",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_1787776c214d9f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f21-c0c5-7380-93cb-d207db10e947",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
