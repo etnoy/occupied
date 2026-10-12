@@ -1,0 +1,37 @@
+custom_components/occupied/frontend/StepsView.svelte
+  s_f52ea3dda3ee7d::t_6a8d8c4a959d02 6,84-85,88
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_f52ea3dda3ee7d::t_66f980653b84f2 883-884,8160-8165,8666-8682,9706,9745,9800-9801,9803,9811,9824,9851,9861,9864-9865,9867,9870,9956-9957,9959,9986-9987,10268-10271,10290,10295,10321,10337,10354-10356,10358,10386,10400,10419,10440-10443,10466,10473,10478,10489,10495-10496
+custom_components/occupied/frontend/dist/step-model.js
+  s_f52ea3dda3ee7d::t_334ed9d5d0626e 201-207
+custom_components/occupied/frontend/dist/steps.js
+  s_f52ea3dda3ee7d::t_c765598169fac5 3,13-30
+custom_components/occupied/frontend/dist/translations.js
+  s_f52ea3dda3ee7d::t_f36a915e38c807 35-36
+custom_components/occupied/frontend/step-model.ts
+  s_f52ea3dda3ee7d::t_e4da7fa794465f 226-233
+custom_components/occupied/frontend/steps.ts
+  s_f52ea3dda3ee7d::t_7928cc306b89f0 4,20-38
+custom_components/occupied/frontend/translations.ts
+  s_f52ea3dda3ee7d::t_0d9fcc1b95fba3 34-35
+docs/editor.md
+  s_f52ea3dda3ee7d::t_1ef62c54f5031a 16
+tests/frontend/src/model.test.ts
+  s_f52ea3dda3ee7d::t_d74272c9e3477d 14,772-846
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a953b52ccd0319c06241a0511713f14f8d5a3e4a",
+  "prompts": {},
+  "sessions": {
+    "s_f52ea3dda3ee7d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11fb1-5697-76a2-afb7-c899c7af8b87",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
