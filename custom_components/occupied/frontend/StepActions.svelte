@@ -27,11 +27,17 @@
   <button
     bind:this={trigger}
     type="button"
-    class="danger"
+    class="danger icon-button"
+    aria-label={panel.t("Delete step")}
+    title={panel.t("Delete step")}
     disabled={panel.busy}
     onclick={() => flushSync(() => (deleteOpen = true))}
   >
-    {panel.t("Delete step")}
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path
+        d="M9 3h6v2h5v2h-1v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7H4V5h5V3Zm-2 4v12h10V7H7Zm2 2h2v8H9V9Zm4 0h2v8h-2V9Z"
+      />
+    </svg>
   </button>
 </div>
 {#if deleteOpen}

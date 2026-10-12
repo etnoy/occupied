@@ -122,7 +122,7 @@
   {@const text = primary
     ? item.message
     : `${item.severity || "error"} · ${item.path || "$"}: ${item.message}`}
-  {#if panel.stepEditor}
+  {#if panel.stepEditor && item.severity !== "warning"}
     <button
       type="button"
       class={className}
@@ -134,10 +134,11 @@
     <p class={className}>{text}</p>
   {/if}
 {/snippet}
+<ha-top-app-bar-fixed back-button narrow={panel.hasAttribute("narrow")}>
+  <div slot="title">Occupied</div>
 <main>
   <header>
     <div>
-      <h1>Occupied</h1>
       {#if !controllerName}
         <p id="house">{t("Loading controller…")}</p>
       {:else if controllerName !== "Occupied" && !/^Occupied [0-9a-f]{8}$/.test(controllerName)}
@@ -163,13 +164,9 @@
           {/each}
         </select>
       {/if}
-      {#if panel.selectedInstance}
+      {#if panel.selectedInstance?.source === "file"}
         <p class="hint">
-          {t(
-            panel.selectedInstance.source === "file"
-              ? "Managed file"
-              : "GUI storage",
-          )}
+          {t("Managed file")}
         </p>
       {/if}
     </div>
@@ -216,7 +213,7 @@
     {/if}
   </div>
   <div id="issues">
-    {#each panel.issues as issue}
+      {#each panel.visibleIssues() as issue}
       {@render renderIssue(issue, primary)}
     {/each}
   </div>
@@ -266,4 +263,5 @@
     {/key}
   </div>
 </main>
+</ha-top-app-bar-fixed>
 {#if panel.pendingStepExit}<UnsavedStepDialog {panel} />{/if}

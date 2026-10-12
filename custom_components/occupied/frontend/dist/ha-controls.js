@@ -4,7 +4,8 @@
 export async function loadHaControls() {
   if (
     customElements.get("ha-selector") &&
-    customElements.get("ha-generic-picker")
+    customElements.get("ha-generic-picker") &&
+    customElements.get("ha-top-app-bar-fixed")
   )
     return;
   await customElements.whenDefined("partial-panel-resolver");
@@ -14,9 +15,13 @@ export async function loadHaControls() {
     .routes.config.load();
   await customElements.whenDefined("ha-panel-config");
   const config = document.createElement("ha-panel-config");
-  await config.routerOptions.routes.automation.load();
+  await Promise.all([
+    config.routerOptions.routes.automation.load(),
+    config.routerOptions.routes.integrations.load(),
+  ]);
   await Promise.all([
     customElements.whenDefined("ha-selector"),
     customElements.whenDefined("ha-generic-picker"),
+    customElements.whenDefined("ha-top-app-bar-fixed"),
   ]);
 }

@@ -271,6 +271,7 @@ export interface ConfigurationSource {
 }
 export interface ProgramDocument {
   program: Program;
+  warnings?: Issue[];
   revision: string;
   source: string;
   configuration_source?: ConfigurationSource;

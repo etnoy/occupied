@@ -7,6 +7,7 @@ import type {
   RuntimeSnapshot,
 } from "@occupied/types.js";
 import { stepEditor } from "@occupied/step-model.js";
+import { startStep } from "@occupied/steps.js";
 
 const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
 
@@ -24,7 +25,11 @@ async function fixture() {
     configurable: true,
     value: class {
       isConnected = true;
-      shadowRoot = { querySelectorAll: () => [] };
+      shadowRoot = {
+        querySelectorAll: () => [],
+        querySelector: () => null,
+        getElementById: () => null,
+      };
       attachShadow() {
         return this.shadowRoot;
       }
@@ -72,7 +77,7 @@ async function fixture() {
     paused: false,
     overlaps: [],
   }));
-  const documents = Object.fromEntries(
+  const documents: Record<string, ProgramDocument> = Object.fromEntries(
     instances.map((instance) => [
       instance.config_entry_id,
       {
@@ -186,6 +191,43 @@ test("Configure routing selects the requested instance and switches all editor s
     assert.equal(f.panel.diagnostics, undefined);
     assert.ok(f.disposed.includes("occupied/subscribe:main"));
     assert.ok(f.subscriptions.has("occupied/subscribe:guest"));
+  } finally {
+    f.restore();
+  }
+});
+
+test("saved warnings survive navigation and editor exits until a resolved program loads", async () => {
+  const f = await fixture();
+  try {
+    const warning = {
+      code: "shared_target",
+      message: "light.shared is shared by step, step_2",
+      severity: "warning",
+    };
+    f.documents.main = { ...f.documents.main, warnings: [warning] };
+    await f.panel.reloadSaved();
+    assert.deepEqual(f.panel.visibleIssues(), [warning]);
+    const error = { message: "Invalid draft", severity: "error" };
+    f.panel.issues = [warning, error];
+    assert.deepEqual(f.panel.visibleIssues(), [warning, error]);
+    f.panel.navigate("settings");
+    startStep(f.panel);
+    assert.deepEqual(f.panel.issues, []);
+    assert.deepEqual(f.panel.visibleIssues(), [warning]);
+    f.panel.requestStepExit(() => f.panel.navigate("settings"));
+    f.panel.confirmStepExit();
+    assert.deepEqual(f.panel.visibleIssues(), [warning]);
+    await f.panel.reloadSaved();
+    assert.deepEqual(f.panel.visibleIssues(), [warning]);
+    f.panel.selectInstance("guest");
+    await settle();
+    assert.deepEqual(f.panel.visibleIssues(), []);
+    f.panel.selectInstance("main");
+    await settle();
+    assert.deepEqual(f.panel.visibleIssues(), [warning]);
+    f.documents.main = { ...f.documents.main, warnings: [] };
+    await f.panel.reloadSaved();
+    assert.deepEqual(f.panel.visibleIssues(), []);
   } finally {
     f.restore();
   }

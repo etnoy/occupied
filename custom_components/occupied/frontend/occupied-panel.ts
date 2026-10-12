@@ -125,7 +125,10 @@ export class OccupiedPanel extends HTMLElement {
     this._load();
   }
   set narrow(value: boolean) {
-    this.toggleAttribute("narrow", !!value);
+    const narrow = !!value;
+    if (this.hasAttribute("narrow") === narrow) return;
+    this.toggleAttribute("narrow", narrow);
+    this.flush();
   }
   set route(_value: unknown) {
     void this._load();
@@ -596,6 +599,20 @@ export class OccupiedPanel extends HTMLElement {
       this.fail(
         this.t("Preview contains infeasible dates. Review timeline issues."),
       );
+  }
+  /** Saved-program warnings persist independently of temporary editor issues. */
+  visibleIssues() {
+    const issues = new Map<string, Issue>();
+    for (const issue of [...(this.document?.warnings || []), ...this.issues]) {
+      const key = JSON.stringify([
+        issue.severity,
+        issue.code,
+        issue.model_path || issue.path || "$",
+        issue.message,
+      ]);
+      issues.set(key, issue);
+    }
+    return [...issues.values()];
   }
   /** Show a backend issue on the step editor field it belongs to. */
   focusIssue(issue: Issue) {

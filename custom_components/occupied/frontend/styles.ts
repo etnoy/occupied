@@ -527,6 +527,17 @@ export const styles = `
   .danger {
     color: var(--error-color, #b3261e);
   }
+  .icon-button {
+    display: inline-grid;
+    place-items: center;
+    width: 42px;
+    padding: 8px;
+  }
+  .icon-button svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
   .routine-editor {
     max-width: none;
     margin: 0 auto 32px;

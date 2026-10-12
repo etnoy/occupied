@@ -21,6 +21,7 @@ from .validation import (
     program_revision,
     resolve_targets,
     validate_program,
+    validation_warnings,
 )
 
 
@@ -112,6 +113,7 @@ def program_document(engine):
     context = planning_context(engine.hass)
     return {
         "program": program_data(program),
+        "warnings": [issue.to_dict() for issue in validation_warnings(program)],
         "revision": current_revision(engine),
         "behavior_hash": behavior_hash(program),
         "source": engine.source_manager.mode if getattr(engine, "source_manager", None) else "gui",

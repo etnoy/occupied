@@ -718,7 +718,7 @@ test("unitless zero offsets validate, describe and save as canonical durations",
 test("step list descriptions share the editor wording without editing hints", () => {
   const entries = [{ id: "kitchen", name: "Kitchen lights" }];
   const cases: [When, string][] = [
-    [{ clock_range: { earliest: "18:00", latest: "18:00" } }, "Runs at 18:00."],
+    [{ clock_range: { earliest: "18:00", latest: "18:00" } }, "Runs at 18:00"],
     [
       {
         clock_range: {

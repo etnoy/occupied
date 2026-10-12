@@ -671,6 +671,17 @@ var styles = `
   .danger {
     color: var(--error-color, #b3261e);
   }
+  .icon-button {
+    display: inline-grid;
+    place-items: center;
+    width: 42px;
+    padding: 8px;
+  }
+  .icon-button svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
   .routine-editor {
     max-width: none;
     margin: 0 auto 32px;
@@ -8540,9 +8551,9 @@ function timingExplanation(
     if (!valid(time.start) || (time.end && !valid(time.end)))
       return t("Choose valid start and end times.");
     if (!time.end)
-      return `${t("Runs at")} ${display(time.start)}.${includeHints ? ` ${t("Add an end of window to introduce randomness.")}` : ""}`;
+      return `${t("Runs at")} ${display(time.start)}${includeHints ? `. ${t("Add an end of window to introduce randomness.")}` : ""}`;
     if (seconds(time.end) === seconds(time.start))
-      return `${t("Runs at")} ${display(time.start)}.${includeHints ? ` ${t("Start and end are the same, so the time is fixed.")}` : ""}`;
+      return `${t("Runs at")} ${display(time.start)}${includeHints ? `. ${t("Start and end are the same, so the time is fixed.")}` : ""}`;
     const nextDay =
       seconds(time.end) < seconds(time.start) ? ` ${t("the next day")}` : "";
     return `${t("Runs at a random time between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}.`;
@@ -8921,7 +8932,7 @@ delegate(["click"]);
 // custom_components/occupied/frontend/StepActions.svelte
 var root2 = from_html(`<button type="button"> </button>`);
 var root_12 = from_html(
-  `<div class="step-editor-actions"><!> <button type="button" class="danger"> </button></div> <!>`,
+  `<div class="step-editor-actions"><!> <button type="button" class="danger icon-button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 3h6v2h5v2h-1v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7H4V5h5V3Zm-2 4v12h10V7H7Zm2 2h2v8H9V9Zm4 0h2v8h-2V9Z"></path></svg></button></div> <!>`,
   1,
 );
 function StepActions($$anchor, $$props) {
@@ -8956,7 +8967,6 @@ function StepActions($$anchor, $$props) {
     });
   }
   var button_1 = sibling(node, 2);
-  var text_1 = only_child(button_1, true);
   bind_this(
     button_1,
     ($$value) => (trigger = $$value),
@@ -8981,11 +8991,15 @@ function StepActions($$anchor, $$props) {
     });
   }
   template_effect(
-    ($0) => {
+    ($0, $1) => {
+      set_attribute2(button_1, "aria-label", $0);
+      set_attribute2(button_1, "title", $1);
       button_1.disabled = $$props.panel.busy;
-      set_text(text_1, $0);
     },
-    [() => $$props.panel.t("Delete step")],
+    [
+      () => $$props.panel.t("Delete step"),
+      () => $$props.panel.t("Delete step"),
+    ],
   );
   delegated("click", button_1, () => flushSync(() => set2(deleteOpen, true)));
   append($$anchor, fragment);
@@ -11868,8 +11882,8 @@ var root_10 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_11 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
 var root_122 = from_html(`<p> </p> <button type="button"> </button>`, 1);
 var root_132 = from_html(
-  `<main><header><div><h1>Occupied</h1> <!> <!> <!></div> <div id="runtime" class="row"><!></div></header> <!> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav aria-label="Occupied"></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main> <!>`,
-  1,
+  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><header><div><!> <!> <!></div> <div id="runtime" class="row"><!></div></header> <!> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav aria-label="Occupied"></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
+  3,
 );
 function App($$anchor, $$props) {
   push($$props, true);
@@ -12044,7 +12058,8 @@ function App($$anchor, $$props) {
         append($$anchor3, p);
       };
       if_block(node_4, ($$render) => {
-        if (get2(panel).stepEditor) $$render(consequent_4);
+        if (get2(panel).stepEditor && item().severity !== "warning")
+          $$render(consequent_4);
         else $$render(alternate_1, -1);
       });
     }
@@ -12079,10 +12094,16 @@ function App($$anchor, $$props) {
     ["settings", "Settings"],
   ];
   var fragment_6 = root_132();
-  var main = first_child(fragment_6);
+  var ha_top_app_bar_fixed = first_child(fragment_6);
+  set_custom_element_data(ha_top_app_bar_fixed, "back-button", true);
+  template_effect(
+    ($0) => set_custom_element_data(ha_top_app_bar_fixed, "narrow", $0),
+    [() => get2(panel).hasAttribute("narrow")],
+  );
+  var main = sibling(child(ha_top_app_bar_fixed), 2);
   var header = child(main);
   var div_1 = child(header);
-  var node_5 = sibling(child(div_1), 2);
+  var node_5 = child(div_1);
   {
     var consequent_5 = ($$anchor2) => {
       var p_1 = root_56();
@@ -12180,19 +12201,13 @@ function App($$anchor, $$props) {
       var text_14 = only_child(p_3, true);
       template_effect(
         ($0) => set_text(text_14, $0),
-        [
-          () =>
-            get2(t)(
-              get2(panel).selectedInstance.source === "file"
-                ? "Managed file"
-                : "GUI storage",
-            ),
-        ],
+        [() => get2(t)("Managed file")],
       );
       append($$anchor2, p_3);
     };
     if_block(node_7, ($$render) => {
-      if (get2(panel).selectedInstance) $$render(consequent_8);
+      if (get2(panel).selectedInstance?.source === "file")
+        $$render(consequent_8);
     });
   }
   reset(div_1);
@@ -12295,7 +12310,7 @@ function App($$anchor, $$props) {
   each(
     div_6,
     21,
-    () => get2(panel).issues,
+    () => get2(panel).visibleIssues(),
     index,
     ($$anchor2, issue) => {
       renderIssue(
@@ -12500,7 +12515,8 @@ function App($$anchor, $$props) {
   );
   reset(div_7);
   reset(main);
-  var node_16 = sibling(main, 2);
+  reset(ha_top_app_bar_fixed);
+  var node_16 = sibling(ha_top_app_bar_fixed, 2);
   {
     var consequent_21 = ($$anchor2) => {
       UnsavedStepDialog($$anchor2, {
@@ -12529,7 +12545,8 @@ delegate(["click", "change"]);
 async function loadHaControls() {
   if (
     customElements.get("ha-selector") &&
-    customElements.get("ha-generic-picker")
+    customElements.get("ha-generic-picker") &&
+    customElements.get("ha-top-app-bar-fixed")
   )
     return;
   await customElements.whenDefined("partial-panel-resolver");
@@ -12539,10 +12556,14 @@ async function loadHaControls() {
     .routes.config.load();
   await customElements.whenDefined("ha-panel-config");
   const config = document.createElement("ha-panel-config");
-  await config.routerOptions.routes.automation.load();
+  await Promise.all([
+    config.routerOptions.routes.automation.load(),
+    config.routerOptions.routes.integrations.load(),
+  ]);
   await Promise.all([
     customElements.whenDefined("ha-selector"),
     customElements.whenDefined("ha-generic-picker"),
+    customElements.whenDefined("ha-top-app-bar-fixed"),
   ]);
 }
 
@@ -12635,7 +12656,10 @@ var OccupiedPanel = class extends HTMLElement {
     this._load();
   }
   set narrow(value) {
-    this.toggleAttribute("narrow", !!value);
+    const narrow = !!value;
+    if (this.hasAttribute("narrow") === narrow) return;
+    this.toggleAttribute("narrow", narrow);
+    this.flush();
   }
   set route(_value) {
     void this._load();
@@ -13092,6 +13116,20 @@ var OccupiedPanel = class extends HTMLElement {
       this.fail(
         this.t("Preview contains infeasible dates. Review timeline issues."),
       );
+  }
+  /** Saved-program warnings persist independently of temporary editor issues. */
+  visibleIssues() {
+    const issues = /* @__PURE__ */ new Map();
+    for (const issue of [...(this.document?.warnings || []), ...this.issues]) {
+      const key2 = JSON.stringify([
+        issue.severity,
+        issue.code,
+        issue.model_path || issue.path || "$",
+        issue.message,
+      ]);
+      issues.set(key2, issue);
+    }
+    return [...issues.values()];
   }
   /** Show a backend issue on the step editor field it belongs to. */
   focusIssue(issue) {

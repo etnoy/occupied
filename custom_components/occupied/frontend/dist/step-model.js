@@ -523,9 +523,9 @@ export function timingExplanation(
     if (!valid(time.start) || (time.end && !valid(time.end)))
       return t("Choose valid start and end times.");
     if (!time.end)
-      return `${t("Runs at")} ${display(time.start)}.${includeHints ? ` ${t("Add an end of window to introduce randomness.")}` : ""}`;
+      return `${t("Runs at")} ${display(time.start)}${includeHints ? `. ${t("Add an end of window to introduce randomness.")}` : ""}`;
     if (seconds(time.end) === seconds(time.start))
-      return `${t("Runs at")} ${display(time.start)}.${includeHints ? ` ${t("Start and end are the same, so the time is fixed.")}` : ""}`;
+      return `${t("Runs at")} ${display(time.start)}${includeHints ? `. ${t("Start and end are the same, so the time is fixed.")}` : ""}`;
     const nextDay =
       seconds(time.end) < seconds(time.start) ? ` ${t("the next day")}` : "";
     return `${t("Runs at a random time between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}.`;
