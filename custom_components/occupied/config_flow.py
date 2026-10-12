@@ -150,18 +150,20 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         name = (user_input or {}).get("name", "Occupied").strip()
         errors = {}
-        if not name:
-            errors["name"] = "name_required"
-        elif any(
-            name.casefold() == str(entry.data.get("name") or entry.title).strip().casefold()
-            for entry in self._async_current_entries()
-        ):
-            errors["name"] = "name_already_exists"
-        if errors:
+        if user_input is not None:
+            if not name:
+                errors["name"] = "name_required"
+            elif any(
+                name.casefold() == str(entry.data.get("name") or entry.title).strip().casefold()
+                for entry in self._async_current_entries()
+            ):
+                errors["name"] = "name_already_exists"
+        if user_input is None or errors:
             return self.async_show_form(
                 step_id="user",
                 errors=errors,
                 data_schema=vol.Schema({vol.Required("name", default=name): str}),
+                last_step=True,
             )
         program = validate_program({"schema_version": 1, "name": name})
         return self.async_create_entry(

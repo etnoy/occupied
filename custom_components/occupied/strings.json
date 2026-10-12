@@ -1,6 +1,9 @@
 {
   "title": "Occupied",
   "config": {
+    "initiate_flow": {
+      "user": "Add controller"
+    },
     "step": {
       "user": {
         "title": "Name your controller",

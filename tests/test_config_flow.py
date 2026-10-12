@@ -1,4 +1,4 @@
-"""Real HA config/options flows for independent households."""
+"""Real HA config/options flows for independent controllers."""
 
 import pytest
 from homeassistant.data_entry_flow import FlowResultType, InvalidData
@@ -15,6 +15,10 @@ async def test_config_flow_allows_another_independent_entry(hass, config, device
     await hass.async_block_till_done()
     assert len(hass.config_entries.async_entries("occupied")) == 1
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
+    assert result["type"] is FlowResultType.FORM
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={"name": "Occupied"}
+    )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Occupied"
     await hass.async_block_till_done()
@@ -79,13 +83,24 @@ async def test_options_can_remove_remote_and_activation_gate(hass, entry, config
     assert not any(event.kind == "remote_start" for event in entry.runtime_data._queue)
 
 
-async def test_gui_bootstrap_creates_an_empty_disabled_daily_household(hass, devices):
+@pytest.mark.parametrize("name", ["Occupied", "Window lights"])
+async def test_gui_bootstrap_requires_a_name_before_creating_a_disabled_controller(
+    hass, devices, name
+):
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "user"
+    assert result["errors"] == {}
+    assert result["data_schema"]({}) == {"name": "Occupied"}
+    assert not hass.config_entries.async_entries("occupied")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={"name": name}
+    )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == result["data"]["name"] == "Occupied"
+    assert result["title"] == result["data"]["name"] == name
     await hass.async_block_till_done()
     entry = result["result"]
-    assert entry.runtime_data.program.name == "Occupied"
+    assert entry.runtime_data.program.name == name
     assert not entry.runtime_data.enabled and not entry.runtime_data.program.routines
     assert not devices
     options = await hass.config_entries.options.async_init(entry.entry_id)
@@ -95,12 +110,15 @@ async def test_gui_bootstrap_creates_an_empty_disabled_daily_household(hass, dev
 
 async def test_gui_name_conflict_requires_user_to_choose_another_name(hass, devices):
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={"name": "Occupied"}
+    )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     await hass.async_block_till_done()
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "user"
-    assert result["errors"] == {"name": "name_already_exists"}
+    assert result["errors"] == {}
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input={"name": " occupied "}
     )
