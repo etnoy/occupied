@@ -1,7 +1,7 @@
 import type { OccupiedPanel } from "./occupied-panel.js";
 import type { StepEntry, Translate } from "./types.js";
 import { days } from "./model.js";
-import { stepEditor, simpleStep } from "./step-model.js";
+import { stepEditor, simpleStep, hasStepChanges } from "./step-model.js";
 import { focusEditor } from "./step-editor-controller.js";
 
 export function startStep(
@@ -15,6 +15,25 @@ export function startStep(
   panel.issues = [];
   panel.renderView();
   focusEditor(panel);
+}
+
+/** Switch cards only after the user agrees to discard pending form changes. */
+export function openStep(panel: OccupiedPanel, entry: StepEntry) {
+  if (panel.busy || panel.stepEditor?.id === entry.id) return;
+  if (
+    panel.stepEditor &&
+    hasStepChanges(panel.stepEditor) &&
+    !window.confirm(panel.t("Discard unsaved changes and open another step?"))
+  )
+    return;
+  if (simpleStep(entry)) startStep(panel, entry);
+  else {
+    panel.stepEditor = null;
+    panel.error = "";
+    panel.issues = [];
+    panel.selectedStep = panel.selectedStep === entry.id ? null : entry.id;
+    panel.renderView();
+  }
 }
 
 export function actionSummary(entry: StepEntry, t: Translate) {

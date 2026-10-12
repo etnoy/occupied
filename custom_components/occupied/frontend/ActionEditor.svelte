@@ -3,7 +3,6 @@
   import type { StepEditorContext } from "./step-editor-controller.js";
   import EditorField from "./EditorField.svelte";
 
-  import { entityName } from "./util.js";
   let { panel, context }: { panel: OccupiedPanel; context: StepEditorContext } =
     $props();
   let { form, t, editing } = $derived(context);
@@ -11,9 +10,6 @@
 
 <div data-editor-section="action">
   <h3>{t(editing ? "Action" : "What should happen?")}</h3>
-  <p class="hint">
-    {form.entities.map((id) => entityName(panel.catalog, id)).join(", ")}
-  </p>
   {#if form.kind === "scene"}
     <p>{t("Activate scene")}</p>
   {:else if form.kind === "service"}

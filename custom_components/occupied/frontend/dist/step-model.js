@@ -198,6 +198,13 @@ export function stepEditor(program, entry, parent) {
     errors: {},
   };
 }
+/** Compare the current form to its saved baseline, including reverted edits. */
+export function hasStepChanges(editor) {
+  return (
+    !editor.existing ||
+    JSON.stringify(editor.form) !== JSON.stringify(editor.original)
+  );
+}
 export function offsetErrors(time) {
   const errors = {},
     low = minutes(time.startOffset);

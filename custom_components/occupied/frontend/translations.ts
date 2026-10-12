@@ -31,6 +31,8 @@ const sv: Record<string, string> = {
   Tools: "Verktyg",
   "Create step": "Skapa steg",
   "Create your first step": "Skapa ditt första steg",
+  "Discard unsaved changes and open another step?":
+    "Kasta osparade ändringar och öppna ett annat steg?",
   "Edit step": "Redigera steg",
   "Add related step": "Lägg till relaterat steg",
   "Save step": "Spara steg",

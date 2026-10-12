@@ -532,10 +532,6 @@ export const styles = `
   .builder-steps .complete {
     color: var(--primary-text-color, #202c37);
   }
-  .selection-count {
-    font-size: 12px;
-    color: var(--secondary-text-color, #596773);
-  }
   .entity-native-selector {
     display: block;
     width: 100%;

@@ -3,6 +3,7 @@
 
   import {
     startStep,
+    openStep,
     actionSummary,
     daySummary,
     stepTree,
@@ -80,16 +81,11 @@
             id={`step-card-${entry.id}`}
             class="routine-row"
             aria-label={entry.name}
-            disabled={!!panel.stepEditor}
+            disabled={panel.busy ||
+              (!!panel.stepEditor && panel.stepEditor.id === entry.id)}
             aria-expanded={expanded}
             aria-controls={`step-editor-${entry.id}`}
-            onclick={() => {
-              if (simpleStep(entry)) startStep(panel, entry);
-              else {
-                panel.selectedStep = expanded ? null : entry.id;
-                panel.flush();
-              }
-            }}
+            onclick={() => openStep(panel, entry)}
           >
             <span class="routine-symbol" aria-hidden="true"
               >{stepSymbol(entry)}</span

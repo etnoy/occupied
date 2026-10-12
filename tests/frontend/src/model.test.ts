@@ -11,6 +11,7 @@ import {
 } from "@occupied/model.js";
 import {
   buildStep,
+  hasStepChanges,
   stepEditor,
   stepEntries,
   simpleStep,
@@ -767,4 +768,79 @@ test("step list descriptions share the editor wording without editing hints", ()
     ),
     "Runs at the same time as Wake-up time.",
   );
+});
+
+test("pending step changes distinguish clean, reverted and new forms", () => {
+  const p = program();
+  const editor = stepEditor(p, stepEntries(p)[0]);
+  assert.equal(hasStepChanges(editor), false);
+  editor.form.name += " edited";
+  editor.changed = true;
+  assert.equal(hasStepChanges(editor), true);
+  editor.form.name = editor.original.name;
+  assert.equal(hasStepChanges(editor), false);
+  editor.form.timing.startOffset = "1h";
+  assert.equal(hasStepChanges(editor), true);
+  editor.original = structuredClone(editor.form);
+  assert.equal(hasStepChanges(editor), false);
+  assert.equal(hasStepChanges(stepEditor(p)), true);
+});
+
+test("switching cards confirms pending edits and preserves them when declined", async () => {
+  const { openStep } = await import("@occupied/steps.js");
+  const p = program();
+  const first = stepEntries(p)[0];
+  const second = { ...first, id: "second", name: "Second" };
+  const editor = stepEditor(p, first);
+  let confirmations = 0,
+    renders = 0,
+    accept = false;
+  const previous = Object.getOwnPropertyDescriptor(globalThis, "window");
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: {
+      confirm: () => {
+        confirmations++;
+        return accept;
+      },
+    },
+  });
+  const panel = {
+    draft: p,
+    stepEditor: editor,
+    busy: false,
+    error: "",
+    issues: [],
+    t: (text: string) => text,
+    renderView: () => {
+      renders++;
+    },
+    shadowRoot: { querySelector: () => ({ focus() {} }) },
+  } as unknown as import("@occupied/occupied-panel.js").OccupiedPanel;
+  try {
+    editor.form.name = "Pending rename";
+    openStep(panel, second);
+    assert.equal(panel.stepEditor, editor);
+    assert.equal(editor.form.name, "Pending rename");
+    assert.equal(renders, 0);
+    accept = true;
+    openStep(panel, second);
+    assert.equal(panel.stepEditor?.id, "second");
+    assert.equal(confirmations, 2);
+    openStep(panel, first);
+    assert.equal(panel.stepEditor?.id, first.id);
+    assert.equal(
+      confirmations,
+      2,
+      "Clean editors should switch without prompting",
+    );
+    assert.equal(
+      first.name,
+      stepEntries(p)[0].name,
+      "Switching must not save discarded edits",
+    );
+  } finally {
+    if (previous) Object.defineProperty(globalThis, "window", previous);
+    else Reflect.deleteProperty(globalThis, "window");
+  }
 });

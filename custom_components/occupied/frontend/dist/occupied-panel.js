@@ -676,10 +676,6 @@ var styles = `
   .builder-steps .complete {
     color: var(--primary-text-color, #202c37);
   }
-  .selection-count {
-    font-size: 12px;
-    color: var(--secondary-text-color, #596773);
-  }
   .entity-native-selector {
     display: block;
     width: 100%;
@@ -884,6 +880,8 @@ var sv = {
   Tools: "Verktyg",
   "Create step": "Skapa steg",
   "Create your first step": "Skapa ditt f\xF6rsta steg",
+  "Discard unsaved changes and open another step?":
+    "Kasta osparade \xE4ndringar och \xF6ppna ett annat steg?",
   "Edit step": "Redigera steg",
   "Add related step": "L\xE4gg till relaterat steg",
   "Save step": "Spara steg",
@@ -8159,6 +8157,12 @@ function stepEditor(program, entry, parent) {
     errors: {},
   };
 }
+function hasStepChanges(editor) {
+  return (
+    !editor.existing ||
+    JSON.stringify(editor.form) !== JSON.stringify(editor.original)
+  );
+}
 function offsetErrors(time) {
   const errors = {},
     low = minutes(time.startOffset);
@@ -8658,6 +8662,23 @@ function startStep(panel, entry, parent) {
   panel.issues = [];
   panel.renderView();
   focusEditor(panel);
+}
+function openStep(panel, entry) {
+  if (panel.busy || panel.stepEditor?.id === entry.id) return;
+  if (
+    panel.stepEditor &&
+    hasStepChanges(panel.stepEditor) &&
+    !window.confirm(panel.t("Discard unsaved changes and open another step?"))
+  )
+    return;
+  if (simpleStep(entry)) startStep(panel, entry);
+  else {
+    panel.stepEditor = null;
+    panel.error = "";
+    panel.issues = [];
+    panel.selectedStep = panel.selectedStep === entry.id ? null : entry.id;
+    panel.renderView();
+  }
 }
 function actionSummary(entry, t) {
   const action2 = entry.actions?.[0]?.action || "";
@@ -9682,7 +9703,7 @@ delegate(["change", "click"]);
 // custom_components/occupied/frontend/EntitiesEditor.svelte
 var root7 = from_html(`<p class="hint"> </p>`);
 var root_15 = from_html(
-  `<div data-editor-section="entities"><!> <h3> </h3> <p class="hint"> </p> <p class="selection-count" aria-live="polite"> </p> <ha-selector></ha-selector> <!> <!></div>`,
+  `<div data-editor-section="entities"><!> <h3> </h3> <ha-selector></ha-selector> <!> <!></div>`,
   2,
 );
 function EntitiesEditor($$anchor, $$props) {
@@ -9721,11 +9742,7 @@ function EntitiesEditor($$anchor, $$props) {
   });
   var h3 = sibling(node, 2);
   var text2 = only_child(h3, true);
-  var p = sibling(h3, 2);
-  var text_1 = only_child(p, true);
-  var p_1 = sibling(p, 2);
-  var text_2 = only_child(p_1, true);
-  var ha_selector = sibling(p_1, 2);
+  var ha_selector = sibling(h3, 2);
   set_class(ha_selector, 1, "entity-native-selector");
   set_custom_element_data(ha_selector, "data-builder-field", "entities");
   template_effect(
@@ -9763,7 +9780,6 @@ function EntitiesEditor($$anchor, $$props) {
         get2(form).kind === "scene"
           ? get2(form).entities[0] || ""
           : get2(form).entities,
-      label: get2(t)("Entities"),
       required: true,
       narrow: $$props.panel.hasAttribute("narrow"),
     }),
@@ -9781,10 +9797,10 @@ function EntitiesEditor($$anchor, $$props) {
   var node_2 = sibling(node_1, 2);
   {
     var consequent = ($$anchor2) => {
-      var p_2 = root7();
-      var text_3 = only_child(p_2, true);
+      var p = root7();
+      var text_1 = only_child(p, true);
       template_effect(
-        ($0) => set_text(text_3, $0),
+        ($0) => set_text(text_1, $0),
         [
           () =>
             get2(t)(
@@ -9792,7 +9808,7 @@ function EntitiesEditor($$anchor, $$props) {
             ),
         ],
       );
-      append($$anchor2, p_2);
+      append($$anchor2, p);
     };
     var d = user_derived(
       () =>
@@ -9805,23 +9821,12 @@ function EntitiesEditor($$anchor, $$props) {
   }
   reset(div);
   template_effect(
-    ($0, $1, $2) => {
-      set_text(text2, $0);
-      set_text(text_1, $1);
-      set_text(text_2, $2);
-    },
+    ($0) => set_text(text2, $0),
     [
       () =>
         get2(t)(
           get2(editing) ? "Entities" : "Which entities should take part?",
         ),
-      () =>
-        get2(t)(
-          get2(form).kind === "scene"
-            ? "Select a scene to activate."
-            : "Select one or more entities. Search by name or room.",
-        ),
-      () => `${get2(form).entities.length} ${get2(t)("selected")}`,
     ],
   );
   event("value-changed", ha_selector, (event2) => {
@@ -9843,7 +9848,7 @@ var root8 = from_html(`<p> </p>`);
 var root_16 = from_html(`<!> <!>`, 1);
 var root_24 = from_html(`<!> <p class="hint"> </p>`, 1);
 var root_34 = from_html(
-  `<div data-editor-section="action"><h3> </h3> <p class="hint"> </p> <!> <!></div>`,
+  `<div data-editor-section="action"><h3> </h3> <!> <!></div>`,
 );
 function ActionEditor($$anchor, $$props) {
   push($$props, true);
@@ -9853,18 +9858,16 @@ function ActionEditor($$anchor, $$props) {
   var div = root_34();
   var h3 = child(div);
   var text2 = only_child(h3, true);
-  var p = sibling(h3, 2);
-  var text_1 = only_child(p, true);
-  var node = sibling(p, 2);
+  var node = sibling(h3, 2);
   {
     var consequent = ($$anchor2) => {
-      var p_1 = root8();
-      var text_2 = only_child(p_1, true);
+      var p = root8();
+      var text_1 = only_child(p, true);
       template_effect(
-        ($0) => set_text(text_2, $0),
+        ($0) => set_text(text_1, $0),
         [() => get2(t)("Activate scene")],
       );
-      append($$anchor2, p_1);
+      append($$anchor2, p);
     };
     var consequent_1 = ($$anchor2) => {
       var fragment = root_16();
@@ -9950,10 +9953,10 @@ function ActionEditor($$anchor, $$props) {
         update: (value) => (get2(form).brightness = value),
         options: { type: "number", min: 1, max: 100 },
       });
-      var p_2 = sibling(node_4, 2);
-      var text_3 = only_child(p_2, true);
+      var p_1 = sibling(node_4, 2);
+      var text_2 = only_child(p_1, true);
       template_effect(
-        ($0) => set_text(text_3, $0),
+        ($0) => set_text(text_2, $0),
         [
           () =>
             get2(t)(
@@ -9980,17 +9983,8 @@ function ActionEditor($$anchor, $$props) {
   }
   reset(div);
   template_effect(
-    ($0, $1) => {
-      set_text(text2, $0);
-      set_text(text_1, $1);
-    },
-    [
-      () => get2(t)(get2(editing) ? "Action" : "What should happen?"),
-      () =>
-        get2(form)
-          .entities.map((id) => entityName($$props.panel.catalog, id))
-          .join(", "),
-    ],
+    ($0) => set_text(text2, $0),
+    [() => get2(t)(get2(editing) ? "Action" : "What should happen?")],
   );
   append($$anchor, div);
   pop();
@@ -10269,10 +10263,12 @@ var root_63 = from_html(
 );
 function StepsView($$anchor, $$props) {
   push($$props, true);
-  let panel = prop($$props, "panel", 7);
   let data = user_derived(() => {
     $$props.revision;
-    return { t: panel().t, entries: stepEntries(panel().draft) };
+    return {
+      t: $$props.panel.t,
+      entries: stepEntries($$props.panel.draft),
+    };
   });
   let t = user_derived(() => get2(data).t),
     entries = user_derived(() => get2(data).entries);
@@ -10291,12 +10287,12 @@ function StepsView($$anchor, $$props) {
       var text_2 = only_child(button, true);
       template_effect(
         ($0) => {
-          button.disabled = !!panel().stepEditor;
+          button.disabled = !!$$props.panel.stepEditor;
           set_text(text_2, $0);
         },
         [() => get2(t)("Create step")],
       );
-      delegated("click", button, () => startStep(panel()));
+      delegated("click", button, () => startStep($$props.panel));
       append($$anchor2, button);
     };
     if_block(node, ($$render) => {
@@ -10322,7 +10318,7 @@ function StepsView($$anchor, $$props) {
           set_text(text_3, $0);
           set_text(text_4, $1);
           set_text(text_5, $2);
-          button_1.disabled = !!panel().stepEditor;
+          button_1.disabled = !!$$props.panel.stepEditor;
           set_text(text_6, $3);
         },
         [
@@ -10338,7 +10334,7 @@ function StepsView($$anchor, $$props) {
           () => get2(t)("Create your first step"),
         ],
       );
-      delegated("click", button_1, () => startStep(panel()));
+      delegated("click", button_1, () => startStep($$props.panel));
       append($$anchor2, section);
     };
     var alternate_1 = ($$anchor2) => {
@@ -10355,11 +10351,11 @@ function StepsView($$anchor, $$props) {
           let depth = () => get2($$item).depth;
           const expanded = user_derived(
             () =>
-              (panel().stepEditor?.existing &&
-                panel().stepEditor.id === entry().id) ||
-              (!panel().stepEditor &&
+              ($$props.panel.stepEditor?.existing &&
+                $$props.panel.stepEditor.id === entry().id) ||
+              (!$$props.panel.stepEditor &&
                 !simpleStep(entry()) &&
-                panel().selectedStep === entry().id),
+                $$props.panel.selectedStep === entry().id),
           );
           var div_4 = root_44();
           var button_2 = child(div_4);
@@ -10387,7 +10383,7 @@ function StepsView($$anchor, $$props) {
                 var consequent_2 = ($$anchor5) => {
                   StepEditor($$anchor5, {
                     get panel() {
-                      return panel();
+                      return $$props.panel;
                     },
                     get revision() {
                       return $$props.revision;
@@ -10401,7 +10397,7 @@ function StepsView($$anchor, $$props) {
                   var node_4 = sibling(p_3, 2);
                   StepActions(node_4, {
                     get panel() {
-                      return panel();
+                      return $$props.panel;
                     },
                     get entry() {
                       return entry();
@@ -10420,7 +10416,7 @@ function StepsView($$anchor, $$props) {
                   append($$anchor5, section_1);
                 };
                 if_block(node_3, ($$render) => {
-                  if (panel().stepEditor) $$render(consequent_2);
+                  if ($$props.panel.stepEditor) $$render(consequent_2);
                   else $$render(alternate, -1);
                 });
               }
@@ -10441,7 +10437,10 @@ function StepsView($$anchor, $$props) {
               set_style(div_4, $0);
               set_attribute2(button_2, "id", `step-card-${entry().id}`);
               set_attribute2(button_2, "aria-label", entry().name);
-              button_2.disabled = !!panel().stepEditor;
+              button_2.disabled =
+                $$props.panel.busy ||
+                (!!$$props.panel.stepEditor &&
+                  $$props.panel.stepEditor.id === entry().id);
               set_attribute2(button_2, "aria-expanded", get2(expanded));
               set_attribute2(
                 button_2,
@@ -10464,25 +10463,19 @@ function StepsView($$anchor, $$props) {
               () => actionSummary(entry(), get2(t)),
               () =>
                 entry()
-                  .entities.map((id) => entityName(panel().catalog, id))
+                  .entities.map((id) => entityName($$props.panel.catalog, id))
                   .join(", "),
               () =>
                 timingSummary(
                   entry(),
                   get2(entries),
                   get2(t),
-                  panel().catalog.time_sources,
+                  $$props.panel.catalog.time_sources,
                 ),
               () => daySummary(entry().days, get2(t)),
             ],
           );
-          delegated("click", button_2, () => {
-            if (simpleStep(entry())) startStep(panel(), entry());
-            else {
-              panel().selectedStep = get2(expanded) ? null : entry().id;
-              panel().flush();
-            }
-          });
+          delegated("click", button_2, () => openStep($$props.panel, entry()));
           append($$anchor3, div_4);
         },
       );
@@ -10493,14 +10486,14 @@ function StepsView($$anchor, $$props) {
       template_effect(
         ($0, $1) => {
           set_attribute2(div_3, "aria-label", $0);
-          button_3.disabled = !!panel().stepEditor;
+          button_3.disabled = !!$$props.panel.stepEditor;
           set_text(text_13, $1);
         },
         [() => get2(t)("Your steps"), () => get2(t)("Preview schedule")],
       );
       delegated("click", button_3, () => {
-        panel().navigate("preview");
-        panel().runPreview();
+        $$props.panel.navigate("preview");
+        $$props.panel.runPreview();
       });
       append($$anchor2, fragment_1);
     };

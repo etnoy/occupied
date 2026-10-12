@@ -223,6 +223,14 @@ export function stepEditor(
     errors: {},
   };
 }
+/** Compare the current form to its saved baseline, including reverted edits. */
+export function hasStepChanges(editor: StepEditor) {
+  return (
+    !editor.existing ||
+    JSON.stringify(editor.form) !== JSON.stringify(editor.original)
+  );
+}
+
 export function offsetErrors(
   time: Pick<TimingForm, "startOffset"> &
     Partial<Pick<TimingForm, "endOffset">>,

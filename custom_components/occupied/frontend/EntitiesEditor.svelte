@@ -32,16 +32,6 @@
     }}
   ></EditorField>
   <h3>{t(editing ? "Entities" : "Which entities should take part?")}</h3>
-  <p class="hint">
-    {t(
-      form.kind === "scene"
-        ? "Select a scene to activate."
-        : "Select one or more entities. Search by name or room.",
-    )}
-  </p>
-  <p class="selection-count" aria-live="polite">
-    {`${form.entities.length} ${t("selected")}`}
-  </p>
   <ha-selector
     class="entity-native-selector"
     data-builder-field="entities"
@@ -73,7 +63,6 @@
         },
       },
       value: form.kind === "scene" ? form.entities[0] || "" : form.entities,
-      label: t("Entities"),
       required: true,
       narrow: panel.hasAttribute("narrow"),
     }}
