@@ -35,32 +35,19 @@ export function createStepEditorContext(panel) {
         else delete editor.errors[offset];
       }
     }
-    // Lit updates the existing inputs and HA selectors; typing retains focus.
+    // Svelte updates the existing inputs and HA selectors; typing retains focus.
     panel.flush();
   };
   const submit = async () => {
-    if (
-      !editing &&
-      editor.stage === 2 &&
-      !form.name.trim() &&
-      form.entities.length
-    ) {
+    if (!editing && !form.name.trim() && form.entities.length) {
       const target = `${entityName(panel.catalog, form.entities[0])}${form.entities.length > 1 ? ` +${form.entities.length - 1}` : ""}`;
       form.name =
         form.kind === "entities"
           ? `${target} ${t(form.action === "turn_off" ? "off" : "on")}`
           : target;
     }
-    editor.errors = editorErrors(
-      panel.draft,
-      editor,
-      editing ? 2 : editor.stage,
-    );
+    editor.errors = editorErrors(panel.draft, editor);
     if (Object.keys(editor.errors).length) return refresh();
-    if (!editing && editor.stage < 2) {
-      editor.stage++;
-      return refresh();
-    }
     try {
       const candidate = buildStep(panel.draft, editor);
       editor.candidatePath = required(
@@ -84,10 +71,6 @@ export function createStepEditorContext(panel) {
     panel.renderView();
     panel.shadowRoot.getElementById(`step-card-${editor.id}`)?.focus();
   };
-  const back = () => {
-    editor.stage--;
-    refresh();
-  };
   return {
     panel,
     // New facades notify Svelte of in-place form and validation changes.
@@ -100,6 +83,5 @@ export function createStepEditorContext(panel) {
     changed,
     submit,
     cancel,
-    back,
   };
 }

@@ -38,7 +38,6 @@ routines:
           sun_range:
             sun: sunrise
             offset_range: {min: -10m, max: 10m}
-            fallback: '07:00'
         actions:
           - action: cover.set_cover_position
             targets:

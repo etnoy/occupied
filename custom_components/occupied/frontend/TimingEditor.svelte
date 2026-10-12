@@ -11,7 +11,7 @@
   } from "./step-model.js";
   let { panel, context }: { panel: OccupiedPanel; context: StepEditorContext } =
     $props();
-  let { editor, form, time, t, editing, refresh, changed } = $derived(context);
+  let { editor, form, time, t, refresh, changed } = $derived(context);
   import SourcePicker from "./SourcePicker.svelte";
   import { focusEditor } from "./step-editor-controller.js";
   let choices = $derived.by(() => {
@@ -28,7 +28,7 @@
 
 <div data-editor-section="time">
   <h3 id="routine-timing-heading">
-    {t(editing ? "Timing" : "When should it happen?")}
+    {t("Timing")}
   </h3>
   <fieldset class="timing-options" aria-labelledby="routine-timing-heading">
     <div class="timing-option-row">
@@ -179,20 +179,6 @@
       >
         {t("Add end offset")}
       </button>
-    {/if}
-    {#if time.anchor.startsWith("sun:")}
-      <details open={!!time.fallback || !!editor.errors.fallback}>
-        <summary>{t("If the sun event is unavailable")}</summary>
-        <EditorField
-          {panel}
-          {context}
-          key="fallback"
-          label="Fallback time (optional)"
-          value={time.fallback}
-          update={(value) => (time.fallback = value)}
-          options={{ type: "time", optional: true }}
-        ></EditorField>
-      </details>
     {/if}
   {/if}
   <p class="hint" data-timing-explanation aria-live="polite">

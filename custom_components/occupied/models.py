@@ -178,7 +178,6 @@ SolarEvent = Literal["sunrise", "sunset", "dawn", "dusk", "noon", "midnight"]
 class SunRange(Model):
     sun: SolarEvent
     offset_range: DurationRange = Field(default_factory=lambda: DurationRange(fixed="0s"))
-    fallback: Clock | None = None
 
 
 class EntityRange(Model):
@@ -218,14 +217,11 @@ class Anchor(Model):
     sun: SolarEvent | None = None
     offset: SignedDuration = "0s"
     day_offset: Annotated[int, Field(ge=0, le=1, strict=True)] = 0
-    fallback: Clock | None = None
 
     @model_validator(mode="after")
     def one_anchor(self):
         if sum(value is not None for value in (self.step, self.clock, self.sun)) != 1:
             raise ValueError("Choose exactly one step, clock, or sun anchor")
-        if self.fallback is not None and self.sun is None:
-            raise ValueError("fallback is only valid for a sun anchor")
         if self.day_offset and self.step is not None:
             raise ValueError("Step anchors retain their dependency date; use offset instead")
         return self

@@ -97,7 +97,6 @@ routines:
           sun_range:
             sun: sunset
             offset_range: {min: -30m, max: 30m}
-            fallback: "18:00"
         actions:
           - action: turn_on
             targets: {groups: [living_room]}
@@ -150,7 +149,7 @@ routines:
       - id: kitchen_evening
         name: Occasional kitchen use
         between:
-          start: {sun: sunset, offset: -1h, fallback: "18:00"}
+          start: {sun: sunset, offset: -1h}
           end: {step: bedtime}
         cycles: {min: 2, max: 4}
         targets: {groups: [kitchen]}

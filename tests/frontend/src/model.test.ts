@@ -844,3 +844,49 @@ test("switching cards confirms pending edits and preserves them when declined", 
     else Reflect.deleteProperty(globalThis, "window");
   }
 });
+
+test("new steps validate all sections and save in a single submission", async () => {
+  const { createStepEditorContext } = await import(
+    "@occupied/step-editor-controller.js"
+  );
+  const p = program();
+  const editor = stepEditor(p);
+  const saved: Program[] = [];
+  const panel = {
+    draft: p,
+    stepEditor: editor,
+    catalog: {
+      entities: [{ entity_id: "light.a", name: "Kitchen light" }],
+      services: {},
+    },
+    t: (text: string) => text,
+    flush() {},
+    shadowRoot: { querySelector: () => ({ focus() {} }) },
+    save: async (candidate: Program) => {
+      saved.push(candidate);
+    },
+    fail: (error: unknown) => {
+      throw error;
+    },
+  } as unknown as import("@occupied/occupied-panel.js").OccupiedPanel;
+  await createStepEditorContext(panel).submit();
+  assert.match(editor.errors.entities, /at least one entity/);
+  assert.equal(saved.length, 0);
+  editor.form.entities = ["light.a"];
+  editor.form.kind = "service";
+  editor.form.service = "invalid";
+  editor.form.data = "invalid";
+  editor.form.timing.start = "invalid";
+  await createStepEditorContext(panel).submit();
+  assert.ok(editor.errors.start && editor.errors.service && editor.errors.data);
+  assert.equal(saved.length, 0);
+  editor.form.kind = "entities";
+  editor.form.name = "";
+  editor.form.timing.start = "18:00";
+  await createStepEditorContext(panel).submit();
+  assert.equal(saved.length, 1);
+  assert.equal(
+    stepEntries(saved[0]).find((entry) => entry.id === editor.id)?.name,
+    "Kitchen light on",
+  );
+});

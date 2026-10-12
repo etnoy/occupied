@@ -50,7 +50,7 @@
       )}
     </p>
     <p class="empty-steps">
-      {t("1. Set timing   →   2. Select entities   →   3. Choose an action")}
+      {t("Set timing, select entities, and choose an action.")}
     </p>
     <button
       type="button"
@@ -114,7 +114,7 @@
               {#if panel.stepEditor}
                 <StepEditor {panel} {revision} />
               {:else}
-                <section class="routine-editor editing">
+                <section class="routine-editor">
                   <p class="hint">
                     {t(
                       "Custom actions cannot be edited with the simple step editor.",

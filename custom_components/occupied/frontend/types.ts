@@ -28,7 +28,7 @@ export interface ClockRange {
 }
 export interface When {
   clock_range?: ClockRange;
-  sun_range?: { sun: string; offset_range: Range; fallback?: string };
+  sun_range?: { sun: string; offset_range: Range };
   entity_range?: { entity_id: string; attribute?: string; offset_range: Range };
   relative_to?: string;
   offset_range?: Range;
@@ -40,7 +40,6 @@ export interface Anchor {
   sun?: string;
   offset?: string;
   day_offset?: number;
-  fallback?: string;
 }
 export interface Condition {
   condition: string;
@@ -191,7 +190,6 @@ export interface TimingForm {
   anchor: string;
   startOffset: string | number;
   endOffset: string | number;
-  fallback: string;
 }
 export interface StepForm {
   name: string;
@@ -208,7 +206,6 @@ export type FieldErrors = Record<string, string>;
 export interface StepEditor {
   id: string;
   existing: boolean;
-  stage: number;
   form: StepForm;
   original: StepForm;
   changed: boolean;

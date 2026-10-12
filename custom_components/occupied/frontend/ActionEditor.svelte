@@ -5,11 +5,11 @@
 
   let { panel, context }: { panel: OccupiedPanel; context: StepEditorContext } =
     $props();
-  let { form, t, editing } = $derived(context);
+  let { form, t } = $derived(context);
 </script>
 
 <div data-editor-section="action">
-  <h3>{t(editing ? "Action" : "What should happen?")}</h3>
+  <h3>{t("Action")}</h3>
   {#if form.kind === "scene"}
     <p>{t("Activate scene")}</p>
   {:else if form.kind === "service"}

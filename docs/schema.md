@@ -26,7 +26,7 @@ Groups expand to entities; duplicates are removed and members are sorted. Unknow
 
 `day_boundary` defaults to `"02:00"`. A simulation date covers that local boundary to the next. Local clocks before the boundary belong to the following civil date. Weekdays refer to the simulation date, including events after midnight. Internal instants are aware UTC; event exports include local equivalents. Simulation days can be 23 or 25 hours.
 
-Repeated DST times choose the first occurrence. A nonexistent time advances to the first valid instant, with an issue recording the adjustment. Clock/window ordering and duration bounds are checked after conversion. Sun events are calculated for the requested date/location. If an event is unavailable, the item is skipped with an explanation or uses its explicitly supplied fallback. No sunset is invented.
+Repeated DST times choose the first occurrence. A nonexistent time advances to the first valid instant, with an issue recording the adjustment. Clock/window ordering and duration bounds are checked after conversion. Sun events are calculated for the requested date/location. If an event is unavailable, the item is skipped with an explanation. No sunset is invented.
 
 Clock values are quoted `HH:MM` or `HH:MM:SS`. Durations require explicit ordered h/m/s units, for example `10s`, `20m`, `2h30m`, or `1.5s`. Signed offsets permit `-30m`. Bare numbers and colon durations are rejected. Durations are finite and at most seven days. Activity and on-durations must be positive; gaps/staggers/handovers can be zero.
 
@@ -42,7 +42,6 @@ when:
   sun_range:
     sun: sunset
     offset_range: {min: -30m, max: 30m}
-    fallback: "18:00"
 # or
 when:
   relative_to: wake
@@ -106,7 +105,7 @@ A window requires `between` and `cycles`. The existing `targets` form repeats li
 
 ```yaml
 between:
-  start: {sun: sunset, offset: -1h, fallback: "18:00"}
+  start: {sun: sunset, offset: -1h}
   end: {step: bedtime}
 cycles: {min: 2, max: 4}
 on_duration: {min: 5m, max: 25m}
@@ -141,7 +140,7 @@ actions:
       event_data: {room: office, state: active}
 ```
 
-An anchor chooses exactly one `step`, `clock`, or `sun` (`sunrise`/`sunset`), plus optional signed `offset`. Clock/sun anchors support `day_offset: 1`; step anchors preserve the dependency date and use offsets instead. Sun anchors alone accept a quoted clock `fallback`. Windows must have positive elapsed length.
+An anchor chooses exactly one `step`, `clock`, or `sun` (`sunrise`/`sunset`), plus optional signed `offset`. Clock/sun anchors support `day_offset: 1`; step anchors preserve the dependency date and use offsets instead. Windows must have positive elapsed length.
 
 `target_mode` is `all`, `one`, `subset`, or `weighted_subset`. Subset modes require `subset_size` using count-range syntax, at least one and no greater than the expanded target count. Positive `weights` keyed by target entity apply to `one`/`weighted_subset`; omitted weights are 1. Selection is without replacement per interval.
 

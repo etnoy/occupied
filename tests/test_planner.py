@@ -105,7 +105,7 @@ def test_solar_times_use_requested_date_and_offsets(program_dict):
         assert abs((plan.step_times["wake"] - anchor).total_seconds()) <= 1800
 
 
-def test_polar_sun_is_skipped_or_uses_explicit_fallback(program_dict):
+def test_polar_sun_is_skipped(program_dict):
     program_dict["location"] = {"latitude": 78.2232, "longitude": 15.6469}
     program_dict["routines"][0]["steps"][0]["when"] = {
         "sun_range": {"sun": "sunset", "offset_range": {"fixed": "0s"}}
@@ -113,10 +113,6 @@ def test_polar_sun_is_skipped_or_uses_explicit_fallback(program_dict):
     plan = generate_plan(validate_program(program_dict), date(2026, 6, 20), 0)
     assert "wake" not in plan.step_times
     assert any(issue.code == "sun_unavailable" for issue in plan.issues)
-    program_dict["routines"][0]["steps"][0]["when"]["sun_range"]["fallback"] = "18:00"
-    plan = generate_plan(validate_program(program_dict), date(2026, 6, 20), 0)
-    assert plan.step_times["wake"] == datetime(2026, 6, 20, 18, tzinfo=UTC)
-    assert any(issue.code == "sun_fallback" for issue in plan.issues)
 
 
 def test_dst_gap_and_repeat_choose_contract_instants(program_dict):

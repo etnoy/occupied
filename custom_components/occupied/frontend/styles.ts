@@ -505,7 +505,7 @@ export const styles = `
     color: var(--error-color, #b3261e);
   }
   .routine-editor {
-    max-width: 680px;
+    max-width: none;
     margin: 0 auto 32px;
     padding: 32px;
   }
@@ -515,23 +515,6 @@ export const styles = `
     letter-spacing: -0.5px;
     margin: 28px 0 8px;
   }
-  .builder-steps {
-    display: flex;
-    list-style: none;
-    padding: 0 0 20px;
-    margin: 20px 0;
-    border-bottom: 1px solid var(--divider-color, #d5dce3);
-    gap: 24px;
-    color: var(--secondary-text-color, #596773);
-    font-size: 13px;
-  }
-  .builder-steps [aria-current="step"] {
-    color: var(--primary-color, #167b94);
-    font-weight: 750;
-  }
-  .builder-steps .complete {
-    color: var(--primary-text-color, #202c37);
-  }
   .entity-native-selector {
     display: block;
     width: 100%;
@@ -540,11 +523,13 @@ export const styles = `
     display: flex;
     gap: 10px;
     align-items: center;
+    flex-wrap: wrap;
     border-top: 1px solid var(--divider-color, #d5dce3);
     padding-top: 22px;
     margin-top: 28px;
   }
-  .builder-footer button:first-child {
+  .builder-footer .step-editor-actions { margin-top: 0; }
+  .builder-footer > button:first-child {
     margin-right: auto;
   }
   .routine-editor details {
@@ -601,10 +586,10 @@ export const styles = `
     max-width: none;
     margin: 20px 0 28px;
   }
-  .editing .step-name-editor label {
+  .routine-editor .step-name-editor label {
     font-weight: 600;
   }
-  .editing .step-name-editor input {
+  .routine-editor .step-name-editor input {
     font-family: inherit;
     font-size: 22px;
     font-weight: 600;
@@ -612,30 +597,27 @@ export const styles = `
     padding: 14px;
   }
 
-  .routine-editor.editing {
-    max-width: none;
-  }
-  .editing .editor-sections {
+  .routine-editor .editor-sections {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.1fr);
     gap: 28px;
   }
-  .editing .editor-sections > div {
+  .routine-editor .editor-sections > div {
     min-width: 0;
   }
-  .editing h3 {
+  .routine-editor h3 {
     margin: 16px 0 8px;
     font-size: 20px;
   }
-  .editing .field {
+  .routine-editor .field {
     margin: 14px 0;
   }
   @media (max-width: 900px) {
-    .editing .editor-sections {
+    .routine-editor .editor-sections {
       grid-template-columns: 1fr;
       gap: 20px;
     }
-    .editing .editor-sections > div + div {
+    .routine-editor .editor-sections > div + div {
       border-top: 1px solid var(--divider-color, #d5dce3);
       padding-top: 12px;
     }
@@ -683,9 +665,6 @@ export const styles = `
     }
     .routine-editor {
       padding: 20px 16px;
-    }
-    .builder-steps {
-      gap: 18px;
     }
     .builder-footer {
       gap: 6px;

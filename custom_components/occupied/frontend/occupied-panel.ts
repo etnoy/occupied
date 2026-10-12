@@ -397,7 +397,6 @@ export class OccupiedPanel extends HTMLElement {
     }
     const field = editorField(path.slice(prefix.length), editor.form);
     editor.errors[field] = issue.message;
-    editor.stage = editorStage(field);
     this.renderView();
     this.shadowRoot
       .querySelector<HTMLElement>('.routine-editor [aria-invalid="true"]')
@@ -615,15 +614,8 @@ function editorField(tail: Path, form: StepForm): string {
     return form.kind === "scene" ? "entities" : "brightness";
   }
   if (has("relative_to") || has("sun")) return "anchor";
-  if (has("fallback")) return "fallback";
   if (form.timing.mode === "absolute") return has("latest") ? "end" : "start";
   return has("max") ? "endOffset" : "startOffset";
-}
-
-/** Builder stage (timing, entities, action) that shows a field. */
-function editorStage(field: string) {
-  if (field === "entities") return 1;
-  return ["name", "brightness", "service", "data"].includes(field) ? 2 : 0;
 }
 
 if (!customElements.get("occupied-panel"))

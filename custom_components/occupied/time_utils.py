@@ -124,9 +124,7 @@ class SimulationDay:
         calendar_date = self.date + timedelta(days=day_offset + (clock < self.boundary))
         return self._local(datetime.combine(calendar_date, clock), path)
 
-    def sun(
-        self, event: str, path: ModelPath, fallback: str | None = None, day_offset: int = 0
-    ) -> datetime | None:
+    def sun(self, event: str, path: ModelPath, day_offset: int = 0) -> datetime | None:
         calendar_date = self.date + timedelta(days=day_offset)
         key = event, calendar_date
         if key not in self._sun_cache:
@@ -148,17 +146,6 @@ class SimulationDay:
                 self._sun_cache[key] = None
         if instant := self._sun_cache[key]:
             return instant
-        if fallback is not None:
-            self.issues.append(
-                Issue(
-                    "sun_fallback",
-                    f"{event} is unavailable on {calendar_date}; "
-                    f"using explicit clock fallback {fallback}",
-                    path,
-                    "warning",
-                )
-            )
-            return self.clock(fallback, path, day_offset)
         self.issues.append(
             Issue(
                 "sun_unavailable",
@@ -220,7 +207,7 @@ class SimulationDay:
     def sun_bounds(
         self, spec: SunRange, path: ModelPath
     ) -> tuple[datetime, datetime, datetime | None] | None:
-        anchor = self.sun(spec.sun, path, spec.fallback)
+        anchor = self.sun(spec.sun, path)
         if anchor is None:
             return None
         offsets = spec.offset_range
@@ -301,7 +288,7 @@ class SimulationDay:
         elif spec.clock is not None:
             instant = self.clock(spec.clock, path, spec.day_offset + extra_day)
         else:
-            instant = self.sun(spec.sun, path, spec.fallback, spec.day_offset + extra_day)
+            instant = self.sun(spec.sun, path, spec.day_offset + extra_day)
         return instant + timedelta(seconds=spec.offset) if instant is not None else None
 
     def between(

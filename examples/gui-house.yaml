@@ -221,7 +221,6 @@ routines:
         offset_range:
           min: -30m
           max: 30m
-        fallback: '18:00'
     actions:
     - action: turn_on
       targets:
@@ -333,7 +332,6 @@ routines:
         sun: sunset
         offset: -1h
         day_offset: 0
-        fallback: '18:00'
       end:
         step: bedtime
         offset: 0s

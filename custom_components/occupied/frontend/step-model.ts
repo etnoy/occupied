@@ -123,7 +123,6 @@ export function timingForm(when: When = {}): TimingForm {
       range && range.fixed == null && range.min !== range.max
         ? (range.max ?? "")
         : "",
-    fallback: when.sun_range?.fallback || "",
   };
 }
 export function simpleStep(entry: StepEntry) {
@@ -216,7 +215,6 @@ export function stepEditor(
   return {
     id: entry?.id || identifier(program, "step"),
     existing: !!entry,
-    stage: 0,
     form,
     original: copy(form),
     changed: !entry,
@@ -252,7 +250,7 @@ export function offsetErrors(
   }
   return errors;
 }
-export function editorErrors(program: Program, editor: StepEditor, stage = 2) {
+export function editorErrors(program: Program, editor: StepEditor) {
   const { form, id } = editor,
     errors: FieldErrors = {};
   if (!form.entities.length)
@@ -317,12 +315,6 @@ export function editorErrors(program: Program, editor: StepEditor, stage = 2) {
       )
     )
       errors.anchor = "Choose a step or Home Assistant time source.";
-    if (
-      time.anchor.startsWith("sun:") &&
-      time.fallback &&
-      !clockPattern.test(time.fallback)
-    )
-      errors.fallback = "Choose a valid fallback time or leave it blank.";
   } else errors.mode = "Choose absolute time or relative to.";
   // Explain downstream day conflicts here, before backend validation.
   for (const child of stepEntries(program))
@@ -332,23 +324,6 @@ export function editorErrors(program: Program, editor: StepEditor, stage = 2) {
       child.days.some((d) => !form.days.includes(d))
     )
       errors.days = `${child.name} depends on this step. Keep its days (${child.days.join(", ")}) or edit it first.`;
-  if (stage < 2) {
-    const fields =
-      stage === 0
-        ? [
-            "mode",
-            "start",
-            "end",
-            "anchor",
-            "startOffset",
-            "endOffset",
-            "fallback",
-          ]
-        : ["entities"];
-    return Object.fromEntries(
-      Object.entries(errors).filter(([key]) => fields.includes(key)),
-    );
-  }
   return errors;
 }
 export function formWhen(time: TimingForm): When {
@@ -383,7 +358,6 @@ export function formWhen(time: TimingForm): When {
     sun_range: {
       sun: time.anchor.slice(4),
       offset_range: range,
-      ...(time.fallback ? { fallback: time.fallback } : {}),
     },
   };
 }
@@ -559,7 +533,6 @@ export function timingExplanation(
     anchor: "",
     startOffset: "0s",
     endOffset: "",
-    fallback: "",
     ...input,
   };
   if (time.mode === "absolute") {

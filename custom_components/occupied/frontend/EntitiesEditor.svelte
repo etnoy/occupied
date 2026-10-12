@@ -8,7 +8,7 @@
   import { isValueChangedEvent } from "./util.js";
   let { panel, context }: { panel: OccupiedPanel; context: StepEditorContext } =
     $props();
-  let { editor, form, t, editing, changed } = $derived(context);
+  let { editor, form, t, changed } = $derived(context);
 </script>
 
 <div data-editor-section="entities">
@@ -31,7 +31,7 @@
       render: true,
     }}
   ></EditorField>
-  <h3>{t(editing ? "Entities" : "Which entities should take part?")}</h3>
+  <h3>{t("Entities")}</h3>
   <ha-selector
     class="entity-native-selector"
     data-builder-field="entities"

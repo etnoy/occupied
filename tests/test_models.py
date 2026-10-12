@@ -261,3 +261,13 @@ def test_targets_deduplicate_group_and_entity_sources(program_dict):
         "light.b",
         "light.c",
     )
+
+
+@pytest.mark.parametrize("model_name", ["SunRange", "Anchor"])
+def test_sun_clock_fallback_is_not_supported(model_name):
+    from pydantic import ValidationError
+
+    from custom_components.occupied import models
+
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        getattr(models, model_name).model_validate({"sun": "sunset", "fallback": "18:00"})
