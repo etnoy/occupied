@@ -1,0 +1,29 @@
+README.md
+  s_1787776c214d9f::t_dd6d1094056ac7 16
+custom_components/occupied/config_flow.py
+  s_1787776c214d9f::t_8c009dcb40781b 153-161,166
+custom_components/occupied/strings.json
+  s_1787776c214d9f::t_d04c62a321f5eb 4-6
+custom_components/occupied/translations/en.json
+  s_1787776c214d9f::t_7f8e1b98389ba1 4-6
+docs/editor.md
+  s_1787776c214d9f::t_844202a1d5eb75 3
+tests/test_config_flow.py
+  s_1787776c214d9f::t_51117a6196e245 1,18-21,86-89,91-98,100,103,113-115,121
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2345994babd8af67d80d9c5933e9de4d18d763a4",
+  "prompts": {},
+  "sessions": {
+    "s_1787776c214d9f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f21-c0c5-7380-93cb-d207db10e947",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
