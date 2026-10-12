@@ -100,6 +100,9 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   set hass(value: HomeAssistant) {
+    const localeChanged =
+      this._hass?.locale?.language !== value?.locale?.language ||
+      this._hass?.locale?.time_format !== value?.locale?.time_format;
     const changed = this._hass?.connection !== value?.connection;
     this._hass = value;
     this.t = translator(value?.language);
@@ -108,6 +111,7 @@ export class OccupiedPanel extends HTMLElement {
       HaSelector | HaGenericPicker
     >("ha-selector,ha-generic-picker"))
       selector.hass = value;
+    if (localeChanged) this.flush();
     if (changed) {
       this._disposeSubscription();
       this._disposeInstances();

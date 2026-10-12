@@ -1,12 +1,19 @@
 <script lang="ts">
   import type { TimelineDocument, Program, Translate } from "./types.js";
+  import type { HomeAssistantLocale } from "./time-format.js";
   import { timelineModel, stamp } from "./timeline.js";
   let {
     doc,
     program,
     t = (text: string) => text,
-  }: { doc: TimelineDocument; program: Program; t?: Translate } = $props();
-  let model = $derived(timelineModel(doc, program, t));
+    locale,
+  }: {
+    doc: TimelineDocument;
+    program: Program;
+    t?: Translate;
+    locale?: HomeAssistantLocale;
+  } = $props();
+  let model = $derived(timelineModel(doc, program, t, locale));
   let query = $state("");
   let page = $state(0);
   let filtered = $derived(
@@ -48,6 +55,7 @@
             >{stamp(
               new Date(start + (width * n) / 6).toISOString(),
               plan.timezone,
+              locale,
             )}</span
           >
         {/each}
@@ -97,7 +105,7 @@
           <tbody>
             {#each filtered.slice(currentPage * 50, currentPage * 50 + 50) as event}
               <tr>
-                {#each [stamp(event.time, plan.timezone), `${labels.get(event.source_id) || event.source_id} · ${event.kind}`, event.action.action, event.action.targets.entities.join(", "), `${event.outcome || t("Preview only")} · ${stamp(event.actual_time || event.dispatch_time, plan.timezone)}`] as value}
+                {#each [stamp(event.time, plan.timezone, locale), `${labels.get(event.source_id) || event.source_id} · ${event.kind}`, event.action.action, event.action.targets.entities.join(", "), `${event.outcome || t("Preview only")} · ${stamp(event.actual_time || event.dispatch_time, plan.timezone, locale)}`] as value}
                   <td>{value}</td>
                 {/each}
               </tr>

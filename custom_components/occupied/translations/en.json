@@ -2,14 +2,6 @@
   "title": "Occupied",
   "config": {
     "step": {
-      "user": {
-        "title": "Create your household",
-        "description": "Create a program in the Occupied panel, import a YAML snapshot, or select an authoritative managed file. Permission starts disabled.",
-        "data": {
-          "name": "Household name",
-          "method": "Configuration method"
-        }
-      },
       "proof": {
         "title": "Original caller proof",
         "description": "Configure the milestone-one deterministic sequence. Permission starts disabled. Leave the activation entity empty for manual control. Each activation gradually brings the selected light to the configured brightness, then runs the light pair and optional remote activity.",
@@ -106,15 +98,6 @@
       },
       "next_event": {
         "name": "Next event"
-      }
-    }
-  },
-  "selector": {
-    "configuration_method": {
-      "options": {
-        "editor": "Create with the Occupied editor",
-        "yaml": "Import Occupied YAML",
-        "file": "Use an authoritative managed file"
       }
     }
   },

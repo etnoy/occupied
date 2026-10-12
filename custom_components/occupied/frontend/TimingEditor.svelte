@@ -187,6 +187,7 @@
       stepEntries(panel.draft),
       t,
       panel.catalog.time_sources,
+      { locale: panel._hass.locale },
     )}
   </p>
   {#if panel.document?.source === "file"}

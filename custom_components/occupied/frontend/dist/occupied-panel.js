@@ -7984,6 +7984,47 @@ if (typeof window !== "undefined") {
   );
 }
 
+// custom_components/occupied/frontend/time-format.ts
+function usesAmPm(locale) {
+  if (!locale) return false;
+  if (locale.time_format === "12") return true;
+  if (locale.time_format === "24") return false;
+  const language = locale.time_format === "language" ? locale.language : void 0;
+  const hourCycle2 = new Intl.DateTimeFormat(language, {
+    hour: "numeric",
+  }).resolvedOptions().hourCycle;
+  return hourCycle2 === "h11" || hourCycle2 === "h12";
+}
+function formatterLocale(locale) {
+  return locale?.language;
+}
+function hourCycle(locale) {
+  return usesAmPm(locale) ? "h12" : "h23";
+}
+function formatClock(value, locale) {
+  const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
+  if (!match) return value;
+  const [, hour, minute, second] = match;
+  const date = new Date(
+    Date.UTC(2020, 0, 1, Number(hour), Number(minute), Number(second || 0)),
+  );
+  return new Intl.DateTimeFormat(formatterLocale(locale), {
+    hour: usesAmPm(locale) ? "numeric" : "2-digit",
+    minute: "2-digit",
+    ...(Number(second) ? { second: "2-digit" } : {}),
+    hourCycle: hourCycle(locale),
+    timeZone: "UTC",
+  }).format(date);
+}
+function formatTimestamp(value, zone, locale) {
+  return new Intl.DateTimeFormat(formatterLocale(locale), {
+    dateStyle: "short",
+    timeStyle: "medium",
+    hourCycle: hourCycle(locale),
+    timeZone: zone && zone !== "home_assistant" ? zone : void 0,
+  }).format(new Date(value));
+}
+
 // custom_components/occupied/frontend/step-model.ts
 var same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 var sorted = (values) => [...new Set(values)].sort();
@@ -8226,7 +8267,8 @@ function editorErrors(program, editor) {
       errors.data = "Service data must be a JSON object.";
     }
   }
-  if (!form.name.trim()) errors.name = "Give this step a name.";
+  if (editor.existing && !form.name.trim())
+    errors.name = "Give this step a name.";
   if (
     form.kind === "entities" &&
     form.brightness !== "" &&
@@ -8450,10 +8492,11 @@ function dependentNames(program, id) {
     .filter((e) => paths.some((p) => e.path.every((k, i) => p[i] === k)))
     .map((e) => e.name);
 }
-function timingSummary(entry, entries, t = (v) => v, sources = []) {
+function timingSummary(entry, entries, t = (v) => v, sources = [], locale) {
   if (!entry.when) return t("Repeated activity window");
   return timingExplanation(timingForm(entry.when), entries, t, sources, {
     includeHints: false,
+    locale,
   });
 }
 function timingExplanation(
@@ -8461,7 +8504,7 @@ function timingExplanation(
   entries = [],
   t = (value) => value,
   sources = [],
-  { includeHints = true } = {},
+  { includeHints = true, locale } = {},
 ) {
   const time = {
     start: "",
@@ -8474,8 +8517,7 @@ function timingExplanation(
   if (time.mode === "absolute") {
     const valid = (value) =>
       /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value);
-    const display = (value) =>
-      value.replace(/:00$/, value.length === 8 ? "" : ":00");
+    const display = (value) => formatClock(value, locale);
     const seconds = (value) =>
       value
         .split(":")
@@ -8638,6 +8680,13 @@ function showStep(panel, entry, parent) {
   panel.issues = [];
   panel.renderView();
   focusEditor(panel);
+  if (entry) scrollStepEditorIntoView(panel, entry.id);
+}
+function scrollStepEditorIntoView(panel, id) {
+  panel.shadowRoot
+    .getElementById(`step-editor-${id}`)
+    ?.querySelector(".routine-editor")
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 function openStep(panel, entry) {
   if (panel.busy) return;
@@ -8661,6 +8710,7 @@ function showEntry(panel, entry) {
     panel.issues = [];
     panel.selectedStep = panel.selectedStep === entry.id ? null : entry.id;
     panel.renderView();
+    scrollStepEditorIntoView(panel, entry.id);
   }
 }
 function actionSummary(entry, t) {
@@ -9625,6 +9675,7 @@ function TimingEditor($$anchor, $$props) {
           stepEntries($$props.panel.draft),
           get2(t),
           $$props.panel.catalog.time_sources,
+          { locale: $$props.panel._hass.locale },
         ),
     ],
   );
@@ -10292,6 +10343,7 @@ function StepsView($$anchor, $$props) {
                   get2(entries),
                   get2(t),
                   $$props.panel.catalog.time_sources,
+                  $$props.panel._hass.locale,
                 ),
               () => daySummary(entry().days, get2(t)),
             ],
@@ -10442,17 +10494,15 @@ function SettingsView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/timeline.ts
-function stamp(value, zone) {
+function stamp(value, zone, locale) {
   if (!value) return "\u2014";
   try {
-    return new Date(value).toLocaleString(void 0, {
-      timeZone: zone && zone !== "home_assistant" ? zone : void 0,
-    });
+    return formatTimestamp(value, zone, locale);
   } catch {
     return value;
   }
 }
-function timelineModel(doc, program, t = (text2) => text2) {
+function timelineModel(doc, program, t = (text2) => text2, locale) {
   const plan = doc.plan;
   if (!plan) return null;
   const labels = new Map(
@@ -10487,7 +10537,7 @@ function timelineModel(doc, program, t = (text2) => text2) {
         interval.kind,
         interval.start,
         interval.end,
-        `${labels.get(interval.source_id) || interval.source_id}: ${stamp(interval.start, plan.timezone)} \u2192 ${stamp(interval.end, plan.timezone)} \xB7 ${interval.resources.join(", ")}`,
+        `${labels.get(interval.source_id) || interval.source_id}: ${stamp(interval.start, plan.timezone, locale)} \u2192 ${stamp(interval.end, plan.timezone, locale)} \xB7 ${interval.resources.join(", ")}`,
       ),
     );
   }
@@ -10495,7 +10545,7 @@ function timelineModel(doc, program, t = (text2) => text2) {
     if (drawn++ >= 800) break;
     lane(id, {
       className: "marker",
-      title: `${labels.get(id) || id}: ${stamp(time, plan.timezone)}`,
+      title: `${labels.get(id) || id}: ${stamp(time, plan.timezone, locale)}`,
       style: `left:${position(time)}%`,
       text: "\u25C6",
     });
@@ -10513,7 +10563,7 @@ function timelineModel(doc, program, t = (text2) => text2) {
         "active",
         actualStart,
         activity.deadline,
-        `${t("Runtime deadline")}: ${stamp(activity.deadline, plan.timezone)} \xB7 ${activity.phase}`,
+        `${t("Runtime deadline")}: ${stamp(activity.deadline, plan.timezone, locale)} \xB7 ${activity.phase}`,
       ),
     );
   }
@@ -10531,7 +10581,7 @@ function timelineModel(doc, program, t = (text2) => text2) {
         "ramp",
         handover.start,
         handover.deadline,
-        `${entity} \xB7 ${t("Handover")}: ${stamp(handover.start, plan.timezone)} \u2192 ${stamp(handover.deadline, plan.timezone)} \xB7 ${Math.round(handover.progress * 100)}% \xB7 ${JSON.stringify(handover.observed)} \u2192 ${JSON.stringify(handover.target)}`,
+        `${entity} \xB7 ${t("Handover")}: ${stamp(handover.start, plan.timezone, locale)} \u2192 ${stamp(handover.deadline, plan.timezone, locale)} \xB7 ${Math.round(handover.progress * 100)}% \xB7 ${JSON.stringify(handover.observed)} \u2192 ${JSON.stringify(handover.target)}`,
       ),
     );
   }
@@ -10561,6 +10611,7 @@ function OverviewView($$anchor, $$props) {
   let data = user_derived(() => {
     $$props.revision;
     const t2 = $$props.panel.t,
+      locale2 = $$props.panel._hass.locale,
       state3 = $$props.panel.status;
     const labels2 = new Map(
       resources($$props.panel.saved).map((resource) => [
@@ -10573,7 +10624,7 @@ function OverviewView($$anchor, $$props) {
       ["Reason", state3.reason],
       [
         "Next action",
-        stamp(state3.next_event, $$props.panel.document.timezone),
+        stamp(state3.next_event, $$props.panel.document.timezone, locale2),
       ],
       ["Execution", state3.dry_run ? t2("Dry run") : t2("Live")],
       [
@@ -10589,12 +10640,19 @@ function OverviewView($$anchor, $$props) {
       ],
       ["Yielded targets", (state3.yielded || []).join(", ") || t2("None")],
     ];
-    return { t: t2, state: state3, labels: labels2, fields: fields2 };
+    return {
+      t: t2,
+      state: state3,
+      labels: labels2,
+      fields: fields2,
+      locale: locale2,
+    };
   });
   let t = user_derived(() => get2(data).t),
     state2 = user_derived(() => get2(data).state),
     labels = user_derived(() => get2(data).labels),
-    fields = user_derived(() => get2(data).fields);
+    fields = user_derived(() => get2(data).fields),
+    locale = user_derived(() => get2(data).locale);
   var fragment = comment();
   var node = first_child(fragment);
   {
@@ -10700,6 +10758,7 @@ function OverviewView($$anchor, $$props) {
                     stamp(
                       get2(activity).deadline,
                       $$props.panel.document.timezone,
+                      get2(locale),
                     ),
                   () => get2(activity).resources.join(", "),
                 ],
@@ -10755,7 +10814,12 @@ function OverviewView($$anchor, $$props) {
               set_value(progress_1, $3);
             },
             [
-              () => stamp(handover().deadline, $$props.panel.document.timezone),
+              () =>
+                stamp(
+                  handover().deadline,
+                  $$props.panel.document.timezone,
+                  get2(locale),
+                ),
               () => JSON.stringify(handover().observed),
               () => JSON.stringify(handover().target),
               () => progress(handover().start, handover().deadline),
@@ -10808,7 +10872,11 @@ function OverviewView($$anchor, $$props) {
                   ),
                 [
                   () =>
-                    stamp(get2(event2).time, $$props.panel.document.timezone),
+                    stamp(
+                      get2(event2).time,
+                      $$props.panel.document.timezone,
+                      get2(locale),
+                    ),
                 ],
               );
               append($$anchor4, p_4);
@@ -10904,7 +10972,7 @@ function Timeline($$anchor, $$props) {
   push($$props, true);
   let t = prop($$props, "t", 3, (text2) => text2);
   let model = user_derived(() =>
-    timelineModel($$props.doc, $$props.program, t()),
+    timelineModel($$props.doc, $$props.program, t(), $$props.locale),
   );
   let query = state("");
   let page = state(0);
@@ -10959,6 +11027,7 @@ function Timeline($$anchor, $$props) {
                       (get2(computed_const).width * n) / 6,
                   ).toISOString(),
                   get2(computed_const).plan.timezone,
+                  $$props.locale,
                 ),
             ],
           );
@@ -11063,11 +11132,15 @@ function Timeline($$anchor, $$props) {
             tr_1,
             21,
             () => [
-              stamp(get2(event2).time, get2(computed_const).plan.timezone),
+              stamp(
+                get2(event2).time,
+                get2(computed_const).plan.timezone,
+                $$props.locale,
+              ),
               `${get2(computed_const).labels.get(get2(event2).source_id) || get2(event2).source_id} \xB7 ${get2(event2).kind}`,
               get2(event2).action.action,
               get2(event2).action.targets.entities.join(", "),
-              `${get2(event2).outcome || t()("Preview only")} \xB7 ${stamp(get2(event2).actual_time || get2(event2).dispatch_time, get2(computed_const).plan.timezone)}`,
+              `${get2(event2).outcome || t()("Preview only")} \xB7 ${stamp(get2(event2).actual_time || get2(event2).dispatch_time, get2(computed_const).plan.timezone, $$props.locale)}`,
             ],
             index,
             ($$anchor4, value) => {
@@ -11319,6 +11392,9 @@ function PreviewView($$anchor, $$props) {
           },
           get t() {
             return get2(t);
+          },
+          get locale() {
+            return panel()._hass.locale;
           },
         });
       }
@@ -11783,6 +11859,9 @@ function TimelineView($$anchor, $$props) {
         },
         get t() {
           return get2(t);
+        },
+        get locale() {
+          return panel()._hass.locale;
         },
       });
     };
@@ -12629,6 +12708,9 @@ var OccupiedPanel = class extends HTMLElement {
     this.attachShadow({ mode: "open" });
   }
   set hass(value) {
+    const localeChanged =
+      this._hass?.locale?.language !== value?.locale?.language ||
+      this._hass?.locale?.time_format !== value?.locale?.time_format;
     const changed = this._hass?.connection !== value?.connection;
     this._hass = value;
     this.t = translator(value?.language);
@@ -12636,6 +12718,7 @@ var OccupiedPanel = class extends HTMLElement {
       "ha-selector,ha-generic-picker",
     ))
       selector.hass = value;
+    if (localeChanged) this.flush();
     if (changed) {
       this._disposeSubscription();
       this._disposeInstances();

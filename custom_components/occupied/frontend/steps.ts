@@ -27,6 +27,14 @@ function showStep(
   panel.issues = [];
   panel.renderView();
   focusEditor(panel);
+  if (entry) scrollStepEditorIntoView(panel, entry.id);
+}
+
+function scrollStepEditorIntoView(panel: OccupiedPanel, id: string) {
+  panel.shadowRoot
+    .getElementById(`step-editor-${id}`)
+    ?.querySelector<HTMLElement>(".routine-editor")
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 /** Leave the current editor before opening a different step card. */
@@ -53,6 +61,7 @@ function showEntry(panel: OccupiedPanel, entry: StepEntry) {
     panel.issues = [];
     panel.selectedStep = panel.selectedStep === entry.id ? null : entry.id;
     panel.renderView();
+    scrollStepEditorIntoView(panel, entry.id);
   }
 }
 

@@ -1,4 +1,5 @@
 // Generated from step-model.ts by pnpm run build. Do not edit.
+import { formatClock } from "./time-format.js";
 // The builder edits canonical steps in place. Containers, defaults and opaque
 // configuration remain intact unless the user explicitly changes their behavior.
 import { copy, days, identifier, parentSteps, references } from "./model.js";
@@ -252,7 +253,8 @@ export function editorErrors(program, editor) {
       errors.data = "Service data must be a JSON object.";
     }
   }
-  if (!form.name.trim()) errors.name = "Give this step a name.";
+  if (editor.existing && !form.name.trim())
+    errors.name = "Give this step a name.";
   if (
     form.kind === "entities" &&
     form.brightness !== "" &&
@@ -479,10 +481,17 @@ export function dependentNames(program, id) {
     .filter((e) => paths.some((p) => e.path.every((k, i) => p[i] === k)))
     .map((e) => e.name);
 }
-export function timingSummary(entry, entries, t = (v) => v, sources = []) {
+export function timingSummary(
+  entry,
+  entries,
+  t = (v) => v,
+  sources = [],
+  locale,
+) {
   if (!entry.when) return t("Repeated activity window");
   return timingExplanation(timingForm(entry.when), entries, t, sources, {
     includeHints: false,
+    locale,
   });
 }
 export function timingExplanation(
@@ -490,7 +499,7 @@ export function timingExplanation(
   entries = [],
   t = (value) => value,
   sources = [],
-  { includeHints = true } = {},
+  { includeHints = true, locale } = {},
 ) {
   const time = {
     start: "",
@@ -503,8 +512,7 @@ export function timingExplanation(
   if (time.mode === "absolute") {
     const valid = (value) =>
       /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value);
-    const display = (value) =>
-      value.replace(/:00$/, value.length === 8 ? "" : ":00");
+    const display = (value) => formatClock(value, locale);
     const seconds = (value) =>
       value
         .split(":")

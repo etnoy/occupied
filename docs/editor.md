@@ -1,6 +1,6 @@
 # Occupied editor
 
-Create Occupied through **Settings → Devices & services → Add integration**. Choose **Create with Occupied editor** for an empty household, or **Import Occupied YAML** for a stored snapshot. Permission starts disabled. Open Occupied under **Settings → Devices & services** and select **Configure**. Existing development-proof entries open with an editable daily starter program; saving upgrades them to the daily runtime.
+Create Occupied through **Settings → Devices & services → Add integration**. Setup creates an empty household for the Occupied editor and assigns it a short generated name such as `Occupied 4a91c2ef`. Permission starts disabled. Open Occupied under **Settings → Devices & services** and select **Configure**. Import YAML or switch to an authoritative managed file later from **Settings → Import, export and managed files**. Existing development-proof entries open with an editable daily starter program; saving upgrades them to the daily runtime.
 
 The shared Occupied panel offers an **Instance** selector when several entries exist. **Configure** on an integration entry opens that instance directly. Switching instances confirms unsaved draft or step edits; canceling preserves them. Drafts, previews, history and subscriptions are specific to the selected instance. Unloaded entries remain listed, and invalid managed files remain inspectable with their own Repairs. A warning names any declared controlled entities shared with another loaded instance.
 

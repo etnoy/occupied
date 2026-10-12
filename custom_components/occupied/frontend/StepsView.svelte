@@ -104,6 +104,7 @@
                   entries,
                   t,
                   panel.catalog.time_sources,
+                  panel._hass.locale,
                 )}</span
               ><small>{daySummary(entry.days, t)}</small></span
             >

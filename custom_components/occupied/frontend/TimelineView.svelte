@@ -44,5 +44,10 @@
   </button>
 </section>
 {#if panel.actual}
-  <Timeline doc={panel.actual} program={panel.saved} {t} />
+  <Timeline
+    doc={panel.actual}
+    program={panel.saved}
+    {t}
+    locale={panel._hass.locale}
+  />
 {/if}

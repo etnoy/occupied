@@ -52,8 +52,6 @@ async def _async_register_panel(hass, entry_id, data):
         # keeps the entry module and all of its relative imports on one bundle.
         module_url=f"{asset_url}/occupied-panel.js",
         require_admin=True,
-        sidebar_title="Occupied",
-        sidebar_icon="mdi:home-clock",
         config_panel_domain=DOMAIN,
     )
     entries.add(entry_id)

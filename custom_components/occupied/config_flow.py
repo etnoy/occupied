@@ -89,6 +89,18 @@ def validate_input(data: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def _new_household_name(hass) -> str:
+    """Generate a short, unused name for a newly created household."""
+    names = {
+        str(entry.data.get("name") or entry.title).strip().casefold()
+        for entry in hass.config_entries.async_entries(DOMAIN)
+    }
+    while True:
+        name = f"Occupied {uuid4().hex[:8]}"
+        if name.casefold() not in names:
+            return name
+
+
 class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Create independent household engines with stable entry identities."""
 
@@ -142,30 +154,16 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         if self.unique_id is None:
             await self.async_set_unique_id(uuid4().hex)
-        if user_input is not None:
-            if user_input["method"] == "yaml":
-                return await self.async_step_yaml()
-            if user_input["method"] == "file":
-                return await self.async_step_file()
-            from .validation import program_data, validate_program
+        if user_input and user_input.get("method") == "yaml":
+            return await self.async_step_yaml()
+        if user_input and user_input.get("method") == "file":
+            return await self.async_step_file()
+        from .validation import program_data, validate_program
 
-            program = validate_program({"schema_version": 1, "name": user_input["name"]})
-            return self.async_create_entry(
-                title=program.name, data={"name": program.name, "program": program_data(program)}
-            )
-        return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required("name", default="House"): vol.All(str, vol.Length(min=1)),
-                    vol.Required("method", default="editor"): selector.SelectSelector(
-                        selector.SelectSelectorConfig(
-                            options=["editor", "yaml", "file"],
-                            translation_key="configuration_method",
-                        )
-                    ),
-                }
-            ),
+        name = (user_input or {}).get("name") or _new_household_name(self.hass)
+        program = validate_program({"schema_version": 1, "name": name})
+        return self.async_create_entry(
+            title=program.name, data={"name": program.name, "program": program_data(program)}
         )
 
     async def async_step_yaml(self, user_input=None):

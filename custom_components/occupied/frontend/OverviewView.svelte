@@ -11,6 +11,7 @@
   let data = $derived.by(() => {
     revision;
     const t = panel.t,
+      locale = panel._hass.locale,
       state = panel.status;
 
     const labels = new Map(
@@ -19,7 +20,7 @@
     const fields = [
       ["Status", state.status],
       ["Reason", state.reason],
-      ["Next action", stamp(state.next_event, panel.document.timezone)],
+      ["Next action", stamp(state.next_event, panel.document.timezone, locale)],
       ["Execution", state.dry_run ? t("Dry run") : t("Live")],
       [
         "Saved revision",
@@ -33,9 +34,9 @@
       ],
       ["Yielded targets", (state.yielded || []).join(", ") || t("None")],
     ];
-    return { t, state, labels, fields };
+    return { t, state, labels, fields, locale };
   });
-  let { t, state, labels, fields } = $derived(data);
+  let { t, state, labels, fields, locale } = $derived(data);
 </script>
 
 {#if state}
@@ -81,7 +82,7 @@
         <p>
           {labels.get(activity.source_id) || activity.source_id} ·
           {activity.phase} · {t("Runtime deadline")}:
-          {stamp(activity.deadline, panel.document.timezone)} ·
+          {stamp(activity.deadline, panel.document.timezone, locale)} ·
           {activity.resources.join(", ")}
         </p>
       {/each}
@@ -93,7 +94,7 @@
     <h2>{t("Lighting convergence")}</h2>
     {#each Object.entries(state.handover || {}) as [entity, handover]}
       <p>
-        {entity} · {stamp(handover.deadline, panel.document.timezone)} ·
+        {entity} · {stamp(handover.deadline, panel.document.timezone, locale)} ·
         {JSON.stringify(handover.observed)} →
         {JSON.stringify(handover.target)}
       </p>
@@ -114,7 +115,7 @@
     {#if state.events?.length}
       {#each state.events.slice(0, 30) as event}
         <p>
-          {stamp(event.time, panel.document.timezone)} · {event.event}
+          {stamp(event.time, panel.document.timezone, locale)} · {event.event}
           · {event.id}
         </p>
       {/each}

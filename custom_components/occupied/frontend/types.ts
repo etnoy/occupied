@@ -388,6 +388,10 @@ export interface WebSocketResponses {
 }
 export interface HomeAssistant {
   language?: string;
+  locale?: {
+    language?: string;
+    time_format?: "language" | "system" | "12" | "24";
+  };
   callWS<T>(message: Record<string, unknown>): Promise<T>;
   callService(
     domain: string,

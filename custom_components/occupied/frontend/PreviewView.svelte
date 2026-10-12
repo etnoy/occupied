@@ -76,7 +76,12 @@
   {/if}
 </section>
 {#each panel.preview?.plans || [] as plan}
-  <Timeline doc={{ plan }} program={panel.previewProgram} {t} />
+  <Timeline
+    doc={{ plan }}
+    program={panel.previewProgram}
+    {t}
+    locale={panel._hass.locale}
+  />
 {/each}
 {#if panel.preview?.handover}
   <section>

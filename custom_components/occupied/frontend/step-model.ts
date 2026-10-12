@@ -12,6 +12,8 @@ import type {
   Routine,
   Translate,
 } from "./types.js";
+import type { HomeAssistantLocale } from "./time-format.js";
+import { formatClock } from "./time-format.js";
 // The builder edits canonical steps in place. Containers, defaults and opaque
 // configuration remain intact unless the user explicitly changes their behavior.
 import { copy, days, identifier, parentSteps, references } from "./model.js";
@@ -281,7 +283,8 @@ export function editorErrors(program: Program, editor: StepEditor) {
       errors.data = "Service data must be a JSON object.";
     }
   }
-  if (!form.name.trim()) errors.name = "Give this step a name.";
+  if (editor.existing && !form.name.trim())
+    errors.name = "Give this step a name.";
   if (
     form.kind === "entities" &&
     form.brightness !== "" &&
@@ -513,10 +516,12 @@ export function timingSummary(
   entries: Pick<StepEntry, "id" | "name">[],
   t: Translate = (v) => v,
   sources: Pick<TimeSource, "value" | "name">[] = [],
+  locale?: HomeAssistantLocale,
 ) {
   if (!entry.when) return t("Repeated activity window");
   return timingExplanation(timingForm(entry.when), entries, t, sources, {
     includeHints: false,
+    locale,
   });
 }
 
@@ -525,7 +530,10 @@ export function timingExplanation(
   entries: Pick<StepEntry, "id" | "name">[] = [],
   t: Translate = (value) => value,
   sources: Pick<TimeSource, "value" | "name">[] = [],
-  { includeHints = true } = {},
+  {
+    includeHints = true,
+    locale,
+  }: { includeHints?: boolean; locale?: HomeAssistantLocale } = {},
 ) {
   const time: TimingForm = {
     start: "",
@@ -538,8 +546,7 @@ export function timingExplanation(
   if (time.mode === "absolute") {
     const valid = (value: string) =>
       /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value);
-    const display = (value: string) =>
-      value.replace(/:00$/, value.length === 8 ? "" : ":00");
+    const display = (value: string) => formatClock(value, locale);
     const seconds = (value: string) =>
       value
         .split(":")

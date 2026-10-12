@@ -1,16 +1,15 @@
 // Generated from timeline.ts by pnpm run build. Do not edit.
+import { formatTimestamp } from "./time-format.js";
 import { resources } from "./model.js";
-export function stamp(value, zone) {
+export function stamp(value, zone, locale) {
   if (!value) return "—";
   try {
-    return new Date(value).toLocaleString(undefined, {
-      timeZone: zone && zone !== "home_assistant" ? zone : undefined,
-    });
+    return formatTimestamp(value, zone, locale);
   } catch {
     return value;
   }
 }
-export function timelineModel(doc, program, t = (text) => text) {
+export function timelineModel(doc, program, t = (text) => text, locale) {
   const plan = doc.plan;
   if (!plan) return null;
   const labels = new Map(
@@ -45,7 +44,7 @@ export function timelineModel(doc, program, t = (text) => text) {
         interval.kind,
         interval.start,
         interval.end,
-        `${labels.get(interval.source_id) || interval.source_id}: ${stamp(interval.start, plan.timezone)} → ${stamp(interval.end, plan.timezone)} · ${interval.resources.join(", ")}`,
+        `${labels.get(interval.source_id) || interval.source_id}: ${stamp(interval.start, plan.timezone, locale)} → ${stamp(interval.end, plan.timezone, locale)} · ${interval.resources.join(", ")}`,
       ),
     );
   }
@@ -53,7 +52,7 @@ export function timelineModel(doc, program, t = (text) => text) {
     if (drawn++ >= 800) break;
     lane(id, {
       className: "marker",
-      title: `${labels.get(id) || id}: ${stamp(time, plan.timezone)}`,
+      title: `${labels.get(id) || id}: ${stamp(time, plan.timezone, locale)}`,
       style: `left:${position(time)}%`,
       text: "◆",
     });
@@ -71,7 +70,7 @@ export function timelineModel(doc, program, t = (text) => text) {
         "active",
         actualStart,
         activity.deadline,
-        `${t("Runtime deadline")}: ${stamp(activity.deadline, plan.timezone)} · ${activity.phase}`,
+        `${t("Runtime deadline")}: ${stamp(activity.deadline, plan.timezone, locale)} · ${activity.phase}`,
       ),
     );
   }
@@ -89,7 +88,7 @@ export function timelineModel(doc, program, t = (text) => text) {
         "ramp",
         handover.start,
         handover.deadline,
-        `${entity} · ${t("Handover")}: ${stamp(handover.start, plan.timezone)} → ${stamp(handover.deadline, plan.timezone)} · ${Math.round(handover.progress * 100)}% · ${JSON.stringify(handover.observed)} → ${JSON.stringify(handover.target)}`,
+        `${entity} · ${t("Handover")}: ${stamp(handover.start, plan.timezone, locale)} → ${stamp(handover.deadline, plan.timezone, locale)} · ${Math.round(handover.progress * 100)}% · ${JSON.stringify(handover.observed)} → ${JSON.stringify(handover.target)}`,
       ),
     );
   }
