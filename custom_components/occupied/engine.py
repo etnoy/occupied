@@ -153,7 +153,7 @@ class OccupiedEngine:
         if not self.enabled:
             return False, "Permission is disabled"
         if self.paused:
-            return False, "Simulation is paused"
+            return False, "Management is paused"
         return self.gate.evaluate()
 
     @callback

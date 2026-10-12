@@ -22,7 +22,7 @@
     )}
   </p>
   <select
-    aria-label={t("Saved simulation date")}
+    aria-label={t("Saved schedule date")}
     value={panel.timelineDate || panel.actual?.plan?.simulation_date || ""}
     onchange={(event: Event) => {
       panel.timelineDate = (event.currentTarget as HTMLSelectElement).value;

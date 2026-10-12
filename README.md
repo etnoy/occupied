@@ -3,7 +3,7 @@
 
 <img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/occupied.svg" alt="Logo, a smiling occupied toilet sign" height="200">
 
-Occupied is a Home Assistant integration that simulated occupancy so that it looks like you are home when you are not. This integration is different than others because you create scenarios that can be run automatically with random variance.
+Occupied manages selected Home Assistant entities using schedules, optional randomness and activation conditions. Create separate controllers for entity groups with different rules: one can manage window lights each evening, while another manages ceiling lights only when the alarm is armed.
 
 It is the spiritual successor of https://github.com/acockburn/occusim
 
@@ -15,13 +15,13 @@ Occupied includes the complete editor and timeline, canonical daily programs, du
 2. Restart Home Assistant.
 3. Open **Settings → Devices & services → Add integration → Occupied**.
 4. Open **Occupied** under **Settings → Devices & services** and select **Configure**. Choose the editor, import an Occupied YAML snapshot, or select an authoritative managed file. Select **Create your first step**, choose entity actions or a Home Assistant scene, and a start time or interval, then **Save step**. Select a step and **Add related step** to schedule what happens before or after it. Saving validates automatically. Existing proof settings remain supported and open with an editable daily starter program.
-5. Use **Preview schedule** to review your steps. **Settings** contains activation conditions and dry-run mode; **Advanced settings** contains custom activities, import/export, and managed files. Turn on the simulation when ready; activation conditions still apply.
+5. Use **Preview schedule** to review your steps. **Settings** contains activation conditions and dry-run mode; **Advanced settings** contains custom activities, import/export, and managed files. Start managing entities when ready; activation conditions still apply.
 
-Create multiple household entries for independent buildings, zones or scenarios. Each has its own program, optional managed file, activation conditions, permission, seed and runtime state. The Occupied panel selects an instance; Configure opens the selected integration entry. GUI/import mode stores snapshots. Managed-file mode detects changes and supports validated `occupied.reload`; invalid updates retain that instance's running program, and invalid initial files remain inactive. Shared declared device targets show a warning because actions and cleanup can interfere; ownership is not coordinated across instances. Occupied never writes managed files. No frontend build at installation, AppDaemon, separate daemon, or open browser is required. The tested matrix is Home Assistant Core **2026.9.3 and 2026.9.4**, on Python **3.14.8** (HA requires Python >=3.14.2).
+Each controller is a separate integration entry with its own program, optional managed file, activation conditions, permission, seed and runtime state. The Occupied panel lets you select a controller; Configure opens the selected integration entry. GUI/import mode stores snapshots. Managed-file mode detects changes and supports validated `occupied.reload`; invalid updates retain that controller's running program, and invalid initial files remain inactive. Shared declared device targets show a warning because actions and cleanup can interfere; ownership is not coordinated across controllers. Occupied never writes managed files. No frontend build at installation, AppDaemon, separate daemon, or open browser is required. The tested matrix is Home Assistant Core **2026.9.3 and 2026.9.4**, on Python **3.14.8** (HA requires Python >=3.14.2).
 
 ## Canonical programs and offline previews
 
-See [the schema reference](docs/schema.md), [the household example](examples/house.yaml) and [the GUI export](examples/gui-house.yaml). YAML files and JSON drafts use the same versioned model, defaults, graph validation, and planner. Labels and resource list order do not affect sampled times. Explicit ID migration rewrites typed references atomically.
+See [the schema reference](docs/schema.md), [the controller example](examples/house.yaml) and [the GUI export](examples/gui-house.yaml). YAML files and JSON drafts use the same versioned model, defaults, graph validation, and planner. Labels and resource list order do not affect sampled times. Explicit ID migration rewrites typed references atomically.
 
 The CLI requires Python 3.14.2 or later and its three direct planner dependencies. Install the release wheel without HA using `pip install ./occupied-0.1.0-py3-none-any.whl`, use `uv sync --no-dev --locked`, or use the development environment below. You can also invoke it with `python -m custom_components.occupied.cli`.
 
@@ -41,7 +41,7 @@ Previews include UTC and local event times, intervals, stable event IDs, behavio
 
 Authenticated admin WebSocket commands `occupied/validate`, `occupied/preview`, `occupied/export`, and `occupied/rename_id` expose these draft operations to the editor. They require a loaded `config_entry_id` and a `program` JSON object or YAML string. Preview also takes ISO `date`, `seed`, optional `days` (1–31), and optional aware ISO `at`. ID migration takes `kind`, `old`, and `new`. These commands return drafts and previews without changing the live queue or calling device services.
 
-The pure planner records nominal activity start/end pairs and declared resources. The daily runtime checks device availability, native start/ownership conditions, actual service latency, persistence, and cancellation. A single-day CLI handover preview reports `next_day_plan_required` across its boundary; the runtime loads the required endpoint date. Admin `occupied/diagnostics` exports redacted counts by default, with household details available only through explicit `include_sensitive: true`.
+The pure planner records nominal activity start/end pairs and declared resources. The daily runtime checks device availability, native start/ownership conditions, actual service latency, persistence, and cancellation. A single-day CLI handover preview reports `next_day_plan_required` across its boundary; the runtime loads the required endpoint date. Admin `occupied/diagnostics` exports redacted counts by default, with controller details available only through explicit `include_sensitive: true`.
 
 ## Development and verification
 

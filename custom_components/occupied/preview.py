@@ -29,7 +29,7 @@ def preview_draft(
 ) -> dict[str, Any]:
     program = load_program(source)
     if not 1 <= days <= 31:
-        raise ValueError("Preview between one and 31 simulation dates")
+        raise ValueError("Preview between one and 31 schedule dates")
     plans = preview_dates(
         program, [start + timedelta(days=index) for index in range(days)], seed, context=context
     )

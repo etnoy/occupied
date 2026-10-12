@@ -17,7 +17,7 @@
   <h2>{t("Diagnostics")}</h2>
   <p class="hint">
     {t(
-      "Default exports contain counts and runtime status. Include household details explicitly to export entities, sampled plans, observations and outcomes. Credential fields remain redacted.",
+      "Default exports contain counts and runtime status. Include controller details explicitly to export entities, sampled plans, observations and outcomes. Credential fields remain redacted.",
     )}
   </p>
   <label
@@ -28,7 +28,7 @@
         (panel.includeSensitive = (
           event.currentTarget as HTMLInputElement
         ).checked)}
-    />{t("Include household details")}</label
+    />{t("Include controller details")}</label
   >
   <button type="button" onclick={() => panel.loadDiagnostics()}>
     {t("Refresh")}

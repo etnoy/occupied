@@ -335,7 +335,7 @@ class DailyEngine:
                 if not self.started
                 else "Permission is disabled"
                 if not self.enabled
-                else "Simulation is paused"
+                else "Management is paused"
             )
         return self.gate.evaluate()
 
@@ -536,7 +536,7 @@ class DailyEngine:
                 self._restoring = False
                 self.status = "transitioning" if self._handover else "active"
                 self.reason = (
-                    "Converging projected lighting" if self._handover else "Daily simulation"
+                    "Converging projected lighting" if self._handover else "Managing entities"
                 )
                 self._arm_timer()
             except (ProgramError, ValueError) as err:
@@ -871,7 +871,7 @@ class DailyEngine:
             if self.active:
                 self.status = "transitioning" if self._handover else "active"
                 self.reason = (
-                    "Converging projected lighting" if self._handover else "Daily simulation"
+                    "Converging projected lighting" if self._handover else "Managing entities"
                 )
             self._arm_timer()
             self._notify()
@@ -1304,7 +1304,7 @@ class DailyEngine:
             if current.state == "on":
                 data["brightness"] = max(1, round(current.brightness_pct * 255 / 100))
             action = ResolvedAction(f"light.turn_{current.state}", (entity,), data, (entity,), True)
-            # Hold only the simulator's still-owned transition at its observed level.
+            # Hold only the controller's still-owned transition at its observed level.
             await self._call(
                 action,
                 f"cancel_fade:{self.session}:{entity}:{secrets.token_hex(4)}",

@@ -25,7 +25,7 @@ occupied:
   config_file: occupied/house.yaml
 ```
 
-The path is relative to HA's config directory. A read-only container mount under that directory works. This legacy declaration retains the original household identity and never silently replaces its source. If several entries exist without that identity, a Repair asks you to use named instances.
+The path is relative to HA's config directory. A read-only container mount under that directory works. This legacy declaration retains the original controller identity and never silently replaces its source. If several entries exist without that identity, a Repair asks you to use named instances.
 
 For multiple independent instances, use stable IDs:
 
@@ -40,7 +40,7 @@ occupied:
 
 Each file is a complete Occupied program using schema version 1. IDs must start with a lowercase letter and contain only lowercase letters, digits and underscores; they must be unique. Keep the IDs stable when renaming programs or moving files. A repeated declaration finds its existing entry; a changed path reports a source conflict until you explicitly select the new file for that instance. It does not silently replace the running source. Removing a declaration leaves the entry running; delete it separately through Devices & services. Remove its declaration before deletion to prevent bootstrap recreating it on restart.
 
-When converting an original managed-file household to named instances, use its existing file path once: Occupied adopts the new ID while retaining the entry ID, permission, seed and stored plans. GUI entries remain intact; switching an existing GUI entry to a managed file is explicit in the panel. Additional GUI, snapshot and file entries can be added normally through **Add integration**.
+When converting an original managed-file controller to named instances, use its existing file path once: Occupied adopts the new ID while retaining the entry ID, permission, seed and stored plans. GUI entries remain intact; switching an existing GUI entry to a managed file is explicit in the panel. Additional GUI, snapshot and file entries can be added normally through **Add integration**.
 
 The shared Occupied panel offers an instance selector. Configure on a particular integration opens that instance. Missing/invalid initial files leave only that instance inactive and create a separate HA Repair. Correct the file and reload to recover. Resolve source conflicts in the selected instance's **Settings → Advanced settings → Import, export and managed files**, or remove its bootstrap declaration.
 
@@ -68,7 +68,7 @@ Schema version 1 remains the supported program format. Unknown versions are reje
 | Runtime persistence failure | Resolve disk/storage permissions or capacity, then enable/resume to retry, or reload the entry. New dispatch stops while persistence is failing. |
 | Editor assets look stale | Reload the browser after an integration upgrade; verify that all bundled frontend modules were replaced. |
 
-Default diagnostics expose status and counts, including source mode/status, without household names, entity IDs, file paths or raw error text. Detailed diagnostics require an explicit admin-sensitive export; known credential fields remain redacted. Source errors are visible to admins through Configuration and HA Repairs.
+Default diagnostics expose status and counts, including source mode/status, without controller names, entity IDs, file paths or raw error text. Detailed diagnostics require an explicit admin-sensitive export; known credential fields remain redacted. Source errors are visible to admins through Configuration and HA Repairs.
 
 ## Uninstall
 

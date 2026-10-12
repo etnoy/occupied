@@ -20,7 +20,7 @@ def _config_schema(config):
     def distinct_instances(instances):
         identities = [item["id"] for item in instances]
         if len(identities) != len(set(identities)):
-            raise vol.Invalid("Occupied instance IDs must be unique")
+            raise vol.Invalid("Occupied controller IDs must be unique")
         return instances
 
     instance = vol.Schema(

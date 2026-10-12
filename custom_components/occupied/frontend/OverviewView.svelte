@@ -48,14 +48,14 @@
         disabled={panel.busy}
         onclick={() => panel.control(state.enabled ? "stop" : "start")}
       >
-        {t(state.enabled ? "Disable" : "Enable")}
+        {t(state.enabled ? "Stop managing" : "Start managing")}
       </button>
       <button
         type="button"
         disabled={panel.busy}
         onclick={() => panel.control(state.paused ? "resume" : "pause")}
       >
-        {t(state.paused ? "Resume" : "Pause")}
+        {t(state.paused ? "Resume management" : "Pause management")}
       </button>
       {#if state.mode === "daily"}
         <button

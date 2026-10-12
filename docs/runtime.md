@@ -4,7 +4,7 @@ Occupied runs inside Home Assistant Core 2026.9.4. Canonical daily programs, the
 
 ## Apply a program
 
-Install Occupied and create a household entry as described in the README. Multiple entries have independent activation conditions, permissions, seeds, plans, history and cleanup; control services always require the intended entry ID. Permission starts disabled. Open the Occupied integration under **Settings → Devices & services** and select **Configure** to validate/save a draft, or prepare a program from [examples/house.yaml](../examples/house.yaml), replace its entities and activity names, and validate/preview it with `occupied-config`. Validation and preview do not control devices.
+Install Occupied and create a controller entry as described in the README. Multiple entries have independent activation conditions, permissions, seeds, plans, history and cleanup; control services always require the intended entry ID. Permission starts disabled. Open the Occupied integration under **Settings → Devices & services** and select **Configure** to validate/save a draft, or prepare a program from [examples/house.yaml](../examples/house.yaml), replace its entities and activity names, and validate/preview it with `occupied-config`. Validation and preview do not control devices.
 
 The authenticated HA WebSocket API accepts `occupied/apply` with `config_entry_id` and `program` (a JSON object or YAML string). This admin-only command stores a canonical snapshot. It upgrades a proof entry to the daily engine, or replaces a daily program in place. It neither modifies nor watches the source file. For example, from the HA frontend's browser console:
 
@@ -13,7 +13,7 @@ const hass = document.querySelector("home-assistant").hass;
 const entries = await hass.callWS({ type: "config_entries/get" });
 const entryId = entries.find(entry => entry.domain === "occupied").entry_id;
 const yaml = `schema_version: 1
-name: My household
+name: My controller
 activation:
   conditions:
     - condition: state
@@ -49,13 +49,13 @@ await hass.callWS({ type: "occupied/validate", config_entry_id: entryId, program
 await hass.callWS({ type: "occupied/apply", config_entry_id: entryId, program: yaml });
 ```
 
-An HA integration can also start Occupied's `import` config flow with canonical JSON/YAML as its data to create the household directly. The ordinary options form remains for proof settings; daily programs are changed through the Occupied integration editor or apply. Editor saves require the read revision; `occupied/apply` also accepts optional `expected_revision` for API clients. Invalid schema or an infeasible replacement leaves an existing daily program and its queue intact. Metadata-only changes retain sampled times, session, and handover deadlines. Behavior changes replace future work and retain immutable end actions for already-started activities, even if removed from the new program.
+An HA integration can also start Occupied's `import` config flow with canonical JSON/YAML as its data to create the controller directly. The ordinary options form remains for proof settings; daily programs are changed through the Occupied integration editor or apply. Editor saves require the read revision; `occupied/apply` also accepts optional `expected_revision` for API clients. Invalid schema or an infeasible replacement leaves an existing daily program and its queue intact. Metadata-only changes retain sampled times, session, and handover deadlines. Behavior changes replace future work and retain immutable end actions for already-started activities, even if removed from the new program.
 
 ## Permission, dry run and status
 
 The Occupied configuration panel exposes enable/disable, pause/resume, and live/dry selection. Random windows can repeat arbitrary service start/end action lists, including scenes and scripts, and `event.fire` emits native HA events. These generic effects are opaque, so interruption cannot infer a compensating action; define an explicit end action for normal cycle completion. Dashboard entities include enabled and dry-run switches, status/reason, and the next event. Start/resume reevaluates native HA activation conditions; it cannot bypass them. Missing, unknown, or unavailable dependencies block dispatch, including dependencies inside negated predicates. Changes between two allowed states retain the same session.
 
-Select **Dry run** before enabling a new daily program to inspect its behavior. It uses real activation state and a private virtual device-state overlay for typed controls, leases, handover, and activity conditions. Journal entries record `would_dispatch`; no simulation service calls reach devices. Opaque scripts/scenes have no inferred effects, so conditions dependent on those effects cannot be confirmed automatically in dry run.
+Select **Dry run** before enabling a new controller to inspect its behavior. It uses real activation state and a private virtual device-state overlay for typed controls, leases, handover, and activity conditions. Journal entries record `would_dispatch`; no dry-run service calls reach devices. Opaque scripts/scenes have no inferred effects, so conditions dependent on those effects cannot be confirmed automatically in dry run.
 
 Switching mode stops the previous session according to its explicit cleanup policy. Switching a running live session to dry run can therefore send its owned cancellation actions before entering dry mode. Returning to live discards virtual ownership, snapshots real lights, hands over gradually, and schedules future discrete actions only. Simulated past calls are never replayed.
 
@@ -65,7 +65,7 @@ Admin services `occupied.start`, `stop`, `pause`, and `resume` take `config_entr
 
 Only managed lights with an explicit baseline participate in convergence. At activation, the engine reads observed brightness and projects each target at its handover deadline, including intervening typed intents. Default duration is ten minutes; group overrides can differ. Native `TRANSITION` capability and supported color modes determine service payloads. Otherwise dimmable lights use bounded steps, and on/off-only lights change at staggered times. No initial whole-house on/off sweep occurs. Completion gets one bounded reconciliation if the observed state differs.
 
-Random windows hold per-entity leases. One ending cannot turn off a light held by another interval, or a light already on before Occupied acquired it. Explicit routine intents override random activity; safety-off suppresses later simulation activation for the target that day. Leases spanning the daily boundary remain effective. Opaque actions declaring a managed light resource wait until that light's handover completes.
+Random windows hold per-entity leases. One ending cannot turn off a light held by another interval, or a light already on before Occupied acquired it. Explicit routine intents override random activity; safety-off suppresses later scheduled activation for the target that day. Leases spanning the daily boundary remain effective. Opaque actions declaring a managed light resource wait until that light's handover completes.
 
 By default, external changes yield the entity until the next activation. Expected HA contexts and ownership attributes distinguish Occupied writes where possible; ambiguous provenance yields conservatively. Manual changes suppress queued writes and cleanup. Optional `authoritative_simulation` continues lighting intentions, but it never makes arbitrary activity cleanup safe without matching ownership. Stop/disarm/pause leaves light states by default; `turn_off_owned` affects only still-owned lights. Still-owned native fades are cancelled by holding observed brightness; a yielded fade is left to its external controller.
 
@@ -79,7 +79,7 @@ Outside state/activity changes, including separate ownership observer entities, 
 
 ## Persistence and recovery
 
-Atomic HA stores retain permission, canonical program snapshots, sampled plans/date seeds, pre/post-dispatch journal entries, contexts, leases, observed ownership, native fades, handover endpoints, and activity snapshots/deadlines. Daily seeds derive independently from a persisted household seed. The date cache expands for declared cross-boundary work, including multi-day leases at cold startup. The daily boundary samples the next date without starting a new activation session. Effective timezone/location changes recompile future timing while retaining owned cleanup.
+Atomic HA stores retain permission, canonical program snapshots, sampled plans/date seeds, pre/post-dispatch journal entries, contexts, leases, observed ownership, native fades, handover endpoints, and activity snapshots/deadlines. Daily seeds derive independently from a persisted controller seed. The date cache expands for declared cross-boundary work, including multi-day leases at cold startup. The daily boundary samples the next date without starting a new activation session. Effective timezone/location changes recompile future timing while retaining owned cleanup.
 
 An HA restart waits for known activation state, restores sampled times, resumes remaining convergence toward its saved deadline, and restores owned activity ends without replaying starts. Overdue ends run only with trustworthy matching ownership; historical discrete actions are skipped. Invalid saved plans regenerate future work while keeping valid lifecycle snapshots. Interrupted `pending` calls become `uncertain` rather than being blindly replayed.
 
@@ -91,7 +91,7 @@ Live compilation rejects programs whose maximum expansion exceeds 50,000 events/
 
 ## Diagnostics
 
-HA's integration diagnostics and admin `occupied/diagnostics` omit household names, entity IDs, service data, and detailed error text by default. Known credential fields remain redacted even in a sensitive export. To export the actual sampled plans, convergence endpoints, lifecycle snapshots, and journal, explicitly set `include_sensitive: true`:
+HA's integration diagnostics and admin `occupied/diagnostics` omit controller names, entity IDs, service data, and detailed error text by default. Known credential fields remain redacted even in a sensitive export. To export the actual sampled plans, convergence endpoints, lifecycle snapshots, and journal, explicitly set `include_sensitive: true`:
 
 ```javascript
 const diagnostics = await hass.callWS({
@@ -101,4 +101,4 @@ const diagnostics = await hass.callWS({
 });
 ```
 
-`occupied/status` is also admin-only and includes household details used by the panel. Preview commands remain read-only and use separate seeds. Tests exercise real HA APIs with virtual devices on HA 2026.9.3 and 2026.9.4. Physical-device behavior and hardware soak remain deployment acceptance work. [Managed source reload](managed-configuration.md) uses this engine and preserves active immutable cleanup snapshots; [installation](installation.md) covers upgrades, troubleshooting and removal.
+`occupied/status` is also admin-only and includes controller details used by the panel. Preview commands remain read-only and use separate seeds. Tests exercise real HA APIs with virtual devices on HA 2026.9.3 and 2026.9.4. Physical-device behavior and hardware soak remain deployment acceptance work. [Managed source reload](managed-configuration.md) uses this engine and preserves active immutable cleanup snapshots; [installation](installation.md) covers upgrades, troubleshooting and removal.

@@ -45,7 +45,7 @@ def parser() -> argparse.ArgumentParser:
     validate.add_argument("file", type=Path)
     validate.add_argument("--json", action="store_true")
     validate.add_argument(
-        "--date", type=_date, help="ISO simulation date, or today in the program timezone"
+        "--date", type=_date, help="ISO schedule date, or today in the program timezone"
     )
     validate.add_argument("--days", type=int, default=1)
     validate.add_argument("--seed", default="0")

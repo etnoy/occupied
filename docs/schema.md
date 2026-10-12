@@ -2,7 +2,7 @@
 
 The editor, CLI, backend draft APIs and daily runtime accept this canonical model. Configure it using [the editor guide](editor.md) or apply through [the runtime API](runtime.md). Authoritative managed-file reloads remain Milestone 5. Preview never invokes services. In Home Assistant it reads a snapshot of known time sources; it does not evaluate activation conditions.
 
-Start with [the household example](../examples/house.yaml). `occupied-config export FILE` emits normalized YAML with shared defaults. JSON drafts and YAML normalize through the same models and validators. Unknown fields, duplicate YAML keys, unsafe tags, recursive aliases, and YAML merge keys are rejected. Use schema defaults for sharing settings. Issues include a model path and, for YAML input, source line/column.
+Start with [the controller example](../examples/house.yaml). `occupied-config export FILE` emits normalized YAML with shared defaults. JSON drafts and YAML normalize through the same models and validators. Unknown fields, duplicate YAML keys, unsafe tags, recursive aliases, and YAML merge keys are rejected. Use schema defaults for sharing settings. Issues include a model path and, for YAML input, source line/column.
 
 ## Program, identities, and targets
 
@@ -24,7 +24,7 @@ Groups expand to entities; duplicates are removed and members are sorted. Unknow
 
 `timezone` defaults to `home_assistant`: the HA preview API supplies configured timezone/location; offline preview needs `--timezone Europe/Stockholm` or an explicit program IANA timezone. Optional `location` contains latitude, longitude, and elevation in metres. CLI location arguments provide context when the program omits location.
 
-`day_boundary` defaults to `"02:00"`. A simulation date covers that local boundary to the next. Local clocks before the boundary belong to the following civil date. Weekdays refer to the simulation date, including events after midnight. Internal instants are aware UTC; event exports include local equivalents. Simulation days can be 23 or 25 hours.
+`day_boundary` defaults to `"02:00"`. A schedule date covers that local boundary to the next. Local clocks before the boundary belong to the following civil date. Weekdays refer to the schedule date, including events after midnight. Internal instants are aware UTC; event exports include local equivalents. Schedule days can be 23 or 25 hours.
 
 Repeated DST times choose the first occurrence. A nonexistent time advances to the first valid instant, with an issue recording the adjustment. Clock/window ordering and duration bounds are checked after conversion. Sun events are calculated for the requested date/location. If an event is unavailable, the item is skipped with an explanation. No sunset is invented.
 
@@ -61,11 +61,11 @@ when:
 
 `sun_range.sun` and sun window anchors support `sunrise`, `sunset`, `dawn`, `dusk`, `noon` and `midnight`. Dawn/dusk use civil twilight (sun 6° below the horizon). Solar events are calculated for each requested date, independent of HA's next-event sensors.
 
-`entity_range` accepts a time-bearing `input_datetime`, a sensor with `device_class: timestamp`, or a calendar with `attribute: start_time`/`end_time`. Time-only helpers repeat every simulation day. Dated helpers, timestamp sensors and calendar bounds refer only to the occurrence HA currently reports; they are not extrapolated onto other dates. Missing, unavailable or invalid values skip the item with a warning, and other dates report no known occurrence. Offsets can cross the boundary when the item permits it. The HA runtime reschedules pending work when a source changes, preserves ongoing handover/cleanup, and does not replay a completed step on the same simulation date. Calendar event lists and reactive triggers are not part of this source model. CLI previews have no HA snapshot, so entity sources are skipped with a warning.
+`entity_range` accepts a time-bearing `input_datetime`, a sensor with `device_class: timestamp`, or a calendar with `attribute: start_time`/`end_time`. Time-only helpers repeat every schedule day. Dated helpers, timestamp sensors and calendar bounds refer only to the occurrence HA currently reports; they are not extrapolated onto other dates. Missing, unavailable or invalid values skip the item with a warning, and other dates report no known occurrence. Offsets can cross the boundary when the item permits it. The HA runtime reschedules pending work when a source changes, preserves ongoing handover/cleanup, and does not replay a completed step on the same schedule date. Calendar event lists and reactive triggers are not part of this source model. CLI previews have no HA snapshot, so entity sources are skipped with a warning.
 
 Step start times always use uniform sampling, including clock, sun and relative intervals. Equal bounds give a fixed start time. Legacy `when.distribution`, `time_distribution` and range `mode` fields remain accepted for compatibility but do not change step start sampling. Timed activities still allow `when.distribution` to select `uniform` or `triangular`. Relative instants retain their parent step's dependency date and add elapsed UTC duration. A missing/skipped parent suppresses dependent work with an explanation. Cycles and dangling anchors are errors. If a parent is unavailable on some selected weekdays, narrow the dependent days or explicitly choose `missing_anchor: skip`.
 
-Clock ranges crossing midnight require `cross_midnight: true` inside `clock_range`. Windows use the same flag inside `between`/`within`. Crossing the simulation-day boundary additionally requires `allow_cross_boundary: true` on the item. These are separate choices: 23:00–01:00 crosses midnight but stays within a default 02:00 day.
+Clock ranges crossing midnight require `cross_midnight: true` inside `clock_range`. Windows use the same flag inside `between`/`within`. Crossing the schedule day boundary additionally requires `allow_cross_boundary: true` on the item. These are separate choices: 23:00–01:00 crosses midnight but stays within a default 02:00 day.
 
 ## Defaults and routines
 

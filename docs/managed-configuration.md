@@ -43,7 +43,7 @@ python3.14 -m venv /opt/occupied
 /opt/occupied/bin/occupied-config rename-id candidate.yaml step wake morning_wake --output reviewed.yaml
 ```
 
-`today` uses the program's resolved timezone and simulation-day boundary. Provide the same HA timezone/location context as the installed engine when the program inherits them. CLI validation shares the model/planner and performs no device calls. The CLI's three direct dependencies are pinned independently of HA; it has no HA import or frontend build requirement.
+`today` uses the program's resolved timezone and schedule day boundary. Provide the same HA timezone/location context as the installed engine when the program inherits them. CLI validation shares the model/planner and performs no device calls. The CLI's three direct dependencies are pinned independently of HA; it has no HA import or frontend build requirement.
 
 For an authenticated immediate reload, store a HA admin long-lived access token in a restricted file. Pass the token file path rather than token contents:
 
@@ -59,4 +59,4 @@ The [example manifest](../examples/puppet/occupied.pp) manages only the source Y
 
 Puppet's `file.validate_cmd` checks the candidate before replacement, using the same timezone/location and a seven-date preview. Failed validation retains the deployed file. Keep staging on the destination filesystem to support atomic replacement. A `refreshonly` reload subscribes to the file change and authenticates using the token file. The watcher makes redundant reloads harmless. The relevant resource semantics are documented in [Puppet's file/exec reference](https://help.puppet.com/core/current/Content/PuppetCore/Markdown/type.htm).
 
-Bootstrap the household once through `configuration.yaml`, then let Puppet own the YAML. Do not manage HA's `.storage`. An existing GUI entry needs an explicit source switch. Export/rename operations emit reviewable YAML and do not edit the managed source unless an output destination is deliberately chosen.
+Bootstrap the controller once through `configuration.yaml`, then let Puppet own the YAML. Do not manage HA's `.storage`. An existing GUI entry needs an explicit source switch. Export/rename operations emit reviewable YAML and do not edit the managed source unless an output destination is deliberately chosen.

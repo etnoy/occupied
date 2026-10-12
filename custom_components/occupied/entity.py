@@ -17,7 +17,7 @@ class OccupiedEntity(Entity):
             identifiers={(DOMAIN, engine.entry_id)},
             name="Occupied",
             manufacturer="Occupied",
-            model="Household simulator",
+            model="Entity controller",
         )
 
     async def async_added_to_hass(self) -> None:

@@ -32,7 +32,7 @@
     });
   });
   let revision = $derived($updates);
-  let householdName = $derived(
+  let controllerName = $derived(
     panel.draft?.name || panel.selectedInstance?.name,
   );
   let state = $derived.by(() => {
@@ -58,7 +58,7 @@
       : !state.enabled
         ? "Off"
         : state.active
-          ? "Running"
+          ? "Managing"
           : "Waiting"}
     {@const schedulable = resources(panel.saved).some((resource) =>
       ["step", "activity", "window"].includes(resource.kind),
@@ -76,7 +76,7 @@
       disabled={panel.busy || (!state.enabled && !schedulable)}
       onclick={() => panel.control(state.enabled ? "stop" : "start")}
     >
-      {t(state.enabled ? "Turn off simulation" : "Turn on simulation")}
+      {t(state.enabled ? "Stop managing" : "Start managing")}
     </button>
   {/if}
 {/snippet}
@@ -138,13 +138,13 @@
   <header>
     <div>
       <h1>Occupied</h1>
-      {#if !householdName}
-        <p id="house">{t("Loading household…")}</p>
-      {:else if householdName !== "Occupied" && !/^Occupied [0-9a-f]{8}$/.test(householdName)}
-        <p id="house">{householdName}</p>
+      {#if !controllerName}
+        <p id="house">{t("Loading controller…")}</p>
+      {:else if controllerName !== "Occupied" && !/^Occupied [0-9a-f]{8}$/.test(controllerName)}
+        <p id="house">{controllerName}</p>
       {/if}
       {#if panel.instances.length > 1}
-        <label for="instance-select">{t("Instance")}</label>
+        <label for="instance-select">{t("Controller")}</label>
         <select
           id="instance-select"
           value={panel.selectedEntry || ""}

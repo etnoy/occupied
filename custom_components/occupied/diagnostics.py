@@ -1,4 +1,4 @@
-"""Diagnostics omit household details unless explicitly requested by an admin."""
+"""Diagnostics omit controller details unless explicitly requested by an admin."""
 
 from homeassistant.components.diagnostics import REDACTED
 

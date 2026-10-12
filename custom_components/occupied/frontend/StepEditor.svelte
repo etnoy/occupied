@@ -32,7 +32,7 @@
         hideLabel: true,
         placeholder: editing
           ? undefined
-          : t("Optional, leave blank for auto-generated"),
+          : t("Optional title"),
       }}
     ></EditorField>
   </div>

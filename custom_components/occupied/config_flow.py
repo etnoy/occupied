@@ -1,4 +1,4 @@
-"""Create a GUI/imported household and retain options for existing proof entries."""
+"""Create a GUI/imported controller and retain options for existing proof entries."""
 
 from typing import Any
 from uuid import uuid4
@@ -90,7 +90,7 @@ def validate_input(data: dict[str, Any]) -> dict[str, Any]:
 
 
 class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Create independent household engines with stable entry identities."""
+    """Create independent controller engines with stable entry identities."""
 
     VERSION = 1
 

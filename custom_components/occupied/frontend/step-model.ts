@@ -196,7 +196,7 @@ export function stepEditor(
           : "entities",
     service: source?.actions?.[0]?.action || "homeassistant.turn_on",
     data: JSON.stringify(source?.actions?.[0]?.data || {}, null, 2),
-    entities: [...(entry?.entities || parent?.entities || [])],
+    entities: [...(entry?.entities || [])],
     action: entry?.actions?.[0]?.action.endsWith("turn_off")
       ? "turn_off"
       : "turn_on",

@@ -19,12 +19,14 @@
 </script>
 
 <section>
-  <h2>{t("Simulation")}</h2>
+  <h2>{t("Management")}</h2>
   <p class="hint">
     {#if dryRun}
       {t("Dry run is on. Devices are not controlled.")}
     {:else}
-      {t("Live mode controls devices when the simulation is on.")}
+      {t(
+        "Live mode manages devices when enabled and activation conditions are met.",
+      )}
     {/if}
   </p>
   <button

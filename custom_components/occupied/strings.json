@@ -3,17 +3,17 @@
   "config": {
     "step": {
       "user": {
-        "title": "Name your household",
-        "description": "Choose a distinct name for this household.",
+        "title": "Name your controller",
+        "description": "Choose a distinct name for this controller.",
         "data": {
-          "name": "Household name"
+          "name": "Controller name"
         }
       },
       "proof": {
         "title": "Original caller proof",
         "description": "Configure the milestone-one deterministic sequence. Permission starts disabled. Leave the activation entity empty for manual control. Each activation gradually brings the selected light to the configured brightness, then runs the light pair and optional remote activity.",
         "data": {
-          "name": "Household name",
+          "name": "Controller name",
           "light_entity": "Proof light",
           "activation_entity": "Activation entity (optional)",
           "allowed_states": "Allowed activation states",
@@ -43,16 +43,16 @@
       }
     },
     "error": {
-      "name_required": "Enter a household name.",
-      "name_already_exists": "Another Occupied household already uses this name. Choose a different name.",
+      "name_required": "Enter a controller name.",
+      "name_already_exists": "Another Occupied controller already uses this name. Choose a different name.",
       "invalid_config": "Check the selected entities, allowed states, activity name, and duration bounds.",
       "invalid_program": "The YAML is not a valid Occupied program. Validate it with the Occupied CLI to see field and line details.",
       "invalid_file": "Cannot load this file. Check the relative path, read permissions, and Occupied YAML; use the CLI for detailed validation."
     },
     "abort": {
-      "already_configured": "This Occupied instance is already configured.",
+      "already_configured": "This Occupied controller is already configured.",
       "invalid_program": "The canonical Occupied program is invalid.",
-      "ambiguous_instance": "Use named instances in configuration.yaml to identify the household."
+      "ambiguous_instance": "Use named controllers in configuration.yaml to identify the controller."
     }
   },
   "options": {
@@ -61,7 +61,7 @@
         "title": "Occupied caller proof",
         "description": "Configure the milestone-one deterministic sequence. Permission starts disabled. Leave the activation entity empty for manual control. Each activation gradually brings the selected light to the configured brightness, then runs the light pair and optional remote activity.",
         "data": {
-          "name": "Household name",
+          "name": "Controller name",
           "light_entity": "Proof light",
           "activation_entity": "Activation entity (optional)",
           "allowed_states": "Allowed activation states",
@@ -80,13 +80,13 @@
       "invalid_config": "Check the selected entities, allowed states, activity name, and duration bounds."
     },
     "abort": {
-      "daily_program": "Edit this household from Occupied under Settings > Devices & services."
+      "daily_program": "Edit this controller from Occupied under Settings > Devices & services."
     }
   },
   "entity": {
     "switch": {
       "enabled": {
-        "name": "Enabled"
+        "name": "Management"
       },
       "dry_run": {
         "name": "Dry run"
@@ -101,7 +101,7 @@
           "inactive": "Inactive",
           "paused": "Paused",
           "transitioning": "Transitioning",
-          "active": "Active",
+          "active": "Managing",
           "complete": "Complete"
         }
       },
@@ -117,11 +117,11 @@
     },
     "source_conflict": {
       "title": "Occupied bootstrap conflicts with {name}",
-      "description": "configuration.yaml selects a different source for {name}. Select this instance in Occupied and change its source explicitly, or remove its bootstrap declaration. The existing source has been retained."
+      "description": "configuration.yaml selects a different source for {name}. Select this controller in Occupied and change its source explicitly, or remove its bootstrap declaration. The existing source has been retained."
     },
     "ambiguous_bootstrap": {
-      "title": "Occupied bootstrap needs an instance identity",
-      "description": "Several Occupied instances exist and the legacy config_file declaration cannot identify one. Use instances with a stable id for each household. Existing instances have been retained."
+      "title": "Occupied bootstrap needs a controller identity",
+      "description": "Several Occupied controllers exist, so the legacy config_file declaration cannot identify the intended controller. Configure named entries under instances in configuration.yaml, with a stable id for each controller. Existing controllers have been retained."
     }
   }
 }

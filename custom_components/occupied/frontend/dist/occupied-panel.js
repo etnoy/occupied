@@ -903,8 +903,7 @@ var sv = {
   "Save step": "Spara steg",
   "Save changes": "Spara \xE4ndringar",
   "Step name": "Stegets namn",
-  "Optional, leave blank for auto-generated":
-    "Valfritt, l\xE4mna tomt f\xF6r automatisk generering",
+  "Optional title": "Valfri titel",
   "Preview schedule": "F\xF6rhandsvisa schema",
   "Back to steps": "Tillbaka till steg",
   "Back to settings": "Tillbaka till inst\xE4llningar",
@@ -954,10 +953,18 @@ var sv = {
   sunset: "solnedg\xE5ng",
   "Search entities or rooms": "S\xF6k entiteter eller rum",
   selected: "valda",
-  "Turn on simulation": "Starta simulering",
-  "Turn off simulation": "Stoppa simulering",
+  "Start managing": "B\xF6rja styra",
+  "Stop managing": "Sluta styra",
+  "Pause management": "Pausa styrningen",
+  "Resume management": "\xC5teruppta styrningen",
+  Management: "Styrning",
+  Controller: "Styrenhet",
+  "Live mode manages devices when enabled and activation conditions are met.":
+    "Enheter styrs n\xE4r styrningen \xE4r aktiverad och aktiveringsvillkoren \xE4r uppfyllda.",
+  "Saved schedule date": "Sparat schemadatum",
+  "Include controller details": "Inkludera styrenhetsdetaljer",
   Off: "Av",
-  Running: "K\xF6rs",
+  Managing: "Styr",
   Waiting: "V\xE4ntar",
   Paused: "Pausad",
   Overview: "\xD6versikt",
@@ -967,7 +974,7 @@ var sv = {
   "Discard edits": "\xC5terst\xE4ll \xE4ndringar",
   "Reload saved program": "L\xE4s in sparat program",
   "Unsaved edits": "Osparade \xE4ndringar",
-  "Loading household\u2026": "L\xE4ser in hush\xE5ll\u2026",
+  "Loading controller\u2026": "L\xE4ser in styrenhet\u2026",
   Enable: "Aktivera",
   Disable: "Inaktivera",
   Pause: "Pausa",
@@ -8185,7 +8192,7 @@ function stepEditor(program, entry, parent) {
           : "entities",
     service: source2?.actions?.[0]?.action || "homeassistant.turn_on",
     data: JSON.stringify(source2?.actions?.[0]?.data || {}, null, 2),
-    entities: [...(entry?.entities || parent?.entities || [])],
+    entities: [...(entry?.entities || [])],
     action: entry?.actions?.[0]?.action.endsWith("turn_off")
       ? "turn_off"
       : "turn_on",
@@ -9999,9 +10006,7 @@ function StepEditor($$anchor, $$props) {
   {
     let $0 = user_derived(() => ({
       hideLabel: true,
-      placeholder: get2(editing)
-        ? void 0
-        : get2(t)("Optional, leave blank for auto-generated"),
+      placeholder: get2(editing) ? void 0 : get2(t)("Optional title"),
     }));
     EditorField(node_1, {
       get panel() {
@@ -10432,7 +10437,9 @@ function SettingsView($$anchor, $$props) {
         ($0) => set_text(text_2, $0),
         [
           () =>
-            get2(t)("Live mode controls devices when the simulation is on."),
+            get2(t)(
+              "Live mode manages devices when enabled and activation conditions are met.",
+            ),
         ],
       );
       append($$anchor2, text_2);
@@ -10478,7 +10485,7 @@ function SettingsView($$anchor, $$props) {
       set_text(text_5, $3);
     },
     [
-      () => get2(t)("Simulation"),
+      () => get2(t)("Management"),
       () => get2(t)(get2(dryRun) ? "Use live mode" : "Use dry run"),
       () => get2(t)("Runtime details"),
       () => get2(t)("Tools"),
@@ -10927,8 +10934,12 @@ function OverviewView($$anchor, $$props) {
         },
         [
           () => get2(t)("Overview"),
-          () => get2(t)(get2(state2).enabled ? "Disable" : "Enable"),
-          () => get2(t)(get2(state2).paused ? "Resume" : "Pause"),
+          () =>
+            get2(t)(get2(state2).enabled ? "Stop managing" : "Start managing"),
+          () =>
+            get2(t)(
+              get2(state2).paused ? "Resume management" : "Pause management",
+            ),
           () => get2(t)("Active activities"),
           () => get2(t)("Lighting convergence"),
           () => get2(t)("Upcoming actions"),
@@ -11781,9 +11792,9 @@ function DiagnosticsView($$anchor, $$props) {
       () => get2(t)("Diagnostics"),
       () =>
         get2(t)(
-          "Default exports contain counts and runtime status. Include household details explicitly to export entities, sampled plans, observations and outcomes. Credential fields remain redacted.",
+          "Default exports contain counts and runtime status. Include controller details explicitly to export entities, sampled plans, observations and outcomes. Credential fields remain redacted.",
         ),
-      () => get2(t)("Include household details"),
+      () => get2(t)("Include controller details"),
       () => get2(t)("Refresh"),
       () => get2(t)("Recent runtime outcomes"),
     ],
@@ -11891,7 +11902,7 @@ function TimelineView($$anchor, $$props) {
         get2(t)(
           "This view reads saved runtime plans and dispatch outcomes. It never samples a replacement plan.",
         ),
-      () => get2(t)("Saved simulation date"),
+      () => get2(t)("Saved schedule date"),
       () => get2(t)("Refresh"),
       () => get2(t)("Download"),
     ],
@@ -12002,7 +12013,7 @@ function App($$anchor, $$props) {
             : !get2(state3).enabled
               ? "Off"
               : get2(state3).active
-                ? "Running"
+                ? "Managing"
                 : "Waiting",
         );
         const schedulable = user_derived(() =>
@@ -12048,9 +12059,7 @@ function App($$anchor, $$props) {
             () => get2(t)(get2(label)),
             () =>
               get2(t)(
-                get2(state3).enabled
-                  ? "Turn off simulation"
-                  : "Turn on simulation",
+                get2(state3).enabled ? "Stop managing" : "Start managing",
               ),
           ],
         );
@@ -12177,7 +12186,7 @@ function App($$anchor, $$props) {
     });
   });
   let revision = user_derived($updates);
-  let householdName = user_derived(
+  let controllerName = user_derived(
     () => get2(panel).draft?.name || get2(panel).selectedInstance?.name,
   );
   let state2 = user_derived(() => {
@@ -12206,23 +12215,23 @@ function App($$anchor, $$props) {
       var text_10 = only_child(p_1, true);
       template_effect(
         ($0) => set_text(text_10, $0),
-        [() => get2(t)("Loading household\u2026")],
+        [() => get2(t)("Loading controller\u2026")],
       );
       append($$anchor2, p_1);
     };
     var consequent_6 = ($$anchor2) => {
       var p_2 = root_56();
       var text_11 = only_child(p_2, true);
-      template_effect(() => set_text(text_11, get2(householdName)));
+      template_effect(() => set_text(text_11, get2(controllerName)));
       append($$anchor2, p_2);
     };
     var d = user_derived(
       () =>
-        get2(householdName) !== "Occupied" &&
-        !/^Occupied [0-9a-f]{8}$/.test(get2(householdName)),
+        get2(controllerName) !== "Occupied" &&
+        !/^Occupied [0-9a-f]{8}$/.test(get2(controllerName)),
     );
     if_block(node_5, ($$render) => {
-      if (!get2(householdName)) $$render(consequent_5);
+      if (!get2(controllerName)) $$render(consequent_5);
       else if (get2(d)) $$render(consequent_6, 1);
     });
   }
@@ -12278,7 +12287,7 @@ function App($$anchor, $$props) {
               select_option(select, select_value));
           }
         },
-        [() => get2(t)("Instance")],
+        [() => get2(t)("Controller")],
       );
       delegated("change", select, (event2) => {
         get2(panel).selectInstance(event2.currentTarget.value);

@@ -242,7 +242,7 @@ class _Planner:
             self.issues.append(
                 Issue(
                     "day_or_routine_skipped",
-                    f"{item.id} is not selected for this simulation day/routine occurrence",
+                    f"{item.id} is not selected for this schedule day/routine occurrence",
                     path,
                     "info",
                 )
@@ -419,7 +419,7 @@ class _Planner:
                     self.issues.append(
                         Issue(
                             "outside_day",
-                            f"Step {item.id} extends outside the simulation day; "
+                            f"Step {item.id} extends outside the schedule day; "
                             "use an explicit allow_cross_boundary policy",
                             path,
                         )
@@ -686,7 +686,7 @@ class _Planner:
                     self.issues.append(
                         Issue(
                             "outside_day",
-                            f"Window {item.id} extends outside the simulation day",
+                            f"Window {item.id} extends outside the schedule day",
                             path,
                         )
                     )
@@ -750,7 +750,7 @@ class _Planner:
                             self.issues.append(
                                 Issue(
                                     "outside_day",
-                                    f"Window {item.id} actions extend outside the simulation day",
+                                    f"Window {item.id} actions extend outside the schedule day",
                                     path,
                                 )
                             )
@@ -832,7 +832,7 @@ def preview_dates(
     """Date streams are independent; previewing a week or one day yields identical choices."""
     dates = tuple(dates)
     if not 1 <= len(dates) <= 31:
-        raise ProgramError([Issue("preview_dates", "Preview between one and 31 simulation dates")])
+        raise ProgramError([Issue("preview_dates", "Preview between one and 31 schedule dates")])
     result = []
     for day in dates:
         day_seed = hashlib.sha256(json.dumps([str(seed), day.isoformat()]).encode()).hexdigest()

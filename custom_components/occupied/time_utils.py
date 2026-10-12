@@ -1,4 +1,4 @@
-"""Pure timezone/sun resolution for one local simulation date."""
+"""Pure timezone/sun resolution for one local schedule date."""
 
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
@@ -186,7 +186,7 @@ class SimulationDay:
                 [
                     Issue(
                         "clock_order",
-                        "Clock range ends before its start within this simulation day",
+                        "Clock range ends before its start within this schedule day",
                         path,
                     )
                 ]
@@ -245,7 +245,7 @@ class SimulationDay:
                             Issue(
                                 "time_source_other_date",
                                 f"{spec.entity_id} has no reported occurrence on this "
-                                "simulation date; item skipped",
+                                "schedule date; item skipped",
                                 path,
                                 "info",
                             )
