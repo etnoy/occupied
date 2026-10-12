@@ -1,0 +1,41 @@
+custom_components/occupied/frontend/App.svelte
+  s_f52ea3dda3ee7d::t_5f11d29ee3471b 177,192,195
+custom_components/occupied/frontend/DeleteStepDialog.svelte
+  s_f52ea3dda3ee7d::t_a4a0a45ecd34ca 74
+custom_components/occupied/frontend/StepActions.svelte
+  s_f52ea3dda3ee7d::t_12214abf06d91f 2,8,10,17-29,31,33-35,37
+custom_components/occupied/frontend/StepEditor.svelte
+  s_f52ea3dda3ee7d::t_ae88af0954a87d 4-5,62-67
+custom_components/occupied/frontend/StepsView.svelte
+  s_f52ea3dda3ee7d::t_0ebac7e8daff01 11,13-14,36,58,68-72,74,78-92,94-131,139
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_f52ea3dda3ee7d::t_fb3b62b518ec73 572-579,582,586,588-591,593-597,826,7168-7228,8631,8653-8700,8728-8735,8737-8740,8742-8753,8756-8774,8776-8778,8780-8783,8785,8787-8789,8791-8792,8794-9040,9059,9069,9182,9224,9284,9287,9291-9292,9346,9388,9408,9440,9537,9571,9683-9684,9695,9784,9842-9845,9853,9861,9870,9936,9999-10023,10026-10057,10059,10061-10062,10065,10068-10096,10098-10099,10102-10103,10106-10113,10116,10119,10122,10124,10126-10143,10147-10178,10180-10204,10207-10210,10212-10216,10218-10222,10225-10234,10237-10238,10240-10241,10243,10246,10255-10260,10262,10266,10272,10275,10279,10293-10296,10299,10325,10341,10344-10345,10356-10366,10380-10436,10442-10450,10456,10467,10474,10479-10485,10491-10492,10496-10497,10501-10503,10509,10738,10741,10788,10869,10899,10956,10986,11006,11079,11084-11085,11165,11247,11260,11386,11516,11570,11607,11801,11814,12025,12028-12029,12150,12185,12262,12286,12330,12336,12365,12397,12463-12467,12951-12954
+custom_components/occupied/frontend/dist/step-editor-controller.js
+  s_f52ea3dda3ee7d::t_8b26b5552a8648 85
+custom_components/occupied/frontend/dist/styles.js
+  s_f52ea3dda3ee7d::t_f77b1ecba9bb57 429-436,439,443,445-448,450-454,683
+custom_components/occupied/frontend/occupied-panel.ts
+  s_f52ea3dda3ee7d::t_ee9936fefe5d58 473-476
+custom_components/occupied/frontend/step-editor-controller.ts
+  s_f52ea3dda3ee7d::t_4e201817f7fec7 90
+custom_components/occupied/frontend/styles.ts
+  s_f52ea3dda3ee7d::t_be5dfe8356db10 428-435,438,442,444-447,449-453,682
+docs/editor.md
+  s_f52ea3dda3ee7d::t_8477cac190280c 14,16-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f1827e5bf24ca8e64f26fc115362f7f0f8dc168e",
+  "prompts": {},
+  "sessions": {
+    "s_f52ea3dda3ee7d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11fb1-5697-76a2-afb7-c899c7af8b87",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
