@@ -1,0 +1,25 @@
+custom_components/occupied/frontend/StepActions.svelte
+  s_8a52fcfd80e23c::t_f2a73890c103b3 30-32,36-40
+custom_components/occupied/frontend/step-model.ts
+  s_8a52fcfd80e23c::t_04d2ecd87a3b05 560,562
+custom_components/occupied/frontend/styles.ts
+  s_8a52fcfd80e23c::t_dcec194b6a7859 530-540
+tests/frontend/src/model.test.ts
+  s_8a52fcfd80e23c::t_d941044911b041 721
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "8231a2515514b8edf30838fe450ae03cb965be68",
+  "prompts": {},
+  "sessions": {
+    "s_8a52fcfd80e23c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13052-dd5c-76e0-9ac7-e468deb77bd9",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
