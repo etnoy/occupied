@@ -1,0 +1,19 @@
+custom_components/occupied/frontend/step-editor-controller.ts
+  s_1787776c214d9f::t_dfb004fdadbc40 17-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "07b0708a300b51507b3592aec174b218f337c170",
+  "prompts": {},
+  "sessions": {
+    "s_1787776c214d9f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f21-c0c5-7380-93cb-d207db10e947",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
