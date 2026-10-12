@@ -1,0 +1,164 @@
+docs/runtime.md
+  s_9b0bd3556eb9f1::t_1c3f519feaa1c0 7
+  s_7e8df04c1e560b::t_58d5154396bed1 3
+custom_components/occupied/translations/en.json
+  s_9eae8be67d309b::t_19baf57cf438d8 52
+  s_9eae8be67d309b::t_25a3afa5a8232e 54,127-128
+  s_9eae8be67d309b::t_17cfe55d31da75 129-131
+  s_7e8df04c1e560b::t_478423d93776a8 132
+tests/test_config_flow.py
+  s_9eae8be67d309b::t_f6c24dd55288f9 20
+  s_9eae8be67d309b::t_efee44e86afea1 18-19
+  s_9eae8be67d309b::t_c816697fd7c6ae 21-23
+  s_7e8df04c1e560b::t_e2441dde937079 1,9,24-27
+scripts/check_release.py
+  s_7e8df04c1e560b::t_223c13aaa9f2e7 23
+custom_components/occupied/engine_daily.py
+  s_7e8df04c1e560b::t_6d6375bbdd8a8a 1398-1400
+custom_components/occupied/config_flow.py
+  s_7e8df04c1e560b::t_a97bdc1a6a114b 4,93,102-110,112-123,126-131,133,143-144,228-229
+custom_components/occupied/frontend/steps.ts
+  s_f52ea3dda3ee7d::t_e8868ce699ef7b 4,11-22,32,34-43,45-50
+custom_components/occupied/strings.json
+  s_9eae8be67d309b::t_7060b8fe260293 54,127-128
+  s_9eae8be67d309b::t_2ca84e072f6087 52
+  s_9eae8be67d309b::t_9c7b5f4634e642 129-131
+  s_7e8df04c1e560b::t_bc64e9b2daea00 132
+custom_components/occupied/frontend/StepActions.svelte
+  s_f52ea3dda3ee7d::t_d46887118ee86c 21
+tests/test_managed.py
+  s_0f346951ec0436::t_1e506cee94d916 279,311
+custom_components/occupied/frontend/App.svelte
+  s_7e8df04c1e560b::t_aac0bfe1364720 15,51,73,82-86,138-171,175-182,196,221,231-240,266
+custom_components/occupied/websocket_api.py
+  s_7e8df04c1e560b::t_dfe29df06aa5f1 15-16,36-78,214,220
+custom_components/occupied/frontend/step-editor-controller.ts
+  s_f52ea3dda3ee7d::t_decf92964a4a10 72-74
+docs/installation.md
+  s_9eae8be67d309b::t_c288c0a6fb88ac 28
+  s_9eae8be67d309b::t_44d626e98d3978 29-31
+  s_7e8df04c1e560b::t_8a1426e947860e 32-45
+custom_components/occupied/bootstrap.py
+  s_7e8df04c1e560b::t_f972fca38e8e92 1-68
+custom_components/occupied/frontend/step-model.ts
+  s_3a492f5741b020::t_c5087ea2652676 565-566
+custom_components/occupied/frontend/StepsView.svelte
+  s_7e8df04c1e560b::t_481bb042cfd045 37,59,84,134
+custom_components/occupied/frontend/occupied-panel.ts
+  s_7e8df04c1e560b::t_c06a57137793e3 18,28,57,77-82,113-114,126-134,149-150,168-169,173-174,176,186-291,357-389,391,397,409-416,429-432,449-456,460-490,492,704,709-711,732
+docs/editor.md
+  s_f52ea3dda3ee7d::t_ef1544241b1977 75
+  s_7e8df04c1e560b::t_e9f84528b9249b 5-6,60,64
+custom_components/occupied/frontend/StepEditor.svelte
+  s_f52ea3dda3ee7d::t_1213feba9df981 22
+package.json
+  s_09c00cb2663bce::t_eca4da254d9e99 11
+custom_components/occupied/panel.py
+  s_7e8df04c1e560b::t_b55f034502ee20 3,26-34,55-56,59,63-66
+custom_components/occupied/frontend/UnsavedStepDialog.svelte
+  s_f52ea3dda3ee7d::t_ff4ee13140c68f 1-42
+custom_components/occupied/engine.py
+  s_7e8df04c1e560b::t_71573e414357a7 414-416
+custom_components/occupied/instances.py
+  s_7e8df04c1e560b::t_d6dde0d19537a0 1-73
+custom_components/occupied/frontend/ConfigurationView.svelte
+  s_f52ea3dda3ee7d::t_05eddfa5858c92 99-102
+custom_components/occupied/managed.py
+  s_7e8df04c1e560b::t_6256aa861dbd11 11,20-21,80,128
+custom_components/occupied/frontend/styles.ts
+  s_f52ea3dda3ee7d::t_94aafdcfa71e72 497-519
+README.md
+  s_7e8df04c1e560b::t_e7d081c66010a0 20
+custom_components/occupied/__init__.py
+  s_7e8df04c1e560b::t_b3cb5224048e73 20-31,33-38,110-112,116-121,138,183,203,217-218
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_7e8df04c1e560b::t_550da38547f269 641-663,853-863,896-900,2413,2415,2417,2496-2498,2762-2763,4382,4403,8501-8502,8607-8609,8628-8634,8643-8648,8650-8658,8879-8881,8883,9914-9916,9930-9947,9955,9975-9976,9984-9985,9993-9994,10006,10008,10015,10017,10027-10028,10033-10034,10037,10042,10044,10046,10073,10117,10133,10148,10264,10310,10343,10362,10551,10652,10892,10984,11199,11285,11383,11456,11593-11596,11617,11685,11728,11741,11833,11835-11884,11888,11895-11907,11933,11964,11983-11984,11997,12043-12048,12115-12116,12121-12206,12209-12210,12213-12241,12243,12255,12264-12265,12275,12277-12279,12281,12298-12299,12319,12321-12322,12324-12325,12328-12332,12335-12336,12346,12348-12350,12352-12376,12378-12380,12382,12385-12386,12388,12390,12393,12395,12405,12415,12425,12435,12445,12455,12465,12475-12482,12487,12489,12491,12493,12495,12497,12499,12501,12504,12507,12512-12524,12529,12531,12533-12538,12540,12544,12590,12609-12614,12641-12642,12654-12661,12675-12676,12694-12695,12699-12700,12702,12710-12812,12874-12906,12908,12914,12926-12933,12946-12949,12964-12971,12975-13005,13007,13214,13219-13221,13242
+custom_components/occupied/frontend/dist/step-editor-controller.js
+  s_7e8df04c1e560b::t_7ea5995c276bd0 67-69
+custom_components/occupied/frontend/dist/step-model.js
+  s_7e8df04c1e560b::t_157b187c437068 530-531
+custom_components/occupied/frontend/dist/steps.js
+  s_7e8df04c1e560b::t_a5643d6b637dde 3,6-12,20,22-27,29-37
+custom_components/occupied/frontend/dist/styles.js
+  s_7e8df04c1e560b::t_d4afb2a9ab6a1b 498-520
+custom_components/occupied/frontend/dist/translations.js
+  s_7e8df04c1e560b::t_713ffe49c2e9fd 4-14,46-50
+custom_components/occupied/frontend/translations.ts
+  s_7e8df04c1e560b::t_6d331e7a1e9e24 3-13,45-49
+custom_components/occupied/frontend/types.ts
+  s_7e8df04c1e560b::t_4e4e9a900c1ed7 281-293,370
+docs/managed-configuration.md
+  s_7e8df04c1e560b::t_0573e67baddc0f 5-8
+tests/frontend/src/instances.test.ts
+  s_7e8df04c1e560b::t_a27ab7f5c705a5 1-284
+tests/frontend/src/model.test.ts
+  s_7e8df04c1e560b::t_a3e6237989c9b4 566-568,572,577,582,587,592,594-596,706,734,738,742,785,791,794-795,805-811,814-831
+tests/test_instances.py
+  s_7e8df04c1e560b::t_78417512adf4a7 1-407
+tests/test_panel.py
+  s_7e8df04c1e560b::t_1eb83f792d0331 22-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "e7e027dc0ea70f0445a93b4a7f58e59e74113977",
+  "prompts": {},
+  "sessions": {
+    "s_09c00cb2663bce": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11f4e-07c9-7a42-a993-447ca67d3e50",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_0f346951ec0436": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11271-f137-79a3-86ef-83a0894f88e0",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_3a492f5741b020": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12ed9-3c92-7d23-836b-d450607360df",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_7e8df04c1e560b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12ec6-98be-74d0-bc12-3eaab97678c5",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_9b0bd3556eb9f1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a46-6fc9-7460-a72d-1af77d3b0020",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_9eae8be67d309b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1111c-1aad-7330-bcac-ab43d7d7eb7e",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_f52ea3dda3ee7d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11fb1-5697-76a2-afb7-c899c7af8b87",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
