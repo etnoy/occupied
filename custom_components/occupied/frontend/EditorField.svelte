@@ -93,6 +93,7 @@
     <select
       {id}
       data-builder-field={key}
+      aria-label={options.hideLabel ? t(label) : undefined}
       aria-invalid={invalid}
       aria-describedby={described}
       value={String(value)}

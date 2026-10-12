@@ -26,10 +26,6 @@
         : "GUI storage is authoritative. Importing YAML creates a draft snapshot. Selecting a managed file below changes the saved program explicitly.",
     )}
   </p>
-  <p>
-    {t(source.mode === "file" ? "Managed file" : "GUI storage")} ·
-    {source.status || "ready"}
-  </p>
   <input
     type="text"
     aria-label={t("Relative managed-file path")}

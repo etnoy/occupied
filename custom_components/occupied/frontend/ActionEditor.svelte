@@ -16,24 +16,27 @@
     {context}
     key="kind"
     label="Step type"
-    value={form.kind}
+    value={form.kind === "entities" ? form.action : form.kind}
     update={(value) => {
-      form.kind = value;
-      form.entities = [];
+      const kind =
+        value === "turn_on" || value === "turn_off" ? "entities" : value;
+      if (form.kind !== kind) form.entities = [];
+      form.kind = kind;
+      if (kind === "entities") form.action = value;
     }}
     options={{
+      hideLabel: true,
       choices: [
-        ["entities", "Lights and switches"],
+        ["turn_on", "Turn on lights/switches"],
+        ["turn_off", "Turn off lights/switches"],
         ["service", "Entity service action"],
-        ["scene", "Home Assistant scene"],
+        ["scene", "Activate Home Assistant scene"],
       ],
       render: true,
     }}
   ></EditorField>
   <EntitiesEditor {panel} {context} />
-  {#if form.kind === "scene"}
-    <p>{t("Activate scene")}</p>
-  {:else if form.kind === "service"}
+  {#if form.kind === "service"}
     <EditorField
       {panel}
       {context}
@@ -51,37 +54,5 @@
       update={(value) => (form.data = value)}
       options={{ multiline: true }}
     ></EditorField>
-  {:else}
-    <EditorField
-      {panel}
-      {context}
-      key="action"
-      label="Action"
-      value={form.action}
-      update={(value) => (form.action = value)}
-      options={{
-        choices: [
-          ["turn_on", "Turn on"],
-          ["turn_off", "Turn off"],
-        ],
-        render: true,
-      }}
-    ></EditorField>
-  {/if}
-  {#if form.kind === "entities" && form.action === "turn_on" && form.entities.some((id) => panel.catalog.entities.find((entity) => entity.entity_id === id)?.dimmable)}
-    <EditorField
-      {panel}
-      {context}
-      key="brightness"
-      label="Brightness (%)"
-      value={form.brightness}
-      update={(value) => (form.brightness = value)}
-      options={{ type: "number", min: 1, max: 100 }}
-    ></EditorField>
-    <p class="hint">
-      {t(
-        "Leave blank to use the default brightness. Applies to dimmable lights.",
-      )}
-    </p>
   {/if}
 </div>

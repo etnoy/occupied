@@ -22,14 +22,8 @@
   let { t, entries } = $derived(data);
 </script>
 
-<div class="page-heading">
-  <div>
-    <h2>{t("Your steps")}</h2>
-    <p class="hint">
-      {t("Choose what happens, when it happens, and what follows.")}
-    </p>
-  </div>
-  {#if entries.length}
+{#if entries.length}
+  <div class="page-heading">
     <button
       type="button"
       class="primary"
@@ -39,19 +33,10 @@
     >
       {t("Create step")}
     </button>
-  {/if}
-</div>
+  </div>
+{/if}
 {#if !entries.length}
   <section class="routine-empty">
-    <h2>{t("A little activity. A lived-in home.")}</h2>
-    <p class="hint">
-      {t(
-        "Start with an entity action or a scene, then add whatever should happen next.",
-      )}
-    </p>
-    <p class="empty-steps">
-      {t("Set timing, select entities, and choose an action.")}
-    </p>
     <button
       type="button"
       class="primary"
