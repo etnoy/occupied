@@ -1,0 +1,95 @@
+README.md
+  s_1787776c214d9f::t_fcdbf79a27f82e 6,18,20,24,44
+custom_components/occupied/__init__.py
+  s_1787776c214d9f::t_5471b6f19ee92e 23
+custom_components/occupied/cli.py
+  s_1787776c214d9f::t_bbeb32d3b24fd3 48
+custom_components/occupied/config_flow.py
+  s_1787776c214d9f::t_75cf3e5ffe8de9 1,93
+custom_components/occupied/diagnostics.py
+  s_1787776c214d9f::t_0f0f6d578cc1bf 1
+custom_components/occupied/engine.py
+  s_1787776c214d9f::t_4a2c2cc9cff13c 156
+custom_components/occupied/engine_daily.py
+  s_1787776c214d9f::t_f7718197cc5f32 338,539,874,1307
+custom_components/occupied/entity.py
+  s_1787776c214d9f::t_6461ce6dcc9fd5 20
+custom_components/occupied/frontend/App.svelte
+  s_1787776c214d9f::t_181fd739cb0a26 35,61,79,141-144,147
+custom_components/occupied/frontend/DiagnosticsView.svelte
+  s_1787776c214d9f::t_ab2949b32a7e6d 20,31
+custom_components/occupied/frontend/OverviewView.svelte
+  s_1787776c214d9f::t_9b6786a5274345 51,58
+custom_components/occupied/frontend/SettingsView.svelte
+  s_1787776c214d9f::t_398099ec831e5c 22,27-29
+custom_components/occupied/frontend/StepEditor.svelte
+  s_db1f0b327d1127::t_f48ebfbfcd6573 35
+custom_components/occupied/frontend/TimelineView.svelte
+  s_1787776c214d9f::t_49cc25ed709de5 25
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_1787776c214d9f::t_19c81693ccff13 906,956-965,967,977,8195,10009,10440-10442,10488,10937-10942,11795,11797,11905,12016,12062,12189,12218,12225,12230-12231,12234,12290
+custom_components/occupied/frontend/dist/step-model.js
+  s_1787776c214d9f::t_30ab287addad6f 173
+custom_components/occupied/frontend/dist/translations.js
+  s_1787776c214d9f::t_55153f4a9df4f6 56,106-115,117,127
+custom_components/occupied/frontend/step-model.ts
+  s_167f5be30bc21b::t_70e8510ca238bf 199
+custom_components/occupied/frontend/translations.ts
+  s_1787776c214d9f::t_b0919a66ceb97a 55,105-114,116,126
+custom_components/occupied/planner.py
+  s_1787776c214d9f::t_03bea97fb57412 245,422,689,753,835
+custom_components/occupied/preview.py
+  s_1787776c214d9f::t_ab26490bb00561 32
+custom_components/occupied/services.yaml
+  s_1787776c214d9f::t_0b6d2ffc9985c6 2-3,6,12-13,16,22-23,26,32-33,36,46,60
+custom_components/occupied/strings.json
+  s_1787776c214d9f::t_af794805576a8c 6-7,9,16,46-47,53,55,64,83,89,104,120,123-124
+custom_components/occupied/time_utils.py
+  s_1787776c214d9f::t_7b1f2df4d749af 1,189,248
+custom_components/occupied/translations/en.json
+  s_1787776c214d9f::t_8b3f3fdab7b77d 6-7,9,16,46-47,53,55,64,83,89,104,120,123-124
+docs/editor.md
+  s_1787776c214d9f::t_fb185a28bedb60 3,5,22,26,28,40,42,54,73,75
+docs/installation.md
+  s_1787776c214d9f::t_c393ebc4f8b28a 28,43,71
+docs/managed-configuration.md
+  s_1787776c214d9f::t_e2693bbc219efb 46,62
+docs/releasing.md
+  s_1787776c214d9f::t_e46e6f8c764572 53
+docs/runtime.md
+  s_1787776c214d9f::t_1d3389f15fd832 7,16,52,58,68,82,94,104
+docs/schema.md
+  s_1787776c214d9f::t_90042fe59974a2 5,27,64,68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b5d1d2fb0057c740d73c28e5f7b7b835734ad4d4",
+  "prompts": {},
+  "sessions": {
+    "s_167f5be30bc21b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f22-55bb-73e1-a05a-d471b0a85dc0",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_1787776c214d9f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f21-c0c5-7380-93cb-d207db10e947",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_db1f0b327d1127": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f22-cc84-7371-abf4-81971335709a",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
