@@ -1395,6 +1395,9 @@ class DailyEngine:
     @callback
     def _notify(self):
         async_dispatcher_send(self.hass, self.signal)
+        from .instances import INSTANCE_SIGNAL
+
+        async_dispatcher_send(self.hass, INSTANCE_SIGNAL)
 
     def snapshot(self):
         now = dt_util.utcnow()

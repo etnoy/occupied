@@ -18,6 +18,5 @@
   "requirements": [
     "pydantic>=2.13.4,<2.14"
   ],
-  "single_config_entry": true,
   "version": "0.1.0"
 }

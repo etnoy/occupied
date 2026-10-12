@@ -8,6 +8,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.event import async_call_later, async_track_time_interval
 
+from .bootstrap import check_bootstrap
 from .const import DOMAIN
 from .file_config import file_fingerprint, load_yaml, read_managed
 from .validation import ProgramError, RevisionConflict, program_revision
@@ -16,28 +17,8 @@ POLL_INTERVAL = timedelta(seconds=5)
 DEBOUNCE_SECONDS = 1
 
 
-def source_lock(hass):
-    return hass.data[DOMAIN].setdefault("editor_lock", asyncio.Lock())
-
-
-@callback
-def check_bootstrap(hass, entry, bootstrap):
-    """Check before HA's singleton flow guard can short-circuit an import."""
-    conflict = bootstrap and (
-        entry.data.get("source") != "file"
-        or entry.data.get("config_file") != bootstrap["config_file"]
-    )
-    if conflict:
-        ir.async_create_issue(
-            hass,
-            DOMAIN,
-            "source_conflict",
-            is_fixable=False,
-            severity=ir.IssueSeverity.ERROR,
-            translation_key="source_conflict",
-        )
-    else:
-        ir.async_delete_issue(hass, DOMAIN, "source_conflict")
+def source_lock(hass, entry_id):
+    return hass.data[DOMAIN].setdefault("editor_locks", {}).setdefault(entry_id, asyncio.Lock())
 
 
 class SourceManager:
@@ -96,7 +77,7 @@ class SourceManager:
 
     async def async_reload(self):
         """Idempotent normalized reload, including raw changes and error recovery."""
-        async with source_lock(self.hass):
+        async with source_lock(self.hass, self.entry.entry_id):
             if self.closed or self.engine.closed:
                 raise HomeAssistantError("Occupied is unloaded")
             if self.mode != "file":
@@ -144,7 +125,7 @@ class SourceManager:
 
     async def async_select(self, mode, path, expected_revision):
         """Explicit in-place source change; invalid candidates leave the source intact."""
-        async with source_lock(self.hass):
+        async with source_lock(self.hass, self.entry.entry_id):
             if self.closed or self.engine.closed:
                 raise HomeAssistantError("Occupied is unloaded")
             if expected_revision != program_revision(self.engine.program):

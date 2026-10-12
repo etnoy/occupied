@@ -18,10 +18,7 @@
   {#if entry.kind === "steps"}
     <button
       type="button"
-      disabled={panel.busy || !!panel.stepEditor?.changed}
-      title={panel.stepEditor?.changed
-        ? panel.t("Save or cancel your changes before adding a related step.")
-        : undefined}
+      disabled={panel.busy}
       onclick={() => startStep(panel, null, entry)}
     >
       {panel.t("Add related step")}

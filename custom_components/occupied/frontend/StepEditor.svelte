@@ -19,7 +19,7 @@
 </script>
 
 <section class="routine-editor">
-  <h2 tabindex="-1">{t(editing ? "Edit step" : "Create step")}</h2>
+  {#if !editing}<h2 tabindex="-1">{t("Create step")}</h2>{/if}
   <div class="step-name-editor">
     <EditorField
       {panel}

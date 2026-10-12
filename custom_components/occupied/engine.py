@@ -411,6 +411,9 @@ class OccupiedEngine:
     @callback
     def _notify(self) -> None:
         async_dispatcher_send(self.hass, self.signal)
+        from .instances import INSTANCE_SIGNAL
+
+        async_dispatcher_send(self.hass, INSTANCE_SIGNAL)
 
     def snapshot(self) -> dict[str, Any]:
         """Compact authenticated panel status; the panel is never the caller."""

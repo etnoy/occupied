@@ -15,6 +15,7 @@ import type {
   PreviewResult,
   JsonObject,
   Tab,
+  InstanceDocument,
 } from "./types.js";
 import { errorMessage, progress } from "./util.js";
 import { copy, set } from "./model.js";
@@ -24,6 +25,7 @@ import { mount, unmount, flushSync } from "svelte";
 import { writable } from "svelte/store";
 import App from "./App.svelte";
 import { loadHaControls } from "./ha-controls.js";
+import { hasStepChanges } from "./step-model.js";
 
 type PanelConfig = { config?: { config_entry_id?: string } };
 
@@ -52,6 +54,7 @@ export class OccupiedPanel extends HTMLElement {
   tab: Tab = "routines";
   t = translator("en");
   stepEditor: StepEditor | null = null;
+  pendingStepExit: (() => void) | null = null;
   selectedStep: string | null = null;
   actual?: TimelineDocument;
   timelineDate = "";
@@ -71,6 +74,12 @@ export class OccupiedPanel extends HTMLElement {
 
   _hass!: HomeAssistant;
   _loading = false;
+  instances: InstanceDocument[] = [];
+  selectedEntry: string | null = null;
+  private _instancesReady = false;
+  private _instancesEpoch = 0;
+  private _instancesUnsubscribe: (() => void) | null = null;
+  private _instancesSubscribing = false;
   private _panel?: PanelConfig;
   private _loadedEntry: string | null = null;
   private _timer?: ReturnType<typeof setInterval>;
@@ -101,6 +110,8 @@ export class OccupiedPanel extends HTMLElement {
       selector.hass = value;
     if (changed) {
       this._disposeSubscription();
+      this._disposeInstances();
+      this._instancesReady = false;
       this._subscribe();
     }
     this._load();
@@ -111,6 +122,15 @@ export class OccupiedPanel extends HTMLElement {
   }
   set narrow(value: boolean) {
     this.toggleAttribute("narrow", !!value);
+  }
+  set route(_value: unknown) {
+    void this._load();
+  }
+
+  get selectedInstance() {
+    return this.instances.find(
+      (item) => item.config_entry_id === this.selectedEntry,
+    );
   }
 
   connectedCallback() {
@@ -126,6 +146,8 @@ export class OccupiedPanel extends HTMLElement {
     }
     this._load();
     window.addEventListener("beforeunload", this._beforeUnload);
+    window.addEventListener("location-changed", this._locationChanged);
+    window.addEventListener("popstate", this._locationChanged);
     this._timer = setInterval(() => {
       for (const bar of this.shadowRoot.querySelectorAll<HTMLProgressElement>(
         "progress[data-start]",
@@ -143,10 +165,15 @@ export class OccupiedPanel extends HTMLElement {
     this._loadedEntry = null;
     this._loading = false;
     this._disposeSubscription();
+    this._disposeInstances();
+    this._instancesReady = false;
     clearInterval(this._timer);
     if (this._timelineTimer) clearTimeout(this._timelineTimer);
     window.removeEventListener("beforeunload", this._beforeUnload);
+    window.removeEventListener("location-changed", this._locationChanged);
+    window.removeEventListener("popstate", this._locationChanged);
   }
+  private _locationChanged = () => void this._load();
   private _beforeUnload = (event: BeforeUnloadEvent) => {
     if (this.dirty || this.stepEditor?.changed) {
       event.preventDefault();
@@ -155,6 +182,112 @@ export class OccupiedPanel extends HTMLElement {
   };
 
   // --- Backend connection -------------------------------------------------
+
+  private _disposeInstances() {
+    this._instancesEpoch++;
+    this._instancesUnsubscribe?.();
+    this._instancesUnsubscribe = null;
+    this._instancesSubscribing = false;
+  }
+  private async _subscribeInstances() {
+    if (
+      this._instancesUnsubscribe ||
+      this._instancesSubscribing ||
+      !this.isConnected
+    )
+      return;
+    this._instancesSubscribing = true;
+    const epoch = this._instancesEpoch;
+    try {
+      const unsubscribe = await this._hass.connection.subscribeMessage<
+        InstanceDocument[]
+      >(
+        (instances) => {
+          if (epoch !== this._instancesEpoch || !this.isConnected) return;
+          this.instances = instances;
+          this.flush();
+          if (!this.selectedInstance?.loaded && this._loadedEntry) {
+            this.epoch++;
+            this._loadedEntry = null;
+            this._loading = this.busy = false;
+            this._disposeSubscription();
+          }
+          void this._load();
+        },
+        { type: "occupied/instances_subscribe" },
+      );
+      if (epoch !== this._instancesEpoch || !this.isConnected) unsubscribe();
+      else this._instancesUnsubscribe = unsubscribe;
+    } catch (error) {
+      if (epoch === this._instancesEpoch) this.fail(error);
+    } finally {
+      if (epoch === this._instancesEpoch) this._instancesSubscribing = false;
+    }
+  }
+  private _writeSelection(entry: string, replace = false) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("config_entry", entry);
+    window.history[replace ? "replaceState" : "pushState"](null, "", url);
+    window.dispatchEvent(new Event("location-changed"));
+  }
+  selectInstance(entry: string) {
+    if (entry === this.selectedEntry || this.busy) return;
+    if (!this._canSwitchInstance()) {
+      this.flush();
+      return;
+    }
+    this._resetInstance(entry);
+    this._writeSelection(entry);
+    void this._load();
+  }
+  private _canSwitchInstance() {
+    return (
+      !(this.dirty || (this.stepEditor && hasStepChanges(this.stepEditor))) ||
+      window.confirm(
+        this.t("This instance has unsaved changes. Discard them and switch?"),
+      )
+    );
+  }
+  private _resetInstance(entry: string) {
+    this.epoch++;
+    this._disposeSubscription();
+    if (this._timelineTimer) clearTimeout(this._timelineTimer);
+    this._timelineTimer = null;
+    this._timelineLoading = false;
+    this._loadedEntry = null;
+    this.selectedEntry = entry;
+    Object.assign(this, {
+      draft: undefined,
+      saved: undefined,
+      document: undefined,
+      status: undefined,
+      catalog: { entities: [], services: {} },
+      revision: "",
+      stale: false,
+      dirty: false,
+      version: 0,
+      validatedVersion: -1,
+      issues: [],
+      error: "",
+      busy: false,
+      _loading: false,
+      tab: "routines",
+      stepEditor: null,
+      pendingStepExit: null,
+      selectedStep: null,
+      actual: undefined,
+      timelineDate: "",
+      preview: undefined,
+      previewProgram: undefined,
+      previewVersion: undefined,
+      previewSettings: { date: "", days: 7, seed: "preview-1", at: "" },
+      sourcePath: undefined,
+      yaml: "",
+      includeSensitive: false,
+      diagnostics: undefined,
+    });
+    this.renderView();
+  }
 
   ws<K extends keyof WebSocketResponses>(
     type: K,
@@ -221,16 +354,47 @@ export class OccupiedPanel extends HTMLElement {
       this.reloadSaved();
   }
   private async _load() {
-    const entry = this._panel?.config?.config_entry_id;
+    if (!this.isConnected || !this._hass || !this._panel) return;
+    if (!this._instancesReady) {
+      const epoch = this._instancesEpoch;
+      try {
+        const instances = await this._hass.callWS<InstanceDocument[]>({
+          type: "occupied/instances",
+        });
+        if (epoch !== this._instancesEpoch || !this.isConnected) return;
+        this.instances = instances;
+        this._instancesReady = true;
+        void this._subscribeInstances();
+      } catch (error) {
+        if (epoch === this._instancesEpoch) this.fail(error);
+        return;
+      }
+    }
+    const entry =
+      new URLSearchParams(window.location.search).get("config_entry") ||
+      this._panel.config?.config_entry_id ||
+      this.selectedEntry ||
+      this.instances.find((item) => item.loaded)?.config_entry_id ||
+      this.instances[0]?.config_entry_id;
+    if (!entry) {
+      this.flush();
+      return;
+    }
+    if (entry !== this.selectedEntry) {
+      if (this.busy || !this._canSwitchInstance()) {
+        if (this.selectedEntry) this._writeSelection(this.selectedEntry, true);
+        return;
+      }
+      this._resetInstance(entry);
+    }
     if (
-      !this.isConnected ||
-      !this._hass ||
-      !entry ||
+      !this.selectedInstance?.loaded ||
       this._loading ||
       this._loadedEntry === entry
     )
       return;
     this._loading = true;
+    this.flush();
     this._disposeSubscription();
     const epoch = ++this.epoch;
     this._loadedEntry = entry;
@@ -242,8 +406,14 @@ export class OccupiedPanel extends HTMLElement {
         loadHaControls(),
       ]);
       if (epoch !== this.epoch) return;
-      this.adopt(doc);
-      this.resetDraft();
+      if (this.draft && (this.dirty || this.stepEditor)) {
+        this.document = doc;
+        this.saved = doc.program;
+        this.stale = doc.revision !== this.revision;
+      } else {
+        this.adopt(doc);
+        this.resetDraft();
+      }
       this.catalog = catalog;
       this.status = status;
       this.previewSettings.date = doc.simulation_date;
@@ -256,7 +426,10 @@ export class OccupiedPanel extends HTMLElement {
         this.fail(error);
       }
     } finally {
-      if (epoch === this.epoch) this._loading = false;
+      if (epoch === this.epoch) {
+        this._loading = false;
+        this.flush();
+      }
     }
   }
 
@@ -273,11 +446,50 @@ export class OccupiedPanel extends HTMLElement {
     this.flush();
   }
   navigate(tab: Tab) {
-    if (this.stepEditor) return;
+    if (this.stepEditor) {
+      this.requestStepExit(() => {
+        this.tab = tab;
+        this.renderView();
+      });
+      return;
+    }
+    if (this.tab === tab) return;
     this.tab = tab;
     this.renderView();
   }
+  requestStepExit(action: () => void) {
+    const editor = this.stepEditor;
+    if (!editor) {
+      action();
+      return;
+    }
+    if (hasStepChanges(editor)) {
+      this.pendingStepExit = action;
+      this.flush();
+      return;
+    }
+    this.finishStepExit(action);
+  }
+  cancelStepExit() {
+    this.pendingStepExit = null;
+    this.flush();
+  }
+  confirmStepExit() {
+    const action = this.pendingStepExit;
+    if (action) this.finishStepExit(action);
+  }
+  private finishStepExit(action: () => void) {
+    this.pendingStepExit = null;
+    this.stepEditor = null;
+    this.selectedStep = null;
+    this.error = "";
+    this.issues = [];
+    this.version++;
+    action();
+    this.renderView();
+  }
   retry() {
+    this._instancesReady = false;
     void this._load();
   }
   notices() {
@@ -489,12 +701,14 @@ export class OccupiedPanel extends HTMLElement {
     });
   }
   control(service: string, data: Record<string, unknown> = {}) {
-    return this.run(async () => {
+    return this.run(async (epoch) => {
       await this._hass.callService("occupied", service, {
         config_entry_id: this._loadedEntry,
         ...data,
       });
-      this.status = await this.ws("status");
+      if (epoch !== this.epoch) return;
+      const status = await this.ws("status");
+      if (epoch === this.epoch) this.status = status;
     });
   }
   async loadTimeline() {
@@ -515,7 +729,7 @@ export class OccupiedPanel extends HTMLElement {
     } catch (error) {
       if (epoch === this.epoch) this.fail(error);
     } finally {
-      this._timelineLoading = false;
+      if (epoch === this.epoch) this._timelineLoading = false;
     }
   }
   runPreview() {

@@ -1,6 +1,7 @@
 """Create a GUI/imported household and retain options for existing proof entries."""
 
 from typing import Any
+from uuid import uuid4
 
 import voluptuous as vol
 from homeassistant import config_entries
@@ -89,7 +90,7 @@ def validate_input(data: dict[str, Any]) -> dict[str, Any]:
 
 
 class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Create the one supported household engine."""
+    """Create independent household engines with stable entry identities."""
 
     VERSION = 1
 
@@ -97,32 +98,39 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         from .file_config import load_program
         from .validation import ProgramError, program_data
 
-        await self.async_set_unique_id(DOMAIN)
         if isinstance(user_input, dict) and "config_file" in user_input:
-            existing = self._async_current_entries()
-            if existing:
-                entry = existing[0]
-                if (
-                    entry.data.get("source") != "file"
-                    or entry.data.get("config_file") != user_input["config_file"]
-                ):
-                    from homeassistant.helpers import issue_registry as ir
+            from .bootstrap import check_bootstrap, existing_entry, unique_id
 
-                    ir.async_create_issue(
-                        self.hass,
-                        DOMAIN,
-                        "source_conflict",
-                        is_fixable=False,
-                        severity=ir.IssueSeverity.ERROR,
-                        translation_key="source_conflict",
-                    )
+            identity = unique_id(user_input)
+            await self.async_set_unique_id(identity)
+            if entry := existing_entry(self.hass, user_input):
+                if "id" in user_input and entry.unique_id != identity:
+                    self.hass.config_entries.async_update_entry(entry, unique_id=identity)
+                config = {"instances": [user_input]} if "id" in user_input else user_input
+                check_bootstrap(self.hass, entry, config)
                 return self.async_abort(reason="already_configured")
+            if "id" not in user_input and self._async_current_entries():
+                from homeassistant.helpers import issue_registry as ir
+
+                ir.async_create_issue(
+                    self.hass,
+                    DOMAIN,
+                    "ambiguous_bootstrap",
+                    is_fixable=False,
+                    severity=ir.IssueSeverity.ERROR,
+                    translation_key="ambiguous_bootstrap",
+                )
+                return self.async_abort(reason="ambiguous_instance")
             self._abort_if_unique_id_configured()
             return self.async_create_entry(
-                title="House",
-                data={"name": "House", "source": "file", "config_file": user_input["config_file"]},
+                title=user_input.get("id", "House"),
+                data={
+                    "name": user_input.get("id", "House"),
+                    "source": "file",
+                    "config_file": user_input["config_file"],
+                },
             )
-        self._abort_if_unique_id_configured()
+        await self.async_set_unique_id(uuid4().hex)
         try:
             program = await self.hass.async_add_executor_job(load_program, user_input)
         except ProgramError:
@@ -132,8 +140,8 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        await self.async_set_unique_id(DOMAIN)
-        self._abort_if_unique_id_configured()
+        if self.unique_id is None:
+            await self.async_set_unique_id(uuid4().hex)
         if user_input is not None:
             if user_input["method"] == "yaml":
                 return await self.async_step_yaml()
@@ -217,8 +225,8 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_proof(self, user_input=None):
         """Keep the original caller-proof configuration available for development."""
-        await self.async_set_unique_id(DOMAIN)
-        self._abort_if_unique_id_configured()
+        if self.unique_id is None:
+            await self.async_set_unique_id(uuid4().hex)
         errors = {}
         if user_input is not None:
             try:

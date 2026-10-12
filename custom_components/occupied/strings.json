@@ -49,9 +49,9 @@
       "invalid_file": "Cannot load this file. Check the relative path, read permissions, and Occupied YAML; use the CLI for detailed validation."
     },
     "abort": {
-      "already_configured": "One Occupied household is already configured.",
+      "already_configured": "This Occupied instance is already configured.",
       "invalid_program": "The canonical Occupied program is invalid.",
-      "single_instance_allowed": "One Occupied household is already configured."
+      "ambiguous_instance": "Use named instances in configuration.yaml to identify the household."
     }
   },
   "options": {
@@ -124,8 +124,12 @@
       "description": "File: {path}\n\n{error}\n\nCorrect the file and call occupied.reload or wait for change detection. The last valid running program is retained; an invalid initial file remains inactive."
     },
     "source_conflict": {
-      "title": "Occupied bootstrap conflicts with the existing household",
-      "description": "configuration.yaml selects a different source from the existing Occupied entry. Choose the source explicitly in Occupied \u2192 Configuration, or remove the bootstrap declaration. Occupied has kept the existing source."
+      "title": "Occupied bootstrap conflicts with {name}",
+      "description": "configuration.yaml selects a different source for {name}. Select this instance in Occupied and change its source explicitly, or remove its bootstrap declaration. The existing source has been retained."
+    },
+    "ambiguous_bootstrap": {
+      "title": "Occupied bootstrap needs an instance identity",
+      "description": "Several Occupied instances exist and the legacy config_file declaration cannot identify one. Use instances with a stable id for each household. Existing instances have been retained."
     }
   }
 }

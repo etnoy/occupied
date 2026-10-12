@@ -17,8 +17,25 @@ def _config_schema(config):
     """Optional unattended bootstrap; retain pure CLI imports without HA dependencies."""
     import voluptuous as vol
 
+    def distinct_instances(instances):
+        identities = [item["id"] for item in instances]
+        if len(identities) != len(set(identities)):
+            raise vol.Invalid("Occupied instance IDs must be unique")
+        return instances
+
+    instance = vol.Schema(
+        {
+            vol.Required("id"): vol.All(str, vol.Match(r"^[a-z][a-z0-9_]*\Z")),
+            vol.Required("config_file"): str,
+        }
+    )
     return vol.Schema(
-        {vol.Optional("occupied"): vol.Schema({vol.Required("config_file"): str})},
+        {
+            vol.Optional("occupied"): vol.Any(
+                vol.Schema({vol.Required("config_file"): str}),
+                vol.Schema({vol.Required("instances"): vol.All([instance], distinct_instances)}),
+            )
+        },
         extra=vol.ALLOW_EXTRA,
     )(config)
 
@@ -90,18 +107,18 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         schema=vol.Schema({vol.Required("config_entry_id"): str, vol.Required("dry_run"): bool}),
     )
     async_register_websocket(hass)
-    from .managed import check_bootstrap
+    from homeassistant.helpers import issue_registry as ir
+
+    from .bootstrap import async_bootstrap, check_bootstrap
 
     bootstrap = hass.data[DOMAIN]["bootstrap"] = config.get(DOMAIN)
     entries = hass.config_entries.async_entries(DOMAIN)
-    if entries:
-        check_bootstrap(hass, entries[0], bootstrap)
-    elif bootstrap:
-        hass.async_create_task(
-            hass.config_entries.flow.async_init(
-                DOMAIN, context={"source": "import"}, data=bootstrap
-            )
-        )
+    ir.async_delete_issue(hass, DOMAIN, "source_conflict")
+    ir.async_delete_issue(hass, DOMAIN, "ambiguous_bootstrap")
+    for entry in entries:
+        check_bootstrap(hass, entry, bootstrap)
+    if bootstrap:
+        hass.async_create_task(async_bootstrap(hass, bootstrap))
     return True
 
 
@@ -117,10 +134,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> 
     from .storage import program_store
     from .validation import ProgramError, validate_program
 
-    if any(other.entry_id != entry.entry_id for other in hass.config_entries.async_entries(DOMAIN)):
-        raise ConfigEntryError("Occupied supports one household entry")
     managed = entry.data.get("source") == "file"
-    from .managed import check_bootstrap
+    from .bootstrap import check_bootstrap
 
     check_bootstrap(hass, entry, hass.data[DOMAIN].get("bootstrap"))
     source = (
@@ -165,7 +180,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> 
         await engine.async_start()
     except Exception:
         await engine.async_close()
-        async_remove_panel(hass)
+        async_remove_panel(hass, entry.entry_id)
         await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
         raise
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
@@ -185,7 +200,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) ->
     await entry.runtime_data.async_close()
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
-        async_remove_panel(hass)
+        async_remove_panel(hass, entry.entry_id)
     return unloaded
 
 
@@ -199,4 +214,5 @@ async def async_remove_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) ->
     for suffix in ("program", "permission", "runtime"):
         await DurableStore(hass, 1, f"{DOMAIN}.{entry.entry_id}.{suffix}").async_remove()
     ir.async_delete_issue(hass, DOMAIN, f"managed_file_{entry.entry_id}")
-    ir.async_delete_issue(hass, DOMAIN, "source_conflict")
+    ir.async_delete_issue(hass, DOMAIN, f"source_conflict_{entry.entry_id}")
+    hass.data.get(DOMAIN, {}).get("editor_locks", {}).pop(entry.entry_id, None)

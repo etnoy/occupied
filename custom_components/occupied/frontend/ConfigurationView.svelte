@@ -96,7 +96,10 @@
     onchange={async (event: Event) => {
       const file = (event.currentTarget as HTMLInputElement).files?.[0];
       if (file) {
-        panel.yaml = await file.text();
+        const epoch = panel.epoch;
+        const yaml = await file.text();
+        if (epoch !== panel.epoch) return;
+        panel.yaml = yaml;
         panel.flush();
       }
     }}

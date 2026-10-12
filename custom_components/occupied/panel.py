@@ -1,5 +1,6 @@
 """A local bundled panel using HA's public custom-panel contract."""
 
+import asyncio
 import hashlib
 from pathlib import Path
 
@@ -22,6 +23,15 @@ def _asset_version(frontend_path: Path) -> str:
 
 async def async_register_panel(hass: HomeAssistant, entry_id: str) -> None:
     data = hass.data.setdefault(DOMAIN, {})
+    async with data.setdefault("panel_lock", asyncio.Lock()):
+        await _async_register_panel(hass, entry_id, data)
+
+
+async def _async_register_panel(hass, entry_id, data):
+    entries = data.setdefault("panel_entries", set())
+    if DOMAIN in hass.data.get(frontend.DATA_PANELS, {}):
+        entries.add(entry_id)
+        return
     frontend_path = Path(__file__).parent / "frontend" / "dist"
     version = await hass.async_add_executor_job(_asset_version, frontend_path)
     asset_url = f"/occupied_static/{version}"
@@ -42,12 +52,16 @@ async def async_register_panel(hass: HomeAssistant, entry_id: str) -> None:
         # keeps the entry module and all of its relative imports on one bundle.
         module_url=f"{asset_url}/occupied-panel.js",
         require_admin=True,
+        sidebar_title="Occupied",
+        sidebar_icon="mdi:home-clock",
         config_panel_domain=DOMAIN,
-        config={"config_entry_id": entry_id},
     )
+    entries.add(entry_id)
 
 
 @callback
-def async_remove_panel(hass: HomeAssistant) -> None:
-    if DOMAIN in hass.data.get(frontend.DATA_PANELS, {}):
+def async_remove_panel(hass: HomeAssistant, entry_id: str) -> None:
+    entries = hass.data.get(DOMAIN, {}).get("panel_entries", set())
+    entries.discard(entry_id)
+    if not entries and DOMAIN in hass.data.get(frontend.DATA_PANELS, {}):
         frontend.async_remove_panel(hass, DOMAIN)

@@ -2,6 +2,10 @@
 
 GUI storage, YAML snapshot import and managed-file authority are explicit choices. Snapshot import copies the program into a draft and GUI storage after saving. Managed mode reads a YAML file under HA's config directory, including a read-only mounted file, and keeps that file authoritative. Occupied never writes it or edits Puppet-managed configuration.
 
+Each integration entry can select its own managed file. Use the panel's instance selector or Configure on the integration entry before changing sources. Permissions, reload locks, watchers, Repairs, seeds and runtime stores are independent. Reload services and CLI deployment commands always target a specific `config_entry_id`/`--entry-id`. See [named YAML bootstrap](installation.md#unattended-managed-setup) for unattended creation of multiple entries. Each source file remains a complete program; identifiers inside different programs can be reused.
+
+The panel warns when loaded instances declare the same controlled entities, including group members and resources retained by active cleanup snapshots. Instances do not coordinate device ownership. Scene contents and undeclared targets inside opaque service data cannot be inferred; use separate device targets when independent behavior is required.
+
 ## Read, preview and change the source
 
 Choose a file during native setup, use [unattended bootstrap](installation.md#unattended-managed-setup), or open **Occupied → Settings → Advanced settings**, select **Import, export and managed files**, and choose **Use managed file**. Enter its relative path. The complete candidate must validate and compile before replacing the saved program. Absolute paths, traversal and symlinks outside the config directory are rejected; files are bounded to 1 MiB and read in HA's executor.

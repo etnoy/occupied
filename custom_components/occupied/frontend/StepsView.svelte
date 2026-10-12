@@ -34,7 +34,7 @@
       type="button"
       class="primary"
       data-create-routine
-      disabled={!!panel.stepEditor}
+      disabled={panel.busy}
       onclick={() => startStep(panel)}
     >
       {t("Create step")}
@@ -56,7 +56,7 @@
       type="button"
       class="primary"
       data-create-routine
-      disabled={!!panel.stepEditor}
+      disabled={panel.busy}
       onclick={() => startStep(panel)}
     >
       {t("Create your first step")}
@@ -81,8 +81,7 @@
             id={`step-card-${entry.id}`}
             class="routine-row"
             aria-label={entry.name}
-            disabled={panel.busy ||
-              (!!panel.stepEditor && panel.stepEditor.id === entry.id)}
+            disabled={panel.busy}
             aria-expanded={expanded}
             aria-controls={`step-editor-${entry.id}`}
             onclick={() => openStep(panel, entry)}
@@ -132,7 +131,7 @@
   <button
     type="button"
     class="text-button"
-    disabled={!!panel.stepEditor}
+    disabled={panel.busy}
     onclick={() => {
       panel.navigate("preview");
       panel.runPreview();

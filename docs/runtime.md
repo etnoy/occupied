@@ -1,10 +1,10 @@
 # Daily runtime
 
-Occupied runs inside Home Assistant Core 2026.9.4. Canonical daily programs, the pure planner, and the offline CLI share [schema version 1](schema.md). Configure routines through [the editor](editor.md). Authoritative file watching/reload remains Milestone 5.
+Occupied runs inside Home Assistant Core 2026.9.4. Canonical daily programs, the pure planner, and the offline CLI share [schema version 1](schema.md). Configure routines through [the editor](editor.md). Each entry can use [authoritative managed YAML with file watching and reload](managed-configuration.md).
 
 ## Apply a program
 
-Install Occupied and create its single household entry as described in the README. Permission starts disabled. Open the Occupied integration under **Settings → Devices & services** and select **Configure** to validate/save a draft, or prepare a program from [examples/house.yaml](../examples/house.yaml), replace its entities and activity names, and validate/preview it with `occupied-config`. Validation and preview do not control devices.
+Install Occupied and create a household entry as described in the README. Multiple entries have independent activation conditions, permissions, seeds, plans, history and cleanup; control services always require the intended entry ID. Permission starts disabled. Open the Occupied integration under **Settings → Devices & services** and select **Configure** to validate/save a draft, or prepare a program from [examples/house.yaml](../examples/house.yaml), replace its entities and activity names, and validate/preview it with `occupied-config`. Validation and preview do not control devices.
 
 The authenticated HA WebSocket API accepts `occupied/apply` with `config_entry_id` and `program` (a JSON object or YAML string). This admin-only command stores a canonical snapshot. It upgrades a proof entry to the daily engine, or replaces a daily program in place. It neither modifies nor watches the source file. For example, from the HA frontend's browser console:
 

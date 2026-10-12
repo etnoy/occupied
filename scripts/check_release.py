@@ -20,7 +20,7 @@ integration = ROOT / "custom_components" / "occupied"
 manifest = json.loads((integration / "manifest.json").read_text())
 project = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]
 assert manifest["version"] == project["version"]
-assert manifest["domain"] == "occupied" and manifest["single_config_entry"]
+assert manifest["domain"] == "occupied" and not manifest.get("single_config_entry", False)
 assert manifest["codeowners"] == ["@etnoy"]
 assert manifest["documentation"].startswith("https://github.com/etnoy/occupied")
 assert manifest["issue_tracker"] == "https://github.com/etnoy/occupied/issues"

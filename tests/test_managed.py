@@ -276,7 +276,7 @@ async def test_gui_to_file_keeps_engine_and_equivalent_behavior(hass, managed_fi
     assert entry.runtime_data.source_manager.mode == "file"
 
 
-async def test_bootstrap_clean_install_is_singleton(hass, managed_file):
+async def test_legacy_bootstrap_is_idempotent(hass, managed_file):
     assert await async_setup_component(
         hass, "occupied", {"occupied": {"config_file": "occupied/house.yaml"}}
     )
@@ -308,7 +308,7 @@ async def test_bootstrap_conflict_does_not_override_entry(hass, managed_file, pr
     )
     await hass.async_block_till_done()
     assert entry.data["name"] == "Existing" and entry.data["source"] == source
-    assert ("occupied", "source_conflict") in ir.async_get(hass).issues
+    assert ("occupied", f"source_conflict_{entry.entry_id}") in ir.async_get(hass).issues
 
 
 async def test_native_file_flow_missing_then_valid(hass, managed_file):

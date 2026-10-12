@@ -527,7 +527,8 @@ export function timingExplanation(
   if (!time.anchor) return t("Choose a step or event.");
   const step = time.anchor.startsWith("step:");
   const name = step
-    ? `${entries.find((entry) => entry.id === time.anchor.slice(5))?.name || time.anchor.slice(5)} ${t("step")}`
+    ? entries.find((entry) => entry.id === time.anchor.slice(5))?.name ||
+      time.anchor.slice(5)
     : time.anchor.startsWith("sun:")
       ? t(time.anchor.slice(4))
       : sources.find((source) => source.value === time.anchor)?.name ||

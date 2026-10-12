@@ -64,12 +64,9 @@ export function createStepEditorContext(panel) {
     }
   };
   const cancel = () => {
-    panel.stepEditor = null;
-    panel.error = "";
-    panel.issues = [];
-    panel.version++;
-    panel.renderView();
-    panel.shadowRoot.getElementById(`step-card-${editor.id}`)?.focus();
+    panel.requestStepExit(() => {
+      panel.shadowRoot.getElementById(`step-card-${editor.id}`)?.focus();
+    });
   };
   return {
     panel,

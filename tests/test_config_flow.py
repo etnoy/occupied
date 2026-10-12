@@ -1,4 +1,4 @@
-"""Real HA config/options flow and single-household installation behavior."""
+"""Real HA config/options flows for independent households."""
 
 import pytest
 from homeassistant.data_entry_flow import FlowResultType, InvalidData
@@ -6,7 +6,7 @@ from homeassistant.data_entry_flow import FlowResultType, InvalidData
 from custom_components.occupied.validation import program_data, validate_program
 
 
-async def test_config_flow_and_single_entry(hass, config, devices):
+async def test_config_flow_allows_another_independent_entry(hass, config, devices):
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "proof"})
     assert result["type"] is FlowResultType.FORM
     result = await hass.config_entries.flow.async_configure(result["flow_id"], user_input=config)
@@ -15,8 +15,16 @@ async def test_config_flow_and_single_entry(hass, config, devices):
     await hass.async_block_till_done()
     assert len(hass.config_entries.async_entries("occupied")) == 1
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
-    assert result["type"] is FlowResultType.ABORT
-    assert result["reason"] in {"already_configured", "single_instance_allowed"}
+    assert result["type"] is FlowResultType.FORM
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={"name": "Guest house", "method": "editor"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    entries = hass.config_entries.async_entries("occupied")
+    assert len(entries) == 2
+    assert entries[0].unique_id != entries[1].unique_id
+    assert entries[0].runtime_data is not entries[1].runtime_data
 
 
 @pytest.mark.parametrize(

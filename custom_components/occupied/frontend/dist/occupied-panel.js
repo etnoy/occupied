@@ -638,6 +638,29 @@ var styles = `
   .step-delete-dialog::backdrop {
     background: #0006;
   }
+  .step-exit-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: #0004;
+  }
+  .step-exit-dialog {
+    position: relative;
+    inset: auto;
+    width: 440px;
+    max-width: 100%;
+    margin: 0;
+    padding: 24px;
+    border: 1px solid var(--divider-color, #d5dce3);
+    border-radius: 12px;
+    background: var(--card-background-color, #fff);
+    color: var(--primary-text-color, #202c37);
+    box-shadow: 0 6px 24px #0003;
+  }
+  .step-exit-dialog h2 { margin-top: 0; }
   .step-delete-actions {
     display: flex;
     justify-content: flex-end;
@@ -827,6 +850,17 @@ var styles = `
 
 // custom_components/occupied/frontend/translations.ts
 var sv = {
+  Instance: "Instans",
+  Unloaded: "Inte inl\xE4st",
+  "Managed file": "Hanterad fil",
+  "GUI storage": "Lagring i gr\xE4nssnittet",
+  "Shared devices with": "Delade enheter med",
+  "Actions and cleanup can interfere between instances.":
+    "\xC5tg\xE4rder och avslut kan p\xE5verka varandra mellan instanser.",
+  "This instance has unsaved changes. Discard them and switch?":
+    "Den h\xE4r instansen har osparade \xE4ndringar. Kasta dem och byt?",
+  "This instance is unavailable. Check Settings \u2192 Devices & services, then retry.":
+    "Den h\xE4r instansen \xE4r inte tillg\xE4nglig. Kontrollera Inst\xE4llningar \u2192 Enheter och tj\xE4nster och f\xF6rs\xF6k igen.",
   "Steps and time sources": "Steg och tidsk\xE4llor",
   "matching sources": "matchande tidsk\xE4llor",
   "No matching steps or time sources.":
@@ -859,8 +893,11 @@ var sv = {
   Tools: "Verktyg",
   "Create step": "Skapa steg",
   "Create your first step": "Skapa ditt f\xF6rsta steg",
-  "Discard unsaved changes and open another step?":
-    "Kasta osparade \xE4ndringar och \xF6ppna ett annat steg?",
+  "Unsaved changes": "Osparade \xE4ndringar",
+  "This step has unsaved changes. Discard them and continue?":
+    "Steget har osparade \xE4ndringar. Kasta dem och forts\xE4tta?",
+  "Keep editing": "Forts\xE4tt redigera",
+  "Discard changes": "Kasta \xE4ndringar",
   "Edit step": "Redigera steg",
   "Add related step": "L\xE4gg till relaterat steg",
   "Save step": "Spara steg",
@@ -2373,11 +2410,11 @@ var Batch = class _Batch {
         this.#unlink();
         infinite_loop_guard();
       }
-      for (const root19 of this.#resolve()) {
+      for (const root20 of this.#resolve()) {
         try {
-          this.#traverse(root19, effects, render_effects);
+          this.#traverse(root20, effects, render_effects);
         } catch (e) {
-          reset_all(root19);
+          reset_all(root20);
           if (!this.#is_deferred()) this.discard();
           throw e;
         }
@@ -2456,9 +2493,9 @@ var Batch = class _Batch {
    * @param {Effect[]} effects
    * @param {Effect[]} render_effects
    */
-  #traverse(root19, effects, render_effects) {
-    root19.f ^= CLEAN;
-    var effect2 = root19.first;
+  #traverse(root20, effects, render_effects) {
+    root20.f ^= CLEAN;
+    var effect2 = root20.first;
     while (effect2 !== null) {
       var flags2 = effect2.f;
       var is_branch = (flags2 & (BRANCH_EFFECT | ROOT_EFFECT)) !== 0;
@@ -2722,8 +2759,8 @@ var Batch = class _Batch {
         }
         if (batch.#scheduled.length > 0 && !batch.#decrement_queued) {
           batch.apply();
-          for (var root19 of batch.#resolve()) {
-            batch.#traverse(root19, [], []);
+          for (var root20 of batch.#resolve()) {
+            batch.#traverse(root20, [], []);
           }
         }
         batch.deactivate();
@@ -4342,7 +4379,7 @@ function is_dirty(reaction) {
 function schedule_possible_effect_self_invalidation(
   signal,
   effect2,
-  root19 = true,
+  root20 = true,
 ) {
   var reactions = signal.reactions;
   if (reactions === null) return;
@@ -4363,7 +4400,7 @@ function schedule_possible_effect_self_invalidation(
         false,
       );
     } else if (effect2 === reaction) {
-      if (root19) {
+      if (root20) {
         set_signal_status(reaction, DIRTY);
       } else if ((reaction.f & CLEAN) !== 0) {
         set_signal_status(reaction, MAYBE_DIRTY);
@@ -8461,7 +8498,8 @@ function timingExplanation(
   if (!time.anchor) return t("Choose a step or event.");
   const step = time.anchor.startsWith("step:");
   const name = step
-    ? `${entries.find((entry) => entry.id === time.anchor.slice(5))?.name || time.anchor.slice(5)} ${t("step")}`
+    ? entries.find((entry) => entry.id === time.anchor.slice(5))?.name ||
+      time.anchor.slice(5)
     : time.anchor.startsWith("sun:")
       ? t(time.anchor.slice(4))
       : sources.find((source2) => source2.value === time.anchor)?.name ||
@@ -8566,12 +8604,9 @@ function createStepEditorContext(panel) {
     }
   };
   const cancel = () => {
-    panel.stepEditor = null;
-    panel.error = "";
-    panel.issues = [];
-    panel.version++;
-    panel.renderView();
-    panel.shadowRoot.getElementById(`step-card-${editor.id}`)?.focus();
+    panel.requestStepExit(() => {
+      panel.shadowRoot.getElementById(`step-card-${editor.id}`)?.focus();
+    });
   };
   return {
     panel,
@@ -8590,6 +8625,13 @@ function createStepEditorContext(panel) {
 
 // custom_components/occupied/frontend/steps.ts
 function startStep(panel, entry, parent) {
+  if (panel.stepEditor) {
+    panel.requestStepExit(() => startStep(panel, entry, parent));
+    return;
+  }
+  showStep(panel, entry, parent);
+}
+function showStep(panel, entry, parent) {
   panel.stepEditor = stepEditor(panel.draft, entry, parent);
   panel.tab = "routines";
   panel.error = "";
@@ -8598,16 +8640,23 @@ function startStep(panel, entry, parent) {
   focusEditor(panel);
 }
 function openStep(panel, entry) {
-  if (panel.busy || panel.stepEditor?.id === entry.id) return;
-  if (
-    panel.stepEditor &&
-    hasStepChanges(panel.stepEditor) &&
-    !window.confirm(panel.t("Discard unsaved changes and open another step?"))
-  )
+  if (panel.busy) return;
+  if (panel.stepEditor?.id === entry.id) {
+    panel.requestStepExit(() => {
+      panel.selectedStep = null;
+      panel.shadowRoot.getElementById(`step-card-${entry.id}`)?.focus();
+    });
     return;
-  if (simpleStep(entry)) startStep(panel, entry);
+  }
+  if (panel.stepEditor) {
+    panel.requestStepExit(() => openStep(panel, entry));
+    return;
+  }
+  showEntry(panel, entry);
+}
+function showEntry(panel, entry) {
+  if (simpleStep(entry)) showStep(panel, entry);
   else {
-    panel.stepEditor = null;
     panel.error = "";
     panel.issues = [];
     panel.selectedStep = panel.selectedStep === entry.id ? null : entry.id;
@@ -8827,21 +8876,11 @@ function StepActions($$anchor, $$props) {
       var button = root2();
       var text2 = only_child(button, true);
       template_effect(
-        ($0, $1) => {
-          button.disabled =
-            $$props.panel.busy || !!$$props.panel.stepEditor?.changed;
-          set_attribute2(button, "title", $0);
-          set_text(text2, $1);
+        ($0) => {
+          button.disabled = $$props.panel.busy;
+          set_text(text2, $0);
         },
-        [
-          () =>
-            $$props.panel.stepEditor?.changed
-              ? $$props.panel.t(
-                  "Save or cancel your changes before adding a related step.",
-                )
-              : void 0,
-          () => $$props.panel.t("Add related step"),
-        ],
+        [() => $$props.panel.t("Add related step")],
       );
       delegated("click", button, () =>
         startStep($$props.panel, null, $$props.entry),
@@ -9872,8 +9911,9 @@ function ActionEditor($$anchor, $$props) {
 }
 
 // custom_components/occupied/frontend/StepEditor.svelte
-var root9 = from_html(
-  `<section class="routine-editor"><h2 tabindex="-1"> </h2> <div class="step-name-editor"><!></div> <div class="editor-sections"><!> <!> <!></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-routine-submit=""> </button></div></section>`,
+var root9 = from_html(`<h2 tabindex="-1"> </h2>`);
+var root_17 = from_html(
+  `<section class="routine-editor"><!> <div class="step-name-editor"><!></div> <div class="editor-sections"><!> <!> <!></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-routine-submit=""> </button></div></section>`,
 );
 function StepEditor($$anchor, $$props) {
   push($$props, true);
@@ -9887,11 +9927,24 @@ function StepEditor($$anchor, $$props) {
     editing = user_derived(() => get2(context).editing),
     submit = user_derived(() => get2(context).submit),
     cancel = user_derived(() => get2(context).cancel);
-  var section = root9();
-  var h2 = child(section);
-  var text2 = only_child(h2, true);
-  var div = sibling(h2, 2);
-  var node = child(div);
+  var section = root_17();
+  var node = child(section);
+  {
+    var consequent = ($$anchor2) => {
+      var h2 = root9();
+      var text2 = only_child(h2, true);
+      template_effect(
+        ($0) => set_text(text2, $0),
+        [() => get2(t)("Create step")],
+      );
+      append($$anchor2, h2);
+    };
+    if_block(node, ($$render) => {
+      if (!get2(editing)) $$render(consequent);
+    });
+  }
+  var div = sibling(node, 2);
+  var node_1 = child(div);
   {
     let $0 = user_derived(() => ({
       hideLabel: true,
@@ -9899,7 +9952,7 @@ function StepEditor($$anchor, $$props) {
         ? void 0
         : get2(t)("Optional, leave blank for auto-generated"),
     }));
-    EditorField(node, {
+    EditorField(node_1, {
       get panel() {
         return $$props.panel;
       },
@@ -9919,17 +9972,8 @@ function StepEditor($$anchor, $$props) {
   }
   reset(div);
   var div_1 = sibling(div, 2);
-  var node_1 = child(div_1);
-  TimingEditor(node_1, {
-    get panel() {
-      return $$props.panel;
-    },
-    get context() {
-      return get2(context);
-    },
-  });
-  var node_2 = sibling(node_1, 2);
-  EntitiesEditor(node_2, {
+  var node_2 = child(div_1);
+  TimingEditor(node_2, {
     get panel() {
       return $$props.panel;
     },
@@ -9938,7 +9982,16 @@ function StepEditor($$anchor, $$props) {
     },
   });
   var node_3 = sibling(node_2, 2);
-  ActionEditor(node_3, {
+  EntitiesEditor(node_3, {
+    get panel() {
+      return $$props.panel;
+    },
+    get context() {
+      return get2(context);
+    },
+  });
+  var node_4 = sibling(node_3, 2);
+  ActionEditor(node_4, {
     get panel() {
       return $$props.panel;
     },
@@ -9950,18 +10003,18 @@ function StepEditor($$anchor, $$props) {
   var div_2 = sibling(div_1, 2);
   var button = child(div_2);
   var text_1 = only_child(button, true);
-  var node_4 = sibling(button, 2);
+  var node_5 = sibling(button, 2);
   {
-    var consequent_1 = ($$anchor2) => {
+    var consequent_2 = ($$anchor2) => {
       const entry = user_derived(() =>
         stepEntries($$props.panel.draft).find(
           (item) => item.id === get2(editor).id,
         ),
       );
       var fragment = comment();
-      var node_5 = first_child(fragment);
+      var node_6 = first_child(fragment);
       {
-        var consequent = ($$anchor3) => {
+        var consequent_1 = ($$anchor3) => {
           StepActions($$anchor3, {
             get panel() {
               return $$props.panel;
@@ -9971,30 +10024,28 @@ function StepEditor($$anchor, $$props) {
             },
           });
         };
-        if_block(node_5, ($$render) => {
-          if (get2(entry)) $$render(consequent);
+        if_block(node_6, ($$render) => {
+          if (get2(entry)) $$render(consequent_1);
         });
       }
       append($$anchor2, fragment);
     };
-    if_block(node_4, ($$render) => {
-      if (get2(editing)) $$render(consequent_1);
+    if_block(node_5, ($$render) => {
+      if (get2(editing)) $$render(consequent_2);
     });
   }
-  var button_1 = sibling(node_4, 2);
+  var button_1 = sibling(node_5, 2);
   var text_2 = only_child(button_1, true);
   reset(div_2);
   reset(section);
   template_effect(
-    ($0, $1, $2) => {
-      set_text(text2, $0);
+    ($0, $1) => {
       button.disabled = $$props.panel.busy;
-      set_text(text_1, $1);
+      set_text(text_1, $0);
       button_1.disabled = $$props.panel.busy || $$props.panel.stale;
-      set_text(text_2, $2);
+      set_text(text_2, $1);
     },
     [
-      () => get2(t)(get2(editing) ? "Edit step" : "Create step"),
       () => get2(t)("Cancel"),
       () =>
         get2(t)(
@@ -10019,7 +10070,7 @@ delegate(["click"]);
 var root10 = from_html(
   `<button type="button" class="primary" data-create-routine=""> </button>`,
 );
-var root_17 = from_html(
+var root_18 = from_html(
   `<section class="routine-empty"><h2> </h2> <p class="hint"> </p> <p class="empty-steps"> </p> <button type="button" class="primary" data-create-routine=""> </button></section>`,
 );
 var root_25 = from_html(
@@ -10063,7 +10114,7 @@ function StepsView($$anchor, $$props) {
       var text_2 = only_child(button, true);
       template_effect(
         ($0) => {
-          button.disabled = !!$$props.panel.stepEditor;
+          button.disabled = $$props.panel.busy;
           set_text(text_2, $0);
         },
         [() => get2(t)("Create step")],
@@ -10079,7 +10130,7 @@ function StepsView($$anchor, $$props) {
   var node_1 = sibling(div, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var section = root_17();
+      var section = root_18();
       var h2_1 = child(section);
       var text_3 = only_child(h2_1, true);
       var p_1 = sibling(h2_1, 2);
@@ -10094,7 +10145,7 @@ function StepsView($$anchor, $$props) {
           set_text(text_3, $0);
           set_text(text_4, $1);
           set_text(text_5, $2);
-          button_1.disabled = !!$$props.panel.stepEditor;
+          button_1.disabled = $$props.panel.busy;
           set_text(text_6, $3);
         },
         [
@@ -10210,10 +10261,7 @@ function StepsView($$anchor, $$props) {
               set_style(div_4, $0);
               set_attribute2(button_2, "id", `step-card-${entry().id}`);
               set_attribute2(button_2, "aria-label", entry().name);
-              button_2.disabled =
-                $$props.panel.busy ||
-                (!!$$props.panel.stepEditor &&
-                  $$props.panel.stepEditor.id === entry().id);
+              button_2.disabled = $$props.panel.busy;
               set_attribute2(button_2, "aria-expanded", get2(expanded));
               set_attribute2(
                 button_2,
@@ -10259,7 +10307,7 @@ function StepsView($$anchor, $$props) {
       template_effect(
         ($0, $1) => {
           set_attribute2(div_3, "aria-label", $0);
-          button_3.disabled = !!$$props.panel.stepEditor;
+          button_3.disabled = $$props.panel.busy;
           set_text(text_13, $1);
         },
         [() => get2(t)("Your steps"), () => get2(t)("Preview schedule")],
@@ -10292,7 +10340,7 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/SettingsView.svelte
 var root11 = from_html(`<button type="button"> </button>`);
-var root_18 = from_html(
+var root_19 = from_html(
   `<section><h2> </h2> <p class="hint"><!></p> <button type="button"> </button> <button type="button"> </button></section> <section><h2> </h2> <!></section>`,
   1,
 );
@@ -10311,7 +10359,7 @@ function SettingsView($$anchor, $$props) {
   });
   let t = user_derived(() => get2(data).t),
     dryRun = user_derived(() => get2(data).dryRun);
-  var fragment = root_18();
+  var fragment = root_19();
   var section = first_child(fragment);
   var h2 = child(section);
   var text2 = only_child(h2, true);
@@ -10500,7 +10548,7 @@ function timelineModel(doc, program, t = (text2) => text2) {
 
 // custom_components/occupied/frontend/OverviewView.svelte
 var root12 = from_html(`<button type="button"> </button>`);
-var root_19 = from_html(`<dt> </dt> <dd> </dd>`, 1);
+var root_110 = from_html(`<dt> </dt> <dd> </dd>`, 1);
 var root_26 = from_html(`<p> </p>`);
 var root_36 = from_html(`<p> </p> <progress max="1"></progress>`, 1);
 var root_44 = from_html(`<p class="error"> </p>`);
@@ -10601,7 +10649,7 @@ function OverviewView($$anchor, $$props) {
           var $$array = user_derived(() => to_array(get2($$item), 2));
           let label = () => get2($$array)[0];
           let value = () => get2($$array)[1];
-          var fragment_2 = root_19();
+          var fragment_2 = root_110();
           var dt = first_child(fragment_2);
           var text_4 = only_child(dt, true);
           var dd = sibling(dt, 2);
@@ -10841,7 +10889,7 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/Timeline.svelte
 var root13 = from_html(`<span> </span>`);
-var root_110 = from_html(`<span tabindex="0"> </span>`);
+var root_111 = from_html(`<span tabindex="0"> </span>`);
 var root_27 = from_html(
   `<div class="lane"><span class="lane-label"> </span> <div class="track"></div></div>`,
 );
@@ -10933,7 +10981,7 @@ function Timeline($$anchor, $$props) {
           var text_5 = only_child(span_1, true);
           var div_3 = sibling(span_1, 2);
           each(div_3, 21, marks, index, ($$anchor4, mark) => {
-            var span_2 = root_110();
+            var span_2 = root_111();
             var text_6 = only_child(span_2, true);
             template_effect(() => {
               set_class(span_2, 1, clsx2(get2(mark).className));
@@ -11148,7 +11196,7 @@ delegate(["input", "click"]);
 
 // custom_components/occupied/frontend/PreviewView.svelte
 var root14 = from_html(`<label class="field"> <input/></label>`);
-var root_111 = from_html(`<button type="button"> </button>`);
+var root_112 = from_html(`<button type="button"> </button>`);
 var root_28 = from_html(`<section><h2> </h2> <pre> </pre></section>`);
 var root_38 = from_html(
   `<section><h2> </h2> <p class="hint"> </p> <!> <details><summary> </summary> <!><!><!></details> <button type="button"> </button><button type="button"> </button> <!></section> <!> <!>`,
@@ -11234,7 +11282,7 @@ function PreviewView($$anchor, $$props) {
   var node_4 = sibling(button_1, 2);
   {
     var consequent = ($$anchor2) => {
-      var button_2 = root_111();
+      var button_2 = root_112();
       var text_6 = only_child(button_2, true);
       template_effect(
         ($0) => set_text(text_6, $0),
@@ -11332,7 +11380,7 @@ delegate(["input", "click"]);
 
 // custom_components/occupied/frontend/ConfigurationView.svelte
 var root15 = from_html(`<p> </p>`);
-var root_112 = from_html(`<p class="error"> <!> </p>`);
+var root_113 = from_html(`<p class="error"> <!> </p>`);
 var root_29 = from_html(
   `<button type="button"> </button> <button type="button"> </button> <!> <!>`,
   1,
@@ -11405,7 +11453,7 @@ function ConfigurationView($$anchor, $$props) {
         () => get2(source2).issues || [],
         index,
         ($$anchor3, issue) => {
-          var p_3 = root_112();
+          var p_3 = root_113();
           var text_7 = child(p_3, true);
           var node_3 = sibling(text_7);
           {
@@ -11542,7 +11590,10 @@ function ConfigurationView($$anchor, $$props) {
   delegated("change", input_1, async (event2) => {
     const file = event2.currentTarget.files?.[0];
     if (file) {
-      panel().yaml = await file.text();
+      const epoch = panel().epoch;
+      const yaml = await file.text();
+      if (epoch !== panel().epoch) return;
+      panel().yaml = yaml;
       panel().flush();
     }
   });
@@ -11563,7 +11614,7 @@ delegate(["input", "click", "change"]);
 
 // custom_components/occupied/frontend/DiagnosticsView.svelte
 var root16 = from_html(`<button type="button"> </button> <pre> </pre>`, 1);
-var root_113 = from_html(`<pre> </pre>`);
+var root_114 = from_html(`<pre> </pre>`);
 var root_210 = from_html(
   `<section><h2> </h2> <p class="hint"> </p> <label><input type="checkbox"/> </label> <button type="button"> </button> <!></section> <section><h2> </h2> <!></section>`,
   1,
@@ -11631,7 +11682,7 @@ function DiagnosticsView($$anchor, $$props) {
     () => (panel().status?.outcomes || []).slice(-50).reverse(),
     index,
     ($$anchor2, item) => {
-      var pre_1 = root_113();
+      var pre_1 = root_114();
       var text_7 = only_child(pre_1, true);
       template_effect(
         ($0) => set_text(text_7, $0),
@@ -11674,7 +11725,7 @@ delegate(["change", "click"]);
 
 // custom_components/occupied/frontend/TimelineView.svelte
 var root17 = from_html(`<option> </option>`);
-var root_114 = from_html(
+var root_115 = from_html(
   `<section><h2> </h2> <p class="hint"> </p> <select></select> <button type="button"> </button><button type="button"> </button></section> <!>`,
   1,
 );
@@ -11687,7 +11738,7 @@ function TimelineView($$anchor, $$props) {
     return { t: t2 };
   });
   let t = user_derived(() => get2(data).t);
-  var fragment = root_114();
+  var fragment = root_115();
   var section = first_child(fragment);
   var h2 = child(section);
   var text2 = only_child(h2, true);
@@ -11779,22 +11830,81 @@ function TimelineView($$anchor, $$props) {
 }
 delegate(["change", "click"]);
 
-// custom_components/occupied/frontend/App.svelte
+// custom_components/occupied/frontend/UnsavedStepDialog.svelte
 var root18 = from_html(
+  `<div class="step-exit-overlay"><dialog open="" class="step-exit-dialog" role="alertdialog" aria-modal="true" aria-labelledby="step-exit-title" aria-describedby="step-exit-description"><h2 id="step-exit-title"> </h2> <p id="step-exit-description"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog></div>`,
+);
+function UnsavedStepDialog($$anchor, $$props) {
+  push($$props, true);
+  let t = user_derived(() => $$props.panel.t);
+  let keepEditing;
+  onMount(() => keepEditing.focus());
+  var div = root18();
+  var dialog = child(div);
+  var h2 = child(dialog);
+  var text2 = only_child(h2, true);
+  var p = sibling(h2, 2);
+  var text_1 = only_child(p, true);
+  var div_1 = sibling(p, 2);
+  var button = child(div_1);
+  var text_2 = only_child(button, true);
+  bind_this(
+    button,
+    ($$value) => (keepEditing = $$value),
+    () => keepEditing,
+  );
+  var button_1 = sibling(button, 2);
+  var text_3 = only_child(button_1, true);
+  reset(div_1);
+  reset(dialog);
+  reset(div);
+  template_effect(
+    ($0, $1, $2, $3) => {
+      set_text(text2, $0);
+      set_text(text_1, $1);
+      set_text(text_2, $2);
+      set_text(text_3, $3);
+    },
+    [
+      () => get2(t)("Unsaved changes"),
+      () =>
+        get2(t)("This step has unsaved changes. Discard them and continue?"),
+      () => get2(t)("Keep editing"),
+      () => get2(t)("Discard changes"),
+    ],
+  );
+  delegated("click", button, () => $$props.panel.cancelStepExit());
+  delegated("click", button_1, () => $$props.panel.confirmStepExit());
+  append($$anchor, div);
+  pop();
+}
+delegate(["click"]);
+
+// custom_components/occupied/frontend/App.svelte
+var root19 = from_html(
   `<span id="badge" class="badge" aria-live="polite"> <!></span> <button type="button" class="text-button"> </button>`,
   1,
 );
-var root_115 = from_html(
+var root_116 = from_html(
   `<button type="button" class="primary"> </button> <button type="button"> </button>`,
   1,
 );
 var root_211 = from_html(`<button type="button"> </button>`);
 var root_310 = from_html(`<div id="toolbar" class="toolbar"><!> <!></div>`);
 var root_46 = from_html(`<p> </p>`);
-var root_56 = from_html(`<button type="button" class="text-button"> </button>`);
-var root_65 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
-var root_72 = from_html(
-  `<main><header><div><h1>Occupied</h1> <p id="house"> </p></div> <div id="runtime" class="row"><!></div></header> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav aria-label="Occupied"></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main>`,
+var root_56 = from_html(`<option> </option>`);
+var root_65 = from_html(
+  `<label for="instance-select"> </label> <select id="instance-select"></select>`,
+  1,
+);
+var root_72 = from_html(`<p class="hint"> </p>`);
+var root_8 = from_html(`<p class="banner" role="status"> </p>`);
+var root_9 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_10 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
+var root_11 = from_html(`<p> </p> <button type="button"> </button>`, 1);
+var root_122 = from_html(
+  `<main><header><div><h1>Occupied</h1> <p id="house"> </p> <!> <!></div> <div id="runtime" class="row"><!></div></header> <!> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav aria-label="Occupied"></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main> <!>`,
+  1,
 );
 function App($$anchor, $$props) {
   push($$props, true);
@@ -11820,7 +11930,7 @@ function App($$anchor, $$props) {
             ["step", "activity", "window"].includes(resource.kind),
           ),
         );
-        var fragment_1 = root18();
+        var fragment_1 = root19();
         var span = first_child(fragment_1);
         var text_1 = child(span, true);
         var node_1 = sibling(text_1);
@@ -11851,9 +11961,7 @@ function App($$anchor, $$props) {
             set_attribute2(span, "title", get2(state3).reason || "");
             set_text(text_1, $0);
             button.disabled =
-              get2(panel).busy ||
-              !!get2(panel).stepEditor ||
-              (!get2(state3).enabled && !get2(schedulable));
+              get2(panel).busy || (!get2(state3).enabled && !get2(schedulable));
             set_text(text_4, $1);
           },
           [
@@ -11872,7 +11980,8 @@ function App($$anchor, $$props) {
         append($$anchor3, fragment_1);
       };
       if_block(node, ($$render) => {
-        if (get2(panel).status) $$render(consequent_1);
+        if (get2(panel).status && get2(panel).selectedInstance?.loaded)
+          $$render(consequent_1);
       });
     }
     append($$anchor2, fragment);
@@ -11885,7 +11994,7 @@ function App($$anchor, $$props) {
     var node_2 = child(div);
     {
       var consequent_2 = ($$anchor3) => {
-        var fragment_4 = root_115();
+        var fragment_4 = root_116();
         var button_1 = first_child(fragment_4);
         var text_5 = only_child(button_1, true);
         var button_2 = sibling(button_1, 2);
@@ -11931,7 +12040,12 @@ function App($$anchor, $$props) {
     }
     reset(div);
     template_effect(() =>
-      set_attribute2(div, "hidden", !get2(unsaved) && !get2(panel).stale),
+      set_attribute2(
+        div,
+        "hidden",
+        !get2(panel).selectedInstance?.loaded ||
+          (!get2(unsaved) && !get2(panel).stale),
+      ),
     );
     append($$anchor2, div);
   };
@@ -11998,23 +12112,135 @@ function App($$anchor, $$props) {
     ["routines", "Your steps"],
     ["settings", "Settings"],
   ];
-  var main = root_72();
+  var fragment_6 = root_122();
+  var main = first_child(fragment_6);
   var header = child(main);
   var div_1 = child(header);
   var p_1 = sibling(child(div_1), 2);
   var text_10 = only_child(p_1, true);
+  var node_5 = sibling(p_1, 2);
+  {
+    var consequent_5 = ($$anchor2) => {
+      var fragment_7 = root_65();
+      var label_1 = first_child(fragment_7);
+      var text_11 = only_child(label_1, true);
+      var select = sibling(label_1, 2);
+      each(
+        select,
+        21,
+        () => get2(panel).instances,
+        index,
+        ($$anchor3, instance) => {
+          var option = root_56();
+          var text_12 = only_child(option);
+          var option_value = {};
+          template_effect(
+            ($0) => {
+              set_text(
+                text_12,
+                `${get2(instance).name ?? ""} \xB7 ${$0 ?? ""}`,
+              );
+              if (
+                option_value !== (option_value = get2(instance).config_entry_id)
+              ) {
+                option.value = (option.__value = option_value) ?? "";
+              }
+            },
+            [
+              () =>
+                get2(t)(
+                  get2(instance).loaded ? get2(instance).status : "Unloaded",
+                ),
+            ],
+          );
+          append($$anchor3, option);
+        },
+      );
+      reset(select);
+      var select_value;
+      init_select(select);
+      template_effect(
+        ($0) => {
+          set_text(text_11, $0);
+          select.disabled = get2(panel).busy;
+          if (
+            select_value !== (select_value = get2(panel).selectedEntry || "")
+          ) {
+            ((select.value = (select.__value = select_value) ?? ""),
+              select_option(select, select_value));
+          }
+        },
+        [() => get2(t)("Instance")],
+      );
+      delegated("change", select, (event2) => {
+        get2(panel).selectInstance(event2.currentTarget.value);
+        event2.currentTarget.value = get2(panel).selectedEntry || "";
+      });
+      append($$anchor2, fragment_7);
+    };
+    if_block(node_5, ($$render) => {
+      if (get2(panel).instances.length > 1) $$render(consequent_5);
+    });
+  }
+  var node_6 = sibling(node_5, 2);
+  {
+    var consequent_6 = ($$anchor2) => {
+      var p_2 = root_72();
+      var text_13 = only_child(p_2, true);
+      template_effect(
+        ($0) => set_text(text_13, $0),
+        [
+          () =>
+            get2(t)(
+              get2(panel).selectedInstance.source === "file"
+                ? "Managed file"
+                : "GUI storage",
+            ),
+        ],
+      );
+      append($$anchor2, p_2);
+    };
+    if_block(node_6, ($$render) => {
+      if (get2(panel).selectedInstance) $$render(consequent_6);
+    });
+  }
   reset(div_1);
   var div_2 = sibling(div_1, 2);
-  var node_5 = child(div_2);
-  runtimeControls(node_5);
+  var node_7 = child(div_2);
+  runtimeControls(node_7);
   reset(div_2);
   reset(header);
-  var node_6 = sibling(header, 2);
-  toolbar(node_6);
-  var div_3 = sibling(node_6, 2);
-  var text_11 = only_child(div_3, true);
+  var node_8 = sibling(header, 2);
+  each(
+    node_8,
+    17,
+    () => get2(panel).selectedInstance?.overlaps || [],
+    index,
+    ($$anchor2, overlap) => {
+      var p_3 = root_8();
+      var text_14 = only_child(p_3);
+      template_effect(
+        ($0, $1, $2) =>
+          set_text(
+            text_14,
+            `${$0 ?? ""}
+      ${get2(overlap).name ?? ""}: ${$1 ?? ""}. ${$2 ?? ""}`,
+          ),
+        [
+          () => get2(t)("Shared devices with"),
+          () => get2(overlap).entities.join(", "),
+          () => get2(t)("Actions and cleanup can interfere between instances."),
+        ],
+      );
+      append($$anchor2, p_3);
+    },
+  );
+  var node_9 = sibling(node_8, 2);
+  toolbar(node_9);
+  var div_3 = sibling(node_9, 2);
+  var text_15 = only_child(div_3, true);
   var div_4 = sibling(div_3, 2);
-  var text_12 = only_child(div_4, true);
+  var text_16 = only_child(div_4, true);
   var nav = sibling(div_4, 2);
   each(
     nav,
@@ -12026,7 +12252,7 @@ function App($$anchor, $$props) {
       let id = () => get2($$array)[0];
       let label = () => get2($$array)[1];
       var button_5 = root_211();
-      var text_13 = only_child(button_5, true);
+      var text_17 = only_child(button_5, true);
       template_effect(
         ($0) => {
           set_attribute2(button_5, "data-tab", id());
@@ -12035,8 +12261,8 @@ function App($$anchor, $$props) {
             "aria-current",
             get2(panel).tab === id() ? "page" : "false",
           );
-          button_5.disabled = !!get2(panel).stepEditor;
-          set_text(text_13, $0);
+          button_5.disabled = !get2(panel).selectedInstance?.loaded;
+          set_text(text_17, $0);
         },
         [() => get2(t)(label())],
       );
@@ -12046,13 +12272,13 @@ function App($$anchor, $$props) {
   );
   reset(nav);
   var div_5 = sibling(nav, 2);
-  var node_7 = child(div_5);
+  var node_10 = child(div_5);
   {
-    var consequent_5 = ($$anchor2) => {
-      var button_6 = root_56();
-      var text_14 = only_child(button_6, true);
+    var consequent_7 = ($$anchor2) => {
+      var button_6 = root_9();
+      var text_18 = only_child(button_6, true);
       template_effect(
-        ($0) => set_text(text_14, $0),
+        ($0) => set_text(text_18, $0),
         [
           () =>
             get2(t)(
@@ -12069,8 +12295,8 @@ function App($$anchor, $$props) {
       );
       append($$anchor2, button_6);
     };
-    if_block(node_7, ($$render) => {
-      if (!get2(primary)) $$render(consequent_5);
+    if_block(node_10, ($$render) => {
+      if (!get2(primary)) $$render(consequent_7);
     });
   }
   reset(div_5);
@@ -12090,24 +12316,24 @@ function App($$anchor, $$props) {
   );
   reset(div_6);
   var div_7 = sibling(div_6, 2);
-  var node_8 = child(div_7);
+  var node_11 = child(div_7);
   key(
-    node_8,
-    () => get2(panel).tab,
+    node_11,
+    () => `${get2(panel).selectedEntry}:${get2(panel).tab}`,
     ($$anchor2) => {
-      var fragment_7 = comment();
-      var node_9 = first_child(fragment_7);
+      var fragment_9 = comment();
+      var node_12 = first_child(fragment_9);
       {
         const failed = ($$anchor3, error = noop) => {
-          var fragment_8 = root_65();
-          var p_2 = first_child(fragment_8);
-          var text_15 = only_child(p_2, true);
-          var p_3 = sibling(p_2, 2);
-          var text_16 = only_child(p_3, true);
+          var fragment_10 = root_10();
+          var p_4 = first_child(fragment_10);
+          var text_19 = only_child(p_4, true);
+          var p_5 = sibling(p_4, 2);
+          var text_20 = only_child(p_5, true);
           template_effect(
             ($0, $1) => {
-              set_text(text_15, $0);
-              set_text(text_16, $1);
+              set_text(text_19, $0);
+              set_text(text_20, $1);
             },
             [
               () => errorMessage(error()),
@@ -12117,34 +12343,56 @@ function App($$anchor, $$props) {
                 ),
             ],
           );
-          append($$anchor3, fragment_8);
+          append($$anchor3, fragment_10);
         };
-        boundary(node_9, { failed }, ($$anchor3) => {
-          var fragment_9 = comment();
-          var node_10 = first_child(fragment_9);
+        boundary(node_12, { failed }, ($$anchor3) => {
+          var fragment_11 = comment();
+          var node_13 = first_child(fragment_11);
           {
-            var consequent_7 = ($$anchor4) => {
-              var fragment_10 = comment();
-              var node_11 = first_child(fragment_10);
+            var consequent_8 = ($$anchor4) => {
+              var fragment_12 = root_11();
+              var p_6 = first_child(fragment_12);
+              var text_21 = only_child(p_6, true);
+              var button_7 = sibling(p_6, 2);
+              var text_22 = only_child(button_7, true);
+              template_effect(
+                ($0, $1) => {
+                  set_text(text_21, $0);
+                  set_text(text_22, $1);
+                },
+                [
+                  () =>
+                    get2(t)(
+                      "This instance is unavailable. Check Settings \u2192 Devices & services, then retry.",
+                    ),
+                  () => get2(t)("Retry"),
+                ],
+              );
+              delegated("click", button_7, () => get2(panel).retry());
+              append($$anchor4, fragment_12);
+            };
+            var consequent_10 = ($$anchor4) => {
+              var fragment_13 = comment();
+              var node_14 = first_child(fragment_13);
               {
-                var consequent_6 = ($$anchor5) => {
-                  var button_7 = root_211();
-                  var text_17 = only_child(button_7, true);
+                var consequent_9 = ($$anchor5) => {
+                  var button_8 = root_211();
+                  var text_23 = only_child(button_8, true);
                   template_effect(
-                    ($0) => set_text(text_17, $0),
+                    ($0) => set_text(text_23, $0),
                     [() => get2(t)("Retry")],
                   );
-                  delegated("click", button_7, () => get2(panel).retry());
-                  append($$anchor5, button_7);
+                  delegated("click", button_8, () => get2(panel).retry());
+                  append($$anchor5, button_8);
                 };
-                if_block(node_11, ($$render) => {
+                if_block(node_14, ($$render) => {
                   if (get2(panel).error && !get2(panel)._loading)
-                    $$render(consequent_6);
+                    $$render(consequent_9);
                 });
               }
-              append($$anchor4, fragment_10);
+              append($$anchor4, fragment_13);
             };
-            var consequent_8 = ($$anchor4) => {
+            var consequent_11 = ($$anchor4) => {
               StepEditor($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12154,7 +12402,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_9 = ($$anchor4) => {
+            var consequent_12 = ($$anchor4) => {
               StepsView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12164,7 +12412,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_10 = ($$anchor4) => {
+            var consequent_13 = ($$anchor4) => {
               SettingsView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12174,7 +12422,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_11 = ($$anchor4) => {
+            var consequent_14 = ($$anchor4) => {
               OverviewView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12184,7 +12432,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_12 = ($$anchor4) => {
+            var consequent_15 = ($$anchor4) => {
               PreviewView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12194,7 +12442,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_13 = ($$anchor4) => {
+            var consequent_16 = ($$anchor4) => {
               ConfigurationView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12204,7 +12452,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_14 = ($$anchor4) => {
+            var consequent_17 = ($$anchor4) => {
               DiagnosticsView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12214,7 +12462,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_15 = ($$anchor4) => {
+            var consequent_18 = ($$anchor4) => {
               TimelineView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12224,52 +12472,76 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            if_block(node_10, ($$render) => {
-              if (!get2(panel).draft) $$render(consequent_7);
+            if_block(node_13, ($$render) => {
+              if (
+                get2(panel).selectedEntry &&
+                !get2(panel).selectedInstance?.loaded
+              )
+                $$render(consequent_8);
+              else if (get2(panel)._loading || !get2(panel).draft)
+                $$render(consequent_10, 1);
               else if (
                 get2(panel).stepEditor &&
                 !get2(panel).stepEditor.existing
               )
-                $$render(consequent_8, 1);
+                $$render(consequent_11, 2);
               else if (get2(panel).tab === "routines")
-                $$render(consequent_9, 2);
+                $$render(consequent_12, 3);
               else if (get2(panel).tab === "settings")
-                $$render(consequent_10, 3);
+                $$render(consequent_13, 4);
               else if (get2(panel).tab === "overview")
-                $$render(consequent_11, 4);
+                $$render(consequent_14, 5);
               else if (get2(panel).tab === "preview")
-                $$render(consequent_12, 5);
+                $$render(consequent_15, 6);
               else if (get2(panel).tab === "configuration")
-                $$render(consequent_13, 6);
+                $$render(consequent_16, 7);
               else if (get2(panel).tab === "diagnostics")
-                $$render(consequent_14, 7);
+                $$render(consequent_17, 8);
               else if (get2(panel).tab === "timeline")
-                $$render(consequent_15, 8);
+                $$render(consequent_18, 9);
             });
           }
-          append($$anchor3, fragment_9);
+          append($$anchor3, fragment_11);
         });
       }
-      append($$anchor2, fragment_7);
+      append($$anchor2, fragment_9);
     },
   );
   reset(div_7);
   reset(main);
+  var node_15 = sibling(main, 2);
+  {
+    var consequent_19 = ($$anchor2) => {
+      UnsavedStepDialog($$anchor2, {
+        get panel() {
+          return get2(panel);
+        },
+      });
+    };
+    if_block(node_15, ($$render) => {
+      if (get2(panel).pendingStepExit) $$render(consequent_19);
+    });
+  }
   template_effect(
     ($0) => {
       set_text(text_10, $0);
       set_attribute2(div_3, "hidden", !get2(notices));
-      set_text(text_11, get2(notices));
+      set_text(text_15, get2(notices));
       set_attribute2(div_4, "hidden", !get2(panel).error);
-      set_text(text_12, get2(panel).error);
+      set_text(text_16, get2(panel).error);
     },
-    [() => get2(panel).draft?.name || get2(t)("Loading household\u2026")],
+    [
+      () =>
+        get2(panel).draft?.name ||
+        get2(panel).selectedInstance?.name ||
+        get2(t)("Loading household\u2026"),
+    ],
   );
-  append($$anchor, main);
+  append($$anchor, fragment_6);
   pop();
   $$cleanup();
 }
-delegate(["click"]);
+delegate(["click", "change"]);
 
 // custom_components/occupied/frontend/ha-controls.ts
 async function loadHaControls() {
@@ -12315,6 +12587,7 @@ var OccupiedPanel = class extends HTMLElement {
   tab = "routines";
   t = translator("en");
   stepEditor = null;
+  pendingStepExit = null;
   selectedStep = null;
   actual;
   timelineDate = "";
@@ -12333,6 +12606,12 @@ var OccupiedPanel = class extends HTMLElement {
   diagnostics;
   _hass;
   _loading = false;
+  instances = [];
+  selectedEntry = null;
+  _instancesReady = false;
+  _instancesEpoch = 0;
+  _instancesUnsubscribe = null;
+  _instancesSubscribing = false;
   _panel;
   _loadedEntry = null;
   _timer;
@@ -12359,6 +12638,8 @@ var OccupiedPanel = class extends HTMLElement {
       selector.hass = value;
     if (changed) {
       this._disposeSubscription();
+      this._disposeInstances();
+      this._instancesReady = false;
       this._subscribe();
     }
     this._load();
@@ -12369,6 +12650,14 @@ var OccupiedPanel = class extends HTMLElement {
   }
   set narrow(value) {
     this.toggleAttribute("narrow", !!value);
+  }
+  set route(_value) {
+    void this._load();
+  }
+  get selectedInstance() {
+    return this.instances.find(
+      (item) => item.config_entry_id === this.selectedEntry,
+    );
   }
   connectedCallback() {
     if (!this.component) {
@@ -12383,6 +12672,8 @@ var OccupiedPanel = class extends HTMLElement {
     }
     this._load();
     window.addEventListener("beforeunload", this._beforeUnload);
+    window.addEventListener("location-changed", this._locationChanged);
+    window.addEventListener("popstate", this._locationChanged);
     this._timer = setInterval(() => {
       for (const bar of this.shadowRoot.querySelectorAll(
         "progress[data-start]",
@@ -12400,10 +12691,15 @@ var OccupiedPanel = class extends HTMLElement {
     this._loadedEntry = null;
     this._loading = false;
     this._disposeSubscription();
+    this._disposeInstances();
+    this._instancesReady = false;
     clearInterval(this._timer);
     if (this._timelineTimer) clearTimeout(this._timelineTimer);
     window.removeEventListener("beforeunload", this._beforeUnload);
+    window.removeEventListener("location-changed", this._locationChanged);
+    window.removeEventListener("popstate", this._locationChanged);
   }
+  _locationChanged = () => void this._load();
   _beforeUnload = (event2) => {
     if (this.dirty || this.stepEditor?.changed) {
       event2.preventDefault();
@@ -12411,6 +12707,109 @@ var OccupiedPanel = class extends HTMLElement {
     }
   };
   // --- Backend connection -------------------------------------------------
+  _disposeInstances() {
+    this._instancesEpoch++;
+    this._instancesUnsubscribe?.();
+    this._instancesUnsubscribe = null;
+    this._instancesSubscribing = false;
+  }
+  async _subscribeInstances() {
+    if (
+      this._instancesUnsubscribe ||
+      this._instancesSubscribing ||
+      !this.isConnected
+    )
+      return;
+    this._instancesSubscribing = true;
+    const epoch = this._instancesEpoch;
+    try {
+      const unsubscribe = await this._hass.connection.subscribeMessage(
+        (instances) => {
+          if (epoch !== this._instancesEpoch || !this.isConnected) return;
+          this.instances = instances;
+          this.flush();
+          if (!this.selectedInstance?.loaded && this._loadedEntry) {
+            this.epoch++;
+            this._loadedEntry = null;
+            this._loading = this.busy = false;
+            this._disposeSubscription();
+          }
+          void this._load();
+        },
+        { type: "occupied/instances_subscribe" },
+      );
+      if (epoch !== this._instancesEpoch || !this.isConnected) unsubscribe();
+      else this._instancesUnsubscribe = unsubscribe;
+    } catch (error) {
+      if (epoch === this._instancesEpoch) this.fail(error);
+    } finally {
+      if (epoch === this._instancesEpoch) this._instancesSubscribing = false;
+    }
+  }
+  _writeSelection(entry, replace = false) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("config_entry", entry);
+    window.history[replace ? "replaceState" : "pushState"](null, "", url);
+    window.dispatchEvent(new Event("location-changed"));
+  }
+  selectInstance(entry) {
+    if (entry === this.selectedEntry || this.busy) return;
+    if (!this._canSwitchInstance()) {
+      this.flush();
+      return;
+    }
+    this._resetInstance(entry);
+    this._writeSelection(entry);
+    void this._load();
+  }
+  _canSwitchInstance() {
+    return (
+      !(this.dirty || (this.stepEditor && hasStepChanges(this.stepEditor))) ||
+      window.confirm(
+        this.t("This instance has unsaved changes. Discard them and switch?"),
+      )
+    );
+  }
+  _resetInstance(entry) {
+    this.epoch++;
+    this._disposeSubscription();
+    if (this._timelineTimer) clearTimeout(this._timelineTimer);
+    this._timelineTimer = null;
+    this._timelineLoading = false;
+    this._loadedEntry = null;
+    this.selectedEntry = entry;
+    Object.assign(this, {
+      draft: void 0,
+      saved: void 0,
+      document: void 0,
+      status: void 0,
+      catalog: { entities: [], services: {} },
+      revision: "",
+      stale: false,
+      dirty: false,
+      version: 0,
+      validatedVersion: -1,
+      issues: [],
+      error: "",
+      busy: false,
+      _loading: false,
+      tab: "routines",
+      stepEditor: null,
+      pendingStepExit: null,
+      selectedStep: null,
+      actual: void 0,
+      timelineDate: "",
+      preview: void 0,
+      previewProgram: void 0,
+      previewVersion: void 0,
+      previewSettings: { date: "", days: 7, seed: "preview-1", at: "" },
+      sourcePath: void 0,
+      yaml: "",
+      includeSensitive: false,
+      diagnostics: void 0,
+    });
+    this.renderView();
+  }
   ws(type, data = {}) {
     return this._hass.callWS({
       type: `occupied/${type}`,
@@ -12472,16 +12871,47 @@ var OccupiedPanel = class extends HTMLElement {
       this.reloadSaved();
   }
   async _load() {
-    const entry = this._panel?.config?.config_entry_id;
+    if (!this.isConnected || !this._hass || !this._panel) return;
+    if (!this._instancesReady) {
+      const epoch2 = this._instancesEpoch;
+      try {
+        const instances = await this._hass.callWS({
+          type: "occupied/instances",
+        });
+        if (epoch2 !== this._instancesEpoch || !this.isConnected) return;
+        this.instances = instances;
+        this._instancesReady = true;
+        void this._subscribeInstances();
+      } catch (error) {
+        if (epoch2 === this._instancesEpoch) this.fail(error);
+        return;
+      }
+    }
+    const entry =
+      new URLSearchParams(window.location.search).get("config_entry") ||
+      this._panel.config?.config_entry_id ||
+      this.selectedEntry ||
+      this.instances.find((item) => item.loaded)?.config_entry_id ||
+      this.instances[0]?.config_entry_id;
+    if (!entry) {
+      this.flush();
+      return;
+    }
+    if (entry !== this.selectedEntry) {
+      if (this.busy || !this._canSwitchInstance()) {
+        if (this.selectedEntry) this._writeSelection(this.selectedEntry, true);
+        return;
+      }
+      this._resetInstance(entry);
+    }
     if (
-      !this.isConnected ||
-      !this._hass ||
-      !entry ||
+      !this.selectedInstance?.loaded ||
       this._loading ||
       this._loadedEntry === entry
     )
       return;
     this._loading = true;
+    this.flush();
     this._disposeSubscription();
     const epoch = ++this.epoch;
     this._loadedEntry = entry;
@@ -12493,8 +12923,14 @@ var OccupiedPanel = class extends HTMLElement {
         loadHaControls(),
       ]);
       if (epoch !== this.epoch) return;
-      this.adopt(doc);
-      this.resetDraft();
+      if (this.draft && (this.dirty || this.stepEditor)) {
+        this.document = doc;
+        this.saved = doc.program;
+        this.stale = doc.revision !== this.revision;
+      } else {
+        this.adopt(doc);
+        this.resetDraft();
+      }
       this.catalog = catalog;
       this.status = status;
       this.previewSettings.date = doc.simulation_date;
@@ -12507,7 +12943,10 @@ var OccupiedPanel = class extends HTMLElement {
         this.fail(error);
       }
     } finally {
-      if (epoch === this.epoch) this._loading = false;
+      if (epoch === this.epoch) {
+        this._loading = false;
+        this.flush();
+      }
     }
   }
   // --- Rendering ----------------------------------------------------------
@@ -12522,11 +12961,50 @@ var OccupiedPanel = class extends HTMLElement {
     this.flush();
   }
   navigate(tab) {
-    if (this.stepEditor) return;
+    if (this.stepEditor) {
+      this.requestStepExit(() => {
+        this.tab = tab;
+        this.renderView();
+      });
+      return;
+    }
+    if (this.tab === tab) return;
     this.tab = tab;
     this.renderView();
   }
+  requestStepExit(action2) {
+    const editor = this.stepEditor;
+    if (!editor) {
+      action2();
+      return;
+    }
+    if (hasStepChanges(editor)) {
+      this.pendingStepExit = action2;
+      this.flush();
+      return;
+    }
+    this.finishStepExit(action2);
+  }
+  cancelStepExit() {
+    this.pendingStepExit = null;
+    this.flush();
+  }
+  confirmStepExit() {
+    const action2 = this.pendingStepExit;
+    if (action2) this.finishStepExit(action2);
+  }
+  finishStepExit(action2) {
+    this.pendingStepExit = null;
+    this.stepEditor = null;
+    this.selectedStep = null;
+    this.error = "";
+    this.issues = [];
+    this.version++;
+    action2();
+    this.renderView();
+  }
   retry() {
+    this._instancesReady = false;
     void this._load();
   }
   notices() {
@@ -12733,12 +13211,14 @@ var OccupiedPanel = class extends HTMLElement {
     });
   }
   control(service, data = {}) {
-    return this.run(async () => {
+    return this.run(async (epoch) => {
       await this._hass.callService("occupied", service, {
         config_entry_id: this._loadedEntry,
         ...data,
       });
-      this.status = await this.ws("status");
+      if (epoch !== this.epoch) return;
+      const status = await this.ws("status");
+      if (epoch === this.epoch) this.status = status;
     });
   }
   async loadTimeline() {
@@ -12759,7 +13239,7 @@ var OccupiedPanel = class extends HTMLElement {
     } catch (error) {
       if (epoch === this.epoch) this.fail(error);
     } finally {
-      this._timelineLoading = false;
+      if (epoch === this.epoch) this._timelineLoading = false;
     }
   }
   runPreview() {

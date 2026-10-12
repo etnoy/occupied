@@ -494,6 +494,29 @@ export const styles = `
   .step-delete-dialog::backdrop {
     background: #0006;
   }
+  .step-exit-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: #0004;
+  }
+  .step-exit-dialog {
+    position: relative;
+    inset: auto;
+    width: 440px;
+    max-width: 100%;
+    margin: 0;
+    padding: 24px;
+    border: 1px solid var(--divider-color, #d5dce3);
+    border-radius: 12px;
+    background: var(--card-background-color, #fff);
+    color: var(--primary-text-color, #202c37);
+    box-shadow: 0 6px 24px #0003;
+  }
+  .step-exit-dialog h2 { margin-top: 0; }
   .step-delete-actions {
     display: flex;
     justify-content: flex-end;

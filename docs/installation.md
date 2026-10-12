@@ -25,7 +25,24 @@ occupied:
   config_file: occupied/house.yaml
 ```
 
-The path is relative to HA's config directory. A read-only container mount under that directory works. There is one household entry. Bootstrap creates that entry only when none exists; it never silently replaces a GUI household or another file selection. Resolve conflicts in **Occupied → Configuration** or remove the bootstrap declaration. Missing/invalid initial files leave an inactive, inspectable entry and create a HA Repair. Correct the file and reload to recover.
+The path is relative to HA's config directory. A read-only container mount under that directory works. This legacy declaration retains the original household identity and never silently replaces its source. If several entries exist without that identity, a Repair asks you to use named instances.
+
+For multiple independent instances, use stable IDs:
+
+```yaml
+occupied:
+  instances:
+    - id: main_house
+      config_file: occupied/main-house.yaml
+    - id: guest_house
+      config_file: occupied/guest-house.yaml
+```
+
+Each file is a complete Occupied program using schema version 1. IDs must start with a lowercase letter and contain only lowercase letters, digits and underscores; they must be unique. Keep the IDs stable when renaming programs or moving files. A repeated declaration finds its existing entry; a changed path reports a source conflict until you explicitly select the new file for that instance. It does not silently replace the running source. Removing a declaration leaves the entry running; delete it separately through Devices & services. Remove its declaration before deletion to prevent bootstrap recreating it on restart.
+
+When converting an original managed-file household to named instances, use its existing file path once: Occupied adopts the new ID while retaining the entry ID, permission, seed and stored plans. GUI entries remain intact; switching an existing GUI entry to a managed file is explicit in the panel. Additional GUI, snapshot and file entries can be added normally through **Add integration**.
+
+The shared Occupied panel offers an instance selector. Configure on a particular integration opens that instance. Missing/invalid initial files leave only that instance inactive and create a separate HA Repair. Correct the file and reload to recover. Resolve source conflicts in the selected instance's **Settings → Advanced settings → Import, export and managed files**, or remove its bootstrap declaration.
 
 See [managed configuration and Puppet](managed-configuration.md) for reload, deployment, file authority and explicit source changes. The [editor guide](editor.md), [schema](schema.md) and [runtime guide](runtime.md) cover exact activation states, generic actions, timed activities, handover, ownership and recovery.
 

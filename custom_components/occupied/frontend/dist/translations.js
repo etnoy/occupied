@@ -1,6 +1,17 @@
 // Generated from translations.ts by pnpm run build. Do not edit.
 // English is the complete fallback; HA's selected language supplies localized UI chrome.
 const sv = {
+  Instance: "Instans",
+  Unloaded: "Inte inläst",
+  "Managed file": "Hanterad fil",
+  "GUI storage": "Lagring i gränssnittet",
+  "Shared devices with": "Delade enheter med",
+  "Actions and cleanup can interfere between instances.":
+    "Åtgärder och avslut kan påverka varandra mellan instanser.",
+  "This instance has unsaved changes. Discard them and switch?":
+    "Den här instansen har osparade ändringar. Kasta dem och byt?",
+  "This instance is unavailable. Check Settings → Devices & services, then retry.":
+    "Den här instansen är inte tillgänglig. Kontrollera Inställningar → Enheter och tjänster och försök igen.",
   "Steps and time sources": "Steg och tidskällor",
   "matching sources": "matchande tidskällor",
   "No matching steps or time sources.": "Inga matchande steg eller tidskällor.",
@@ -32,8 +43,11 @@ const sv = {
   Tools: "Verktyg",
   "Create step": "Skapa steg",
   "Create your first step": "Skapa ditt första steg",
-  "Discard unsaved changes and open another step?":
-    "Kasta osparade ändringar och öppna ett annat steg?",
+  "Unsaved changes": "Osparade ändringar",
+  "This step has unsaved changes. Discard them and continue?":
+    "Steget har osparade ändringar. Kasta dem och fortsätta?",
+  "Keep editing": "Fortsätt redigera",
+  "Discard changes": "Kasta ändringar",
   "Edit step": "Redigera steg",
   "Add related step": "Lägg till relaterat steg",
   "Save step": "Spara steg",

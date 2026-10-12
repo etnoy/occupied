@@ -12,6 +12,7 @@
   import ConfigurationView from "./ConfigurationView.svelte";
   import DiagnosticsView from "./DiagnosticsView.svelte";
   import TimelineView from "./TimelineView.svelte";
+  import UnsavedStepDialog from "./UnsavedStepDialog.svelte";
   let {
     panel: controller,
     updates,
@@ -47,7 +48,7 @@
 </script>
 
 {#snippet runtimeControls()}
-  {#if panel.status}
+  {#if panel.status && panel.selectedInstance?.loaded}
     {@const state = panel.status}
     {@const label = state.paused
       ? "Paused"
@@ -69,9 +70,7 @@
     <button
       type="button"
       class="text-button"
-      disabled={panel.busy ||
-        !!panel.stepEditor ||
-        (!state.enabled && !schedulable)}
+      disabled={panel.busy || (!state.enabled && !schedulable)}
       onclick={() => panel.control(state.enabled ? "stop" : "start")}
     >
       {t(state.enabled ? "Turn off simulation" : "Turn on simulation")}
@@ -80,7 +79,11 @@
 {/snippet}
 {#snippet toolbar()}
   {@const unsaved = panel.dirty && !panel.stepEditor}
-  <div id="toolbar" class="toolbar" hidden={!unsaved && !panel.stale}>
+  <div
+    id="toolbar"
+    class="toolbar"
+    hidden={!panel.selectedInstance?.loaded || (!unsaved && !panel.stale)}
+  >
     {#if unsaved}
       <button
         type="button"
@@ -132,10 +135,51 @@
   <header>
     <div>
       <h1>Occupied</h1>
-      <p id="house">{panel.draft?.name || t("Loading household…")}</p>
+      <p id="house">
+        {panel.draft?.name ||
+          panel.selectedInstance?.name ||
+          t("Loading household…")}
+      </p>
+      {#if panel.instances.length > 1}
+        <label for="instance-select">{t("Instance")}</label>
+        <select
+          id="instance-select"
+          value={panel.selectedEntry || ""}
+          disabled={panel.busy}
+          onchange={(event) => {
+            panel.selectInstance(event.currentTarget.value);
+            event.currentTarget.value = panel.selectedEntry || "";
+          }}
+        >
+          {#each panel.instances as instance}
+            <option value={instance.config_entry_id}>
+              {instance.name} · {t(
+                instance.loaded ? instance.status : "Unloaded",
+              )}
+            </option>
+          {/each}
+        </select>
+      {/if}
+      {#if panel.selectedInstance}
+        <p class="hint">
+          {t(
+            panel.selectedInstance.source === "file"
+              ? "Managed file"
+              : "GUI storage",
+          )}
+        </p>
+      {/if}
     </div>
     <div id="runtime" class="row">{@render runtimeControls()}</div>
   </header>
+  {#each panel.selectedInstance?.overlaps || [] as overlap}
+    <p class="banner" role="status">
+      {t("Shared devices with")}
+      {overlap.name}: {overlap.entities.join(", ")}. {t(
+        "Actions and cleanup can interfere between instances.",
+      )}
+    </p>
+  {/each}
   {@render toolbar()}
   <div id="notice" class="banner" role="status" hidden={!notices}>
     {notices}
@@ -149,7 +193,7 @@
         type="button"
         data-tab={id}
         aria-current={panel.tab === id ? "page" : "false"}
-        disabled={!!panel.stepEditor}
+        disabled={!panel.selectedInstance?.loaded}
         onclick={() => panel.navigate(id)}
       >
         {t(label)}
@@ -174,7 +218,7 @@
     {/each}
   </div>
   <div id="view">
-    {#key panel.tab}
+    {#key `${panel.selectedEntry}:${panel.tab}`}
       <svelte:boundary>
         {#snippet failed(error)}
           <p class="error">{errorMessage(error)}</p>
@@ -184,7 +228,16 @@
             )}
           </p>
         {/snippet}
-        {#if !panel.draft}
+        {#if panel.selectedEntry && !panel.selectedInstance?.loaded}
+          <p>
+            {t(
+              "This instance is unavailable. Check Settings → Devices & services, then retry.",
+            )}
+          </p>
+          <button type="button" onclick={() => panel.retry()}
+            >{t("Retry")}</button
+          >
+        {:else if panel._loading || !panel.draft}
           {#if panel.error && !panel._loading}<button
               type="button"
               onclick={() => panel.retry()}>{t("Retry")}</button
@@ -210,3 +263,4 @@
     {/key}
   </div>
 </main>
+{#if panel.pendingStepExit}<UnsavedStepDialog {panel} />{/if}

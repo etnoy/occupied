@@ -563,41 +563,37 @@ test("timing explanation describes signed offsets and window bounds directly", (
     endOffset: "",
   };
   for (const [startOffset, endOffset, expected] of [
-    ["2h", "", "Runs 2 hours after Kitchen lights step."],
-    ["-20m", "", "Runs 20 minutes before Kitchen lights step."],
-    ["0s", "", "Runs at the same time as Kitchen lights step."],
+    ["2h", "", "Runs 2 hours after Kitchen lights."],
+    ["-20m", "", "Runs 20 minutes before Kitchen lights."],
+    ["0s", "", "Runs at the same time as Kitchen lights."],
     [
       "-20m",
       "1h",
-      "Runs at a random time between 20 minutes before and 1 hour after Kitchen lights step.",
+      "Runs at a random time between 20 minutes before and 1 hour after Kitchen lights.",
     ],
     [
       "10m",
       "1h",
-      "Runs at a random time between 10 minutes and 1 hour after Kitchen lights step.",
+      "Runs at a random time between 10 minutes and 1 hour after Kitchen lights.",
     ],
     [
       "-1h",
       "-20m",
-      "Runs at a random time between 1 hour and 20 minutes before Kitchen lights step.",
+      "Runs at a random time between 1 hour and 20 minutes before Kitchen lights.",
     ],
     [
       "0s",
       "1h",
-      "Runs at a random time between the start of Kitchen lights step and 1 hour after Kitchen lights step.",
+      "Runs at a random time between the start of Kitchen lights and 1 hour after Kitchen lights.",
     ],
     [
       "-20m",
       "0s",
-      "Runs at a random time between 20 minutes before Kitchen lights step and the start of Kitchen lights step.",
+      "Runs at a random time between 20 minutes before Kitchen lights and the start of Kitchen lights.",
     ],
-    ["1h", "60m", "Runs 1 hour after Kitchen lights step."],
-    [
-      "1h30m10s",
-      "",
-      "Runs 1 hour 30 minutes 10 seconds after Kitchen lights step.",
-    ],
-    ["1.5s", "", "Runs 1.5 seconds after Kitchen lights step."],
+    ["1h", "60m", "Runs 1 hour after Kitchen lights."],
+    ["1h30m10s", "", "Runs 1 hour 30 minutes 10 seconds after Kitchen lights."],
+    ["1.5s", "", "Runs 1.5 seconds after Kitchen lights."],
   ])
     assert.equal(
       timingExplanation({ ...base, startOffset, endOffset }, entries),
@@ -707,7 +703,7 @@ test("unitless zero offsets validate, describe and save as canonical durations",
       },
       [{ id: "morning", name: "Morning" }],
     ),
-    "Runs at the same time as Morning step.",
+    "Runs at the same time as Morning.",
   );
   assert.match(
     offsetErrors({ startOffset: "30m", endOffset: "0" }).endOffset,
@@ -735,15 +731,15 @@ test("step list descriptions share the editor wording without editing hints", ()
     ],
     [
       { relative_to: "kitchen", offset_range: { fixed: "2h" } },
-      "Runs 2 hours after Kitchen lights step.",
+      "Runs 2 hours after Kitchen lights.",
     ],
     [
       { relative_to: "kitchen", offset_range: { fixed: "0s" } },
-      "Runs at the same time as Kitchen lights step.",
+      "Runs at the same time as Kitchen lights.",
     ],
     [
       { relative_to: "kitchen", offset_range: { min: "-20m", max: "1h" } },
-      "Runs at a random time between 20 minutes before and 1 hour after Kitchen lights step.",
+      "Runs at a random time between 20 minutes before and 1 hour after Kitchen lights.",
     ],
     [
       { sun_range: { sun: "sunset", offset_range: { fixed: "-20m" } } },
@@ -786,26 +782,17 @@ test("pending step changes distinguish clean, reverted and new forms", () => {
   assert.equal(hasStepChanges(stepEditor(p)), true);
 });
 
-test("switching cards confirms pending edits and preserves them when declined", async () => {
+test("switching cards delegates unsaved edit handling before changing steps", async () => {
   const { openStep } = await import("@occupied/steps.js");
   const p = program();
   const first = stepEntries(p)[0];
   const second = { ...first, id: "second", name: "Second" };
   const editor = stepEditor(p, first);
-  let confirmations = 0,
+  let requests = 0,
     renders = 0,
     accept = false;
-  const previous = Object.getOwnPropertyDescriptor(globalThis, "window");
-  Object.defineProperty(globalThis, "window", {
-    configurable: true,
-    value: {
-      confirm: () => {
-        confirmations++;
-        return accept;
-      },
-    },
-  });
-  const panel = {
+  let panel: import("@occupied/occupied-panel.js").OccupiedPanel;
+  panel = {
     draft: p,
     stepEditor: editor,
     busy: false,
@@ -815,34 +802,33 @@ test("switching cards confirms pending edits and preserves them when declined", 
     renderView: () => {
       renders++;
     },
+    requestStepExit(action: () => void) {
+      requests++;
+      if (accept) {
+        panel.stepEditor = null;
+        action();
+      }
+    },
     shadowRoot: { querySelector: () => ({ focus() {} }) },
   } as unknown as import("@occupied/occupied-panel.js").OccupiedPanel;
-  try {
-    editor.form.name = "Pending rename";
-    openStep(panel, second);
-    assert.equal(panel.stepEditor, editor);
-    assert.equal(editor.form.name, "Pending rename");
-    assert.equal(renders, 0);
-    accept = true;
-    openStep(panel, second);
-    assert.equal(panel.stepEditor?.id, "second");
-    assert.equal(confirmations, 2);
-    openStep(panel, first);
-    assert.equal(panel.stepEditor?.id, first.id);
-    assert.equal(
-      confirmations,
-      2,
-      "Clean editors should switch without prompting",
-    );
-    assert.equal(
-      first.name,
-      stepEntries(p)[0].name,
-      "Switching must not save discarded edits",
-    );
-  } finally {
-    if (previous) Object.defineProperty(globalThis, "window", previous);
-    else Reflect.deleteProperty(globalThis, "window");
-  }
+  editor.form.name = "Pending rename";
+  openStep(panel, second);
+  assert.equal(panel.stepEditor, editor);
+  assert.equal(editor.form.name, "Pending rename");
+  assert.equal(renders, 0);
+  assert.equal(requests, 1);
+  accept = true;
+  openStep(panel, second);
+  assert.equal(panel.stepEditor?.id, "second");
+  assert.equal(requests, 2);
+  openStep(panel, first);
+  assert.equal(panel.stepEditor?.id, first.id);
+  assert.equal(requests, 3);
+  assert.equal(
+    first.name,
+    stepEntries(p)[0].name,
+    "Switching must not save discarded edits",
+  );
 });
 
 test("new steps validate all sections and save in a single submission", async () => {

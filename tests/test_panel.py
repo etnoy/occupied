@@ -19,7 +19,8 @@ async def test_panel_and_status_then_browser_closure(
     assert panel.require_admin
     module_url = panel.config["_panel_custom"]["module_url"]
     assert re.fullmatch(r"/occupied_static/[0-9a-f]{16}/occupied-panel\.js", module_url)
-    assert panel.config["config_entry_id"] == entry.entry_id
+    assert panel.sidebar_title == "Occupied"
+    assert "config_entry_id" not in panel.config
     client = await hass_ws_client(hass)
     await client.send_json({"id": 1, "type": "occupied/status", "config_entry_id": entry.entry_id})
     response = await client.receive_json()

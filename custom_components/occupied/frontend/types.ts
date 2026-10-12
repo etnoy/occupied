@@ -278,6 +278,19 @@ export interface ProgramDocument {
   simulation_date: string;
   timezone: string;
 }
+export interface InstanceDocument {
+  config_entry_id: string;
+  name: string;
+  loaded: boolean;
+  state: string;
+  source: string;
+  source_status?: string | null;
+  status: string;
+  enabled: boolean;
+  paused: boolean;
+  active: boolean;
+  overlaps: { config_entry_id: string; name: string; entities: string[] }[];
+}
 export type ApiResult<T> =
   | ({ valid: true; issues?: Issue[] } & T)
   | { valid: false; issues: Issue[] };
@@ -354,6 +367,7 @@ export interface PreviewResult {
   handover?: JsonValue;
 }
 export interface WebSocketResponses {
+  instances: InstanceDocument[];
   program: ProgramDocument;
   catalog: Catalog;
   status: RuntimeSnapshot;

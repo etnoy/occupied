@@ -1,6 +1,5 @@
 """Authenticated status and pure canonical draft/preview operations."""
 
-import asyncio
 from datetime import date, datetime
 from functools import partial
 
@@ -13,6 +12,8 @@ from homeassistant.exceptions import HomeAssistantError
 @callback
 def async_register_websocket(hass: HomeAssistant) -> None:
     for command in (
+        websocket_instances,
+        websocket_instances_subscribe,
         websocket_status,
         websocket_validate,
         websocket_preview,
@@ -30,6 +31,49 @@ def async_register_websocket(hass: HomeAssistant) -> None:
         websocket_reload,
     ):
         websocket_api.async_register_command(hass, command)
+
+
+@websocket_api.websocket_command({vol.Required("type"): "occupied/instances"})
+@websocket_api.require_admin
+@callback
+def websocket_instances(hass, connection, msg):
+    from .instances import instance_documents
+
+    connection.send_result(msg["id"], instance_documents(hass))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "occupied/instances_subscribe"})
+@websocket_api.require_admin
+@callback
+def websocket_instances_subscribe(hass, connection, msg):
+    from homeassistant.config_entries import SIGNAL_CONFIG_ENTRY_CHANGED
+    from homeassistant.helpers.dispatcher import async_dispatcher_connect
+
+    from .const import DOMAIN
+    from .instances import INSTANCE_SIGNAL, instance_documents
+
+    @callback
+    def changed(*_):
+        connection.send_event(msg["id"], instance_documents(hass))
+
+    @callback
+    def entry_changed(_change, entry):
+        if entry.domain == DOMAIN:
+            changed()
+
+    unsubs = [
+        async_dispatcher_connect(hass, INSTANCE_SIGNAL, changed),
+        async_dispatcher_connect(hass, SIGNAL_CONFIG_ENTRY_CHANGED, entry_changed),
+    ]
+
+    @callback
+    def unsubscribe():
+        for unsub in unsubs:
+            unsub()
+
+    connection.subscriptions[msg["id"]] = unsubscribe
+    connection.send_result(msg["id"])
+    changed()
 
 
 @websocket_api.websocket_command(
@@ -164,17 +208,16 @@ async def websocket_apply(hass, connection, msg):
 async def _apply_program(hass, connection, msg, *, editor_save=False):
     from . import resolve_engine
     from .activation import ActivationGate
-    from .const import DOMAIN
     from .editor import current_revision, installed_issues, program_document
     from .engine_daily import DailyEngine
     from .file_config import load_program
+    from .managed import source_lock
     from .storage import program_store
     from .validation import ProgramError, RevisionConflict, condition_data, program_data
 
     try:
         program = await hass.async_add_executor_job(load_program, msg["program"])
-        lock = hass.data[DOMAIN].setdefault("editor_lock", asyncio.Lock())
-        async with lock:
+        async with source_lock(hass, msg["config_entry_id"]):
             engine = resolve_engine(hass, msg["config_entry_id"])
             if getattr(engine, "source_manager", None) and engine.source_manager.mode == "file":
                 raise HomeAssistantError(

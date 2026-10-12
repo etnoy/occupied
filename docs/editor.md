@@ -2,6 +2,8 @@
 
 Create Occupied through **Settings → Devices & services → Add integration**. Choose **Create with Occupied editor** for an empty household, or **Import Occupied YAML** for a stored snapshot. Permission starts disabled. Open Occupied under **Settings → Devices & services** and select **Configure**. Existing development-proof entries open with an editable daily starter program; saving upgrades them to the daily runtime.
 
+The shared Occupied panel offers an **Instance** selector when several entries exist. **Configure** on an integration entry opens that instance directly. Switching instances confirms unsaved draft or step edits; canceling preserves them. Drafts, previews, history and subscriptions are specific to the selected instance. Unloaded entries remain listed, and invalid managed files remain inspectable with their own Repairs. A warning names any declared controlled entities shared with another loaded instance.
+
 ## Create a step
 
 **Your steps** is the home screen. It shows the action, entities or scene, days and timing for each step, with related steps together. Select **Create your first step**, or **Create step** when a program already exists. Creation and editing use the same form, with Timing, Entities and Action visible together:
@@ -55,10 +57,11 @@ The [step example](../examples/steps.yaml) follows Morning → Breakfast with a 
 
 ## API and compatibility
 
-Commands require an authenticated admin and loaded `config_entry_id`:
+Commands require an authenticated admin. Entry-specific commands require a loaded `config_entry_id`:
 
 | Command | Purpose / additional fields |
 | --- | --- |
+| `occupied/instances`, `occupied/instances_subscribe` | List/watch admin instance summaries, source status and shared controlled entities; no entry ID required |
 | `occupied/program` | Normalized program, revision, source, resolved date/timezone |
 | `occupied/catalog` | Entity names/areas/capabilities, discovered time sources and native service descriptions/selectors |
 | `occupied/editor_validate` | Validate `program`, including installed service schemas |
@@ -69,4 +72,4 @@ Commands require an authenticated admin and loaded `config_entry_id`:
 | `occupied/validate`, `preview`, `export`, `rename_id` | Shared pure draft operations in [the schema reference](schema.md) |
 | `occupied/diagnostics` | Optional `include_sensitive: true` for household details |
 
-The editor uses Svelte and strict TypeScript and runs only inside Home Assistant. Its generated local ES modules are included in the integration, so installation needs no frontend build or extra runtime dependency. Static assets contain no household data. The editor follows HA's [custom-panel contract](https://developers.home-assistant.io/docs/frontend/custom-ui/creating-custom-panels/) and loads HA's native configuration controls before rendering the editor. Entity and time selection use HA selectors; relative sources use HA's generic picker. There are no standalone replacement controls or URL-based entry selection. English is complete; Swedish navigation/common controls have English fallback. CI verifies the supported HA matrix, frontend model tests, strict types and generated assets. Check UI behavior in an installed Home Assistant instance.
+The editor uses Svelte and strict TypeScript and runs only inside Home Assistant. Its generated local ES modules are included in the integration, so installation needs no frontend build or extra runtime dependency. Static assets contain no household data. The editor follows HA's [custom-panel contract](https://developers.home-assistant.io/docs/frontend/custom-ui/creating-custom-panels/) and loads HA's native configuration controls before rendering the editor. Entity and time selection use HA selectors; relative sources use HA's generic picker. Instance routing accepts HA's native `config_entry` query parameter; entry discovery and data remain authenticated admin operations. English is complete; Swedish navigation/common controls have English fallback. CI verifies the supported HA matrix, frontend model tests, strict types and generated assets. Check UI behavior in an installed Home Assistant instance.
