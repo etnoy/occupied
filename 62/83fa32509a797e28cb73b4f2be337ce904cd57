@@ -1,0 +1,31 @@
+custom_components/occupied/frontend/ActionEditor.svelte
+  s_f52ea3dda3ee7d::t_1a8a17fd3bcb7b 8,12
+custom_components/occupied/frontend/EntitiesEditor.svelte
+  s_f52ea3dda3ee7d::t_d200aebd0271d2 11,34
+custom_components/occupied/frontend/StepEditor.svelte
+  s_f52ea3dda3ee7d::t_4705f3022e4f46 18,21,23-38,40-42,48-52,61
+custom_components/occupied/frontend/StepsView.svelte
+  s_f52ea3dda3ee7d::t_742a88dd81a244 53,117
+custom_components/occupied/frontend/step-editor-controller.ts
+  s_f52ea3dda3ee7d::t_c7384bc7d732d5 43,47,54
+custom_components/occupied/frontend/styles.ts
+  s_f52ea3dda3ee7d::t_2015369cb491ab 508,526,531-532,589,592,600,605,608,612,616,620
+tests/frontend/src/model.test.ts
+  s_f52ea3dda3ee7d::t_368c6706efafeb 847-892
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "6283fa32509a797e28cb73b4f2be337ce904cd57",
+  "prompts": {},
+  "sessions": {
+    "s_f52ea3dda3ee7d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11fb1-5697-76a2-afb7-c899c7af8b87",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
