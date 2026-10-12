@@ -15,11 +15,8 @@ async def test_config_flow_allows_another_independent_entry(hass, config, device
     await hass.async_block_till_done()
     assert len(hass.config_entries.async_entries("occupied")) == 1
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
-    assert result["type"] is FlowResultType.FORM
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input={"name": "Guest house", "method": "editor"}
-    )
     assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == "Occupied"
     await hass.async_block_till_done()
     entries = hass.config_entries.async_entries("occupied")
     assert len(entries) == 2
@@ -84,13 +81,11 @@ async def test_options_can_remove_remote_and_activation_gate(hass, entry, config
 
 async def test_gui_bootstrap_creates_an_empty_disabled_daily_household(hass, devices):
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input={"name": "My house", "method": "editor"}
-    )
     assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == result["data"]["name"] == "Occupied"
     await hass.async_block_till_done()
     entry = result["result"]
-    assert entry.runtime_data.program.name == "My house"
+    assert entry.runtime_data.program.name == "Occupied"
     assert not entry.runtime_data.enabled and not entry.runtime_data.program.routines
     assert not devices
     options = await hass.config_entries.options.async_init(entry.entry_id)
@@ -98,12 +93,38 @@ async def test_gui_bootstrap_creates_an_empty_disabled_daily_household(hass, dev
     assert options["reason"] == "daily_program"
 
 
+async def test_gui_name_conflict_requires_user_to_choose_another_name(hass, devices):
+    result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "user"
+    assert result["errors"] == {"name": "name_already_exists"}
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={"name": " occupied "}
+    )
+    assert result["errors"] == {"name": "name_already_exists"}
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={"name": " "}
+    )
+    assert result["errors"] == {"name": "name_required"}
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={"name": " Guest house "}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == result["data"]["program"]["name"] == "Guest house"
+    await hass.async_block_till_done()
+    entries = hass.config_entries.async_entries("occupied")
+    assert [entry.title for entry in entries] == ["Occupied", "Guest house"]
+    assert entries[0].unique_id != entries[1].unique_id
+
+
 async def test_yaml_setup_reports_invalid_input_then_imports_canonical_snapshot(
     hass, devices, program_dict
 ):
-    result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input={"name": "Import", "method": "yaml"}
+    result = await hass.config_entries.flow.async_init(
+        "occupied", context={"source": "user"}, data={"method": "yaml"}
     )
     assert result["step_id"] == "yaml"
     result = await hass.config_entries.flow.async_configure(

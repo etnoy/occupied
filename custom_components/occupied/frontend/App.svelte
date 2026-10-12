@@ -32,6 +32,9 @@
     });
   });
   let revision = $derived($updates);
+  let householdName = $derived(
+    panel.draft?.name || panel.selectedInstance?.name,
+  );
   let state = $derived.by(() => {
     revision;
     return {
@@ -135,11 +138,11 @@
   <header>
     <div>
       <h1>Occupied</h1>
-      <p id="house">
-        {panel.draft?.name ||
-          panel.selectedInstance?.name ||
-          t("Loading household…")}
-      </p>
+      {#if !householdName}
+        <p id="house">{t("Loading household…")}</p>
+      {:else if householdName !== "Occupied" && !/^Occupied [0-9a-f]{8}$/.test(householdName)}
+        <p id="house">{householdName}</p>
+      {/if}
       {#if panel.instances.length > 1}
         <label for="instance-select">{t("Instance")}</label>
         <select

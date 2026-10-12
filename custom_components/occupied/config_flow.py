@@ -89,18 +89,6 @@ def validate_input(data: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def _new_household_name(hass) -> str:
-    """Generate a short, unused name for a newly created household."""
-    names = {
-        str(entry.data.get("name") or entry.title).strip().casefold()
-        for entry in hass.config_entries.async_entries(DOMAIN)
-    }
-    while True:
-        name = f"Occupied {uuid4().hex[:8]}"
-        if name.casefold() not in names:
-            return name
-
-
 class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Create independent household engines with stable entry identities."""
 
@@ -160,7 +148,21 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_file()
         from .validation import program_data, validate_program
 
-        name = (user_input or {}).get("name") or _new_household_name(self.hass)
+        name = (user_input or {}).get("name", "Occupied").strip()
+        errors = {}
+        if not name:
+            errors["name"] = "name_required"
+        elif any(
+            name.casefold() == str(entry.data.get("name") or entry.title).strip().casefold()
+            for entry in self._async_current_entries()
+        ):
+            errors["name"] = "name_already_exists"
+        if errors:
+            return self.async_show_form(
+                step_id="user",
+                errors=errors,
+                data_schema=vol.Schema({vol.Required("name", default=name): str}),
+            )
         program = validate_program({"schema_version": 1, "name": name})
         return self.async_create_entry(
             title=program.name, data={"name": program.name, "program": program_data(program)}

@@ -11971,18 +11971,19 @@ var root_116 = from_html(
 var root_211 = from_html(`<button type="button"> </button>`);
 var root_310 = from_html(`<div id="toolbar" class="toolbar"><!> <!></div>`);
 var root_46 = from_html(`<p> </p>`);
-var root_56 = from_html(`<option> </option>`);
-var root_65 = from_html(
+var root_56 = from_html(`<p id="house"> </p>`);
+var root_65 = from_html(`<option> </option>`);
+var root_72 = from_html(
   `<label for="instance-select"> </label> <select id="instance-select"></select>`,
   1,
 );
-var root_72 = from_html(`<p class="hint"> </p>`);
-var root_8 = from_html(`<p class="banner" role="status"> </p>`);
-var root_9 = from_html(`<button type="button" class="text-button"> </button>`);
-var root_10 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
-var root_11 = from_html(`<p> </p> <button type="button"> </button>`, 1);
-var root_122 = from_html(
-  `<main><header><div><h1>Occupied</h1> <p id="house"> </p> <!> <!></div> <div id="runtime" class="row"><!></div></header> <!> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav aria-label="Occupied"></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main> <!>`,
+var root_8 = from_html(`<p class="hint"> </p>`);
+var root_9 = from_html(`<p class="banner" role="status"> </p>`);
+var root_10 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_11 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
+var root_122 = from_html(`<p> </p> <button type="button"> </button>`, 1);
+var root_132 = from_html(
+  `<main><header><div><h1>Occupied</h1> <!> <!> <!></div> <div id="runtime" class="row"><!></div></header> <!> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav aria-label="Occupied"></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main> <!>`,
   1,
 );
 function App($$anchor, $$props) {
@@ -12176,6 +12177,9 @@ function App($$anchor, $$props) {
     });
   });
   let revision = user_derived($updates);
+  let householdName = user_derived(
+    () => get2(panel).draft?.name || get2(panel).selectedInstance?.name,
+  );
   let state2 = user_derived(() => {
     get2(revision);
     return {
@@ -12191,18 +12195,43 @@ function App($$anchor, $$props) {
     ["routines", "Your steps"],
     ["settings", "Settings"],
   ];
-  var fragment_6 = root_122();
+  var fragment_6 = root_132();
   var main = first_child(fragment_6);
   var header = child(main);
   var div_1 = child(header);
-  var p_1 = sibling(child(div_1), 2);
-  var text_10 = only_child(p_1, true);
-  var node_5 = sibling(p_1, 2);
+  var node_5 = sibling(child(div_1), 2);
   {
     var consequent_5 = ($$anchor2) => {
-      var fragment_7 = root_65();
+      var p_1 = root_56();
+      var text_10 = only_child(p_1, true);
+      template_effect(
+        ($0) => set_text(text_10, $0),
+        [() => get2(t)("Loading household\u2026")],
+      );
+      append($$anchor2, p_1);
+    };
+    var consequent_6 = ($$anchor2) => {
+      var p_2 = root_56();
+      var text_11 = only_child(p_2, true);
+      template_effect(() => set_text(text_11, get2(householdName)));
+      append($$anchor2, p_2);
+    };
+    var d = user_derived(
+      () =>
+        get2(householdName) !== "Occupied" &&
+        !/^Occupied [0-9a-f]{8}$/.test(get2(householdName)),
+    );
+    if_block(node_5, ($$render) => {
+      if (!get2(householdName)) $$render(consequent_5);
+      else if (get2(d)) $$render(consequent_6, 1);
+    });
+  }
+  var node_6 = sibling(node_5, 2);
+  {
+    var consequent_7 = ($$anchor2) => {
+      var fragment_7 = root_72();
       var label_1 = first_child(fragment_7);
-      var text_11 = only_child(label_1, true);
+      var text_12 = only_child(label_1, true);
       var select = sibling(label_1, 2);
       each(
         select,
@@ -12210,13 +12239,13 @@ function App($$anchor, $$props) {
         () => get2(panel).instances,
         index,
         ($$anchor3, instance) => {
-          var option = root_56();
-          var text_12 = only_child(option);
+          var option = root_65();
+          var text_13 = only_child(option);
           var option_value = {};
           template_effect(
             ($0) => {
               set_text(
-                text_12,
+                text_13,
                 `${get2(instance).name ?? ""} \xB7 ${$0 ?? ""}`,
               );
               if (
@@ -12240,7 +12269,7 @@ function App($$anchor, $$props) {
       init_select(select);
       template_effect(
         ($0) => {
-          set_text(text_11, $0);
+          set_text(text_12, $0);
           select.disabled = get2(panel).busy;
           if (
             select_value !== (select_value = get2(panel).selectedEntry || "")
@@ -12257,17 +12286,17 @@ function App($$anchor, $$props) {
       });
       append($$anchor2, fragment_7);
     };
-    if_block(node_5, ($$render) => {
-      if (get2(panel).instances.length > 1) $$render(consequent_5);
+    if_block(node_6, ($$render) => {
+      if (get2(panel).instances.length > 1) $$render(consequent_7);
     });
   }
-  var node_6 = sibling(node_5, 2);
+  var node_7 = sibling(node_6, 2);
   {
-    var consequent_6 = ($$anchor2) => {
-      var p_2 = root_72();
-      var text_13 = only_child(p_2, true);
+    var consequent_8 = ($$anchor2) => {
+      var p_3 = root_8();
+      var text_14 = only_child(p_3, true);
       template_effect(
-        ($0) => set_text(text_13, $0),
+        ($0) => set_text(text_14, $0),
         [
           () =>
             get2(t)(
@@ -12277,31 +12306,31 @@ function App($$anchor, $$props) {
             ),
         ],
       );
-      append($$anchor2, p_2);
+      append($$anchor2, p_3);
     };
-    if_block(node_6, ($$render) => {
-      if (get2(panel).selectedInstance) $$render(consequent_6);
+    if_block(node_7, ($$render) => {
+      if (get2(panel).selectedInstance) $$render(consequent_8);
     });
   }
   reset(div_1);
   var div_2 = sibling(div_1, 2);
-  var node_7 = child(div_2);
-  runtimeControls(node_7);
+  var node_8 = child(div_2);
+  runtimeControls(node_8);
   reset(div_2);
   reset(header);
-  var node_8 = sibling(header, 2);
+  var node_9 = sibling(header, 2);
   each(
-    node_8,
+    node_9,
     17,
     () => get2(panel).selectedInstance?.overlaps || [],
     index,
     ($$anchor2, overlap) => {
-      var p_3 = root_8();
-      var text_14 = only_child(p_3);
+      var p_4 = root_9();
+      var text_15 = only_child(p_4);
       template_effect(
         ($0, $1, $2) =>
           set_text(
-            text_14,
+            text_15,
             `${$0 ?? ""}
       ${get2(overlap).name ?? ""}: ${$1 ?? ""}. ${$2 ?? ""}`,
           ),
@@ -12311,15 +12340,15 @@ function App($$anchor, $$props) {
           () => get2(t)("Actions and cleanup can interfere between instances."),
         ],
       );
-      append($$anchor2, p_3);
+      append($$anchor2, p_4);
     },
   );
-  var node_9 = sibling(node_8, 2);
-  toolbar(node_9);
-  var div_3 = sibling(node_9, 2);
-  var text_15 = only_child(div_3, true);
+  var node_10 = sibling(node_9, 2);
+  toolbar(node_10);
+  var div_3 = sibling(node_10, 2);
+  var text_16 = only_child(div_3, true);
   var div_4 = sibling(div_3, 2);
-  var text_16 = only_child(div_4, true);
+  var text_17 = only_child(div_4, true);
   var nav = sibling(div_4, 2);
   each(
     nav,
@@ -12331,7 +12360,7 @@ function App($$anchor, $$props) {
       let id = () => get2($$array)[0];
       let label = () => get2($$array)[1];
       var button_5 = root_211();
-      var text_17 = only_child(button_5, true);
+      var text_18 = only_child(button_5, true);
       template_effect(
         ($0) => {
           set_attribute2(button_5, "data-tab", id());
@@ -12341,7 +12370,7 @@ function App($$anchor, $$props) {
             get2(panel).tab === id() ? "page" : "false",
           );
           button_5.disabled = !get2(panel).selectedInstance?.loaded;
-          set_text(text_17, $0);
+          set_text(text_18, $0);
         },
         [() => get2(t)(label())],
       );
@@ -12351,13 +12380,13 @@ function App($$anchor, $$props) {
   );
   reset(nav);
   var div_5 = sibling(nav, 2);
-  var node_10 = child(div_5);
+  var node_11 = child(div_5);
   {
-    var consequent_7 = ($$anchor2) => {
-      var button_6 = root_9();
-      var text_18 = only_child(button_6, true);
+    var consequent_9 = ($$anchor2) => {
+      var button_6 = root_10();
+      var text_19 = only_child(button_6, true);
       template_effect(
-        ($0) => set_text(text_18, $0),
+        ($0) => set_text(text_19, $0),
         [
           () =>
             get2(t)(
@@ -12374,8 +12403,8 @@ function App($$anchor, $$props) {
       );
       append($$anchor2, button_6);
     };
-    if_block(node_10, ($$render) => {
-      if (!get2(primary)) $$render(consequent_7);
+    if_block(node_11, ($$render) => {
+      if (!get2(primary)) $$render(consequent_9);
     });
   }
   reset(div_5);
@@ -12395,24 +12424,24 @@ function App($$anchor, $$props) {
   );
   reset(div_6);
   var div_7 = sibling(div_6, 2);
-  var node_11 = child(div_7);
+  var node_12 = child(div_7);
   key(
-    node_11,
+    node_12,
     () => `${get2(panel).selectedEntry}:${get2(panel).tab}`,
     ($$anchor2) => {
       var fragment_9 = comment();
-      var node_12 = first_child(fragment_9);
+      var node_13 = first_child(fragment_9);
       {
         const failed = ($$anchor3, error = noop) => {
-          var fragment_10 = root_10();
-          var p_4 = first_child(fragment_10);
-          var text_19 = only_child(p_4, true);
-          var p_5 = sibling(p_4, 2);
+          var fragment_10 = root_11();
+          var p_5 = first_child(fragment_10);
           var text_20 = only_child(p_5, true);
+          var p_6 = sibling(p_5, 2);
+          var text_21 = only_child(p_6, true);
           template_effect(
             ($0, $1) => {
-              set_text(text_19, $0);
-              set_text(text_20, $1);
+              set_text(text_20, $0);
+              set_text(text_21, $1);
             },
             [
               () => errorMessage(error()),
@@ -12424,20 +12453,20 @@ function App($$anchor, $$props) {
           );
           append($$anchor3, fragment_10);
         };
-        boundary(node_12, { failed }, ($$anchor3) => {
+        boundary(node_13, { failed }, ($$anchor3) => {
           var fragment_11 = comment();
-          var node_13 = first_child(fragment_11);
+          var node_14 = first_child(fragment_11);
           {
-            var consequent_8 = ($$anchor4) => {
-              var fragment_12 = root_11();
-              var p_6 = first_child(fragment_12);
-              var text_21 = only_child(p_6, true);
-              var button_7 = sibling(p_6, 2);
-              var text_22 = only_child(button_7, true);
+            var consequent_10 = ($$anchor4) => {
+              var fragment_12 = root_122();
+              var p_7 = first_child(fragment_12);
+              var text_22 = only_child(p_7, true);
+              var button_7 = sibling(p_7, 2);
+              var text_23 = only_child(button_7, true);
               template_effect(
                 ($0, $1) => {
-                  set_text(text_21, $0);
-                  set_text(text_22, $1);
+                  set_text(text_22, $0);
+                  set_text(text_23, $1);
                 },
                 [
                   () =>
@@ -12450,28 +12479,28 @@ function App($$anchor, $$props) {
               delegated("click", button_7, () => get2(panel).retry());
               append($$anchor4, fragment_12);
             };
-            var consequent_10 = ($$anchor4) => {
+            var consequent_12 = ($$anchor4) => {
               var fragment_13 = comment();
-              var node_14 = first_child(fragment_13);
+              var node_15 = first_child(fragment_13);
               {
-                var consequent_9 = ($$anchor5) => {
+                var consequent_11 = ($$anchor5) => {
                   var button_8 = root_211();
-                  var text_23 = only_child(button_8, true);
+                  var text_24 = only_child(button_8, true);
                   template_effect(
-                    ($0) => set_text(text_23, $0),
+                    ($0) => set_text(text_24, $0),
                     [() => get2(t)("Retry")],
                   );
                   delegated("click", button_8, () => get2(panel).retry());
                   append($$anchor5, button_8);
                 };
-                if_block(node_14, ($$render) => {
+                if_block(node_15, ($$render) => {
                   if (get2(panel).error && !get2(panel)._loading)
-                    $$render(consequent_9);
+                    $$render(consequent_11);
                 });
               }
               append($$anchor4, fragment_13);
             };
-            var consequent_11 = ($$anchor4) => {
+            var consequent_13 = ($$anchor4) => {
               StepEditor($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12481,7 +12510,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_12 = ($$anchor4) => {
+            var consequent_14 = ($$anchor4) => {
               StepsView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12491,7 +12520,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_13 = ($$anchor4) => {
+            var consequent_15 = ($$anchor4) => {
               SettingsView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12501,7 +12530,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_14 = ($$anchor4) => {
+            var consequent_16 = ($$anchor4) => {
               OverviewView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12511,7 +12540,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_15 = ($$anchor4) => {
+            var consequent_17 = ($$anchor4) => {
               PreviewView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12521,7 +12550,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_16 = ($$anchor4) => {
+            var consequent_18 = ($$anchor4) => {
               ConfigurationView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12531,7 +12560,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_17 = ($$anchor4) => {
+            var consequent_19 = ($$anchor4) => {
               DiagnosticsView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12541,7 +12570,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_18 = ($$anchor4) => {
+            var consequent_20 = ($$anchor4) => {
               TimelineView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12551,33 +12580,33 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            if_block(node_13, ($$render) => {
+            if_block(node_14, ($$render) => {
               if (
                 get2(panel).selectedEntry &&
                 !get2(panel).selectedInstance?.loaded
               )
-                $$render(consequent_8);
+                $$render(consequent_10);
               else if (get2(panel)._loading || !get2(panel).draft)
-                $$render(consequent_10, 1);
+                $$render(consequent_12, 1);
               else if (
                 get2(panel).stepEditor &&
                 !get2(panel).stepEditor.existing
               )
-                $$render(consequent_11, 2);
+                $$render(consequent_13, 2);
               else if (get2(panel).tab === "routines")
-                $$render(consequent_12, 3);
+                $$render(consequent_14, 3);
               else if (get2(panel).tab === "settings")
-                $$render(consequent_13, 4);
+                $$render(consequent_15, 4);
               else if (get2(panel).tab === "overview")
-                $$render(consequent_14, 5);
+                $$render(consequent_16, 5);
               else if (get2(panel).tab === "preview")
-                $$render(consequent_15, 6);
+                $$render(consequent_17, 6);
               else if (get2(panel).tab === "configuration")
-                $$render(consequent_16, 7);
+                $$render(consequent_18, 7);
               else if (get2(panel).tab === "diagnostics")
-                $$render(consequent_17, 8);
+                $$render(consequent_19, 8);
               else if (get2(panel).tab === "timeline")
-                $$render(consequent_18, 9);
+                $$render(consequent_20, 9);
             });
           }
           append($$anchor3, fragment_11);
@@ -12588,34 +12617,25 @@ function App($$anchor, $$props) {
   );
   reset(div_7);
   reset(main);
-  var node_15 = sibling(main, 2);
+  var node_16 = sibling(main, 2);
   {
-    var consequent_19 = ($$anchor2) => {
+    var consequent_21 = ($$anchor2) => {
       UnsavedStepDialog($$anchor2, {
         get panel() {
           return get2(panel);
         },
       });
     };
-    if_block(node_15, ($$render) => {
-      if (get2(panel).pendingStepExit) $$render(consequent_19);
+    if_block(node_16, ($$render) => {
+      if (get2(panel).pendingStepExit) $$render(consequent_21);
     });
   }
-  template_effect(
-    ($0) => {
-      set_text(text_10, $0);
-      set_attribute2(div_3, "hidden", !get2(notices));
-      set_text(text_15, get2(notices));
-      set_attribute2(div_4, "hidden", !get2(panel).error);
-      set_text(text_16, get2(panel).error);
-    },
-    [
-      () =>
-        get2(panel).draft?.name ||
-        get2(panel).selectedInstance?.name ||
-        get2(t)("Loading household\u2026"),
-    ],
-  );
+  template_effect(() => {
+    set_attribute2(div_3, "hidden", !get2(notices));
+    set_text(text_16, get2(notices));
+    set_attribute2(div_4, "hidden", !get2(panel).error);
+    set_text(text_17, get2(panel).error);
+  });
   append($$anchor, fragment_6);
   pop();
   $$cleanup();
