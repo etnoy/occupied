@@ -2,6 +2,7 @@
   import type { OccupiedPanel } from "./occupied-panel.js";
   import type { StepEditorContext } from "./step-editor-controller.js";
   import EditorField from "./EditorField.svelte";
+  import EntitiesEditor from "./EntitiesEditor.svelte";
 
   let { panel, context }: { panel: OccupiedPanel; context: StepEditorContext } =
     $props();
@@ -10,6 +11,26 @@
 
 <div data-editor-section="action">
   <h3>{t("Action")}</h3>
+  <EditorField
+    {panel}
+    {context}
+    key="kind"
+    label="Step type"
+    value={form.kind}
+    update={(value) => {
+      form.kind = value;
+      form.entities = [];
+    }}
+    options={{
+      choices: [
+        ["entities", "Lights and switches"],
+        ["service", "Entity service action"],
+        ["scene", "Home Assistant scene"],
+      ],
+      render: true,
+    }}
+  ></EditorField>
+  <EntitiesEditor {panel} {context} />
   {#if form.kind === "scene"}
     <p>{t("Activate scene")}</p>
   {:else if form.kind === "service"}

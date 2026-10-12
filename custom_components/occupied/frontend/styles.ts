@@ -622,7 +622,7 @@ export const styles = `
 
   .routine-editor .editor-sections {
     display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 28px;
   }
   .routine-editor .editor-sections > div {
@@ -631,6 +631,11 @@ export const styles = `
   .routine-editor h3 {
     margin: 16px 0 8px;
     font-size: 20px;
+  }
+  .routine-editor h4 {
+    margin: 14px 0 8px;
+    font-size: 16px;
+    font-weight: 600;
   }
   .routine-editor .field {
     margin: 14px 0;

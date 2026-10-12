@@ -6,7 +6,6 @@
   import EditorField from "./EditorField.svelte";
 
   import TimingEditor from "./TimingEditor.svelte";
-  import EntitiesEditor from "./EntitiesEditor.svelte";
   import ActionEditor from "./ActionEditor.svelte";
   import { createStepEditorContext } from "./step-editor-controller.js";
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
@@ -19,7 +18,6 @@
 </script>
 
 <section class="routine-editor">
-  {#if !editing}<h2 tabindex="-1">{t("Create step")}</h2>{/if}
   <div class="step-name-editor">
     <EditorField
       {panel}
@@ -30,15 +28,12 @@
       update={(value) => (form.name = value)}
       options={{
         hideLabel: true,
-        placeholder: editing
-          ? undefined
-          : t("Optional title"),
+        placeholder: editing ? undefined : t("Optional title"),
       }}
     ></EditorField>
   </div>
   <div class="editor-sections">
     <TimingEditor {panel} {context} />
-    <EntitiesEditor {panel} {context} />
     <ActionEditor {panel} {context} />
   </div>
   <div class="builder-footer">

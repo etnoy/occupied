@@ -10,7 +10,9 @@ export function focusEditor(panel, key) {
   const target = key
     ? panel.shadowRoot.querySelector(`[data-builder-field="${key}"]`)
     : panel.shadowRoot.querySelector('.routine-editor [aria-invalid="true"]') ||
-      panel.shadowRoot.querySelector(".routine-editor h2");
+      panel.shadowRoot.querySelector(
+        '.routine-editor [data-builder-field="name"]',
+      );
   target?.focus();
 }
 export function createStepEditorContext(panel) {

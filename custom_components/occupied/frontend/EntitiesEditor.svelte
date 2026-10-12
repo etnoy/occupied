@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { OccupiedPanel } from "./occupied-panel.js";
   import type { StepEditorContext } from "./step-editor-controller.js";
-  import EditorField from "./EditorField.svelte";
   import FieldError from "./FieldError.svelte";
   import { properties } from "./dom.js";
   import type { HaSelector } from "./types.js";
@@ -12,26 +11,7 @@
 </script>
 
 <div data-editor-section="entities">
-  <EditorField
-    {panel}
-    {context}
-    key="kind"
-    label="Step type"
-    value={form.kind}
-    update={(value) => {
-      form.kind = value;
-      form.entities = [];
-    }}
-    options={{
-      choices: [
-        ["entities", "Lights and switches"],
-        ["service", "Entity service action"],
-        ["scene", "Home Assistant scene"],
-      ],
-      render: true,
-    }}
-  ></EditorField>
-  <h3>{t("Entities")}</h3>
+  <h4>{t("Entities")}</h4>
   <ha-selector
     class="entity-native-selector"
     data-builder-field="entities"

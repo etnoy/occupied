@@ -809,7 +809,10 @@ test("switching cards delegates unsaved edit handling before changing steps", as
         action();
       }
     },
-    shadowRoot: { querySelector: () => ({ focus() {} }) },
+    shadowRoot: {
+      querySelector: () => ({ focus() {} }),
+      getElementById: () => null,
+    },
   } as unknown as import("@occupied/occupied-panel.js").OccupiedPanel;
   editor.form.name = "Pending rename";
   openStep(panel, second);

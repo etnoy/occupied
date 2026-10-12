@@ -766,7 +766,7 @@ var styles = `
 
   .routine-editor .editor-sections {
     display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 28px;
   }
   .routine-editor .editor-sections > div {
@@ -775,6 +775,11 @@ var styles = `
   .routine-editor h3 {
     margin: 16px 0 8px;
     font-size: 20px;
+  }
+  .routine-editor h4 {
+    margin: 14px 0 8px;
+    font-size: 16px;
+    font-weight: 600;
   }
   .routine-editor .field {
     margin: 14px 0;
@@ -8600,7 +8605,9 @@ function focusEditor(panel, key2) {
   const target = key2
     ? panel.shadowRoot.querySelector(`[data-builder-field="${key2}"]`)
     : panel.shadowRoot.querySelector('.routine-editor [aria-invalid="true"]') ||
-      panel.shadowRoot.querySelector(".routine-editor h2");
+      panel.shadowRoot.querySelector(
+        '.routine-editor [data-builder-field="name"]',
+      );
   target?.focus();
 }
 function createStepEditorContext(panel) {
@@ -9694,7 +9701,7 @@ delegate(["change", "click"]);
 // custom_components/occupied/frontend/EntitiesEditor.svelte
 var root7 = from_html(`<p class="hint"> </p>`);
 var root_15 = from_html(
-  `<div data-editor-section="entities"><!> <h3> </h3> <ha-selector></ha-selector> <!> <!></div>`,
+  `<div data-editor-section="entities"><h4> </h4> <ha-selector></ha-selector> <!> <!></div>`,
   2,
 );
 function EntitiesEditor($$anchor, $$props) {
@@ -9704,35 +9711,9 @@ function EntitiesEditor($$anchor, $$props) {
     t = user_derived(() => $$props.context.t),
     changed = user_derived(() => $$props.context.changed);
   var div = root_15();
-  var node = child(div);
-  EditorField(node, {
-    get panel() {
-      return $$props.panel;
-    },
-    get context() {
-      return $$props.context;
-    },
-    key: "kind",
-    label: "Step type",
-    get value() {
-      return get2(form).kind;
-    },
-    update: (value) => {
-      get2(form).kind = value;
-      get2(form).entities = [];
-    },
-    options: {
-      choices: [
-        ["entities", "Lights and switches"],
-        ["service", "Entity service action"],
-        ["scene", "Home Assistant scene"],
-      ],
-      render: true,
-    },
-  });
-  var h3 = sibling(node, 2);
-  var text2 = only_child(h3, true);
-  var ha_selector = sibling(h3, 2);
+  var h4 = child(div);
+  var text2 = only_child(h4, true);
+  var ha_selector = sibling(h4, 2);
   set_class(ha_selector, 1, "entity-native-selector");
   set_custom_element_data(ha_selector, "data-builder-field", "entities");
   template_effect(
@@ -9774,17 +9755,17 @@ function EntitiesEditor($$anchor, $$props) {
       narrow: $$props.panel.hasAttribute("narrow"),
     }),
   );
-  var node_1 = sibling(ha_selector, 2);
+  var node = sibling(ha_selector, 2);
   {
     let $0 = user_derived(() => ({ ...get2(editor).errors }));
-    FieldError(node_1, {
+    FieldError(node, {
       key: "entities",
       get errors() {
         return get2($0);
       },
     });
   }
-  var node_2 = sibling(node_1, 2);
+  var node_1 = sibling(node, 2);
   {
     var consequent = ($$anchor2) => {
       var p = root7();
@@ -9805,7 +9786,7 @@ function EntitiesEditor($$anchor, $$props) {
         get2(form).kind === "entities" &&
         get2(form).entities.some((id) => !/^(light|switch)\./.test(id)),
     );
-    if_block(node_2, ($$render) => {
+    if_block(node_1, ($$render) => {
       if (get2(d)) $$render(consequent);
     });
   }
@@ -9830,7 +9811,7 @@ var root8 = from_html(`<p> </p>`);
 var root_16 = from_html(`<!> <!>`, 1);
 var root_24 = from_html(`<!> <p class="hint"> </p>`, 1);
 var root_34 = from_html(
-  `<div data-editor-section="action"><h3> </h3> <!> <!></div>`,
+  `<div data-editor-section="action"><h3> </h3> <!> <!> <!> <!></div>`,
 );
 function ActionEditor($$anchor, $$props) {
   push($$props, true);
@@ -9840,6 +9821,41 @@ function ActionEditor($$anchor, $$props) {
   var h3 = child(div);
   var text2 = only_child(h3, true);
   var node = sibling(h3, 2);
+  EditorField(node, {
+    get panel() {
+      return $$props.panel;
+    },
+    get context() {
+      return $$props.context;
+    },
+    key: "kind",
+    label: "Step type",
+    get value() {
+      return get2(form).kind;
+    },
+    update: (value) => {
+      get2(form).kind = value;
+      get2(form).entities = [];
+    },
+    options: {
+      choices: [
+        ["entities", "Lights and switches"],
+        ["service", "Entity service action"],
+        ["scene", "Home Assistant scene"],
+      ],
+      render: true,
+    },
+  });
+  var node_1 = sibling(node, 2);
+  EntitiesEditor(node_1, {
+    get panel() {
+      return $$props.panel;
+    },
+    get context() {
+      return $$props.context;
+    },
+  });
+  var node_2 = sibling(node_1, 2);
   {
     var consequent = ($$anchor2) => {
       var p = root8();
@@ -9852,8 +9868,8 @@ function ActionEditor($$anchor, $$props) {
     };
     var consequent_1 = ($$anchor2) => {
       var fragment = root_16();
-      var node_1 = first_child(fragment);
-      EditorField(node_1, {
+      var node_3 = first_child(fragment);
+      EditorField(node_3, {
         get panel() {
           return $$props.panel;
         },
@@ -9867,8 +9883,8 @@ function ActionEditor($$anchor, $$props) {
         },
         update: (value) => (get2(form).service = value),
       });
-      var node_2 = sibling(node_1, 2);
-      EditorField(node_2, {
+      var node_4 = sibling(node_3, 2);
+      EditorField(node_4, {
         get panel() {
           return $$props.panel;
         },
@@ -9908,18 +9924,18 @@ function ActionEditor($$anchor, $$props) {
         },
       });
     };
-    if_block(node, ($$render) => {
+    if_block(node_2, ($$render) => {
       if (get2(form).kind === "scene") $$render(consequent);
       else if (get2(form).kind === "service") $$render(consequent_1, 1);
       else $$render(alternate, -1);
     });
   }
-  var node_3 = sibling(node, 2);
+  var node_5 = sibling(node_2, 2);
   {
     var consequent_2 = ($$anchor2) => {
       var fragment_2 = root_24();
-      var node_4 = first_child(fragment_2);
-      EditorField(node_4, {
+      var node_6 = first_child(fragment_2);
+      EditorField(node_6, {
         get panel() {
           return $$props.panel;
         },
@@ -9934,7 +9950,7 @@ function ActionEditor($$anchor, $$props) {
         update: (value) => (get2(form).brightness = value),
         options: { type: "number", min: 1, max: 100 },
       });
-      var p_1 = sibling(node_4, 2);
+      var p_1 = sibling(node_6, 2);
       var text_2 = only_child(p_1, true);
       template_effect(
         ($0) => set_text(text_2, $0),
@@ -9958,7 +9974,7 @@ function ActionEditor($$anchor, $$props) {
             )?.dimmable,
         ),
     );
-    if_block(node_3, ($$render) => {
+    if_block(node_5, ($$render) => {
       if (get2(d)) $$render(consequent_2);
     });
   }
@@ -9969,9 +9985,8 @@ function ActionEditor($$anchor, $$props) {
 }
 
 // custom_components/occupied/frontend/StepEditor.svelte
-var root9 = from_html(`<h2 tabindex="-1"> </h2>`);
-var root_17 = from_html(
-  `<section class="routine-editor"><!> <div class="step-name-editor"><!></div> <div class="editor-sections"><!> <!> <!></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-routine-submit=""> </button></div></section>`,
+var root9 = from_html(
+  `<section class="routine-editor"><div class="step-name-editor"><!></div> <div class="editor-sections"><!> <!></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-routine-submit=""> </button></div></section>`,
 );
 function StepEditor($$anchor, $$props) {
   push($$props, true);
@@ -9985,30 +10000,15 @@ function StepEditor($$anchor, $$props) {
     editing = user_derived(() => get2(context).editing),
     submit = user_derived(() => get2(context).submit),
     cancel = user_derived(() => get2(context).cancel);
-  var section = root_17();
-  var node = child(section);
-  {
-    var consequent = ($$anchor2) => {
-      var h2 = root9();
-      var text2 = only_child(h2, true);
-      template_effect(
-        ($0) => set_text(text2, $0),
-        [() => get2(t)("Create step")],
-      );
-      append($$anchor2, h2);
-    };
-    if_block(node, ($$render) => {
-      if (!get2(editing)) $$render(consequent);
-    });
-  }
-  var div = sibling(node, 2);
-  var node_1 = child(div);
+  var section = root9();
+  var div = child(section);
+  var node = child(div);
   {
     let $0 = user_derived(() => ({
       hideLabel: true,
       placeholder: get2(editing) ? void 0 : get2(t)("Optional title"),
     }));
-    EditorField(node_1, {
+    EditorField(node, {
       get panel() {
         return $$props.panel;
       },
@@ -10028,8 +10028,8 @@ function StepEditor($$anchor, $$props) {
   }
   reset(div);
   var div_1 = sibling(div, 2);
-  var node_2 = child(div_1);
-  TimingEditor(node_2, {
+  var node_1 = child(div_1);
+  TimingEditor(node_1, {
     get panel() {
       return $$props.panel;
     },
@@ -10037,17 +10037,8 @@ function StepEditor($$anchor, $$props) {
       return get2(context);
     },
   });
-  var node_3 = sibling(node_2, 2);
-  EntitiesEditor(node_3, {
-    get panel() {
-      return $$props.panel;
-    },
-    get context() {
-      return get2(context);
-    },
-  });
-  var node_4 = sibling(node_3, 2);
-  ActionEditor(node_4, {
+  var node_2 = sibling(node_1, 2);
+  ActionEditor(node_2, {
     get panel() {
       return $$props.panel;
     },
@@ -10058,19 +10049,19 @@ function StepEditor($$anchor, $$props) {
   reset(div_1);
   var div_2 = sibling(div_1, 2);
   var button = child(div_2);
-  var text_1 = only_child(button, true);
-  var node_5 = sibling(button, 2);
+  var text2 = only_child(button, true);
+  var node_3 = sibling(button, 2);
   {
-    var consequent_2 = ($$anchor2) => {
+    var consequent_1 = ($$anchor2) => {
       const entry = user_derived(() =>
         stepEntries($$props.panel.draft).find(
           (item) => item.id === get2(editor).id,
         ),
       );
       var fragment = comment();
-      var node_6 = first_child(fragment);
+      var node_4 = first_child(fragment);
       {
-        var consequent_1 = ($$anchor3) => {
+        var consequent = ($$anchor3) => {
           StepActions($$anchor3, {
             get panel() {
               return $$props.panel;
@@ -10080,26 +10071,26 @@ function StepEditor($$anchor, $$props) {
             },
           });
         };
-        if_block(node_6, ($$render) => {
-          if (get2(entry)) $$render(consequent_1);
+        if_block(node_4, ($$render) => {
+          if (get2(entry)) $$render(consequent);
         });
       }
       append($$anchor2, fragment);
     };
-    if_block(node_5, ($$render) => {
-      if (get2(editing)) $$render(consequent_2);
+    if_block(node_3, ($$render) => {
+      if (get2(editing)) $$render(consequent_1);
     });
   }
-  var button_1 = sibling(node_5, 2);
-  var text_2 = only_child(button_1, true);
+  var button_1 = sibling(node_3, 2);
+  var text_1 = only_child(button_1, true);
   reset(div_2);
   reset(section);
   template_effect(
     ($0, $1) => {
       button.disabled = $$props.panel.busy;
-      set_text(text_1, $0);
+      set_text(text2, $0);
       button_1.disabled = $$props.panel.busy || $$props.panel.stale;
-      set_text(text_2, $1);
+      set_text(text_1, $1);
     },
     [
       () => get2(t)("Cancel"),
@@ -10126,7 +10117,7 @@ delegate(["click"]);
 var root10 = from_html(
   `<button type="button" class="primary" data-create-routine=""> </button>`,
 );
-var root_18 = from_html(
+var root_17 = from_html(
   `<section class="routine-empty"><h2> </h2> <p class="hint"> </p> <p class="empty-steps"> </p> <button type="button" class="primary" data-create-routine=""> </button></section>`,
 );
 var root_25 = from_html(
@@ -10186,7 +10177,7 @@ function StepsView($$anchor, $$props) {
   var node_1 = sibling(div, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var section = root_18();
+      var section = root_17();
       var h2_1 = child(section);
       var text_3 = only_child(h2_1, true);
       var p_1 = sibling(h2_1, 2);
@@ -10397,7 +10388,7 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/SettingsView.svelte
 var root11 = from_html(`<button type="button"> </button>`);
-var root_19 = from_html(
+var root_18 = from_html(
   `<section><h2> </h2> <p class="hint"><!></p> <button type="button"> </button> <button type="button"> </button></section> <section><h2> </h2> <!></section>`,
   1,
 );
@@ -10416,7 +10407,7 @@ function SettingsView($$anchor, $$props) {
   });
   let t = user_derived(() => get2(data).t),
     dryRun = user_derived(() => get2(data).dryRun);
-  var fragment = root_19();
+  var fragment = root_18();
   var section = first_child(fragment);
   var h2 = child(section);
   var text2 = only_child(h2, true);
@@ -10605,7 +10596,7 @@ function timelineModel(doc, program, t = (text2) => text2, locale) {
 
 // custom_components/occupied/frontend/OverviewView.svelte
 var root12 = from_html(`<button type="button"> </button>`);
-var root_110 = from_html(`<dt> </dt> <dd> </dd>`, 1);
+var root_19 = from_html(`<dt> </dt> <dd> </dd>`, 1);
 var root_26 = from_html(`<p> </p>`);
 var root_36 = from_html(`<p> </p> <progress max="1"></progress>`, 1);
 var root_44 = from_html(`<p class="error"> </p>`);
@@ -10714,7 +10705,7 @@ function OverviewView($$anchor, $$props) {
           var $$array = user_derived(() => to_array(get2($$item), 2));
           let label = () => get2($$array)[0];
           let value = () => get2($$array)[1];
-          var fragment_2 = root_110();
+          var fragment_2 = root_19();
           var dt = first_child(fragment_2);
           var text_4 = only_child(dt, true);
           var dd = sibling(dt, 2);
@@ -10968,7 +10959,7 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/Timeline.svelte
 var root13 = from_html(`<span> </span>`);
-var root_111 = from_html(`<span tabindex="0"> </span>`);
+var root_110 = from_html(`<span tabindex="0"> </span>`);
 var root_27 = from_html(
   `<div class="lane"><span class="lane-label"> </span> <div class="track"></div></div>`,
 );
@@ -11061,7 +11052,7 @@ function Timeline($$anchor, $$props) {
           var text_5 = only_child(span_1, true);
           var div_3 = sibling(span_1, 2);
           each(div_3, 21, marks, index, ($$anchor4, mark) => {
-            var span_2 = root_111();
+            var span_2 = root_110();
             var text_6 = only_child(span_2, true);
             template_effect(() => {
               set_class(span_2, 1, clsx2(get2(mark).className));
@@ -11280,7 +11271,7 @@ delegate(["input", "click"]);
 
 // custom_components/occupied/frontend/PreviewView.svelte
 var root14 = from_html(`<label class="field"> <input/></label>`);
-var root_112 = from_html(`<button type="button"> </button>`);
+var root_111 = from_html(`<button type="button"> </button>`);
 var root_28 = from_html(`<section><h2> </h2> <pre> </pre></section>`);
 var root_38 = from_html(
   `<section><h2> </h2> <p class="hint"> </p> <!> <details><summary> </summary> <!><!><!></details> <button type="button"> </button><button type="button"> </button> <!></section> <!> <!>`,
@@ -11366,7 +11357,7 @@ function PreviewView($$anchor, $$props) {
   var node_4 = sibling(button_1, 2);
   {
     var consequent = ($$anchor2) => {
-      var button_2 = root_112();
+      var button_2 = root_111();
       var text_6 = only_child(button_2, true);
       template_effect(
         ($0) => set_text(text_6, $0),
@@ -11467,7 +11458,7 @@ delegate(["input", "click"]);
 
 // custom_components/occupied/frontend/ConfigurationView.svelte
 var root15 = from_html(`<p> </p>`);
-var root_113 = from_html(`<p class="error"> <!> </p>`);
+var root_112 = from_html(`<p class="error"> <!> </p>`);
 var root_29 = from_html(
   `<button type="button"> </button> <button type="button"> </button> <!> <!>`,
   1,
@@ -11540,7 +11531,7 @@ function ConfigurationView($$anchor, $$props) {
         () => get2(source2).issues || [],
         index,
         ($$anchor3, issue) => {
-          var p_3 = root_113();
+          var p_3 = root_112();
           var text_7 = child(p_3, true);
           var node_3 = sibling(text_7);
           {
@@ -11701,7 +11692,7 @@ delegate(["input", "click", "change"]);
 
 // custom_components/occupied/frontend/DiagnosticsView.svelte
 var root16 = from_html(`<button type="button"> </button> <pre> </pre>`, 1);
-var root_114 = from_html(`<pre> </pre>`);
+var root_113 = from_html(`<pre> </pre>`);
 var root_210 = from_html(
   `<section><h2> </h2> <p class="hint"> </p> <label><input type="checkbox"/> </label> <button type="button"> </button> <!></section> <section><h2> </h2> <!></section>`,
   1,
@@ -11769,7 +11760,7 @@ function DiagnosticsView($$anchor, $$props) {
     () => (panel().status?.outcomes || []).slice(-50).reverse(),
     index,
     ($$anchor2, item) => {
-      var pre_1 = root_114();
+      var pre_1 = root_113();
       var text_7 = only_child(pre_1, true);
       template_effect(
         ($0) => set_text(text_7, $0),
@@ -11812,7 +11803,7 @@ delegate(["change", "click"]);
 
 // custom_components/occupied/frontend/TimelineView.svelte
 var root17 = from_html(`<option> </option>`);
-var root_115 = from_html(
+var root_114 = from_html(
   `<section><h2> </h2> <p class="hint"> </p> <select></select> <button type="button"> </button><button type="button"> </button></section> <!>`,
   1,
 );
@@ -11825,7 +11816,7 @@ function TimelineView($$anchor, $$props) {
     return { t: t2 };
   });
   let t = user_derived(() => get2(data).t);
-  var fragment = root_115();
+  var fragment = root_114();
   var section = first_child(fragment);
   var h2 = child(section);
   var text2 = only_child(h2, true);
@@ -11975,7 +11966,7 @@ var root19 = from_html(
   `<span id="badge" class="badge" aria-live="polite"> <!></span> <button type="button" class="text-button"> </button>`,
   1,
 );
-var root_116 = from_html(
+var root_115 = from_html(
   `<button type="button" class="primary"> </button> <button type="button"> </button>`,
   1,
 );
@@ -12083,7 +12074,7 @@ function App($$anchor, $$props) {
     var node_2 = child(div);
     {
       var consequent_2 = ($$anchor3) => {
-        var fragment_4 = root_116();
+        var fragment_4 = root_115();
         var button_1 = first_child(fragment_4);
         var text_5 = only_child(button_1, true);
         var button_2 = sibling(button_1, 2);

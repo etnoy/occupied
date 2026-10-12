@@ -14,7 +14,10 @@ export function focusEditor(panel: OccupiedPanel, key?: string) {
       )
     : panel.shadowRoot.querySelector<HTMLElement>(
         '.routine-editor [aria-invalid="true"]',
-      ) || panel.shadowRoot.querySelector<HTMLElement>(".routine-editor h2");
+      ) ||
+      panel.shadowRoot.querySelector<HTMLElement>(
+        '.routine-editor [data-builder-field="name"]',
+      );
   target?.focus();
 }
 
