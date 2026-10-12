@@ -1,0 +1,39 @@
+custom_components/occupied/frontend/ActionEditor.svelte
+  s_1787776c214d9f::t_037f3d0a634d2e 19,21-25,28,30-31,33,39
+custom_components/occupied/frontend/EditorField.svelte
+  s_1787776c214d9f::t_519913c8dd754f 96
+custom_components/occupied/frontend/StepsView.svelte
+  s_167f5be30bc21b::t_979b2022b5ebfa 25-26,36-37
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_167f5be30bc21b::t_0334ccd4849567 893,895-896,9146,9149,9152,9157-9160,9814-9816,9821,9825-9859,9872,9907,10046,10049,10051,10054,10062,10075,10078-10081,10085,10090,10096,10100-10101,10104,10106,10108,10115-10116,10118,10133-10134,10136,10139,10141,10145,10147,10153-10154,10167-10170,10181,10196,10198,10200,10206,10209-10210,10220-10221,10223,10227-10228,10250,10254-10256,10259,10261,10492-10493,10631,10662,10689,10724,10754,10778,10855,10858,10942,10970,11070,11141,11167-11168,11207,11300,11354,11358-11359,11376,11382,11385,11389,11391,11393,11397-11398,11402,11411,11424-11426,11429,11431,11434,11437-11439,11446-11447,11449,11451,11456,11462,11465,11483-11486,11490,11492,11494,11497,11500,11508-11509,11511-11512,11514,11579,11592,11856-11857,11956,11988,12028,12245,12370
+custom_components/occupied/frontend/dist/translations.js
+  s_167f5be30bc21b::t_37639122d0e2ad 38,40-41
+custom_components/occupied/frontend/translations.ts
+  s_1787776c214d9f::t_fb2711e4ff277d 37,39-40
+docs/editor.md
+  s_1787776c214d9f::t_55ab0d58db32d7 9,12-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2c2b5fb13a12a78ec8f73c6c5b1631cf9a21dd3e",
+  "prompts": {},
+  "sessions": {
+    "s_167f5be30bc21b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f22-55bb-73e1-a05a-d471b0a85dc0",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_1787776c214d9f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f21-c0c5-7380-93cb-d207db10e947",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
