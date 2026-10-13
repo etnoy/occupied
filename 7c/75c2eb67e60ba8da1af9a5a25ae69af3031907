@@ -1,0 +1,39 @@
+custom_components/occupied/frontend/PreviewView.svelte
+  s_1f0d96224bf297::t_402dd325479327 5-6,16-20,28-97
+custom_components/occupied/frontend/Timeline.svelte
+  s_1f0d96224bf297::t_7d8803a282fcb7 2,21-22,31-32,51,53-65,67-108,111-144,146-152,154-161,163-175,177-189
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_1f0d96224bf297::t_5ad466bdb08b10 956-959,8101-8105,11454-11458,11461-11462,11466-11469,11472-11474,11479-11480,11505-11507,11509,11512,11515-11517,11519,11522-11524,11528,11531-11532,11535,11537-11542,11545-11672,11674-11675,11677-11681,11683-11686,11693-11694,11697,11699-11701,11704-11764,11766-11768,11770,11772-11775,11778-11803,11806-11847,11849-11857,11859-11896,11899,11901-11912,11919-11920,11922,11930,11933,11943-11950,11953-12012,12020-12026,12036-12062,12067,12583-12584,12722,12978,13192,13424,13962-13976,13982-13984,13989,13993-13997
+custom_components/occupied/frontend/dist/time-format.js
+  s_1f0d96224bf297::t_f1bd0f13a521c7 2-6
+custom_components/occupied/frontend/dist/translations.js
+  s_1f0d96224bf297::t_bce6d4b507b8ba 62-65
+custom_components/occupied/frontend/occupied-panel.ts
+  s_1f0d96224bf297::t_8d1b7e80da483a 29,64,308,858-872,878-880,885,889-893
+custom_components/occupied/frontend/time-format.ts
+  s_1f0d96224bf297::t_d385f5583e7a8d 5-10
+custom_components/occupied/frontend/translations.ts
+  s_1f0d96224bf297::t_a71d6398e6c2fa 61-64
+docs/editor.md
+  s_1f0d96224bf297::t_32a7182f2d0011 54-55
+tests/frontend/src/instances.test.ts
+  s_1f0d96224bf297::t_294662a386af48 274-316
+tests/frontend/src/timeline.test.ts
+  s_1f0d96224bf297::t_467675efa13e04 5-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "7c75c2eb67e60ba8da1af9a5a25ae69af3031907",
+  "prompts": {},
+  "sessions": {
+    "s_1f0d96224bf297": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13420-2c71-7b63-8583-106f76b80677",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
