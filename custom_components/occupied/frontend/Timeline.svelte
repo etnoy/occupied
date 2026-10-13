@@ -48,7 +48,11 @@
   <section>
     <h2>{formatScheduleDate(plan.simulation_date, locale)}</h2>
     {#if preview && hass}
-      <PreviewStateGraph {plan} {program} {hass} names={entityNames} {t} />
+      {#if model.events.length > 0}
+        <PreviewStateGraph {plan} {program} {hass} names={entityNames} {t} />
+      {:else}
+        <p class="hint">{t("No steps are scheduled for this date.")}</p>
+      {/if}
     {:else}
       <p class="hint">
         {t(
@@ -100,68 +104,74 @@
           )}
         </p>{/if}
     {/if}
-    <details open={!preview}>
-      <summary>{t("Event details")} · {model.events.length}</summary>
-      {#if preview}
-        <p class="hint">
-          {t("Behavior revision")}: {plan.behavior_hash.slice(0, 12)} · {t(
-            "Plan revision",
-          )}: {plan.source_revision?.slice(0, 12) || "—"}
-        </p>
-      {/if}
-      <input
-        type="search"
-        placeholder={t("Filter events")}
-        aria-label={t("Filter events")}
-        oninput={(event) => {
-          query = event.currentTarget.value.toLowerCase();
-          page = 0;
-        }}
-      />
-      <div>
-        <div class="table-wrap">
-          <table>
-            <thead
-              ><tr>
-                {#each ["Planned time", "Source", "Action", "Targets", "Outcome / actual time"] as label}
-                  <th scope="col">{t(label)}</th>
-                {/each}
-              </tr></thead
-            >
-            <tbody>
-              {#each filtered.slice(currentPage * 50, currentPage * 50 + 50) as event}
-                <tr>
-                  {#each [stamp(event.time, plan.timezone, locale), `${labels.get(event.source_id) || event.source_id} · ${event.kind}`, event.action.action, event.action.targets.entities.join(", "), `${event.outcome || t("Preview only")} · ${stamp(event.actual_time || event.dispatch_time, plan.timezone, locale)}`] as value}
-                    <td>{value}</td>
+    {#if !preview || model.events.length > 0}
+      <details open={!preview}>
+        <summary>{t("Event details")} · {model.events.length}</summary>
+        {#if preview}
+          <p class="hint">
+            {t("Behavior revision")}: {plan.behavior_hash.slice(0, 12)} · {t(
+              "Plan revision",
+            )}: {plan.source_revision?.slice(0, 12) || "—"}
+          </p>
+        {/if}
+        <input
+          type="search"
+          placeholder={t("Filter events")}
+          aria-label={t("Filter events")}
+          oninput={(event) => {
+            query = event.currentTarget.value.toLowerCase();
+            page = 0;
+          }}
+        />
+        <div>
+          <div class="table-wrap">
+            <table>
+              <thead
+                ><tr>
+                  {#each ["Planned time", "Source", "Action", "Targets", "Outcome / actual time"] as label}
+                    <th scope="col">{t(label)}</th>
                   {/each}
-                </tr>
-              {/each}
-            </tbody>
-          </table>
+                </tr></thead
+              >
+              <tbody>
+                {#each filtered.slice(currentPage * 50, currentPage * 50 + 50) as event}
+                  <tr>
+                    {#each [stamp(event.time, plan.timezone, locale), `${labels.get(event.source_id) || event.source_id} · ${event.kind}`, event.action.action, event.action.targets.entities.join(", "), `${event.outcome || t("Preview only")} · ${stamp(event.actual_time || event.dispatch_time, plan.timezone, locale)}`] as value}
+                      <td>{value}</td>
+                    {/each}
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+          <div class="row">
+            <button
+              type="button"
+              disabled={currentPage === 0}
+              onclick={() => (page = currentPage - 1)}>{t("Previous")}</button
+            >
+            <span
+              >{filtered.length}
+              {t("events")} · {currentPage + 1}/{Math.max(
+                1,
+                Math.ceil(filtered.length / 50),
+              )}</span
+            >
+            <button
+              type="button"
+              disabled={(currentPage + 1) * 50 >= filtered.length}
+              onclick={() => (page = currentPage + 1)}>{t("Next")}</button
+            >
+          </div>
         </div>
-        <div class="row">
-          <button
-            type="button"
-            disabled={currentPage === 0}
-            onclick={() => (page = currentPage - 1)}>{t("Previous")}</button
-          >
-          <span
-            >{filtered.length}
-            {t("events")} · {currentPage + 1}/{Math.max(
-              1,
-              Math.ceil(filtered.length / 50),
-            )}</span
-          >
-          <button
-            type="button"
-            disabled={(currentPage + 1) * 50 >= filtered.length}
-            onclick={() => (page = currentPage + 1)}>{t("Next")}</button
-          >
-        </div>
-      </div>
-    </details>
-    {#each doc.issues || plan.issues || [] as issue}
-      <p class={issue.severity === "warning" ? "hint" : "error"}>
+      </details>
+    {/if}
+    {#each (doc.issues || plan.issues || []).filter((issue) => !preview || issue.severity !== "info") as issue}
+      <p
+        class={issue.severity === "warning" || issue.severity === "info"
+          ? "hint"
+          : "error"}
+      >
         {issue.code}: {issue.message}
       </p>
     {/each}

@@ -369,7 +369,6 @@ export interface PreviewResult {
   valid: boolean;
   issues?: Issue[];
   plans: Plan[];
-  handover?: JsonValue;
 }
 export interface WebSocketResponses {
   instances: InstanceDocument[];

@@ -92,6 +92,29 @@ def test_skipped_parent_suppresses_dependents_and_windows(program_dict):
     assert any(issue.code == "anchor_skipped" for issue in plan.issues)
 
 
+@pytest.mark.parametrize(
+    ("wake_enabled", "leave_enabled", "scheduled"),
+    [(False, True, set()), (True, False, {"wake"}), (False, False, set())],
+)
+def test_disabled_steps_and_their_dependents_are_skipped_without_errors(
+    program_dict, wake_enabled, leave_enabled, scheduled
+):
+    routine = program_dict["routines"][0]
+    routine["activities"] = []
+    routine["activity_windows"] = []
+    routine["steps"][0]["enabled"] = wake_enabled
+    routine["steps"][1]["enabled"] = leave_enabled
+    plan = generate_plan(validate_program(program_dict), date(2026, 10, 6), 0)
+    assert plan.feasible
+    assert set(plan.step_times) == scheduled
+    assert {event.source_id for event in plan.events} == scheduled
+    disabled = [issue for issue in plan.issues if issue.code == "step_disabled"]
+    assert len(disabled) == int(not wake_enabled) + int(not leave_enabled)
+    assert all(issue.severity == "info" for issue in plan.issues)
+    if not wake_enabled and leave_enabled:
+        assert any(issue.code == "anchor_skipped" for issue in plan.issues)
+
+
 def test_solar_times_use_requested_date_and_offsets(program_dict):
     program_dict["timezone"] = "Europe/Stockholm"
     program_dict["location"] = {"latitude": 59.3293, "longitude": 18.0686}

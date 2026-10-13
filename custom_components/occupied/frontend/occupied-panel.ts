@@ -60,13 +60,6 @@ export class OccupiedPanel extends HTMLElement {
   timelineDate = "";
   preview?: PreviewResult;
   previewProgram!: Program;
-  previewVersion?: number;
-  previewSettings: { date: string; days: number; seed: string; at?: string } = {
-    date: "",
-    days: 1,
-    seed: "preview-1",
-    at: "",
-  };
   sourcePath?: string;
   yaml = "";
   includeSensitive = false;
@@ -310,8 +303,6 @@ export class OccupiedPanel extends HTMLElement {
       timelineDate: "",
       preview: undefined,
       previewProgram: undefined,
-      previewVersion: undefined,
-      previewSettings: { date: "", days: 1, seed: "preview-1", at: "" },
       sourcePath: undefined,
       yaml: "",
       includeSensitive: false,
@@ -469,7 +460,6 @@ export class OccupiedPanel extends HTMLElement {
       }
       this.catalog = catalog;
       this.status = status;
-      this.previewSettings.date = doc.simulation_date;
       this.error = "";
       this.renderView();
       void this._subscribe();
@@ -500,6 +490,8 @@ export class OccupiedPanel extends HTMLElement {
     this.viewRevision++;
     if (this.tab === "timeline") {
       void this.loadTimeline();
+    } else if (this.tab === "preview") {
+      void this.loadPreview();
     }
     this.flush();
   }
@@ -573,11 +565,6 @@ export class OccupiedPanel extends HTMLElement {
         : "",
       this.document?.configuration_source?.status === "error"
         ? t("File error: see Configuration or Home Assistant Repairs")
-        : "",
-      this.previewVersion != null &&
-      this.previewVersion !== this.version &&
-      this.tab === "preview"
-        ? t("Preview belongs to an earlier draft")
         : "",
     ]
       .filter(Boolean)
@@ -865,20 +852,24 @@ export class OccupiedPanel extends HTMLElement {
       }
     }
   }
-  runPreview() {
-    const version = this.version,
-      draft = copy(this.draft),
-      options = { ...this.previewSettings };
-    if (!options.at) {
-      delete options.at;
+  private loadPreview() {
+    if (this.busy || !this.draft || !this.document) {
+      return;
     }
+    const version = this.version,
+      draft = copy(this.draft);
+    this.preview = undefined;
     return this.run(async (epoch) => {
-      const result = await this.ws("preview", { program: draft, ...options });
-      if (epoch !== this.epoch) {
+      const result = await this.ws("preview", {
+        program: draft,
+        date: this.document.simulation_date,
+        days: 1,
+        seed: "preview-1",
+      });
+      if (epoch !== this.epoch || version !== this.version) {
         return;
       }
       this.preview = result;
-      this.previewVersion = version;
       this.previewProgram = draft;
       this.showIssues(result);
     });

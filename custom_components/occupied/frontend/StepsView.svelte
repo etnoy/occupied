@@ -119,10 +119,7 @@
     type="button"
     class="text-button"
     disabled={panel.busy}
-    onclick={() => {
-      panel.navigate("preview");
-      panel.runPreview();
-    }}
+    onclick={() => panel.navigate("preview")}
   >
     {t("Preview schedule")}
   </button>

@@ -58,9 +58,9 @@ const sv = {
   "Optional title": "Valfri titel",
   "Preview schedule": "Förhandsvisa schema",
   "Event details": "Händelsedetaljer",
-  "Export preview": "Exportera förhandsvisning",
-  "Schedule date": "Schemadatum",
-  "Needs attention": "Behöver granskas",
+  "Loading schedule…": "Laddar schema…",
+  "No steps are scheduled for this date.":
+    "Inga steg är schemalagda detta datum.",
   "Planned device states": "Planerade enhetstillstånd",
   "Loading graph…": "Laddar diagram…",
   On: "På",
@@ -69,8 +69,6 @@ const sv = {
     "Inga åtgärder för lampor eller brytare detta datum. Övriga åtgärder visas i Händelsedetaljer.",
   "The Home Assistant graph could not load. Planned actions are available in Event details.":
     "Home Assistant-diagrammet kunde inte laddas. Planerade åtgärder finns i Händelsedetaljer.",
-  "Planned states, not recorded history. Unknown means no starting state or action effect is defined.":
-    "Planerade tillstånd, inte registrerad historik. Okänt betyder att starttillståndet eller åtgärdens effekt inte är definierad.",
   "Back to steps": "Tillbaka till steg",
   "Back to settings": "Tillbaka till inställningar",
   Continue: "Fortsätt",
@@ -180,7 +178,6 @@ const sv = {
   Seed: "Slumpfrö",
   Refresh: "Uppdatera",
   "Run preview": "Förhandsvisa",
-  "Reroll preview": "Nytt slumpfrö",
   "Export YAML": "Exportera YAML",
   "Import as draft": "Importera som utkast",
   Download: "Ladda ner",

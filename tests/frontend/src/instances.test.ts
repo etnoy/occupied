@@ -4,6 +4,7 @@ import type {
   HomeAssistant,
   InstanceDocument,
   ProgramDocument,
+  PreviewResult,
   RuntimeSnapshot,
 } from "@occupied/types.js";
 import { stepEditor } from "@occupied/step-model.js";
@@ -13,10 +14,15 @@ const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
 
 async function fixture() {
   const descriptors = new Map(
-    ["HTMLElement", "customElements", "window"].map((key) => [
-      key,
-      Object.getOwnPropertyDescriptor(globalThis, key),
-    ]),
+    [
+      "HTMLElement",
+      "customElements",
+      "window",
+      "location",
+      "history",
+      "confirm",
+      "dispatchEvent",
+    ].map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]),
   );
   let url = new URL("http://localhost/occupied?config_entry=main"),
     accepted = false,
@@ -65,6 +71,12 @@ async function fixture() {
       },
     },
   });
+  for (const key of ["location", "history", "confirm", "dispatchEvent"]) {
+    Object.defineProperty(globalThis, key, {
+      configurable: true,
+      get: () => Reflect.get(globalThis.window, key),
+    });
+  }
   const { OccupiedPanel } = await import("@occupied/occupied-panel.js");
   const panel = new OccupiedPanel();
   const instances: InstanceDocument[] = ["main", "guest"].map((id) => ({
@@ -101,9 +113,28 @@ async function fixture() {
   let programOverride:
       | ((entry: string) => Promise<ProgramDocument>)
       | undefined,
-    timelineOverride: (() => Promise<unknown>) | undefined;
+    timelineOverride: (() => Promise<unknown>) | undefined,
+    previewOverride: (() => Promise<PreviewResult>) | undefined;
+  const messages: Record<string, unknown>[] = [];
+  const preview: PreviewResult = {
+    valid: true,
+    plans: [
+      {
+        simulation_date: "2026-10-06",
+        timezone: "UTC",
+        behavior_hash: "preview",
+        start: "2026-10-06T00:00:00Z",
+        end: "2026-10-07T00:00:00Z",
+        events: [],
+        steps: {},
+        intervals: [],
+        issues: [],
+      },
+    ],
+  };
   const hass: HomeAssistant = {
     callWS: async <T>(message: Record<string, unknown>): Promise<T> => {
+      messages.push(message);
       const entry = String(message.config_entry_id);
       const responses: Record<string, unknown> = {
         "occupied/instances": instances,
@@ -114,12 +145,16 @@ async function fixture() {
           status: "disabled",
           reason: entry,
         } satisfies RuntimeSnapshot,
+        "occupied/preview": preview,
       };
       if (message.type === "occupied/program" && programOverride) {
         return (await programOverride(entry)) as T;
       }
       if (message.type === "occupied/timeline" && timelineOverride) {
         return (await timelineOverride()) as T;
+      }
+      if (message.type === "occupied/preview" && previewOverride) {
+        return (await previewOverride()) as T;
       }
       return responses[String(message.type)] as T;
     },
@@ -147,6 +182,8 @@ async function fixture() {
     instances,
     disposed,
     subscriptions,
+    messages,
+    preview,
     get confirmations() {
       return confirmations;
     },
@@ -158,6 +195,9 @@ async function fixture() {
     },
     setTimelineOverride(value: typeof timelineOverride) {
       timelineOverride = value;
+    },
+    setPreviewOverride(value: typeof previewOverride) {
+      previewOverride = value;
     },
     route(entry: string) {
       url.searchParams.set("config_entry", entry);
@@ -174,6 +214,62 @@ async function fixture() {
     },
   };
 }
+
+void test("opening preview automatically loads the current date and regenerates after edits", async () => {
+  const f = await fixture();
+  try {
+    f.panel.navigate("preview");
+    assert.equal(f.panel.busy, true);
+    await settle();
+    assert.equal(f.panel.preview, f.preview);
+    assert.equal(f.panel.busy, false);
+    const requests = () =>
+      f.messages.filter((message) => message.type === "occupied/preview");
+    assert.equal(requests().length, 1);
+    assert.equal(requests()[0].date, f.panel.document.simulation_date);
+    assert.equal(requests()[0].days, 1);
+    assert.deepEqual(requests()[0].program, f.panel.draft);
+    assert.equal("at" in requests()[0], false);
+    f.panel.navigate("preview");
+    await settle();
+    assert.equal(requests().length, 1);
+    f.panel.navigate("routines");
+    f.panel.change(["name"], "Updated steps");
+    f.panel.navigate("preview");
+    assert.equal(f.panel.preview, undefined);
+    await settle();
+    assert.equal(requests().length, 2);
+    assert.equal(f.panel.previewProgram.name, "Updated steps");
+  } finally {
+    f.restore();
+  }
+});
+
+void test("a pending preview cannot replace a draft edited while it loads", async () => {
+  const f = await fixture();
+  try {
+    let resolvePreview!: (result: PreviewResult) => void;
+    f.setPreviewOverride(
+      () =>
+        new Promise((resolve) => {
+          resolvePreview = resolve;
+        }),
+    );
+    f.panel.navigate("preview");
+    f.panel.navigate("routines");
+    f.panel.change(["name"], "New draft");
+    resolvePreview(f.preview);
+    await settle();
+    assert.equal(f.panel.preview, undefined);
+    assert.equal(f.panel.busy, false);
+    f.setPreviewOverride(undefined);
+    f.panel.navigate("preview");
+    await settle();
+    assert.equal(f.panel.previewProgram.name, "New draft");
+  } finally {
+    f.restore();
+  }
+});
 
 void test("Configure routing selects the requested instance and switches all editor state", async () => {
   const f = await fixture();
