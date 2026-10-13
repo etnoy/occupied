@@ -1,0 +1,25 @@
+custom_components/occupied/frontend/SettingsView.svelte
+  s_eb83a540b08207::t_19767d7e155479 14,35-36,97-101,110-114
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_eb83a540b08207::t_56cf3ddb1f95b4 1029,10896-10898,10903,10914,10930-10931,10933-10949,10951,10967,10969,10973-10982,10990,10992,11193,11288,11344,11455,11610,11622,11824,11846
+custom_components/occupied/frontend/dist/translations.js
+  s_eb83a540b08207::t_02505e6f28b968 183
+custom_components/occupied/frontend/translations.ts
+  s_eb83a540b08207::t_6329f2ae120129 182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "cc26fe5cc26fba50955c03b37ca191d31cbec259",
+  "prompts": {},
+  "sessions": {
+    "s_eb83a540b08207": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a136c6-6bc5-7401-86eb-5b4c73e22992",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
