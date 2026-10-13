@@ -1,0 +1,230 @@
+# Test fixture: broad editor and planner coverage, not a recommended household schedule.
+schema_version: 1
+name: Editor contract coverage
+steps:
+  wake_up:
+    name: Wake up
+    days:
+    - mon
+    - wed
+    - fri
+    timing:
+      absolute_time:
+        start: 06:40
+        end: 07:20
+    action: turn_on
+    entities:
+    - light.bedroom
+    - light.childrens_room
+    - switch.coffee_machine
+  breakfast:
+    name: Breakfast
+    days:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+    timing:
+      relative_to:
+        step: wake_up
+        start_offset: 10s
+        end_offset: 20m
+    action: turn_on
+    entities:
+    - light.hall
+    - light.kitchen
+  breakfast_scene:
+    name: Breakfast scene
+    days:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+    - sat
+    - sun
+    timing:
+      relative_to:
+        step: breakfast
+    action: scene.turn_on
+    entities:
+    - scene.breakfast
+  sunrise_blinds:
+    name: Sunrise blinds
+    timing:
+      relative_to:
+        sun: sunrise
+        start_offset: -10m
+        end_offset: 10m
+    action: cover.set_cover_position
+    entities:
+    - cover.kitchen
+    - cover.living_room
+    data:
+      position: 75
+  bedtime:
+    name: Bedtime
+    timing:
+      absolute_time:
+        start: '23:50:30'
+        end: 00:05:10
+    action: turn_off
+    entities:
+    - light.bedroom
+    - light.childrens_room
+    - light.hall
+    - light.kitchen
+  overnight_child:
+    days:
+    - mon
+    - sat
+    timing:
+      relative_to:
+        step: bedtime
+        start_offset: 30m10s
+        end_offset: 45m
+    action: turn_off
+    entities:
+    - switch.coffee_machine
+  overnight_grandchild:
+    timing:
+      relative_to:
+        step: overnight_child
+        start_offset: -10s
+    action: light.turn_on
+    entities:
+    - light.hall
+    data:
+      brightness_pct: 12
+      transition: 2
+  solar_sunset:
+    timing:
+      relative_to:
+        sun: sunset
+        start_offset: -1.5s
+        end_offset: 10s
+    action: turn_on
+    entities:
+    - switch.solar_sunset
+  solar_dawn:
+    timing:
+      relative_to:
+        sun: dawn
+        start_offset: -1.5s
+        end_offset: 10s
+    action: turn_on
+    entities:
+    - switch.solar_dawn
+  solar_dusk:
+    timing:
+      relative_to:
+        sun: dusk
+        start_offset: -1.5s
+        end_offset: 10s
+    action: turn_on
+    entities:
+    - switch.solar_dusk
+  solar_noon:
+    timing:
+      relative_to:
+        sun: noon
+        start_offset: -1.5s
+        end_offset: 10s
+    action: turn_on
+    entities:
+    - switch.solar_noon
+  solar_midnight:
+    timing:
+      relative_to:
+        sun: midnight
+        start_offset: -1.5s
+        end_offset: 10s
+    action: turn_on
+    entities:
+    - switch.solar_midnight
+  time_helper:
+    timing:
+      relative_to:
+        entity: input_datetime.evening
+        start_offset: -10m
+        end_offset: 5m
+    action: turn_on
+    entities:
+    - light.kitchen
+  timestamp_sensor:
+    timing:
+      relative_to:
+        entity: sensor.next_alarm
+        start_offset: -10m
+        end_offset: 5m
+    action: turn_on
+    entities:
+    - light.kitchen
+  calendar_start:
+    timing:
+      relative_to:
+        entity: calendar.work
+        start_offset: -10m
+        end_offset: 5m
+        attribute: start_time
+    action: turn_on
+    entities:
+    - light.kitchen
+  calendar_end:
+    timing:
+      relative_to:
+        entity: calendar.work
+        start_offset: -10m
+        end_offset: 5m
+        attribute: end_time
+    action: turn_on
+    entities:
+    - light.kitchen
+  disabled_parent:
+    enabled: false
+    timing:
+      absolute_time:
+        start: '12:00'
+    action: turn_on
+    entities:
+    - light.disabled
+  disabled_child:
+    timing:
+      relative_to:
+        step: disabled_parent
+    action: turn_off
+    entities:
+    - light.disabled
+  opaque_service:
+    name: Kväll · vardagsrum
+    timing:
+      absolute_time:
+        start: '20:00:05'
+    action: script.turn_on
+    entities:
+    - script.evening
+    data:
+      variables:
+        title: Fönster
+        sequence:
+        - second
+        - first
+        options:
+          active: true
+          level: 2.5
+          empty: null
+  colour_service:
+    timing:
+      absolute_time:
+        start: '20:05'
+    action: light.turn_on
+    entities:
+    - light.living_room
+    data:
+      rgb_color:
+      - 12
+      - 34
+      - 56
+      brightness: 128
+      transition: 1.5

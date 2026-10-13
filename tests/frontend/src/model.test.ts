@@ -92,11 +92,24 @@ void test("related creation inherits targets and weekdays without a container", 
     start_offset: "30m",
   });
 });
-void test("weekday and cycle errors identify the relevant field", () => {
+void test("parent and dependent weekdays can be edited independently", () => {
+  const p = program(),
+    parent = stepEditor(p, stepEntries(p)[0]);
+  parent.form.days = ["mon"];
+  assert.deepEqual(editorErrors(p, parent), {});
+  const next = buildStep(p, parent);
+  assert.deepEqual(next.steps?.dinner.days, ["mon"]);
+  assert.deepEqual(next.steps?.bed, p.steps?.bed);
+  const child = stepEditor(next, stepEntries(next)[1]);
+  child.form.days = ["tue"];
+  assert.deepEqual(editorErrors(next, child), {});
+  assert.deepEqual(buildStep(next, child).steps?.bed.days, ["tue"]);
+  child.form.days = [];
+  assert.match(editorErrors(next, child).days, /at least one day/);
+});
+void test("cycle errors identify the relevant field", () => {
   const p = program(),
     editor = stepEditor(p, stepEntries(p)[0]);
-  editor.form.days = ["mon"];
-  assert.match(editorErrors(p, editor).days, /depends/);
   editor.form.timing = {
     mode: "relative",
     anchor: "step:bed",

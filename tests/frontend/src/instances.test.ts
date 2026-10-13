@@ -6,7 +6,7 @@ import type {
   ProgramDocument,
   PreviewResult,
 } from "@occupied/types.js";
-import { stepEditor } from "@occupied/step-model.js";
+import { stepEditor, stepEntries } from "@occupied/step-model.js";
 import { startStep } from "@occupied/steps.js";
 import { createStepEditorContext } from "@occupied/step-editor-controller.js";
 
@@ -477,6 +477,61 @@ void test("unloaded selections remain discoverable and recover without losing dr
     assert.equal(f.panel.stale, true);
     assert.equal(f.panel.saved.name, "main");
     assert.equal(f.panel.revision, "revision-main");
+  } finally {
+    f.restore();
+  }
+});
+
+void test("Save step validates and saves new and edited steps, then closes the editor", async () => {
+  const f = await fixture();
+  try {
+    const requests: Record<string, unknown>[] = [];
+    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      requests.push(structuredClone(message));
+      return Promise.resolve({
+        ...f.panel.document,
+        valid: true,
+        issues: [],
+        program: structuredClone(message.program),
+        revision: `saved-${requests.length}`,
+      } as T);
+    };
+    startStep(f.panel);
+    const editor = f.panel.stepEditor!;
+    editor.form.name = "Agnes fönster on";
+    editor.form.entities = ["light.agnes"];
+    editor.form.timing.start = "18:00:00";
+    editor.form.timing.end = "22:00:00";
+    createStepEditorContext(f.panel).changed("start");
+    await createStepEditorContext(f.panel).submit();
+    assert.deepEqual(
+      requests.map((r) => r.type),
+      ["occupied/editor_validate", "occupied/save"],
+    );
+    assert.deepEqual(requests[0].program, requests[1].program);
+    assert.equal(requests[1].expected_revision, "revision-main");
+    assert.equal(f.panel.stepEditor, null);
+    assert.equal(f.panel.selectedStep, editor.id);
+    assert.equal(f.panel.dirty, false);
+    assert.equal(f.panel.error, "");
+    assert.deepEqual(f.panel.draft, f.panel.saved);
+    assert.deepEqual(f.panel.saved.steps?.[editor.id].timing, {
+      absolute_time: { start: "18:00:00", end: "22:00:00" },
+    });
+
+    startStep(f.panel, stepEntries(f.panel.draft)[0]);
+    f.panel.stepEditor!.form.action = "turn_off";
+    createStepEditorContext(f.panel).changed("action");
+    await createStepEditorContext(f.panel).submit();
+    assert.equal(requests.length, 4);
+    assert.equal(requests[2].type, "occupied/editor_validate");
+    assert.equal(requests[3].type, "occupied/save");
+    assert.equal(requests[3].expected_revision, "saved-2");
+    assert.deepEqual(requests[2].program, requests[3].program);
+    assert.equal(f.panel.saved.steps?.[editor.id].action, "turn_off");
+    assert.equal(Object.keys(f.panel.saved.steps || {}).length, 1);
+    assert.equal(f.panel.stepEditor, null);
+    assert.equal(f.panel.dirty, false);
   } finally {
     f.restore();
   }

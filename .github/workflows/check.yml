@@ -18,6 +18,9 @@ jobs:
         homeassistant: ["2026.9.3", "2026.9.4"]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
           version: "0.12.23"
@@ -37,7 +40,6 @@ jobs:
       - run: .venv/bin/pytest --cov=custom_components.occupied --cov-fail-under=88
       - run: .venv/bin/python scripts/check_release.py
       - run: .venv/bin/occupied-config validate examples/house.yaml --date 2026-10-06 --days 7 --seed release --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
-      - run: .venv/bin/occupied-config validate examples/gui-house.yaml --date 2026-10-06 --days 7 --seed release --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
 
   frontend:
     runs-on: ubuntu-latest

@@ -210,17 +210,6 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
                 )
         elif action == "event.fire":
             issues.append(Issue("action", "Choose an entity service action", path + ("action",)))
-        source = step.timing.relative_to
-        if source and source.step in program.steps:
-            parent = program.steps[source.step]
-            if not set(step.days) <= set(parent.days):
-                issues.append(
-                    Issue(
-                        "anchor_days",
-                        f"This step selects days when {source.step} does not run",
-                        path + ("days",),
-                    )
-                )
     if issues:
         raise ProgramError(issues)
     step_order(program)

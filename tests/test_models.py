@@ -181,11 +181,13 @@ def test_bad_dependencies_and_sources(program_dict, relative):
         validate_program(program_dict)
 
 
-def test_weekday_dependencies(program_dict):
+def test_dependent_weekdays_are_independent(program_dict):
     program_dict["steps"]["wake"]["days"] = ["mon"]
-    with pytest.raises(ProgramError) as raised:
-        validate_program(program_dict)
-    assert raised.value.issues[0].code == "anchor_days"
+    program_dict["steps"]["leave"]["days"] = ["mon", "tue"]
+    program = validate_program(program_dict)
+    assert program.steps["wake"].days == ("mon",)
+    assert program.steps["leave"].days == ("mon", "tue")
+    assert validate_program(program_data(program)) == program
 
 
 def test_entities_derived_from_enabled_typed_actions(program_dict):

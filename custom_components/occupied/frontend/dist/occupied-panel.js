@@ -8456,8 +8456,6 @@ function editorErrors(program, editor) {
       ) {
         errors.anchor =
           "Choose another step without creating a circular relationship.";
-      } else if (form.days.some((d) => !parent.days.includes(d))) {
-        errors.anchor = `This step runs on days when ${parent.name} does not.`;
       }
     } else if (
       !solarEvents.map((event2) => `sun:${event2}`).includes(time.anchor) &&
@@ -8469,14 +8467,6 @@ function editorErrors(program, editor) {
     }
   } else {
     errors.mode = "Choose absolute time or relative to.";
-  }
-  for (const child2 of stepEntries(program)) {
-    if (
-      child2.timing.relative_to?.step === id &&
-      child2.days.some((d) => !form.days.includes(d))
-    ) {
-      errors.days = `${child2.name} depends on this step. Keep its days (${child2.days.join(", ")}) or edit it first.`;
-    }
   }
   return errors;
 }

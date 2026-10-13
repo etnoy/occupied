@@ -1,5 +1,7 @@
 """Editor revision isolation, native-schema validation and actual runtime streams."""
 
+import json
+import subprocess
 from copy import deepcopy
 from pathlib import Path
 from unittest.mock import AsyncMock
@@ -211,15 +213,16 @@ async def test_subscription_follows_runtime_and_unsubscribes(
     assert not devices
 
 
+@pytest.mark.parametrize("fixture_name", ["gui-house.yaml", "scheduling-edge-cases.yaml"])
 async def test_gui_export_and_yaml_source_normalize_and_preview_identically(
-    hass, editor_entry, devices, hass_ws_client
+    hass, editor_entry, devices, hass_ws_client, fixture_name
 ):
     assert await hass.config_entries.async_setup(editor_entry.entry_id)
     engine = editor_entry.runtime_data
     before = engine.snapshot()
-    source = await hass.async_add_executor_job(Path("examples/gui-house.yaml").read_text)
+    path = Path(__file__).parent / "fixtures" / "programs" / fixture_name
+    source = await hass.async_add_executor_job(path.read_text)
     data = program_data(load_program(source))
-    assert data["steps"]["breakfast"]["timing"]["relative_to"]["step"] == "wake_up"
     client = await hass_ws_client(hass)
     results = []
     for index, program in enumerate((source, data), 1):
@@ -342,4 +345,118 @@ async def test_yaml_editor_save_validates_before_persisting(
     assert saved["success"] and saved["result"]["valid"]
     assert saved["result"]["program"]["name"] == "Saved from YAML"
     assert editor_entry.runtime_data.program.name == "Saved from YAML"
+    assert not devices
+
+
+ROOT = Path(__file__).resolve().parents[1]
+BUILD_STEP = """
+import { readFileSync } from 'node:fs';
+import { buildStep, stepEditor, stepEntries } from
+  './custom_components/occupied/frontend/dist/step-model.js';
+const { program, form, editing } = JSON.parse(readFileSync(0, 'utf8'));
+const editor = stepEditor(program, editing ? stepEntries(program)[0] : null);
+Object.assign(editor.form, form);
+console.log(JSON.stringify({ id: editor.id, program: buildStep(program, editor) }));
+"""
+
+
+@pytest.mark.parametrize("editing", [False, True], ids=["add", "edit"])
+@pytest.mark.parametrize(
+    "form",
+    [
+        {
+            "name": "Agnes fönster on",
+            "entities": ["light.a"],
+            "kind": "entities",
+            "timing": {"mode": "absolute", "start": "18:00:00", "end": "22:00:00"},
+        },
+        {"name": "", "entities": ["light.a", "switch.a"], "kind": "entities"},
+        {"entities": ["light.a"], "kind": "entities", "action": "turn_off"},
+        {"entities": ["light.a"], "kind": "entities", "days": ["mon", "wed"]},
+        {
+            "entities": ["light.a"],
+            "kind": "entities",
+            "timing": {
+                "mode": "relative",
+                "anchor": "sun:sunset",
+                "startOffset": "-20m",
+                "endOffset": "10m",
+            },
+        },
+        {
+            "entities": ["light.a"],
+            "kind": "entities",
+            "timing": {
+                "mode": "relative",
+                "anchor": "entity:calendar.work:start_time",
+                "startOffset": "0s",
+                "endOffset": "",
+            },
+        },
+        {"entities": ["scene.evening"], "kind": "scene", "data": '{"transition": 5}'},
+        {
+            "entities": ["light.a"],
+            "kind": "service",
+            "service": "light.turn_on",
+            "data": '{"brightness_pct": 55}',
+        },
+    ],
+    ids=[
+        "absolute-window",
+        "untitled-mixed",
+        "off",
+        "parent-weekdays",
+        "sun",
+        "calendar",
+        "scene",
+        "service",
+    ],
+)
+async def test_shipped_editor_add_and_edit_validate_save_and_reopen(
+    hass, editor_entry, devices, hass_ws_client, form, editing
+):
+    assert await hass.config_entries.async_setup(editor_entry.entry_id)
+    client = await hass_ws_client(hass)
+
+    async def request(identifier, command, **data):
+        await client.send_json(
+            {
+                "id": identifier,
+                "type": f"occupied/{command}",
+                "config_entry_id": editor_entry.entry_id,
+                **data,
+            }
+        )
+        response = await client.receive_json()
+        assert response["success"], response
+        return response["result"]
+
+    document = await request(1, "program")
+    built = await hass.async_add_executor_job(
+        lambda: subprocess.run(
+            ["node", "--input-type=module", "-e", BUILD_STEP],
+            input=json.dumps({"program": document["program"], "form": form, "editing": editing}),
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=ROOT,
+            timeout=15,
+        )
+    )
+    candidate = json.loads(built.stdout)
+    validation = await request(2, "editor_validate", program=candidate["program"])
+    assert validation["valid"], validation
+    assert program_document(editor_entry.runtime_data) == document
+    saved = await request(
+        3, "save", program=candidate["program"], expected_revision=document["revision"]
+    )
+    assert saved["valid"], saved
+    reopened = await request(4, "program")
+    assert reopened["program"] == validation["program"] == saved["program"]
+    assert reopened["program"] == program_data(editor_entry.runtime_data.program)
+    assert candidate["id"] in reopened["program"]["steps"]
+    for step_id, step in document["program"]["steps"].items():
+        if step_id != candidate["id"]:
+            assert reopened["program"]["steps"][step_id] == step
+    assert len(reopened["program"]["steps"]) == len(document["program"]["steps"]) + (not editing)
     assert not devices

@@ -51,7 +51,7 @@ timing:
 
 `start_offset` defaults to `0s`; an omitted end offset equals the start offset. End must be at least start. Durations use signed, ordered h/m/s units such as `10s`, `20m`, `2h30m`, or `-1.5s`. Each offset must be finite and within seven days. Bare numbers and colon durations are rejected.
 
-Step sources reference the parent's sampled time, using elapsed UTC offsets, rather than actual service completion. Cycles and missing IDs are errors. A child's weekdays must be a subset of its parent's. A disabled or unavailable parent skips dependent occurrences.
+Step sources reference the parent's sampled time, using elapsed UTC offsets, rather than actual service completion. Cycles and missing IDs are errors. Each step's weekdays can be edited independently. A dependent step runs only on source dates selected by both it and its parent. A disabled, unavailable, or unscheduled parent skips dependent occurrences without changing their weekday selections.
 
 Solar sources support sunrise, sunset, dawn, dusk, noon, and midnight. Dawn/dusk are civil twilight. Solar events are calculated for the requested date and location; unavailable events skip the step and its dependents with an explanation.
 

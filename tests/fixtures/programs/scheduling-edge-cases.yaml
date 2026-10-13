@@ -1,0 +1,106 @@
+# Test fixture: intentionally unusual weekdays, ordering, and timing bounds.
+schema_version: 1
+name: Scheduling and normalization edge cases
+steps:
+  step:
+    name: Fönsterspottar badrum on
+    days:
+    - mon
+    - tue
+    - thu
+    - fri
+    - sat
+    - sun
+    timing:
+      absolute_time:
+        start: '18:00'
+    action: turn_on
+    entities:
+    - light.fonsterspottar_badrum
+  step_2:
+    name: Fönsterspottar badrum off
+    days:
+    - mon
+    - wed
+    - fri
+    - sat
+    - sun
+    timing:
+      absolute_time:
+        start: '17:00'
+        end: '19:00'
+    action: turn_off
+    entities:
+    - light.fonsterspottar_badrum
+  step_3:
+    name: Spis AutomaticZoneSelection on
+    timing:
+      relative_to:
+        sun: sunrise
+    action: turn_on
+    entities:
+    - switch.spis_cooking_hob_setting_automaticzoneselection
+  fixed_equal_bounds:
+    name: '   '
+    days:
+    - sun
+    - mon
+    - mon
+    timing:
+      absolute_time:
+        start: '23:59:30'
+        end: '23:59:30'
+    action: turn_on
+    entities:
+    - switch.z
+    - light.a
+    - switch.z
+  child_before_parent:
+    days:
+    - mon
+    - tue
+    timing:
+      relative_to:
+        step: late_parent
+        start_offset: 30s
+        end_offset: 30s
+    action: turn_off
+    entities:
+    - light.a
+  late_parent:
+    days:
+    - mon
+    timing:
+      absolute_time:
+        start: '23:59:45'
+    action: turn_on
+    entities:
+    - light.a
+  negative_offset:
+    timing:
+      relative_to:
+        step: late_parent
+        start_offset: -24h
+    action: turn_off
+    entities:
+    - light.a
+  disjoint_child:
+    days:
+    - tue
+    timing:
+      relative_to:
+        step: late_parent
+    action: turn_off
+    entities:
+    - light.a
+  zero_offset:
+    timing:
+      relative_to:
+        step: fixed_equal_bounds
+        start_offset: +0s
+        end_offset: 0s
+    action: scene.turn_on
+    entities:
+    - scene.evening
+    data:
+      transition: 0

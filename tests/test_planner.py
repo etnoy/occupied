@@ -1,9 +1,10 @@
 """Determinism, midnight/DST, and source-date scheduling."""
 
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
+from custom_components.occupied.models import WEEKDAYS
 from custom_components.occupied.planner import generate_plan, preview_dates
 from custom_components.occupied.runtime_planning import runtime_dates
 from custom_components.occupied.time_utils import PlanningContext
@@ -78,6 +79,41 @@ def test_disabled_parent_suppresses_child(program_dict):
     program_dict["steps"]["wake"]["enabled"] = False
     p = plan(program_dict)
     assert not p.events and any(i.code == "anchor_skipped" for i in p.issues)
+
+
+@pytest.mark.parametrize(
+    "parent_days,child_days,child_dates",
+    [
+        (["mon", "wed"], ["mon", "tue", "wed"], {12, 14}),
+        (["mon", "tue", "wed"], ["tue"], {13}),
+        (["mon"], ["tue"], set()),
+    ],
+    ids=["narrower-parent", "narrower-child", "disjoint-days"],
+)
+def test_independent_weekdays_filter_parent_occurrences_across_midnight(
+    program_dict, parent_days, child_days, child_dates
+):
+    program_dict["steps"]["wake"].update(
+        days=parent_days, timing={"absolute_time": {"start": "23:50"}}
+    )
+    program_dict["steps"]["leave"].update(
+        days=child_days,
+        timing={"relative_to": {"step": "wake", "start_offset": "30m"}},
+    )
+    for day_number in range(12, 19):
+        source_date = date(2026, 10, day_number)
+        result = plan(program_dict, source_date)
+        assert result.feasible
+        if day_number in child_dates:
+            assert result.step_times["leave"] == datetime.combine(
+                source_date + timedelta(days=1), datetime.min.time(), UTC
+            ) + timedelta(minutes=20)
+            assert any(event.source_id == "leave" for event in result.events)
+        else:
+            assert "leave" not in result.step_times
+            assert all(event.source_id != "leave" for event in result.events)
+        if WEEKDAYS[source_date.weekday()] in child_days and "wake" not in result.step_times:
+            assert any(issue.code == "anchor_skipped" for issue in result.issues)
 
 
 @pytest.mark.parametrize("solar", ["sunrise", "sunset", "dawn", "dusk", "noon", "midnight"])

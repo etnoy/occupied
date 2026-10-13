@@ -41,6 +41,8 @@ with tarfile.open(directory / f"occupied-{version}.tar.gz") as source:
         "tests/frontend/src/model.test.ts",
         "schema/occupied.schema.json",
         "examples/puppet/occupied.pp",
+        "tests/fixtures/programs/gui-house.yaml",
+        "tests/fixtures/programs/scheduling-edge-cases.yaml",
         "scripts/check_artifacts.py",
     ):
         assert f"occupied-{version}/{relative}" in source.getnames()
