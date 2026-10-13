@@ -9,7 +9,6 @@ export type JsonValue =
   | string
   | JsonValue[]
   | { [key: string]: JsonValue };
-export type JsonObject = { [key: string]: JsonValue };
 export interface Targets {
   entities?: string[];
   groups?: string[];
@@ -297,37 +296,9 @@ export interface InstanceDocument {
 export type ApiResult<T> =
   | ({ valid: true; issues?: Issue[] } & T)
   | { valid: false; issues: Issue[] };
-export interface RuntimeActivity {
-  source_id: string;
-  phase: string;
-  deadline?: string;
-  duration: number;
-  resources: string[];
-}
-export interface RuntimeHandover {
-  start: string;
-  deadline: string;
-  progress: number;
-  observed: JsonValue;
-  target: JsonValue;
-}
 export interface RuntimeSnapshot {
-  status?: string;
-  reason?: string;
-  enabled?: boolean;
-  paused?: boolean;
-  active?: boolean;
-  dry_run?: boolean;
-  mode?: string;
-  next_event?: string;
   source_revision?: string;
   configuration_source?: ConfigurationSource;
-  yielded?: string[];
-  activities?: RuntimeActivity[];
-  handover?: Record<string, RuntimeHandover>;
-  events?: { time: string; event: string; id: string }[];
-  outcomes?: JsonValue[];
-  last_error?: string;
 }
 export interface PlannedEvent {
   time: string;
@@ -336,9 +307,6 @@ export interface PlannedEvent {
   priority?: number;
   lease_id?: string | null;
   action: Action & { targets: { entities: string[] } };
-  outcome?: string;
-  actual_time?: string;
-  dispatch_time?: string;
 }
 export interface Plan {
   simulation_date: string;
@@ -358,13 +326,6 @@ export interface Plan {
   events: PlannedEvent[];
   issues: Issue[];
 }
-export interface TimelineDocument {
-  plan?: Plan;
-  snapshot?: RuntimeSnapshot;
-  events?: PlannedEvent[];
-  issues?: Issue[];
-  dates?: string[];
-}
 export interface PreviewResult {
   valid: boolean;
   issues?: Issue[];
@@ -374,7 +335,6 @@ export interface WebSocketResponses {
   instances: InstanceDocument[];
   program: ProgramDocument;
   catalog: Catalog;
-  status: RuntimeSnapshot;
   editor_validate: ApiResult<{ program: Program; behavior_hash: string }>;
   save: ApiResult<ProgramDocument>;
   validate: ApiResult<{ program: Program; behavior_hash: string }>;
@@ -386,9 +346,7 @@ export interface WebSocketResponses {
   }>;
   source: ApiResult<ProgramDocument>;
   reload: { valid: boolean; changed: boolean; issues: Issue[] };
-  timeline: TimelineDocument;
   preview: PreviewResult;
-  diagnostics: JsonObject;
 }
 export interface HomeAssistant {
   language?: string;
@@ -399,11 +357,6 @@ export interface HomeAssistant {
     time_zone?: "local" | "server";
   };
   callWS<T>(message: Record<string, unknown>): Promise<T>;
-  callService(
-    domain: string,
-    service: string,
-    data: Record<string, unknown>,
-  ): Promise<unknown>;
   connection: {
     subscribeMessage<T>(
       callback: (snapshot: T) => void,
@@ -445,14 +398,7 @@ export interface HaGenericPicker extends HTMLElement {
   required: boolean;
 }
 // Primary navigation tabs plus the secondary pages reached from them.
-export type Tab =
-  | "routines"
-  | "settings"
-  | "overview"
-  | "timeline"
-  | "preview"
-  | "configuration"
-  | "diagnostics";
+export type Tab = "routines" | "settings" | "preview";
 declare global {
   interface HTMLElementTagNameMap {
     "occupied-panel": import("./occupied-panel.js").OccupiedPanel;

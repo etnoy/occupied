@@ -5,7 +5,6 @@ import type {
   InstanceDocument,
   ProgramDocument,
   PreviewResult,
-  RuntimeSnapshot,
 } from "@occupied/types.js";
 import { stepEditor } from "@occupied/step-model.js";
 import { startStep } from "@occupied/steps.js";
@@ -113,7 +112,6 @@ async function fixture() {
   let programOverride:
       | ((entry: string) => Promise<ProgramDocument>)
       | undefined,
-    timelineOverride: (() => Promise<unknown>) | undefined,
     previewOverride: (() => Promise<PreviewResult>) | undefined;
   const messages: Record<string, unknown>[] = [];
   const preview: PreviewResult = {
@@ -140,25 +138,16 @@ async function fixture() {
         "occupied/instances": instances,
         "occupied/program": documents[entry],
         "occupied/catalog": { entities: [], services: {} },
-        "occupied/status": {
-          enabled: false,
-          status: "disabled",
-          reason: entry,
-        } satisfies RuntimeSnapshot,
         "occupied/preview": preview,
       };
       if (message.type === "occupied/program" && programOverride) {
         return (await programOverride(entry)) as T;
-      }
-      if (message.type === "occupied/timeline" && timelineOverride) {
-        return (await timelineOverride()) as T;
       }
       if (message.type === "occupied/preview" && previewOverride) {
         return (await previewOverride()) as T;
       }
       return responses[String(message.type)] as T;
     },
-    callService: async () => {},
     connection: {
       subscribeMessage: <T>(
         callback: (snapshot: T) => void,
@@ -192,9 +181,6 @@ async function fixture() {
     },
     setProgramOverride(value: typeof programOverride) {
       programOverride = value;
-    },
-    setTimelineOverride(value: typeof timelineOverride) {
-      timelineOverride = value;
     },
     setPreviewOverride(value: typeof previewOverride) {
       previewOverride = value;
@@ -320,10 +306,7 @@ void test("Configure routing selects the requested instance and switches all edi
     assert.equal(f.panel.draft.name, "main");
     f.panel.yaml = "old export";
     f.panel.sourcePath = "old.yaml";
-    f.panel.timelineDate = "2020-01-01";
-    f.panel.actual = { dates: ["2020-01-01"] };
     f.panel.preview = { valid: true, plans: [] };
-    f.panel.diagnostics = { old: true };
     f.route("guest");
     await settle();
     assert.equal(f.panel.selectedEntry, "guest");
@@ -332,10 +315,7 @@ void test("Configure routing selects the requested instance and switches all edi
     assert.equal(f.panel.revision, "revision-guest");
     assert.equal(f.panel.yaml, "");
     assert.equal(f.panel.sourcePath, undefined);
-    assert.equal(f.panel.timelineDate, "");
-    assert.equal(f.panel.actual, undefined);
     assert.equal(f.panel.preview, undefined);
-    assert.equal(f.panel.diagnostics, undefined);
     assert.ok(f.disposed.includes("occupied/subscribe:main"));
     assert.ok(f.subscriptions.has("occupied/subscribe:guest"));
   } finally {
@@ -410,21 +390,14 @@ void test("responses and snapshots from a previous instance cannot replace the s
   const f = await fixture();
   try {
     const oldSnapshot = f.subscriptions.get("occupied/subscribe:main")!;
-    let resolveTimeline!: (value: unknown) => void;
-    f.setTimelineOverride(
-      () =>
-        new Promise((resolve) => {
-          resolveTimeline = resolve;
-        }),
-    );
-    const pending = f.panel.loadTimeline();
     f.panel.selectInstance("guest");
     await settle();
-    oldSnapshot({ enabled: true, reason: "old main snapshot" });
-    resolveTimeline({ dates: ["old main history"] });
-    await pending;
-    assert.equal(f.panel.status.reason, "guest");
-    assert.equal(f.panel.actual, undefined);
+    oldSnapshot({
+      source_revision: "old-main-revision",
+      configuration_source: { mode: "old-main-source" },
+    });
+    assert.equal(f.panel.document.source, "file");
+    assert.equal(f.panel.revision, "revision-guest");
     let resolveProgram!: (value: ProgramDocument) => void;
     f.setProgramOverride((entry) =>
       entry === "main"

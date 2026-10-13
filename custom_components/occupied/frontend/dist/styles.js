@@ -173,31 +173,12 @@ export const styles = `
   [hidden] {
     display: none !important;
   }
-  dl {
-    display: grid;
-    grid-template-columns: minmax(140px, 1fr) 3fr;
-    gap: 8px 20px;
-  }
-  dt {
-    color: var(--secondary-text-color, #596773);
-  }
-  dd {
-    margin: 0;
-    overflow-wrap: anywhere;
-  }
   .toolbar {
     position: sticky;
     top: 0;
     padding: 12px 0;
     background: var(--primary-background-color, #f4f5f8);
     z-index: 2;
-  }
-  pre {
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    font:
-      13px/1.5 ui-monospace,
-      monospace;
   }
   .table-wrap {
     overflow: auto;
@@ -218,81 +199,6 @@ export const styles = `
   th {
     white-space: nowrap;
   }
-  progress {
-    width: min(350px, 100%);
-    accent-color: var(--primary-color, #167b94);
-  }
-  .timeline {
-    margin: 18px 0;
-    padding-top: 42px;
-    overflow: hidden;
-    position: relative;
-  }
-  .ruler {
-    position: absolute;
-    top: 0;
-    left: 160px;
-    right: 12px;
-    height: 40px;
-    font-size: 10px;
-  }
-  .ruler span {
-    position: absolute;
-    width: 100px;
-    transform: translateX(-50%);
-  }
-  .ruler span:first-child {
-    transform: none;
-  }
-  .ruler span:last-child {
-    transform: translateX(-100%);
-  }
-  .lane {
-    display: flex;
-    min-height: 36px;
-    align-items: center;
-  }
-  .lane-label {
-    width: 150px;
-    flex-shrink: 0;
-    overflow-wrap: anywhere;
-    padding-right: 8px;
-    font-size: 12px;
-  }
-  .track {
-    position: relative;
-    width: 100%;
-    min-width: 0;
-    height: 32px;
-    margin: 0 12px 0 10px;
-    background: var(--secondary-background-color, #f1f4f6);
-    border-radius: 4px;
-  }
-  .bar {
-    position: absolute;
-    top: 7px;
-    height: 18px;
-    min-width: 3px;
-    border-radius: 3px;
-    background: #4f8a96;
-  }
-  .bar.activity {
-    background: #7762a6;
-  }
-  .bar.active {
-    top: 12px;
-    height: 8px;
-    background: #168555;
-  }
-  .bar.ramp {
-    background: linear-gradient(90deg, #f2d69b, #b88a2e);
-  }
-  .marker {
-    position: absolute;
-    top: 3px;
-    transform: translateX(-50%);
-    color: var(--primary-color, #167b94);
-  }
   @media (max-width: 600px) {
     main {
       padding: 14px;
@@ -305,23 +211,6 @@ export const styles = `
     }
     nav button {
       padding: 7px 10px;
-    }
-    dl {
-      grid-template-columns: 1fr;
-      gap: 3px;
-    }
-    dd {
-      margin-bottom: 8px;
-    }
-    .lane-label {
-      width: 90px;
-      font-size: 11px;
-    }
-    .ruler {
-      left: 100px;
-    }
-    .ruler span {
-      width: 60px;
     }
     .row input {
       width: 100%;

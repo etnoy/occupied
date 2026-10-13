@@ -28,17 +28,6 @@ export function required<T>(value: T | null | undefined): T {
   return value;
 }
 
-/**
-Elapsed fraction of an ISO interval, clamped to 0..1.
-*/
-export function progress(start: string, deadline: string, now = Date.now()) {
-  const from = Date.parse(start);
-  return Math.max(
-    0,
-    Math.min(1, (now - from) / Math.max(1, Date.parse(deadline) - from)),
-  );
-}
-
 export function download(
   name: string,
   text: string,

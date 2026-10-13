@@ -22,16 +22,6 @@ export function required(value) {
   }
   return value;
 }
-/**
-Elapsed fraction of an ISO interval, clamped to 0..1.
-*/
-export function progress(start, deadline, now = Date.now()) {
-  const from = Date.parse(start);
-  return Math.max(
-    0,
-    Math.min(1, (now - from) / Math.max(1, Date.parse(deadline) - from)),
-  );
-}
 export function download(name, text, type = "application/json") {
   const url = URL.createObjectURL(new Blob([text], { type })),
     link = document.createElement("a");

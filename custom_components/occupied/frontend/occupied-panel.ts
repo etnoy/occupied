@@ -11,13 +11,11 @@ import type {
   HaSelector,
   HaGenericPicker,
   WebSocketResponses,
-  TimelineDocument,
   PreviewResult,
-  JsonObject,
   Tab,
   InstanceDocument,
 } from "./types.js";
-import { errorMessage, progress } from "./util.js";
+import { errorMessage } from "./util.js";
 import { copy, set } from "./model.js";
 import { styles } from "./styles.js";
 import { translator } from "./translations.js";
@@ -37,7 +35,6 @@ export class OccupiedPanel extends HTMLElement {
   draft!: Program;
   saved!: Program;
   document!: ProgramDocument;
-  status!: RuntimeSnapshot;
   catalog: Catalog = { entities: [], services: {} };
   revision = "";
   stale = false;
@@ -57,15 +54,11 @@ export class OccupiedPanel extends HTMLElement {
   stepEditor: StepEditor | null = null;
   pendingStepExit: (() => void) | null = null;
   selectedStep: string | null = null;
-  actual?: TimelineDocument;
-  timelineDate = "";
   preview?: PreviewResult;
   previewProgram!: Program;
   previewDate = "";
   sourcePath?: string;
   yaml = "";
-  includeSensitive = false;
-  diagnostics?: JsonObject;
 
   _hass!: HomeAssistant;
   _loading = false;
@@ -77,13 +70,9 @@ export class OccupiedPanel extends HTMLElement {
   private _instancesSubscribing = false;
   private _panel?: PanelConfig;
   private _loadedEntry: string | null = null;
-  private _timer?: ReturnType<typeof setInterval>;
-  private _timelineTimer: ReturnType<typeof setTimeout> | null = null;
-  private _timelineLoading = false;
   private _subscriptionEpoch = 0;
   private _unsubscribe: (() => void) | null = null;
   private _subscribing = false;
-  viewRevision = 0;
   private updates = writable(0);
   private updateRevision = 0;
   private component?: ReturnType<typeof mount>;
@@ -155,13 +144,6 @@ export class OccupiedPanel extends HTMLElement {
     window.addEventListener("beforeunload", this._beforeUnload);
     globalThis.addEventListener("location-changed", this._locationChanged);
     globalThis.addEventListener("popstate", this._locationChanged);
-    this._timer = setInterval(() => {
-      for (const bar of this.shadowRoot.querySelectorAll<HTMLProgressElement>(
-        "progress[data-start]",
-      )) {
-        bar.value = progress(bar.dataset.start!, bar.dataset.deadline!);
-      }
-    }, 1000);
   }
   disconnectedCallback() {
     if (this.component) {
@@ -175,10 +157,6 @@ export class OccupiedPanel extends HTMLElement {
     this._disposeSubscription();
     this._disposeInstances();
     this._instancesReady = false;
-    clearInterval(this._timer);
-    if (this._timelineTimer) {
-      clearTimeout(this._timelineTimer);
-    }
     window.removeEventListener("beforeunload", this._beforeUnload);
     globalThis.removeEventListener("location-changed", this._locationChanged);
     globalThis.removeEventListener("popstate", this._locationChanged);
@@ -275,18 +253,12 @@ export class OccupiedPanel extends HTMLElement {
   private _resetInstance(entry: string) {
     this.epoch++;
     this._disposeSubscription();
-    if (this._timelineTimer) {
-      clearTimeout(this._timelineTimer);
-    }
-    this._timelineTimer = null;
-    this._timelineLoading = false;
     this._loadedEntry = null;
     this.selectedEntry = entry;
     Object.assign(this, {
       draft: undefined,
       saved: undefined,
       document: undefined,
-      status: undefined,
       catalog: { entities: [], services: {} },
       revision: "",
       stale: false,
@@ -301,15 +273,11 @@ export class OccupiedPanel extends HTMLElement {
       stepEditor: null,
       pendingStepExit: null,
       selectedStep: null,
-      actual: undefined,
-      timelineDate: "",
       preview: undefined,
       previewProgram: undefined,
       previewDate: "",
       sourcePath: undefined,
       yaml: "",
-      includeSensitive: false,
-      diagnostics: undefined,
     });
     this.renderView();
   }
@@ -368,7 +336,6 @@ export class OccupiedPanel extends HTMLElement {
     }
   }
   private _onSnapshot(snapshot: RuntimeSnapshot) {
-    this.status = snapshot;
     if (snapshot.configuration_source && this.document) {
       this.document.configuration_source = snapshot.configuration_source;
       this.document.source = snapshot.configuration_source.mode;
@@ -379,12 +346,6 @@ export class OccupiedPanel extends HTMLElement {
       snapshot.source_revision !== this.revision
     );
     this.flush();
-    if (this.tab === "timeline" && !this._timelineTimer) {
-      this._timelineTimer = setTimeout(() => {
-        this._timelineTimer = null;
-        void this.loadTimeline();
-      }, 1000);
-    }
     if (this.stale && !this.dirty && !this.busy && !this.stepEditor) {
       void this.reloadSaved();
     }
@@ -444,10 +405,9 @@ export class OccupiedPanel extends HTMLElement {
     const epoch = ++this.epoch;
     this._loadedEntry = entry;
     try {
-      const [doc, catalog, status] = await Promise.all([
+      const [doc, catalog] = await Promise.all([
         this.ws("program"),
         this.ws("catalog"),
-        this.ws("status"),
         loadHaControls(),
       ]);
       if (epoch !== this.epoch) {
@@ -462,7 +422,6 @@ export class OccupiedPanel extends HTMLElement {
         this.resetDraft();
       }
       this.catalog = catalog;
-      this.status = status;
       this.error = "";
       this.renderView();
       void this._subscribe();
@@ -490,10 +449,7 @@ export class OccupiedPanel extends HTMLElement {
     }
   }
   renderView() {
-    this.viewRevision++;
-    if (this.tab === "timeline") {
-      void this.loadTimeline();
-    } else if (this.tab === "preview") {
+    if (this.tab === "preview") {
       void this.loadPreview();
     }
     this.flush();
@@ -567,7 +523,7 @@ export class OccupiedPanel extends HTMLElement {
           )
         : "",
       this.document?.configuration_source?.status === "error"
-        ? t("File error: see Configuration or Home Assistant Repairs")
+        ? t("File error: see Settings or Home Assistant Repairs")
         : "",
     ]
       .filter(Boolean)
@@ -811,50 +767,6 @@ export class OccupiedPanel extends HTMLElement {
       this.renderView();
     });
   }
-  control(service: string, data: Record<string, unknown> = {}) {
-    return this.run(async (epoch) => {
-      await this._hass.callService("occupied", service, {
-        config_entry_id: this._loadedEntry,
-        ...data,
-      });
-      if (epoch !== this.epoch) {
-        return;
-      }
-      const status = await this.ws("status");
-      if (epoch === this.epoch) {
-        this.status = status;
-      }
-    });
-  }
-  async loadTimeline() {
-    if (this._timelineLoading) {
-      return;
-    }
-    this._timelineLoading = true;
-    const epoch = this.epoch;
-    try {
-      const doc = await this.ws(
-        "timeline",
-        this.timelineDate ? { date: this.timelineDate } : {},
-      );
-      if (epoch !== this.epoch) {
-        return;
-      }
-      this.actual = doc;
-      if (this.tab === "timeline") {
-        this.viewRevision++;
-        this.flush();
-      }
-    } catch (error) {
-      if (epoch === this.epoch) {
-        this.fail(error);
-      }
-    } finally {
-      if (epoch === this.epoch) {
-        this._timelineLoading = false;
-      }
-    }
-  }
   movePreviewDay(days: number) {
     return this.selectPreviewDate(
       shiftScheduleDate(
@@ -895,16 +807,6 @@ export class OccupiedPanel extends HTMLElement {
       this.preview = result;
       this.previewProgram = draft;
       this.showIssues(result);
-    });
-  }
-  loadDiagnostics() {
-    return this.run(async (epoch) => {
-      const result = await this.ws("diagnostics", {
-        include_sensitive: this.includeSensitive,
-      });
-      if (epoch === this.epoch) {
-        this.diagnostics = result;
-      }
     });
   }
   selectSource(source: string, config_file?: string) {

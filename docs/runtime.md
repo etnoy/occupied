@@ -59,7 +59,7 @@ Select **Dry run** before enabling a new controller to inspect its behavior. It 
 
 Switching mode stops the previous session according to its explicit cleanup policy. Switching a running live session to dry run can therefore send its owned cancellation actions before entering dry mode. Returning to live discards virtual ownership, snapshots real lights, hands over gradually, and schedules future discrete actions only. Simulated past calls are never replayed.
 
-Admin services `occupied.start`, `stop`, `pause`, and `resume` take `config_entry_id`. `occupied.set_dry_run` additionally takes boolean `dry_run`. Normal dashboard controls follow HA entity permissions. The panel/status API shows up to date activity deadlines, handover progress/endpoints, yielded targets, outcomes, and future work. Sensor attributes stay compact.
+Admin services `occupied.start`, `stop`, `pause`, and `resume` take `config_entry_id`. `occupied.set_dry_run` additionally takes boolean `dry_run`. Normal dashboard controls follow HA entity permissions. The status API shows up to date activity deadlines, handover progress/endpoints, yielded targets, outcomes, and future work. Sensor attributes stay compact.
 
 ## Lighting and outside control
 

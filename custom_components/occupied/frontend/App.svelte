@@ -6,11 +6,7 @@
   import StepEditor from "./StepEditor.svelte";
   import StepsView from "./StepsView.svelte";
   import SettingsView from "./SettingsView.svelte";
-  import OverviewView from "./OverviewView.svelte";
   import PreviewView from "./PreviewView.svelte";
-  import ConfigurationView from "./ConfigurationView.svelte";
-  import DiagnosticsView from "./DiagnosticsView.svelte";
-  import TimelineView from "./TimelineView.svelte";
   import UnsavedStepDialog from "./UnsavedStepDialog.svelte";
   let {
     panel: controller,
@@ -173,10 +169,9 @@
       <button
         type="button"
         class="text-button"
-        onclick={() =>
-          panel.navigate(panel.tab === "preview" ? "routines" : "settings")}
+        onclick={() => panel.navigate("routines")}
       >
-        {t(panel.tab === "preview" ? "Back to steps" : "Back to settings")}
+        {t("Back to steps")}
       </button>
     {/if}
   </div>
@@ -216,16 +211,8 @@
           <StepsView {panel} {revision} />
         {:else if panel.tab === "settings"}
           <SettingsView {panel} {revision} />
-        {:else if panel.tab === "overview"}
-          <OverviewView {panel} {revision} />
         {:else if panel.tab === "preview"}
           <PreviewView {panel} {revision} />
-        {:else if panel.tab === "configuration"}
-          <ConfigurationView {panel} {revision} />
-        {:else if panel.tab === "diagnostics"}
-          <DiagnosticsView {panel} {revision} />
-        {:else if panel.tab === "timeline"}
-          <TimelineView {panel} revision={panel.viewRevision} />
         {/if}
       </svelte:boundary>
     {/key}

@@ -70,13 +70,12 @@
 {/snippet}
 
 <Timeline
-  doc={{ plan }}
+  {plan}
   program={panel.previewProgram}
   {t}
   locale={panel._hass.locale}
   hass={panel._hass}
   {entityNames}
-  preview
   heading={dayHeading}
   loading={panel.busy}
 />
