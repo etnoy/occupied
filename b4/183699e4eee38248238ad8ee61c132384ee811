@@ -1,0 +1,47 @@
+.github/workflows/check.yml
+  s_114056f3777a90::t_1616a7940a11f3 21-23
+MANIFEST.in
+  s_114056f3777a90::t_78e8326a4ed6da 7
+docs/schema.md
+  s_114056f3777a90::t_eb80c9fe51ec20 54
+examples/house.yaml
+  s_114056f3777a90::t_9ab3545ab34043 1-37
+scripts/check_artifacts.py
+  s_114056f3777a90::t_99dd12f18b5174 44-45
+scripts/check_release.py
+  s_114056f3777a90::t_2d04edb44aa948 29-30
+tests/fixtures/programs/README.md
+  s_114056f3777a90::t_d9ffa294011ad4 1-8
+tests/fixtures/programs/gui-house.yaml
+  s_114056f3777a90::t_9ce99d5df4bb9a 1-230
+tests/fixtures/programs/scheduling-edge-cases.yaml
+  s_114056f3777a90::t_fffae67e86887c 1-106
+tests/frontend/src/instances.test.ts
+  s_114056f3777a90::t_b2982a96b58e56 9,485-539
+tests/frontend/src/model.test.ts
+  s_114056f3777a90::t_e41957b24fcbdc 95-110
+tests/test_editor_api.py
+  s_114056f3777a90::t_2771d6241c35c3 3-4,216,218,223-224,349-462
+tests/test_models.py
+  s_114056f3777a90::t_55b1b21bdd3699 184,186-190
+tests/test_planner.py
+  s_114056f3777a90::t_462e60c9bec755 3,7,84-118
+tests/test_program_fixtures.py
+  s_114056f3777a90::t_dd7821e6c7c2d4 1-117
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b4183699e4eee38248238ad8ee61c132384ee811",
+  "prompts": {},
+  "sessions": {
+    "s_114056f3777a90": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a136e1-4e00-78f3-840a-3b08efe3bc16",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
