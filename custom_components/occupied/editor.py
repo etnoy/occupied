@@ -9,6 +9,7 @@ from homeassistant.helpers.service import async_get_all_descriptions
 from homeassistant.util import dt as dt_util
 
 from .actions import light_capabilities, service_payload
+from .models import program_actions
 from .planner import resolve_actions
 from .time_sources import planning_context, time_source_options
 from .time_utils import simulation_date_at
@@ -103,15 +104,14 @@ def installed_issues(hass, program):
     """Validate installed services without dispatching them."""
     issues = []
     registry = hass.services.async_services()
-    for key, step in program.steps.items():
-        path = ("steps", key)
+    for path, step in program_actions(program, enabled_only=False):
         for entity in step.entities:
             state = hass.states.get(entity)
             if state is None or state.state in {"unknown", "unavailable"}:
                 issues.append(
                     Issue(
                         "entity_unavailable",
-                        f"{entity} is unresolved; runtime will skip it",
+                        f"Unresolved entity: {entity}",
                         path + ("entities",),
                         "warning",
                     )

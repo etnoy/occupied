@@ -82,6 +82,10 @@ function minutes(value: string | number | undefined) {
   return text.startsWith("-") ? -total : total;
 }
 
+export function durationSeconds(value: string): number {
+  return !value || value === "0" ? NaN : minutes(value) * 60;
+}
+
 export function timingForm(timing: Timing = {}): TimingForm {
   const clock = timing.absolute_time,
     source = timing.relative_to;

@@ -9,6 +9,12 @@ import type {
 import { stepEditor, stepEntries } from "@occupied/step-model.js";
 import { startStep } from "@occupied/steps.js";
 import { createStepEditorContext } from "@occupied/step-editor-controller.js";
+import { randomEntries } from "@occupied/random-model.js";
+import {
+  openRandom,
+  createRandomEditorContext,
+  deleteRandom,
+} from "@occupied/random-editor-controller.js";
 
 const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
 
@@ -22,12 +28,14 @@ async function fixture() {
       "history",
       "confirm",
       "dispatchEvent",
+      "CSS",
     ].map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]),
   );
   let url = new URL("http://localhost/occupied?config_entry=main"),
     accepted = false,
     confirmations = 0;
   Object.defineProperties(globalThis, {
+    CSS: { configurable: true, value: { escape: (value: string) => value } },
     HTMLElement: {
       configurable: true,
       value: class {
@@ -532,6 +540,117 @@ void test("Save step validates and saves new and edited steps, then closes the e
     assert.equal(Object.keys(f.panel.saved.steps || {}).length, 1);
     assert.equal(f.panel.stepEditor, null);
     assert.equal(f.panel.dirty, false);
+  } finally {
+    f.restore();
+  }
+});
+
+void test("random creation, editing, and deletion use the guarded save flow", async () => {
+  const f = await fixture();
+  try {
+    const requests: Record<string, unknown>[] = [];
+    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      requests.push(structuredClone(message));
+      return Promise.resolve({
+        ...f.panel.document,
+        valid: true,
+        issues: [],
+        program: structuredClone(message.program),
+        revision: `random-${requests.length}`,
+      } as T);
+    };
+    openRandom(f.panel);
+    const editor = f.panel.randomEditor!;
+    editor.form.on.entities = ["light.a"];
+    createRandomEditorContext(f.panel).changed("on.entities");
+    await createRandomEditorContext(f.panel).submit();
+    assert.equal(f.panel.tab, "random");
+    assert.equal(f.panel.randomEditor, null);
+    assert.equal(f.panel.dirty, false);
+    assert.equal(requests[1].expected_revision, "revision-main");
+    assert.deepEqual(f.panel.saved.random![editor.id].off.entities, [
+      "light.a",
+    ]);
+    openRandom(f.panel, randomEntries(f.panel.draft)[0]);
+    f.panel.randomEditor!.form.count = "5";
+    createRandomEditorContext(f.panel).changed("count");
+    await createRandomEditorContext(f.panel).submit();
+    assert.equal(f.panel.saved.random![editor.id].count, 5);
+    assert.equal(Object.keys(f.panel.saved.random!).length, 1);
+    openRandom(f.panel, randomEntries(f.panel.draft)[0]);
+    await deleteRandom(f.panel);
+    assert.deepEqual(f.panel.saved.random, {});
+    assert.equal(f.panel.randomEditor, null);
+    assert.deepEqual(
+      requests.map((request) => request.type),
+      [
+        "occupied/editor_validate",
+        "occupied/save",
+        "occupied/editor_validate",
+        "occupied/save",
+        "occupied/editor_validate",
+        "occupied/save",
+      ],
+    );
+  } finally {
+    f.restore();
+  }
+});
+
+void test("random forms preserve unsaved changes and backend field errors", async () => {
+  const f = await fixture();
+  try {
+    openRandom(f.panel);
+    const editor = f.panel.randomEditor!;
+    editor.form.on.entities = ["light.a"];
+    createRandomEditorContext(f.panel).changed("on.entities");
+    f.panel.navigate("preview");
+    assert.equal(f.panel.tab, "random");
+    assert.ok(f.panel.pendingStepExit);
+    f.panel.cancelStepExit();
+    assert.equal(f.panel.randomEditor, editor);
+    f.panel._hass.callWS = <T>() =>
+      Promise.resolve({
+        valid: false,
+        issues: [
+          {
+            severity: "error",
+            message: "Invalid duration",
+            model_path: ["random", editor.id, "max_duration"],
+          },
+        ],
+      } as T);
+    await createRandomEditorContext(f.panel).submit();
+    assert.equal(editor.errors.maxDuration, "Invalid duration");
+    assert.equal(f.panel.saved.random, undefined);
+    assert.equal(f.panel.randomEditor, editor);
+    f.panel.navigate("steps");
+    f.panel.confirmStepExit();
+    assert.equal(f.panel.randomEditor, null);
+    assert.equal(f.panel.tab, "steps");
+  } finally {
+    f.restore();
+  }
+});
+
+void test("managed random edits stay in the draft and can be exported or removed", async () => {
+  const f = await fixture();
+  try {
+    f.panel.selectInstance("guest");
+    await settle();
+    const before = f.messages.length;
+    openRandom(f.panel);
+    f.panel.randomEditor!.form.on.entities = ["light.guest"];
+    createRandomEditorContext(f.panel).changed("on.entities");
+    await createRandomEditorContext(f.panel).submit();
+    assert.equal(f.panel.randomEditor, null);
+    assert.equal(f.panel.dirty, true);
+    assert.equal(f.panel.saved.random, undefined);
+    assert.equal(f.messages.length, before);
+    openRandom(f.panel, randomEntries(f.panel.draft)[0]);
+    await deleteRandom(f.panel);
+    assert.deepEqual(f.panel.draft.random, {});
+    assert.equal(f.messages.length, before);
   } finally {
     f.restore();
   }

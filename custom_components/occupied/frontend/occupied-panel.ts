@@ -14,6 +14,8 @@ import type {
   PreviewResult,
   Tab,
   InstanceDocument,
+  RandomEditorState,
+  RandomForm,
 } from "./types.js";
 import { errorMessage } from "./util.js";
 import { copy, set } from "./model.js";
@@ -24,6 +26,7 @@ import { writable } from "svelte/store";
 import App from "./App.svelte";
 import { loadHaControls } from "./ha-controls.js";
 import { hasStepChanges } from "./step-model.js";
+import { hasRandomChanges } from "./random-model.js";
 import { shiftScheduleDate } from "./time-format.js";
 
 type PanelConfig = { config?: { config_entry_id?: string } };
@@ -52,6 +55,18 @@ export class OccupiedPanel extends HTMLElement {
   tab: Tab = "steps";
   t = translator("en");
   stepEditor: StepEditor | null = null;
+  randomEditor: RandomEditorState | null = null;
+
+  get activeEditor() {
+    return this.stepEditor || this.randomEditor;
+  }
+
+  get hasEditorChanges() {
+    if (this.stepEditor) {
+      return hasStepChanges(this.stepEditor);
+    }
+    return this.randomEditor ? hasRandomChanges(this.randomEditor) : false;
+  }
   pendingStepExit: (() => void) | null = null;
   selectedStep: string | null = null;
   preview?: PreviewResult;
@@ -167,13 +182,7 @@ export class OccupiedPanel extends HTMLElement {
   }
   private _locationChanged = () => void this._load();
   private _beforeUnload = (event: BeforeUnloadEvent) => {
-    if (
-      !(
-        this.dirty ||
-        this.yamlDirty ||
-        (this.stepEditor && hasStepChanges(this.stepEditor))
-      )
-    ) {
+    if (!(this.dirty || this.yamlDirty || this.hasEditorChanges)) {
       return;
     }
 
@@ -254,11 +263,7 @@ export class OccupiedPanel extends HTMLElement {
   }
   private _canSwitchInstance() {
     return (
-      !(
-        this.dirty ||
-        this.yamlDirty ||
-        (this.stepEditor && hasStepChanges(this.stepEditor))
-      ) ||
+      !(this.dirty || this.yamlDirty || this.hasEditorChanges) ||
       globalThis.confirm(
         this.t("This instance has unsaved changes. Discard them and switch?"),
       )
@@ -285,6 +290,7 @@ export class OccupiedPanel extends HTMLElement {
       _loading: false,
       tab: "steps",
       stepEditor: null,
+      randomEditor: null,
       pendingStepExit: null,
       selectedStep: null,
       preview: undefined,
@@ -360,7 +366,7 @@ export class OccupiedPanel extends HTMLElement {
       snapshot.source_revision !== this.revision
     );
     this.flush();
-    if (this.stale && !this.dirty && !this.busy && !this.stepEditor) {
+    if (this.stale && !this.dirty && !this.busy && !this.activeEditor) {
       void this.reloadSaved();
     }
   }
@@ -427,7 +433,7 @@ export class OccupiedPanel extends HTMLElement {
       if (epoch !== this.epoch) {
         return;
       }
-      if (this.draft && (this.dirty || this.yamlDirty || this.stepEditor)) {
+      if (this.draft && (this.dirty || this.yamlDirty || this.activeEditor)) {
         this.document = doc;
         this.saved = doc.program;
         this.stale = doc.revision !== this.revision;
@@ -469,7 +475,7 @@ export class OccupiedPanel extends HTMLElement {
     this.flush();
   }
   navigate(tab: Tab) {
-    if (this.stepEditor) {
+    if (this.activeEditor) {
       this.requestStepExit(() => {
         this.navigate(tab);
       });
@@ -492,12 +498,12 @@ export class OccupiedPanel extends HTMLElement {
     this.renderView();
   }
   requestStepExit(action: () => void) {
-    const editor = this.stepEditor;
+    const editor = this.activeEditor;
     if (!editor) {
       action();
       return;
     }
-    if (hasStepChanges(editor)) {
+    if (this.hasEditorChanges) {
       this.pendingStepExit = action;
       this.flush();
       return;
@@ -517,6 +523,7 @@ export class OccupiedPanel extends HTMLElement {
   private finishStepExit(action: () => void) {
     this.pendingStepExit = null;
     this.stepEditor = null;
+    this.randomEditor = null;
     this.selectedStep = null;
     this.error = "";
     this.issues = [];
@@ -669,7 +676,7 @@ export class OccupiedPanel extends HTMLElement {
   Show a backend issue on the step editor field it belongs to.
   */
   focusIssue(issue: Issue) {
-    const editor = this.stepEditor;
+    const editor = this.activeEditor;
     if (!editor) {
       return;
     }
@@ -683,7 +690,9 @@ export class OccupiedPanel extends HTMLElement {
       );
       return;
     }
-    const field = editorField(path.slice(prefix.length), editor.form);
+    const field = this.randomEditor
+      ? randomEditorField(path.slice(prefix.length), this.randomEditor.form)
+      : editorField(path.slice(prefix.length), this.stepEditor!.form);
     editor.errors[field] = issue.message;
     this.renderView();
     this.shadowRoot
@@ -714,7 +723,7 @@ export class OccupiedPanel extends HTMLElement {
     const version = this.version,
       draft = copy(candidate || this.draft),
       expected = this.revision,
-      editor = this.stepEditor,
+      editor = this.activeEditor,
       submittedForm = editor ? copy(editor.form) : null;
     return this.run(async (epoch) => {
       const validation = await this.ws("editor_validate", { program: draft });
@@ -750,14 +759,20 @@ export class OccupiedPanel extends HTMLElement {
         return this.showIssues(result);
       }
       this.adopt({ ...this.document, ...result, needs_apply: false });
-      if (editor && this.stepEditor === editor) {
+      if (editor && this.activeEditor === editor) {
         this.draft = copy(result.program);
         this.dirty = false;
-        this.selectedStep = editor.id;
+        if (this.stepEditor) {
+          this.selectedStep = editor.id;
+        }
         editor.existing = true;
         // Future patches compare against what was actually saved. This also
         // preserves a user reverting a field while its previous value saves.
-        editor.original = submittedForm!;
+        if (this.randomEditor) {
+          this.randomEditor.original = submittedForm as RandomForm;
+        } else {
+          this.stepEditor!.original = submittedForm as StepForm;
+        }
         if (version !== this.version) {
           this.fail(
             this.t("Earlier changes saved. Your newer edits are still open."),
@@ -765,6 +780,7 @@ export class OccupiedPanel extends HTMLElement {
           return;
         }
         this.stepEditor = null;
+        this.randomEditor = null;
       }
       if (version === this.version) {
         this.draft = copy(result.program);
@@ -772,7 +788,9 @@ export class OccupiedPanel extends HTMLElement {
         this.renderView();
         if (editor) {
           this.shadowRoot
-            .getElementById(`step-card-${editor.id}`)
+            .getElementById(
+              `${this.tab === "random" ? "random" : "step"}-card-${editor.id}`,
+            )
             ?.focus({ preventScroll: true });
         }
       } else {
@@ -783,7 +801,7 @@ export class OccupiedPanel extends HTMLElement {
   async reloadSaved(discard = false) {
     if (
       this.busy ||
-      ((this.dirty || this.yamlDirty || this.stepEditor) && !discard)
+      ((this.dirty || this.yamlDirty || this.activeEditor) && !discard)
     ) {
       return;
     }
@@ -796,6 +814,7 @@ export class OccupiedPanel extends HTMLElement {
       this.adopt(doc);
       this.resetDraft();
       this.stepEditor = null;
+      this.randomEditor = null;
       this.renderView();
     });
   }
@@ -904,7 +923,7 @@ function isRevisionConflict(error: unknown) {
 /**
 Map a backend issue path inside a step to the step editor field.
 */
-function editorField(tail: Path, form: StepForm): string {
+function editorField(tail: Path, form: Pick<StepForm, "kind">): string {
   const has = (key: string) => tail.includes(key),
     head = tail[0];
   if (["name", "days", "entities", "data"].includes(String(head))) {
@@ -926,6 +945,29 @@ function editorField(tail: Path, form: StepForm): string {
     return "anchor";
   }
   return "name";
+}
+
+function randomEditorField(tail: Path, form: RandomForm): string {
+  const head = tail[0];
+  if (head === "start" || head === "end") {
+    if (tail.length === 1) {
+      return `${head}.${form[head].mode === "absolute" ? "start" : "anchor"}`;
+    }
+    return `${head}.${editorField(["timing", ...tail.slice(1)], form.on)}`;
+  }
+  if (head === "on" || head === "off") {
+    return `${head}.${editorField(tail.slice(1), form[head])}`;
+  }
+  return (
+    (
+      {
+        min_duration: "minDuration",
+        max_duration: "maxDuration",
+        count: "count",
+        days: "days",
+      } as Record<string, string>
+    )[String(head)] || "name"
+  );
 }
 
 if (!customElements.get("occupied-panel")) {

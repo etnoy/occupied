@@ -19,19 +19,33 @@ export interface Timing {
     end_offset?: string;
   };
 }
-export interface Step {
-  name?: string;
-  enabled?: boolean;
-  days?: string[];
-  timing: Timing;
+export interface Action {
   action: string;
   entities: string[];
   data?: Record<string, JsonValue>;
+}
+export interface Schedule {
+  name?: string;
+  enabled?: boolean;
+  days?: string[];
+}
+export interface Step extends Schedule, Action {
+  timing: Timing;
+}
+export interface RandomEvent extends Schedule {
+  start: Timing;
+  end: Timing;
+  min_duration?: string;
+  max_duration?: string;
+  count?: number;
+  on: Action;
+  off: Action;
 }
 export interface Program {
   schema_version?: number;
   name?: string;
   steps?: Record<string, Step>;
+  random?: Record<string, RandomEvent>;
 }
 export interface StepEntry extends Omit<Step, "name" | "days"> {
   id: string;
@@ -47,14 +61,16 @@ export interface TimingForm {
   startOffset: string | number;
   endOffset: string | number;
 }
-export interface StepForm {
-  name: string;
-  enabled: boolean;
+export interface ActionForm {
   kind: string;
   service: string;
   data: string;
   entities: string[];
   action: string;
+}
+export interface StepForm extends ActionForm {
+  name: string;
+  enabled: boolean;
   days: string[];
   timing: TimingForm;
 }
@@ -69,6 +85,54 @@ export interface StepEditor {
   candidatePath?: Path;
   showEndTime?: boolean;
   showEndOffset?: boolean;
+}
+export interface RandomEntry extends RandomEvent {
+  id: string;
+  name: string;
+  path: ["random", string];
+  days: string[];
+}
+export interface RandomForm {
+  name: string;
+  enabled: boolean;
+  days: string[];
+  start: TimingForm;
+  end: TimingForm;
+  minDuration: string;
+  maxDuration: string;
+  count: string;
+  on: ActionForm;
+  off: ActionForm;
+  sameEntities: boolean;
+}
+export interface RandomEditorState {
+  id: string;
+  existing: boolean;
+  form: RandomForm;
+  original: RandomForm;
+  errors: FieldErrors;
+  candidatePath?: Path;
+  startOptions: Pick<StepEditor, "showEndTime" | "showEndOffset">;
+  endOptions: Pick<StepEditor, "showEndTime" | "showEndOffset">;
+}
+export interface EditorContext {
+  editor: Pick<StepEditor, "id" | "existing" | "errors">;
+  t: Translate;
+  changed: (key: string) => void;
+  fieldPrefix?: string;
+}
+export interface ActionEditorContext extends EditorContext {
+  form: ActionForm;
+}
+export interface TimingEditorContext extends EditorContext {
+  editor: Pick<
+    StepEditor,
+    "id" | "existing" | "errors" | "showEndTime" | "showEndOffset"
+  >;
+  form: Pick<StepForm, "days">;
+  time: TimingForm;
+  stepId?: string;
+  refresh: (key?: string) => void;
 }
 export interface TimeSource {
   value: string;
@@ -245,7 +309,7 @@ export interface HaGenericPicker extends HTMLElement {
   required: boolean;
 }
 // Primary navigation tabs plus the secondary pages reached from them.
-export type Tab = "steps" | "settings" | "preview";
+export type Tab = "steps" | "random" | "settings" | "preview";
 declare global {
   interface HTMLElementTagNameMap {
     "occupied-panel": import("./occupied-panel.js").OccupiedPanel;

@@ -331,6 +331,26 @@ export const styles = `
   .step-card.step-disabled {
     border-style: dashed;
   }
+  .step-card.step-warning {
+    border-color: var(--warning-color, #ffa600);
+    background: color-mix(in srgb, var(--warning-color, #ffa600) 10%, var(--card-background-color, #fff));
+  }
+  .step-card.step-warning .step-row:not(:disabled):hover {
+    background: color-mix(in srgb, var(--warning-color, #ffa600) 18%, var(--card-background-color, #fff));
+  }
+  .step-row-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: var(--warning-color, #ffa600);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+  .step-row-warning ha-icon {
+    --mdc-icon-size: 20px;
+    flex-shrink: 0;
+  }
+  .step-warning-message { display: block; }
   .step-card.step-disabled .step-row {
     color: var(--secondary-text-color, #596773);
   }

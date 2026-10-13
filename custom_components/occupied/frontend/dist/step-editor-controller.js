@@ -87,6 +87,7 @@ export function createStepEditorContext(panel) {
     time: new Proxy(time, {}),
     t,
     editing,
+    stepId: editor.id,
     refresh,
     changed,
     submit,

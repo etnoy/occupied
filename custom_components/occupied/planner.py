@@ -9,7 +9,7 @@ from datetime import date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from .models import WEEKDAYS, Program, Step
+from .models import WEEKDAYS, Action, Program, max_plan_events
 from .time_utils import PlanningContext, SimulationDay
 from .validation import (
     Issue,
@@ -20,7 +20,7 @@ from .validation import (
     validate_program,
 )
 
-PLANNER_VERSION = 5
+PLANNER_VERSION = 6
 
 
 class RandomStreams:
@@ -44,7 +44,7 @@ class ResolvedAction:
         return {"action": self.action, "entities": list(self.targets), "data": self.data.copy()}
 
 
-def resolve_actions(step: Step) -> tuple[ResolvedAction, ...]:
+def resolve_actions(step: Action) -> tuple[ResolvedAction, ...]:
     names = (
         [step.action]
         if "." in step.action
@@ -84,6 +84,7 @@ class PlanEvent:
             "local_time": self.at.astimezone(zone).isoformat() if zone else self.at.isoformat(),
             "source_id": self.source_id,
             "kind": self.kind,
+            "sequence": self.sequence,
             "action": self.action.to_dict(),
         }
 
@@ -127,6 +128,10 @@ def generate_plan(
     program: Program, simulation_date: date, seed, *, context=None, source_revision=None
 ):
     program = validate_program(program)
+    from .runtime_planning import MAX_EVENTS
+
+    if max_plan_events(program) > MAX_EVENTS:
+        raise ProgramError([Issue("runtime_budget", "Program exceeds the daily event budget")])
     context = context or PlanningContext()
     issues, times, events = [], {}, []
     day = SimulationDay(program, simulation_date, context, issues)
@@ -144,46 +149,89 @@ def generate_plan(
                 )
             )
             continue
-        source = step.timing.relative_to
-        if source and source.step:
-            if source.step not in times:
-                issues.append(
-                    Issue(
-                        "anchor_skipped",
-                        f"{source.step} did not occur; {key} skipped",
-                        path + ("relative_to",),
-                        "info",
-                    )
-                )
-                continue
-            bounds = (
-                times[source.step] + timedelta(seconds=source.start_offset),
-                times[source.step] + timedelta(seconds=source.latest_offset),
-            )
-        elif source:
-            bounds = (
-                day.sun_bounds(source, path + ("relative_to",))
-                if source.sun
-                else day.entity_bounds(source, path + ("relative_to",))
-            )
-        else:
-            bounds = day.clock_bounds(step.timing.absolute_time, path + ("absolute_time",))
-        if bounds is None:
+        start = sample_timing(day, step.timing, times, path, streams.rng("step", key, "start"))
+        if start is None:
             continue
-        low, high = bounds
-        start = (
-            low
-            + timedelta(
-                seconds=streams.rng("step", key, "start").uniform(0, (high - low).total_seconds())
-            )
-            if low != high
-            else low
-        )
         times[key] = start
         for index, action in enumerate(resolve_actions(step)):
             events.append(
                 PlanEvent(f"{simulation_date}:step:{key}:{index}", start, key, action, index)
             )
+    for key, event in sorted(program.random.items()):
+        path = ("random", key)
+        if not event.enabled or WEEKDAYS[simulation_date.weekday()] not in event.days:
+            issues.append(
+                Issue(
+                    "random_skipped",
+                    f"{key} is disabled or not selected for this date",
+                    path,
+                    "info",
+                )
+            )
+            continue
+        start = sample_timing(
+            day, event.start, times, path + ("start",), streams.rng("random", key, "start")
+        )
+        end = sample_timing(
+            day, event.end, times, path + ("end",), streams.rng("random", key, "end")
+        )
+        if start is None or end is None:
+            continue
+        source = event.end.relative_to
+        recurring_end = event.end.absolute_time or (
+            source
+            and (
+                source.sun
+                or (
+                    source.entity
+                    and context.time_sources.get(source.entity, {}).get("kind") == "time"
+                )
+            )
+        )
+        if end < start and recurring_end:
+            next_day = SimulationDay(program, simulation_date + timedelta(days=1), context, issues)
+            end = sample_timing(
+                next_day, event.end, times, path + ("end",), streams.rng("random", key, "end")
+            )
+            if end is None:
+                continue
+        span = (end - start).total_seconds()
+        if span <= 0:
+            issues.append(
+                Issue("random_window", "Window end must be after its start", path + ("end",))
+            )
+            continue
+        if event.min_duration > span:
+            issues.append(
+                Issue(
+                    "random_window",
+                    "Minimum duration does not fit inside this window",
+                    path + ("min_duration",),
+                )
+            )
+            continue
+        for occurrence in range(event.count):
+            duration = streams.rng("random", key, occurrence, "duration").uniform(
+                event.min_duration, min(event.max_duration, span)
+            )
+            at = start + timedelta(
+                seconds=streams.rng("random", key, occurrence, "time").uniform(0, span - duration)
+            )
+            for phase, when, configured in (
+                ("start", at, event.on),
+                ("end", at + timedelta(seconds=duration), event.off),
+            ):
+                for index, action in enumerate(resolve_actions(configured)):
+                    events.append(
+                        PlanEvent(
+                            f"{simulation_date}:random:{key}:{occurrence}:{phase}:{index}",
+                            when,
+                            key,
+                            action,
+                            occurrence * 2 + (phase == "end"),
+                            f"random_{phase}",
+                        )
+                    )
     identity = {
         "program": behavior_hash(program),
         "timezone": day.zone.key,
@@ -202,6 +250,41 @@ def generate_plan(
         tuple(sorted(events, key=lambda e: e.order_key)),
         times,
         tuple(issues),
+    )
+
+
+def sample_timing(day, timing, times, path, rng):
+    source = timing.relative_to
+    if source and source.step:
+        if source.step not in times:
+            day.issues.append(
+                Issue(
+                    "anchor_skipped",
+                    f"{source.step} did not occur; item skipped",
+                    path + ("relative_to",),
+                    "info",
+                )
+            )
+            return None
+        bounds = (
+            times[source.step] + timedelta(seconds=source.start_offset),
+            times[source.step] + timedelta(seconds=source.latest_offset),
+        )
+    elif source:
+        bounds = (
+            day.sun_bounds(source, path + ("relative_to",))
+            if source.sun
+            else day.entity_bounds(source, path + ("relative_to",))
+        )
+    else:
+        bounds = day.clock_bounds(timing.absolute_time, path + ("absolute_time",))
+    if bounds is None:
+        return None
+    low, high = bounds
+    return (
+        low + timedelta(seconds=rng.uniform(0, (high - low).total_seconds()))
+        if low != high
+        else low
     )
 
 
@@ -228,7 +311,7 @@ def preview_calendar_dates(program, dates, seed, *, context=None):
     if not 1 <= len(dates) <= 31:
         raise ProgramError([Issue("preview_dates", "Preview between one and 31 dates")])
     sources = sorted({source for day in dates for source in runtime_dates(program, day)})
-    maximum = sum(len(step.entities) for step in program.steps.values() if step.enabled)
+    maximum = max_plan_events(program)
     if len(sources) * maximum > MAX_CACHED_EVENTS:
         raise ProgramError([Issue("preview_budget", "Preview exceeds its bounded event budget")])
     plans = {}

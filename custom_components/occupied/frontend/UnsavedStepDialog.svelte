@@ -20,7 +20,11 @@
   >
     <h2 id="step-exit-title">{t("Unsaved changes")}</h2>
     <p id="step-exit-description">
-      {t("This step has unsaved changes. Discard them and continue?")}
+      {t(
+        panel.randomEditor
+          ? "This random event has unsaved changes. Discard them and continue?"
+          : "This step has unsaved changes. Discard them and continue?",
+      )}
     </p>
     <div class="step-delete-actions">
       <button

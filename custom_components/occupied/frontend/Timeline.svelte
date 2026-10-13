@@ -6,6 +6,8 @@
   import { formatScheduleDate } from "./time-format.js";
   import { stamp } from "./timeline.js";
   import { stepEntries } from "./step-model.js";
+  import { randomEntries } from "./random-model.js";
+  import type { PlannedEvent } from "./types.js";
   let {
     plan,
     schedulePlans,
@@ -30,20 +32,29 @@
     showLoading?: boolean;
   } = $props();
   let labels = $derived(
-    new Map(
-      stepEntries(program || {}).map((resource) => [
-        resource.id,
-        resource.name,
-      ]),
-    ),
+    new Map([
+      ...stepEntries(program || {}).map(
+        (resource) => [`step:${resource.id}`, resource.name] as const,
+      ),
+      ...randomEntries(program || {}).map(
+        (resource) => [`random:${resource.id}`, resource.name] as const,
+      ),
+    ]),
   );
+  function eventLabel(event: PlannedEvent) {
+    return (
+      labels.get(
+        `${event.kind.startsWith("random_") ? "random" : "step"}:${event.source_id}`,
+      ) || event.source_id
+    );
+  }
   let query = $state("");
   let page = $state(0);
   let filtered = $derived(
     plan?.events.filter(
       (event) =>
         JSON.stringify(event).toLowerCase().includes(query) ||
-        (labels.get(event.source_id) || "").toLowerCase().includes(query),
+        eventLabel(event).toLowerCase().includes(query),
     ) ?? [],
   );
   let currentPage = $derived(
@@ -96,7 +107,7 @@
               <tbody>
                 {#each filtered.slice(currentPage * 50, currentPage * 50 + 50) as event}
                   <tr>
-                    {#each [stamp(event.time, plan.timezone, locale), `${labels.get(event.source_id) || event.source_id} · ${event.kind}`, event.action.action, event.action.entities.join(", ")] as value}
+                    {#each [stamp(event.time, plan.timezone, locale), `${eventLabel(event)} · ${t(event.kind === "random_start" ? "Random start" : event.kind === "random_end" ? "Random end" : event.kind)}`, event.action.action, event.action.entities.join(", ")] as value}
                       <td>{value}</td>
                     {/each}
                   </tr>

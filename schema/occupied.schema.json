@@ -28,6 +28,38 @@
       "title": "AbsoluteTime",
       "type": "object"
     },
+    "Action": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "pattern": "^(?:turn_on|turn_off|[a-z_][a-z0-9_]*\\.[a-z_][a-z0-9_]*)$",
+          "title": "Action",
+          "type": "string"
+        },
+        "entities": {
+          "items": {
+            "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Entities",
+          "type": "array"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        }
+      },
+      "required": [
+        "action",
+        "entities"
+      ],
+      "title": "Action",
+      "type": "object"
+    },
     "Day": {
       "enum": [
         "mon",
@@ -41,6 +73,84 @@
       "type": "string"
     },
     "JsonValue": {},
+    "RandomEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "days": {
+          "default": [
+            "mon",
+            "tue",
+            "wed",
+            "thu",
+            "fri",
+            "sat",
+            "sun"
+          ],
+          "items": {
+            "$ref": "#/$defs/Day"
+          },
+          "minItems": 1,
+          "title": "Days",
+          "type": "array"
+        },
+        "start": {
+          "$ref": "#/$defs/Timing"
+        },
+        "end": {
+          "$ref": "#/$defs/Timing"
+        },
+        "min_duration": {
+          "default": "5m",
+          "gt": 0,
+          "title": "Min Duration",
+          "type": "string"
+        },
+        "max_duration": {
+          "default": "15m",
+          "gt": 0,
+          "title": "Max Duration",
+          "type": "string"
+        },
+        "count": {
+          "default": 3,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Count",
+          "type": "integer"
+        },
+        "on": {
+          "$ref": "#/$defs/Action"
+        },
+        "off": {
+          "$ref": "#/$defs/Action"
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "on",
+        "off"
+      ],
+      "title": "RandomEvent",
+      "type": "object"
+    },
     "RelativeTo": {
       "additionalProperties": false,
       "oneOf": [
@@ -210,6 +320,27 @@
     "Step": {
       "additionalProperties": false,
       "properties": {
+        "action": {
+          "pattern": "^(?:turn_on|turn_off|[a-z_][a-z0-9_]*\\.[a-z_][a-z0-9_]*)$",
+          "title": "Action",
+          "type": "string"
+        },
+        "entities": {
+          "items": {
+            "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Entities",
+          "type": "array"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        },
         "name": {
           "anyOf": [
             {
@@ -246,33 +377,12 @@
         },
         "timing": {
           "$ref": "#/$defs/Timing"
-        },
-        "action": {
-          "pattern": "^(?:turn_on|turn_off|[a-z_][a-z0-9_]*\\.[a-z_][a-z0-9_]*)$",
-          "title": "Action",
-          "type": "string"
-        },
-        "entities": {
-          "items": {
-            "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
-            "type": "string"
-          },
-          "minItems": 1,
-          "title": "Entities",
-          "type": "array"
-        },
-        "data": {
-          "additionalProperties": {
-            "$ref": "#/$defs/JsonValue"
-          },
-          "title": "Data",
-          "type": "object"
         }
       },
       "required": [
-        "timing",
         "action",
-        "entities"
+        "entities",
+        "timing"
       ],
       "title": "Step",
       "type": "object"
@@ -369,6 +479,15 @@
         }
       },
       "title": "Steps",
+      "type": "object"
+    },
+    "random": {
+      "patternProperties": {
+        "^[a-z][a-z0-9_-]*$": {
+          "$ref": "#/$defs/RandomEvent"
+        }
+      },
+      "title": "Random",
       "type": "object"
     }
   },

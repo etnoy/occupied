@@ -183,11 +183,23 @@ class Timing(Model):
         return self
 
 
-class Step(Model):
+class Schedule(Model):
     name: str | None = None
     enabled: Annotated[bool, Field(strict=True)] = True
     days: Annotated[tuple[Day, ...], Field(min_length=1)] = WEEKDAYS
-    timing: Timing
+
+    @field_validator("name")
+    @classmethod
+    def optional_title(cls, value):
+        return value.strip() or None if value is not None else None
+
+    @field_validator("days")
+    @classmethod
+    def canonical_days(cls, value):
+        return tuple(day for day in WEEKDAYS if day in value)
+
+
+class Action(Model):
     action: Annotated[
         str, StringConstraints(pattern=r"^(?:turn_on|turn_off|[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*)$")
     ]
@@ -200,26 +212,38 @@ class Step(Model):
         json.dumps(value, allow_nan=False)
         return value
 
-    @field_validator("name")
-    @classmethod
-    def optional_title(cls, value):
-        return value.strip() or None if value is not None else None
-
     @field_validator("entities")
     @classmethod
     def unique_entities(cls, value):
         return tuple(sorted(set(value)))
 
-    @field_validator("days")
+
+class Step(Schedule, Action):
+    timing: Timing
+
+
+class RandomEvent(Schedule):
+    start: Timing
+    end: Timing
+    min_duration: PositiveDuration = "5m"
+    max_duration: PositiveDuration = "15m"
+    count: Annotated[int, Field(strict=True, ge=1, le=1000)] = 3
+    on: Action
+    off: Action
+
+    @field_validator("max_duration")
     @classmethod
-    def canonical_days(cls, value):
-        return tuple(day for day in WEEKDAYS if day in value)
+    def ordered_durations(cls, value, info):
+        if value < info.data.get("min_duration", 0):
+            raise ValueError("Maximum duration must be at least the minimum duration")
+        return value
 
 
 class Program(Model):
     schema_version: Literal[1]
     name: str
     steps: dict[Identifier, Step] = Field(default_factory=dict)
+    random: dict[Identifier, RandomEvent] = Field(default_factory=dict)
 
     @field_validator("schema_version", mode="before")
     @classmethod
@@ -238,17 +262,43 @@ class Handover(Model):
 
 
 def controlled_entities(program: Program) -> frozenset[str]:
-    return frozenset(
-        entity for step in program.steps.values() if step.enabled for entity in step.entities
-    )
+    return frozenset(entity for _, action in program_actions(program) for entity in action.entities)
 
 
 def projectable_lights(program: Program) -> frozenset[str]:
     return frozenset(
         entity
-        for step in program.steps.values()
-        if step.enabled
-        and step.action in {"turn_on", "turn_off", "light.turn_on", "light.turn_off"}
-        for entity in step.entities
+        for _, action in program_actions(program)
+        if action.action in {"turn_on", "turn_off", "light.turn_on", "light.turn_off"}
+        for entity in action.entities
         if entity.startswith("light.")
+    )
+
+
+def program_actions(program: Program, *, enabled_only=True):
+    """Visit every configured action with its editor path."""
+    for key, step in program.steps.items():
+        if step.enabled or not enabled_only:
+            yield ("steps", key), step
+    for key, event in program.random.items():
+        if event.enabled or not enabled_only:
+            yield ("random", key, "on"), event.on
+            yield ("random", key, "off"), event.off
+
+
+def program_timings(program: Program, *, enabled_only=True):
+    for key, step in program.steps.items():
+        if step.enabled or not enabled_only:
+            yield ("steps", key, "timing"), step.timing
+    for key, event in program.random.items():
+        if event.enabled or not enabled_only:
+            yield ("random", key, "start"), event.start
+            yield ("random", key, "end"), event.end
+
+
+def max_plan_events(program: Program) -> int:
+    return sum(len(step.entities) for step in program.steps.values() if step.enabled) + sum(
+        event.count * (len(event.on.entities) + len(event.off.entities))
+        for event in program.random.values()
+        if event.enabled
     )

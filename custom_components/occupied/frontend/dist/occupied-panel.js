@@ -123,7 +123,7 @@ function set(object, path, value) {
     parent[last] = value;
   }
 }
-function identifier(program, name) {
+function identifier(program, name, collection = "steps") {
   let base = name
     .toLowerCase()
     .normalize("NFKD")
@@ -133,7 +133,7 @@ function identifier(program, name) {
     base = "item_" + base;
   }
   base ||= "item";
-  const used = new Set(Object.keys(program.steps || {}));
+  const used = new Set(Object.keys(program[collection] || {}));
   let id = base,
     n = 2;
   while (used.has(id)) {
@@ -142,15 +142,23 @@ function identifier(program, name) {
   return id;
 }
 function references(program, id) {
-  return Object.entries(program.steps || {})
+  const result = Object.entries(program.steps || {})
     .filter(([, step]) => step.timing.relative_to?.step === id)
     .map(([key2]) => ["steps", key2, "timing", "relative_to", "step"]);
+  for (const [key2, event2] of Object.entries(program.random || {})) {
+    for (const edge of ["start", "end"]) {
+      if (event2[edge].relative_to?.step === id) {
+        result.push(["random", key2, edge, "relative_to", "step"]);
+      }
+    }
+  }
+  return result;
 }
 function removeStep(program, path) {
   const id = String(path[1]);
   if (references(program, id).length > 0) {
     throw new Error(
-      "Other steps depend on this step. Change their timing first.",
+      "Steps or random events depend on this step. Change their timing first.",
     );
   }
   delete program.steps?.[id];
@@ -236,6 +244,9 @@ function minutes(value) {
     0,
   );
   return text2.startsWith("-") ? -total : total;
+}
+function durationSeconds(value) {
+  return !value || value === "0" ? NaN : minutes(value) * 60;
 }
 function timingForm(timing = {}) {
   const clock = timing.absolute_time,
@@ -769,6 +780,26 @@ var styles = `
   .step-card.step-disabled {
     border-style: dashed;
   }
+  .step-card.step-warning {
+    border-color: var(--warning-color, #ffa600);
+    background: color-mix(in srgb, var(--warning-color, #ffa600) 10%, var(--card-background-color, #fff));
+  }
+  .step-card.step-warning .step-row:not(:disabled):hover {
+    background: color-mix(in srgb, var(--warning-color, #ffa600) 18%, var(--card-background-color, #fff));
+  }
+  .step-row-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: var(--warning-color, #ffa600);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+  .step-row-warning ha-icon {
+    --mdc-icon-size: 20px;
+    flex-shrink: 0;
+  }
+  .step-warning-message { display: block; }
   .step-card.step-disabled .step-row {
     color: var(--secondary-text-color, #596773);
   }
@@ -1147,6 +1178,43 @@ var sv = {
   "No matching steps or time sources.":
     "Inga matchande steg eller tidsk\xE4llor.",
   Steps: "Steg",
+  Random: "Slumpm\xE4ssigt",
+  "Random activity": "Slumpm\xE4ssig aktivitet",
+  "Random event": "Slumpm\xE4ssig h\xE4ndelse",
+  "Random events": "Slumpm\xE4ssiga h\xE4ndelser",
+  "Random event name": "H\xE4ndelsens namn",
+  "Create your first random event":
+    "Skapa din f\xF6rsta slumpm\xE4ssiga h\xE4ndelse",
+  "Create random event": "Skapa slumpm\xE4ssig h\xE4ndelse",
+  "Save random event": "Spara slumpm\xE4ssig h\xE4ndelse",
+  "Delete random event": "Ta bort slumpm\xE4ssig h\xE4ndelse",
+  "Delete random event?": "Ta bort slumpm\xE4ssig h\xE4ndelse?",
+  "This removes the random event and all its future occurrences.":
+    "Detta tar bort den slumpm\xE4ssiga h\xE4ndelsen och alla framtida f\xF6rekomster.",
+  "This random event has unsaved changes. Discard them and continue?":
+    "H\xE4ndelsen har osparade \xE4ndringar. Kasta dem och forts\xE4tta?",
+  "Run actions at random times within a window. Choose how often they run and how long each occurrence lasts.":
+    "K\xF6r \xE5tg\xE4rder vid slumpm\xE4ssiga tider inom ett tidsf\xF6nster. V\xE4lj hur ofta de k\xF6rs och hur l\xE4nge varje tillf\xE4lle varar.",
+  "Choose a window, a duration, and actions for the start and end of each occurrence.":
+    "V\xE4lj ett tidsf\xF6nster, en varaktighet och \xE5tg\xE4rder f\xF6r b\xF6rjan och slutet av varje tillf\xE4lle.",
+  "Window starts": "Tidsf\xF6nstret b\xF6rjar",
+  "Window ends": "Tidsf\xF6nstret slutar",
+  "Frequency and duration": "Frekvens och varaktighet",
+  "Times per window": "Antal g\xE5nger per tidsf\xF6nster",
+  "times per window": "g\xE5nger per tidsf\xF6nster",
+  "Minimum duration": "Minsta varaktighet",
+  "Maximum duration": "L\xE4ngsta varaktighet",
+  "Use durations like 5m, 30s, or 1h. Occurrences may overlap; every end action stays inside the window.":
+    "Ange varaktigheter som 5m, 30s eller 1h. Tillf\xE4llen kan \xF6verlappa; varje slut\xE5tg\xE4rd sker inom tidsf\xF6nstret.",
+  "At the start": "Vid b\xF6rjan",
+  "At the end": "Vid slutet",
+  "Start action": "Start\xE5tg\xE4rd",
+  "End action": "Slut\xE5tg\xE4rd",
+  "Start entities": "Entiteter vid b\xF6rjan",
+  "End entities": "Entiteter vid slutet",
+  "Use the same entities": "Anv\xE4nd samma entiteter",
+  "Random start": "Slumpm\xE4ssig start",
+  "Random end": "Slumpm\xE4ssigt slut",
   "Solar events": "Solh\xE4ndelser",
   "Home Assistant times": "Home Assistant-tider",
   Calendars: "Kalendrar",
@@ -2722,11 +2790,11 @@ var Batch = class _Batch {
         this.#unlink();
         infinite_loop_guard();
       }
-      for (const root18 of this.#resolve()) {
+      for (const root21 of this.#resolve()) {
         try {
-          this.#traverse(root18, effects, render_effects);
+          this.#traverse(root21, effects, render_effects);
         } catch (e) {
-          reset_all(root18);
+          reset_all(root21);
           if (!this.#is_deferred()) this.discard();
           throw e;
         }
@@ -2805,9 +2873,9 @@ var Batch = class _Batch {
    * @param {Effect[]} effects
    * @param {Effect[]} render_effects
    */
-  #traverse(root18, effects, render_effects) {
-    root18.f ^= CLEAN;
-    var effect2 = root18.first;
+  #traverse(root21, effects, render_effects) {
+    root21.f ^= CLEAN;
+    var effect2 = root21.first;
     while (effect2 !== null) {
       var flags2 = effect2.f;
       var is_branch = (flags2 & (BRANCH_EFFECT | ROOT_EFFECT)) !== 0;
@@ -3071,8 +3139,8 @@ var Batch = class _Batch {
         }
         if (batch.#scheduled.length > 0 && !batch.#decrement_queued) {
           batch.apply();
-          for (var root18 of batch.#resolve()) {
-            batch.#traverse(root18, [], []);
+          for (var root21 of batch.#resolve()) {
+            batch.#traverse(root21, [], []);
           }
         }
         batch.deactivate();
@@ -4691,7 +4759,7 @@ function is_dirty(reaction) {
 function schedule_possible_effect_self_invalidation(
   signal,
   effect2,
-  root18 = true,
+  root21 = true,
 ) {
   var reactions = signal.reactions;
   if (reactions === null) return;
@@ -4712,7 +4780,7 @@ function schedule_possible_effect_self_invalidation(
         false,
       );
     } else if (effect2 === reaction) {
-      if (root18) {
+      if (root21) {
         set_signal_status(reaction, DIRTY);
       } else if ((reaction.f & CLEAN) !== 0) {
         set_signal_status(reaction, MAYBE_DIRTY);
@@ -6944,14 +7012,14 @@ function snippet(node, get_snippet, ...args) {
 function append_styles(anchor, css) {
   effect(() => {
     anchor = active_effect?.parent?.nodes?.start ?? anchor;
-    var root18 = anchor.getRootNode();
+    var root21 = anchor.getRootNode();
     var target =
       /** @type {ShadowRoot} */
-      root18.host
+      root21.host
         ? /** @type {ShadowRoot} */
-          root18
+          root21
         : /** @type {Document} */
-          (root18.head ?? /** @type {Document} */ root18.ownerDocument.head);
+          (root21.head ?? /** @type {Document} */ root21.ownerDocument.head);
     if (!target.querySelector("#" + css.hash)) {
       const style = create_element("style");
       style.id = css.hash;
@@ -8355,21 +8423,10 @@ function timeSourceChoices(program, id, catalog = {}, t = (value) => value) {
 }
 function stepEditor(program, entry, parent) {
   const source2 = entry || parent;
-  const action2 = source2?.action;
-  let kind = "entities";
-  if (action2 === "scene.turn_on") {
-    kind = "scene";
-  } else if (action2?.includes(".")) {
-    kind = "service";
-  }
   const form = {
+    ...actionForm(source2),
     name: entry ? program.steps?.[entry.id]?.name || "" : "",
     enabled: entry?.enabled !== false,
-    kind,
-    service: source2?.action || "homeassistant.turn_on",
-    data: JSON.stringify(source2?.data || {}, null, 2),
-    entities: [...(source2?.entities || [])],
-    action: action2 === "turn_off" ? "turn_off" : "turn_on",
     days: [...(source2?.days || days)],
     timing: timingForm(entry?.timing),
   };
@@ -8389,12 +8446,38 @@ function stepEditor(program, entry, parent) {
     errors: {},
   };
 }
+function actionForm(source2) {
+  const action2 = source2?.action;
+  let kind = "entities";
+  if (action2 === "scene.turn_on") {
+    kind = "scene";
+  } else if (action2?.includes(".")) {
+    kind = "service";
+  }
+  return {
+    kind,
+    service: source2?.action || "homeassistant.turn_on",
+    data: JSON.stringify(source2?.data || {}, null, 2),
+    entities: [...(source2?.entities || [])],
+    action: action2 === "turn_off" ? "turn_off" : "turn_on",
+  };
+}
 function hasStepChanges(editor) {
   return JSON.stringify(editor.form) !== JSON.stringify(editor.original);
 }
 function editorErrors(program, editor) {
   const { form, id } = editor,
-    errors = {};
+    errors = {
+      ...actionErrors(form),
+      ...timingErrors(program, form.timing, id),
+    };
+  if (form.days.length === 0) {
+    errors.days = "Choose at least one day.";
+  }
+  return errors;
+}
+function actionErrors(form) {
+  const errors = {};
   if (form.entities.length === 0) {
     errors.entities =
       form.kind === "scene"
@@ -8432,10 +8515,10 @@ function editorErrors(program, editor) {
       errors.data = "Service data must be a JSON object.";
     }
   }
-  if (form.days.length === 0) {
-    errors.days = "Choose at least one day.";
-  }
-  const time = form.timing;
+  return errors;
+}
+function timingErrors(program, time, id) {
+  const errors = {};
   const clockPattern = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
   if (time.mode === "absolute") {
     if (!clockPattern.test(time.start)) {
@@ -8511,28 +8594,51 @@ function buildStep(program, editor) {
   }
   const next2 = copy(program),
     { form } = editor;
+  (next2.steps ||= {})[editor.id] = {
+    ...(form.name.trim() && { name: form.name.trim() }),
+    ...(!form.enabled && { enabled: false }),
+    days: [...form.days],
+    timing: formTiming(form.timing),
+    ...buildAction(form),
+  };
+  return next2;
+}
+function buildAction(form) {
   let action2 = form.action;
   if (form.kind === "scene") {
     action2 = "scene.turn_on";
   } else if (form.kind === "service") {
     action2 = form.service;
   }
-  (next2.steps ||= {})[editor.id] = {
-    ...(form.name.trim() && { name: form.name.trim() }),
-    ...(!form.enabled && { enabled: false }),
-    days: [...form.days],
-    timing: formTiming(form.timing),
+  return {
     action: action2,
     entities: sorted(form.entities),
     ...(form.kind !== "entities" && { data: JSON.parse(form.data) }),
   };
-  return next2;
 }
 function dependentNames(program, id) {
   const paths = references(program, id);
-  return stepEntries(program)
-    .filter((e) => paths.some((p) => p[1] === e.id))
-    .map((e) => e.name);
+  return [
+    ...stepEntries(program)
+      .filter((e) => paths.some((p) => p[0] === "steps" && p[1] === e.id))
+      .map((e) => e.name),
+    ...Object.entries(program.random || {})
+      .filter(([key2]) => paths.some((p) => p[0] === "random" && p[1] === key2))
+      .map(([key2, event2]) => event2.name || key2),
+  ];
+}
+
+// custom_components/occupied/frontend/step-issues.ts
+function warningStepId(issue, entries) {
+  if (issue.severity !== "warning") {
+    return;
+  }
+  return entries.find((entry) =>
+    issue.model_path
+      ? entry.path.every((key2, index2) => issue.model_path?.[index2] === key2)
+      : issue.path === `$.steps.${entry.id}` ||
+        issue.path?.startsWith(`$.steps.${entry.id}.`),
+  )?.id;
 }
 
 // custom_components/occupied/frontend/step-editor-controller.ts
@@ -8620,6 +8726,7 @@ function createStepEditorContext(panel) {
     time: new Proxy(time, {}),
     t,
     editing,
+    stepId: editor.id,
     refresh,
     changed,
     submit,
@@ -9325,6 +9432,7 @@ delegate(["click", "keydown"]);
 var root4 = from_html(`<p class="error" role="alert"> </p>`);
 function FieldError($$anchor, $$props) {
   push($$props, true);
+  let fieldPrefix = prop($$props, "fieldPrefix", 3, "");
   var fragment = comment();
   var node = first_child(fragment);
   {
@@ -9332,8 +9440,12 @@ function FieldError($$anchor, $$props) {
       var p = root4();
       var text2 = only_child(p, true);
       template_effect(() => {
-        set_attribute2(p, "id", `step-error-${$$props.key}`);
-        set_attribute2(p, "data-builder-error", $$props.key);
+        set_attribute2(p, "id", `step-error-${fieldPrefix()}${$$props.key}`);
+        set_attribute2(
+          p,
+          "data-builder-error",
+          `${fieldPrefix()}${$$props.key}`,
+        );
         set_text(text2, $$props.errors[$$props.key]);
       });
       append($$anchor2, p);
@@ -9360,12 +9472,14 @@ function EditorField($$anchor, $$props) {
   let editor = user_derived(() => $$props.context.editor),
     t = user_derived(() => $$props.context.t),
     changed = user_derived(() => $$props.context.changed);
-  let id = user_derived(() => `step-${$$props.key}`);
+  let fieldPrefix = user_derived(() => $$props.context.fieldPrefix || "");
+  let field = user_derived(() => `${get(fieldPrefix)}${$$props.key}`);
+  let id = user_derived(() => `step-${get(field)}`);
   let invalid = user_derived(() =>
     get(editor).errors[$$props.key] ? true : void 0,
   );
   let described = user_derived(() =>
-    get(editor).errors[$$props.key] ? `step-error-${$$props.key}` : void 0,
+    get(editor).errors[$$props.key] ? `step-error-${get(field)}` : void 0,
   );
   let nativeTime = user_derived(() => options().type === "time");
   function input(event2) {
@@ -9376,7 +9490,7 @@ function EditorField($$anchor, $$props) {
     }
     $$props.update(String(control.value ?? ""));
     get(changed)($$props.key);
-    if (options().render) focusEditor($$props.panel, $$props.key);
+    if (options().render) focusEditor($$props.panel, get(field));
   }
   var div = root_6();
   var node = child(div);
@@ -9410,7 +9524,7 @@ function EditorField($$anchor, $$props) {
         set_custom_element_data(ha_selector, "id", get(id)),
       );
       template_effect(() =>
-        set_custom_element_data(ha_selector, "data-builder-field", $$props.key),
+        set_custom_element_data(ha_selector, "data-builder-field", get(field)),
       );
       template_effect(
         ($0) => set_custom_element_data(ha_selector, "aria-label", $0),
@@ -9473,7 +9587,7 @@ function EditorField($$anchor, $$props) {
       template_effect(
         ($0, $1) => {
           set_attribute2(select, "id", get(id));
-          set_attribute2(select, "data-builder-field", $$props.key);
+          set_attribute2(select, "data-builder-field", get(field));
           set_attribute2(select, "aria-label", $0);
           set_attribute2(select, "aria-invalid", get(invalid));
           set_attribute2(select, "aria-describedby", get(described));
@@ -9496,7 +9610,7 @@ function EditorField($$anchor, $$props) {
       template_effect(
         ($0, $1) => {
           set_attribute2(textarea, "id", get(id));
-          set_attribute2(textarea, "data-builder-field", $$props.key);
+          set_attribute2(textarea, "data-builder-field", get(field));
           set_attribute2(textarea, "aria-label", $0);
           set_attribute2(textarea, "aria-invalid", get(invalid));
           set_attribute2(textarea, "aria-describedby", get(described));
@@ -9524,7 +9638,7 @@ function EditorField($$anchor, $$props) {
       template_effect(
         ($0, $1) => {
           set_attribute2(input_1, "id", get(id));
-          set_attribute2(input_1, "data-builder-field", $$props.key);
+          set_attribute2(input_1, "data-builder-field", get(field));
           set_attribute2(input_1, "type", options().type || "text");
           set_attribute2(input_1, "aria-label", $0);
           set_attribute2(input_1, "aria-invalid", get(invalid));
@@ -9557,6 +9671,9 @@ function EditorField($$anchor, $$props) {
       get key() {
         return $$props.key;
       },
+      get fieldPrefix() {
+        return get(fieldPrefix);
+      },
       get errors() {
         return get($0);
       },
@@ -9575,7 +9692,8 @@ var root6 = from_html(
 );
 function SourcePicker($$anchor, $$props) {
   push($$props, true);
-  let error = prop($$props, "error", 3, "");
+  let error = prop($$props, "error", 3, ""),
+    fieldPrefix = prop($$props, "fieldPrefix", 3, "");
   let items = user_derived(() => {
     const items2 = [];
     let group;
@@ -9613,8 +9731,20 @@ function SourcePicker($$anchor, $$props) {
   }
   var div = root6();
   var ha_generic_picker = child(div);
-  set_custom_element_data(ha_generic_picker, "id", "step-anchor");
-  set_custom_element_data(ha_generic_picker, "data-builder-field", "anchor");
+  template_effect(() =>
+    set_custom_element_data(
+      ha_generic_picker,
+      "id",
+      `step-${fieldPrefix()}anchor`,
+    ),
+  );
+  template_effect(() =>
+    set_custom_element_data(
+      ha_generic_picker,
+      "data-builder-field",
+      `${fieldPrefix()}anchor`,
+    ),
+  );
   template_effect(
     ($0) => set_custom_element_data(ha_generic_picker, "aria-label", $0),
     [() => $$props.t("Relative to")],
@@ -9630,7 +9760,7 @@ function SourcePicker($$anchor, $$props) {
     set_custom_element_data(
       ha_generic_picker,
       "aria-describedby",
-      error() ? "step-error-anchor" : void 0,
+      error() ? `step-error-${fieldPrefix()}anchor` : void 0,
     ),
   );
   set_custom_element_data(ha_generic_picker, "tabindex", "0");
@@ -9659,6 +9789,9 @@ function SourcePicker($$anchor, $$props) {
     let $0 = user_derived(() => ({ anchor: error() }));
     FieldError(node, {
       key: "anchor",
+      get fieldPrefix() {
+        return fieldPrefix();
+      },
       get errors() {
         return get($0);
       },
@@ -9672,28 +9805,30 @@ function SourcePicker($$anchor, $$props) {
 
 // custom_components/occupied/frontend/TimingEditor.svelte
 var root7 = from_html(
-  `<label class="timing-option"><input type="radio" name="step-timing-mode" data-builder-field="mode"/><span> </span></label>`,
+  `<label class="timing-option"><input type="radio"/><span> </span></label>`,
 );
 var root_15 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_25 = from_html(`<!> <!>`, 1);
 var root_34 = from_html(`<p class="hint"> </p>`);
 var root_42 = from_html(`<!> <!> <!> <!>`, 1);
 var root_52 = from_html(
-  `<div data-editor-section="time"><h3 id="step-timing-heading"> </h3> <fieldset class="timing-options" aria-labelledby="step-timing-heading"><div class="timing-option-row"></div> <!></fieldset> <!> <p class="hint" data-timing-explanation="" aria-live="polite"> </p> <!></div>`,
+  `<div data-editor-section="time"><h3> </h3> <fieldset class="timing-options"><div class="timing-option-row"></div> <!></fieldset> <!> <p class="hint" data-timing-explanation="" aria-live="polite"> </p> <!></div>`,
 );
 function TimingEditor($$anchor, $$props) {
   push($$props, true);
+  let heading = prop($$props, "heading", 3, "Timing");
   let editor = user_derived(() => $$props.context.editor),
     form = user_derived(() => $$props.context.form),
     time = user_derived(() => $$props.context.time),
     t = user_derived(() => $$props.context.t),
     refresh = user_derived(() => $$props.context.refresh),
     changed = user_derived(() => $$props.context.changed);
+  let fieldPrefix = user_derived(() => $$props.context.fieldPrefix || "");
   let choices = user_derived(() => {
     $$props.context;
     let choices2 = timeSourceChoices(
       $$props.panel.draft,
-      get(editor).id,
+      $$props.context.stepId,
       $$props.panel.catalog,
       get(t),
     );
@@ -9736,7 +9871,13 @@ function TimingEditor($$anchor, $$props) {
       reset(label_1);
       template_effect(
         ($0) => {
+          set_attribute2(input, "name", `step-${get(fieldPrefix)}timing-mode`);
           set_value(input, value());
+          set_attribute2(
+            input,
+            "data-builder-field",
+            `${get(fieldPrefix)}mode`,
+          );
           set_checked(input, get(time).mode === value());
           set_text(text_1, $0);
         },
@@ -9749,7 +9890,9 @@ function TimingEditor($$anchor, $$props) {
           get(time).anchor = "sun:sunrise";
         get(changed)("mode");
         $$props.panel.shadowRoot
-          .querySelector('[data-builder-field="mode"]:checked')
+          .querySelector(
+            `[data-builder-field="${get(fieldPrefix)}mode"]:checked`,
+          )
           ?.focus();
       });
       append($$anchor2, label_1);
@@ -9761,6 +9904,9 @@ function TimingEditor($$anchor, $$props) {
     let $0 = user_derived(() => ({ ...get(editor).errors }));
     FieldError(node, {
       key: "mode",
+      get fieldPrefix() {
+        return get(fieldPrefix);
+      },
       get errors() {
         return get($0);
       },
@@ -9820,7 +9966,7 @@ function TimingEditor($$anchor, $$props) {
             get(time).end = get(time).start;
             get(editor).showEndTime = true;
             get(changed)("end");
-            focusEditor($$props.panel, "end");
+            get(refresh)("end");
           });
           append($$anchor3, button);
         };
@@ -9847,6 +9993,7 @@ function TimingEditor($$anchor, $$props) {
           value: get(time).anchor,
           t: get(t),
           error: get(editor).errors.anchor,
+          fieldPrefix: get(fieldPrefix),
           onChange: (value) => {
             get(time).anchor = value;
             if (!get(editor).existing && value.startsWith("step:")) {
@@ -9859,7 +10006,7 @@ function TimingEditor($$anchor, $$props) {
             }
             get(changed)("anchor");
             const picker = $$props.panel.shadowRoot.querySelector(
-              '[data-builder-field="anchor"]',
+              `[data-builder-field="${get(fieldPrefix)}anchor"]`,
             );
             if (picker && $$props.panel.shadowRoot.activeElement !== picker) {
               picker.focus();
@@ -9919,7 +10066,7 @@ function TimingEditor($$anchor, $$props) {
                 get(time).endOffset = "";
                 get(editor).showEndOffset = false;
                 get(changed)("endOffset");
-                focusEditor($$props.panel, "startOffset");
+                get(refresh)("startOffset");
               });
               append($$anchor4, button_1);
             };
@@ -9997,11 +10144,17 @@ function TimingEditor($$anchor, $$props) {
   reset(div);
   template_effect(
     ($0, $1) => {
+      set_attribute2(h3, "id", `step-${get(fieldPrefix)}timing-heading`);
       set_text(text2, $0);
+      set_attribute2(
+        fieldset,
+        "aria-labelledby",
+        `step-${get(fieldPrefix)}timing-heading`,
+      );
       set_text(text_6, $1);
     },
     [
-      () => get(t)("Timing"),
+      () => get(t)(heading()),
       () =>
         timingExplanation(
           get(time),
@@ -10029,25 +10182,42 @@ var root_16 = from_html(
 );
 function EntitiesEditor($$anchor, $$props) {
   push($$props, true);
+  let label = prop($$props, "label", 3, "Entities");
   let editor = user_derived(() => $$props.context.editor),
     form = user_derived(() => $$props.context.form),
     t = user_derived(() => $$props.context.t),
     changed = user_derived(() => $$props.context.changed);
+  let fieldPrefix = user_derived(() => $$props.context.fieldPrefix || "");
   var div = root_16();
   var h4 = child(div);
   var text2 = only_child(h4, true);
   var ha_selector = sibling(h4, 2);
   set_class(ha_selector, 1, "entity-native-selector");
-  set_custom_element_data(ha_selector, "data-builder-field", "entities");
+  template_effect(() =>
+    set_custom_element_data(
+      ha_selector,
+      "data-builder-field",
+      `${get(fieldPrefix)}entities`,
+    ),
+  );
   template_effect(
     ($0) => set_custom_element_data(ha_selector, "aria-label", $0),
-    [() => get(t)("Entities")],
+    [() => get(t)(label())],
   );
   template_effect(() =>
     set_custom_element_data(
       ha_selector,
       "aria-invalid",
       get(editor).errors.entities ? "true" : void 0,
+    ),
+  );
+  template_effect(() =>
+    set_custom_element_data(
+      ha_selector,
+      "aria-describedby",
+      get(editor).errors.entities
+        ? `step-error-${get(fieldPrefix)}entities`
+        : void 0,
     ),
   );
   action(
@@ -10083,6 +10253,9 @@ function EntitiesEditor($$anchor, $$props) {
     let $0 = user_derived(() => ({ ...get(editor).errors }));
     FieldError(node, {
       key: "entities",
+      get fieldPrefix() {
+        return get(fieldPrefix);
+      },
       get errors() {
         return get($0);
       },
@@ -10114,7 +10287,7 @@ function EntitiesEditor($$anchor, $$props) {
     });
   }
   reset(div);
-  template_effect(($0) => set_text(text2, $0), [() => get(t)("Entities")]);
+  template_effect(($0) => set_text(text2, $0), [() => get(t)(label())]);
   event("value-changed", ha_selector, (event2) => {
     if (!isValueChangedEvent(event2)) return;
     event2.currentTarget.value = event2.detail.value;
@@ -10134,6 +10307,10 @@ var root9 = from_html(
   `<div data-editor-section="action"><h3> </h3> <!> <!> <!> <!></div>`,
 );
 function ActionEditor($$anchor, $$props) {
+  let heading = prop($$props, "heading", 3, "Action"),
+    kindLabel = prop($$props, "kindLabel", 3, "Step type"),
+    entityLabel = prop($$props, "entityLabel", 3, "Entities"),
+    hideEntities = prop($$props, "hideEntities", 3, false);
   let form = user_derived(() => $$props.context.form),
     t = user_derived(() => $$props.context.t);
   var div = root9();
@@ -10152,7 +10329,9 @@ function ActionEditor($$anchor, $$props) {
         return $$props.context;
       },
       key: "kind",
-      label: "Step type",
+      get label() {
+        return kindLabel();
+      },
       get value() {
         return get($0);
       },
@@ -10176,17 +10355,27 @@ function ActionEditor($$anchor, $$props) {
     });
   }
   var node_1 = sibling(node, 2);
-  EntitiesEditor(node_1, {
-    get panel() {
-      return $$props.panel;
-    },
-    get context() {
-      return $$props.context;
-    },
-  });
-  var node_2 = sibling(node_1, 2);
   {
     var consequent = ($$anchor2) => {
+      EntitiesEditor($$anchor2, {
+        get panel() {
+          return $$props.panel;
+        },
+        get context() {
+          return $$props.context;
+        },
+        get label() {
+          return entityLabel();
+        },
+      });
+    };
+    if_block(node_1, ($$render) => {
+      if (!hideEntities()) $$render(consequent);
+    });
+  }
+  var node_2 = sibling(node_1, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
       EditorField($$anchor2, {
         get panel() {
           return $$props.panel;
@@ -10203,12 +10392,12 @@ function ActionEditor($$anchor, $$props) {
       });
     };
     if_block(node_2, ($$render) => {
-      if (get(form).kind === "service") $$render(consequent);
+      if (get(form).kind === "service") $$render(consequent_1);
     });
   }
   var node_3 = sibling(node_2, 2);
   {
-    var consequent_1 = ($$anchor2) => {
+    var consequent_2 = ($$anchor2) => {
       EditorField($$anchor2, {
         get panel() {
           return $$props.panel;
@@ -10226,11 +10415,11 @@ function ActionEditor($$anchor, $$props) {
       });
     };
     if_block(node_3, ($$render) => {
-      if (get(form).kind !== "entities") $$render(consequent_1);
+      if (get(form).kind !== "entities") $$render(consequent_2);
     });
   }
   reset(div);
-  template_effect(($0) => set_text(text2, $0), [() => get(t)("Action")]);
+  template_effect(($0) => set_text(text2, $0), [() => get(t)(heading())]);
   append($$anchor, div);
 }
 
@@ -10394,12 +10583,17 @@ var root11 = from_html(
   `<section class="step-empty"><button type="button" class="primary" data-create-step=""> </button></section>`,
 );
 var root_17 = from_html(`<span class="step-status-badge"> </span>`);
-var root_26 = from_html(`<span class="step-row-time"> </span>`);
-var root_35 = from_html(`<div><!></div>`);
-var root_43 = from_html(
+var root_26 = from_html(`<span class="step-warning-message"> </span>`);
+var root_35 = from_html(
+  `<span class="step-row-warning"><ha-icon></ha-icon> <span></span></span>`,
+  2,
+);
+var root_43 = from_html(`<span class="step-row-time"> </span>`);
+var root_53 = from_html(`<div><!></div>`);
+var root_62 = from_html(
   `<div><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong> <!></span> <span class="hint"> </span></span> <!></button> <!></div>`,
 );
-var root_53 = from_html(
+var root_7 = from_html(
   `<div class="step-layout"><div class="step-list"></div></div> <button type="button" class="primary" data-create-step=""> </button>`,
   1,
 );
@@ -10407,17 +10601,22 @@ function StepsView($$anchor, $$props) {
   push($$props, true);
   let data = user_derived(() => {
     $$props.revision;
+    const entries2 = stepEntries(
+      $$props.panel.draft,
+      $$props.panel.catalog,
+      $$props.panel.t,
+    );
     return {
       t: $$props.panel.t,
-      entries: stepEntries(
-        $$props.panel.draft,
-        $$props.panel.catalog,
-        $$props.panel.t,
-      ),
+      entries: entries2,
+      issues: $$props.panel
+        .visibleIssues()
+        .map((issue) => ({ issue, stepId: warningStepId(issue, entries2) })),
     };
   });
   let t = user_derived(() => get(data).t),
-    entries = user_derived(() => get(data).entries);
+    entries = user_derived(() => get(data).entries),
+    issues = user_derived(() => get(data).issues);
   var fragment = comment();
   var node = first_child(fragment);
   {
@@ -10437,7 +10636,7 @@ function StepsView($$anchor, $$props) {
       append($$anchor2, section);
     };
     var alternate = ($$anchor2) => {
-      var fragment_1 = root_53();
+      var fragment_1 = root_7();
       var div = first_child(fragment_1);
       var div_1 = child(div);
       each(
@@ -10448,6 +10647,11 @@ function StepsView($$anchor, $$props) {
         ($$anchor3, $$item) => {
           let entry = () => get($$item).entry;
           let depth = () => get($$item).depth;
+          const warnings = user_derived(() =>
+            get(issues)
+              .filter(({ stepId }) => stepId === entry().id)
+              .map(({ issue }) => issue),
+          );
           const editing = user_derived(
             () =>
               $$props.panel.stepEditor?.existing &&
@@ -10464,7 +10668,7 @@ function StepsView($$anchor, $$props) {
               (!$$props.panel.stepEditor &&
                 $$props.panel.selectedStep === entry().id),
           );
-          var div_2 = root_43();
+          var div_2 = root_62();
           let classes;
           var button_1 = child(div_2);
           let classes_1;
@@ -10494,10 +10698,35 @@ function StepsView($$anchor, $$props) {
           var node_2 = sibling(span, 2);
           {
             var consequent_2 = ($$anchor4) => {
-              var span_4 = root_26();
-              var text_4 = only_child(span_4, true);
+              var span_4 = root_35();
+              var ha_icon = child(span_4);
+              set_custom_element_data(ha_icon, "icon", "mdi:alert-outline");
+              set_custom_element_data(ha_icon, "aria-hidden", "true");
+              var span_5 = sibling(ha_icon, 2);
+              each(
+                span_5,
+                21,
+                () => get(warnings),
+                index,
+                ($$anchor5, warning) => {
+                  var span_6 = root_26();
+                  var text_4 = only_child(span_6, true);
+                  template_effect(() => set_text(text_4, get(warning).message));
+                  append($$anchor5, span_6);
+                },
+              );
+              reset(span_5);
+              reset(span_4);
+              template_effect(() =>
+                set_attribute2(span_4, "id", `step-warning-${entry().id}`),
+              );
+              append($$anchor4, span_4);
+            };
+            var consequent_3 = ($$anchor4) => {
+              var span_7 = root_43();
+              var text_5 = only_child(span_7, true);
               template_effect(
-                ($0) => set_text(text_4, $0),
+                ($0) => set_text(text_5, $0),
                 [
                   () =>
                     timingSummary(
@@ -10509,20 +10738,21 @@ function StepsView($$anchor, $$props) {
                     ),
                 ],
               );
-              append($$anchor4, span_4);
+              append($$anchor4, span_7);
             };
             if_block(node_2, ($$render) => {
-              if (!get(editing)) $$render(consequent_2);
+              if (get(warnings).length) $$render(consequent_2);
+              else if (!get(editing)) $$render(consequent_3, 1);
             });
           }
           reset(button_1);
           var node_3 = sibling(button_1, 2);
           {
-            var consequent_4 = ($$anchor4) => {
-              var div_3 = root_35();
+            var consequent_5 = ($$anchor4) => {
+              var div_3 = root_53();
               var node_4 = child(div_3);
               {
-                var consequent_3 = ($$anchor5) => {
+                var consequent_4 = ($$anchor5) => {
                   StepEditor($$anchor5, {
                     get panel() {
                       return $$props.panel;
@@ -10533,7 +10763,7 @@ function StepsView($$anchor, $$props) {
                   });
                 };
                 if_block(node_4, ($$render) => {
-                  if ($$props.panel.stepEditor) $$render(consequent_3);
+                  if ($$props.panel.stepEditor) $$render(consequent_4);
                 });
               }
               reset(div_3);
@@ -10543,7 +10773,7 @@ function StepsView($$anchor, $$props) {
               append($$anchor4, div_3);
             };
             if_block(node_3, ($$render) => {
-              if (get(expanded)) $$render(consequent_4);
+              if (get(expanded)) $$render(consequent_5);
             });
           }
           reset(div_2);
@@ -10551,12 +10781,13 @@ function StepsView($$anchor, $$props) {
             ($0, $1, $2, $3) => {
               classes = set_class(div_2, 1, "step-card", null, classes, {
                 "step-disabled": get(stepDisabled),
+                "step-warning": get(warnings).length > 0,
               });
               set_attribute2(div_2, "data-step-id", entry().id);
               set_style(div_2, $0);
               set_attribute2(button_1, "id", `step-card-${entry().id}`);
               classes_1 = set_class(button_1, 1, "step-row", null, classes_1, {
-                editing: get(editing),
+                editing: get(editing) && !get(warnings).length,
               });
               set_attribute2(button_1, "aria-label", $1);
               button_1.disabled = $$props.panel.busy;
@@ -10565,6 +10796,11 @@ function StepsView($$anchor, $$props) {
                 button_1,
                 "aria-controls",
                 `step-editor-${entry().id}`,
+              );
+              set_attribute2(
+                button_1,
+                "aria-describedby",
+                get(warnings).length ? `step-warning-${entry().id}` : void 0,
               );
               set_text(text_1, entry().name);
               set_text(
@@ -10593,12 +10829,12 @@ function StepsView($$anchor, $$props) {
       reset(div_1);
       reset(div);
       var button_2 = sibling(div, 2);
-      var text_5 = only_child(button_2, true);
+      var text_6 = only_child(button_2, true);
       template_effect(
         ($0, $1) => {
           set_attribute2(div_1, "aria-label", $0);
           button_2.disabled = $$props.panel.busy;
-          set_text(text_5, $1);
+          set_text(text_6, $1);
         },
         [() => get(t)("Steps"), () => get(t)("Create step")],
       );
@@ -11057,6 +11293,150 @@ function PreviewStateGraph($$anchor, $$props) {
   pop();
 }
 
+// custom_components/occupied/frontend/random-model.ts
+function randomEntries(program, catalog, t = (text2) => text2) {
+  return Object.entries(program.random || {}).map(([id, event2]) => ({
+    ...event2,
+    id,
+    path: ["random", id],
+    days: [...(event2.days || days)],
+    name:
+      event2.name ||
+      `${catalog ? entityName(catalog, event2.on.entities[0]) : event2.on.entities[0]} \xB7 ${t("Random event")}`,
+  }));
+}
+function randomEditor(program, entry) {
+  const source2 = entry ? program.random?.[entry.id] : void 0;
+  const on2 = actionForm(source2?.on);
+  const off = actionForm(source2?.off || { action: "turn_off", entities: [] });
+  const form = {
+    name: source2?.name || "",
+    enabled: source2?.enabled !== false,
+    days: [...(source2?.days || days)],
+    start: timingForm(source2?.start),
+    end: timingForm(source2?.end || { absolute_time: { start: "23:00" } }),
+    minDuration: source2?.min_duration || "5m",
+    maxDuration: source2?.max_duration || "15m",
+    count: String(source2?.count ?? 3),
+    on: on2,
+    off,
+    sameEntities:
+      on2.kind === "entities" &&
+      off.kind === "entities" &&
+      JSON.stringify([...on2.entities].sort()) ===
+        JSON.stringify([...off.entities].sort()),
+  };
+  return {
+    id: entry?.id || identifier(program, "random", "random"),
+    existing: !!entry,
+    form,
+    original: copy(form),
+    errors: {},
+    startOptions: {},
+    endOptions: {},
+  };
+}
+function hasRandomChanges(editor) {
+  return JSON.stringify(editor.form) !== JSON.stringify(editor.original);
+}
+function prefixedErrors(errors, prefix) {
+  return Object.fromEntries(
+    Object.entries(errors).map(([field, message]) => [
+      `${prefix}${field}`,
+      message,
+    ]),
+  );
+}
+function randomErrors(program, editor) {
+  const { form } = editor;
+  const errors = {
+    ...prefixedErrors(timingErrors(program, form.start), "start."),
+    ...prefixedErrors(timingErrors(program, form.end), "end."),
+    ...prefixedErrors(actionErrors(form.on), "on."),
+    ...prefixedErrors(
+      actionErrors(
+        form.sameEntities
+          ? { ...form.off, entities: form.on.entities }
+          : form.off,
+      ),
+      "off.",
+    ),
+  };
+  const minimum = durationSeconds(form.minDuration),
+    maximum = durationSeconds(form.maxDuration);
+  if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604800) {
+    errors.minDuration =
+      "Use a positive duration within seven days, for example 5m or 1h.";
+  }
+  if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604800) {
+    errors.maxDuration =
+      "Use a positive duration within seven days, for example 5m or 1h.";
+  } else if (maximum < minimum) {
+    errors.maxDuration =
+      "Maximum duration must be at least the minimum duration.";
+  }
+  const count = Number(form.count);
+  if (!Number.isSafeInteger(count) || count < 1 || count > 1e3) {
+    errors.count = "Choose a whole number from 1 to 1000.";
+  }
+  if (form.days.length === 0) {
+    errors.days = "Choose at least one day.";
+  }
+  if (
+    form.start.mode === "absolute" &&
+    form.end.mode === "absolute" &&
+    !form.start.end &&
+    !form.end.end &&
+    !errors["start.start"] &&
+    !errors["end.start"]
+  ) {
+    const seconds = (clock) =>
+      clock
+        .split(":")
+        .reduce((total, part, i) => total + Number(part) * [3600, 60, 1][i], 0);
+    let span = seconds(form.end.start) - seconds(form.start.start);
+    if (span < 0) {
+      span += 86400;
+    }
+    if (span === 0) {
+      errors["end.start"] = "Window end must be after its start.";
+    } else if (minimum > span) {
+      errors.minDuration = "Minimum duration does not fit inside this window.";
+    }
+  }
+  return errors;
+}
+function buildRandom(program, editor) {
+  const errors = randomErrors(program, editor);
+  if (Object.keys(errors).length > 0) {
+    throw new Error(Object.values(errors)[0]);
+  }
+  if (editor.existing && !program.random?.[editor.id]) {
+    throw new Error(
+      "This random event changed elsewhere. Cancel and reopen it before saving.",
+    );
+  }
+  const next2 = copy(program),
+    { form } = editor;
+  (next2.random ||= {})[editor.id] = {
+    ...(form.name.trim() && { name: form.name.trim() }),
+    ...(!form.enabled && { enabled: false }),
+    days: [...form.days],
+    start: formTiming(form.start),
+    end: formTiming(form.end),
+    min_duration: form.minDuration,
+    max_duration: form.maxDuration,
+    count: Number(form.count),
+    on: buildAction(form.on),
+    off: buildAction(
+      form.sameEntities
+        ? { ...form.off, entities: form.on.entities }
+        : form.off,
+    ),
+  };
+  return next2;
+}
+
 // custom_components/occupied/frontend/Timeline.svelte
 var root14 = from_html(`<h2> </h2>`);
 var root_110 = from_html(`<th scope="col"> </th>`);
@@ -11066,8 +11446,8 @@ var root_44 = from_html(
   `<details><summary> </summary> <p class="hint"> </p> <input type="search"/> <div><div class="table-wrap"><table><thead><tr></tr></thead><tbody></tbody></table></div> <div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div></div></details>`,
 );
 var root_54 = from_html(`<p> </p>`);
-var root_62 = from_html(`<!> <!> <!>`, 1);
-var root_7 = from_html(`<p role="status"> </p>`);
+var root_63 = from_html(`<!> <!> <!>`, 1);
+var root_72 = from_html(`<p role="status"> </p>`);
 var root_8 = from_html(`<section><!> <!></section>`);
 function Timeline($$anchor, $$props) {
   push($$props, true);
@@ -11077,13 +11457,24 @@ function Timeline($$anchor, $$props) {
     showLoading = prop($$props, "showLoading", 19, loading);
   let labels = user_derived(
     () =>
-      new Map(
-        stepEntries($$props.program || {}).map((resource) => [
-          resource.id,
+      new Map([
+        ...stepEntries($$props.program || {}).map((resource) => [
+          `step:${resource.id}`,
           resource.name,
         ]),
-      ),
+        ...randomEntries($$props.program || {}).map((resource) => [
+          `random:${resource.id}`,
+          resource.name,
+        ]),
+      ]),
   );
+  function eventLabel(event2) {
+    return (
+      get(labels).get(
+        `${event2.kind.startsWith("random_") ? "random" : "step"}:${event2.source_id}`,
+      ) || event2.source_id
+    );
+  }
   let query = state("");
   let page = state(0);
   let filtered = user_derived(
@@ -11091,9 +11482,7 @@ function Timeline($$anchor, $$props) {
       $$props.plan?.events.filter(
         (event2) =>
           JSON.stringify(event2).toLowerCase().includes(get(query)) ||
-          (get(labels).get(event2.source_id) || "")
-            .toLowerCase()
-            .includes(get(query)),
+          eventLabel(event2).toLowerCase().includes(get(query)),
       ) ?? [],
   );
   let currentPage = user_derived(() =>
@@ -11128,7 +11517,7 @@ function Timeline($$anchor, $$props) {
   var node_2 = sibling(node, 2);
   {
     var consequent_3 = ($$anchor2) => {
-      var fragment_1 = root_62();
+      var fragment_1 = root_63();
       var node_3 = first_child(fragment_1);
       PreviewStateGraph(node_3, {
         get plan() {
@@ -11199,7 +11588,7 @@ function Timeline($$anchor, $$props) {
                     $$props.plan.timezone,
                     $$props.locale,
                   ),
-                  `${get(labels).get(get(event2).source_id) || get(event2).source_id} \xB7 ${get(event2).kind}`,
+                  `${eventLabel(get(event2))} \xB7 ${t()(get(event2).kind === "random_start" ? "Random start" : get(event2).kind === "random_end" ? "Random end" : get(event2).kind)}`,
                   get(event2).action.action,
                   get(event2).action.entities.join(", "),
                 ],
@@ -11303,7 +11692,7 @@ function Timeline($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var consequent_4 = ($$anchor2) => {
-      var p_2 = root_7();
+      var p_2 = root_72();
       var text_10 = only_child(p_2, true);
       template_effect(
         ($0) => set_text(text_10, $0),
@@ -11536,7 +11925,12 @@ function UnsavedStepDialog($$anchor, $$props) {
     },
     [
       () => get(t)("Unsaved changes"),
-      () => get(t)("This step has unsaved changes. Discard them and continue?"),
+      () =>
+        get(t)(
+          $$props.panel.randomEditor
+            ? "This random event has unsaved changes. Discard them and continue?"
+            : "This step has unsaved changes. Discard them and continue?",
+        ),
       () => get(t)("Keep editing"),
       () => get(t)("Discard changes"),
     ],
@@ -11548,18 +11942,872 @@ function UnsavedStepDialog($$anchor, $$props) {
 }
 delegate(["click"]);
 
+// custom_components/occupied/frontend/random-editor-controller.ts
+function openRandom(panel, entry) {
+  if (panel.busy) {
+    return;
+  }
+  if (panel.activeEditor) {
+    const same = !!entry && panel.randomEditor?.id === entry.id;
+    panel.requestStepExit(() => {
+      if (!same) {
+        openRandom(panel, entry);
+      }
+    });
+    return;
+  }
+  panel.randomEditor = randomEditor(panel.draft, entry);
+  panel.tab = "random";
+  panel.error = "";
+  panel.issues = [];
+  panel.renderView();
+  focusEditor(panel, "name");
+  if (entry) {
+    panel.shadowRoot
+      .getElementById(`random-editor-${entry.id}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+function createRandomEditorContext(panel) {
+  const editor = panel.randomEditor,
+    form = editor.form,
+    t = panel.t;
+  const refresh = (key2) => {
+    panel.flush();
+    focusEditor(panel, key2);
+  };
+  const changed = (key2) => {
+    if (form.on.kind !== "entities" || form.off.kind !== "entities") {
+      form.sameEntities = false;
+    }
+    if (form.sameEntities) {
+      form.off.entities = [...form.on.entities];
+    }
+    panel.version++;
+    panel.validatedVersion = -1;
+    const errors = randomErrors(panel.draft, editor);
+    for (const field of Object.keys(editor.errors)) {
+      if (errors[field]) {
+        editor.errors[field] = errors[field];
+      } else {
+        delete editor.errors[field];
+      }
+    }
+    delete editor.errors[key2];
+    panel.flush();
+  };
+  const scopedEditor = (prefix, options) =>
+    new Proxy(editor, {
+      get(target, key2) {
+        if (key2 === "errors") {
+          return Object.fromEntries(
+            Object.entries(target.errors)
+              .filter(([field]) => field.startsWith(prefix))
+              .map(([field, message]) => [field.slice(prefix.length), message]),
+          );
+        }
+        if (options && (key2 === "showEndTime" || key2 === "showEndOffset")) {
+          return options[key2];
+        }
+        return Reflect.get(target, key2);
+      },
+      set(target, key2, value) {
+        if (options && (key2 === "showEndTime" || key2 === "showEndOffset")) {
+          options[key2] = value;
+          return true;
+        }
+        return Reflect.set(target, key2, value);
+      },
+    });
+  const timing = (edge) => ({
+    editor: scopedEditor(`${edge}.`, editor[`${edge}Options`]),
+    form: new Proxy(form, {}),
+    time: new Proxy(form[edge], {}),
+    t,
+    fieldPrefix: `${edge}.`,
+    changed: (key2) => changed(`${edge}.${key2}`),
+    refresh: (key2) => refresh(key2 ? `${edge}.${key2}` : void 0),
+  });
+  const action2 = (phase) => ({
+    editor: scopedEditor(`${phase}.`),
+    form: new Proxy(form[phase], {}),
+    t,
+    fieldPrefix: `${phase}.`,
+    changed: (key2) => changed(`${phase}.${key2}`),
+  });
+  const submit = async () => {
+    editor.errors = randomErrors(panel.draft, editor);
+    if (Object.keys(editor.errors).length > 0) {
+      return refresh(Object.keys(editor.errors)[0]);
+    }
+    try {
+      const candidate = buildRandom(panel.draft, editor);
+      editor.candidatePath = ["random", editor.id];
+      if (panel.document?.source === "file") {
+        panel.randomEditor = null;
+        panel.change([], candidate, true);
+      } else {
+        await panel.save(candidate);
+      }
+    } catch (error) {
+      panel.fail(error);
+    }
+  };
+  const cancel = () =>
+    panel.requestStepExit(() =>
+      panel.shadowRoot.getElementById(`random-card-${editor.id}`)?.focus(),
+    );
+  const context = { editor: new Proxy(editor, {}), t, changed };
+  return {
+    ...context,
+    form: new Proxy(form, {}),
+    timing,
+    action: action2,
+    submit,
+    cancel,
+  };
+}
+async function deleteRandom(panel) {
+  const editor = panel.randomEditor;
+  if (!editor || panel.busy) {
+    return;
+  }
+  const candidate = copy(panel.draft);
+  delete candidate.random?.[editor.id];
+  if (panel.document?.source === "file") {
+    panel.randomEditor = null;
+    panel.change([], candidate, true);
+    return;
+  }
+  await panel.save(candidate);
+}
+
+// custom_components/occupied/frontend/DeleteRandomDialog.svelte
+var root17 = from_html(
+  `<dialog class="step-delete-dialog" aria-labelledby="random-delete-title"><h2 id="random-delete-title"> </h2> <p> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog>`,
+);
+function DeleteRandomDialog($$anchor, $$props) {
+  push($$props, true);
+  let dialog;
+  onMount(() => {
+    dialog.showModal();
+    dialog.querySelector("button")?.focus();
+  });
+  var dialog_1 = root17();
+  var h2 = child(dialog_1);
+  var text2 = only_child(h2, true);
+  var p = sibling(h2, 2);
+  var text_1 = only_child(p, true);
+  var div = sibling(p, 2);
+  var button = child(div);
+  var text_2 = only_child(button, true);
+  var button_1 = sibling(button, 2);
+  var text_3 = only_child(button_1, true);
+  reset(div);
+  reset(dialog_1);
+  bind_this(
+    dialog_1,
+    ($$value) => (dialog = $$value),
+    () => dialog,
+  );
+  template_effect(
+    ($0, $1, $2, $3) => {
+      set_text(text2, $0);
+      set_text(text_1, $1);
+      button.disabled = $$props.panel.busy;
+      set_text(text_2, $2);
+      button_1.disabled = $$props.panel.busy || $$props.panel.stale;
+      set_text(text_3, $3);
+    },
+    [
+      () => $$props.panel.t("Delete random event?"),
+      () =>
+        $$props.panel.t(
+          "This removes the random event and all its future occurrences.",
+        ),
+      () => $$props.panel.t("Cancel"),
+      () => $$props.panel.t("Delete random event"),
+    ],
+  );
+  event("close", dialog_1, function (...$$args) {
+    $$props.onClose?.apply(this, $$args);
+  });
+  delegated("click", button, () => dialog.close());
+  delegated("click", button_1, async () => {
+    await deleteRandom($$props.panel);
+    if (!$$props.panel.error && !$$props.panel.randomEditor) dialog.close();
+  });
+  append($$anchor, dialog_1);
+  pop();
+}
+delegate(["click"]);
+
+// custom_components/occupied/frontend/RandomEventEditor.svelte
+var root18 = from_html(
+  `<label class="same-entities svelte-e4ijcz"><input type="checkbox"/> </label>`,
+);
+var root_112 = from_html(`<button type="button"> </button>`);
+var root_29 = from_html(
+  `<label class="step-weekday-option"><input type="checkbox"/><span> </span></label>`,
+);
+var root_38 = from_html(`<button type="button" class="danger"> </button>`);
+var root_45 = from_html(
+  `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <h3> </h3> <div class="random-frequency svelte-e4ijcz"><!> <!> <!></div> <p class="hint"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <details class="random-settings svelte-e4ijcz"><summary> </summary> <label class="svelte-e4ijcz"><input type="checkbox"/> </label> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!></details> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section> <!>`,
+  1,
+);
+var $$css4 = {
+  hash: "svelte-e4ijcz",
+  code: ".random-frequency.svelte-e4ijcz {display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:16px;}.same-entities.svelte-e4ijcz {display:flex;align-items:center;gap:8px;margin-top:16px;}.random-settings.svelte-e4ijcz {margin-top:24px;}.random-settings.svelte-e4ijcz > label:where(.svelte-e4ijcz) {display:flex;align-items:center;gap:8px;margin-top:16px;}\n  @media (max-width: 600px) {.random-frequency.svelte-e4ijcz {grid-template-columns:1fr;gap:0;}\n  }",
+};
+function RandomEventEditor($$anchor, $$props) {
+  push($$props, true);
+  append_styles($$anchor, $$css4);
+  let context = user_derived(() => {
+    $$props.revision;
+    return createRandomEditorContext($$props.panel);
+  });
+  let editor = user_derived(() => get(context).editor),
+    form = user_derived(() => get(context).form),
+    t = user_derived(() => get(context).t),
+    changed = user_derived(() => get(context).changed),
+    submit = user_derived(() => get(context).submit),
+    cancel = user_derived(() => get(context).cancel);
+  let deleteOpen = state(false);
+  let deleteTrigger = state(void 0);
+  const weekdays = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+  const presets = [
+    ["Every day", days],
+    ["Weekdays", days.slice(0, 5)],
+    ["Weekends", days.slice(5)],
+  ];
+  var fragment = root_45();
+  var section = first_child(fragment);
+  var div = child(section);
+  var node = child(div);
+  {
+    let $0 = user_derived(() => ({
+      hideLabel: true,
+      placeholder: get(t)("Optional title"),
+    }));
+    EditorField(node, {
+      get panel() {
+        return $$props.panel;
+      },
+      get context() {
+        return get(context);
+      },
+      key: "name",
+      label: "Random event name",
+      get value() {
+        return get(form).name;
+      },
+      update: (value) => (get(form).name = value),
+      get options() {
+        return get($0);
+      },
+    });
+  }
+  reset(div);
+  var p = sibling(div, 2);
+  var text2 = only_child(p, true);
+  var div_1 = sibling(p, 2);
+  var node_1 = child(div_1);
+  {
+    let $0 = user_derived(() => get(context).timing("start"));
+    TimingEditor(node_1, {
+      get panel() {
+        return $$props.panel;
+      },
+      get context() {
+        return get($0);
+      },
+      heading: "Window starts",
+    });
+  }
+  var node_2 = sibling(node_1, 2);
+  {
+    let $0 = user_derived(() => get(context).timing("end"));
+    TimingEditor(node_2, {
+      get panel() {
+        return $$props.panel;
+      },
+      get context() {
+        return get($0);
+      },
+      heading: "Window ends",
+    });
+  }
+  reset(div_1);
+  var h3 = sibling(div_1, 2);
+  var text_1 = only_child(h3, true);
+  var div_2 = sibling(h3, 2);
+  var node_3 = child(div_2);
+  EditorField(node_3, {
+    get panel() {
+      return $$props.panel;
+    },
+    get context() {
+      return get(context);
+    },
+    key: "count",
+    label: "Times per window",
+    get value() {
+      return get(form).count;
+    },
+    update: (value) => (get(form).count = value),
+    options: { type: "number", min: 1, max: 1e3, step: 1 },
+  });
+  var node_4 = sibling(node_3, 2);
+  EditorField(node_4, {
+    get panel() {
+      return $$props.panel;
+    },
+    get context() {
+      return get(context);
+    },
+    key: "minDuration",
+    label: "Minimum duration",
+    get value() {
+      return get(form).minDuration;
+    },
+    update: (value) => (get(form).minDuration = value),
+    options: { placeholder: "5m" },
+  });
+  var node_5 = sibling(node_4, 2);
+  EditorField(node_5, {
+    get panel() {
+      return $$props.panel;
+    },
+    get context() {
+      return get(context);
+    },
+    key: "maxDuration",
+    label: "Maximum duration",
+    get value() {
+      return get(form).maxDuration;
+    },
+    update: (value) => (get(form).maxDuration = value),
+    options: { placeholder: "15m" },
+  });
+  reset(div_2);
+  var p_1 = sibling(div_2, 2);
+  var text_2 = only_child(p_1, true);
+  var div_3 = sibling(p_1, 2);
+  var node_6 = child(div_3);
+  {
+    let $0 = user_derived(() => get(context).action("on"));
+    ActionEditor(node_6, {
+      get panel() {
+        return $$props.panel;
+      },
+      get context() {
+        return get($0);
+      },
+      heading: "At the start",
+      kindLabel: "Start action",
+      entityLabel: "Start entities",
+    });
+  }
+  var div_4 = sibling(node_6, 2);
+  var node_7 = child(div_4);
+  {
+    let $0 = user_derived(() => get(context).action("off"));
+    ActionEditor(node_7, {
+      get panel() {
+        return $$props.panel;
+      },
+      get context() {
+        return get($0);
+      },
+      heading: "At the end",
+      kindLabel: "End action",
+      entityLabel: "End entities",
+      get hideEntities() {
+        return get(form).sameEntities;
+      },
+    });
+  }
+  var node_8 = sibling(node_7, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var label_1 = root18();
+      var input = child(label_1);
+      remove_input_defaults(input);
+      var text_3 = sibling(input, 1, true);
+      reset(label_1);
+      template_effect(
+        ($0) => {
+          set_checked(input, get(form).sameEntities);
+          set_text(text_3, $0);
+        },
+        [() => get(t)("Use the same entities")],
+      );
+      delegated("change", input, (event2) => {
+        get(form).sameEntities = event2.currentTarget.checked;
+        get(changed)("sameEntities");
+      });
+      append($$anchor2, label_1);
+    };
+    if_block(node_8, ($$render) => {
+      if (get(form).on.kind === "entities" && get(form).off.kind === "entities")
+        $$render(consequent);
+    });
+  }
+  reset(div_4);
+  reset(div_3);
+  var details = sibling(div_3, 2);
+  var summary = child(details);
+  var text_4 = only_child(summary, true);
+  var label_2 = sibling(summary, 2);
+  var input_1 = child(label_2);
+  remove_input_defaults(input_1);
+  var text_5 = sibling(input_1, 1, true);
+  reset(label_2);
+  var fieldset = sibling(label_2, 2);
+  var legend = child(fieldset);
+  var text_6 = only_child(legend, true);
+  var div_5 = sibling(legend, 2);
+  each(
+    div_5,
+    21,
+    () => presets,
+    index,
+    ($$anchor2, $$item) => {
+      var $$array = user_derived(() => to_array(get($$item), 2));
+      let label = () => get($$array)[0];
+      let selection = () => get($$array)[1];
+      var button = root_112();
+      var text_7 = only_child(button, true);
+      template_effect(
+        ($0, $1) => {
+          set_attribute2(button, "aria-pressed", $0);
+          set_text(text_7, $1);
+        },
+        [
+          () =>
+            get(form).days.length === selection().length &&
+            selection().every((day) => get(form).days.includes(day)),
+          () => get(t)(label()),
+        ],
+      );
+      delegated("click", button, () => {
+        get(form).days = [...selection()];
+        get(changed)("days");
+      });
+      append($$anchor2, button);
+    },
+  );
+  reset(div_5);
+  var div_6 = sibling(div_5, 2);
+  each(
+    div_6,
+    21,
+    () => days,
+    index,
+    ($$anchor2, day, index2) => {
+      var label_3 = root_29();
+      var input_2 = child(label_3);
+      remove_input_defaults(input_2);
+      var span = sibling(input_2);
+      var text_8 = only_child(span, true);
+      reset(label_3);
+      template_effect(
+        ($0, $1) => {
+          set_checked(input_2, $0);
+          set_text(text_8, $1);
+        },
+        [
+          () => get(form).days.includes(get(day)),
+          () => get(t)(weekdays[index2]),
+        ],
+      );
+      delegated("change", input_2, (event2) => {
+        get(form).days = days.filter((candidate) =>
+          candidate === get(day)
+            ? event2.currentTarget.checked
+            : get(form).days.includes(candidate),
+        );
+        get(changed)("days");
+      });
+      append($$anchor2, label_3);
+    },
+  );
+  reset(div_6);
+  reset(fieldset);
+  var node_9 = sibling(fieldset, 2);
+  {
+    let $0 = user_derived(() => ({ ...get(editor).errors }));
+    FieldError(node_9, {
+      key: "days",
+      get errors() {
+        return get($0);
+      },
+    });
+  }
+  reset(details);
+  var div_7 = sibling(details, 2);
+  var button_1 = child(div_7);
+  var text_9 = only_child(button_1, true);
+  var node_10 = sibling(button_1, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      var button_2 = root_38();
+      var text_10 = only_child(button_2, true);
+      bind_this(
+        button_2,
+        ($$value) => set2(deleteTrigger, $$value),
+        () => get(deleteTrigger),
+      );
+      template_effect(
+        ($0) => {
+          button_2.disabled = $$props.panel.busy || $$props.panel.stale;
+          set_text(text_10, $0);
+        },
+        [() => get(t)("Delete random event")],
+      );
+      delegated("click", button_2, () => set2(deleteOpen, true));
+      append($$anchor2, button_2);
+    };
+    if_block(node_10, ($$render) => {
+      if (get(editor).existing) $$render(consequent_1);
+    });
+  }
+  var button_3 = sibling(node_10, 2);
+  var text_11 = only_child(button_3, true);
+  reset(div_7);
+  reset(section);
+  var node_11 = sibling(section, 2);
+  {
+    var consequent_2 = ($$anchor2) => {
+      DeleteRandomDialog($$anchor2, {
+        get panel() {
+          return $$props.panel;
+        },
+        onClose: () => {
+          set2(deleteOpen, false);
+          if (get(deleteTrigger)?.isConnected) get(deleteTrigger).focus();
+        },
+      });
+    };
+    if_block(node_11, ($$render) => {
+      if (get(deleteOpen)) $$render(consequent_2);
+    });
+  }
+  template_effect(
+    ($0, $1, $2, $3, $4, $5, $6, $7) => {
+      set_text(text2, $0);
+      set_text(text_1, $1);
+      set_text(text_2, $2);
+      details.open = !!get(editor).errors.days;
+      set_text(text_4, $3);
+      set_checked(input_1, get(form).enabled);
+      set_text(text_5, $4);
+      set_text(text_6, $5);
+      button_1.disabled = $$props.panel.busy;
+      set_text(text_9, $6);
+      button_3.disabled = $$props.panel.busy || $$props.panel.stale;
+      set_text(text_11, $7);
+    },
+    [
+      () =>
+        get(t)(
+          "Choose a window, a duration, and actions for the start and end of each occurrence.",
+        ),
+      () => get(t)("Frequency and duration"),
+      () =>
+        get(t)(
+          "Use durations like 5m, 30s, or 1h. Occurrences may overlap; every end action stays inside the window.",
+        ),
+      () => get(t)("Advanced settings"),
+      () => get(t)("Enabled"),
+      () => get(t)("Run on"),
+      () => get(t)("Cancel"),
+      () =>
+        get(t)(
+          $$props.panel.document?.source === "file"
+            ? "Add to draft"
+            : "Save random event",
+        ),
+    ],
+  );
+  delegated("change", input_1, (event2) => {
+    get(form).enabled = event2.currentTarget.checked;
+    get(changed)("enabled");
+  });
+  delegated("click", button_1, function (...$$args) {
+    get(cancel)?.apply(this, $$args);
+  });
+  delegated("click", button_3, function (...$$args) {
+    get(submit)?.apply(this, $$args);
+  });
+  append($$anchor, fragment);
+  pop();
+}
+delegate(["change", "click"]);
+
+// custom_components/occupied/frontend/RandomView.svelte
+var root19 = from_html(
+  `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-random=""> </button></section>`,
+);
+var root_113 = from_html(`<span class="step-status-badge"> </span>`);
+var root_210 = from_html(`<span class="step-row-time"> </span>`);
+var root_39 = from_html(
+  `<div style="--depth:0"><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button> <div><!></div></div>`,
+);
+var root_46 = from_html(
+  `<p class="hint"> </p> <div class="step-list"></div> <button type="button" class="primary" data-create-random=""> </button>`,
+  1,
+);
+function RandomView($$anchor, $$props) {
+  push($$props, true);
+  let data = user_derived(() => {
+    $$props.revision;
+    return {
+      t: $$props.panel.t,
+      entries: randomEntries(
+        $$props.panel.draft,
+        $$props.panel.catalog,
+        $$props.panel.t,
+      ),
+      steps: stepEntries(
+        $$props.panel.draft,
+        $$props.panel.catalog,
+        $$props.panel.t,
+      ),
+    };
+  });
+  let t = user_derived(() => get(data).t),
+    entries = user_derived(() => get(data).entries),
+    steps = user_derived(() => get(data).steps);
+  var fragment = comment();
+  var node = first_child(fragment);
+  {
+    var consequent = ($$anchor2) => {
+      var section = root19();
+      var h2 = child(section);
+      var text2 = only_child(h2, true);
+      var p = sibling(h2, 2);
+      var text_1 = only_child(p, true);
+      var button = sibling(p, 2);
+      var text_2 = only_child(button, true);
+      reset(section);
+      template_effect(
+        ($0, $1, $2) => {
+          set_text(text2, $0);
+          set_text(text_1, $1);
+          button.disabled = $$props.panel.busy;
+          set_text(text_2, $2);
+        },
+        [
+          () => get(t)("Random activity"),
+          () =>
+            get(t)(
+              "Run actions at random times within a window. Choose how often they run and how long each occurrence lasts.",
+            ),
+          () => get(t)("Create your first random event"),
+        ],
+      );
+      delegated("click", button, () => openRandom($$props.panel));
+      append($$anchor2, section);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_1 = root_46();
+      var p_1 = first_child(fragment_1);
+      var text_3 = only_child(p_1, true);
+      var div = sibling(p_1, 2);
+      each(
+        div,
+        21,
+        () => get(entries),
+        (entry) => entry.id,
+        ($$anchor3, entry) => {
+          const editing = user_derived(
+            () =>
+              $$props.panel.randomEditor?.existing &&
+              $$props.panel.randomEditor.id === get(entry).id,
+          );
+          const disabled = user_derived(() =>
+            get(editing)
+              ? $$props.panel.randomEditor?.form.enabled === false
+              : get(entry).enabled === false,
+          );
+          var div_1 = root_39();
+          let classes;
+          var button_1 = child(div_1);
+          let classes_1;
+          var span = child(button_1);
+          var span_1 = child(span);
+          var strong = child(span_1);
+          var text_4 = only_child(strong, true);
+          var node_1 = sibling(strong);
+          {
+            var consequent_1 = ($$anchor4) => {
+              var span_2 = root_113();
+              var text_5 = only_child(span_2, true);
+              template_effect(
+                ($0) => set_text(text_5, $0),
+                [() => get(t)("Disabled")],
+              );
+              append($$anchor4, span_2);
+            };
+            if_block(node_1, ($$render) => {
+              if (get(disabled)) $$render(consequent_1);
+            });
+          }
+          reset(span_1);
+          var span_3 = sibling(span_1, 2);
+          var text_6 = only_child(span_3);
+          reset(span);
+          var node_2 = sibling(span, 2);
+          {
+            var consequent_2 = ($$anchor4) => {
+              var span_4 = root_210();
+              var text_7 = only_child(span_4);
+              template_effect(
+                ($0, $1) => set_text(text_7, `${$0 ?? ""} \u2192 ${$1 ?? ""}`),
+                [
+                  () =>
+                    timingSummary(
+                      { timing: get(entry).start },
+                      get(steps),
+                      get(t),
+                      $$props.panel.catalog.time_sources,
+                      $$props.panel._hass.locale,
+                    ),
+                  () =>
+                    timingSummary(
+                      { timing: get(entry).end },
+                      get(steps),
+                      get(t),
+                      $$props.panel.catalog.time_sources,
+                      $$props.panel._hass.locale,
+                    ),
+                ],
+              );
+              append($$anchor4, span_4);
+            };
+            if_block(node_2, ($$render) => {
+              if (!get(editing)) $$render(consequent_2);
+            });
+          }
+          reset(button_1);
+          var div_2 = sibling(button_1, 2);
+          var node_3 = child(div_2);
+          {
+            var consequent_3 = ($$anchor4) => {
+              RandomEventEditor($$anchor4, {
+                get panel() {
+                  return $$props.panel;
+                },
+                get revision() {
+                  return $$props.revision;
+                },
+              });
+            };
+            if_block(node_3, ($$render) => {
+              if (get(editing)) $$render(consequent_3);
+            });
+          }
+          reset(div_2);
+          reset(div_1);
+          template_effect(
+            ($0, $1, $2) => {
+              classes = set_class(div_1, 1, "step-card", null, classes, {
+                "step-disabled": get(disabled),
+              });
+              set_attribute2(div_1, "data-random-id", get(entry).id);
+              set_attribute2(button_1, "id", `random-card-${get(entry).id}`);
+              classes_1 = set_class(button_1, 1, "step-row", null, classes_1, {
+                editing: get(editing),
+              });
+              set_attribute2(button_1, "aria-label", $0);
+              set_attribute2(button_1, "aria-expanded", get(editing));
+              set_attribute2(
+                button_1,
+                "aria-controls",
+                `random-editor-${get(entry).id}`,
+              );
+              button_1.disabled = $$props.panel.busy;
+              set_text(text_4, get(entry).name);
+              set_text(
+                text_6,
+                `${get(entry).count ?? 3 ?? ""}
+              ${$1 ?? ""} \xB7 ${(get(entry).min_duration || "5m") ?? ""}\u2013${(get(entry).max_duration || "15m") ?? ""} \xB7 ${$2 ?? ""}`,
+              );
+              set_attribute2(div_2, "id", `random-editor-${get(entry).id}`);
+            },
+            [
+              () =>
+                get(disabled)
+                  ? `${get(entry).name} \xB7 ${get(t)("Disabled")}`
+                  : get(entry).name,
+              () => get(t)("times per window"),
+              () =>
+                get(entry)
+                  .on.entities.map((id) =>
+                    entityName($$props.panel.catalog, id),
+                  )
+                  .join(", "),
+            ],
+          );
+          delegated("click", button_1, () =>
+            openRandom($$props.panel, get(entry)),
+          );
+          append($$anchor3, div_1);
+        },
+      );
+      reset(div);
+      var button_2 = sibling(div, 2);
+      var text_8 = only_child(button_2, true);
+      template_effect(
+        ($0, $1, $2) => {
+          set_text(text_3, $0);
+          set_attribute2(div, "aria-label", $1);
+          button_2.disabled = $$props.panel.busy;
+          set_text(text_8, $2);
+        },
+        [
+          () =>
+            get(t)(
+              "Run actions at random times within a window. Choose how often they run and how long each occurrence lasts.",
+            ),
+          () => get(t)("Random events"),
+          () => get(t)("Create random event"),
+        ],
+      );
+      delegated("click", button_2, () => openRandom($$props.panel));
+      append($$anchor2, fragment_1);
+    };
+    if_block(node, ($$render) => {
+      if (!get(entries).length) $$render(consequent);
+      else $$render(alternate, -1);
+    });
+  }
+  append($$anchor, fragment);
+  pop();
+}
+delegate(["click"]);
+
 // custom_components/occupied/frontend/App.svelte
-var root17 = from_html(`<button type="button"> </button>`);
-var root_112 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
-var root_29 = from_html(`<p> </p>`);
-var root_38 = from_html(`<p id="house"> </p>`);
-var root_45 = from_html(`<option> </option>`);
+var root20 = from_html(`<button type="button"> </button>`);
+var root_114 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
+var root_211 = from_html(`<p> </p>`);
+var root_310 = from_html(`<p id="house"> </p>`);
+var root_47 = from_html(`<option> </option>`);
 var root_55 = from_html(
   `<label for="instance-select"> </label> <select id="instance-select"></select>`,
   1,
 );
-var root_63 = from_html(`<p class="hint"> </p>`);
-var root_72 = from_html(`<p class="banner" role="status"> </p>`);
+var root_64 = from_html(`<p class="hint"> </p>`);
+var root_73 = from_html(`<p class="banner" role="status"> </p>`);
 var root_82 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_9 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
 var root_10 = from_html(`<p> </p> <button type="button"> </button>`, 1);
@@ -11572,11 +12820,11 @@ function App($$anchor, $$props) {
   const $updates = () => store_get($$props.updates, "$updates", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   const toolbar = ($$anchor2) => {
-    var div = root_112();
+    var div = root_114();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
-        var button = root17();
+        var button = root20();
         var text_1 = only_child(button, true);
         template_effect(
           ($0) => {
@@ -11615,7 +12863,7 @@ function App($$anchor, $$props) {
     var node_1 = first_child(fragment);
     {
       var consequent_1 = ($$anchor3) => {
-        var button_1 = root17();
+        var button_1 = root20();
         var text_2 = only_child(button_1, true);
         template_effect(() => {
           set_class(button_1, 1, clsx2(get(className)));
@@ -11625,7 +12873,7 @@ function App($$anchor, $$props) {
         append($$anchor3, button_1);
       };
       var alternate = ($$anchor3) => {
-        var p = root_29();
+        var p = root_211();
         var text_3 = only_child(p, true);
         template_effect(() => {
           set_class(p, 1, clsx2(get(className)));
@@ -11634,7 +12882,7 @@ function App($$anchor, $$props) {
         append($$anchor3, p);
       };
       if_block(node_1, ($$render) => {
-        if (get(panel).stepEditor && item().severity !== "warning")
+        if (get(panel).activeEditor && item().severity !== "warning")
           $$render(consequent_1);
         else $$render(alternate, -1);
       });
@@ -11656,17 +12904,29 @@ function App($$anchor, $$props) {
   );
   let state2 = user_derived(() => {
     get(revision);
+    const showingSteps =
+      get(panel).tab === "steps" &&
+      get(panel).draft &&
+      get(panel).selectedInstance?.loaded &&
+      !get(panel)._loading &&
+      (!get(panel).stepEditor || get(panel).stepEditor.existing);
+    const entries = showingSteps ? stepEntries(get(panel).draft) : [];
     return {
       t: get(panel).t,
       notices: get(panel).notices(),
       primary: primaryTabs.some(([id]) => id === get(panel).tab),
+      issues: get(panel)
+        .visibleIssues()
+        .filter((issue) => !warningStepId(issue, entries)),
     };
   });
   let t = user_derived(() => get(state2).t),
     notices = user_derived(() => get(state2).notices),
-    primary = user_derived(() => get(state2).primary);
+    primary = user_derived(() => get(state2).primary),
+    issues = user_derived(() => get(state2).issues);
   const primaryTabs = [
     ["steps", "Steps"],
+    ["random", "Random"],
     ["preview", "Preview"],
     ["settings", "Settings"],
   ];
@@ -11683,7 +12943,7 @@ function App($$anchor, $$props) {
   var node_2 = child(div_1);
   {
     var consequent_2 = ($$anchor2) => {
-      var p_1 = root_38();
+      var p_1 = root_310();
       var text_4 = only_child(p_1, true);
       template_effect(
         ($0) => set_text(text_4, $0),
@@ -11692,7 +12952,7 @@ function App($$anchor, $$props) {
       append($$anchor2, p_1);
     };
     var consequent_3 = ($$anchor2) => {
-      var p_2 = root_38();
+      var p_2 = root_310();
       var text_5 = only_child(p_2, true);
       template_effect(() => set_text(text_5, get(controllerName)));
       append($$anchor2, p_2);
@@ -11720,7 +12980,7 @@ function App($$anchor, $$props) {
         () => get(panel).instances,
         index,
         ($$anchor3, instance) => {
-          var option = root_45();
+          var option = root_47();
           var text_7 = only_child(option);
           var option_value = {};
           template_effect(
@@ -11771,7 +13031,7 @@ function App($$anchor, $$props) {
   var node_4 = sibling(node_3, 2);
   {
     var consequent_5 = ($$anchor2) => {
-      var p_3 = root_63();
+      var p_3 = root_64();
       var text_8 = only_child(p_3, true);
       template_effect(
         ($0) => set_text(text_8, $0),
@@ -11793,7 +13053,7 @@ function App($$anchor, $$props) {
     () => get(panel).selectedInstance?.overlaps || [],
     index,
     ($$anchor2, overlap) => {
-      var p_4 = root_72();
+      var p_4 = root_73();
       var text_9 = only_child(p_4);
       template_effect(
         ($0, $1, $2) =>
@@ -11827,7 +13087,7 @@ function App($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let id = () => get($$array)[0];
       let label = () => get($$array)[1];
-      var button_2 = root17();
+      var button_2 = root20();
       var text_12 = only_child(button_2, true);
       template_effect(
         ($0) => {
@@ -11869,7 +13129,7 @@ function App($$anchor, $$props) {
   each(
     div_5,
     21,
-    () => get(panel).visibleIssues(),
+    () => get(issues),
     index,
     ($$anchor2, issue) => {
       renderIssue(
@@ -11941,7 +13201,7 @@ function App($$anchor, $$props) {
               var node_11 = first_child(fragment_8);
               {
                 var consequent_8 = ($$anchor5) => {
-                  var button_5 = root17();
+                  var button_5 = root20();
                   var text_18 = only_child(button_5, true);
                   template_effect(
                     ($0) => set_text(text_18, $0),
@@ -11968,7 +13228,7 @@ function App($$anchor, $$props) {
               });
             };
             var consequent_11 = ($$anchor4) => {
-              StepsView($$anchor4, {
+              RandomEventEditor($$anchor4, {
                 get panel() {
                   return get(panel);
                 },
@@ -11978,7 +13238,7 @@ function App($$anchor, $$props) {
               });
             };
             var consequent_12 = ($$anchor4) => {
-              SettingsView($$anchor4, {
+              StepsView($$anchor4, {
                 get panel() {
                   return get(panel);
                 },
@@ -11988,6 +13248,26 @@ function App($$anchor, $$props) {
               });
             };
             var consequent_13 = ($$anchor4) => {
+              RandomView($$anchor4, {
+                get panel() {
+                  return get(panel);
+                },
+                get revision() {
+                  return get(revision);
+                },
+              });
+            };
+            var consequent_14 = ($$anchor4) => {
+              SettingsView($$anchor4, {
+                get panel() {
+                  return get(panel);
+                },
+                get revision() {
+                  return get(revision);
+                },
+              });
+            };
+            var consequent_15 = ($$anchor4) => {
               PreviewView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -12007,10 +13287,16 @@ function App($$anchor, $$props) {
                 $$render(consequent_9, 1);
               else if (get(panel).stepEditor && !get(panel).stepEditor.existing)
                 $$render(consequent_10, 2);
-              else if (get(panel).tab === "steps") $$render(consequent_11, 3);
+              else if (
+                get(panel).randomEditor &&
+                !get(panel).randomEditor.existing
+              )
+                $$render(consequent_11, 3);
+              else if (get(panel).tab === "steps") $$render(consequent_12, 4);
+              else if (get(panel).tab === "random") $$render(consequent_13, 5);
               else if (get(panel).tab === "settings")
-                $$render(consequent_12, 4);
-              else if (get(panel).tab === "preview") $$render(consequent_13, 5);
+                $$render(consequent_14, 6);
+              else if (get(panel).tab === "preview") $$render(consequent_15, 7);
             });
           }
           append($$anchor3, fragment_6);
@@ -12024,7 +13310,7 @@ function App($$anchor, $$props) {
   reset(ha_top_app_bar_fixed);
   var node_12 = sibling(ha_top_app_bar_fixed, 2);
   {
-    var consequent_14 = ($$anchor2) => {
+    var consequent_16 = ($$anchor2) => {
       UnsavedStepDialog($$anchor2, {
         get panel() {
           return get(panel);
@@ -12032,7 +13318,7 @@ function App($$anchor, $$props) {
       });
     };
     if_block(node_12, ($$render) => {
-      if (get(panel).pendingStepExit) $$render(consequent_14);
+      if (get(panel).pendingStepExit) $$render(consequent_16);
     });
   }
   template_effect(() => {
@@ -12069,6 +13355,16 @@ var OccupiedPanel = class extends HTMLElement {
   tab = "steps";
   t = translator("en");
   stepEditor = null;
+  randomEditor = null;
+  get activeEditor() {
+    return this.stepEditor || this.randomEditor;
+  }
+  get hasEditorChanges() {
+    if (this.stepEditor) {
+      return hasStepChanges(this.stepEditor);
+    }
+    return this.randomEditor ? hasRandomChanges(this.randomEditor) : false;
+  }
   pendingStepExit = null;
   selectedStep = null;
   preview;
@@ -12176,13 +13472,7 @@ var OccupiedPanel = class extends HTMLElement {
   }
   _locationChanged = () => void this._load();
   _beforeUnload = (event2) => {
-    if (
-      !(
-        this.dirty ||
-        this.yamlDirty ||
-        (this.stepEditor && hasStepChanges(this.stepEditor))
-      )
-    ) {
+    if (!(this.dirty || this.yamlDirty || this.hasEditorChanges)) {
       return;
     }
     event2.preventDefault();
@@ -12258,11 +13548,7 @@ var OccupiedPanel = class extends HTMLElement {
   }
   _canSwitchInstance() {
     return (
-      !(
-        this.dirty ||
-        this.yamlDirty ||
-        (this.stepEditor && hasStepChanges(this.stepEditor))
-      ) ||
+      !(this.dirty || this.yamlDirty || this.hasEditorChanges) ||
       globalThis.confirm(
         this.t("This instance has unsaved changes. Discard them and switch?"),
       )
@@ -12289,6 +13575,7 @@ var OccupiedPanel = class extends HTMLElement {
       _loading: false,
       tab: "steps",
       stepEditor: null,
+      randomEditor: null,
       pendingStepExit: null,
       selectedStep: null,
       preview: void 0,
@@ -12359,7 +13646,7 @@ var OccupiedPanel = class extends HTMLElement {
       snapshot2.source_revision !== this.revision
     );
     this.flush();
-    if (this.stale && !this.dirty && !this.busy && !this.stepEditor) {
+    if (this.stale && !this.dirty && !this.busy && !this.activeEditor) {
       void this.reloadSaved();
     }
   }
@@ -12426,7 +13713,7 @@ var OccupiedPanel = class extends HTMLElement {
       if (epoch !== this.epoch) {
         return;
       }
-      if (this.draft && (this.dirty || this.yamlDirty || this.stepEditor)) {
+      if (this.draft && (this.dirty || this.yamlDirty || this.activeEditor)) {
         this.document = doc;
         this.saved = doc.program;
         this.stale = doc.revision !== this.revision;
@@ -12466,7 +13753,7 @@ var OccupiedPanel = class extends HTMLElement {
     this.flush();
   }
   navigate(tab) {
-    if (this.stepEditor) {
+    if (this.activeEditor) {
       this.requestStepExit(() => {
         this.navigate(tab);
       });
@@ -12489,12 +13776,12 @@ var OccupiedPanel = class extends HTMLElement {
     this.renderView();
   }
   requestStepExit(action2) {
-    const editor = this.stepEditor;
+    const editor = this.activeEditor;
     if (!editor) {
       action2();
       return;
     }
-    if (hasStepChanges(editor)) {
+    if (this.hasEditorChanges) {
       this.pendingStepExit = action2;
       this.flush();
       return;
@@ -12514,6 +13801,7 @@ var OccupiedPanel = class extends HTMLElement {
   finishStepExit(action2) {
     this.pendingStepExit = null;
     this.stepEditor = null;
+    this.randomEditor = null;
     this.selectedStep = null;
     this.error = "";
     this.issues = [];
@@ -12665,7 +13953,7 @@ var OccupiedPanel = class extends HTMLElement {
   Show a backend issue on the step editor field it belongs to.
   */
   focusIssue(issue) {
-    const editor = this.stepEditor;
+    const editor = this.activeEditor;
     if (!editor) {
       return;
     }
@@ -12679,7 +13967,9 @@ var OccupiedPanel = class extends HTMLElement {
       );
       return;
     }
-    const field = editorField(path.slice(prefix.length), editor.form);
+    const field = this.randomEditor
+      ? randomEditorField(path.slice(prefix.length), this.randomEditor.form)
+      : editorField(path.slice(prefix.length), this.stepEditor.form);
     editor.errors[field] = issue.message;
     this.renderView();
     this.shadowRoot
@@ -12708,7 +13998,7 @@ var OccupiedPanel = class extends HTMLElement {
     const version = this.version,
       draft = copy(candidate || this.draft),
       expected = this.revision,
-      editor = this.stepEditor,
+      editor = this.activeEditor,
       submittedForm = editor ? copy(editor.form) : null;
     return this.run(async (epoch) => {
       const validation = await this.ws("editor_validate", { program: draft });
@@ -12744,12 +14034,18 @@ var OccupiedPanel = class extends HTMLElement {
         return this.showIssues(result);
       }
       this.adopt({ ...this.document, ...result, needs_apply: false });
-      if (editor && this.stepEditor === editor) {
+      if (editor && this.activeEditor === editor) {
         this.draft = copy(result.program);
         this.dirty = false;
-        this.selectedStep = editor.id;
+        if (this.stepEditor) {
+          this.selectedStep = editor.id;
+        }
         editor.existing = true;
-        editor.original = submittedForm;
+        if (this.randomEditor) {
+          this.randomEditor.original = submittedForm;
+        } else {
+          this.stepEditor.original = submittedForm;
+        }
         if (version !== this.version) {
           this.fail(
             this.t("Earlier changes saved. Your newer edits are still open."),
@@ -12757,6 +14053,7 @@ var OccupiedPanel = class extends HTMLElement {
           return;
         }
         this.stepEditor = null;
+        this.randomEditor = null;
       }
       if (version === this.version) {
         this.draft = copy(result.program);
@@ -12764,7 +14061,9 @@ var OccupiedPanel = class extends HTMLElement {
         this.renderView();
         if (editor) {
           this.shadowRoot
-            .getElementById(`step-card-${editor.id}`)
+            .getElementById(
+              `${this.tab === "random" ? "random" : "step"}-card-${editor.id}`,
+            )
             ?.focus({ preventScroll: true });
         }
       } else {
@@ -12775,7 +14074,7 @@ var OccupiedPanel = class extends HTMLElement {
   async reloadSaved(discard = false) {
     if (
       this.busy ||
-      ((this.dirty || this.yamlDirty || this.stepEditor) && !discard)
+      ((this.dirty || this.yamlDirty || this.activeEditor) && !discard)
     ) {
       return;
     }
@@ -12788,6 +14087,7 @@ var OccupiedPanel = class extends HTMLElement {
       this.adopt(doc);
       this.resetDraft();
       this.stepEditor = null;
+      this.randomEditor = null;
       this.renderView();
     });
   }
@@ -12911,6 +14211,26 @@ function editorField(tail, form) {
     return "anchor";
   }
   return "name";
+}
+function randomEditorField(tail, form) {
+  const head2 = tail[0];
+  if (head2 === "start" || head2 === "end") {
+    if (tail.length === 1) {
+      return `${head2}.${form[head2].mode === "absolute" ? "start" : "anchor"}`;
+    }
+    return `${head2}.${editorField(["timing", ...tail.slice(1)], form.on)}`;
+  }
+  if (head2 === "on" || head2 === "off") {
+    return `${head2}.${editorField(tail.slice(1), form[head2])}`;
+  }
+  return (
+    {
+      min_duration: "minDuration",
+      max_duration: "maxDuration",
+      count: "count",
+      days: "days",
+    }[String(head2)] || "name"
+  );
 }
 if (!customElements.get("occupied-panel")) {
   customElements.define("occupied-panel", OccupiedPanel);

@@ -6,9 +6,11 @@ Occupied manages selected Home Assistant entities using schedules, optional rand
 
 It is the spiritual successor of https://github.com/acockburn/occusim
 
-A native Home Assistant occupancy simulator with a shared GUI/YAML step model and deterministic daily planning.
+A native Home Assistant occupancy simulator with shared GUI/YAML steps and random events, and deterministic daily planning.
 
 Create a controller through **Settings → Devices & services → Add integration → Occupied**, then select **Configure**. Permission starts disabled. The editor creates steps with absolute start windows or relative timing, and one light/switch, scene, or native entity service action. Titles are optional. All weekdays and enabled state are implicit defaults.
+
+Use the separate **Random** tab for repeated activity: choose a start/end window, a number of occurrences, a duration range, and actions for each occurrence's start and end. The same time and entity pickers support clock times, existing steps, solar events, and Home Assistant time sources. End actions reuse the selected entities by default. Random events appear alongside steps in Preview and in YAML exports.
 
 ```yaml
 schema_version: 1

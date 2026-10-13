@@ -2,12 +2,16 @@
   import type { OccupiedPanel } from "./occupied-panel.js";
   import type { Issue, Tab } from "./types.js";
   import { errorMessage } from "./util.js";
+  import { stepEntries } from "./step-model.js";
+  import { warningStepId } from "./step-issues.js";
 
   import StepEditor from "./StepEditor.svelte";
   import StepsView from "./StepsView.svelte";
   import SettingsView from "./SettingsView.svelte";
   import PreviewView from "./PreviewView.svelte";
   import UnsavedStepDialog from "./UnsavedStepDialog.svelte";
+  import RandomView from "./RandomView.svelte";
+  import RandomEventEditor from "./RandomEventEditor.svelte";
   let {
     panel: controller,
     updates,
@@ -32,15 +36,26 @@
   );
   let state = $derived.by(() => {
     revision;
+    const showingSteps =
+      panel.tab === "steps" &&
+      panel.draft &&
+      panel.selectedInstance?.loaded &&
+      !panel._loading &&
+      (!panel.stepEditor || panel.stepEditor.existing);
+    const entries = showingSteps ? stepEntries(panel.draft) : [];
     return {
       t: panel.t,
       notices: panel.notices(),
       primary: primaryTabs.some(([id]) => id === panel.tab),
+      issues: panel
+        .visibleIssues()
+        .filter((issue) => !warningStepId(issue, entries)),
     };
   });
-  let { t, notices, primary } = $derived(state);
+  let { t, notices, primary, issues } = $derived(state);
   const primaryTabs: [Tab, string][] = [
     ["steps", "Steps"],
+    ["random", "Random"],
     ["preview", "Preview"],
     ["settings", "Settings"],
   ];
@@ -68,7 +83,7 @@
   {@const text = primary
     ? item.message
     : `${item.severity || "error"} · ${item.path || "$"}: ${item.message}`}
-  {#if panel.stepEditor && item.severity !== "warning"}
+  {#if panel.activeEditor && item.severity !== "warning"}
     <button
       type="button"
       class={className}
@@ -157,7 +172,7 @@
       {/if}
     </div>
     <div id="issues">
-      {#each panel.visibleIssues() as issue}
+      {#each issues as issue}
         {@render renderIssue(issue, primary)}
       {/each}
     </div>
@@ -188,8 +203,12 @@
               >{/if}
           {:else if panel.stepEditor && !panel.stepEditor.existing}
             <StepEditor {panel} {revision} />
+          {:else if panel.randomEditor && !panel.randomEditor.existing}
+            <RandomEventEditor {panel} {revision} />
           {:else if panel.tab === "steps"}
             <StepsView {panel} {revision} />
+          {:else if panel.tab === "random"}
+            <RandomView {panel} {revision} />
           {:else if panel.tab === "settings"}
             <SettingsView {panel} {revision} />
           {:else if panel.tab === "preview"}

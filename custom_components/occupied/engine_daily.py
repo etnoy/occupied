@@ -19,6 +19,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import Context, State, callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
@@ -253,6 +254,7 @@ class DailyEngine:
                 await self._stop_owned()
                 self.status, self.reason = "inactive", f"Cannot compile daily plan: {err}"
                 self.last_error = str(err)
+                self._record("planning", "failed", self.reason)
                 await self._persist()
                 self._notify()
                 return
@@ -458,6 +460,7 @@ class DailyEngine:
                 self._invalidate()
                 self.status, self.reason = "inactive", f"Cannot compile daily plan: {err}"
                 self.last_error = str(err)
+                self._record("planning", "failed", self.reason)
         await self._persist()
         self._notify()
 
@@ -664,6 +667,7 @@ class DailyEngine:
                         await self._stop_owned()
                         self.status, self.reason = "inactive", f"Cannot compile daily plan: {err}"
                         self.last_error = str(err)
+                        self._record(event.key, "failed", self.reason)
                 elif event.kind == "handover_done":
                     if data := self._handover.get(event.payload):
                         target = LightState(**data["target"])
@@ -720,15 +724,45 @@ class DailyEngine:
             return False
         if (set(action.targets) | set(action.resources)) & self._yielded:
             return False
-        if action.action.startswith(("light.", "switch.")) and any(
-            self._observe(entity) is None for entity in action.targets
-        ):
-            self._finish(key, "unavailable", action)
+        registry = er.async_get(self.hass)
+        disabled = [
+            entity
+            for entity in action.targets
+            if (entry := registry.async_get(entity)) and entry.disabled_by
+        ]
+        if disabled:
+            self._finish(
+                key,
+                "entity_disabled",
+                action,
+                f"Skipping {action.action}; disabled entities: {', '.join(disabled)}",
+            )
             return False
+        unresolved = [entity for entity in action.targets if self._observe(entity) is None]
+        if action.action.startswith(("light.", "switch.")) and unresolved:
+            self._finish(
+                key,
+                "unavailable",
+                action,
+                f"Skipping {action.action}; unresolved entities: {', '.join(unresolved)}",
+            )
+            return False
+        if unresolved:
+            self._record(
+                key,
+                "entity_unresolved",
+                f"Attempting {action.action}; unresolved entities: {', '.join(unresolved)}",
+            )
         domain, service = action.action.split(".")
         data = service_payload(self.hass, action)
         if not self.hass.services.has_service(domain, service):
-            self._finish(key, "service_missing", action)
+            self._finish(
+                key,
+                "service_missing",
+                action,
+                f"Skipping {action.action} for {', '.join(action.targets)}; "
+                "service is not registered",
+            )
             return False
         context = Context()
         self._contexts.append(context.id)
@@ -764,7 +798,9 @@ class DailyEngine:
                     domain, service, data, blocking=True, context=context
                 )
         except Exception as err:
-            self.last_error = f"{action.action}: {err}"
+            self.last_error = (
+                f"{action.action} for {', '.join(action.targets)}: {type(err).__name__}: {err}"
+            )
             self._finish(key, "failed", action, self.last_error)
             if (
                 action.replay_safe
@@ -913,6 +949,30 @@ class DailyEngine:
                 self._notify()
 
     def _record(self, key, outcome, detail):
+        if outcome in {"failed", "invalid_plan"}:
+            _LOGGER.error(
+                "Occupied %s (%s), event %s: %s: %s",
+                self.program.name,
+                self.entry_id,
+                key,
+                outcome,
+                detail,
+            )
+        elif outcome in {
+            "entity_disabled",
+            "entity_unresolved",
+            "unavailable",
+            "service_missing",
+            "handover_skipped",
+        }:
+            _LOGGER.warning(
+                "Occupied %s (%s), event %s: %s: %s",
+                self.program.name,
+                self.entry_id,
+                key,
+                outcome,
+                detail,
+            )
         self.outcomes.append(
             {
                 "time": dt_util.utcnow().isoformat(),

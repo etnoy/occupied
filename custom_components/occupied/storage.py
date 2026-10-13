@@ -55,12 +55,23 @@ def plan_from_data(data):
         raise ValueError("Unsupported saved planner version")
     # The shape check rejects obsolete caches without changing version numbers.
     events = tuple(
-        PlanEvent(i["id"], instant(i["time"]), i["source_id"], action_from_data(i["action"]), index)
+        PlanEvent(
+            i["id"],
+            instant(i["time"]),
+            i["source_id"],
+            action_from_data(i["action"]),
+            i.get("sequence", index),
+            i["kind"],
+        )
         for index, i in enumerate(data["events"])
     )
     start, end = instant(data["start"]), instant(data["end"])
-    if start >= end or len(events) > 50000 or any(i.get("kind") != "step" for i in data["events"]):
-        raise ValueError("Invalid saved step plan")
+    if (
+        start >= end
+        or len(events) > 50000
+        or any(i.get("kind") not in {"step", "random_start", "random_end"} for i in data["events"])
+    ):
+        raise ValueError("Invalid saved plan")
     return DailyPlan(
         date.fromisoformat(data["simulation_date"]),
         str(data["seed"]),

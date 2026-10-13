@@ -9,6 +9,8 @@ import type {
   TimeSource,
   Catalog,
   Translate,
+  Action,
+  ActionForm,
 } from "./types.js";
 import { offsetErrors, timingForm, entityName } from "./util.js";
 import { copy, days, identifier, parentSteps, references } from "./model.js";
@@ -75,21 +77,10 @@ export function stepEditor(
   parent?: StepEntry,
 ): StepEditor {
   const source = entry || parent;
-  const action = source?.action;
-  let kind = "entities";
-  if (action === "scene.turn_on") {
-    kind = "scene";
-  } else if (action?.includes(".")) {
-    kind = "service";
-  }
   const form: StepForm = {
+    ...actionForm(source),
     name: entry ? program.steps?.[entry.id]?.name || "" : "",
     enabled: entry?.enabled !== false,
-    kind,
-    service: source?.action || "homeassistant.turn_on",
-    data: JSON.stringify(source?.data || {}, null, 2),
-    entities: [...(source?.entities || [])],
-    action: action === "turn_off" ? "turn_off" : "turn_on",
     days: [...(source?.days || days)],
     timing: timingForm(entry?.timing),
   };
@@ -109,12 +100,38 @@ export function stepEditor(
     errors: {},
   };
 }
+export function actionForm(source?: Action): ActionForm {
+  const action = source?.action;
+  let kind = "entities";
+  if (action === "scene.turn_on") {
+    kind = "scene";
+  } else if (action?.includes(".")) {
+    kind = "service";
+  }
+  return {
+    kind,
+    service: source?.action || "homeassistant.turn_on",
+    data: JSON.stringify(source?.data || {}, null, 2),
+    entities: [...(source?.entities || [])],
+    action: action === "turn_off" ? "turn_off" : "turn_on",
+  };
+}
 export function hasStepChanges(editor: StepEditor) {
   return JSON.stringify(editor.form) !== JSON.stringify(editor.original);
 }
 export function editorErrors(program: Program, editor: StepEditor) {
   const { form, id } = editor,
-    errors: FieldErrors = {};
+    errors = {
+      ...actionErrors(form),
+      ...timingErrors(program, form.timing, id),
+    };
+  if (form.days.length === 0) {
+    errors.days = "Choose at least one day.";
+  }
+  return errors;
+}
+export function actionErrors(form: ActionForm): FieldErrors {
+  const errors: FieldErrors = {};
   if (form.entities.length === 0) {
     errors.entities =
       form.kind === "scene"
@@ -152,10 +169,14 @@ export function editorErrors(program: Program, editor: StepEditor) {
       errors.data = "Service data must be a JSON object.";
     }
   }
-  if (form.days.length === 0) {
-    errors.days = "Choose at least one day.";
-  }
-  const time = form.timing;
+  return errors;
+}
+export function timingErrors(
+  program: Program,
+  time: TimingForm,
+  id?: string,
+): FieldErrors {
+  const errors: FieldErrors = {};
   const clockPattern = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
   if (time.mode === "absolute") {
     if (!clockPattern.test(time.start)) {
@@ -232,26 +253,36 @@ export function buildStep(program: Program, editor: StepEditor) {
   }
   const next = copy(program),
     { form } = editor;
+  (next.steps ||= {})[editor.id] = {
+    ...(form.name.trim() && { name: form.name.trim() }),
+    ...(!form.enabled && { enabled: false }),
+    days: [...form.days],
+    timing: formTiming(form.timing),
+    ...buildAction(form),
+  };
+  return next;
+}
+export function buildAction(form: ActionForm): Action {
   let action = form.action;
   if (form.kind === "scene") {
     action = "scene.turn_on";
   } else if (form.kind === "service") {
     action = form.service;
   }
-  (next.steps ||= {})[editor.id] = {
-    ...(form.name.trim() && { name: form.name.trim() }),
-    ...(!form.enabled && { enabled: false }),
-    days: [...form.days],
-    timing: formTiming(form.timing),
+  return {
     action,
     entities: sorted(form.entities),
     ...(form.kind !== "entities" && { data: JSON.parse(form.data) }),
   };
-  return next;
 }
 export function dependentNames(program: Program, id: string) {
   const paths = references(program, id);
-  return stepEntries(program)
-    .filter((e) => paths.some((p) => p[1] === e.id))
-    .map((e) => e.name);
+  return [
+    ...stepEntries(program)
+      .filter((e) => paths.some((p) => p[0] === "steps" && p[1] === e.id))
+      .map((e) => e.name),
+    ...Object.entries(program.random || {})
+      .filter(([key]) => paths.some((p) => p[0] === "random" && p[1] === key))
+      .map(([key, event]) => event.name || key),
+  ];
 }

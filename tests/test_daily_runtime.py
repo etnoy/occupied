@@ -214,6 +214,51 @@ async def test_restart_retains_sampled_plans_and_does_not_replay(
     assert len(daily_devices) == before
 
 
+@pytest.mark.parametrize("dry_run", [False, True])
+async def test_random_activity_dispatch_restart_and_manual_control(
+    hass, daily_entry, daily_devices, freezer, runtime_program, dry_run
+):
+    runtime_program["steps"] = {}
+    runtime_program["random"] = {
+        "lamp": {
+            "start": {"absolute_time": {"start": "18:01"}},
+            "end": {"absolute_time": {"start": "18:21"}},
+            "min_duration": "20m",
+            "max_duration": "20m",
+            "count": 1,
+            "on": {"action": "turn_on", "entities": ["light.proof"]},
+            "off": {"action": "turn_off", "entities": ["light.proof"]},
+        }
+    }
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_dry_run(dry_run)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 60)
+    assert hass.states.get("light.proof").state == ("off" if dry_run else "on")
+    plans = {day: plan.to_dict() for day, plan in engine._plans.items()}
+    before = len(daily_devices)
+    assert await hass.config_entries.async_reload(daily_entry.entry_id)
+    await hass.async_block_till_done()
+    restarted = daily_entry.runtime_data
+    assert {day: plan.to_dict() for day, plan in restarted._plans.items()} == plans
+    await advance(hass, freezer, 0)
+    assert len(daily_devices) == before
+    await advance(hass, freezer, 1200)
+    assert hass.states.get("light.proof").state == "off"
+    assert [call.service for call in daily_devices] == ([] if dry_run else ["turn_on", "turn_off"])
+    if not dry_run:
+        await restarted.async_set_enabled(False)
+        await advance(hass, freezer, 85200)
+        await restarted.async_set_enabled(True)
+        await advance(hass, freezer, 0)
+        hass.states.async_set("light.proof", "off")
+        await hass.async_block_till_done()
+        assert "light.proof" in restarted._yielded
+        before = len(daily_devices)
+        await advance(hass, freezer, 60)
+        assert len(daily_devices) == before
+
+
 async def test_permission_and_pause_cancel_future_dispatch(
     hass, daily_entry, daily_devices, freezer
 ):
@@ -227,7 +272,9 @@ async def test_permission_and_pause_cancel_future_dispatch(
     assert not any(c.domain == "script" for c in daily_devices)
 
 
-async def test_storage_failure_blocks_calls(hass, daily_entry, daily_devices, freezer, monkeypatch):
+async def test_storage_failure_blocks_calls(
+    hass, daily_entry, daily_devices, freezer, monkeypatch, caplog
+):
     from homeassistant.exceptions import HomeAssistantError
 
     engine = await load(hass, daily_entry, freezer)
@@ -239,6 +286,75 @@ async def test_storage_failure_blocks_calls(hass, daily_entry, daily_devices, fr
     await engine.async_set_enabled(True)
     await advance(hass, freezer, 121)
     assert not daily_devices and not engine.active and engine._storage_failed
+    assert "Disk full" in caplog.text
+    assert daily_entry.entry_id in caplog.text
+
+
+@pytest.mark.parametrize("state", [None, "unknown", "unavailable", "disabled"])
+async def test_unresolved_or_disabled_target_logs_and_skips(
+    hass, daily_entry, daily_devices, freezer, caplog, state
+):
+    from homeassistant.helpers import entity_registry as er
+
+    from custom_components.occupied.planner import ResolvedAction
+
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    entity = "switch.unresolved"
+    if state == "disabled":
+        entry = er.async_get(hass).async_get_or_create(
+            "switch", "test", "disabled-target", disabled_by=er.RegistryEntryDisabler.USER
+        )
+        entity = entry.entity_id
+        hass.states.async_set(entity, "off")
+    elif state:
+        hass.states.async_set(entity, state)
+    caplog.clear()
+    action = ResolvedAction("switch.turn_on", (entity,), {}, (entity,), True)
+    assert not await engine._call(action, "test-target", engine.generation)
+    assert not daily_devices
+    assert entity in caplog.text
+    assert "switch.turn_on" in caplog.text
+    assert "test-target" in caplog.text
+    assert daily_entry.entry_id in caplog.text
+    assert ("disabled entities" if state == "disabled" else "unresolved entities") in caplog.text
+
+
+@pytest.mark.parametrize("error", [ValueError("Unexpected failure"), TimeoutError()])
+async def test_service_failure_logs_context(
+    hass, daily_entry, daily_devices, freezer, caplog, error
+):
+    from custom_components.occupied.planner import ResolvedAction
+
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+
+    async def fail(call):
+        raise error
+
+    hass.services.async_register("script", "fail", fail)
+    caplog.clear()
+    action = ResolvedAction("script.fail", ("script.test",), {}, ("script.test",), False)
+    assert not await engine._call(action, "test-failure", engine.generation)
+    assert "script.fail" in caplog.text
+    assert "script.test" in caplog.text
+    assert "test-failure" in caplog.text
+    assert type(error).__name__ in caplog.text
+    assert daily_entry.entry_id in caplog.text
+
+
+async def test_missing_service_logs_and_skips(hass, daily_entry, daily_devices, freezer, caplog):
+    from custom_components.occupied.planner import ResolvedAction
+
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    caplog.clear()
+    action = ResolvedAction("light.missing", ("light.proof",), {}, ("light.proof",), False)
+    assert not await engine._call(action, "test-missing-service", engine.generation)
+    assert not daily_devices
+    assert "light.missing" in caplog.text
+    assert "light.proof" in caplog.text
+    assert "service is not registered" in caplog.text
 
 
 async def test_time_source_changes_reschedule_without_replaying_completed_steps(

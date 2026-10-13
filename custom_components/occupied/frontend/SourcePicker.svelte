@@ -17,6 +17,7 @@
     t,
     onChange,
     error = "",
+    fieldPrefix = "",
   }: {
     hass: HomeAssistant;
     choices: TimeSource[];
@@ -24,6 +25,7 @@
     t: Translate;
     onChange: (value: string) => void;
     error?: string;
+    fieldPrefix?: string;
   } = $props();
   let items = $derived.by(() => {
     const items: (string | PickerItem)[] = [];
@@ -65,11 +67,11 @@
   <!-- HA provides keyboard interaction inside its custom element. -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <ha-generic-picker
-    id="step-anchor"
-    data-builder-field="anchor"
+    id={`step-${fieldPrefix}anchor`}
+    data-builder-field={`${fieldPrefix}anchor`}
     aria-label={t("Relative to")}
     aria-invalid={error ? "true" : undefined}
-    aria-describedby={error ? "step-error-anchor" : undefined}
+    aria-describedby={error ? `step-error-${fieldPrefix}anchor` : undefined}
     tabindex="0"
     use:properties={{
       hass,
@@ -89,5 +91,5 @@
     }}
     onvalue-changed={select}
   ></ha-generic-picker>
-  <FieldError key="anchor" errors={{ anchor: error }} />
+  <FieldError key="anchor" {fieldPrefix} errors={{ anchor: error }} />
 </div>

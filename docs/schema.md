@@ -1,10 +1,10 @@
 # Occupied configuration schema
 
-The GUI, JSON API, YAML loader, CLI, and runtime use the same step model. The schema remains `schema_version: 1` during greenfield development. The generated contract is [occupied.schema.json](../schema/occupied.schema.json).
+The GUI, JSON API, YAML loader, CLI, and runtime use the same step and random-event model. The schema remains `schema_version: 1` during greenfield development. The generated contract is [occupied.schema.json](../schema/occupied.schema.json).
 
 ## Program and steps
 
-`schema_version: 1` and `name` are required. The only other program field is `steps`, a mapping keyed by stable step IDs. An omitted steps map creates an empty controller.
+`schema_version: 1` and `name` are required. The optional `steps` and `random` mappings are keyed by stable IDs. Omitting both creates an empty controller.
 
 ```yaml
 schema_version: 1
@@ -57,6 +57,28 @@ Solar sources support sunrise, sunset, dawn, dusk, noon, and midnight. Dawn/dusk
 
 HA sources support time-bearing datetime helpers, timestamp sensors, and calendars. Calendar sources require `attribute: start_time` or `end_time`. Time-only helpers repeat daily. Dated sources use only the occurrence HA reports and are not projected onto unknown future dates. Missing or unavailable values skip the step with a warning. Offline previews have no HA snapshot. Source changes reschedule future work without replaying completed steps for the same source date.
 
+## Random events
+
+The `random` map defines repeated activity inside a window. The GUI edits it in its own **Random** tab:
+
+```yaml
+random:
+  living_room:
+    start: {absolute_time: {start: '18:00'}}
+    end: {absolute_time: {start: '23:00'}}
+    min_duration: 5m
+    max_duration: 15m
+    count: 3
+    'on': {action: turn_on, entities: [light.living_room]}
+    'off': {action: turn_off, entities: [light.living_room]}
+```
+
+`start` and `end` each use the same timing model as steps. They can reference a step (`relative_to: {step: evening}`), a solar event, or a known HA time source, and can themselves have random bounds. Step boundaries follow that source date's sampled step times. Disabled, unscheduled, or unavailable boundaries skip the random event. An earlier recurring clock, solar, or time-only helper end rolls into the next local date; step and dated-source boundaries must already be chronological.
+
+`min_duration` and `max_duration` are positive h/m/s durations within seven days, defaulting to `5m` and `15m`. Maximum must be at least minimum. `count` is an integer from 1 to 1000, defaulting to 3. Optional `name`, `enabled`, and `days` follow the step defaults. `on` and `off` each require an action and entities, with optional service data, using the same action validation as steps. Either phase can activate a scene or call a native entity service.
+
+Each occurrence independently samples its duration and start time. Both actions stay inside the resolved window; maximum duration is limited by the available window, and a minimum that cannot fit makes the date infeasible. Equal durations are supported. Overlap is allowed, so an end action may run while another occurrence is active. Sampling streams are stable per ID and occurrence; titles, presentation order, and unrelated definitions do not move sampled times. Step ID renames update both boundary references. Random IDs can be renamed using the CLI/API `random` kind.
+
 ## Dates, context, and DST
 
 Timezone and location come from HA, or CLI context flags (`--timezone`, `--latitude`, `--longitude`, `--elevation`). They are not duplicated in program YAML. Offline dated previews require timezone context; solar steps also require location.
@@ -73,11 +95,11 @@ A qualified `domain.service`, such as `light.turn_on`, `cover.set_cover_position
 
 `scene.turn_on` selects one HA scene and optionally accepts service data. Scene and generic service effects are opaque: Occupied does not infer changed lights, inverses, or cleanup. Native HA service schemas are checked during GUI validation/save without executing services. Put entity selection in `entities`; target selectors in `data` are rejected.
 
-One step has one action. Related steps model subsequent scheduled actions. There are no routine containers, inherited defaults, multi-action lists, timed activity/window lifecycles, probability, stagger, weighted targets, or configurable sampling distributions.
+One step has one action. Related steps model subsequent scheduled actions; random events pair start/end actions for repeated occurrences. There are no routine containers, inherited defaults, multi-action lists, probability, stagger, weighted targets, or configurable sampling distributions.
 
 ## Projection and runtime
 
-Controlled entities are derived from enabled steps. Only direct typed light intents participate in handover. State starts Unknown for each local date until a scheduled action establishes intent; activation leaves unknown state alone. An explicit midnight step can establish an initial state. Scenes/services remain opaque and do not supply inferred baselines.
+Controlled entities are derived from enabled steps and both actions of enabled random events. Only direct typed light intents participate in handover. State starts Unknown for each local date until a scheduled action establishes intent; activation leaves unknown state alone. An explicit midnight step can establish an initial state. Scenes/services remain opaque and do not supply inferred baselines.
 
 On without brightness keeps known desired brightness or delegates brightness to HA/the device. It never inserts a default percentage. Handover uses one internal ten-minute default and HA capabilities for native transitions or bounded fallback calls. Outside manual changes yield that entity until the next activation. Stopping leaves states and holds still-owned native fades at the observed level.
 

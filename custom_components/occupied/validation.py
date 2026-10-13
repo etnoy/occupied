@@ -9,7 +9,7 @@ from typing import Any, Literal
 
 from pydantic import ValidationError
 
-from .models import Program
+from .models import Program, program_actions, program_timings
 
 type ModelPath = tuple[str | int, ...]
 
@@ -43,8 +43,12 @@ def format_path(path):
 
 def program_data(program):
     data = program.model_dump(mode="json", exclude_none=True, exclude_defaults=True)
-    for step in data.get("steps", {}).values():
-        source = step["timing"].get("relative_to")
+    timings = [step["timing"] for step in data.get("steps", {}).values()]
+    timings += [
+        event[edge] for event in data.get("random", {}).values() for edge in ("start", "end")
+    ]
+    for timing in timings:
+        source = timing.get("relative_to")
         if source and source.get("start_offset") == "0s":
             source.pop("start_offset")
     return data
@@ -156,10 +160,19 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
             [Issue("schema", i["msg"], tuple(i["loc"])) for i in err.errors()]
         ) from err
     issues = []
-    if len(program.steps) > 5000:
-        issues.append(Issue("program_size", "A program supports at most 5000 steps", ("steps",)))
-    for key, step in program.steps.items():
-        path = ("steps", key)
+    if len(program.steps) + len(program.random) > 5000:
+        issues.append(
+            Issue("program_size", "A program supports at most 5000 steps and random events")
+        )
+    for path, timing in program_timings(program, enabled_only=False):
+        source = timing.relative_to
+        if source and source.step and source.step not in program.steps:
+            issues.append(
+                Issue(
+                    "dangling_step", f"Unknown step {source.step}", path + ("relative_to", "step")
+                )
+            )
+    for path, step in program_actions(program, enabled_only=False):
         action = step.action
         if {"entity_id", "device_id", "area_id"} & step.data.keys():
             issues.append(
@@ -221,6 +234,10 @@ def behavior_hash(program):
     data.pop("name")
     for step in data["steps"].values():
         step.pop("name", None)
+    for event in data["random"].values():
+        event.pop("name", None)
+    if not data["random"]:
+        data.pop("random")
     return hashlib.sha256(
         json.dumps(data, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
     ).hexdigest()
@@ -231,17 +248,23 @@ def validation_warnings(program):
 
 
 def rename_identifier(program, kind, old, new):
-    if kind != "step":
-        raise ProgramError([Issue("identifier_kind", "Only step IDs can be renamed")])
+    if kind not in {"step", "random"}:
+        raise ProgramError([Issue("identifier_kind", "Choose step or random IDs")])
     data = program_data(program)
-    steps = data.get("steps", {})
-    if old not in steps:
-        raise ProgramError([Issue("unknown_id", f"Unknown step {old}")])
-    if new != old and new in steps:
-        raise ProgramError([Issue("duplicate_id", f"Step {new} already exists")])
-    data["steps"] = {(new if key == old else key): value for key, value in steps.items()}
-    for step in data["steps"].values():
-        source = step["timing"].get("relative_to")
-        if source and source.get("step") == old:
-            source["step"] = new
+    collection = "steps" if kind == "step" else "random"
+    items = data.get(collection, {})
+    if old not in items:
+        raise ProgramError([Issue("unknown_id", f"Unknown {kind} {old}")])
+    if new != old and new in items:
+        raise ProgramError([Issue("duplicate_id", f"{kind} {new} already exists")])
+    data[collection] = {(new if key == old else key): value for key, value in items.items()}
+    if kind == "step":
+        timings = [step["timing"] for step in data.get("steps", {}).values()]
+        timings += [
+            event[edge] for event in data.get("random", {}).values() for edge in ("start", "end")
+        ]
+        for timing in timings:
+            source = timing.get("relative_to")
+            if source and source.get("step") == old:
+                source["step"] = new
     return validate_program(data)

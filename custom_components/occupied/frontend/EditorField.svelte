@@ -1,8 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import type { OccupiedPanel } from "./occupied-panel.js";
-  import type { StepEditorContext } from "./step-editor-controller.js";
-  import type { HaSelector } from "./types.js";
+  import type { HaSelector, EditorContext } from "./types.js";
   import { isValueChangedEvent } from "./util.js";
   import { focusEditor } from "./step-editor-controller.js";
   import { properties, validity } from "./dom.js";
@@ -31,7 +30,7 @@
     trailing,
   }: {
     panel: OccupiedPanel;
-    context: StepEditorContext;
+    context: EditorContext;
     key: string;
     label: string;
     value: string | number;
@@ -40,10 +39,12 @@
     trailing?: Snippet;
   } = $props();
   let { editor, t, changed } = $derived(context);
-  let id = $derived(`step-${key}`);
+  let fieldPrefix = $derived(context.fieldPrefix || "");
+  let field = $derived(`${fieldPrefix}${key}`);
+  let id = $derived(`step-${field}`);
   let invalid = $derived(editor.errors[key] ? true : undefined);
   let described = $derived(
-    editor.errors[key] ? `step-error-${key}` : undefined,
+    editor.errors[key] ? `step-error-${field}` : undefined,
   );
   let nativeTime = $derived(options.type === "time");
 
@@ -59,7 +60,7 @@
     }
     update(String(control.value ?? ""));
     changed(key);
-    if (options.render) focusEditor(panel, key);
+    if (options.render) focusEditor(panel, field);
   }
 </script>
 
@@ -75,7 +76,7 @@
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <ha-selector
       {id}
-      data-builder-field={key}
+      data-builder-field={field}
       aria-label={t(label)}
       aria-invalid={invalid}
       aria-describedby={described}
@@ -92,7 +93,7 @@
   {:else if options.choices}
     <select
       {id}
-      data-builder-field={key}
+      data-builder-field={field}
       aria-label={options.hideLabel ? t(label) : undefined}
       aria-invalid={invalid}
       aria-describedby={described}
@@ -106,7 +107,7 @@
   {:else if options.multiline}
     <textarea
       {id}
-      data-builder-field={key}
+      data-builder-field={field}
       aria-label={options.hideLabel ? t(label) : undefined}
       aria-invalid={invalid}
       aria-describedby={described}
@@ -115,7 +116,7 @@
   {:else}
     <input
       {id}
-      data-builder-field={key}
+      data-builder-field={field}
       type={options.type || "text"}
       aria-label={options.hideLabel ? t(label) : undefined}
       aria-invalid={invalid}
@@ -131,5 +132,5 @@
         : ""}
     />
   {/if}
-  <FieldError {key} errors={{ ...editor.errors }} />
+  <FieldError {key} {fieldPrefix} errors={{ ...editor.errors }} />
 </div>

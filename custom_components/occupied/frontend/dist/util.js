@@ -58,6 +58,9 @@ function minutes(value) {
   );
   return text.startsWith("-") ? -total : total;
 }
+export function durationSeconds(value) {
+  return !value || value === "0" ? NaN : minutes(value) * 60;
+}
 export function timingForm(timing = {}) {
   const clock = timing.absolute_time,
     source = timing.relative_to;

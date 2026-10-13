@@ -1,19 +1,39 @@
 <script lang="ts">
   import type { OccupiedPanel } from "./occupied-panel.js";
-  import type { StepEditorContext } from "./step-editor-controller.js";
+  import type { TimingEditorContext } from "./types.js";
   import EditorField from "./EditorField.svelte";
   import FieldError from "./FieldError.svelte";
 
   import { stepEntries, timeSourceChoices } from "./step-model.js";
   import { timingExplanation } from "./util.js";
-  let { panel, context }: { panel: OccupiedPanel; context: StepEditorContext } =
-    $props();
+  let {
+    panel,
+    context,
+    heading = "Timing",
+    clockLabel = "Start time window",
+    windowEndLabel = "End of window (optional)",
+    addWindowEndLabel = "Add end of window",
+    showExplanation = true,
+  }: {
+    panel: OccupiedPanel;
+    context: TimingEditorContext;
+    heading?: string;
+    clockLabel?: string;
+    windowEndLabel?: string;
+    addWindowEndLabel?: string;
+    showExplanation?: boolean;
+  } = $props();
   let { editor, form, time, t, refresh, changed } = $derived(context);
   import SourcePicker from "./SourcePicker.svelte";
-  import { focusEditor } from "./step-editor-controller.js";
+  let fieldPrefix = $derived(context.fieldPrefix || "");
   let choices = $derived.by(() => {
     context;
-    let choices = timeSourceChoices(panel.draft, editor.id, panel.catalog, t);
+    let choices = timeSourceChoices(
+      panel.draft,
+      context.stepId,
+      panel.catalog,
+      t,
+    );
     if (time.anchor && !choices.some((choice) => choice.value === time.anchor))
       choices = [
         ...choices,
@@ -24,18 +44,21 @@
 </script>
 
 <div data-editor-section="time">
-  <h3 id="step-timing-heading">
-    {t("Timing")}
+  <h3 id={`step-${fieldPrefix}timing-heading`}>
+    {t(heading)}
   </h3>
-  <fieldset class="timing-options" aria-labelledby="step-timing-heading">
+  <fieldset
+    class="timing-options"
+    aria-labelledby={`step-${fieldPrefix}timing-heading`}
+  >
     <div class="timing-option-row">
       {#each [["absolute", "Absolute time"], ["relative", "Relative to"]] as [value, label]}
         <label class="timing-option"
           ><input
             type="radio"
-            name="step-timing-mode"
+            name={`step-${fieldPrefix}timing-mode`}
             {value}
-            data-builder-field="mode"
+            data-builder-field={`${fieldPrefix}mode`}
             checked={time.mode === value}
             onchange={(event: Event) => {
               if (!(event.currentTarget as HTMLInputElement).checked) return;
@@ -45,7 +68,7 @@
               changed("mode");
               panel.shadowRoot
                 .querySelector<HTMLElement>(
-                  '[data-builder-field="mode"]:checked',
+                  `[data-builder-field="${fieldPrefix}mode"]:checked`,
                 )
                 ?.focus();
             }}
@@ -53,14 +76,14 @@
         >
       {/each}
     </div>
-    <FieldError key="mode" errors={{ ...editor.errors }} />
+    <FieldError key="mode" {fieldPrefix} errors={{ ...editor.errors }} />
   </fieldset>
   {#if time.mode === "absolute"}
     <EditorField
       {panel}
       {context}
       key="start"
-      label="Start time window"
+      label={clockLabel}
       value={time.start}
       update={(value) => (time.start = value)}
       options={{ type: "time", step: 1 }}
@@ -70,7 +93,7 @@
         {panel}
         {context}
         key="end"
-        label="End of window (optional)"
+        label={windowEndLabel}
         value={time.end}
         update={(value) => {
           time.end = value;
@@ -86,10 +109,10 @@
           time.end = time.start;
           editor.showEndTime = true;
           changed("end");
-          focusEditor(panel, "end");
+          refresh("end");
         }}
       >
-        {t("Add end of window")}
+        {t(addWindowEndLabel)}
       </button>
     {/if}
   {:else}
@@ -100,6 +123,7 @@
         value: time.anchor,
         t,
         error: editor.errors.anchor,
+        fieldPrefix,
         onChange: (value) => {
           time.anchor = value;
           if (!editor.existing && value.startsWith("step:")) {
@@ -112,7 +136,7 @@
           }
           changed("anchor");
           const picker = panel.shadowRoot.querySelector<HTMLElement>(
-            '[data-builder-field="anchor"]',
+            `[data-builder-field="${fieldPrefix}anchor"]`,
           );
           if (picker && panel.shadowRoot.activeElement !== picker) {
             picker.focus();
@@ -152,7 +176,7 @@
               time.endOffset = "";
               editor.showEndOffset = false;
               changed("endOffset");
-              focusEditor(panel, "startOffset");
+              refresh("startOffset");
             }}
           >
             {t("Remove end offset")}
@@ -171,15 +195,19 @@
       </button>
     {/if}
   {/if}
-  <p class="hint" data-timing-explanation aria-live="polite">
-    {timingExplanation(
-      time,
-      stepEntries(panel.draft, panel.catalog, panel.t),
-      t,
-      panel.catalog.time_sources,
-      { locale: panel._hass.locale, days: form.days },
-    )}
-  </p>
+  {#if showExplanation}<p
+      class="hint"
+      data-timing-explanation
+      aria-live="polite"
+    >
+      {timingExplanation(
+        time,
+        stepEntries(panel.draft, panel.catalog, panel.t),
+        t,
+        panel.catalog.time_sources,
+        { locale: panel._hass.locale, days: form.days },
+      )}
+    </p>{/if}
   {#if panel.document?.source === "file"}
     <p class="hint">
       {t(

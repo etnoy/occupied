@@ -12,17 +12,29 @@ Add Occupied through **Settings → Devices & services → Add integration**. Ch
 4. **Advanced settings** selects weekdays. New and existing steps can be disabled through the ellipsis menu. Omitted days mean every day.
 5. **Save step** validates and saves through the backend. Errors appear next to fields. Saving a step does not enable runtime permission.
 
-**Add related step** prefills the parent, entity selection, and weekdays. Dependencies follow the parent's sampled time, even across midnight. The picker excludes circular relationships. Incompatible weekdays are explained inline. A disabled or unavailable parent skips its dependents. Delete is blocked while other steps refer to the selected step.
+**Add related step** prefills the parent, entity selection, and weekdays. Dependencies follow the parent's sampled time, even across midnight. The picker excludes circular relationships. Incompatible weekdays are explained inline. A disabled or unavailable parent skips its dependents. Delete is blocked while other steps or random events refer to the selected step.
 
 Click another card to switch editors. Pending changes require a discard decision; cancel retains the form. Save uses the revision read when editing began, so concurrent updates cannot overwrite another editor. Runtime updates preserve open inputs and focus. Metadata-only title/order changes retain sampled plans, sessions, and handover deadlines.
 
 The flat `steps` map is the canonical draft model. Every supported YAML step uses this editor; there are no hidden routine containers, light-management settings, or custom activity cards that cannot be edited.
 
+## Create and edit random events
+
+The separate **Random** tab uses the same inline editing flow as Steps. Choose **Create your first random event** or **Create random event**:
+
+1. Choose when the window starts and ends. Use clock times directly, or **Relative to** to follow existing steps, solar events, or HA time sources. A referenced step supplies its actual sampled time. Separate marker steps are unnecessary.
+2. Set **Times per window**, **Minimum duration**, and **Maximum duration**. Defaults are three occurrences lasting 5–15 minutes. Durations use `h`, `m`, and `s`, such as `10m` or `1h30m`.
+3. Choose actions **At the start** and **At the end**. Both support lights/switches, scenes, and native service actions. By default, turning entities on also selects them for the end action. Uncheck **Use the same entities** for separate targets, or choose a different end scene/service.
+4. Optionally add a title or change enabled state and weekdays under **Advanced settings**.
+5. Choose **Save random event**. Validation, unsaved-change protection, revision guards, and managed-file drafts work as they do for Steps. Reopen a card to edit it; **Delete random event** removes the definition through the same guarded save flow.
+
+Each occurrence receives a random start and duration and finishes inside its window. Occurrences may overlap. A maximum longer than the window is limited to the available time; a minimum that cannot fit produces an error. Earlier recurring clock/solar/time-helper end times continue into the next local date. Step and dated-source boundaries must already resolve in the correct chronological order.
+
 ## YAML and managed files
 
 **Settings** shows the YAML editor directly. Load a YAML/JSON file or edit the code and choose **Save changes**. Saving validates YAML, schema, dependencies, and installed services before applying changes. Invalid code remains in the editor and leaves the saved program intact. **Download** saves the current text. Comments remain in the open editor but are not stored in the canonical program.
 
-In managed-file mode, the step editor finishes with **Add to draft**. The draft remains available for preview/export, while **Save changes** is disabled and file authority is enforced by the backend. Deploy the exported YAML and reload the managed source. Importing a local browser file does not make that file authoritative. See [managed configuration](managed-configuration.md).
+In managed-file mode, both editors finish with **Add to draft**. The draft remains available for preview/export, while **Save changes** is disabled and file authority is enforced by the backend. Deploy the exported YAML and reload the managed source. Importing a local browser file does not make that file authoritative. See [managed configuration](managed-configuration.md).
 
 All-week selections, normal enabled state, zero offsets, empty data, and equal end bounds are omitted from export. Stable IDs are mapping keys; changing a title never changes its key. Use the CLI/API typed rename operation when changing an ID.
 

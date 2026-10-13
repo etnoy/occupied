@@ -3,18 +3,24 @@
 
   import { startStep, openStep, actionSummary, stepTree } from "./steps.js";
   import { stepEntries } from "./step-model.js";
+  import { warningStepId } from "./step-issues.js";
   import { entityName, timingSummary } from "./util.js";
   import StepEditor from "./StepEditor.svelte";
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
   let data = $derived.by(() => {
     revision;
+    const entries = stepEntries(panel.draft, panel.catalog, panel.t);
     return {
       t: panel.t,
-      entries: stepEntries(panel.draft, panel.catalog, panel.t),
+      entries,
+      issues: panel.visibleIssues().map((issue) => ({
+        issue,
+        stepId: warningStepId(issue, entries),
+      })),
     };
   });
-  let { t, entries } = $derived(data);
+  let { t, entries, issues } = $derived(data);
 </script>
 
 {#if !entries.length}
@@ -33,6 +39,9 @@
   <div class="step-layout">
     <div class="step-list" aria-label={t("Steps")}>
       {#each stepTree(entries) as { entry, depth } (entry.id)}
+        {@const warnings = issues
+          .filter(({ stepId }) => stepId === entry.id)
+          .map(({ issue }) => issue)}
         {@const editing =
           panel.stepEditor?.existing && panel.stepEditor.id === entry.id}
         {@const stepDisabled = editing
@@ -43,6 +52,7 @@
         <div
           class="step-card"
           class:step-disabled={stepDisabled}
+          class:step-warning={warnings.length > 0}
           data-step-id={entry.id}
           style={`--depth:${Math.min(depth, 3)}`}
         >
@@ -50,13 +60,16 @@
             type="button"
             id={`step-card-${entry.id}`}
             class="step-row"
-            class:editing
+            class:editing={editing && !warnings.length}
             aria-label={stepDisabled
               ? `${entry.name} · ${t("Disabled")}`
               : entry.name}
             disabled={panel.busy}
             aria-expanded={expanded}
             aria-controls={`step-editor-${entry.id}`}
+            aria-describedby={warnings.length
+              ? `step-warning-${entry.id}`
+              : undefined}
             onclick={() => openStep(panel, entry)}
           >
             <span class="step-row-content">
@@ -73,7 +86,16 @@
                   .join(", ")}</span
               >
             </span>
-            {#if !editing}
+            {#if warnings.length}
+              <span class="step-row-warning" id={`step-warning-${entry.id}`}>
+                <ha-icon icon="mdi:alert-outline" aria-hidden="true"></ha-icon>
+                <span>
+                  {#each warnings as warning}
+                    <span class="step-warning-message">{warning.message}</span>
+                  {/each}
+                </span>
+              </span>
+            {:else if !editing}
               <span class="step-row-time">
                 {timingSummary(
                   entry,

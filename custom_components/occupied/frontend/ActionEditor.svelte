@@ -1,21 +1,34 @@
 <script lang="ts">
   import type { OccupiedPanel } from "./occupied-panel.js";
-  import type { StepEditorContext } from "./step-editor-controller.js";
+  import type { ActionEditorContext } from "./types.js";
   import EditorField from "./EditorField.svelte";
   import EntitiesEditor from "./EntitiesEditor.svelte";
 
-  let { panel, context }: { panel: OccupiedPanel; context: StepEditorContext } =
-    $props();
+  let {
+    panel,
+    context,
+    heading = "Action",
+    kindLabel = "Step type",
+    entityLabel = "Entities",
+    hideEntities = false,
+  }: {
+    panel: OccupiedPanel;
+    context: ActionEditorContext;
+    heading?: string;
+    kindLabel?: string;
+    entityLabel?: string;
+    hideEntities?: boolean;
+  } = $props();
   let { form, t } = $derived(context);
 </script>
 
 <div data-editor-section="action">
-  <h3>{t("Action")}</h3>
+  <h3>{t(heading)}</h3>
   <EditorField
     {panel}
     {context}
     key="kind"
-    label="Step type"
+    label={kindLabel}
     value={form.kind === "entities" ? form.action : form.kind}
     update={(value) => {
       const kind =
@@ -35,7 +48,11 @@
       render: true,
     }}
   ></EditorField>
-  <EntitiesEditor {panel} {context} />
+  {#if !hideEntities}<EntitiesEditor
+      {panel}
+      {context}
+      label={entityLabel}
+    />{/if}
   {#if form.kind === "service"}
     <EditorField
       {panel}

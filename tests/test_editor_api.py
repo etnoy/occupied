@@ -78,6 +78,87 @@ async def test_shared_step_entities_need_no_baseline(
     assert not devices
 
 
+async def test_random_actions_validate_save_preview_and_export(
+    hass, editor_entry, devices, program_dict, hass_ws_client
+):
+    program_dict["random"] = {
+        "lamp": {
+            "start": {"relative_to": {"step": "wake"}},
+            "end": {"relative_to": {"step": "leave"}},
+            "min_duration": "1m",
+            "max_duration": "5m",
+            "count": 3,
+            "on": {
+                "action": "light.turn_on",
+                "entities": ["light.a"],
+                "data": {"brightness_pct": 60},
+            },
+            "off": {"action": "turn_off", "entities": ["light.a"]},
+        }
+    }
+    assert await hass.config_entries.async_setup(editor_entry.entry_id)
+    client = await hass_ws_client(hass)
+    doc = program_document(editor_entry.runtime_data)
+    result = (
+        await request(
+            client,
+            "occupied/save",
+            editor_entry,
+            program=program_dict,
+            expected_revision=doc["revision"],
+        )
+    )["result"]
+    assert result["valid"] and "lamp" in result["program"]["random"]
+    preview = (
+        await request(
+            client,
+            "occupied/preview",
+            editor_entry,
+            2,
+            program=result["program"],
+            date="2026-10-06",
+            days=1,
+            seed="random-api",
+        )
+    )["result"]
+    assert preview["valid"]
+    assert (
+        len(
+            [
+                event
+                for event in preview["plans"][0]["events"]
+                if event["kind"].startswith("random_")
+            ]
+        )
+        == 6
+    )
+    exported = (
+        await request(client, "occupied/export", editor_entry, 3, program=result["program"])
+    )["result"]
+    assert load_program(exported["yaml"]) == editor_entry.runtime_data.program
+    renamed = (
+        await request(
+            client,
+            "occupied/rename_id",
+            editor_entry,
+            4,
+            program=result["program"],
+            kind="step",
+            old="wake",
+            new="morning",
+        )
+    )["result"]
+    assert renamed["program"]["random"]["lamp"]["start"]["relative_to"]["step"] == "morning"
+    assert not devices
+    program_dict["random"]["lamp"]["on"]["data"]["entity_id"] = "light.b"
+    invalid = (
+        await request(client, "occupied/editor_validate", editor_entry, 5, program=program_dict)
+    )["result"]
+    assert not invalid["valid"]
+    assert invalid["issues"][0]["model_path"] == ["random", "lamp", "on", "data"]
+    assert not devices
+
+
 async def test_two_editors_cannot_overwrite_each_other(
     hass, editor_entry, devices, program_dict, hass_ws_client
 ):

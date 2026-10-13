@@ -32,7 +32,11 @@ export function set(object: unknown, path: Path, value: unknown) {
   }
 }
 
-export function identifier(program: Program, name: string) {
+export function identifier(
+  program: Program,
+  name: string,
+  collection: "steps" | "random" = "steps",
+) {
   let base = name
     .toLowerCase()
     .normalize("NFKD")
@@ -42,7 +46,7 @@ export function identifier(program: Program, name: string) {
     base = "item_" + base;
   }
   base ||= "item";
-  const used = new Set(Object.keys(program.steps || {}));
+  const used = new Set(Object.keys(program[collection] || {}));
   let id = base,
     n = 2;
   while (used.has(id)) {
@@ -51,15 +55,23 @@ export function identifier(program: Program, name: string) {
   return id;
 }
 export function references(program: Program, id: string): Path[] {
-  return Object.entries(program.steps || {})
+  const result: Path[] = Object.entries(program.steps || {})
     .filter(([, step]) => step.timing.relative_to?.step === id)
     .map(([key]) => ["steps", key, "timing", "relative_to", "step"]);
+  for (const [key, event] of Object.entries(program.random || {})) {
+    for (const edge of ["start", "end"] as const) {
+      if (event[edge].relative_to?.step === id) {
+        result.push(["random", key, edge, "relative_to", "step"]);
+      }
+    }
+  }
+  return result;
 }
 export function removeStep(program: Program, path: Path) {
   const id = String(path[1]);
   if (references(program, id).length > 0) {
     throw new Error(
-      "Other steps depend on this step. Change their timing first.",
+      "Steps or random events depend on this step. Change their timing first.",
     );
   }
   delete program.steps?.[id];
