@@ -1,0 +1,70 @@
+custom_components/occupied/frontend/SettingsView.svelte
+  s_eb83a540b08207::t_23817a558a24f0 34,95-103
+custom_components/occupied/frontend/App.svelte
+  s_eb83a540b08207::t_ee09d51737a1e0 53
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_f52ea3dda3ee7d::t_d2ba0abd7bc727 11795
+  s_216f62c4d3b4e8::t_38b6c8a499323e 10896,11796-11797,11818,11861,11871,12073,12187
+  s_fc597f4f5372c0::t_858afeec698110 11810,12286-12291
+  s_7e8df04c1e560b::t_550da38547f269 11843
+  s_167f5be30bc21b::t_a1fc5133673799 11800,11822,11826-11827,11831-11832,11834-11835,11857-11858,11860,11862,11864-11865,11867-11868,11872,11875,11879,11881,11885,11916-11917,11926,11928-11930,11932,11937-11940,11948-11950,11953,11955-11958,11966-11967,11971,11993,12008,12010-12011,12014,12016-12018,12020,12025,12027,12032,12034,12039-12040,12044,12057-12060,12062,12074,12077,12079,12083-12084,12088-12089,12094,12096-12098,12100,12103-12104,12106-12107,12127,12129,12132-12133,12136-12138,12140,12143-12144,12154,12156-12158,12160-12165,12168-12169,12179-12180,12182-12184,12186,12188,12190,12193-12194,12196,12198,12201,12203,12213,12223,12233,12243,12248,12250,12255,12257,12259,12261,12264,12267,12273,12275,12282,12292
+  s_fc597f4f5372c0::t_9b8f56f276c95b 11807-11809
+  s_167f5be30bc21b::t_0fbceecb08757d 12283
+  s_eb83a540b08207::t_a0d88d04a0b79b 10901,11798-11799,11804-11806
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "557c3ca2f7f3434d92aba8f427ba67ee816bc55d",
+  "prompts": {},
+  "sessions": {
+    "s_167f5be30bc21b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12f22-55bb-73e1-a05a-d471b0a85dc0",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_216f62c4d3b4e8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a136a1-098c-7510-8658-00c4cbef444f",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_7e8df04c1e560b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12ec6-98be-74d0-bc12-3eaab97678c5",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_eb83a540b08207": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a136c6-6bc5-7401-86eb-5b4c73e22992",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_f52ea3dda3ee7d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11fb1-5697-76a2-afb7-c899c7af8b87",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_fc597f4f5372c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a136a4-827d-7022-884b-eaa126d61fac",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
