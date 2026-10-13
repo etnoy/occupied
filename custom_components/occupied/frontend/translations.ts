@@ -179,6 +179,7 @@ const sv: Record<string, string> = {
   Refresh: "Uppdatera",
   "Run preview": "Förhandsvisa",
   "Export YAML": "Exportera YAML",
+  changes: "ändringar",
   "Edit the YAML and save to validate and apply your changes. Invalid code is kept in the editor.":
     "Redigera YAML och spara för att validera och tillämpa dina ändringar. Ogiltig kod behålls i redigeraren.",
   Download: "Ladda ner",

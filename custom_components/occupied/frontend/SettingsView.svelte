@@ -11,6 +11,7 @@
     return { t: panel.t };
   });
   let { t } = $derived(data);
+  let yamlDirty = $derived(panel.yamlDirty);
   let autoExportStarted = false;
 
   $effect(() => {
@@ -31,8 +32,8 @@
   });
 </script>
 
-<section class="yaml-panel">
-  <h2>{t("YAML")}</h2>
+<section class="yaml-panel" class:has-changes={yamlDirty}>
+  <h2>{t("YAML")} {#if yamlDirty}<span class="changes">({t("changes")})</span>{/if}</h2>
   <p class="hint">
     {t(
       "Edit the YAML and save to validate and apply your changes. Invalid code is kept in the editor.",
@@ -93,6 +94,11 @@
     --code-mirror-max-height: 60vh;
   }
   section.yaml-panel {
+    border-color: var(--divider-color, #d5dce3);
+    border-left: 1px solid var(--divider-color, #d5dce3);
+    background: var(--card-background-color, #fff);
+  }
+  section.yaml-panel.has-changes {
     border-color: var(--warning-color, #e69500);
     border-left: 4px solid var(--warning-color, #e69500);
     background: color-mix(
@@ -100,5 +106,10 @@
       var(--warning-color, #e69500) 18%,
       var(--card-background-color, #fff)
     );
+  }
+  .changes {
+    color: var(--warning-color, #e69500);
+    font-size: 0.75em;
+    font-weight: 500;
   }
 </style>

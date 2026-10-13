@@ -1026,6 +1026,7 @@ var sv = {
   Refresh: "Uppdatera",
   "Run preview": "F\xF6rhandsvisa",
   "Export YAML": "Exportera YAML",
+  changes: "\xE4ndringar",
   "Edit the YAML and save to validate and apply your changes. Invalid code is kept in the editor.":
     "Redigera YAML och spara f\xF6r att validera och till\xE4mpa dina \xE4ndringar. Ogiltig kod beh\xE5lls i redigeraren.",
   Download: "Ladda ner",
@@ -10892,13 +10893,14 @@ function StepsView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/SettingsView.svelte
-var root12 = from_html(
-  `<section class="yaml-panel svelte-82irif"><h2> </h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <button type="button" class="primary"> </button><button type="button"> </button></section>`,
+var root12 = from_html(`<span class="changes svelte-82irif"> </span>`);
+var root_19 = from_html(
+  `<section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <button type="button" class="primary"> </button><button type="button"> </button></section>`,
   2,
 );
 var $$css = {
   hash: "svelte-82irif",
-  code: "ha-code-editor.svelte-82irif {display:block;width:100%;margin:8px 0;--code-mirror-height: 420px;--code-mirror-max-height: 60vh;}section.yaml-panel.svelte-82irif {border-color:var(--warning-color, #e69500);border-left:4px solid var(--warning-color, #e69500);background:color-mix(\n      in srgb,\n      var(--warning-color, #e69500) 18%,\n      var(--card-background-color, #fff)\n    );}",
+  code: "ha-code-editor.svelte-82irif {display:block;width:100%;margin:8px 0;--code-mirror-height: 420px;--code-mirror-max-height: 60vh;}section.yaml-panel.svelte-82irif {border-color:var(--divider-color, #d5dce3);border-left:1px solid var(--divider-color, #d5dce3);background:var(--card-background-color, #fff);}section.yaml-panel.has-changes.svelte-82irif {border-color:var(--warning-color, #e69500);border-left:4px solid var(--warning-color, #e69500);background:color-mix(\n      in srgb,\n      var(--warning-color, #e69500) 18%,\n      var(--card-background-color, #fff)\n    );}.changes.svelte-82irif {color:var(--warning-color, #e69500);font-size:0.75em;font-weight:500;}",
 };
 function SettingsView($$anchor, $$props) {
   push($$props, true);
@@ -10909,6 +10911,7 @@ function SettingsView($$anchor, $$props) {
     return { t: panel().t };
   });
   let t = user_derived(() => get2(data).t);
+  let yamlDirty = user_derived(() => panel().yamlDirty);
   let autoExportStarted = false;
   user_effect(() => {
     $$props.revision;
@@ -10924,11 +10927,28 @@ function SettingsView($$anchor, $$props) {
       };
     }
   });
-  var section = root12();
+  var section = root_19();
+  let classes;
   var h2 = child(section);
-  var text2 = only_child(h2, true);
+  var text2 = child(h2);
+  var node = sibling(text2);
+  {
+    var consequent = ($$anchor2) => {
+      var span = root12();
+      var text_1 = only_child(span);
+      template_effect(
+        ($0) => set_text(text_1, `(${$0 ?? ""})`),
+        [() => get2(t)("changes")],
+      );
+      append($$anchor2, span);
+    };
+    if_block(node, ($$render) => {
+      if (get2(yamlDirty)) $$render(consequent);
+    });
+  }
+  reset(h2);
   var p = sibling(h2, 2);
-  var text_1 = only_child(p, true);
+  var text_2 = only_child(p, true);
   var input = sibling(p, 2);
   var ha_code_editor = sibling(input, 2);
   set_custom_element_data(ha_code_editor, "role", "group");
@@ -10944,14 +10964,22 @@ function SettingsView($$anchor, $$props) {
     () => ({ mode: "yaml", value: panel().yaml, linewrap: true }),
   );
   var button = sibling(ha_code_editor, 2);
-  var text_2 = only_child(button, true);
+  var text_3 = only_child(button, true);
   var button_1 = sibling(button);
-  var text_3 = only_child(button_1, true);
+  var text_4 = only_child(button_1, true);
   reset(section);
   template_effect(
     ($0, $1, $2, $3, $4) => {
-      set_text(text2, $0);
-      set_text(text_1, $1);
+      classes = set_class(
+        section,
+        1,
+        "yaml-panel svelte-82irif",
+        null,
+        classes,
+        { "has-changes": get2(yamlDirty) },
+      );
+      set_text(text2, `${$0 ?? ""} `);
+      set_text(text_2, $1);
       set_attribute2(input, "aria-label", $2);
       ha_code_editor.dir = ha_code_editor.dir;
       button.disabled =
@@ -10959,9 +10987,9 @@ function SettingsView($$anchor, $$props) {
         panel().stale ||
         panel().document.source === "file" ||
         !panel().yaml;
-      set_text(text_2, $3);
+      set_text(text_3, $3);
       button_1.disabled = panel().busy || !panel().yaml;
-      set_text(text_3, $4);
+      set_text(text_4, $4);
     },
     [
       () => get2(t)("YAML"),
@@ -11162,7 +11190,7 @@ function stamp(value, zone, locale) {
 
 // custom_components/occupied/frontend/PreviewStateGraph.svelte
 var root13 = from_html(`<p class="hint"> </p>`);
-var root_19 = from_html(
+var root_110 = from_html(
   `<state-history-chart-timeline></state-history-chart-timeline>`,
   2,
 );
@@ -11257,7 +11285,7 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, p_1);
     };
     var consequent_2 = ($$anchor2) => {
-      var state_history_chart_timeline = root_19();
+      var state_history_chart_timeline = root_110();
       template_effect(() =>
         set_custom_element_data(
           state_history_chart_timeline,
@@ -11313,7 +11341,7 @@ function PreviewStateGraph($$anchor, $$props) {
 
 // custom_components/occupied/frontend/Timeline.svelte
 var root14 = from_html(`<h2> </h2>`);
-var root_110 = from_html(`<th scope="col"> </th>`);
+var root_111 = from_html(`<th scope="col"> </th>`);
 var root_28 = from_html(`<td> </td>`);
 var root_37 = from_html(`<tr></tr>`);
 var root_44 = from_html(
@@ -11424,7 +11452,7 @@ function Timeline($$anchor, $$props) {
             () => ["Planned time", "Source", "Action", "Targets"],
             index,
             ($$anchor4, label) => {
-              var th = root_110();
+              var th = root_111();
               var text_4 = only_child(th, true);
               template_effect(($0) => set_text(text_4, $0), [() => t()(label)]);
               append($$anchor4, th);
@@ -11579,7 +11607,7 @@ delegate(["input", "click"]);
 
 // custom_components/occupied/frontend/PreviewView.svelte
 var root15 = from_html(`<span class="hint" role="status"> </span>`);
-var root_111 = from_html(
+var root_112 = from_html(
   `<div class="schedule-heading svelte-5w63kc"><h2 aria-live="polite" class="svelte-5w63kc"> </h2> <!> <div class="day-navigation svelte-5w63kc" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-5w63kc"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
   2,
 );
@@ -11591,7 +11619,7 @@ function PreviewView($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css3);
   const dayHeading = ($$anchor2) => {
-    var div = root_111();
+    var div = root_112();
     var h2 = child(div);
     var text2 = only_child(h2, true);
     var node = sibling(h2, 2);
@@ -11793,7 +11821,7 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/App.svelte
 var root17 = from_html(`<button type="button"> </button>`);
-var root_112 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
+var root_113 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
 var root_29 = from_html(`<p> </p>`);
 var root_38 = from_html(`<p id="house"> </p>`);
 var root_45 = from_html(`<option> </option>`);
@@ -11815,7 +11843,7 @@ function App($$anchor, $$props) {
   const $updates = () => store_get($$props.updates, "$updates", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   const toolbar = ($$anchor2) => {
-    var div = root_112();
+    var div = root_113();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
