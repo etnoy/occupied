@@ -10,6 +10,8 @@ const sv = {
     "Åtgärder och avslut kan påverka varandra mellan instanser.",
   "This instance has unsaved changes. Discard them and switch?":
     "Den här instansen har osparade ändringar. Kasta dem och byt?",
+  "There are unsaved edits. Discard them and switch views?":
+    "Det finns osparade ändringar. Vill du kasta dem och byta vy?",
   "This instance is unavailable. Check Settings → Devices & services, then retry.":
     "Den här instansen är inte tillgänglig. Kontrollera Inställningar → Enheter och tjänster och försök igen.",
   "Steps and time sources": "Steg och tidskällor",

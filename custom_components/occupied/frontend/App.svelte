@@ -39,6 +39,9 @@
     };
   });
   let { t, notices, primary } = $derived(state);
+  let hasUnsavedEdits = $derived(
+    (panel.dirty || panel.yamlDirty) && !panel.stepEditor,
+  );
   const primaryTabs: [Tab, string][] = [
     ["routines", "Steps"],
     ["preview", "Preview"],
@@ -220,6 +223,14 @@
           {/if}
         </svelte:boundary>
       {/key}
+    </div>
+    <div
+      id="unsaved-edits"
+      class="banner unsaved"
+      role="status"
+      hidden={!hasUnsavedEdits}
+    >
+      {t("Unsaved edits")}
     </div>
   </main>
 </ha-top-app-bar-fixed>

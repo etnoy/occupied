@@ -471,13 +471,22 @@ export class OccupiedPanel extends HTMLElement {
   navigate(tab: Tab) {
     if (this.stepEditor) {
       this.requestStepExit(() => {
-        this.tab = tab;
-        this.renderView();
+        this.navigate(tab);
       });
       return;
     }
     if (this.tab === tab) {
       return;
+    }
+    if (this.dirty || this.yamlDirty) {
+      if (
+        !globalThis.confirm(
+          this.t("There are unsaved edits. Discard them and switch views?"),
+        )
+      ) {
+        return;
+      }
+      this.discardEdits(false);
     }
     this.tab = tab;
     this.renderView();
@@ -526,8 +535,6 @@ export class OccupiedPanel extends HTMLElement {
       programNotice = t(
         "The saved program changed. Your draft is preserved; reload the saved program before saving.",
       );
-    } else if ((this.dirty || this.yamlDirty) && !this.stepEditor) {
-      programNotice = t("Unsaved edits");
     }
     return [
       programNotice,
@@ -564,11 +571,13 @@ export class OccupiedPanel extends HTMLElement {
     this.validatedVersion = -1;
     this.issues = [];
   }
-  discardEdits() {
+  discardEdits(render = true) {
     this.resetDraft();
     this.yaml = this.yamlSaved;
     this.error = "";
-    this.renderView();
+    if (render) {
+      this.renderView();
+    }
   }
   change(path: Path, value: unknown, rerender = false) {
     if (path.length === 0) {

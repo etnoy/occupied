@@ -317,6 +317,17 @@ var styles = `
     margin: 12px 0;
     overflow-wrap: anywhere;
   }
+  .banner.unsaved {
+    border: 1px solid var(--warning-color, #e69500);
+    border-left-width: 4px;
+    background: color-mix(
+      in srgb,
+      var(--warning-color, #e69500) 18%,
+      var(--card-background-color, #fff)
+    );
+    color: var(--primary-text-color, #202c37);
+    font-weight: 600;
+  }
   .error,
   [aria-invalid="true"] {
     color: var(--error-color, #b3261e);
@@ -844,6 +855,8 @@ var sv = {
     "\xC5tg\xE4rder och avslut kan p\xE5verka varandra mellan instanser.",
   "This instance has unsaved changes. Discard them and switch?":
     "Den h\xE4r instansen har osparade \xE4ndringar. Kasta dem och byt?",
+  "There are unsaved edits. Discard them and switch views?":
+    "Det finns osparade \xE4ndringar. Vill du kasta dem och byta vy?",
   "This instance is unavailable. Check Settings \u2192 Devices & services, then retry.":
     "Den h\xE4r instansen \xE4r inte tillg\xE4nglig. Kontrollera Inst\xE4llningar \u2192 Enheter och tj\xE4nster och f\xF6rs\xF6k igen.",
   "Steps and time sources": "Steg och tidsk\xE4llor",
@@ -11798,7 +11811,7 @@ var root_9 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_10 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
 var root_11 = from_html(`<p> </p> <button type="button"> </button>`, 1);
 var root_122 = from_html(
-  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><header><div><!> <!> <!></div></header> <!> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav aria-label="Occupied"></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
+  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><header><div><!> <!> <!></div></header> <!> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav aria-label="Occupied"></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div> <div id="unsaved-edits" class="banner unsaved" role="status"> </div></main></ha-top-app-bar-fixed> <!>`,
   3,
 );
 function App($$anchor, $$props) {
@@ -11938,6 +11951,10 @@ function App($$anchor, $$props) {
   let t = user_derived(() => get2(state2).t),
     notices = user_derived(() => get2(state2).notices),
     primary = user_derived(() => get2(state2).primary);
+  let hasUnsavedEdits = user_derived(
+    () =>
+      (get2(panel).dirty || get2(panel).yamlDirty) && !get2(panel).stepEditor,
+  );
   const primaryTabs = [
     ["routines", "Steps"],
     ["preview", "Preview"],
@@ -12298,6 +12315,8 @@ function App($$anchor, $$props) {
     },
   );
   reset(div_6);
+  var div_7 = sibling(div_6, 2);
+  var text_21 = only_child(div_7, true);
   reset(main);
   reset(ha_top_app_bar_fixed);
   var node_13 = sibling(ha_top_app_bar_fixed, 2);
@@ -12313,12 +12332,17 @@ function App($$anchor, $$props) {
       if (get2(panel).pendingStepExit) $$render(consequent_15);
     });
   }
-  template_effect(() => {
-    set_attribute2(div_2, "hidden", !get2(notices));
-    set_text(text_12, get2(notices));
-    set_attribute2(div_3, "hidden", !get2(panel).error);
-    set_text(text_13, get2(panel).error);
-  });
+  template_effect(
+    ($0) => {
+      set_attribute2(div_2, "hidden", !get2(notices));
+      set_text(text_12, get2(notices));
+      set_attribute2(div_3, "hidden", !get2(panel).error);
+      set_text(text_13, get2(panel).error);
+      set_attribute2(div_7, "hidden", !get2(hasUnsavedEdits));
+      set_text(text_21, $0);
+    },
+    [() => get2(t)("Unsaved edits")],
+  );
   append($$anchor, fragment_2);
   pop();
   $$cleanup();
@@ -12746,13 +12770,22 @@ var OccupiedPanel = class extends HTMLElement {
   navigate(tab) {
     if (this.stepEditor) {
       this.requestStepExit(() => {
-        this.tab = tab;
-        this.renderView();
+        this.navigate(tab);
       });
       return;
     }
     if (this.tab === tab) {
       return;
+    }
+    if (this.dirty || this.yamlDirty) {
+      if (
+        !globalThis.confirm(
+          this.t("There are unsaved edits. Discard them and switch views?"),
+        )
+      ) {
+        return;
+      }
+      this.discardEdits(false);
     }
     this.tab = tab;
     this.renderView();
@@ -12801,8 +12834,6 @@ var OccupiedPanel = class extends HTMLElement {
       programNotice = t(
         "The saved program changed. Your draft is preserved; reload the saved program before saving.",
       );
-    } else if ((this.dirty || this.yamlDirty) && !this.stepEditor) {
-      programNotice = t("Unsaved edits");
     }
     return [
       programNotice,
@@ -12838,11 +12869,13 @@ var OccupiedPanel = class extends HTMLElement {
     this.validatedVersion = -1;
     this.issues = [];
   }
-  discardEdits() {
+  discardEdits(render = true) {
     this.resetDraft();
     this.yaml = this.yamlSaved;
     this.error = "";
-    this.renderView();
+    if (render) {
+      this.renderView();
+    }
   }
   change(path, value, rerender = false) {
     if (path.length === 0) {

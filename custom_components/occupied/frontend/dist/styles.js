@@ -163,6 +163,17 @@ export const styles = `
     margin: 12px 0;
     overflow-wrap: anywhere;
   }
+  .banner.unsaved {
+    border: 1px solid var(--warning-color, #e69500);
+    border-left-width: 4px;
+    background: color-mix(
+      in srgb,
+      var(--warning-color, #e69500) 18%,
+      var(--card-background-color, #fff)
+    );
+    color: var(--primary-text-color, #202c37);
+    font-weight: 600;
+  }
   .error,
   [aria-invalid="true"] {
     color: var(--error-color, #b3261e);
