@@ -163,7 +163,7 @@ export class OccupiedPanel extends HTMLElement {
   }
   private _locationChanged = () => void this._load();
   private _beforeUnload = (event: BeforeUnloadEvent) => {
-    if (!(this.dirty || this.stepEditor?.changed)) {
+    if (!(this.dirty || (this.stepEditor && hasStepChanges(this.stepEditor)))) {
       return;
     }
 

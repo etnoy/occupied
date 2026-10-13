@@ -8221,15 +8221,12 @@ function stepEditor(program, entry, parent) {
     existing: !!entry,
     form,
     original: copy(form),
-    changed: !entry,
+    changed: false,
     errors: {},
   };
 }
 function hasStepChanges(editor) {
-  return (
-    !editor.existing ||
-    JSON.stringify(editor.form) !== JSON.stringify(editor.original)
-  );
+  return JSON.stringify(editor.form) !== JSON.stringify(editor.original);
 }
 function offsetErrors(time) {
   const errors = {},
@@ -12095,7 +12092,7 @@ var OccupiedPanel = class extends HTMLElement {
   }
   _locationChanged = () => void this._load();
   _beforeUnload = (event2) => {
-    if (!(this.dirty || this.stepEditor?.changed)) {
+    if (!(this.dirty || (this.stepEditor && hasStepChanges(this.stepEditor)))) {
       return;
     }
     event2.preventDefault();

@@ -212,15 +212,12 @@ export function stepEditor(program, entry, parent) {
     existing: !!entry,
     form,
     original: copy(form),
-    changed: !entry,
+    changed: false,
     errors: {},
   };
 }
 export function hasStepChanges(editor) {
-  return (
-    !editor.existing ||
-    JSON.stringify(editor.form) !== JSON.stringify(editor.original)
-  );
+  return JSON.stringify(editor.form) !== JSON.stringify(editor.original);
 }
 export function offsetErrors(time) {
   const errors = {},

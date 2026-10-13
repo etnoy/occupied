@@ -8,6 +8,7 @@ import type {
 } from "@occupied/types.js";
 import { stepEditor } from "@occupied/step-model.js";
 import { startStep } from "@occupied/steps.js";
+import { createStepEditorContext } from "@occupied/step-editor-controller.js";
 
 const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
 
@@ -318,6 +319,46 @@ void test("Configure routing selects the requested instance and switches all edi
     assert.equal(f.panel.preview, undefined);
     assert.ok(f.disposed.includes("occupied/subscribe:main"));
     assert.ok(f.subscriptions.has("occupied/subscribe:guest"));
+  } finally {
+    f.restore();
+  }
+});
+
+void test("canceling a new step only asks to discard actual edits", async () => {
+  const f = await fixture();
+  try {
+    const original = structuredClone(f.panel.draft);
+    startStep(f.panel);
+    createStepEditorContext(f.panel).cancel();
+    assert.equal(f.panel.stepEditor, null);
+    assert.equal(f.panel.pendingStepExit, null);
+    assert.deepEqual(f.panel.draft, original);
+
+    startStep(f.panel);
+    const context = createStepEditorContext(f.panel);
+    context.form.name = "Pending step";
+    context.changed("name");
+    context.cancel();
+    assert.ok(f.panel.pendingStepExit);
+    assert.notEqual(f.panel.stepEditor, null);
+    assert.equal(context.form.name, "Pending step");
+    f.panel.cancelStepExit();
+    assert.equal(f.panel.pendingStepExit, null);
+    context.cancel();
+    f.panel.confirmStepExit();
+    assert.equal(f.panel.stepEditor, null);
+    assert.deepEqual(f.panel.draft, original);
+
+    startStep(f.panel);
+    const reverted = createStepEditorContext(f.panel);
+    reverted.form.timing.start = "19:00";
+    reverted.changed("start");
+    reverted.form.timing.start = reverted.editor.original.timing.start;
+    reverted.changed("start");
+    reverted.cancel();
+    assert.equal(f.panel.stepEditor, null);
+    assert.equal(f.panel.pendingStepExit, null);
+    assert.deepEqual(f.panel.draft, original);
   } finally {
     f.restore();
   }

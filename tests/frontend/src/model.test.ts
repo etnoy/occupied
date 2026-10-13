@@ -783,7 +783,13 @@ void test("pending step changes distinguish clean, reverted and new forms", () =
   assert.equal(hasStepChanges(editor), true);
   editor.original = structuredClone(editor.form);
   assert.equal(hasStepChanges(editor), false);
-  assert.equal(hasStepChanges(stepEditor(p)), true);
+  const fresh = stepEditor(p);
+  assert.equal(hasStepChanges(fresh), false);
+  fresh.form.name = "New step";
+  assert.equal(hasStepChanges(fresh), true);
+  fresh.form.name = fresh.original.name;
+  assert.equal(hasStepChanges(fresh), false);
+  assert.equal(hasStepChanges(stepEditor(p, null, stepEntries(p)[0])), false);
 });
 
 void test("switching cards delegates unsaved edit handling before changing steps", async () => {
