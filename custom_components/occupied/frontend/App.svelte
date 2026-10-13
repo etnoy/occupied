@@ -2,7 +2,6 @@
   import type { OccupiedPanel } from "./occupied-panel.js";
   import type { Issue, Tab } from "./types.js";
   import { errorMessage } from "./util.js";
-  import { resources } from "./model.js";
 
   import StepEditor from "./StepEditor.svelte";
   import StepsView from "./StepsView.svelte";
@@ -50,36 +49,6 @@
   ];
 </script>
 
-{#snippet runtimeControls()}
-  {#if panel.status && panel.selectedInstance?.loaded}
-    {@const state = panel.status}
-    {@const label = state.paused
-      ? "Paused"
-      : !state.enabled
-        ? "Off"
-        : state.active
-          ? "Managing"
-          : "Waiting"}
-    {@const schedulable = resources(panel.saved).some((resource) =>
-      ["step", "activity", "window"].includes(resource.kind),
-    )}
-    <span id="badge" class="badge" aria-live="polite" title={state.reason || ""}
-      >{t(label)}{#if state.dry_run}
-        {` · ${t("Dry run")}`}
-      {:else}
-        {""}
-      {/if}</span
-    >
-    <button
-      type="button"
-      class="text-button"
-      disabled={panel.busy || (!state.enabled && !schedulable)}
-      onclick={() => panel.control(state.enabled ? "stop" : "start")}
-    >
-      {t(state.enabled ? "Stop managing" : "Start managing")}
-    </button>
-  {/if}
-{/snippet}
 {#snippet toolbar()}
   {@const unsaved = panel.dirty && !panel.stepEditor}
   <div
@@ -170,7 +139,6 @@
         </p>
       {/if}
     </div>
-    <div id="runtime" class="row">{@render runtimeControls()}</div>
   </header>
   {#each panel.selectedInstance?.overlaps || [] as overlap}
     <p class="banner" role="status">

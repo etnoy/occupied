@@ -1,9 +1,12 @@
-/** Bridge object properties and nonstandard events to Home Assistant elements. */
+/**
+Bridge object properties and nonstandard events to Home Assistant elements.
+*/
 export function properties(node: HTMLElement, values: Record<string, unknown>) {
   const apply = (next: Record<string, unknown>) => {
     for (const [key, value] of Object.entries(next)) {
-      if ((node as unknown as Record<string, unknown>)[key] !== value)
+      if ((node as unknown as Record<string, unknown>)[key] !== value) {
         (node as unknown as Record<string, unknown>)[key] = value;
+      }
     }
   };
   apply(values);

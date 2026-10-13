@@ -17,6 +17,7 @@ def runtime_dates(program, today):
     """Conservatively bound possible events before allocating sampled plans."""
     steps = {s.id: s for r in program.routines for s in r.steps}
     bounds = {}
+    active_steps = set()
 
     def when_bounds(when):
         if when.relative_to:
@@ -27,7 +28,12 @@ def runtime_dates(program, today):
         return 0, DAY * (2 if when.clock_range.cross_midnight else 1)
 
     for identifier in step_order(program):
-        bounds[identifier] = when_bounds(steps[identifier].when)
+        step = steps[identifier]
+        bounds[identifier] = when_bounds(step.when)
+        if step.enabled and (
+            step.when.relative_to is None or step.when.relative_to in active_steps
+        ):
+            active_steps.add(identifier)
 
     def anchor_bounds(anchor):
         low, high = (
@@ -62,6 +68,8 @@ def runtime_dates(program, today):
             continue
         defaults = merge_defaults(program, routine)
         for item in (*routine.steps, *routine.activities):
+            if hasattr(item, "actions") and item.id not in active_steps:
+                continue
             if item.probability == 0:
                 continue
             starts = item.actions if hasattr(item, "actions") else item.on_start

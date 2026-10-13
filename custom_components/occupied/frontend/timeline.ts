@@ -8,7 +8,9 @@ export function stamp(
   zone?: string,
   locale?: HomeAssistantLocale,
 ) {
-  if (!value) return "—";
+  if (!value) {
+    return "—";
+  }
   try {
     return formatTimestamp(value, zone, locale);
   } catch {
@@ -29,7 +31,9 @@ export function timelineModel(
   locale?: HomeAssistantLocale,
 ) {
   const plan = doc.plan;
-  if (!plan) return null;
+  if (!plan) {
+    return null;
+  }
   const labels = new Map(
     resources(program).map((resource) => [resource.id, resource.name]),
   );
@@ -40,7 +44,9 @@ export function timelineModel(
     Math.max(0, Math.min(100, ((Date.parse(time) - start) / width) * 100));
   const lanes = new Map<string, TimelineMark[]>();
   const lane = (id: string, mark: TimelineMark) => {
-    if (!lanes.has(id)) lanes.set(id, []);
+    if (!lanes.has(id)) {
+      lanes.set(id, []);
+    }
     lanes.get(id)!.push(mark);
   };
   const bar = (
@@ -60,7 +66,9 @@ export function timelineModel(
   });
   let drawn = 0;
   for (const interval of plan.intervals) {
-    if (drawn++ >= 800) break;
+    if (drawn++ >= 800) {
+      break;
+    }
     lane(
       interval.source_id,
       bar(
@@ -72,7 +80,9 @@ export function timelineModel(
     );
   }
   for (const [id, time] of Object.entries(plan.steps || {})) {
-    if (drawn++ >= 800) break;
+    if (drawn++ >= 800) {
+      break;
+    }
     lane(id, {
       className: "marker",
       title: `${labels.get(id) || id}: ${stamp(time, plan.timezone, locale)}`,
@@ -81,12 +91,18 @@ export function timelineModel(
     });
   }
   for (const activity of doc.snapshot?.activities || []) {
-    if (!activity.deadline) continue;
+    if (!activity.deadline) {
+      continue;
+    }
     const actualStart = new Date(
       Date.parse(activity.deadline) - activity.duration * 1000,
     ).toISOString();
-    if (Date.parse(activity.deadline) < start || Date.parse(actualStart) > end)
+    if (
+      Date.parse(activity.deadline) < start ||
+      Date.parse(actualStart) > end
+    ) {
       continue;
+    }
     lane(
       activity.source_id,
       bar(
@@ -103,8 +119,9 @@ export function timelineModel(
     if (
       Date.parse(handover.deadline) < start ||
       Date.parse(handover.start) > end
-    )
+    ) {
       continue;
+    }
     lane(
       entity,
       bar(

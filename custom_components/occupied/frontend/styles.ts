@@ -184,11 +184,6 @@ export const styles = `
     margin: 0;
     overflow-wrap: anywhere;
   }
-  .badge {
-    padding: 6px 12px;
-    background: var(--secondary-background-color, #e3eef2);
-    border-radius: 20px;
-  }
   .toolbar {
     position: sticky;
     top: 0;
@@ -435,7 +430,7 @@ export const styles = `
   }
   .routine-row {
     display: grid;
-    grid-template-columns: 26px minmax(0, 1fr) minmax(0, 0.85fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
     align-items: center;
     gap: 14px;
     text-align: left;
@@ -447,15 +442,11 @@ export const styles = `
     color: inherit;
   }
   .routine-row:disabled { opacity: 1; cursor: default; }
+  .routine-row.editing { grid-template-columns: minmax(0, 1fr); }
   .routine-row:not(:disabled):hover { background: var(--secondary-background-color, #e3eef2); }
   .routine-row[aria-expanded="true"] { border-bottom: 1px solid var(--divider-color, #d5dce3); }
   .routine-card .routine-editor { margin: 0; }
   .step-editor-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-  .routine-symbol {
-    color: var(--primary-color, #167b94);
-    font-size: 22px;
-    width: 26px;
-  }
   .routine-row-content {
     display: flex;
     min-width: 0;
@@ -472,9 +463,6 @@ export const styles = `
     overflow-wrap: anywhere;
   }
   .routine-row-time {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
     text-align: right;
     font-size: 13px;
     overflow-wrap: anywhere;
@@ -676,12 +664,6 @@ export const styles = `
       gap: 10px;
       margin-bottom: 8px;
     }
-    header .row {
-      gap: 4px;
-    }
-    #runtime {
-      font-size: 12px;
-    }
     nav {
       margin-bottom: 24px;
     }
@@ -696,10 +678,9 @@ export const styles = `
     .routine-row {
       padding: 14px;
       gap: 10px;
-      grid-template-columns: 26px minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr);
     }
     .routine-row-time {
-      grid-column: 2;
       text-align: left;
     }
     .routine-editor {

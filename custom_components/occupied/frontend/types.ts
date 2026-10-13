@@ -74,6 +74,7 @@ export interface Handover {
 export interface Item {
   id: string;
   name: string;
+  enabled?: boolean;
   description?: string;
   days?: string[];
   probability?: number;
@@ -193,6 +194,7 @@ export interface TimingForm {
 }
 export interface StepForm {
   name: string;
+  enabled: boolean;
   kind: string;
   service: string;
   data: string;

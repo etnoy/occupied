@@ -336,6 +336,7 @@ class Item(Model):
 
 
 class Step(Item):
+    enabled: bool = True
     when: When
     actions: tuple[Action, ...]
 

@@ -10,7 +10,7 @@ import {
 export function focusEditor(panel: OccupiedPanel, key?: string) {
   const target = key
     ? panel.shadowRoot.querySelector<HTMLElement>(
-        `[data-builder-field="${key}"]`,
+        `[data-builder-field="${CSS.escape(key)}"]`,
       )
     : panel.shadowRoot.querySelector<HTMLElement>(
         '.routine-editor [aria-invalid="true"]',
@@ -39,15 +39,18 @@ export function createStepEditorContext(panel: OccupiedPanel) {
     if (["startOffset", "endOffset"].includes(key)) {
       const errors = offsetErrors(time);
       for (const offset of ["startOffset", "endOffset"]) {
-        if (errors[offset]) editor.errors[offset] = errors[offset];
-        else delete editor.errors[offset];
+        if (errors[offset]) {
+          editor.errors[offset] = errors[offset];
+        } else {
+          delete editor.errors[offset];
+        }
       }
     }
     // Svelte updates the existing inputs and HA selectors; typing retains focus.
     panel.flush();
   };
   const submit = async () => {
-    if (!editing && !form.name.trim() && form.entities.length) {
+    if (!editing && !form.name.trim() && form.entities.length > 0) {
       const target = `${entityName(panel.catalog, form.entities[0])}${form.entities.length > 1 ? ` +${form.entities.length - 1}` : ""}`;
       form.name =
         form.kind === "entities"
@@ -55,7 +58,9 @@ export function createStepEditorContext(panel: OccupiedPanel) {
           : target;
     }
     editor.errors = editorErrors(panel.draft, editor);
-    if (Object.keys(editor.errors).length) return refresh();
+    if (Object.keys(editor.errors).length > 0) {
+      return refresh();
+    }
     try {
       const candidate = buildStep(panel.draft, editor);
       editor.candidatePath = required(
@@ -66,7 +71,9 @@ export function createStepEditorContext(panel: OccupiedPanel) {
         panel.selectedStep = editor.id;
         panel.stepEditor = null;
         panel.renderView();
-      } else await panel.save(candidate);
+      } else {
+        await panel.save(candidate);
+      }
     } catch (error) {
       panel.fail(error);
     }

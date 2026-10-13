@@ -1,9 +1,13 @@
 // Generated from dom.ts by pnpm run build. Do not edit.
-/** Bridge object properties and nonstandard events to Home Assistant elements. */
+/**
+Bridge object properties and nonstandard events to Home Assistant elements.
+*/
 export function properties(node, values) {
   const apply = (next) => {
     for (const [key, value] of Object.entries(next)) {
-      if (node[key] !== value) node[key] = value;
+      if (node[key] !== value) {
+        node[key] = value;
+      }
     }
   };
   apply(values);

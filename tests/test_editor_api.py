@@ -65,32 +65,42 @@ async def test_read_starter_and_catalog_do_not_replace_proof_or_call_devices(
     assert entry.runtime_data is engine and engine.snapshot() == before and not devices
 
 
-async def test_saved_shared_target_warnings_survive_reload_and_clear_when_resolved(
+async def test_shared_targets_do_not_warn_and_baseline_warnings_survive_reload(
     hass, editor_entry, program_dict, devices, hass_ws_client
 ):
     assert await hass.config_entries.async_setup(editor_entry.entry_id)
     client = await hass_ws_client(hass)
     doc = (await request(client, "occupied/program", editor_entry))["result"]
-    shared = [warning for warning in doc["warnings"] if warning["code"] == "shared_target"]
-    assert len(shared) == 2
-    assert all(warning["severity"] == "warning" for warning in shared)
-    assert await hass.config_entries.async_reload(editor_entry.entry_id)
-    reloaded = (await request(client, "occupied/program", editor_entry, 2))["result"]
-    assert reloaded["warnings"] == doc["warnings"]
-    resolved = deepcopy(program_dict)
-    resolved["routines"][0]["steps"] = resolved["routines"][0]["steps"][:1]
-    resolved["routines"][0]["activity_windows"] = []
+    assert all(warning["code"] == "opaque_action" for warning in doc["warnings"])
+    missing_baseline = deepcopy(program_dict)
+    missing_baseline["lighting"]["baseline"] = []
     saved = await request(
         client,
         "occupied/save",
         editor_entry,
-        3,
-        program=resolved,
+        2,
+        program=missing_baseline,
+        expected_revision=doc["revision"],
+    )
+    assert saved["success"] and saved["result"]["valid"]
+    warnings = saved["result"]["warnings"]
+    baseline_warnings = [warning for warning in warnings if warning["code"] == "undefined_baseline"]
+    assert len(baseline_warnings) == 1
+    assert baseline_warnings[0]["severity"] == "warning"
+    assert await hass.config_entries.async_reload(editor_entry.entry_id)
+    reloaded = (await request(client, "occupied/program", editor_entry, 3))["result"]
+    assert reloaded["warnings"] == warnings
+    saved = await request(
+        client,
+        "occupied/save",
+        editor_entry,
+        4,
+        program=program_dict,
         expected_revision=reloaded["revision"],
     )
     assert saved["success"] and saved["result"]["valid"]
-    assert not any(warning["code"] == "shared_target" for warning in saved["result"]["warnings"])
-    current = (await request(client, "occupied/program", editor_entry, 4))["result"]
+    assert saved["result"]["warnings"] == doc["warnings"]
+    current = (await request(client, "occupied/program", editor_entry, 5))["result"]
     assert current["warnings"] == saved["result"]["warnings"]
     assert not devices
 

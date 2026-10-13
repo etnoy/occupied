@@ -10,7 +10,9 @@ import { compile } from "svelte/compiler";
 const root = fileURLToPath(new URL("../", import.meta.url));
 const check = process.argv.includes("--check");
 const testsOnly = process.argv.includes("--tests-only");
-if (check && testsOnly) throw new Error("Use either --check or --tests-only");
+if (check && testsOnly) {
+  throw new Error("Use either --check or --tests-only");
+}
 execFileSync(
   process.execPath,
   [
@@ -39,9 +41,12 @@ for (const directory of [
   const tests = directory === "tests/frontend/src";
   // Ignored test output is generated separately. A clean checkout check compares
   // only the committed runtime assets and never rewrites them.
-  if ((check && tests) || (testsOnly && !tests)) continue;
+  if ((check && tests) || (testsOnly && !tests)) {
+    continue;
+  }
   const destination = tests ? "tests/frontend/generated" : `${directory}/dist`;
-  const sources = (await readdir(resolve(root, directory)))
+  const filenames = await readdir(resolve(root, directory));
+  const sources = filenames
     .filter((name) => name.endsWith(".ts") && !name.endsWith(".d.ts"))
     .sort();
   if (check) {
@@ -51,10 +56,14 @@ for (const directory of [
     const existing = await readdir(resolve(root, destination), {
       withFileTypes: true,
     }).catch(() => []);
-    for (const entry of existing)
-      if (!entry.isFile() || !expected.has(entry.name))
+    for (const entry of existing) {
+      if (!entry.isFile() || !expected.has(entry.name)) {
         stale.push(`Unexpected asset: ${destination}/${entry.name}`);
-  } else await rm(resolve(root, destination), { recursive: true, force: true });
+      }
+    }
+  } else {
+    await rm(resolve(root, destination), { recursive: true, force: true });
+  }
   for (const name of sources) {
     const source = `${directory}/${name.replace(/\.ts$/, ".js")}`;
     const relative = `${destination}/${name.replace(/\.ts$/, ".js")}`;
@@ -91,11 +100,12 @@ for (const directory of [
       emitted = bundle.outputFiles![0].text;
     }
     // Tests import the exact committed modules installed by HA.
-    if (tests)
+    if (tests) {
       emitted = emitted.replaceAll(
         '"@occupied/',
         '"../../../custom_components/occupied/frontend/dist/',
       );
+    }
     const banner = `// Generated from ${name} by pnpm run build. Do not edit.\n`;
     const options = await resolveConfig(resolve(root, relative));
     const content = await format(banner + emitted, {
@@ -106,21 +116,24 @@ for (const directory of [
       const current = await readFile(resolve(root, relative), "utf8").catch(
         () => "",
       );
-      if (current !== content) stale.push(relative);
+      if (current !== content) {
+        stale.push(relative);
+      }
     } else {
       await mkdir(resolve(root, destination), { recursive: true });
       await writeFile(resolve(root, relative), content);
     }
   }
 }
-if (stale.length)
+if (stale.length > 0) {
   throw new Error(
     `Committed frontend assets are missing, stale or unexpected. Run pnpm run build and commit frontend/dist alongside the TypeScript sources:\n${stale.join("\n")}`,
   );
-console.log(
-  check
-    ? "Committed frontend assets match their TypeScript sources."
-    : testsOnly
-      ? "Built test JavaScript without changing committed frontend assets."
-      : "Built frontend and test JavaScript from strict TypeScript.",
-);
+}
+let message = "Built frontend and test JavaScript from strict TypeScript.";
+if (check) {
+  message = "Committed frontend assets match their TypeScript sources.";
+} else if (testsOnly) {
+  message = "Built test JavaScript without changing committed frontend assets.";
+}
+console.log(message);

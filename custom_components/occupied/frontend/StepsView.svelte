@@ -1,14 +1,7 @@
 <script lang="ts">
   import type { OccupiedPanel } from "./occupied-panel.js";
 
-  import {
-    startStep,
-    openStep,
-    actionSummary,
-    daySummary,
-    stepTree,
-    stepSymbol,
-  } from "./steps.js";
+  import { startStep, openStep, actionSummary, stepTree } from "./steps.js";
   import { stepEntries, timingSummary, simpleStep } from "./step-model.js";
   import { entityName } from "./util.js";
   import StepEditor from "./StepEditor.svelte";
@@ -51,8 +44,10 @@
   <div class="routine-layout">
     <div class="routine-list" aria-label={t("Your steps")}>
       {#each stepTree(entries) as { entry, depth } (entry.id)}
+        {@const editing =
+          panel.stepEditor?.existing && panel.stepEditor.id === entry.id}
         {@const expanded =
-          (panel.stepEditor?.existing && panel.stepEditor.id === entry.id) ||
+          editing ||
           (!panel.stepEditor &&
             !simpleStep(entry) &&
             panel.selectedStep === entry.id)}
@@ -65,15 +60,13 @@
             type="button"
             id={`step-card-${entry.id}`}
             class="routine-row"
+            class:editing
             aria-label={entry.name}
             disabled={panel.busy}
             aria-expanded={expanded}
             aria-controls={`step-editor-${entry.id}`}
             onclick={() => openStep(panel, entry)}
           >
-            <span class="routine-symbol" aria-hidden="true"
-              >{stepSymbol(entry)}</span
-            >
             <span class="routine-row-content"
               ><strong>{entry.name}</strong><span class="hint"
                 >{actionSummary(entry, t)} ·
@@ -82,17 +75,17 @@
                   .join(", ")}</span
               ></span
             >
-            <span class="routine-row-time"
-              ><span
-                >{timingSummary(
+            {#if !editing}
+              <span class="routine-row-time">
+                {timingSummary(
                   entry,
                   entries,
                   t,
                   panel.catalog.time_sources,
                   panel._hass.locale,
-                )}</span
-              ><small>{daySummary(entry.days, t)}</small></span
-            >
+                )}
+              </span>
+            {/if}
           </button>
           {#if expanded}
             <div id={`step-editor-${entry.id}`}>

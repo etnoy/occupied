@@ -404,6 +404,11 @@ class _Planner:
         }
         for step_id in step_order(self.program):
             routine, item, path = lookup[step_id]
+            if not item.enabled:
+                self.issues.append(
+                    Issue("step_disabled", f"Step {item.id} is disabled", path, "info")
+                )
+                continue
             defaults = merge_defaults(self.program, routine)
             if not self.occurs(routine, item, defaults, path):
                 continue

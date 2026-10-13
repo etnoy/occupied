@@ -15,6 +15,23 @@
 </script>
 
 <div class="step-editor-actions">
+  {#if panel.stepEditor?.id === entry.id}
+    <button
+      type="button"
+      aria-pressed={panel.stepEditor.form.enabled}
+      disabled={panel.busy}
+      onclick={() => {
+        const editor = panel.stepEditor;
+        if (!editor || editor.id !== entry.id) return;
+        editor.form.enabled = !editor.form.enabled;
+        editor.changed = true;
+        panel.version++;
+        panel.flush();
+      }}
+    >
+      {panel.t(panel.stepEditor.form.enabled ? "Enabled" : "Disabled")}
+    </button>
+  {/if}
   {#if entry.kind === "steps"}
     <button
       type="button"

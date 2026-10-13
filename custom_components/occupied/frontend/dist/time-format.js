@@ -1,8 +1,14 @@
 // Generated from time-format.ts by pnpm run build. Do not edit.
 function usesAmPm(locale) {
-  if (!locale) return false;
-  if (locale.time_format === "12") return true;
-  if (locale.time_format === "24") return false;
+  if (!locale) {
+    return false;
+  }
+  if (locale.time_format === "12") {
+    return true;
+  }
+  if (locale.time_format === "24") {
+    return false;
+  }
   const language =
     locale.time_format === "language" ? locale.language : undefined;
   const hourCycle = new Intl.DateTimeFormat(language, {
@@ -16,10 +22,14 @@ function formatterLocale(locale) {
 function hourCycle(locale) {
   return usesAmPm(locale) ? "h12" : "h23";
 }
-/** Format a canonical local clock value without applying a timezone offset. */
+/**
+Format a canonical local clock value without applying a timezone offset.
+*/
 export function formatClock(value, locale) {
   const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
-  if (!match) return value;
+  if (!match) {
+    return value;
+  }
   const [, hour, minute, second] = match;
   const date = new Date(
     Date.UTC(2020, 0, 1, Number(hour), Number(minute), Number(second || 0)),
@@ -27,12 +37,14 @@ export function formatClock(value, locale) {
   return new Intl.DateTimeFormat(formatterLocale(locale), {
     hour: usesAmPm(locale) ? "numeric" : "2-digit",
     minute: "2-digit",
-    ...(Number(second) ? { second: "2-digit" } : {}),
+    ...(Number(second) && { second: "2-digit" }),
     hourCycle: hourCycle(locale),
     timeZone: "UTC",
   }).format(date);
 }
-/** Format an absolute timestamp with HA's time preference and the requested zone. */
+/**
+Format an absolute timestamp with HA's time preference and the requested zone.
+*/
 export function formatTimestamp(value, zone, locale) {
   return new Intl.DateTimeFormat(formatterLocale(locale), {
     dateStyle: "short",

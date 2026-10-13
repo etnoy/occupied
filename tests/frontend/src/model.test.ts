@@ -59,14 +59,14 @@ const program = () => ({
     },
   ],
 });
-test("new identifiers derive once and remain unique", () => {
+void test("new identifiers derive once and remain unique", () => {
   const p = program();
   assert.equal(identifier(p, "Room"), "room_2");
   assert.equal(identifier(p, "123 bedroom"), "item_123_bedroom");
   p.groups[0].name = "New label";
   assert.equal(p.groups[0].id, "room");
 });
-test("routine copies rewrite internal typed references while preserving opaque data", () => {
+void test("routine copies rewrite internal typed references while preserving opaque data", () => {
   const p = program(),
     item = duplicate(p, ["routines", 0]);
   assert.notEqual(required(item.steps)[0].id, "dinner");
@@ -87,7 +87,7 @@ test("routine copies rewrite internal typed references while preserving opaque d
     ["room"],
   );
 });
-test("referenced deletes fail and routine deletion permits internal references", () => {
+void test("referenced deletes fail and routine deletion permits internal references", () => {
   const p = program();
   assert.equal(references(p, "dinner").length, 2);
   assert.throws(
@@ -98,7 +98,7 @@ test("referenced deletes fail and routine deletion permits internal references",
   removeResource(p, ["routines", 0]);
   assert.equal(p.routines.length, 0);
 });
-test("parent picker excludes self and descendants", () => {
+void test("parent picker excludes self and descendants", () => {
   const p = program();
   assert.deepEqual(parentSteps(p, "dinner"), []);
   assert.deepEqual(
@@ -124,7 +124,7 @@ function create(
   Object.assign(editor.form, { name, entities });
   return { editor, program: buildStep(program, editor) };
 }
-test("entity-first creation supports mixed domains with brightness and manages only lights", () => {
+void test("entity-first creation supports mixed domains with brightness and manages only lights", () => {
   const p = empty(),
     editor = stepEditor(p);
   Object.assign(editor.form, {
@@ -156,7 +156,7 @@ test("entity-first creation supports mixed domains with brightness and manages o
     { targets: { entities: ["light.a"] }, state: "off" },
   ]);
 });
-test("related routines use stable step anchors and reject cycles and incompatible days", () => {
+void test("related routines use stable step anchors and reject cycles and incompatible days", () => {
   const { program: first } = create(empty(), "Evening");
   const parent = stepEntries(first)[0];
   const { program: next } = create(first, "Kitchen", ["light.kitchen"], parent);
@@ -176,7 +176,7 @@ test("related routines use stable step anchors and reject cycles and incompatibl
   edit.form.days = ["mon"];
   assert.match(editorErrors(next, edit).days, /Kitchen depends/);
 });
-test("renaming preserves group references, all advanced settings and existing lighting exactly", () => {
+void test("renaming preserves group references, all advanced settings and existing lighting exactly", () => {
   const { program: p } = create(empty(), "Evening");
   required(p.groups).push({
     id: "living",
@@ -201,7 +201,7 @@ test("renaming preserves group references, all advanced settings and existing li
   assert.deepEqual(next, expected);
   assert.equal(simpleStep(stepEntries(next)[0]), true);
 });
-test("editing entity selection does not modify a shared group or replace existing baselines", () => {
+void test("editing entity selection does not modify a shared group or replace existing baselines", () => {
   const { program: p } = create(empty(), "Evening");
   p.groups = [
     { id: "living", name: "Living", entities: ["light.living_room"] },
@@ -224,7 +224,7 @@ test("editing entity selection does not modify a shared group or replace existin
     state: "off",
   });
 });
-test("widening a legacy item's weekdays retains siblings and inherited defaults", () => {
+void test("widening a legacy item's weekdays retains siblings and inherited defaults", () => {
   const { program: p } = create(empty(), "Evening");
   required(p.routines)[0].days = ["mon"];
   required(p.routines)[0].defaults = { probability: 0.6 };
@@ -249,7 +249,7 @@ test("widening a legacy item's weekdays retains siblings and inherited defaults"
     ["mon", "tue"],
   );
 });
-test("start/end bounds and signed sun offsets preserve overnight semantics", () => {
+void test("start/end bounds and signed sun offsets preserve overnight semantics", () => {
   const p = empty(),
     editor = stepEditor(p);
   Object.assign(editor.form, { name: "Night", entities: ["light.a"] });
@@ -286,10 +286,10 @@ test("start/end bounds and signed sun offsets preserve overnight semantics", () 
   );
   assert.equal(
     timingSummary(stepEntries(next)[0], []),
-    "Runs at a random time between 35 minutes and 25 minutes before sunset.",
+    "Runs at a random time between 35 minutes and 25 minutes before sunset every day.",
   );
 });
-test("existing fractional-minute ranges remain editable and untouched on rename", () => {
+void test("existing fractional-minute ranges remain editable and untouched on rename", () => {
   const { program: first } = create(empty(), "Wake");
   const { program: p } = create(
     first,
@@ -310,7 +310,7 @@ test("existing fractional-minute ranges remain editable and untouched on rename"
     entry.when,
   );
 });
-test("complex activities and mixed actions stay outside the simple editor", () => {
+void test("complex activities and mixed actions stay outside the simple editor", () => {
   const { program: p } = create(empty(), "Evening");
   const entry = stepEntries(p)[0];
   assert.equal(simpleStep({ ...entry, kind: "activities" }), false);
@@ -327,7 +327,7 @@ test("complex activities and mixed actions stay outside the simple editor", () =
   );
 });
 
-test("scene steps round-trip without adding managed lights", () => {
+void test("scene steps round-trip without adding managed lights", () => {
   const p = empty(),
     editor = stepEditor(p);
   Object.assign(editor.form, {
@@ -357,7 +357,7 @@ test("scene steps round-trip without adding managed lights", () => {
   assert.match(editorErrors(next, edit).entities, /one Home Assistant scene/);
 });
 
-test("entity service steps validate data and preserve group targets on action edits", () => {
+void test("entity service steps validate data and preserve group targets on action edits", () => {
   const p = empty(),
     editor = stepEditor(p);
   Object.assign(editor.form, {
@@ -398,7 +398,7 @@ test("entity service steps validate data and preserve group targets on action ed
   assert.match(editorErrors(next, edit).service, /domain.service/);
 });
 
-test("explicit step start intervals and second-precision relative offsets", () => {
+void test("explicit step start intervals and second-precision relative offsets", () => {
   const editor = stepEditor(empty());
   Object.assign(editor.form, {
     name: "Morning",
@@ -443,7 +443,7 @@ test("explicit step start intervals and second-precision relative offsets", () =
   assert.match(editorErrors(empty(), editor).end, /valid/);
 });
 
-test("clearing optional ends restores fixed timing and retains existing weekdays", () => {
+void test("clearing optional ends restores fixed timing and retains existing weekdays", () => {
   const { program: p } = create(empty(), "Morning");
   required(required(p.routines)[0].steps)[0].days = ["mon", "wed"];
   required(required(required(p.routines)[0].steps)[0].when).clock_range = {
@@ -489,7 +489,7 @@ test("clearing optional ends restores fixed timing and retains existing weekdays
   );
 });
 
-test("offset form validation explains format, range and ordering errors", () => {
+void test("offset form validation explains format, range and ordering errors", () => {
   for (const value of [
     "30m",
     "1h",
@@ -499,13 +499,15 @@ test("offset form validation explains format, range and ordering errors", () => 
     "+30m",
     "1.5s",
     "0s",
-  ])
+  ]) {
     assert.deepEqual(offsetErrors({ startOffset: value, endOffset: "" }), {});
-  for (const value of ["", "30", "00:30", "1m2h", "30minutes", "-", "1h 30m"])
+  }
+  for (const value of ["", "30", "00:30", "1m2h", "30minutes", "-", "1h 30m"]) {
     assert.match(
       offsetErrors({ startOffset: value, endOffset: "" }).startOffset,
       /Use h, m or s/,
     );
+  }
   assert.match(offsetErrors({ startOffset: "169h" }).startOffset, /seven days/);
   assert.match(
     offsetErrors({ startOffset: "1h", endOffset: "abc" }).endOffset,
@@ -525,7 +527,7 @@ test("offset form validation explains format, range and ordering errors", () => 
   );
 });
 
-test("HA time sources and all solar events round-trip through the step editor", () => {
+void test("HA time sources and all solar events round-trip through the step editor", () => {
   const { program: p } = create(empty(), "Morning");
   for (const anchor of [
     "sun:dawn",
@@ -554,7 +556,7 @@ test("HA time sources and all solar events round-trip through the step editor", 
   }
 });
 
-test("timing explanation describes signed offsets and window bounds directly", () => {
+void test("timing explanation describes signed offsets and window bounds directly", () => {
   const entries = [{ id: "kitchen", name: "Kitchen lights" }];
   const base = {
     mode: "relative",
@@ -594,11 +596,12 @@ test("timing explanation describes signed offsets and window bounds directly", (
     ["1h", "60m", "Runs 1 hour after Kitchen lights."],
     ["1h30m10s", "", "Runs 1 hour 30 minutes 10 seconds after Kitchen lights."],
     ["1.5s", "", "Runs 1.5 seconds after Kitchen lights."],
-  ])
+  ]) {
     assert.equal(
       timingExplanation({ ...base, startOffset, endOffset }, entries),
       expected,
     );
+  }
   assert.equal(
     timingExplanation({ ...base, startOffset: "bad" }, entries),
     "Enter valid offsets to see when this step runs.",
@@ -643,7 +646,7 @@ test("timing explanation describes signed offsets and window bounds directly", (
   );
 });
 
-test("absolute timing explanation follows fixed, random and overnight windows", () => {
+void test("absolute timing explanation follows fixed, random and overnight windows", () => {
   const base = { mode: "absolute", start: "18:00", end: "" };
   assert.equal(
     timingExplanation(base),
@@ -663,7 +666,7 @@ test("absolute timing explanation follows fixed, random and overnight windows", 
   );
 });
 
-test("unitless zero offsets validate, describe and save as canonical durations", () => {
+void test("unitless zero offsets validate, describe and save as canonical durations", () => {
   const { program: p } = create(empty(), "Morning");
   for (const [startOffset, endOffset, expectedRange] of [
     ["0", "", { fixed: "0s" }],
@@ -715,7 +718,7 @@ test("unitless zero offsets validate, describe and save as canonical durations",
   );
 });
 
-test("step list descriptions share the editor wording without editing hints", () => {
+void test("step list descriptions share the editor wording without editing hints", () => {
   const entries = [{ id: "kitchen", name: "Kitchen lights" }];
   const cases: [When, string][] = [
     [{ clock_range: { earliest: "18:00", latest: "18:00" } }, "Runs at 18:00"],
@@ -746,8 +749,9 @@ test("step list descriptions share the editor wording without editing hints", ()
       "Runs 20 minutes before sunset.",
     ],
   ];
-  for (const [when, expected] of cases)
+  for (const [when, expected] of cases) {
     assert.equal(timingSummary({ when }, entries), expected);
+  }
   assert.equal(
     timingSummary(
       {
@@ -766,7 +770,7 @@ test("step list descriptions share the editor wording without editing hints", ()
   );
 });
 
-test("pending step changes distinguish clean, reverted and new forms", () => {
+void test("pending step changes distinguish clean, reverted and new forms", () => {
   const p = program();
   const editor = stepEditor(p, stepEntries(p)[0]);
   assert.equal(hasStepChanges(editor), false);
@@ -782,7 +786,7 @@ test("pending step changes distinguish clean, reverted and new forms", () => {
   assert.equal(hasStepChanges(stepEditor(p)), true);
 });
 
-test("switching cards delegates unsaved edit handling before changing steps", async () => {
+void test("switching cards delegates unsaved edit handling before changing steps", async () => {
   const { openStep } = await import("@occupied/steps.js");
   const p = program();
   const first = stepEntries(p)[0];
@@ -791,8 +795,7 @@ test("switching cards delegates unsaved edit handling before changing steps", as
   let requests = 0,
     renders = 0,
     accept = false;
-  let panel: import("@occupied/occupied-panel.js").OccupiedPanel;
-  panel = {
+  const panel = {
     draft: p,
     stepEditor: editor,
     busy: false,
@@ -834,7 +837,7 @@ test("switching cards delegates unsaved edit handling before changing steps", as
   );
 });
 
-test("new steps validate all sections and save in a single submission", async () => {
+void test("new steps validate all sections and save in a single submission", async () => {
   const { createStepEditorContext } = await import(
     "@occupied/step-editor-controller.js"
   );
@@ -851,8 +854,9 @@ test("new steps validate all sections and save in a single submission", async ()
     t: (text: string) => text,
     flush() {},
     shadowRoot: { querySelector: () => ({ focus() {} }) },
-    save: async (candidate: Program) => {
+    save: (candidate: Program) => {
       saved.push(candidate);
+      return Promise.resolve();
     },
     fail: (error: unknown) => {
       throw error;

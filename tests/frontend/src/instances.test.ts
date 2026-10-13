@@ -21,45 +21,47 @@ async function fixture() {
   let url = new URL("http://localhost/occupied?config_entry=main"),
     accepted = false,
     confirmations = 0;
-  Object.defineProperty(globalThis, "HTMLElement", {
-    configurable: true,
-    value: class {
-      isConnected = true;
-      shadowRoot = {
-        querySelectorAll: () => [],
-        querySelector: () => null,
-        getElementById: () => null,
-      };
-      attachShadow() {
-        return this.shadowRoot;
-      }
-    },
-  });
-  Object.defineProperty(globalThis, "customElements", {
-    configurable: true,
-    value: {
-      get: (name: string) => (name.startsWith("ha-") ? class {} : undefined),
-      define() {},
-    },
-  });
-  Object.defineProperty(globalThis, "window", {
-    configurable: true,
-    value: {
-      get location() {
-        return url;
+  Object.defineProperties(globalThis, {
+    HTMLElement: {
+      configurable: true,
+      value: class {
+        isConnected = true;
+        shadowRoot = {
+          querySelectorAll: () => [],
+          querySelector: () => null,
+          getElementById: () => null,
+        };
+        attachShadow() {
+          return this.shadowRoot;
+        }
       },
-      history: {
-        pushState: (_data: unknown, _title: string, next: URL) => {
-          url = new URL(next);
-        },
-        replaceState: (_data: unknown, _title: string, next: URL) => {
-          url = new URL(next);
-        },
+    },
+    customElements: {
+      configurable: true,
+      value: {
+        get: (name: string) => (name.startsWith("ha-") ? class {} : undefined),
+        define() {},
       },
-      dispatchEvent() {},
-      confirm: () => {
-        confirmations++;
-        return accepted;
+    },
+    window: {
+      configurable: true,
+      value: {
+        get location() {
+          return url;
+        },
+        history: {
+          pushState: (_data: unknown, _title: string, next: URL) => {
+            url = new URL(next);
+          },
+          replaceState: (_data: unknown, _title: string, next: URL) => {
+            url = new URL(next);
+          },
+        },
+        dispatchEvent() {},
+        confirm: () => {
+          confirmations++;
+          return accepted;
+        },
       },
     },
   });
@@ -113,24 +115,26 @@ async function fixture() {
           reason: entry,
         } satisfies RuntimeSnapshot,
       };
-      if (message.type === "occupied/program" && programOverride)
+      if (message.type === "occupied/program" && programOverride) {
         return (await programOverride(entry)) as T;
-      if (message.type === "occupied/timeline" && timelineOverride)
+      }
+      if (message.type === "occupied/timeline" && timelineOverride) {
         return (await timelineOverride()) as T;
+      }
       return responses[String(message.type)] as T;
     },
     callService: async () => {},
     connection: {
-      subscribeMessage: async <T>(
+      subscribeMessage: <T>(
         callback: (snapshot: T) => void,
         message: Record<string, unknown>,
       ) => {
         const key = `${message.type}:${message.config_entry_id || "all"}`;
         subscriptions.set(key, callback as (snapshot: unknown) => void);
-        return () => {
+        return Promise.resolve(() => {
           disposed.push(key);
           subscriptions.delete(key);
-        };
+        });
       },
     },
   };
@@ -160,14 +164,18 @@ async function fixture() {
       panel.route = {};
     },
     restore() {
-      for (const [key, descriptor] of descriptors)
-        if (descriptor) Object.defineProperty(globalThis, key, descriptor);
-        else Reflect.deleteProperty(globalThis, key);
+      for (const [key, descriptor] of descriptors) {
+        if (descriptor) {
+          Object.defineProperty(globalThis, key, descriptor);
+        } else {
+          Reflect.deleteProperty(globalThis, key);
+        }
+      }
     },
   };
 }
 
-test("Configure routing selects the requested instance and switches all editor state", async () => {
+void test("Configure routing selects the requested instance and switches all editor state", async () => {
   const f = await fixture();
   try {
     assert.equal(f.panel.draft.name, "main");
@@ -196,12 +204,12 @@ test("Configure routing selects the requested instance and switches all editor s
   }
 });
 
-test("saved warnings survive navigation and editor exits until a resolved program loads", async () => {
+void test("saved warnings survive navigation and editor exits until a resolved program loads", async () => {
   const f = await fixture();
   try {
     const warning = {
-      code: "shared_target",
-      message: "light.shared is shared by step, step_2",
+      code: "undefined_baseline",
+      message: "Lights without a baseline are left alone: light.shared",
       severity: "warning",
     };
     f.documents.main = { ...f.documents.main, warnings: [warning] };
@@ -233,7 +241,7 @@ test("saved warnings survive navigation and editor exits until a resolved progra
   }
 });
 
-test("instance switching preserves unsaved drafts and step forms when declined", async () => {
+void test("instance switching preserves unsaved drafts and step forms when declined", async () => {
   const f = await fixture();
   try {
     f.panel.change(["name"], "Pending name");
@@ -259,7 +267,7 @@ test("instance switching preserves unsaved drafts and step forms when declined",
   }
 });
 
-test("responses and snapshots from a previous instance cannot replace the selection", async () => {
+void test("responses and snapshots from a previous instance cannot replace the selection", async () => {
   const f = await fixture();
   try {
     const oldSnapshot = f.subscriptions.get("occupied/subscribe:main")!;
@@ -299,7 +307,7 @@ test("responses and snapshots from a previous instance cannot replace the select
   }
 });
 
-test("unloaded selections remain discoverable and recover without losing drafts", async () => {
+void test("unloaded selections remain discoverable and recover without losing drafts", async () => {
   const f = await fixture();
   try {
     f.panel.change(["name"], "Pending draft");

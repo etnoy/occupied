@@ -5,8 +5,9 @@ export async function loadHaControls() {
     customElements.get("ha-selector") &&
     customElements.get("ha-generic-picker") &&
     customElements.get("ha-top-app-bar-fixed")
-  )
+  ) {
     return;
+  }
   await customElements.whenDefined("partial-panel-resolver");
   const resolver = document.createElement(
     "partial-panel-resolver",

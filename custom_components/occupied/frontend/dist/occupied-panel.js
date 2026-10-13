@@ -1,11 +1,13 @@
 // Generated from occupied-panel.ts by pnpm run build. Do not edit.
 // custom_components/occupied/frontend/util.ts
 function errorMessage(error) {
-  return error instanceof Error
-    ? error.message
-    : typeof error === "object" && error !== null && "message" in error
-      ? String(error.message)
-      : String(error);
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "object" && error !== null && "message" in error) {
+    return String(error.message);
+  }
+  return String(error);
 }
 function isValueChangedEvent(event2) {
   return (
@@ -16,8 +18,9 @@ function isValueChangedEvent(event2) {
   );
 }
 function required(value) {
-  if (value == null)
+  if (value == null) {
     throw new Error("Required editor element or value is missing");
+  }
   return value;
 }
 function progress(start, deadline, now = Date.now()) {
@@ -42,20 +45,32 @@ function entityName(catalog, id) {
 // custom_components/occupied/frontend/model.ts
 var copy = (value) => structuredClone(value);
 var days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+var resourceKinds = {
+  steps: "step",
+  activities: "activity",
+  activity_windows: "window",
+};
 function get(object, path) {
   let value = object;
-  for (const key2 of path) value = value == null ? void 0 : value[key2];
+  for (const key2 of path) {
+    value = value?.[key2];
+  }
   return value;
 }
 function set(object, path, value) {
-  if (!path.length) throw new Error("Cannot set an empty path");
+  if (path.length === 0) {
+    throw new Error("Cannot set an empty path");
+  }
   let parent = object;
-  path.slice(0, -1).forEach((key2, i) => {
+  for (const [i, key2] of path.slice(0, -1).entries()) {
     parent = parent[key2] ??= typeof path[i + 1] === "number" ? [] : {};
-  });
-  const last = path[path.length - 1];
-  if (value === void 0) delete parent[last];
-  else parent[last] = value;
+  }
+  const last = path.at(-1);
+  if (value === void 0) {
+    delete parent[last];
+  } else {
+    parent[last] = value;
+  }
 }
 function resources(program) {
   return [
@@ -65,8 +80,7 @@ function resources(program) {
       ...["steps", "activities", "activity_windows"].flatMap((k) =>
         (r2[k] || []).map((x) => ({
           ...x,
-          kind:
-            k === "steps" ? "step" : k === "activities" ? "activity" : "window",
+          kind: resourceKinds[k],
           routine: r2.id,
         })),
       ),
@@ -77,32 +91,38 @@ function identifier(program, name) {
   let base = name
     .toLowerCase()
     .normalize("NFKD")
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-  if (!/^[a-z]/.test(base)) base = "item_" + base;
+    .replaceAll(/[^a-z0-9]+/g, "_")
+    .replaceAll(/^_+|_+$/g, "");
+  if (!/^[a-z]/.test(base)) {
+    base = "item_" + base;
+  }
   base ||= "item";
   const used = new Set(resources(program).map((x) => x.id));
   let id = base,
     n = 2;
-  while (used.has(id)) id = `${base}_${n++}`;
+  while (used.has(id)) {
+    id = `${base}_${n++}`;
+  }
   return id;
 }
 function references(program, id) {
   const found = [];
   function visit(value, path) {
-    if (!value || typeof value !== "object") return;
+    if (!value || typeof value !== "object") {
+      return;
+    }
     for (const [key2, child2] of Object.entries(value)) {
-      if (key2 === "data" || key2 === "weights") continue;
-      if ((key2 === "relative_to" || key2 === "step") && child2 === id)
+      if (key2 === "data" || key2 === "weights") {
+        continue;
+      }
+      if (
+        ((key2 === "relative_to" || key2 === "step") && child2 === id) ||
+        (key2 === "groups" && Array.isArray(child2) && child2.includes(id))
+      ) {
         found.push([...path, key2]);
-      else if (
-        key2 === "groups" &&
-        Array.isArray(child2) &&
-        child2.includes(id)
-      )
-        found.push([...path, key2]);
-      else if (typeof child2 === "object")
+      } else if (typeof child2 === "object") {
         visit(child2, [...path, Array.isArray(value) ? Number(key2) : key2]);
+      }
     }
   }
   visit(program, []);
@@ -111,19 +131,21 @@ function references(program, id) {
 function removeResource(program, path) {
   const item = get(program, path),
     ids = [item.id];
-  if (path[0] === "routines" && path.length === 2)
+  if (path[0] === "routines" && path.length === 2) {
     ids.push(
       ...["steps", "activities", "activity_windows"].flatMap((k) =>
         (item[k] || []).map((x) => x.id),
       ),
     );
+  }
   const outside = ids
     .flatMap((id) => references(program, id))
-    .filter((p) => !path.every((k, i) => p[i] === k));
-  if (outside.length)
+    .filter((p) => path.some((k, i) => p[i] !== k));
+  if (outside.length > 0) {
     throw new Error(
       `Referenced by ${outside.map((p) => p.join(" \u2192 ")).join(", ")}. Remove these references first.`,
     );
+  }
   get(program, path.slice(0, -1)).splice(Number(path.at(-1)), 1);
 }
 function parentSteps(program, child2) {
@@ -132,11 +154,13 @@ function parentSteps(program, child2) {
   let changed = true;
   while (changed) {
     changed = false;
-    for (const s of steps)
-      if (blocked.has(s.when?.relative_to) && !blocked.has(s.id)) {
-        blocked.add(s.id);
-        changed = true;
+    for (const s of steps) {
+      if (!blocked.has(s.when?.relative_to) || blocked.has(s.id)) {
+        continue;
       }
+      blocked.add(s.id);
+      changed = true;
+    }
   }
   return steps.filter((x) => !blocked.has(x.id));
 }
@@ -327,11 +351,6 @@ var styles = `
   dd {
     margin: 0;
     overflow-wrap: anywhere;
-  }
-  .badge {
-    padding: 6px 12px;
-    background: var(--secondary-background-color, #e3eef2);
-    border-radius: 20px;
   }
   .toolbar {
     position: sticky;
@@ -579,7 +598,7 @@ var styles = `
   }
   .routine-row {
     display: grid;
-    grid-template-columns: 26px minmax(0, 1fr) minmax(0, 0.85fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
     align-items: center;
     gap: 14px;
     text-align: left;
@@ -591,15 +610,11 @@ var styles = `
     color: inherit;
   }
   .routine-row:disabled { opacity: 1; cursor: default; }
+  .routine-row.editing { grid-template-columns: minmax(0, 1fr); }
   .routine-row:not(:disabled):hover { background: var(--secondary-background-color, #e3eef2); }
   .routine-row[aria-expanded="true"] { border-bottom: 1px solid var(--divider-color, #d5dce3); }
   .routine-card .routine-editor { margin: 0; }
   .step-editor-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-  .routine-symbol {
-    color: var(--primary-color, #167b94);
-    font-size: 22px;
-    width: 26px;
-  }
   .routine-row-content {
     display: flex;
     min-width: 0;
@@ -616,9 +631,6 @@ var styles = `
     overflow-wrap: anywhere;
   }
   .routine-row-time {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
     text-align: right;
     font-size: 13px;
     overflow-wrap: anywhere;
@@ -820,12 +832,6 @@ var styles = `
       gap: 10px;
       margin-bottom: 8px;
     }
-    header .row {
-      gap: 4px;
-    }
-    #runtime {
-      font-size: 12px;
-    }
     nav {
       margin-bottom: 24px;
     }
@@ -840,10 +846,9 @@ var styles = `
     .routine-row {
       padding: 14px;
       gap: 10px;
-      grid-template-columns: 26px minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr);
     }
     .routine-row-time {
-      grid-column: 2;
       text-align: left;
     }
     .routine-editor {
@@ -916,6 +921,8 @@ var sv = {
   "Discard changes": "Kasta \xE4ndringar",
   "Edit step": "Redigera steg",
   "Add related step": "L\xE4gg till relaterat steg",
+  Enabled: "Aktiverat",
+  Disabled: "Inaktiverat",
   "Save step": "Spara steg",
   "Save changes": "Spara \xE4ndringar",
   "Step name": "Stegets namn",
@@ -951,7 +958,6 @@ var sv = {
     "Start och slut \xE4r samma, s\xE5 tiden \xE4r fast.",
   "End of window (optional)": "Slut p\xE5 tidsintervall (valfritt)",
   "Add end of window": "L\xE4gg till slut p\xE5 tidsintervall",
-  "Remove end of window": "Ta bort slut p\xE5 tidsintervall",
   "Start offset": "Startf\xF6rskjutning",
   "End offset (optional)": "Slutf\xF6rskjutning (valfritt)",
   "Add end offset": "L\xE4gg till slutf\xF6rskjutning",
@@ -960,6 +966,18 @@ var sv = {
   "Turn on": "Sl\xE5 p\xE5",
   "Turn off": "Sl\xE5 av",
   "Every day": "Varje dag",
+  "every day": "varje dag",
+  "on weekdays": "p\xE5 vardagar",
+  "on weekends": "p\xE5 helger",
+  "on no days": "inga dagar",
+  on: "p\xE5",
+  Mondays: "m\xE5ndagar",
+  Tuesdays: "tisdagar",
+  Wednesdays: "onsdagar",
+  Thursdays: "torsdagar",
+  Fridays: "fredagar",
+  Saturdays: "l\xF6rdagar",
+  Sundays: "s\xF6ndagar",
   Weekends: "Helger",
   before: "f\xF6re",
   after: "efter",
@@ -1042,7 +1060,7 @@ var node_env = globalThis.process?.env?.NODE_ENV;
 var dev_fallback_default =
   node_env && !node_env.toLowerCase().startsWith("prod");
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/shared/utils.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/shared/utils.js
 var is_array = Array.isArray;
 var index_of = Array.prototype.indexOf;
 var includes = Array.prototype.includes;
@@ -1088,7 +1106,7 @@ function to_array(value, n) {
   return array;
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/constants.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/constants.js
 var DERIVED = 1 << 1;
 var EFFECT = 1 << 2;
 var RENDER_EFFECT = 1 << 3;
@@ -1138,7 +1156,7 @@ var IS_XHTML =
 var TEXT_NODE = 3;
 var COMMENT_NODE = 8;
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/constants.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/constants.js
 var EACH_ITEM_REACTIVE = 1;
 var EACH_INDEX_REACTIVE = 1 << 1;
 var EACH_IS_CONTROLLED = 1 << 2;
@@ -1166,7 +1184,7 @@ var UNINITIALIZED = /* @__PURE__ */ Symbol("uninitialized");
 var FILENAME = /* @__PURE__ */ Symbol("filename");
 var NAMESPACE_HTML = "http://www.w3.org/1999/xhtml";
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/warnings.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/warnings.js
 var bold = "font-weight: bold";
 var normal = "font-weight: normal";
 function await_reactivity_loss(name) {
@@ -1182,11 +1200,11 @@ https://svelte.dev/e/await_reactivity_loss`,
     console.warn(`https://svelte.dev/e/await_reactivity_loss`);
   }
 }
-function await_waterfall(name, location) {
+function await_waterfall(name, location2) {
   if (dev_fallback_default) {
     console.warn(
       `%c[svelte] await_waterfall
-%cAn async derived, \`${name}\` (${location}) was not read immediately after it resolved. This often indicates an unnecessary waterfall, which can slow down your app
+%cAn async derived, \`${name}\` (${location2}) was not read immediately after it resolved. This often indicates an unnecessary waterfall, which can slow down your app
 https://svelte.dev/e/await_waterfall`,
       bold,
       normal,
@@ -1221,11 +1239,11 @@ https://svelte.dev/e/hydration_attribute_changed`,
     console.warn(`https://svelte.dev/e/hydration_attribute_changed`);
   }
 }
-function hydration_mismatch(location) {
+function hydration_mismatch(location2) {
   if (dev_fallback_default) {
     console.warn(
       `%c[svelte] hydration_mismatch
-%c${location ? `Hydration failed because the initial UI does not match what was rendered on the server. The error occurred near ${location}` : "Hydration failed because the initial UI does not match what was rendered on the server"}
+%c${location2 ? `Hydration failed because the initial UI does not match what was rendered on the server. The error occurred near ${location2}` : "Hydration failed because the initial UI does not match what was rendered on the server"}
 https://svelte.dev/e/hydration_mismatch`,
       bold,
       normal,
@@ -1287,7 +1305,7 @@ https://svelte.dev/e/svelte_boundary_reset_noop`,
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/hydration.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/hydration.js
 var hydrating = false;
 function set_hydrating(value) {
   hydrating = value;
@@ -1358,7 +1376,7 @@ function read_hydration_instruction(node) {
   );
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/reactivity/equality.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/reactivity/equality.js
 function equals(value) {
   return value === this.v;
 }
@@ -1373,7 +1391,7 @@ function safe_equals(value) {
   return !safe_not_equal(value, this.v);
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/shared/errors.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/shared/errors.js
 function invariant_violation(message) {
   if (dev_fallback_default) {
     const error = new Error(`invariant_violation
@@ -1397,7 +1415,7 @@ https://svelte.dev/e/lifecycle_outside_component`);
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/errors.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/errors.js
 function async_derived_orphan() {
   if (dev_fallback_default) {
     const error = new Error(`async_derived_orphan
@@ -1575,12 +1593,12 @@ https://svelte.dev/e/svelte_boundary_reset_onerror`);
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/flags/index.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/flags/index.js
 var async_mode_flag = false;
 var legacy_mode_flag = false;
 var tracing_mode_flag = false;
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dev/tracing.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dev/tracing.js
 var tracing_expressions = null;
 function tag(source2, label) {
   source2.label = label;
@@ -1592,7 +1610,7 @@ function tag_proxy(value, label) {
   return value;
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/shared/dev.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/shared/dev.js
 function get_error(label) {
   const error = new Error();
   const stack2 = get_stack();
@@ -1645,7 +1663,7 @@ function invariant(condition, message) {
   if (!condition) invariant_violation(message);
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/context.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/context.js
 var component_context = null;
 function set_component_context(context) {
   component_context = context;
@@ -1708,7 +1726,7 @@ function is_runes() {
   );
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/task.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/task.js
 var micro_tasks = [];
 function run_micro_tasks() {
   var tasks = micro_tasks;
@@ -1730,7 +1748,7 @@ function flush_tasks() {
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/reactivity/status.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/reactivity/status.js
 var STATUS_MASK = ~(DIRTY | MAYBE_DIRTY | CLEAN);
 function set_signal_status(signal, status) {
   signal.f = (signal.f & STATUS_MASK) | status;
@@ -1743,7 +1761,7 @@ function update_derived_status(derived3) {
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/reactivity/utils.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/reactivity/utils.js
 function defer_effect(effect2, dirty_effects, maybe_dirty_effects) {
   if ((effect2.f & DIRTY) !== 0) {
     dirty_effects.add(effect2);
@@ -1753,7 +1771,7 @@ function defer_effect(effect2, dirty_effects, maybe_dirty_effects) {
   set_signal_status(effect2, CLEAN);
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/elements/misc.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/elements/misc.js
 function remove_textarea_child(dom) {
   if (hydrating && get_first_child(dom) !== null) {
     clear_text_content(dom);
@@ -1781,7 +1799,7 @@ function add_form_reset_listener() {
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/elements/bindings/shared.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/elements/bindings/shared.js
 function without_reactive_context(fn) {
   var previous_reaction = active_reaction;
   var previous_effect = active_effect;
@@ -1795,7 +1813,7 @@ function without_reactive_context(fn) {
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/reactivity/async.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/reactivity/async.js
 function flatten(blockers, sync, async2, fn) {
   const d = is_runes() ? derived : derived_safe_equal;
   var pending2 = blockers.filter((b) => !b.settled);
@@ -1915,7 +1933,7 @@ function increment_pending() {
   };
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/reactivity/deriveds.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/reactivity/deriveds.js
 var reactivity_loss_tracker = null;
 function set_reactivity_loss_tracker(v) {
   reactivity_loss_tracker = v;
@@ -1950,7 +1968,7 @@ function derived(fn) {
 }
 var OBSOLETE = /* @__PURE__ */ Symbol("obsolete");
 // @__NO_SIDE_EFFECTS__
-function async_derived(fn, label, location) {
+function async_derived(fn, label, location2) {
   let parent =
     /** @type {Effect | null} */
     active_effect;
@@ -2043,7 +2061,7 @@ function async_derived(fn, label, location) {
         }
         if (
           dev_fallback_default &&
-          location !== void 0 &&
+          location2 !== void 0 &&
           !signal.equals(value)
         ) {
           recent_async_deriveds.add(signal);
@@ -2055,7 +2073,7 @@ function async_derived(fn, label, location) {
               await_waterfall(
                 /** @type {string} */
                 signal.label,
-                location,
+                location2,
               );
               recent_async_deriveds.delete(signal);
             }
@@ -2207,7 +2225,7 @@ function unfreeze_derived_effects(derived3) {
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/reactivity/batch.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/reactivity/batch.js
 var first_batch = null;
 var last_batch = null;
 var current_batch = null;
@@ -3112,7 +3130,7 @@ function reset_all(effect2) {
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/reactivity/sources.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/reactivity/sources.js
 var eager_effects = /* @__PURE__ */ new Set();
 var old_values = /* @__PURE__ */ new Map();
 function set_eager_effects(v) {
@@ -3322,7 +3340,7 @@ function mark_reactions(signal, status, updated_during_traversal) {
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/proxy.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/proxy.js
 var regex_is_valid_identifier = /^[a-zA-Z_$][a-zA-Z_$0-9]*$/;
 function proxy(value) {
   if (
@@ -3630,7 +3648,7 @@ function inspectable_array(array) {
   });
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dev/equality.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dev/equality.js
 function init_array_prototype_warnings() {
   const array_prototype2 = Array.prototype;
   const cleanup = Array.__svelte_cleanup;
@@ -3681,7 +3699,7 @@ function init_array_prototype_warnings() {
   };
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/operations.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/operations.js
 var $window;
 var $document;
 var is_firefox;
@@ -3854,7 +3872,7 @@ function merge_text_nodes(text2) {
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/error-handling.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/error-handling.js
 var adjustments = /* @__PURE__ */ new WeakMap();
 function handle_error(error) {
   var effect2 = active_effect;
@@ -3942,7 +3960,7 @@ function apply_adjustments(error) {
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/reactivity/effects.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/reactivity/effects.js
 function validate_effect(rune) {
   if (active_effect === null) {
     if (active_reaction === null) {
@@ -4320,10 +4338,10 @@ function move_effect(effect2, fragment) {
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/legacy.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/legacy.js
 var captured_signals = null;
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/runtime.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/runtime.js
 var is_destroying_effect = false;
 function set_is_destroying_effect(value) {
   is_destroying_effect = value;
@@ -4883,7 +4901,7 @@ function deep_read(value, visited = /* @__PURE__ */ new Set()) {
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/utils.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/utils.js
 var DOM_BOOLEAN_ATTRIBUTES = [
   "allowfullscreen",
   "async",
@@ -4958,7 +4976,7 @@ var RUNES =
     "$host",
   ];
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/elements/events.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/elements/events.js
 var event_symbol = /* @__PURE__ */ Symbol("events");
 var all_registered_events = /* @__PURE__ */ new Set();
 var root_event_handles = /* @__PURE__ */ new Set();
@@ -5113,7 +5131,7 @@ function handle_event_propagation(event2) {
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/reconciler.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/reconciler.js
 var policy =
   // We gotta write it like this because after downleveling the pure comment may end up in the wrong location
   globalThis?.window?.trustedTypes &&
@@ -5138,7 +5156,7 @@ function create_fragment_from_html(html2) {
   return elem.content;
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/template.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/template.js
 function assign_nodes(start, end) {
   var effect2 =
     /** @type {Effect} */
@@ -5233,7 +5251,7 @@ function append(anchor, dom) {
   );
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/reactivity/create-subscriber.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/reactivity/create-subscriber.js
 function createSubscriber(start) {
   let subscribers = 0;
   let version = source(0);
@@ -5264,7 +5282,7 @@ function createSubscriber(start) {
   };
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/blocks/boundary.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/blocks/boundary.js
 var flags = EFFECT_TRANSPARENT | EFFECT_PRESERVED;
 function boundary(node, props, children, transform_error) {
   new Boundary(node, props, children, transform_error);
@@ -5711,7 +5729,7 @@ var Boundary = class {
   }
 };
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/render.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/render.js
 var should_intro = true;
 function set_text(text2, value) {
   var str = value == null ? "" : typeof value === "object" ? `${value}` : value;
@@ -5896,7 +5914,7 @@ function unmount(component2, options) {
   return Promise.resolve();
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/blocks/branches.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/blocks/branches.js
 var BranchManager = class {
   /** @type {TemplateNode} */
   anchor;
@@ -6067,7 +6085,7 @@ var BranchManager = class {
   }
 };
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/blocks/if.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/blocks/if.js
 function if_block(node, fn, elseif = false) {
   var marker;
   if (hydrating) {
@@ -6106,7 +6124,7 @@ function if_block(node, fn, elseif = false) {
   }, flags2);
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/blocks/key.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/blocks/key.js
 var NAN = /* @__PURE__ */ Symbol("NaN");
 function key(node, get_key, render_fn) {
   if (hydrating) {
@@ -6126,7 +6144,7 @@ function key(node, get_key, render_fn) {
   });
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/blocks/each.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/blocks/each.js
 function index(_, i) {
   return i;
 }
@@ -6644,7 +6662,7 @@ function validate_each_keys(array, key_fn) {
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/blocks/snippet.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/blocks/snippet.js
 function snippet(node, get_snippet, ...args) {
   var branches = new BranchManager(node);
   block(() => {
@@ -6659,7 +6677,7 @@ function snippet(node, get_snippet, ...args) {
   }, EFFECT_TRANSPARENT);
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/elements/actions.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/elements/actions.js
 function action(dom, action2, get_value) {
   effect(() => {
     var payload = untrack(() => action2(dom, get_value?.()) || {});
@@ -6706,7 +6724,7 @@ function clsx() {
   return n;
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/shared/attributes.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/shared/attributes.js
 function clsx2(value) {
   if (typeof value === "object") {
     return clsx(value);
@@ -6843,7 +6861,7 @@ function to_style(value, styles2) {
   return value == null ? null : String(value);
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/elements/class.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/elements/class.js
 function set_class(dom, is_html, value, hash2, prev_classes, next_classes) {
   var prev =
     /** @type {any} */
@@ -6871,7 +6889,7 @@ function set_class(dom, is_html, value, hash2, prev_classes, next_classes) {
   return next_classes;
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/elements/style.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/elements/style.js
 function update_styles(dom, prev = {}, next2, priority) {
   for (var key2 in next2) {
     var value = next2[key2];
@@ -6909,7 +6927,7 @@ function set_style(dom, value, prev_styles, next_styles) {
   return next_styles;
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/elements/bindings/select.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/elements/bindings/select.js
 function set_selected(option, selected) {
   if (selected) {
     if (!option.hasAttribute("selected")) option.setAttribute("selected", "");
@@ -7017,7 +7035,7 @@ function is_selectedcontent_mutation(entry) {
   return false;
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/elements/attributes.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/elements/attributes.js
 var IS_CUSTOM_ELEMENT = /* @__PURE__ */ Symbol("is custom element");
 var IS_HTML = /* @__PURE__ */ Symbol("is html");
 var LINK_TAG = IS_XHTML ? "link" : "LINK";
@@ -7202,7 +7220,7 @@ function srcset_url_equal(element2, srcset) {
   );
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/elements/bindings/this.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/elements/bindings/this.js
 function is_bound_this(bound_value, element_or_component) {
   return (
     bound_value === element_or_component ||
@@ -7263,7 +7281,7 @@ function bind_this(
   return element_or_component;
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/store/utils.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/store/utils.js
 function subscribe_to_store(store, run3, invalidate) {
   if (store == null) {
     run3(void 0);
@@ -7280,7 +7298,7 @@ function subscribe_to_store(store, run3, invalidate) {
   return unsub.unsubscribe ? () => unsub.unsubscribe() : unsub;
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/store/shared/index.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/store/shared/index.js
 var subscriber_queue = [];
 function writable(value, start = noop) {
   let stop = null;
@@ -7337,7 +7355,7 @@ function get3(store) {
   return value;
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/reactivity/store.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/reactivity/store.js
 var is_store_binding = false;
 var IS_UNMOUNTED = /* @__PURE__ */ Symbol("unmounted");
 function store_get(store, store_name, stores) {
@@ -7398,7 +7416,7 @@ function capture_store_binding(fn) {
   }
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/reactivity/props.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/reactivity/props.js
 var spread_props_handler = {
   get(target, key2) {
     let i = target.props.length;
@@ -7601,7 +7619,7 @@ function prop(props, key2, flags2, fallback2) {
   );
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/legacy/legacy-client.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/legacy/legacy-client.js
 function createClassComponent(options) {
   return new Svelte4Component(options);
 }
@@ -7706,7 +7724,7 @@ var Svelte4Component = class {
   }
 };
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/client/dom/elements/custom-element.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/elements/custom-element.js
 var SvelteElement;
 if (typeof HTMLElement === "function") {
   SvelteElement = class extends HTMLElement {
@@ -7946,7 +7964,7 @@ function get_custom_elements_slots(element2) {
   return result;
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/index-client.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/index-client.js
 if (dev_fallback_default) {
   let throw_rune_error = function (rune) {
     if (!(rune in globalThis)) {
@@ -7997,10 +8015,10 @@ function init_update_callbacks(context) {
   return (l.u ??= { a: [], b: [], m: [] });
 }
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/version.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/version.js
 var PUBLIC_VERSION = "5";
 
-// node_modules/.pnpm/svelte@5.57.2/node_modules/svelte/src/internal/disclose-version.js
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/disclose-version.js
 if (typeof window !== "undefined") {
   ((window.__svelte ??= {}).v ??= /* @__PURE__ */ new Set()).add(
     PUBLIC_VERSION,
@@ -8009,9 +8027,15 @@ if (typeof window !== "undefined") {
 
 // custom_components/occupied/frontend/time-format.ts
 function usesAmPm(locale) {
-  if (!locale) return false;
-  if (locale.time_format === "12") return true;
-  if (locale.time_format === "24") return false;
+  if (!locale) {
+    return false;
+  }
+  if (locale.time_format === "12") {
+    return true;
+  }
+  if (locale.time_format === "24") {
+    return false;
+  }
   const language = locale.time_format === "language" ? locale.language : void 0;
   const hourCycle2 = new Intl.DateTimeFormat(language, {
     hour: "numeric",
@@ -8026,7 +8050,9 @@ function hourCycle(locale) {
 }
 function formatClock(value, locale) {
   const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
-  if (!match) return value;
+  if (!match) {
+    return value;
+  }
   const [, hour, minute, second] = match;
   const date = new Date(
     Date.UTC(2020, 0, 1, Number(hour), Number(minute), Number(second || 0)),
@@ -8034,7 +8060,7 @@ function formatClock(value, locale) {
   return new Intl.DateTimeFormat(formatterLocale(locale), {
     hour: usesAmPm(locale) ? "numeric" : "2-digit",
     minute: "2-digit",
-    ...(Number(second) ? { second: "2-digit" } : {}),
+    ...(Number(second) && { second: "2-digit" }),
     hourCycle: hourCycle(locale),
     timeZone: "UTC",
   }).format(date);
@@ -8083,16 +8109,21 @@ function stepEntries(program) {
   );
 }
 function minutes(value) {
-  if (value === "0") return 0;
-  if (typeof value === "number") return value / 60;
-  const text2 = String(value || "0s");
+  if (value === "0") {
+    return 0;
+  }
+  if (typeof value === "number") {
+    return value / 60;
+  }
+  const text2 = value || "0s";
   if (
     !/^[+-]?(?:\d+(?:\.\d+)?h)?(?:\d+(?:\.\d+)?m)?(?:\d+(?:\.\d+)?s)?$/.test(
       text2,
     ) ||
     ["", "+", "-"].includes(text2)
-  )
+  ) {
     return NaN;
+  }
   const total = [...text2.matchAll(/(\d+(?:\.\d+)?)([hms])/g)].reduce(
     (n, [, amount, unit]) =>
       n + Number(amount) * { h: 60, m: 1, s: 1 / 60 }[unit],
@@ -8126,17 +8157,22 @@ function timingForm(when = {}) {
     when.sun_range?.offset_range ||
     when.entity_range?.offset_range;
   const clock = when.clock_range;
+  let anchor = "";
+  if (when.relative_to) {
+    anchor = `step:${when.relative_to}`;
+  } else if (when.sun_range) {
+    anchor = `sun:${when.sun_range.sun}`;
+  } else if (when.entity_range) {
+    const attribute = when.entity_range.attribute
+      ? `:${when.entity_range.attribute}`
+      : "";
+    anchor = `entity:${when.entity_range.entity_id}${attribute}`;
+  }
   return {
     mode: clock || !range ? "absolute" : "relative",
     start: clock?.earliest || "18:00",
     end: clock && clock.latest !== clock.earliest ? clock.latest : "",
-    anchor: when.relative_to
-      ? `step:${when.relative_to}`
-      : when.sun_range
-        ? `sun:${when.sun_range.sun}`
-        : when.entity_range
-          ? `entity:${when.entity_range.entity_id}${when.entity_range.attribute ? `:${when.entity_range.attribute}` : ""}`
-          : "",
+    anchor,
     startOffset: range?.fixed ?? range?.min ?? "0s",
     endOffset:
       range && range.fixed == null && range.min !== range.max
@@ -8145,67 +8181,78 @@ function timingForm(when = {}) {
   };
 }
 function simpleStep(entry) {
-  if (entry.kind !== "steps" || !entry.actions?.length) return false;
+  if (entry.kind !== "steps" || !entry.actions?.length) {
+    return false;
+  }
   const actions = entry.actions;
   if (actions.length === 1 && actions[0].action.includes(".")) {
     const action2 = actions[0];
-    if (!/^(light|switch)\.turn_(on|off)$/.test(action2.action))
+    if (!/^(light|switch)\.turn_(on|off)$/.test(action2.action)) {
       return (
         entry.entities.length > 0 &&
         !action2.stagger &&
         !action2.target_order &&
         !action2.resources?.length
       );
+    }
   }
   if (
-    !actions.every((a) =>
-      /^(?:(?:light|switch)\.)?turn_(on|off)$/.test(a.action),
+    actions.some(
+      (a) => !/^(?:(?:light|switch)\.)?turn_(on|off)$/.test(a.action),
     )
-  )
+  ) {
     return false;
+  }
   if (
-    !actions.every((a) =>
-      a.action.endsWith(
-        actions[0].action.endsWith("turn_on") ? "turn_on" : "turn_off",
-      ),
+    actions.some(
+      (a) =>
+        !a.action.endsWith(
+          actions[0].action.endsWith("turn_on") ? "turn_on" : "turn_off",
+        ),
     )
-  )
+  ) {
     return false;
+  }
   if (
-    !entry.entities.length ||
+    entry.entities.length === 0 ||
     entry.entities.some((e) => !/^(light|switch)\./.test(e))
-  )
+  ) {
     return false;
+  }
   if (
     actions.length > 1 &&
     (actions.length !== 2 ||
       !same(actions[1].data || {}, {}) ||
       actions[0].action !== actions[1].action ||
       actions.some((a) => a.targets?.groups?.length) ||
-      !(actions[0].targets?.entities || []).every((e) =>
-        e.startsWith("light."),
+      (actions[0].targets?.entities || []).some(
+        (e) => !e.startsWith("light."),
       ) ||
-      !(actions[1].targets?.entities || []).every((e) =>
-        e.startsWith("switch."),
+      (actions[1].targets?.entities || []).some(
+        (e) => !e.startsWith("switch."),
       ) ||
       actions.some((a) => a.stagger || a.target_order || a.resources?.length))
-  )
+  ) {
     return false;
+  }
   return !!entry.when;
 }
 function stepEditor(program, entry, parent) {
   const source2 = entry || parent;
+  const action2 = source2?.actions?.[0]?.action;
+  let kind = "entities";
+  if (action2 === "scene.turn_on") {
+    kind = "scene";
+  } else if (
+    action2 &&
+    !/^(?:(?:light|switch)\.)?turn_(on|off)$/.test(action2)
+  ) {
+    kind = "service";
+  }
   const form = {
     name: entry?.name || "",
-    kind:
-      source2?.actions?.[0]?.action === "scene.turn_on"
-        ? "scene"
-        : source2?.actions?.[0]?.action &&
-            !/^(?:(?:light|switch)\.)?turn_(on|off)$/.test(
-              source2.actions[0].action,
-            )
-          ? "service"
-          : "entities",
+    enabled: entry?.enabled !== false,
+    kind,
     service: source2?.actions?.[0]?.action || "homeassistant.turn_on",
     data: JSON.stringify(source2?.actions?.[0]?.data || {}, null, 2),
     entities: [...(entry?.entities || [])],
@@ -8220,12 +8267,13 @@ function stepEditor(program, entry, parent) {
     days: [...(entry?.days || parent?.days || days)],
     timing: timingForm(entry?.when),
   };
-  if (parent)
+  if (parent) {
     Object.assign(form.timing, {
       mode: "relative",
       anchor: `step:${parent.id}`,
       startOffset: "30m",
     });
+  }
   return {
     id: entry?.id || identifier(program, "step"),
     existing: !!entry,
@@ -8245,94 +8293,119 @@ function offsetErrors(time) {
   const errors = {},
     low = minutes(time.startOffset);
   const formatError = "Use h, m or s, for example 30m, 1h, 1h30m or -10m.";
-  if (!time.startOffset || !Number.isFinite(low))
+  if (!time.startOffset || !Number.isFinite(low)) {
     errors.startOffset = formatError;
-  else if (Math.abs(low) > 10080)
+  } else if (Math.abs(low) > 10080) {
     errors.startOffset = "Offsets must be within seven days.";
+  }
   if (time.endOffset) {
     const high = minutes(time.endOffset);
-    if (!Number.isFinite(high)) errors.endOffset = formatError;
-    else if (Math.abs(high) > 10080)
+    if (!Number.isFinite(high)) {
+      errors.endOffset = formatError;
+    } else if (Math.abs(high) > 10080) {
       errors.endOffset = "Offsets must be within seven days.";
-    else if (Number.isFinite(low) && high < low)
+    } else if (Number.isFinite(low) && high < low) {
       errors.endOffset = "The end offset must be at least the start offset.";
+    }
   }
   return errors;
 }
 function editorErrors(program, editor) {
   const { form, id } = editor,
     errors = {};
-  if (!form.entities.length)
+  if (form.entities.length === 0) {
     errors.entities =
       form.kind === "scene"
         ? "Select a Home Assistant scene."
         : "Select at least one entity.";
-  if (form.entities.some((e) => !/^[a-z_][a-z0-9_]*\.[a-z0-9_]+$/.test(e)))
+  }
+  if (form.entities.some((e) => !/^[a-z_][a-z0-9_]*\.[a-z0-9_]+$/.test(e))) {
     errors.entities = "Choose valid Home Assistant entity IDs.";
+  }
   if (
     form.kind === "scene" &&
     (form.entities.length !== 1 || !form.entities[0]?.startsWith("scene."))
-  )
+  ) {
     errors.entities = "Select one Home Assistant scene.";
+  }
   if (
     form.kind === "entities" &&
     form.entities.some((e) => !/^(light|switch)\./.test(e))
-  )
+  ) {
     errors.entities = "Choose lights and switches, or select a service action.";
+  }
   if (form.kind === "service") {
-    if (!/^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$/.test(form.service))
+    if (!/^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$/.test(form.service)) {
       errors.service = "Choose a service using domain.service.";
+    }
     try {
       const data = JSON.parse(form.data);
-      if (!data || Array.isArray(data) || typeof data !== "object")
-        throw new Error();
+      if (!data || Array.isArray(data) || typeof data !== "object") {
+        throw new TypeError("Expected service data to be a JSON object");
+      }
     } catch {
       errors.data = "Service data must be a JSON object.";
     }
   }
-  if (editor.existing && !form.name.trim())
+  if (editor.existing && !form.name.trim()) {
     errors.name = "Give this step a name.";
+  }
   if (
     form.kind === "entities" &&
     form.brightness !== "" &&
     (!Number.isFinite(Number(form.brightness)) ||
       Number(form.brightness) <= 0 ||
       Number(form.brightness) > 100)
-  )
+  ) {
     errors.brightness = "Choose a brightness between 1 and 100%.";
-  if (!form.days.length) errors.days = "Choose at least one day.";
+  }
+  if (form.days.length === 0) {
+    errors.days = "Choose at least one day.";
+  }
   const time = form.timing;
   const clockPattern = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
   if (time.mode === "absolute") {
-    if (!clockPattern.test(time.start)) errors.start = "Choose a start time.";
-    if (time.end && !clockPattern.test(time.end))
+    if (!clockPattern.test(time.start)) {
+      errors.start = "Choose a start time.";
+    }
+    if (time.end && !clockPattern.test(time.end)) {
       errors.end = "Choose a valid end time or leave it blank.";
+    }
   } else if (time.mode === "relative") {
     Object.assign(errors, offsetErrors(time));
     if (time.anchor.startsWith("step:")) {
       const parent = stepEntries(program).find(
         (e) => e.id === time.anchor.slice(5) && e.kind === "steps",
       );
-      if (!parent || !parentSteps(program, id).some((e) => e.id === parent.id))
+      if (
+        !parent ||
+        parentSteps(program, id).every((e) => e.id !== parent.id)
+      ) {
         errors.anchor =
           "Choose another step without creating a circular relationship.";
-      else if (form.days.some((d) => !parent.days.includes(d)))
+      } else if (form.days.some((d) => !parent.days.includes(d))) {
         errors.anchor = `This step runs on days when ${parent.name} does not.`;
+      }
     } else if (
       !solarEvents.map((event2) => `sun:${event2}`).includes(time.anchor) &&
       !/^entity:[a-z_][a-z0-9_]*\.[a-z0-9_]+(?::(?:start_time|end_time))?$/.test(
         time.anchor,
       )
-    )
+    ) {
       errors.anchor = "Choose a step or Home Assistant time source.";
-  } else errors.mode = "Choose absolute time or relative to.";
-  for (const child2 of stepEntries(program))
+    }
+  } else {
+    errors.mode = "Choose absolute time or relative to.";
+  }
+  for (const child2 of stepEntries(program)) {
     if (
       child2.when?.relative_to === id &&
       child2.missing_anchor !== "skip" &&
       child2.days.some((d) => !form.days.includes(d))
-    )
+    ) {
       errors.days = `${child2.name} depends on this step. Keep its days (${child2.days.join(", ")}) or edit it first.`;
+    }
+  }
   return errors;
 }
 function formWhen(time) {
@@ -8351,14 +8424,15 @@ function formWhen(time) {
   const range = endOffset
     ? { min: startOffset, max: endOffset }
     : { fixed: startOffset };
-  if (time.anchor.startsWith("step:"))
+  if (time.anchor.startsWith("step:")) {
     return { relative_to: time.anchor.slice(5), offset_range: range };
+  }
   if (time.anchor.startsWith("entity:")) {
-    const [, entity_id, attribute] = time.anchor.split(":");
+    const [, entity_id, attribute] = time.anchor.split(":", 3);
     return {
       entity_range: {
         entity_id,
-        ...(attribute ? { attribute } : {}),
+        ...(attribute && { attribute }),
         offset_range: range,
       },
     };
@@ -8372,14 +8446,17 @@ function formWhen(time) {
 }
 function buildStep(program, editor) {
   const errors = editorErrors(program, editor);
-  if (Object.keys(errors).length) throw new Error(Object.values(errors)[0]);
+  if (Object.keys(errors).length > 0) {
+    throw new Error(Object.values(errors)[0]);
+  }
   const next2 = copy(program),
     { form, original } = editor;
   let entry = stepEntries(next2).find((e) => e.id === editor.id);
-  if (editor.existing && !entry)
+  if (editor.existing && !entry) {
     throw new Error(
       "This step changed elsewhere. Cancel and reopen it before saving.",
     );
+  }
   if (!entry) {
     const container2 = {
       id: identifier(next2, `${editor.id}_schedule`),
@@ -8399,14 +8476,18 @@ function buildStep(program, editor) {
     (next2.routines ||= []).push(container2);
     entry = stepEntries(next2).find((e) => e.id === editor.id);
   }
-  if (!entry || !next2.routines) throw new Error("Step could not be created");
+  if (!entry || !next2.routines) {
+    throw new Error("Step could not be created");
+  }
   const container = next2.routines[entry.path[1]];
   const item = container.steps[entry.path[3]];
   item.actions ||= [];
   const isNew = !item.when;
   item.name = form.name.trim();
-  if (isNew || !same(form.timing, original.timing))
+  item.enabled = form.enabled;
+  if (isNew || !same(form.timing, original.timing)) {
     item.when = formWhen(form.timing);
+  }
   if (isNew || !same(form.days, original.days)) {
     item.days = [...form.days];
     if (form.days.some((d) => !(entry.container.days || days).includes(d))) {
@@ -8434,14 +8515,14 @@ function buildStep(program, editor) {
     if (isNew || targetsChanged || kindChanged || serviceChanged) {
       const action2 = copy(item.actions[0] || { action: form.service });
       action2.action = form.kind === "scene" ? "scene.turn_on" : form.service;
-      if (isNew || targetsChanged || kindChanged)
+      if (isNew || targetsChanged || kindChanged) {
         action2.targets = { entities: [...form.entities] };
-      action2.data =
-        form.kind === "scene"
-          ? kindChanged
-            ? {}
-            : action2.data || {}
-          : JSON.parse(form.data);
+      }
+      if (form.kind === "scene") {
+        action2.data = kindChanged ? {} : action2.data || {};
+      } else {
+        action2.data = JSON.parse(form.data);
+      }
       item.actions = [action2];
     }
   } else if (isNew || targetsChanged || actionChanged || brightnessChanged) {
@@ -8451,8 +8532,11 @@ function buildStep(program, editor) {
     const data = actionChanged ? {} : { ...action2.data };
     if (form.action === "turn_on" && (isNew || brightnessChanged)) {
       delete data.brightness;
-      if (form.brightness === "") delete data.brightness_pct;
-      else data.brightness_pct = Number(form.brightness);
+      if (form.brightness === "") {
+        delete data.brightness_pct;
+      } else {
+        data.brightness_pct = Number(form.brightness);
+      }
     }
     action2.action = form.action;
     action2.data = data;
@@ -8470,14 +8554,16 @@ function buildStep(program, editor) {
       const lights = form.entities.filter((e) => e.startsWith("light."));
       const switches = form.entities.filter((e) => e.startsWith("switch."));
       item.actions = [];
-      if (lights.length)
+      if (lights.length > 0) {
         item.actions.push({ ...action2, targets: { entities: lights }, data });
-      if (switches.length)
+      }
+      if (switches.length > 0) {
         item.actions.push({
           ...action2,
           targets: { entities: switches },
           data: {},
         });
+      }
     }
   }
   const lighting = (next2.lighting ||= {});
@@ -8489,7 +8575,7 @@ function buildStep(program, editor) {
       e.startsWith("light.") &&
       !managed2.has(e),
   );
-  if (newLights.length) {
+  if (newLights.length > 0) {
     lighting.managed_targets ||= { entities: [], groups: [] };
     lighting.managed_targets.entities = sorted([
       ...(lighting.managed_targets.entities || []),
@@ -8501,11 +8587,12 @@ function buildStep(program, editor) {
       ),
     );
     const missing = newLights.filter((e) => !baselined.has(e));
-    if (missing.length)
+    if (missing.length > 0) {
       (lighting.baseline ||= []).push({
         targets: { entities: missing },
         state: "off",
       });
+    }
   }
   return next2;
 }
@@ -8515,11 +8602,47 @@ function dependentNames(program, id) {
     .filter((e) => paths.some((p) => e.path.every((k, i) => p[i] === k)))
     .map((e) => e.name);
 }
+function scheduleDaySuffix(selected, t) {
+  if (!selected) {
+    return "";
+  }
+  if (selected.length === 0) {
+    return ` ${t("on no days")}`;
+  }
+  if (days.every((day) => selected.includes(day))) {
+    return ` ${t("every day")}`;
+  }
+  if (
+    selected.length === 5 &&
+    days.slice(0, 5).every((day) => selected.includes(day))
+  ) {
+    return ` ${t("on weekdays")}`;
+  }
+  if (
+    selected.length === 2 &&
+    days.slice(5).every((day) => selected.includes(day))
+  ) {
+    return ` ${t("on weekends")}`;
+  }
+  const weekdayNames = {
+    mon: "Mondays",
+    tue: "Tuesdays",
+    wed: "Wednesdays",
+    thu: "Thursdays",
+    fri: "Fridays",
+    sat: "Saturdays",
+    sun: "Sundays",
+  };
+  return ` ${t("on")} ${selected.map((day) => t(weekdayNames[day] || day)).join(", ")}`;
+}
 function timingSummary(entry, entries, t = (v) => v, sources = [], locale) {
-  if (!entry.when) return t("Repeated activity window");
+  if (!entry.when) {
+    return `${t("Repeated activity window")}${scheduleDaySuffix(entry.days, t)}${entry.days ? "." : ""}`;
+  }
   return timingExplanation(timingForm(entry.when), entries, t, sources, {
     includeHints: false,
     locale,
+    days: entry.days,
   });
 }
 function timingExplanation(
@@ -8527,8 +8650,9 @@ function timingExplanation(
   entries = [],
   t = (value) => value,
   sources = [],
-  { includeHints = true, locale } = {},
+  { includeHints = true, locale, days: selectedDays } = {},
 ) {
+  const recurrence = scheduleDaySuffix(selectedDays, t);
   const time = {
     start: "",
     end: "",
@@ -8548,33 +8672,45 @@ function timingExplanation(
           (sum, part, index2) => sum + Number(part) * [3600, 60, 1][index2],
           0,
         );
-    if (!valid(time.start) || (time.end && !valid(time.end)))
+    if (!valid(time.start) || (time.end && !valid(time.end))) {
       return t("Choose valid start and end times.");
-    if (!time.end)
-      return `${t("Runs at")} ${display(time.start)}${includeHints ? `. ${t("Add an end of window to introduce randomness.")}` : ""}`;
-    if (seconds(time.end) === seconds(time.start))
-      return `${t("Runs at")} ${display(time.start)}${includeHints ? `. ${t("Start and end are the same, so the time is fixed.")}` : ""}`;
+    }
+    const fixedTime = `${t("Runs at")} ${display(time.start)}${recurrence}${includeHints || selectedDays ? "." : ""}`;
+    if (!time.end) {
+      return `${fixedTime}${includeHints ? ` ${t("Add an end of window to introduce randomness.")}` : ""}`;
+    }
+    if (seconds(time.end) === seconds(time.start)) {
+      return `${fixedTime}${includeHints ? ` ${t("Start and end are the same, so the time is fixed.")}` : ""}`;
+    }
     const nextDay =
       seconds(time.end) < seconds(time.start) ? ` ${t("the next day")}` : "";
-    return `${t("Runs at a random time between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}.`;
+    return `${t("Runs at a random time between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}${recurrence}.`;
   }
-  if (Object.keys(offsetErrors(time)).length)
+  if (Object.keys(offsetErrors(time)).length > 0) {
     return t("Enter valid offsets to see when this step runs.");
-  if (!time.anchor) return t("Choose a step or event.");
+  }
+  if (!time.anchor) {
+    return t("Choose a step or event.");
+  }
   const step = time.anchor.startsWith("step:");
-  const name = step
-    ? entries.find((entry) => entry.id === time.anchor.slice(5))?.name ||
-      time.anchor.slice(5)
-    : time.anchor.startsWith("sun:")
-      ? t(time.anchor.slice(4))
-      : sources.find((source2) => source2.value === time.anchor)?.name ||
-        time.anchor
-          .slice(7)
-          .replace(
-            /:(start_time|end_time)$/,
-            (_, attribute) =>
-              ` \xB7 ${t(attribute === "start_time" ? "start" : "end")}`,
-          );
+  let name;
+  if (step) {
+    name =
+      entries.find((entry) => entry.id === time.anchor.slice(5))?.name ||
+      time.anchor.slice(5);
+  } else if (time.anchor.startsWith("sun:")) {
+    name = t(time.anchor.slice(4));
+  } else {
+    name =
+      sources.find((source2) => source2.value === time.anchor)?.name ||
+      time.anchor
+        .slice(7)
+        .replace(
+          /:(start_time|end_time)$/,
+          (_, attribute) =>
+            ` \xB7 ${t(attribute === "start_time" ? "start" : "end")}`,
+        );
+  }
   const low = minutes(time.startOffset),
     high = time.endOffset ? minutes(time.endOffset) : low;
   const duration = (offset) => {
@@ -8597,24 +8733,29 @@ function timingExplanation(
   };
   const offsetLabel = (offset) =>
     `${duration(offset)} ${t(offset < 0 ? "before" : "after")}`;
-  if (low === high)
+  if (low === high) {
     return low === 0
-      ? `${t("Runs at the same time as")} ${name}.`
-      : `${t("Runs")} ${offsetLabel(low)} ${name}.`;
+      ? `${t("Runs at the same time as")} ${name}${recurrence}.`
+      : `${t("Runs")} ${offsetLabel(low)} ${name}${recurrence}.`;
+  }
   const anchorStart = step ? `${t("the start of")} ${name}` : name;
-  if (low === 0)
-    return `${t("Runs at a random time between")} ${anchorStart} ${t("and")} ${offsetLabel(high)} ${name}.`;
-  if (high === 0)
-    return `${t("Runs at a random time between")} ${offsetLabel(low)} ${name} ${t("and")} ${anchorStart}.`;
+  if (low === 0) {
+    return `${t("Runs at a random time between")} ${anchorStart} ${t("and")} ${offsetLabel(high)} ${name}${recurrence}.`;
+  }
+  if (high === 0) {
+    return `${t("Runs at a random time between")} ${offsetLabel(low)} ${name} ${t("and")} ${anchorStart}${recurrence}.`;
+  }
   const firstBound =
     Math.sign(low) === Math.sign(high) ? duration(low) : offsetLabel(low);
-  return `${t("Runs at a random time between")} ${firstBound} ${t("and")} ${offsetLabel(high)} ${name}.`;
+  return `${t("Runs at a random time between")} ${firstBound} ${t("and")} ${offsetLabel(high)} ${name}${recurrence}.`;
 }
 
 // custom_components/occupied/frontend/step-editor-controller.ts
 function focusEditor(panel, key2) {
   const target = key2
-    ? panel.shadowRoot.querySelector(`[data-builder-field="${key2}"]`)
+    ? panel.shadowRoot.querySelector(
+        `[data-builder-field="${CSS.escape(key2)}"]`,
+      )
     : panel.shadowRoot.querySelector('.routine-editor [aria-invalid="true"]') ||
       panel.shadowRoot.querySelector(
         '.routine-editor [data-builder-field="name"]',
@@ -8639,14 +8780,17 @@ function createStepEditorContext(panel) {
     if (["startOffset", "endOffset"].includes(key2)) {
       const errors = offsetErrors(time);
       for (const offset of ["startOffset", "endOffset"]) {
-        if (errors[offset]) editor.errors[offset] = errors[offset];
-        else delete editor.errors[offset];
+        if (errors[offset]) {
+          editor.errors[offset] = errors[offset];
+        } else {
+          delete editor.errors[offset];
+        }
       }
     }
     panel.flush();
   };
   const submit = async () => {
-    if (!editing && !form.name.trim() && form.entities.length) {
+    if (!editing && !form.name.trim() && form.entities.length > 0) {
       const target = `${entityName(panel.catalog, form.entities[0])}${form.entities.length > 1 ? ` +${form.entities.length - 1}` : ""}`;
       form.name =
         form.kind === "entities"
@@ -8654,7 +8798,9 @@ function createStepEditorContext(panel) {
           : target;
     }
     editor.errors = editorErrors(panel.draft, editor);
-    if (Object.keys(editor.errors).length) return refresh();
+    if (Object.keys(editor.errors).length > 0) {
+      return refresh();
+    }
     try {
       const candidate = buildStep(panel.draft, editor);
       editor.candidatePath = required(
@@ -8665,7 +8811,9 @@ function createStepEditorContext(panel) {
         panel.selectedStep = editor.id;
         panel.stepEditor = null;
         panel.renderView();
-      } else await panel.save(candidate);
+      } else {
+        await panel.save(candidate);
+      }
     } catch (error) {
       panel.fail(error);
     }
@@ -8705,7 +8853,9 @@ function showStep(panel, entry, parent) {
   panel.issues = [];
   panel.renderView();
   focusEditor(panel);
-  if (entry) scrollStepEditorIntoView(panel, entry.id);
+  if (entry) {
+    scrollStepEditorIntoView(panel, entry.id);
+  }
 }
 function scrollStepEditorIntoView(panel, id) {
   panel.shadowRoot
@@ -8714,7 +8864,9 @@ function scrollStepEditorIntoView(panel, id) {
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 function openStep(panel, entry) {
-  if (panel.busy) return;
+  if (panel.busy) {
+    return;
+  }
   if (panel.stepEditor?.id === entry.id) {
     panel.requestStepExit(() => {
       panel.selectedStep = null;
@@ -8729,8 +8881,9 @@ function openStep(panel, entry) {
   showEntry(panel, entry);
 }
 function showEntry(panel, entry) {
-  if (simpleStep(entry)) showStep(panel, entry);
-  else {
+  if (simpleStep(entry)) {
+    showStep(panel, entry);
+  } else {
     panel.error = "";
     panel.issues = [];
     panel.selectedStep = panel.selectedStep === entry.id ? null : entry.id;
@@ -8740,48 +8893,52 @@ function showEntry(panel, entry) {
 }
 function actionSummary(entry, t) {
   const action2 = entry.actions?.[0]?.action || "";
-  if (action2 === "scene.turn_on") return t("Activate scene");
-  if (simpleStep(entry))
+  if (action2 === "scene.turn_on") {
+    return t("Activate scene");
+  }
+  if (simpleStep(entry)) {
     return /^(?:(?:light|switch)\.)?turn_(on|off)$/.test(action2)
       ? t(action2.endsWith("turn_off") ? "Turn off" : "Turn on")
       : action2;
+  }
   return t("Custom actions");
-}
-function daySummary(selected, t) {
-  if (selected.length === 7) return t("Every day");
-  if (selected.join() === days.slice(0, 5).join()) return t("Weekdays");
-  if (selected.join() === days.slice(5).join()) return t("Weekends");
-  return selected.map((day) => t(day)).join(", ");
 }
 function stepTree(entries) {
   const seen2 = /* @__PURE__ */ new Set(),
     ordered = [];
   const append2 = (entry, depth) => {
-    if (seen2.has(entry.id)) return;
+    if (seen2.has(entry.id)) {
+      return;
+    }
     seen2.add(entry.id);
     ordered.push({ entry, depth });
-    for (const child2 of entries)
-      if (child2.when?.relative_to === entry.id) append2(child2, depth + 1);
+    for (const child2 of entries) {
+      if (child2.when?.relative_to === entry.id) {
+        append2(child2, depth + 1);
+      }
+    }
   };
   const isRoot = (step) =>
     !step.when?.relative_to ||
-    !entries.some((parent) => parent.id === step.when?.relative_to);
-  for (const step of entries) if (isRoot(step)) append2(step, 0);
-  for (const step of entries) append2(step, 0);
+    entries.every((parent) => parent.id !== step.when?.relative_to);
+  for (const step of entries) {
+    if (isRoot(step)) {
+      append2(step, 0);
+    }
+  }
+  for (const step of entries) {
+    append2(step, 0);
+  }
   return ordered;
-}
-function stepSymbol(entry) {
-  if (entry.kind !== "steps") return "\u25F7";
-  return entry.actions?.every((action2) => action2.action.endsWith("turn_off"))
-    ? "\u25CB"
-    : "\u25CF";
 }
 
 // custom_components/occupied/frontend/dom.ts
 function properties(node, values) {
   const apply2 = (next2) => {
     for (const [key2, value] of Object.entries(next2)) {
-      if (node[key2] !== value) node[key2] = value;
+      if (node[key2] !== value) {
+        node[key2] = value;
+      }
     }
   };
   apply2(values);
@@ -8932,11 +9089,12 @@ delegate(["click"]);
 // custom_components/occupied/frontend/StepActions.svelte
 var root2 = from_html(`<button type="button"> </button>`);
 var root_12 = from_html(
-  `<div class="step-editor-actions"><!> <button type="button" class="danger icon-button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 3h6v2h5v2h-1v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7H4V5h5V3Zm-2 4v12h10V7H7Zm2 2h2v8H9V9Zm4 0h2v8h-2V9Z"></path></svg></button></div> <!>`,
+  `<div class="step-editor-actions"><!> <!> <button type="button" class="danger icon-button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 3h6v2h5v2h-1v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7H4V5h5V3Zm-2 4v12h10V7H7Zm2 2h2v8H9V9Zm4 0h2v8h-2V9Z"></path></svg></button></div> <!>`,
   1,
 );
 function StepActions($$anchor, $$props) {
   push($$props, true);
+  let panel = prop($$props, "panel", 7);
   let deleteOpen = state(false);
   let trigger;
   function closeDeleteDialog() {
@@ -8952,33 +9110,67 @@ function StepActions($$anchor, $$props) {
       var text2 = only_child(button, true);
       template_effect(
         ($0) => {
-          button.disabled = $$props.panel.busy;
+          set_attribute2(
+            button,
+            "aria-pressed",
+            panel().stepEditor.form.enabled,
+          );
+          button.disabled = panel().busy;
           set_text(text2, $0);
         },
-        [() => $$props.panel.t("Add related step")],
+        [
+          () =>
+            panel().t(panel().stepEditor.form.enabled ? "Enabled" : "Disabled"),
+        ],
       );
-      delegated("click", button, () =>
-        startStep($$props.panel, null, $$props.entry),
-      );
+      delegated("click", button, () => {
+        const editor = panel().stepEditor;
+        if (!editor || editor.id !== $$props.entry.id) return;
+        editor.form.enabled = !editor.form.enabled;
+        editor.changed = true;
+        panel().version++;
+        panel().flush();
+      });
       append($$anchor2, button);
     };
     if_block(node, ($$render) => {
-      if ($$props.entry.kind === "steps") $$render(consequent);
+      if (panel().stepEditor?.id === $$props.entry.id) $$render(consequent);
     });
   }
-  var button_1 = sibling(node, 2);
+  var node_1 = sibling(node, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      var button_1 = root2();
+      var text_1 = only_child(button_1, true);
+      template_effect(
+        ($0) => {
+          button_1.disabled = panel().busy;
+          set_text(text_1, $0);
+        },
+        [() => panel().t("Add related step")],
+      );
+      delegated("click", button_1, () =>
+        startStep(panel(), null, $$props.entry),
+      );
+      append($$anchor2, button_1);
+    };
+    if_block(node_1, ($$render) => {
+      if ($$props.entry.kind === "steps") $$render(consequent_1);
+    });
+  }
+  var button_2 = sibling(node_1, 2);
   bind_this(
-    button_1,
+    button_2,
     ($$value) => (trigger = $$value),
     () => trigger,
   );
   reset(div);
-  var node_1 = sibling(div, 2);
+  var node_2 = sibling(div, 2);
   {
-    var consequent_1 = ($$anchor2) => {
+    var consequent_2 = ($$anchor2) => {
       DeleteStepDialog($$anchor2, {
         get panel() {
-          return $$props.panel;
+          return panel();
         },
         get entry() {
           return $$props.entry;
@@ -8986,22 +9178,19 @@ function StepActions($$anchor, $$props) {
         onClose: closeDeleteDialog,
       });
     };
-    if_block(node_1, ($$render) => {
-      if (get2(deleteOpen)) $$render(consequent_1);
+    if_block(node_2, ($$render) => {
+      if (get2(deleteOpen)) $$render(consequent_2);
     });
   }
   template_effect(
     ($0, $1) => {
-      set_attribute2(button_1, "aria-label", $0);
-      set_attribute2(button_1, "title", $1);
-      button_1.disabled = $$props.panel.busy;
+      set_attribute2(button_2, "aria-label", $0);
+      set_attribute2(button_2, "title", $1);
+      button_2.disabled = panel().busy;
     },
-    [
-      () => $$props.panel.t("Delete step"),
-      () => $$props.panel.t("Delete step"),
-    ],
+    [() => panel().t("Delete step"), () => panel().t("Delete step")],
   );
-  delegated("click", button_1, () => flushSync(() => set2(deleteOpen, true)));
+  delegated("click", button_2, () => flushSync(() => set2(deleteOpen, true)));
   append($$anchor, fragment);
   pop();
 }
@@ -9360,15 +9549,11 @@ function SourcePicker($$anchor, $$props) {
 var root6 = from_html(
   `<label class="timing-option"><input type="radio" name="step-timing-mode" data-builder-field="mode"/><span> </span></label>`,
 );
-var root_14 = from_html(
-  `<!> <button type="button" class="text-button"> </button>`,
-  1,
-);
-var root_23 = from_html(`<button type="button" class="text-button"> </button>`);
-var root_33 = from_html(`<!> <!>`, 1);
-var root_42 = from_html(`<p class="hint"> </p>`);
-var root_52 = from_html(`<!> <!> <!> <!>`, 1);
-var root_62 = from_html(
+var root_14 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_23 = from_html(`<!> <!>`, 1);
+var root_33 = from_html(`<p class="hint"> </p>`);
+var root_42 = from_html(`<!> <!> <!> <!>`, 1);
+var root_52 = from_html(
   `<div data-editor-section="time"><h3 id="routine-timing-heading"> </h3> <fieldset class="timing-options" aria-labelledby="routine-timing-heading"><div class="timing-option-row"></div> <!></fieldset> <!> <p class="hint" data-timing-explanation="" aria-live="polite"> </p> <!></div>`,
 );
 function TimingEditor($$anchor, $$props) {
@@ -9400,7 +9585,7 @@ function TimingEditor($$anchor, $$props) {
       ];
     return choices2;
   });
-  var div = root_62();
+  var div = root_52();
   var h3 = child(div);
   var text2 = only_child(h3, true);
   var fieldset = sibling(h3, 2);
@@ -9459,7 +9644,7 @@ function TimingEditor($$anchor, $$props) {
   var node_1 = sibling(fieldset, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment = root_33();
+      var fragment = root_23();
       var node_2 = first_child(fragment);
       EditorField(node_2, {
         get panel() {
@@ -9479,9 +9664,7 @@ function TimingEditor($$anchor, $$props) {
       var node_3 = sibling(node_2, 2);
       {
         var consequent = ($$anchor3) => {
-          var fragment_1 = root_14();
-          var node_4 = first_child(fragment_1);
-          EditorField(node_4, {
+          EditorField($$anchor3, {
             get panel() {
               return $$props.panel;
             },
@@ -9493,37 +9676,27 @@ function TimingEditor($$anchor, $$props) {
             get value() {
               return get2(time).end;
             },
-            update: (value) => (get2(time).end = value),
+            update: (value) => {
+              get2(time).end = value;
+              if (!value) get2(editor).showEndTime = false;
+            },
             options: { type: "time", step: 1, optional: true },
           });
-          var button = sibling(node_4, 2);
+        };
+        var alternate = ($$anchor3) => {
+          var button = root_14();
           var text_2 = only_child(button, true);
           template_effect(
             ($0) => set_text(text_2, $0),
-            [() => get2(t)("Remove end of window")],
-          );
-          delegated("click", button, () => {
-            get2(time).end = "";
-            get2(editor).showEndTime = false;
-            get2(changed)("end");
-            focusEditor($$props.panel, "start");
-          });
-          append($$anchor3, fragment_1);
-        };
-        var alternate = ($$anchor3) => {
-          var button_1 = root_23();
-          var text_3 = only_child(button_1, true);
-          template_effect(
-            ($0) => set_text(text_3, $0),
             [() => get2(t)("Add end of window")],
           );
-          delegated("click", button_1, () => {
+          delegated("click", button, () => {
             get2(time).end = get2(time).start;
             get2(editor).showEndTime = true;
             get2(changed)("end");
             focusEditor($$props.panel, "end");
           });
-          append($$anchor3, button_1);
+          append($$anchor3, button);
         };
         if_block(node_3, ($$render) => {
           if (
@@ -9538,10 +9711,10 @@ function TimingEditor($$anchor, $$props) {
       append($$anchor2, fragment);
     };
     var alternate_2 = ($$anchor2) => {
-      var fragment_2 = root_52();
-      var node_5 = first_child(fragment_2);
+      var fragment_2 = root_42();
+      var node_4 = first_child(fragment_2);
       SourcePicker(
-        node_5,
+        node_4,
         spread_props(() => ({
           hass: $$props.panel._hass,
           choices: get2(choices),
@@ -9566,13 +9739,13 @@ function TimingEditor($$anchor, $$props) {
           },
         })),
       );
-      var node_6 = sibling(node_5, 2);
+      var node_5 = sibling(node_4, 2);
       {
         var consequent_2 = ($$anchor3) => {
-          var p = root_42();
-          var text_4 = only_child(p, true);
+          var p = root_33();
+          var text_3 = only_child(p, true);
           template_effect(
-            ($0) => set_text(text_4, $0),
+            ($0) => set_text(text_3, $0),
             [
               () =>
                 get2(t)(
@@ -9583,12 +9756,12 @@ function TimingEditor($$anchor, $$props) {
           append($$anchor3, p);
         };
         var d = user_derived(() => get2(time).anchor.startsWith("entity:"));
-        if_block(node_6, ($$render) => {
+        if_block(node_5, ($$render) => {
           if (get2(d)) $$render(consequent_2);
         });
       }
-      var node_7 = sibling(node_6, 2);
-      EditorField(node_7, {
+      var node_6 = sibling(node_5, 2);
+      EditorField(node_6, {
         get panel() {
           return $$props.panel;
         },
@@ -9603,24 +9776,24 @@ function TimingEditor($$anchor, $$props) {
         update: (value) => (get2(time).startOffset = value),
         options: { placeholder: "30m or 1h" },
       });
-      var node_8 = sibling(node_7, 2);
+      var node_7 = sibling(node_6, 2);
       {
         var consequent_3 = ($$anchor3) => {
           {
             const trailing = ($$anchor4) => {
-              var button_2 = root_23();
-              var text_5 = only_child(button_2, true);
+              var button_1 = root_14();
+              var text_4 = only_child(button_1, true);
               template_effect(
-                ($0) => set_text(text_5, $0),
+                ($0) => set_text(text_4, $0),
                 [() => get2(t)("Remove end offset")],
               );
-              delegated("click", button_2, () => {
+              delegated("click", button_1, () => {
                 get2(time).endOffset = "";
                 get2(editor).showEndOffset = false;
                 get2(changed)("endOffset");
                 focusEditor($$props.panel, "startOffset");
               });
-              append($$anchor4, button_2);
+              append($$anchor4, button_1);
             };
             EditorField($$anchor3, {
               get panel() {
@@ -9642,19 +9815,19 @@ function TimingEditor($$anchor, $$props) {
           }
         };
         var alternate_1 = ($$anchor3) => {
-          var button_3 = root_23();
-          var text_6 = only_child(button_3, true);
+          var button_2 = root_14();
+          var text_5 = only_child(button_2, true);
           template_effect(
-            ($0) => set_text(text_6, $0),
+            ($0) => set_text(text_5, $0),
             [() => get2(t)("Add end offset")],
           );
-          delegated("click", button_3, () => {
+          delegated("click", button_2, () => {
             get2(editor).showEndOffset = true;
             get2(refresh)("endOffset");
           });
-          append($$anchor3, button_3);
+          append($$anchor3, button_2);
         };
-        if_block(node_8, ($$render) => {
+        if_block(node_7, ($$render) => {
           if (
             get2(time).endOffset ||
             get2(editor).showEndOffset ||
@@ -9672,14 +9845,14 @@ function TimingEditor($$anchor, $$props) {
     });
   }
   var p_1 = sibling(node_1, 2);
-  var text_7 = only_child(p_1, true);
-  var node_9 = sibling(p_1, 2);
+  var text_6 = only_child(p_1, true);
+  var node_8 = sibling(p_1, 2);
   {
     var consequent_4 = ($$anchor2) => {
-      var p_2 = root_42();
-      var text_8 = only_child(p_2, true);
+      var p_2 = root_33();
+      var text_7 = only_child(p_2, true);
       template_effect(
-        ($0) => set_text(text_8, $0),
+        ($0) => set_text(text_7, $0),
         [
           () =>
             get2(t)(
@@ -9689,7 +9862,7 @@ function TimingEditor($$anchor, $$props) {
       );
       append($$anchor2, p_2);
     };
-    if_block(node_9, ($$render) => {
+    if_block(node_8, ($$render) => {
       if ($$props.panel.document?.source === "file") $$render(consequent_4);
     });
   }
@@ -9697,7 +9870,7 @@ function TimingEditor($$anchor, $$props) {
   template_effect(
     ($0, $1) => {
       set_text(text2, $0);
-      set_text(text_7, $1);
+      set_text(text_6, $1);
     },
     [
       () => get2(t)("Timing"),
@@ -9707,7 +9880,7 @@ function TimingEditor($$anchor, $$props) {
           stepEntries($$props.panel.draft),
           get2(t),
           $$props.panel.catalog.time_sources,
-          { locale: $$props.panel._hass.locale },
+          { locale: $$props.panel._hass.locale, days: get2(form).days },
         ),
     ],
   );
@@ -10062,18 +10235,19 @@ var root10 = from_html(
 var root_17 = from_html(
   `<section class="routine-empty"><button type="button" class="primary" data-create-routine=""> </button></section>`,
 );
-var root_24 = from_html(
+var root_24 = from_html(`<span class="routine-row-time"> </span>`);
+var root_34 = from_html(
   `<section class="routine-editor"><p class="hint"> </p> <!></section>`,
 );
-var root_34 = from_html(`<div><!></div>`);
-var root_43 = from_html(
-  `<div class="routine-card"><button type="button" class="routine-row"><span class="routine-symbol" aria-hidden="true"> </span> <span class="routine-row-content"><strong> </strong><span class="hint"> </span></span> <span class="routine-row-time"><span> </span><small> </small></span></button> <!></div>`,
-);
+var root_43 = from_html(`<div><!></div>`);
 var root_53 = from_html(
+  `<div class="routine-card"><button type="button"><span class="routine-row-content"><strong> </strong><span class="hint"> </span></span> <!></button> <!></div>`,
+);
+var root_62 = from_html(
   `<div class="routine-layout"><div class="routine-list"></div></div> <button type="button" class="text-button"> </button>`,
   1,
 );
-var root_63 = from_html(`<!> <!>`, 1);
+var root_7 = from_html(`<!> <!>`, 1);
 function StepsView($$anchor, $$props) {
   push($$props, true);
   let data = user_derived(() => {
@@ -10085,7 +10259,7 @@ function StepsView($$anchor, $$props) {
   });
   let t = user_derived(() => get2(data).t),
     entries = user_derived(() => get2(data).entries);
-  var fragment = root_63();
+  var fragment = root_7();
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
@@ -10125,7 +10299,7 @@ function StepsView($$anchor, $$props) {
       append($$anchor2, section);
     };
     var alternate_1 = ($$anchor2) => {
-      var fragment_1 = root_53();
+      var fragment_1 = root_62();
       var div_1 = first_child(fragment_1);
       var div_2 = child(div_1);
       each(
@@ -10136,38 +10310,59 @@ function StepsView($$anchor, $$props) {
         ($$anchor3, $$item) => {
           let entry = () => get2($$item).entry;
           let depth = () => get2($$item).depth;
+          const editing = user_derived(
+            () =>
+              $$props.panel.stepEditor?.existing &&
+              $$props.panel.stepEditor.id === entry().id,
+          );
           const expanded = user_derived(
             () =>
-              ($$props.panel.stepEditor?.existing &&
-                $$props.panel.stepEditor.id === entry().id) ||
+              get2(editing) ||
               (!$$props.panel.stepEditor &&
                 !simpleStep(entry()) &&
                 $$props.panel.selectedStep === entry().id),
           );
-          var div_3 = root_43();
+          var div_3 = root_53();
           var button_2 = child(div_3);
+          let classes;
           var span = child(button_2);
-          var text_2 = only_child(span, true);
-          var span_1 = sibling(span, 2);
-          var strong = child(span_1);
-          var text_3 = only_child(strong, true);
-          var span_2 = sibling(strong);
-          var text_4 = only_child(span_2);
-          reset(span_1);
-          var span_3 = sibling(span_1, 2);
-          var span_4 = child(span_3);
-          var text_5 = only_child(span_4, true);
-          var small = sibling(span_4);
-          var text_6 = only_child(small, true);
-          reset(span_3);
-          reset(button_2);
-          var node_2 = sibling(button_2, 2);
+          var strong = child(span);
+          var text_2 = only_child(strong, true);
+          var span_1 = sibling(strong);
+          var text_3 = only_child(span_1);
+          reset(span);
+          var node_2 = sibling(span, 2);
           {
-            var consequent_3 = ($$anchor4) => {
-              var div_4 = root_34();
-              var node_3 = child(div_4);
+            var consequent_2 = ($$anchor4) => {
+              var span_2 = root_24();
+              var text_4 = only_child(span_2, true);
+              template_effect(
+                ($0) => set_text(text_4, $0),
+                [
+                  () =>
+                    timingSummary(
+                      entry(),
+                      get2(entries),
+                      get2(t),
+                      $$props.panel.catalog.time_sources,
+                      $$props.panel._hass.locale,
+                    ),
+                ],
+              );
+              append($$anchor4, span_2);
+            };
+            if_block(node_2, ($$render) => {
+              if (!get2(editing)) $$render(consequent_2);
+            });
+          }
+          reset(button_2);
+          var node_3 = sibling(button_2, 2);
+          {
+            var consequent_4 = ($$anchor4) => {
+              var div_4 = root_43();
+              var node_4 = child(div_4);
               {
-                var consequent_2 = ($$anchor5) => {
+                var consequent_3 = ($$anchor5) => {
                   StepEditor($$anchor5, {
                     get panel() {
                       return $$props.panel;
@@ -10178,11 +10373,11 @@ function StepsView($$anchor, $$props) {
                   });
                 };
                 var alternate = ($$anchor5) => {
-                  var section_1 = root_24();
+                  var section_1 = root_34();
                   var p = child(section_1);
-                  var text_7 = only_child(p, true);
-                  var node_4 = sibling(p, 2);
-                  StepActions(node_4, {
+                  var text_5 = only_child(p, true);
+                  var node_5 = sibling(p, 2);
+                  StepActions(node_5, {
                     get panel() {
                       return $$props.panel;
                     },
@@ -10192,7 +10387,7 @@ function StepsView($$anchor, $$props) {
                   });
                   reset(section_1);
                   template_effect(
-                    ($0) => set_text(text_7, $0),
+                    ($0) => set_text(text_5, $0),
                     [
                       () =>
                         get2(t)(
@@ -10202,8 +10397,8 @@ function StepsView($$anchor, $$props) {
                   );
                   append($$anchor5, section_1);
                 };
-                if_block(node_3, ($$render) => {
-                  if ($$props.panel.stepEditor) $$render(consequent_2);
+                if_block(node_4, ($$render) => {
+                  if ($$props.panel.stepEditor) $$render(consequent_3);
                   else $$render(alternate, -1);
                 });
               }
@@ -10213,16 +10408,19 @@ function StepsView($$anchor, $$props) {
               );
               append($$anchor4, div_4);
             };
-            if_block(node_2, ($$render) => {
-              if (get2(expanded)) $$render(consequent_3);
+            if_block(node_3, ($$render) => {
+              if (get2(expanded)) $$render(consequent_4);
             });
           }
           reset(div_3);
           template_effect(
-            ($0, $1, $2, $3, $4, $5) => {
+            ($0, $1, $2) => {
               set_attribute2(div_3, "data-routine-id", entry().id);
               set_style(div_3, $0);
               set_attribute2(button_2, "id", `step-card-${entry().id}`);
+              classes = set_class(button_2, 1, "routine-row", null, classes, {
+                editing: get2(editing),
+              });
               set_attribute2(button_2, "aria-label", entry().name);
               button_2.disabled = $$props.panel.busy;
               set_attribute2(button_2, "aria-expanded", get2(expanded));
@@ -10231,33 +10429,20 @@ function StepsView($$anchor, $$props) {
                 "aria-controls",
                 `step-editor-${entry().id}`,
               );
-              set_text(text_2, $1);
-              set_text(text_3, entry().name);
+              set_text(text_2, entry().name);
               set_text(
-                text_4,
-                `${$2 ?? ""} \xB7
-                ${$3 ?? ""}`,
+                text_3,
+                `${$1 ?? ""} \xB7
+                ${$2 ?? ""}`,
               );
-              set_text(text_5, $4);
-              set_text(text_6, $5);
             },
             [
               () => `--depth:${Math.min(depth(), 3)}`,
-              () => stepSymbol(entry()),
               () => actionSummary(entry(), get2(t)),
               () =>
                 entry()
                   .entities.map((id) => entityName($$props.panel.catalog, id))
                   .join(", "),
-              () =>
-                timingSummary(
-                  entry(),
-                  get2(entries),
-                  get2(t),
-                  $$props.panel.catalog.time_sources,
-                  $$props.panel._hass.locale,
-                ),
-              () => daySummary(entry().days, get2(t)),
             ],
           );
           delegated("click", button_2, () => openStep($$props.panel, entry()));
@@ -10267,12 +10452,12 @@ function StepsView($$anchor, $$props) {
       reset(div_2);
       reset(div_1);
       var button_3 = sibling(div_1, 2);
-      var text_8 = only_child(button_3, true);
+      var text_6 = only_child(button_3, true);
       template_effect(
         ($0, $1) => {
           set_attribute2(div_2, "aria-label", $0);
           button_3.disabled = $$props.panel.busy;
-          set_text(text_8, $1);
+          set_text(text_6, $1);
         },
         [() => get2(t)("Your steps"), () => get2(t)("Preview schedule")],
       );
@@ -10399,7 +10584,9 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/timeline.ts
 function stamp(value, zone, locale) {
-  if (!value) return "\u2014";
+  if (!value) {
+    return "\u2014";
+  }
   try {
     return formatTimestamp(value, zone, locale);
   } catch {
@@ -10408,7 +10595,9 @@ function stamp(value, zone, locale) {
 }
 function timelineModel(doc, program, t = (text2) => text2, locale) {
   const plan = doc.plan;
-  if (!plan) return null;
+  if (!plan) {
+    return null;
+  }
   const labels = new Map(
     resources(program).map((resource) => [resource.id, resource.name]),
   );
@@ -10419,7 +10608,9 @@ function timelineModel(doc, program, t = (text2) => text2, locale) {
     Math.max(0, Math.min(100, ((Date.parse(time) - start) / width) * 100));
   const lanes = /* @__PURE__ */ new Map();
   const lane = (id, mark) => {
-    if (!lanes.has(id)) lanes.set(id, []);
+    if (!lanes.has(id)) {
+      lanes.set(id, []);
+    }
     lanes.get(id).push(mark);
   };
   const bar = (kind, from, to, title) => ({
@@ -10434,7 +10625,9 @@ function timelineModel(doc, program, t = (text2) => text2, locale) {
   });
   let drawn = 0;
   for (const interval of plan.intervals) {
-    if (drawn++ >= 800) break;
+    if (drawn++ >= 800) {
+      break;
+    }
     lane(
       interval.source_id,
       bar(
@@ -10446,7 +10639,9 @@ function timelineModel(doc, program, t = (text2) => text2, locale) {
     );
   }
   for (const [id, time] of Object.entries(plan.steps || {})) {
-    if (drawn++ >= 800) break;
+    if (drawn++ >= 800) {
+      break;
+    }
     lane(id, {
       className: "marker",
       title: `${labels.get(id) || id}: ${stamp(time, plan.timezone, locale)}`,
@@ -10455,12 +10650,18 @@ function timelineModel(doc, program, t = (text2) => text2, locale) {
     });
   }
   for (const activity of doc.snapshot?.activities || []) {
-    if (!activity.deadline) continue;
+    if (!activity.deadline) {
+      continue;
+    }
     const actualStart = new Date(
       Date.parse(activity.deadline) - activity.duration * 1e3,
     ).toISOString();
-    if (Date.parse(activity.deadline) < start || Date.parse(actualStart) > end)
+    if (
+      Date.parse(activity.deadline) < start ||
+      Date.parse(actualStart) > end
+    ) {
       continue;
+    }
     lane(
       activity.source_id,
       bar(
@@ -10477,8 +10678,9 @@ function timelineModel(doc, program, t = (text2) => text2, locale) {
     if (
       Date.parse(handover.deadline) < start ||
       Date.parse(handover.start) > end
-    )
+    ) {
       continue;
+    }
     lane(
       entity,
       bar(
@@ -10872,8 +11074,8 @@ var root_26 = from_html(
 var root_36 = from_html(`<p> </p>`);
 var root_45 = from_html(`<th scope="col"> </th>`);
 var root_55 = from_html(`<td> </td>`);
-var root_64 = from_html(`<tr></tr>`);
-var root_7 = from_html(
+var root_63 = from_html(`<tr></tr>`);
+var root_72 = from_html(
   `<section><h2> </h2> <p class="hint"> </p> <p> </p> <div class="timeline" role="img"><div class="ruler"></div> <!></div> <!> <input type="search"/> <div><div class="table-wrap"><table><thead><tr></tr></thead><tbody></tbody></table></div> <div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div></div> <!></section>`,
 );
 function Timeline($$anchor, $$props) {
@@ -10907,7 +11109,7 @@ function Timeline($$anchor, $$props) {
       const computed_const = user_derived(() => {
         return get2(model);
       });
-      var section = root_7();
+      var section = root_72();
       var h2 = child(section);
       var text_1 = only_child(h2);
       var p = sibling(h2, 2);
@@ -11035,7 +11237,7 @@ function Timeline($$anchor, $$props) {
           ),
         index,
         ($$anchor3, event2) => {
-          var tr_1 = root_64();
+          var tr_1 = root_63();
           each(
             tr_1,
             21,
@@ -11860,159 +12062,81 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/App.svelte
 var root19 = from_html(
-  `<span id="badge" class="badge" aria-live="polite"> <!></span> <button type="button" class="text-button"> </button>`,
-  1,
-);
-var root_115 = from_html(
   `<button type="button" class="primary"> </button> <button type="button"> </button>`,
   1,
 );
-var root_210 = from_html(`<button type="button"> </button>`);
-var root_39 = from_html(`<div id="toolbar" class="toolbar"><!> <!></div>`);
-var root_46 = from_html(`<p> </p>`);
-var root_56 = from_html(`<p id="house"> </p>`);
-var root_65 = from_html(`<option> </option>`);
-var root_72 = from_html(
+var root_115 = from_html(`<button type="button"> </button>`);
+var root_210 = from_html(`<div id="toolbar" class="toolbar"><!> <!></div>`);
+var root_39 = from_html(`<p> </p>`);
+var root_46 = from_html(`<p id="house"> </p>`);
+var root_56 = from_html(`<option> </option>`);
+var root_64 = from_html(
   `<label for="instance-select"> </label> <select id="instance-select"></select>`,
   1,
 );
-var root_8 = from_html(`<p class="hint"> </p>`);
-var root_9 = from_html(`<p class="banner" role="status"> </p>`);
-var root_10 = from_html(`<button type="button" class="text-button"> </button>`);
-var root_11 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
-var root_122 = from_html(`<p> </p> <button type="button"> </button>`, 1);
-var root_132 = from_html(
-  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><header><div><!> <!> <!></div> <div id="runtime" class="row"><!></div></header> <!> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav aria-label="Occupied"></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
+var root_73 = from_html(`<p class="hint"> </p>`);
+var root_8 = from_html(`<p class="banner" role="status"> </p>`);
+var root_9 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_10 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
+var root_11 = from_html(`<p> </p> <button type="button"> </button>`, 1);
+var root_122 = from_html(
+  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><header><div><!> <!> <!></div></header> <!> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav aria-label="Occupied"></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
   3,
 );
 function App($$anchor, $$props) {
   push($$props, true);
   const $updates = () => store_get($$props.updates, "$updates", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
-  const runtimeControls = ($$anchor2) => {
-    var fragment = comment();
-    var node = first_child(fragment);
-    {
-      var consequent_1 = ($$anchor3) => {
-        const state3 = user_derived(() => get2(panel).status);
-        const label = user_derived(() =>
-          get2(state3).paused
-            ? "Paused"
-            : !get2(state3).enabled
-              ? "Off"
-              : get2(state3).active
-                ? "Managing"
-                : "Waiting",
-        );
-        const schedulable = user_derived(() =>
-          resources(get2(panel).saved).some((resource) =>
-            ["step", "activity", "window"].includes(resource.kind),
-          ),
-        );
-        var fragment_1 = root19();
-        var span = first_child(fragment_1);
-        var text_1 = child(span, true);
-        var node_1 = sibling(text_1);
-        {
-          var consequent = ($$anchor4) => {
-            var text_2 = text();
-            template_effect(
-              ($0) => set_text(text_2, $0),
-              [() => ` \xB7 ${get2(t)("Dry run")}`],
-            );
-            append($$anchor4, text_2);
-          };
-          var alternate = ($$anchor4) => {
-            var text_3 = text();
-            text_3.nodeValue = "";
-            append($$anchor4, text_3);
-          };
-          if_block(node_1, ($$render) => {
-            if (get2(state3).dry_run) $$render(consequent);
-            else $$render(alternate, -1);
-          });
-        }
-        reset(span);
-        var button = sibling(span, 2);
-        var text_4 = only_child(button, true);
-        template_effect(
-          ($0, $1) => {
-            set_attribute2(span, "title", get2(state3).reason || "");
-            set_text(text_1, $0);
-            button.disabled =
-              get2(panel).busy || (!get2(state3).enabled && !get2(schedulable));
-            set_text(text_4, $1);
-          },
-          [
-            () => get2(t)(get2(label)),
-            () =>
-              get2(t)(
-                get2(state3).enabled ? "Stop managing" : "Start managing",
-              ),
-          ],
-        );
-        delegated("click", button, () =>
-          get2(panel).control(get2(state3).enabled ? "stop" : "start"),
-        );
-        append($$anchor3, fragment_1);
-      };
-      if_block(node, ($$render) => {
-        if (get2(panel).status && get2(panel).selectedInstance?.loaded)
-          $$render(consequent_1);
-      });
-    }
-    append($$anchor2, fragment);
-  };
   const toolbar = ($$anchor2) => {
     const unsaved = user_derived(
       () => get2(panel).dirty && !get2(panel).stepEditor,
     );
-    var div = root_39();
-    var node_2 = child(div);
+    var div = root_210();
+    var node = child(div);
     {
-      var consequent_2 = ($$anchor3) => {
-        var fragment_4 = root_115();
-        var button_1 = first_child(fragment_4);
-        var text_5 = only_child(button_1, true);
-        var button_2 = sibling(button_1, 2);
-        var text_6 = only_child(button_2, true);
+      var consequent = ($$anchor3) => {
+        var fragment = root19();
+        var button = first_child(fragment);
+        var text_1 = only_child(button, true);
+        var button_1 = sibling(button, 2);
+        var text_2 = only_child(button_1, true);
         template_effect(
           ($0, $1) => {
-            button_1.disabled =
+            button.disabled =
               get2(panel).busy ||
               get2(panel).document?.source === "file" ||
               get2(panel).stale;
-            set_text(text_5, $0);
-            button_2.disabled = get2(panel).busy || !get2(panel).draft;
-            set_text(text_6, $1);
+            set_text(text_1, $0);
+            button_1.disabled = get2(panel).busy || !get2(panel).draft;
+            set_text(text_2, $1);
           },
           [() => get2(t)("Save changes"), () => get2(t)("Discard edits")],
         );
-        delegated("click", button_1, () => get2(panel).save());
-        delegated("click", button_2, () => get2(panel).discardEdits());
-        append($$anchor3, fragment_4);
+        delegated("click", button, () => get2(panel).save());
+        delegated("click", button_1, () => get2(panel).discardEdits());
+        append($$anchor3, fragment);
       };
-      if_block(node_2, ($$render) => {
-        if (get2(unsaved)) $$render(consequent_2);
+      if_block(node, ($$render) => {
+        if (get2(unsaved)) $$render(consequent);
       });
     }
-    var node_3 = sibling(node_2, 2);
+    var node_1 = sibling(node, 2);
     {
-      var consequent_3 = ($$anchor3) => {
-        var button_3 = root_210();
-        var text_7 = only_child(button_3, true);
+      var consequent_1 = ($$anchor3) => {
+        var button_2 = root_115();
+        var text_3 = only_child(button_2, true);
         template_effect(
           ($0) => {
-            button_3.disabled = get2(panel).busy;
-            set_text(text_7, $0);
+            button_2.disabled = get2(panel).busy;
+            set_text(text_3, $0);
           },
           [() => get2(t)("Reload saved program")],
         );
-        delegated("click", button_3, () => get2(panel).reloadSaved(true));
-        append($$anchor3, button_3);
+        delegated("click", button_2, () => get2(panel).reloadSaved(true));
+        append($$anchor3, button_2);
       };
-      if_block(node_3, ($$render) => {
-        if (get2(panel).stale) $$render(consequent_3);
+      if_block(node_1, ($$render) => {
+        if (get2(panel).stale) $$render(consequent_1);
       });
     }
     reset(div);
@@ -12035,35 +12159,35 @@ function App($$anchor, $$props) {
         ? item().message
         : `${item().severity || "error"} \xB7 ${item().path || "$"}: ${item().message}`,
     );
-    var fragment_5 = comment();
-    var node_4 = first_child(fragment_5);
+    var fragment_1 = comment();
+    var node_2 = first_child(fragment_1);
     {
-      var consequent_4 = ($$anchor3) => {
-        var button_4 = root_210();
-        var text_8 = only_child(button_4, true);
+      var consequent_2 = ($$anchor3) => {
+        var button_3 = root_115();
+        var text_4 = only_child(button_3, true);
         template_effect(() => {
-          set_class(button_4, 1, clsx2(get2(className)));
-          set_text(text_8, get2(text2));
+          set_class(button_3, 1, clsx2(get2(className)));
+          set_text(text_4, get2(text2));
         });
-        delegated("click", button_4, () => get2(panel).focusIssue(item()));
-        append($$anchor3, button_4);
+        delegated("click", button_3, () => get2(panel).focusIssue(item()));
+        append($$anchor3, button_3);
       };
-      var alternate_1 = ($$anchor3) => {
-        var p = root_46();
-        var text_9 = only_child(p, true);
+      var alternate = ($$anchor3) => {
+        var p = root_39();
+        var text_5 = only_child(p, true);
         template_effect(() => {
           set_class(p, 1, clsx2(get2(className)));
-          set_text(text_9, get2(text2));
+          set_text(text_5, get2(text2));
         });
         append($$anchor3, p);
       };
-      if_block(node_4, ($$render) => {
+      if_block(node_2, ($$render) => {
         if (get2(panel).stepEditor && item().severity !== "warning")
-          $$render(consequent_4);
-        else $$render(alternate_1, -1);
+          $$render(consequent_2);
+        else $$render(alternate, -1);
       });
     }
-    append($$anchor2, fragment_5);
+    append($$anchor2, fragment_1);
   };
   let panel = user_derived(() => {
     $updates();
@@ -12093,8 +12217,8 @@ function App($$anchor, $$props) {
     ["routines", "Your steps"],
     ["settings", "Settings"],
   ];
-  var fragment_6 = root_132();
-  var ha_top_app_bar_fixed = first_child(fragment_6);
+  var fragment_2 = root_122();
+  var ha_top_app_bar_fixed = first_child(fragment_2);
   set_custom_element_data(ha_top_app_bar_fixed, "back-button", true);
   template_effect(
     ($0) => set_custom_element_data(ha_top_app_bar_fixed, "narrow", $0),
@@ -12103,21 +12227,21 @@ function App($$anchor, $$props) {
   var main = sibling(child(ha_top_app_bar_fixed), 2);
   var header = child(main);
   var div_1 = child(header);
-  var node_5 = child(div_1);
+  var node_3 = child(div_1);
   {
-    var consequent_5 = ($$anchor2) => {
-      var p_1 = root_56();
-      var text_10 = only_child(p_1, true);
+    var consequent_3 = ($$anchor2) => {
+      var p_1 = root_46();
+      var text_6 = only_child(p_1, true);
       template_effect(
-        ($0) => set_text(text_10, $0),
+        ($0) => set_text(text_6, $0),
         [() => get2(t)("Loading controller\u2026")],
       );
       append($$anchor2, p_1);
     };
-    var consequent_6 = ($$anchor2) => {
-      var p_2 = root_56();
-      var text_11 = only_child(p_2, true);
-      template_effect(() => set_text(text_11, get2(controllerName)));
+    var consequent_4 = ($$anchor2) => {
+      var p_2 = root_46();
+      var text_7 = only_child(p_2, true);
+      template_effect(() => set_text(text_7, get2(controllerName)));
       append($$anchor2, p_2);
     };
     var d = user_derived(
@@ -12125,17 +12249,17 @@ function App($$anchor, $$props) {
         get2(controllerName) !== "Occupied" &&
         !/^Occupied [0-9a-f]{8}$/.test(get2(controllerName)),
     );
-    if_block(node_5, ($$render) => {
-      if (!get2(controllerName)) $$render(consequent_5);
-      else if (get2(d)) $$render(consequent_6, 1);
+    if_block(node_3, ($$render) => {
+      if (!get2(controllerName)) $$render(consequent_3);
+      else if (get2(d)) $$render(consequent_4, 1);
     });
   }
-  var node_6 = sibling(node_5, 2);
+  var node_4 = sibling(node_3, 2);
   {
-    var consequent_7 = ($$anchor2) => {
-      var fragment_7 = root_72();
-      var label_1 = first_child(fragment_7);
-      var text_12 = only_child(label_1, true);
+    var consequent_5 = ($$anchor2) => {
+      var fragment_3 = root_64();
+      var label_1 = first_child(fragment_3);
+      var text_8 = only_child(label_1, true);
       var select = sibling(label_1, 2);
       each(
         select,
@@ -12143,15 +12267,12 @@ function App($$anchor, $$props) {
         () => get2(panel).instances,
         index,
         ($$anchor3, instance) => {
-          var option = root_65();
-          var text_13 = only_child(option);
+          var option = root_56();
+          var text_9 = only_child(option);
           var option_value = {};
           template_effect(
             ($0) => {
-              set_text(
-                text_13,
-                `${get2(instance).name ?? ""} \xB7 ${$0 ?? ""}`,
-              );
+              set_text(text_9, `${get2(instance).name ?? ""} \xB7 ${$0 ?? ""}`);
               if (
                 option_value !== (option_value = get2(instance).config_entry_id)
               ) {
@@ -12173,7 +12294,7 @@ function App($$anchor, $$props) {
       init_select(select);
       template_effect(
         ($0) => {
-          set_text(text_12, $0);
+          set_text(text_8, $0);
           select.disabled = get2(panel).busy;
           if (
             select_value !== (select_value = get2(panel).selectedEntry || "")
@@ -12188,47 +12309,43 @@ function App($$anchor, $$props) {
         get2(panel).selectInstance(event2.currentTarget.value);
         event2.currentTarget.value = get2(panel).selectedEntry || "";
       });
-      append($$anchor2, fragment_7);
+      append($$anchor2, fragment_3);
     };
-    if_block(node_6, ($$render) => {
-      if (get2(panel).instances.length > 1) $$render(consequent_7);
+    if_block(node_4, ($$render) => {
+      if (get2(panel).instances.length > 1) $$render(consequent_5);
     });
   }
-  var node_7 = sibling(node_6, 2);
+  var node_5 = sibling(node_4, 2);
   {
-    var consequent_8 = ($$anchor2) => {
-      var p_3 = root_8();
-      var text_14 = only_child(p_3, true);
+    var consequent_6 = ($$anchor2) => {
+      var p_3 = root_73();
+      var text_10 = only_child(p_3, true);
       template_effect(
-        ($0) => set_text(text_14, $0),
+        ($0) => set_text(text_10, $0),
         [() => get2(t)("Managed file")],
       );
       append($$anchor2, p_3);
     };
-    if_block(node_7, ($$render) => {
+    if_block(node_5, ($$render) => {
       if (get2(panel).selectedInstance?.source === "file")
-        $$render(consequent_8);
+        $$render(consequent_6);
     });
   }
   reset(div_1);
-  var div_2 = sibling(div_1, 2);
-  var node_8 = child(div_2);
-  runtimeControls(node_8);
-  reset(div_2);
   reset(header);
-  var node_9 = sibling(header, 2);
+  var node_6 = sibling(header, 2);
   each(
-    node_9,
+    node_6,
     17,
     () => get2(panel).selectedInstance?.overlaps || [],
     index,
     ($$anchor2, overlap) => {
-      var p_4 = root_9();
-      var text_15 = only_child(p_4);
+      var p_4 = root_8();
+      var text_11 = only_child(p_4);
       template_effect(
         ($0, $1, $2) =>
           set_text(
-            text_15,
+            text_11,
             `${$0 ?? ""}
       ${get2(overlap).name ?? ""}: ${$1 ?? ""}. ${$2 ?? ""}`,
           ),
@@ -12241,13 +12358,13 @@ function App($$anchor, $$props) {
       append($$anchor2, p_4);
     },
   );
-  var node_10 = sibling(node_9, 2);
-  toolbar(node_10);
-  var div_3 = sibling(node_10, 2);
-  var text_16 = only_child(div_3, true);
-  var div_4 = sibling(div_3, 2);
-  var text_17 = only_child(div_4, true);
-  var nav = sibling(div_4, 2);
+  var node_7 = sibling(node_6, 2);
+  toolbar(node_7);
+  var div_2 = sibling(node_7, 2);
+  var text_12 = only_child(div_2, true);
+  var div_3 = sibling(div_2, 2);
+  var text_13 = only_child(div_3, true);
+  var nav = sibling(div_3, 2);
   each(
     nav,
     21,
@@ -12257,34 +12374,34 @@ function App($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get2($$item), 2));
       let id = () => get2($$array)[0];
       let label = () => get2($$array)[1];
-      var button_5 = root_210();
-      var text_18 = only_child(button_5, true);
+      var button_4 = root_115();
+      var text_14 = only_child(button_4, true);
       template_effect(
         ($0) => {
-          set_attribute2(button_5, "data-tab", id());
+          set_attribute2(button_4, "data-tab", id());
           set_attribute2(
-            button_5,
+            button_4,
             "aria-current",
             get2(panel).tab === id() ? "page" : "false",
           );
-          button_5.disabled = !get2(panel).selectedInstance?.loaded;
-          set_text(text_18, $0);
+          button_4.disabled = !get2(panel).selectedInstance?.loaded;
+          set_text(text_14, $0);
         },
         [() => get2(t)(label())],
       );
-      delegated("click", button_5, () => get2(panel).navigate(id()));
-      append($$anchor2, button_5);
+      delegated("click", button_4, () => get2(panel).navigate(id()));
+      append($$anchor2, button_4);
     },
   );
   reset(nav);
-  var div_5 = sibling(nav, 2);
-  var node_11 = child(div_5);
+  var div_4 = sibling(nav, 2);
+  var node_8 = child(div_4);
   {
-    var consequent_9 = ($$anchor2) => {
-      var button_6 = root_10();
-      var text_19 = only_child(button_6, true);
+    var consequent_7 = ($$anchor2) => {
+      var button_5 = root_9();
+      var text_15 = only_child(button_5, true);
       template_effect(
-        ($0) => set_text(text_19, $0),
+        ($0) => set_text(text_15, $0),
         [
           () =>
             get2(t)(
@@ -12294,21 +12411,21 @@ function App($$anchor, $$props) {
             ),
         ],
       );
-      delegated("click", button_6, () =>
+      delegated("click", button_5, () =>
         get2(panel).navigate(
           get2(panel).tab === "preview" ? "routines" : "settings",
         ),
       );
-      append($$anchor2, button_6);
+      append($$anchor2, button_5);
     };
-    if_block(node_11, ($$render) => {
-      if (!get2(primary)) $$render(consequent_9);
+    if_block(node_8, ($$render) => {
+      if (!get2(primary)) $$render(consequent_7);
     });
   }
-  reset(div_5);
-  var div_6 = sibling(div_5, 2);
+  reset(div_4);
+  var div_5 = sibling(div_4, 2);
   each(
-    div_6,
+    div_5,
     21,
     () => get2(panel).visibleIssues(),
     index,
@@ -12320,26 +12437,26 @@ function App($$anchor, $$props) {
       );
     },
   );
-  reset(div_6);
-  var div_7 = sibling(div_6, 2);
-  var node_12 = child(div_7);
+  reset(div_5);
+  var div_6 = sibling(div_5, 2);
+  var node_9 = child(div_6);
   key(
-    node_12,
+    node_9,
     () => `${get2(panel).selectedEntry}:${get2(panel).tab}`,
     ($$anchor2) => {
-      var fragment_9 = comment();
-      var node_13 = first_child(fragment_9);
+      var fragment_5 = comment();
+      var node_10 = first_child(fragment_5);
       {
         const failed = ($$anchor3, error = noop) => {
-          var fragment_10 = root_11();
-          var p_5 = first_child(fragment_10);
-          var text_20 = only_child(p_5, true);
+          var fragment_6 = root_10();
+          var p_5 = first_child(fragment_6);
+          var text_16 = only_child(p_5, true);
           var p_6 = sibling(p_5, 2);
-          var text_21 = only_child(p_6, true);
+          var text_17 = only_child(p_6, true);
           template_effect(
             ($0, $1) => {
-              set_text(text_20, $0);
-              set_text(text_21, $1);
+              set_text(text_16, $0);
+              set_text(text_17, $1);
             },
             [
               () => errorMessage(error()),
@@ -12349,22 +12466,22 @@ function App($$anchor, $$props) {
                 ),
             ],
           );
-          append($$anchor3, fragment_10);
+          append($$anchor3, fragment_6);
         };
-        boundary(node_13, { failed }, ($$anchor3) => {
-          var fragment_11 = comment();
-          var node_14 = first_child(fragment_11);
+        boundary(node_10, { failed }, ($$anchor3) => {
+          var fragment_7 = comment();
+          var node_11 = first_child(fragment_7);
           {
-            var consequent_10 = ($$anchor4) => {
-              var fragment_12 = root_122();
-              var p_7 = first_child(fragment_12);
-              var text_22 = only_child(p_7, true);
-              var button_7 = sibling(p_7, 2);
-              var text_23 = only_child(button_7, true);
+            var consequent_8 = ($$anchor4) => {
+              var fragment_8 = root_11();
+              var p_7 = first_child(fragment_8);
+              var text_18 = only_child(p_7, true);
+              var button_6 = sibling(p_7, 2);
+              var text_19 = only_child(button_6, true);
               template_effect(
                 ($0, $1) => {
-                  set_text(text_22, $0);
-                  set_text(text_23, $1);
+                  set_text(text_18, $0);
+                  set_text(text_19, $1);
                 },
                 [
                   () =>
@@ -12374,31 +12491,31 @@ function App($$anchor, $$props) {
                   () => get2(t)("Retry"),
                 ],
               );
-              delegated("click", button_7, () => get2(panel).retry());
-              append($$anchor4, fragment_12);
+              delegated("click", button_6, () => get2(panel).retry());
+              append($$anchor4, fragment_8);
             };
-            var consequent_12 = ($$anchor4) => {
-              var fragment_13 = comment();
-              var node_15 = first_child(fragment_13);
+            var consequent_10 = ($$anchor4) => {
+              var fragment_9 = comment();
+              var node_12 = first_child(fragment_9);
               {
-                var consequent_11 = ($$anchor5) => {
-                  var button_8 = root_210();
-                  var text_24 = only_child(button_8, true);
+                var consequent_9 = ($$anchor5) => {
+                  var button_7 = root_115();
+                  var text_20 = only_child(button_7, true);
                   template_effect(
-                    ($0) => set_text(text_24, $0),
+                    ($0) => set_text(text_20, $0),
                     [() => get2(t)("Retry")],
                   );
-                  delegated("click", button_8, () => get2(panel).retry());
-                  append($$anchor5, button_8);
+                  delegated("click", button_7, () => get2(panel).retry());
+                  append($$anchor5, button_7);
                 };
-                if_block(node_15, ($$render) => {
+                if_block(node_12, ($$render) => {
                   if (get2(panel).error && !get2(panel)._loading)
-                    $$render(consequent_11);
+                    $$render(consequent_9);
                 });
               }
-              append($$anchor4, fragment_13);
+              append($$anchor4, fragment_9);
             };
-            var consequent_13 = ($$anchor4) => {
+            var consequent_11 = ($$anchor4) => {
               StepEditor($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12408,7 +12525,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_14 = ($$anchor4) => {
+            var consequent_12 = ($$anchor4) => {
               StepsView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12418,7 +12535,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_15 = ($$anchor4) => {
+            var consequent_13 = ($$anchor4) => {
               SettingsView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12428,7 +12545,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_16 = ($$anchor4) => {
+            var consequent_14 = ($$anchor4) => {
               OverviewView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12438,7 +12555,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_17 = ($$anchor4) => {
+            var consequent_15 = ($$anchor4) => {
               PreviewView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12448,7 +12565,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_18 = ($$anchor4) => {
+            var consequent_16 = ($$anchor4) => {
               ConfigurationView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12458,7 +12575,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_19 = ($$anchor4) => {
+            var consequent_17 = ($$anchor4) => {
               DiagnosticsView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12468,7 +12585,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_20 = ($$anchor4) => {
+            var consequent_18 = ($$anchor4) => {
               TimelineView($$anchor4, {
                 get panel() {
                   return get2(panel);
@@ -12478,64 +12595,64 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            if_block(node_14, ($$render) => {
+            if_block(node_11, ($$render) => {
               if (
                 get2(panel).selectedEntry &&
                 !get2(panel).selectedInstance?.loaded
               )
-                $$render(consequent_10);
+                $$render(consequent_8);
               else if (get2(panel)._loading || !get2(panel).draft)
-                $$render(consequent_12, 1);
+                $$render(consequent_10, 1);
               else if (
                 get2(panel).stepEditor &&
                 !get2(panel).stepEditor.existing
               )
-                $$render(consequent_13, 2);
+                $$render(consequent_11, 2);
               else if (get2(panel).tab === "routines")
-                $$render(consequent_14, 3);
+                $$render(consequent_12, 3);
               else if (get2(panel).tab === "settings")
-                $$render(consequent_15, 4);
+                $$render(consequent_13, 4);
               else if (get2(panel).tab === "overview")
-                $$render(consequent_16, 5);
+                $$render(consequent_14, 5);
               else if (get2(panel).tab === "preview")
-                $$render(consequent_17, 6);
+                $$render(consequent_15, 6);
               else if (get2(panel).tab === "configuration")
-                $$render(consequent_18, 7);
+                $$render(consequent_16, 7);
               else if (get2(panel).tab === "diagnostics")
-                $$render(consequent_19, 8);
+                $$render(consequent_17, 8);
               else if (get2(panel).tab === "timeline")
-                $$render(consequent_20, 9);
+                $$render(consequent_18, 9);
             });
           }
-          append($$anchor3, fragment_11);
+          append($$anchor3, fragment_7);
         });
       }
-      append($$anchor2, fragment_9);
+      append($$anchor2, fragment_5);
     },
   );
-  reset(div_7);
+  reset(div_6);
   reset(main);
   reset(ha_top_app_bar_fixed);
-  var node_16 = sibling(ha_top_app_bar_fixed, 2);
+  var node_13 = sibling(ha_top_app_bar_fixed, 2);
   {
-    var consequent_21 = ($$anchor2) => {
+    var consequent_19 = ($$anchor2) => {
       UnsavedStepDialog($$anchor2, {
         get panel() {
           return get2(panel);
         },
       });
     };
-    if_block(node_16, ($$render) => {
-      if (get2(panel).pendingStepExit) $$render(consequent_21);
+    if_block(node_13, ($$render) => {
+      if (get2(panel).pendingStepExit) $$render(consequent_19);
     });
   }
   template_effect(() => {
-    set_attribute2(div_3, "hidden", !get2(notices));
-    set_text(text_16, get2(notices));
-    set_attribute2(div_4, "hidden", !get2(panel).error);
-    set_text(text_17, get2(panel).error);
+    set_attribute2(div_2, "hidden", !get2(notices));
+    set_text(text_12, get2(notices));
+    set_attribute2(div_3, "hidden", !get2(panel).error);
+    set_text(text_13, get2(panel).error);
   });
-  append($$anchor, fragment_6);
+  append($$anchor, fragment_2);
   pop();
   $$cleanup();
 }
@@ -12547,8 +12664,9 @@ async function loadHaControls() {
     customElements.get("ha-selector") &&
     customElements.get("ha-generic-picker") &&
     customElements.get("ha-top-app-bar-fixed")
-  )
+  ) {
     return;
+  }
   await customElements.whenDefined("partial-panel-resolver");
   const resolver = document.createElement("partial-panel-resolver");
   await resolver
@@ -12640,24 +12758,29 @@ var OccupiedPanel = class extends HTMLElement {
     this.t = translator(value?.language);
     for (const selector of this.shadowRoot.querySelectorAll(
       "ha-selector,ha-generic-picker",
-    ))
+    )) {
       selector.hass = value;
-    if (localeChanged) this.flush();
+    }
+    if (localeChanged) {
+      this.flush();
+    }
     if (changed) {
       this._disposeSubscription();
       this._disposeInstances();
       this._instancesReady = false;
-      this._subscribe();
+      void this._subscribe();
     }
-    this._load();
+    void this._load();
   }
   set panel(value) {
     this._panel = value;
-    this._load();
+    void this._load();
   }
   set narrow(value) {
     const narrow = !!value;
-    if (this.hasAttribute("narrow") === narrow) return;
+    if (this.hasAttribute("narrow") === narrow) {
+      return;
+    }
     this.toggleAttribute("narrow", narrow);
     this.flush();
   }
@@ -12680,15 +12803,16 @@ var OccupiedPanel = class extends HTMLElement {
       });
       this.flush();
     }
-    this._load();
+    void this._load();
     window.addEventListener("beforeunload", this._beforeUnload);
-    window.addEventListener("location-changed", this._locationChanged);
-    window.addEventListener("popstate", this._locationChanged);
+    globalThis.addEventListener("location-changed", this._locationChanged);
+    globalThis.addEventListener("popstate", this._locationChanged);
     this._timer = setInterval(() => {
       for (const bar of this.shadowRoot.querySelectorAll(
         "progress[data-start]",
-      ))
+      )) {
         bar.value = progress(bar.dataset.start, bar.dataset.deadline);
+      }
     }, 1e3);
   }
   disconnectedCallback() {
@@ -12704,17 +12828,20 @@ var OccupiedPanel = class extends HTMLElement {
     this._disposeInstances();
     this._instancesReady = false;
     clearInterval(this._timer);
-    if (this._timelineTimer) clearTimeout(this._timelineTimer);
+    if (this._timelineTimer) {
+      clearTimeout(this._timelineTimer);
+    }
     window.removeEventListener("beforeunload", this._beforeUnload);
-    window.removeEventListener("location-changed", this._locationChanged);
-    window.removeEventListener("popstate", this._locationChanged);
+    globalThis.removeEventListener("location-changed", this._locationChanged);
+    globalThis.removeEventListener("popstate", this._locationChanged);
   }
   _locationChanged = () => void this._load();
   _beforeUnload = (event2) => {
-    if (this.dirty || this.stepEditor?.changed) {
-      event2.preventDefault();
-      event2.returnValue = "";
+    if (!(this.dirty || this.stepEditor?.changed)) {
+      return;
     }
+    event2.preventDefault();
+    event2.returnValue = "";
   };
   // --- Backend connection -------------------------------------------------
   _disposeInstances() {
@@ -12728,14 +12855,17 @@ var OccupiedPanel = class extends HTMLElement {
       this._instancesUnsubscribe ||
       this._instancesSubscribing ||
       !this.isConnected
-    )
+    ) {
       return;
+    }
     this._instancesSubscribing = true;
     const epoch = this._instancesEpoch;
     try {
       const unsubscribe = await this._hass.connection.subscribeMessage(
         (instances) => {
-          if (epoch !== this._instancesEpoch || !this.isConnected) return;
+          if (epoch !== this._instancesEpoch || !this.isConnected) {
+            return;
+          }
           this.instances = instances;
           this.flush();
           if (!this.selectedInstance?.loaded && this._loadedEntry) {
@@ -12748,22 +12878,31 @@ var OccupiedPanel = class extends HTMLElement {
         },
         { type: "occupied/instances_subscribe" },
       );
-      if (epoch !== this._instancesEpoch || !this.isConnected) unsubscribe();
-      else this._instancesUnsubscribe = unsubscribe;
+      if (epoch !== this._instancesEpoch || !this.isConnected) {
+        unsubscribe();
+      } else {
+        this._instancesUnsubscribe = unsubscribe;
+      }
     } catch (error) {
-      if (epoch === this._instancesEpoch) this.fail(error);
+      if (epoch === this._instancesEpoch) {
+        this.fail(error);
+      }
     } finally {
-      if (epoch === this._instancesEpoch) this._instancesSubscribing = false;
+      if (epoch === this._instancesEpoch) {
+        this._instancesSubscribing = false;
+      }
     }
   }
   _writeSelection(entry, replace = false) {
-    const url = new URL(window.location.href);
+    const url = new URL(location.href);
     url.searchParams.set("config_entry", entry);
-    window.history[replace ? "replaceState" : "pushState"](null, "", url);
-    window.dispatchEvent(new Event("location-changed"));
+    history[replace ? "replaceState" : "pushState"](null, "", url);
+    globalThis.dispatchEvent(new Event("location-changed"));
   }
   selectInstance(entry) {
-    if (entry === this.selectedEntry || this.busy) return;
+    if (entry === this.selectedEntry || this.busy) {
+      return;
+    }
     if (!this._canSwitchInstance()) {
       this.flush();
       return;
@@ -12775,7 +12914,7 @@ var OccupiedPanel = class extends HTMLElement {
   _canSwitchInstance() {
     return (
       !(this.dirty || (this.stepEditor && hasStepChanges(this.stepEditor))) ||
-      window.confirm(
+      globalThis.confirm(
         this.t("This instance has unsaved changes. Discard them and switch?"),
       )
     );
@@ -12783,7 +12922,9 @@ var OccupiedPanel = class extends HTMLElement {
   _resetInstance(entry) {
     this.epoch++;
     this._disposeSubscription();
-    if (this._timelineTimer) clearTimeout(this._timelineTimer);
+    if (this._timelineTimer) {
+      clearTimeout(this._timelineTimer);
+    }
     this._timelineTimer = null;
     this._timelineLoading = false;
     this._loadedEntry = null;
@@ -12840,24 +12981,33 @@ var OccupiedPanel = class extends HTMLElement {
       !this._hass?.connection ||
       this._unsubscribe ||
       this._subscribing
-    )
+    ) {
       return;
+    }
     this._subscribing = true;
     const epoch = this._subscriptionEpoch;
     try {
       const unsubscribe = await this._hass.connection.subscribeMessage(
         (snapshot2) => {
-          if (epoch === this._subscriptionEpoch && this.isConnected)
+          if (epoch === this._subscriptionEpoch && this.isConnected) {
             this._onSnapshot(snapshot2);
+          }
         },
         { type: "occupied/subscribe", config_entry_id: this._loadedEntry },
       );
-      if (epoch !== this._subscriptionEpoch || !this.isConnected) unsubscribe();
-      else this._unsubscribe = unsubscribe;
+      if (epoch !== this._subscriptionEpoch || !this.isConnected) {
+        unsubscribe();
+      } else {
+        this._unsubscribe = unsubscribe;
+      }
     } catch (error) {
-      if (epoch === this._subscriptionEpoch) this.fail(error);
+      if (epoch === this._subscriptionEpoch) {
+        this.fail(error);
+      }
     } finally {
-      if (epoch === this._subscriptionEpoch) this._subscribing = false;
+      if (epoch === this._subscriptionEpoch) {
+        this._subscribing = false;
+      }
     }
   }
   _onSnapshot(snapshot2) {
@@ -12872,33 +13022,41 @@ var OccupiedPanel = class extends HTMLElement {
       snapshot2.source_revision !== this.revision
     );
     this.flush();
-    if (this.tab === "timeline" && !this._timelineTimer)
+    if (this.tab === "timeline" && !this._timelineTimer) {
       this._timelineTimer = setTimeout(() => {
         this._timelineTimer = null;
-        this.loadTimeline();
+        void this.loadTimeline();
       }, 1e3);
-    if (this.stale && !this.dirty && !this.busy && !this.stepEditor)
-      this.reloadSaved();
+    }
+    if (this.stale && !this.dirty && !this.busy && !this.stepEditor) {
+      void this.reloadSaved();
+    }
   }
   async _load() {
-    if (!this.isConnected || !this._hass || !this._panel) return;
+    if (!this.isConnected || !this._hass || !this._panel) {
+      return;
+    }
     if (!this._instancesReady) {
       const epoch2 = this._instancesEpoch;
       try {
         const instances = await this._hass.callWS({
           type: "occupied/instances",
         });
-        if (epoch2 !== this._instancesEpoch || !this.isConnected) return;
+        if (epoch2 !== this._instancesEpoch || !this.isConnected) {
+          return;
+        }
         this.instances = instances;
         this._instancesReady = true;
         void this._subscribeInstances();
       } catch (error) {
-        if (epoch2 === this._instancesEpoch) this.fail(error);
+        if (epoch2 === this._instancesEpoch) {
+          this.fail(error);
+        }
         return;
       }
     }
     const entry =
-      new URLSearchParams(window.location.search).get("config_entry") ||
+      new URLSearchParams(location.search).get("config_entry") ||
       this._panel.config?.config_entry_id ||
       this.selectedEntry ||
       this.instances.find((item) => item.loaded)?.config_entry_id ||
@@ -12909,7 +13067,9 @@ var OccupiedPanel = class extends HTMLElement {
     }
     if (entry !== this.selectedEntry) {
       if (this.busy || !this._canSwitchInstance()) {
-        if (this.selectedEntry) this._writeSelection(this.selectedEntry, true);
+        if (this.selectedEntry) {
+          this._writeSelection(this.selectedEntry, true);
+        }
         return;
       }
       this._resetInstance(entry);
@@ -12918,8 +13078,9 @@ var OccupiedPanel = class extends HTMLElement {
       !this.selectedInstance?.loaded ||
       this._loading ||
       this._loadedEntry === entry
-    )
+    ) {
       return;
+    }
     this._loading = true;
     this.flush();
     this._disposeSubscription();
@@ -12932,7 +13093,9 @@ var OccupiedPanel = class extends HTMLElement {
         this.ws("status"),
         loadHaControls(),
       ]);
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       if (this.draft && (this.dirty || this.stepEditor)) {
         this.document = doc;
         this.saved = doc.program;
@@ -12946,7 +13109,7 @@ var OccupiedPanel = class extends HTMLElement {
       this.previewSettings.date = doc.simulation_date;
       this.error = "";
       this.renderView();
-      this._subscribe();
+      void this._subscribe();
     } catch (error) {
       if (epoch === this.epoch) {
         this._loadedEntry = null;
@@ -12960,14 +13123,19 @@ var OccupiedPanel = class extends HTMLElement {
     }
   }
   // --- Rendering ----------------------------------------------------------
-  /** Commit Svelte updates before callers focus a newly rendered field. */
+  /**
+  Commit Svelte updates before callers focus a newly rendered field.
+  */
   flush() {
-    if (this.component)
+    if (this.component) {
       flushSync(() => this.updates.set(++this.updateRevision));
+    }
   }
   renderView() {
     this.viewRevision++;
-    if (this.tab === "timeline") void this.loadTimeline();
+    if (this.tab === "timeline") {
+      void this.loadTimeline();
+    }
     this.flush();
   }
   navigate(tab) {
@@ -12978,7 +13146,9 @@ var OccupiedPanel = class extends HTMLElement {
       });
       return;
     }
-    if (this.tab === tab) return;
+    if (this.tab === tab) {
+      return;
+    }
     this.tab = tab;
     this.renderView();
   }
@@ -13001,7 +13171,9 @@ var OccupiedPanel = class extends HTMLElement {
   }
   confirmStepExit() {
     const action2 = this.pendingStepExit;
-    if (action2) this.finishStepExit(action2);
+    if (action2) {
+      this.finishStepExit(action2);
+    }
   }
   finishStepExit(action2) {
     this.pendingStepExit = null;
@@ -13019,14 +13191,16 @@ var OccupiedPanel = class extends HTMLElement {
   }
   notices() {
     const t = this.t;
+    let programNotice = "";
+    if (this.stale) {
+      programNotice = t(
+        "The saved program changed. Your draft is preserved; reload the saved program before saving.",
+      );
+    } else if (this.dirty && !this.stepEditor) {
+      programNotice = t("Unsaved edits");
+    }
     return [
-      this.stale
-        ? t(
-            "The saved program changed. Your draft is preserved; reload the saved program before saving.",
-          )
-        : this.dirty && !this.stepEditor
-          ? t("Unsaved edits")
-          : "",
+      programNotice,
       this.document?.source === "file"
         ? t(
             "Managed file is authoritative. Export draft changes to your file, then reload.",
@@ -13045,14 +13219,18 @@ var OccupiedPanel = class extends HTMLElement {
       .join(" \xB7 ");
   }
   // --- Draft editing ------------------------------------------------------
-  /** Record the saved program from a backend document. */
+  /**
+  Record the saved program from a backend document.
+  */
   adopt(doc) {
     this.document = doc;
     this.saved = doc.program;
     this.revision = doc.revision;
     this.stale = false;
   }
-  /** Replace the draft with the saved program, dropping local edits. */
+  /**
+  Replace the draft with the saved program, dropping local edits.
+  */
   resetDraft() {
     this.draft = copy(this.saved);
     this.dirty = !!this.document.needs_apply;
@@ -13066,16 +13244,22 @@ var OccupiedPanel = class extends HTMLElement {
     this.renderView();
   }
   change(path, value, rerender = false) {
-    if (!path.length) this.draft = value;
-    else set(this.draft, path, value);
+    if (path.length === 0) {
+      this.draft = value;
+    } else {
+      set(this.draft, path, value);
+    }
     this.edited(rerender);
   }
   edited(rerender = false) {
     this.version++;
     this.dirty = true;
     this.validatedVersion = -1;
-    if (rerender) this.renderView();
-    else this.flush();
+    if (rerender) {
+      this.renderView();
+    } else {
+      this.flush();
+    }
   }
   fail(error) {
     this.error = errorMessage(error);
@@ -13088,9 +13272,13 @@ var OccupiedPanel = class extends HTMLElement {
       this.fail(error);
     }
   }
-  /** Run one backend action at a time; failures are shown, not thrown. */
+  /**
+  Run one backend action at a time; failures are shown, not thrown.
+  */
   async run(action2) {
-    if (this.busy) return;
+    if (this.busy) {
+      return;
+    }
     this.busy = true;
     this.error = "";
     this.flush();
@@ -13099,7 +13287,9 @@ var OccupiedPanel = class extends HTMLElement {
       return await action2(epoch);
     } catch (error) {
       if (epoch === this.epoch) {
-        if (isRevisionConflict(error)) this.stale = true;
+        if (isRevisionConflict(error)) {
+          this.stale = true;
+        }
         this.fail(error);
       }
     } finally {
@@ -13112,12 +13302,15 @@ var OccupiedPanel = class extends HTMLElement {
   showIssues(result) {
     this.issues = result.issues || [];
     this.flush();
-    if (result.valid === false && !this.issues.length)
+    if (result.valid === false && this.issues.length === 0) {
       this.fail(
         this.t("Preview contains infeasible dates. Review timeline issues."),
       );
+    }
   }
-  /** Saved-program warnings persist independently of temporary editor issues. */
+  /**
+  Saved-program warnings persist independently of temporary editor issues.
+  */
   visibleIssues() {
     const issues = /* @__PURE__ */ new Map();
     for (const issue of [...(this.document?.warnings || []), ...this.issues]) {
@@ -13131,13 +13324,17 @@ var OccupiedPanel = class extends HTMLElement {
     }
     return [...issues.values()];
   }
-  /** Show a backend issue on the step editor field it belongs to. */
+  /**
+  Show a backend issue on the step editor field it belongs to.
+  */
   focusIssue(issue) {
     const editor = this.stepEditor;
-    if (!editor) return;
+    if (!editor) {
+      return;
+    }
     const path = issue.model_path || [],
       prefix = editor.candidatePath || [];
-    if (!prefix.length || !prefix.every((key2, i) => path[i] === key2)) {
+    if (prefix.length === 0 || prefix.some((key2, i) => path[i] !== key2)) {
       this.fail(
         this.t(
           "Finish or cancel this step to edit other configuration issues.",
@@ -13158,13 +13355,19 @@ var OccupiedPanel = class extends HTMLElement {
       draft = copy(this.draft);
     return this.run(async (epoch) => {
       const result = await this.ws("editor_validate", { program: draft });
-      if (epoch !== this.epoch || version !== this.version) return;
+      if (epoch !== this.epoch || version !== this.version) {
+        return;
+      }
       this.showIssues(result);
-      if (result.valid) this.validatedVersion = version;
+      if (result.valid) {
+        this.validatedVersion = version;
+      }
     });
   }
   save(candidate) {
-    if (this.document?.source === "file" || this.stale) return;
+    if (this.document?.source === "file" || this.stale) {
+      return;
+    }
     const version = this.version,
       draft = copy(candidate || this.draft),
       expected = this.revision,
@@ -13172,7 +13375,9 @@ var OccupiedPanel = class extends HTMLElement {
       submittedForm = editor ? copy(editor.form) : null;
     return this.run(async (epoch) => {
       const validation = await this.ws("editor_validate", { program: draft });
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       if (version !== this.version) {
         this.fail(
           this.t(
@@ -13183,10 +13388,11 @@ var OccupiedPanel = class extends HTMLElement {
       }
       this.showIssues(validation);
       if (!validation.valid) {
-        if (editor && this.issues.length)
+        if (editor && this.issues.length > 0) {
           this.focusIssue(
             this.issues.find((i) => i.severity !== "warning") || this.issues[0],
           );
+        }
         return;
       }
       this.validatedVersion = version;
@@ -13194,8 +13400,12 @@ var OccupiedPanel = class extends HTMLElement {
         program: draft,
         expected_revision: expected,
       });
-      if (epoch !== this.epoch) return;
-      if (!result.valid) return this.showIssues(result);
+      if (epoch !== this.epoch) {
+        return;
+      }
+      if (!result.valid) {
+        return this.showIssues(result);
+      }
       this.adopt({ ...this.document, ...result, needs_apply: false });
       if (editor && this.stepEditor === editor) {
         this.draft = copy(result.program);
@@ -13215,19 +13425,26 @@ var OccupiedPanel = class extends HTMLElement {
         this.draft = copy(result.program);
         this.dirty = false;
         this.renderView();
-        if (editor)
+        if (editor) {
           this.shadowRoot
             .getElementById(`step-card-${editor.id}`)
             ?.focus({ preventScroll: true });
-      } else this.dirty = true;
+        }
+      } else {
+        this.dirty = true;
+      }
     });
   }
   async reloadSaved(discard = false) {
-    if (this.busy || ((this.dirty || this.stepEditor) && !discard)) return;
+    if (this.busy || ((this.dirty || this.stepEditor) && !discard)) {
+      return;
+    }
     const version = this.version;
     return this.run(async (epoch) => {
       const doc = await this.ws("program");
-      if (epoch !== this.epoch || version !== this.version) return;
+      if (epoch !== this.epoch || version !== this.version) {
+        return;
+      }
       this.adopt(doc);
       this.resetDraft();
       this.stepEditor = null;
@@ -13240,13 +13457,19 @@ var OccupiedPanel = class extends HTMLElement {
         config_entry_id: this._loadedEntry,
         ...data,
       });
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       const status = await this.ws("status");
-      if (epoch === this.epoch) this.status = status;
+      if (epoch === this.epoch) {
+        this.status = status;
+      }
     });
   }
   async loadTimeline() {
-    if (this._timelineLoading) return;
+    if (this._timelineLoading) {
+      return;
+    }
     this._timelineLoading = true;
     const epoch = this.epoch;
     try {
@@ -13254,26 +13477,36 @@ var OccupiedPanel = class extends HTMLElement {
         "timeline",
         this.timelineDate ? { date: this.timelineDate } : {},
       );
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       this.actual = doc;
       if (this.tab === "timeline") {
         this.viewRevision++;
         this.flush();
       }
     } catch (error) {
-      if (epoch === this.epoch) this.fail(error);
+      if (epoch === this.epoch) {
+        this.fail(error);
+      }
     } finally {
-      if (epoch === this.epoch) this._timelineLoading = false;
+      if (epoch === this.epoch) {
+        this._timelineLoading = false;
+      }
     }
   }
   runPreview() {
     const version = this.version,
       draft = copy(this.draft),
       options = { ...this.previewSettings };
-    if (!options.at) delete options.at;
+    if (!options.at) {
+      delete options.at;
+    }
     return this.run(async (epoch) => {
       const result = await this.ws("preview", { program: draft, ...options });
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       this.preview = result;
       this.previewVersion = version;
       this.previewProgram = draft;
@@ -13285,21 +13518,29 @@ var OccupiedPanel = class extends HTMLElement {
       const result = await this.ws("diagnostics", {
         include_sensitive: this.includeSensitive,
       });
-      if (epoch === this.epoch) this.diagnostics = result;
+      if (epoch === this.epoch) {
+        this.diagnostics = result;
+      }
     });
   }
   selectSource(source2, config_file) {
     return this.run(async (epoch) => {
       const result = await this.ws("source", {
         source: source2,
-        ...(config_file ? { config_file } : {}),
+        ...(config_file && { config_file }),
         expected_revision: this.revision,
       });
-      if (epoch !== this.epoch) return;
-      if (!result.valid) return this.showIssues(result);
+      if (epoch !== this.epoch) {
+        return;
+      }
+      if (!result.valid) {
+        return this.showIssues(result);
+      }
       this.adopt({ ...this.document, ...result });
       this.validatedVersion = -1;
-      if (!this.dirty) this.draft = copy(result.program);
+      if (!this.dirty) {
+        this.draft = copy(result.program);
+      }
       this.renderView();
     });
   }
@@ -13307,7 +13548,9 @@ var OccupiedPanel = class extends HTMLElement {
     return this.run(async (epoch) => {
       const result = await this.ws("reload");
       const doc = await this.ws("program");
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       this.document = doc;
       this.saved = doc.program;
       this.stale = doc.revision !== this.revision;
@@ -13316,7 +13559,9 @@ var OccupiedPanel = class extends HTMLElement {
         this.draft = copy(doc.program);
         this.stale = false;
       }
-      if (!result.valid) this.showIssues(result);
+      if (!result.valid) {
+        this.showIssues(result);
+      }
       this.renderView();
     });
   }
@@ -13324,7 +13569,9 @@ var OccupiedPanel = class extends HTMLElement {
     const version = this.version;
     return this.run(async (epoch) => {
       const result = await this.ws("validate", { program: this.yaml });
-      if (epoch !== this.epoch || version !== this.version) return;
+      if (epoch !== this.epoch || version !== this.version) {
+        return;
+      }
       this.showIssues(result);
       if (result.valid) {
         this.draft = result.program;
@@ -13335,9 +13582,13 @@ var OccupiedPanel = class extends HTMLElement {
   exportYaml() {
     return this.run(async (epoch) => {
       const result = await this.ws("export", { program: copy(this.draft) });
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       this.showIssues(result);
-      if (result.valid) this.yaml = result.yaml;
+      if (result.valid) {
+        this.yaml = result.yaml;
+      }
     });
   }
 };
@@ -13352,16 +13603,27 @@ function isRevisionConflict(error) {
 function editorField(tail, form) {
   const has = (key2) => tail.includes(key2),
     head2 = tail[0];
-  if (head2 === "name" || head2 === "days") return head2;
+  if (head2 === "name" || head2 === "days") {
+    return head2;
+  }
   if (head2 === "actions") {
-    if (has("targets")) return "entities";
-    if (form.kind === "service") return has("data") ? "data" : "service";
+    if (has("targets")) {
+      return "entities";
+    }
+    if (form.kind === "service") {
+      return has("data") ? "data" : "service";
+    }
     return form.kind === "scene" ? "entities" : "brightness";
   }
-  if (has("relative_to") || has("sun")) return "anchor";
-  if (form.timing.mode === "absolute") return has("latest") ? "end" : "start";
+  if (has("relative_to") || has("sun")) {
+    return "anchor";
+  }
+  if (form.timing.mode === "absolute") {
+    return has("latest") ? "end" : "start";
+  }
   return has("max") ? "endOffset" : "startOffset";
 }
-if (!customElements.get("occupied-panel"))
+if (!customElements.get("occupied-panel")) {
   customElements.define("occupied-panel", OccupiedPanel);
+}
 export { OccupiedPanel };

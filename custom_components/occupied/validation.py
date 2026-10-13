@@ -527,7 +527,7 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
 
 
 def validation_warnings(program: Program) -> tuple[Issue, ...]:
-    """Explain valid but competing targets and intentionally unprojectable effects."""
+    """Explain missing baselines, unprojectable effects, and ordered action conflicts."""
     warnings = []
     managed = set(resolve_targets(program, program.lighting.managed_targets))
     baseline_targets = {
@@ -544,11 +544,7 @@ def validation_warnings(program: Program) -> tuple[Issue, ...]:
                 "warning",
             )
         )
-    uses: dict[str, set[str]] = {}
-    for _, item, action, path in actions_with_paths(program):
-        entities = resolve_targets(program, action.targets)
-        for entity in entities:
-            uses.setdefault(entity, set()).add(item.id)
+    for _, _, action, path in actions_with_paths(program):
         if action.action not in {
             "turn_on",
             "turn_off",
@@ -566,20 +562,6 @@ def validation_warnings(program: Program) -> tuple[Issue, ...]:
                     "effects must be declared as resources",
                     path,
                     "warning",
-                )
-            )
-    for _, item, _ in items_with_paths(program):
-        if isinstance(item, ActivityWindow):
-            for entity in resolve_targets(program, item.targets):
-                uses.setdefault(entity, set()).add(item.id)
-    for entity, owners in sorted(uses.items()):
-        if len(owners) > 1:
-            warnings.append(
-                Issue(
-                    "shared_target",
-                    f"{entity} is shared by {', '.join(sorted(owners))}; "
-                    "routine/safety intents override window leases",
-                    severity="warning",
                 )
             )
     for _, item, path in items_with_paths(program):

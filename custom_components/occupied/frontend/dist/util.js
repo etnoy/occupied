@@ -1,10 +1,12 @@
 // Generated from util.ts by pnpm run build. Do not edit.
 export function errorMessage(error) {
-  return error instanceof Error
-    ? error.message
-    : typeof error === "object" && error !== null && "message" in error
-      ? String(error.message)
-      : String(error);
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "object" && error !== null && "message" in error) {
+    return String(error.message);
+  }
+  return String(error);
 }
 export function isValueChangedEvent(event) {
   return (
@@ -15,11 +17,14 @@ export function isValueChangedEvent(event) {
   );
 }
 export function required(value) {
-  if (value == null)
+  if (value == null) {
     throw new Error("Required editor element or value is missing");
+  }
   return value;
 }
-/** Elapsed fraction of an ISO interval, clamped to 0..1. */
+/**
+Elapsed fraction of an ISO interval, clamped to 0..1.
+*/
 export function progress(start, deadline, now = Date.now()) {
   const from = Date.parse(start);
   return Math.max(

@@ -109,24 +109,29 @@ export class OccupiedPanel extends HTMLElement {
     // Stable views capture hass when built; keep their HA elements current.
     for (const selector of this.shadowRoot.querySelectorAll<
       HaSelector | HaGenericPicker
-    >("ha-selector,ha-generic-picker"))
+    >("ha-selector,ha-generic-picker")) {
       selector.hass = value;
-    if (localeChanged) this.flush();
+    }
+    if (localeChanged) {
+      this.flush();
+    }
     if (changed) {
       this._disposeSubscription();
       this._disposeInstances();
       this._instancesReady = false;
-      this._subscribe();
+      void this._subscribe();
     }
-    this._load();
+    void this._load();
   }
   set panel(value: PanelConfig) {
     this._panel = value;
-    this._load();
+    void this._load();
   }
   set narrow(value: boolean) {
     const narrow = !!value;
-    if (this.hasAttribute("narrow") === narrow) return;
+    if (this.hasAttribute("narrow") === narrow) {
+      return;
+    }
     this.toggleAttribute("narrow", narrow);
     this.flush();
   }
@@ -151,15 +156,16 @@ export class OccupiedPanel extends HTMLElement {
       });
       this.flush();
     }
-    this._load();
+    void this._load();
     window.addEventListener("beforeunload", this._beforeUnload);
-    window.addEventListener("location-changed", this._locationChanged);
-    window.addEventListener("popstate", this._locationChanged);
+    globalThis.addEventListener("location-changed", this._locationChanged);
+    globalThis.addEventListener("popstate", this._locationChanged);
     this._timer = setInterval(() => {
       for (const bar of this.shadowRoot.querySelectorAll<HTMLProgressElement>(
         "progress[data-start]",
-      ))
+      )) {
         bar.value = progress(bar.dataset.start!, bar.dataset.deadline!);
+      }
     }, 1000);
   }
   disconnectedCallback() {
@@ -175,17 +181,21 @@ export class OccupiedPanel extends HTMLElement {
     this._disposeInstances();
     this._instancesReady = false;
     clearInterval(this._timer);
-    if (this._timelineTimer) clearTimeout(this._timelineTimer);
+    if (this._timelineTimer) {
+      clearTimeout(this._timelineTimer);
+    }
     window.removeEventListener("beforeunload", this._beforeUnload);
-    window.removeEventListener("location-changed", this._locationChanged);
-    window.removeEventListener("popstate", this._locationChanged);
+    globalThis.removeEventListener("location-changed", this._locationChanged);
+    globalThis.removeEventListener("popstate", this._locationChanged);
   }
   private _locationChanged = () => void this._load();
   private _beforeUnload = (event: BeforeUnloadEvent) => {
-    if (this.dirty || this.stepEditor?.changed) {
-      event.preventDefault();
-      event.returnValue = "";
+    if (!(this.dirty || this.stepEditor?.changed)) {
+      return;
     }
+
+    event.preventDefault();
+    event.returnValue = "";
   };
 
   // --- Backend connection -------------------------------------------------
@@ -201,8 +211,9 @@ export class OccupiedPanel extends HTMLElement {
       this._instancesUnsubscribe ||
       this._instancesSubscribing ||
       !this.isConnected
-    )
+    ) {
       return;
+    }
     this._instancesSubscribing = true;
     const epoch = this._instancesEpoch;
     try {
@@ -210,7 +221,9 @@ export class OccupiedPanel extends HTMLElement {
         InstanceDocument[]
       >(
         (instances) => {
-          if (epoch !== this._instancesEpoch || !this.isConnected) return;
+          if (epoch !== this._instancesEpoch || !this.isConnected) {
+            return;
+          }
           this.instances = instances;
           this.flush();
           if (!this.selectedInstance?.loaded && this._loadedEntry) {
@@ -223,22 +236,31 @@ export class OccupiedPanel extends HTMLElement {
         },
         { type: "occupied/instances_subscribe" },
       );
-      if (epoch !== this._instancesEpoch || !this.isConnected) unsubscribe();
-      else this._instancesUnsubscribe = unsubscribe;
+      if (epoch !== this._instancesEpoch || !this.isConnected) {
+        unsubscribe();
+      } else {
+        this._instancesUnsubscribe = unsubscribe;
+      }
     } catch (error) {
-      if (epoch === this._instancesEpoch) this.fail(error);
+      if (epoch === this._instancesEpoch) {
+        this.fail(error);
+      }
     } finally {
-      if (epoch === this._instancesEpoch) this._instancesSubscribing = false;
+      if (epoch === this._instancesEpoch) {
+        this._instancesSubscribing = false;
+      }
     }
   }
   private _writeSelection(entry: string, replace = false) {
-    const url = new URL(window.location.href);
+    const url = new URL(location.href);
     url.searchParams.set("config_entry", entry);
-    window.history[replace ? "replaceState" : "pushState"](null, "", url);
-    window.dispatchEvent(new Event("location-changed"));
+    history[replace ? "replaceState" : "pushState"](null, "", url);
+    globalThis.dispatchEvent(new Event("location-changed"));
   }
   selectInstance(entry: string) {
-    if (entry === this.selectedEntry || this.busy) return;
+    if (entry === this.selectedEntry || this.busy) {
+      return;
+    }
     if (!this._canSwitchInstance()) {
       this.flush();
       return;
@@ -250,7 +272,7 @@ export class OccupiedPanel extends HTMLElement {
   private _canSwitchInstance() {
     return (
       !(this.dirty || (this.stepEditor && hasStepChanges(this.stepEditor))) ||
-      window.confirm(
+      globalThis.confirm(
         this.t("This instance has unsaved changes. Discard them and switch?"),
       )
     );
@@ -258,7 +280,9 @@ export class OccupiedPanel extends HTMLElement {
   private _resetInstance(entry: string) {
     this.epoch++;
     this._disposeSubscription();
-    if (this._timelineTimer) clearTimeout(this._timelineTimer);
+    if (this._timelineTimer) {
+      clearTimeout(this._timelineTimer);
+    }
     this._timelineTimer = null;
     this._timelineLoading = false;
     this._loadedEntry = null;
@@ -319,25 +343,34 @@ export class OccupiedPanel extends HTMLElement {
       !this._hass?.connection ||
       this._unsubscribe ||
       this._subscribing
-    )
+    ) {
       return;
+    }
     this._subscribing = true;
     const epoch = this._subscriptionEpoch;
     try {
       const unsubscribe =
         await this._hass.connection.subscribeMessage<RuntimeSnapshot>(
           (snapshot) => {
-            if (epoch === this._subscriptionEpoch && this.isConnected)
+            if (epoch === this._subscriptionEpoch && this.isConnected) {
               this._onSnapshot(snapshot);
+            }
           },
           { type: "occupied/subscribe", config_entry_id: this._loadedEntry },
         );
-      if (epoch !== this._subscriptionEpoch || !this.isConnected) unsubscribe();
-      else this._unsubscribe = unsubscribe;
+      if (epoch !== this._subscriptionEpoch || !this.isConnected) {
+        unsubscribe();
+      } else {
+        this._unsubscribe = unsubscribe;
+      }
     } catch (error) {
-      if (epoch === this._subscriptionEpoch) this.fail(error);
+      if (epoch === this._subscriptionEpoch) {
+        this.fail(error);
+      }
     } finally {
-      if (epoch === this._subscriptionEpoch) this._subscribing = false;
+      if (epoch === this._subscriptionEpoch) {
+        this._subscribing = false;
+      }
     }
   }
   private _onSnapshot(snapshot: RuntimeSnapshot) {
@@ -352,33 +385,41 @@ export class OccupiedPanel extends HTMLElement {
       snapshot.source_revision !== this.revision
     );
     this.flush();
-    if (this.tab === "timeline" && !this._timelineTimer)
+    if (this.tab === "timeline" && !this._timelineTimer) {
       this._timelineTimer = setTimeout(() => {
         this._timelineTimer = null;
-        this.loadTimeline();
+        void this.loadTimeline();
       }, 1000);
-    if (this.stale && !this.dirty && !this.busy && !this.stepEditor)
-      this.reloadSaved();
+    }
+    if (this.stale && !this.dirty && !this.busy && !this.stepEditor) {
+      void this.reloadSaved();
+    }
   }
   private async _load() {
-    if (!this.isConnected || !this._hass || !this._panel) return;
+    if (!this.isConnected || !this._hass || !this._panel) {
+      return;
+    }
     if (!this._instancesReady) {
       const epoch = this._instancesEpoch;
       try {
         const instances = await this._hass.callWS<InstanceDocument[]>({
           type: "occupied/instances",
         });
-        if (epoch !== this._instancesEpoch || !this.isConnected) return;
+        if (epoch !== this._instancesEpoch || !this.isConnected) {
+          return;
+        }
         this.instances = instances;
         this._instancesReady = true;
         void this._subscribeInstances();
       } catch (error) {
-        if (epoch === this._instancesEpoch) this.fail(error);
+        if (epoch === this._instancesEpoch) {
+          this.fail(error);
+        }
         return;
       }
     }
     const entry =
-      new URLSearchParams(window.location.search).get("config_entry") ||
+      new URLSearchParams(location.search).get("config_entry") ||
       this._panel.config?.config_entry_id ||
       this.selectedEntry ||
       this.instances.find((item) => item.loaded)?.config_entry_id ||
@@ -389,7 +430,9 @@ export class OccupiedPanel extends HTMLElement {
     }
     if (entry !== this.selectedEntry) {
       if (this.busy || !this._canSwitchInstance()) {
-        if (this.selectedEntry) this._writeSelection(this.selectedEntry, true);
+        if (this.selectedEntry) {
+          this._writeSelection(this.selectedEntry, true);
+        }
         return;
       }
       this._resetInstance(entry);
@@ -398,8 +441,9 @@ export class OccupiedPanel extends HTMLElement {
       !this.selectedInstance?.loaded ||
       this._loading ||
       this._loadedEntry === entry
-    )
+    ) {
       return;
+    }
     this._loading = true;
     this.flush();
     this._disposeSubscription();
@@ -412,7 +456,9 @@ export class OccupiedPanel extends HTMLElement {
         this.ws("status"),
         loadHaControls(),
       ]);
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       if (this.draft && (this.dirty || this.stepEditor)) {
         this.document = doc;
         this.saved = doc.program;
@@ -426,7 +472,7 @@ export class OccupiedPanel extends HTMLElement {
       this.previewSettings.date = doc.simulation_date;
       this.error = "";
       this.renderView();
-      this._subscribe();
+      void this._subscribe();
     } catch (error) {
       if (epoch === this.epoch) {
         this._loadedEntry = null;
@@ -442,14 +488,19 @@ export class OccupiedPanel extends HTMLElement {
 
   // --- Rendering ----------------------------------------------------------
 
-  /** Commit Svelte updates before callers focus a newly rendered field. */
+  /**
+  Commit Svelte updates before callers focus a newly rendered field.
+  */
   flush() {
-    if (this.component)
+    if (this.component) {
       flushSync(() => this.updates.set(++this.updateRevision));
+    }
   }
   renderView() {
     this.viewRevision++;
-    if (this.tab === "timeline") void this.loadTimeline();
+    if (this.tab === "timeline") {
+      void this.loadTimeline();
+    }
     this.flush();
   }
   navigate(tab: Tab) {
@@ -460,7 +511,9 @@ export class OccupiedPanel extends HTMLElement {
       });
       return;
     }
-    if (this.tab === tab) return;
+    if (this.tab === tab) {
+      return;
+    }
     this.tab = tab;
     this.renderView();
   }
@@ -483,7 +536,9 @@ export class OccupiedPanel extends HTMLElement {
   }
   confirmStepExit() {
     const action = this.pendingStepExit;
-    if (action) this.finishStepExit(action);
+    if (action) {
+      this.finishStepExit(action);
+    }
   }
   private finishStepExit(action: () => void) {
     this.pendingStepExit = null;
@@ -501,14 +556,16 @@ export class OccupiedPanel extends HTMLElement {
   }
   notices() {
     const t = this.t;
+    let programNotice = "";
+    if (this.stale) {
+      programNotice = t(
+        "The saved program changed. Your draft is preserved; reload the saved program before saving.",
+      );
+    } else if (this.dirty && !this.stepEditor) {
+      programNotice = t("Unsaved edits");
+    }
     return [
-      this.stale
-        ? t(
-            "The saved program changed. Your draft is preserved; reload the saved program before saving.",
-          )
-        : this.dirty && !this.stepEditor
-          ? t("Unsaved edits")
-          : "",
+      programNotice,
       this.document?.source === "file"
         ? t(
             "Managed file is authoritative. Export draft changes to your file, then reload.",
@@ -528,14 +585,18 @@ export class OccupiedPanel extends HTMLElement {
   }
   // --- Draft editing ------------------------------------------------------
 
-  /** Record the saved program from a backend document. */
+  /**
+  Record the saved program from a backend document.
+  */
   private adopt(doc: ProgramDocument) {
     this.document = doc;
     this.saved = doc.program;
     this.revision = doc.revision;
     this.stale = false;
   }
-  /** Replace the draft with the saved program, dropping local edits. */
+  /**
+  Replace the draft with the saved program, dropping local edits.
+  */
   private resetDraft() {
     this.draft = copy(this.saved);
     this.dirty = !!this.document.needs_apply;
@@ -549,16 +610,22 @@ export class OccupiedPanel extends HTMLElement {
     this.renderView();
   }
   change(path: Path, value: unknown, rerender = false) {
-    if (!path.length) this.draft = value as Program;
-    else set(this.draft, path, value);
+    if (path.length === 0) {
+      this.draft = value as Program;
+    } else {
+      set(this.draft, path, value);
+    }
     this.edited(rerender);
   }
   edited(rerender = false) {
     this.version++;
     this.dirty = true;
     this.validatedVersion = -1;
-    if (rerender) this.renderView();
-    else this.flush();
+    if (rerender) {
+      this.renderView();
+    } else {
+      this.flush();
+    }
   }
   fail(error: unknown) {
     this.error = errorMessage(error);
@@ -571,9 +638,13 @@ export class OccupiedPanel extends HTMLElement {
       this.fail(error);
     }
   }
-  /** Run one backend action at a time; failures are shown, not thrown. */
+  /**
+  Run one backend action at a time; failures are shown, not thrown.
+  */
   async run<T>(action: (epoch: number) => Promise<T>): Promise<T | undefined> {
-    if (this.busy) return;
+    if (this.busy) {
+      return;
+    }
     this.busy = true;
     this.error = "";
     this.flush();
@@ -582,7 +653,9 @@ export class OccupiedPanel extends HTMLElement {
       return await action(epoch);
     } catch (error) {
       if (epoch === this.epoch) {
-        if (isRevisionConflict(error)) this.stale = true;
+        if (isRevisionConflict(error)) {
+          this.stale = true;
+        }
         this.fail(error);
       }
     } finally {
@@ -595,12 +668,15 @@ export class OccupiedPanel extends HTMLElement {
   private showIssues(result: { valid?: boolean; issues?: Issue[] }) {
     this.issues = result.issues || [];
     this.flush();
-    if (result.valid === false && !this.issues.length)
+    if (result.valid === false && this.issues.length === 0) {
       this.fail(
         this.t("Preview contains infeasible dates. Review timeline issues."),
       );
+    }
   }
-  /** Saved-program warnings persist independently of temporary editor issues. */
+  /**
+  Saved-program warnings persist independently of temporary editor issues.
+  */
   visibleIssues() {
     const issues = new Map<string, Issue>();
     for (const issue of [...(this.document?.warnings || []), ...this.issues]) {
@@ -614,13 +690,17 @@ export class OccupiedPanel extends HTMLElement {
     }
     return [...issues.values()];
   }
-  /** Show a backend issue on the step editor field it belongs to. */
+  /**
+  Show a backend issue on the step editor field it belongs to.
+  */
   focusIssue(issue: Issue) {
     const editor = this.stepEditor;
-    if (!editor) return;
+    if (!editor) {
+      return;
+    }
     const path = issue.model_path || [],
       prefix = editor.candidatePath || [];
-    if (!prefix.length || !prefix.every((key, i) => path[i] === key)) {
+    if (prefix.length === 0 || prefix.some((key, i) => path[i] !== key)) {
       this.fail(
         this.t(
           "Finish or cancel this step to edit other configuration issues.",
@@ -643,13 +723,19 @@ export class OccupiedPanel extends HTMLElement {
       draft = copy(this.draft);
     return this.run(async (epoch) => {
       const result = await this.ws("editor_validate", { program: draft });
-      if (epoch !== this.epoch || version !== this.version) return;
+      if (epoch !== this.epoch || version !== this.version) {
+        return;
+      }
       this.showIssues(result);
-      if (result.valid) this.validatedVersion = version;
+      if (result.valid) {
+        this.validatedVersion = version;
+      }
     });
   }
   save(candidate?: Program) {
-    if (this.document?.source === "file" || this.stale) return;
+    if (this.document?.source === "file" || this.stale) {
+      return;
+    }
     const version = this.version,
       draft = copy(candidate || this.draft),
       expected = this.revision,
@@ -657,7 +743,9 @@ export class OccupiedPanel extends HTMLElement {
       submittedForm = editor ? copy(editor.form) : null;
     return this.run(async (epoch) => {
       const validation = await this.ws("editor_validate", { program: draft });
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       if (version !== this.version) {
         this.fail(
           this.t(
@@ -668,10 +756,11 @@ export class OccupiedPanel extends HTMLElement {
       }
       this.showIssues(validation);
       if (!validation.valid) {
-        if (editor && this.issues.length)
+        if (editor && this.issues.length > 0) {
           this.focusIssue(
             this.issues.find((i) => i.severity !== "warning") || this.issues[0],
           );
+        }
         return;
       }
       this.validatedVersion = version;
@@ -679,8 +768,12 @@ export class OccupiedPanel extends HTMLElement {
         program: draft,
         expected_revision: expected,
       });
-      if (epoch !== this.epoch) return;
-      if (!result.valid) return this.showIssues(result);
+      if (epoch !== this.epoch) {
+        return;
+      }
+      if (!result.valid) {
+        return this.showIssues(result);
+      }
       this.adopt({ ...this.document, ...result, needs_apply: false });
       if (editor && this.stepEditor === editor) {
         this.draft = copy(result.program);
@@ -702,19 +795,26 @@ export class OccupiedPanel extends HTMLElement {
         this.draft = copy(result.program);
         this.dirty = false;
         this.renderView();
-        if (editor)
+        if (editor) {
           this.shadowRoot
             .getElementById(`step-card-${editor.id}`)
             ?.focus({ preventScroll: true });
-      } else this.dirty = true;
+        }
+      } else {
+        this.dirty = true;
+      }
     });
   }
   async reloadSaved(discard = false) {
-    if (this.busy || ((this.dirty || this.stepEditor) && !discard)) return;
+    if (this.busy || ((this.dirty || this.stepEditor) && !discard)) {
+      return;
+    }
     const version = this.version;
     return this.run(async (epoch) => {
       const doc = await this.ws("program");
-      if (epoch !== this.epoch || version !== this.version) return;
+      if (epoch !== this.epoch || version !== this.version) {
+        return;
+      }
       this.adopt(doc);
       this.resetDraft();
       this.stepEditor = null;
@@ -727,13 +827,19 @@ export class OccupiedPanel extends HTMLElement {
         config_entry_id: this._loadedEntry,
         ...data,
       });
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       const status = await this.ws("status");
-      if (epoch === this.epoch) this.status = status;
+      if (epoch === this.epoch) {
+        this.status = status;
+      }
     });
   }
   async loadTimeline() {
-    if (this._timelineLoading) return;
+    if (this._timelineLoading) {
+      return;
+    }
     this._timelineLoading = true;
     const epoch = this.epoch;
     try {
@@ -741,26 +847,36 @@ export class OccupiedPanel extends HTMLElement {
         "timeline",
         this.timelineDate ? { date: this.timelineDate } : {},
       );
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       this.actual = doc;
       if (this.tab === "timeline") {
         this.viewRevision++;
         this.flush();
       }
     } catch (error) {
-      if (epoch === this.epoch) this.fail(error);
+      if (epoch === this.epoch) {
+        this.fail(error);
+      }
     } finally {
-      if (epoch === this.epoch) this._timelineLoading = false;
+      if (epoch === this.epoch) {
+        this._timelineLoading = false;
+      }
     }
   }
   runPreview() {
     const version = this.version,
       draft = copy(this.draft),
       options = { ...this.previewSettings };
-    if (!options.at) delete options.at;
+    if (!options.at) {
+      delete options.at;
+    }
     return this.run(async (epoch) => {
       const result = await this.ws("preview", { program: draft, ...options });
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       this.preview = result;
       this.previewVersion = version;
       this.previewProgram = draft;
@@ -772,21 +888,29 @@ export class OccupiedPanel extends HTMLElement {
       const result = await this.ws("diagnostics", {
         include_sensitive: this.includeSensitive,
       });
-      if (epoch === this.epoch) this.diagnostics = result;
+      if (epoch === this.epoch) {
+        this.diagnostics = result;
+      }
     });
   }
   selectSource(source: string, config_file?: string) {
     return this.run(async (epoch) => {
       const result = await this.ws("source", {
         source,
-        ...(config_file ? { config_file } : {}),
+        ...(config_file && { config_file }),
         expected_revision: this.revision,
       });
-      if (epoch !== this.epoch) return;
-      if (!result.valid) return this.showIssues(result);
+      if (epoch !== this.epoch) {
+        return;
+      }
+      if (!result.valid) {
+        return this.showIssues(result);
+      }
       this.adopt({ ...this.document, ...result });
       this.validatedVersion = -1;
-      if (!this.dirty) this.draft = copy(result.program);
+      if (!this.dirty) {
+        this.draft = copy(result.program);
+      }
       this.renderView();
     });
   }
@@ -794,7 +918,9 @@ export class OccupiedPanel extends HTMLElement {
     return this.run(async (epoch) => {
       const result = await this.ws("reload");
       const doc = await this.ws("program");
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       this.document = doc;
       this.saved = doc.program;
       this.stale = doc.revision !== this.revision;
@@ -803,7 +929,9 @@ export class OccupiedPanel extends HTMLElement {
         this.draft = copy(doc.program);
         this.stale = false;
       }
-      if (!result.valid) this.showIssues(result);
+      if (!result.valid) {
+        this.showIssues(result);
+      }
       this.renderView();
     });
   }
@@ -811,7 +939,9 @@ export class OccupiedPanel extends HTMLElement {
     const version = this.version;
     return this.run(async (epoch) => {
       const result = await this.ws("validate", { program: this.yaml });
-      if (epoch !== this.epoch || version !== this.version) return;
+      if (epoch !== this.epoch || version !== this.version) {
+        return;
+      }
       this.showIssues(result);
       if (result.valid) {
         this.draft = result.program;
@@ -822,9 +952,13 @@ export class OccupiedPanel extends HTMLElement {
   exportYaml() {
     return this.run(async (epoch) => {
       const result = await this.ws("export", { program: copy(this.draft) });
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       this.showIssues(result);
-      if (result.valid) this.yaml = result.yaml;
+      if (result.valid) {
+        this.yaml = result.yaml;
+      }
     });
   }
 }
@@ -838,20 +972,33 @@ function isRevisionConflict(error: unknown) {
   );
 }
 
-/** Map a backend issue path inside a step to the step editor field. */
+/**
+Map a backend issue path inside a step to the step editor field.
+*/
 function editorField(tail: Path, form: StepForm): string {
   const has = (key: string) => tail.includes(key),
     head = tail[0];
-  if (head === "name" || head === "days") return head;
+  if (head === "name" || head === "days") {
+    return head;
+  }
   if (head === "actions") {
-    if (has("targets")) return "entities";
-    if (form.kind === "service") return has("data") ? "data" : "service";
+    if (has("targets")) {
+      return "entities";
+    }
+    if (form.kind === "service") {
+      return has("data") ? "data" : "service";
+    }
     return form.kind === "scene" ? "entities" : "brightness";
   }
-  if (has("relative_to") || has("sun")) return "anchor";
-  if (form.timing.mode === "absolute") return has("latest") ? "end" : "start";
+  if (has("relative_to") || has("sun")) {
+    return "anchor";
+  }
+  if (form.timing.mode === "absolute") {
+    return has("latest") ? "end" : "start";
+  }
   return has("max") ? "endOffset" : "startOffset";
 }
 
-if (!customElements.get("occupied-panel"))
+if (!customElements.get("occupied-panel")) {
   customElements.define("occupied-panel", OccupiedPanel);
+}

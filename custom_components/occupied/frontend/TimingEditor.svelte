@@ -75,21 +75,12 @@
         key="end"
         label="End of window (optional)"
         value={time.end}
-        update={(value) => (time.end = value)}
+        update={(value) => {
+          time.end = value;
+          if (!value) editor.showEndTime = false;
+        }}
         options={{ type: "time", step: 1, optional: true }}
       ></EditorField>
-      <button
-        type="button"
-        class="text-button"
-        onclick={() => {
-          time.end = "";
-          editor.showEndTime = false;
-          changed("end");
-          focusEditor(panel, "start");
-        }}
-      >
-        {t("Remove end of window")}
-      </button>
     {:else}
       <button
         type="button"
@@ -187,7 +178,7 @@
       stepEntries(panel.draft),
       t,
       panel.catalog.time_sources,
-      { locale: panel._hass.locale },
+      { locale: panel._hass.locale, days: form.days },
     )}
   </p>
   {#if panel.document?.source === "file"}
