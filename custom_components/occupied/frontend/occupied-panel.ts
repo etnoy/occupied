@@ -26,6 +26,7 @@ import { writable } from "svelte/store";
 import App from "./App.svelte";
 import { loadHaControls } from "./ha-controls.js";
 import { hasStepChanges } from "./step-model.js";
+import { shiftScheduleDate } from "./time-format.js";
 
 type PanelConfig = { config?: { config_entry_id?: string } };
 
@@ -60,6 +61,7 @@ export class OccupiedPanel extends HTMLElement {
   timelineDate = "";
   preview?: PreviewResult;
   previewProgram!: Program;
+  previewDate = "";
   sourcePath?: string;
   yaml = "";
   includeSensitive = false;
@@ -303,6 +305,7 @@ export class OccupiedPanel extends HTMLElement {
       timelineDate: "",
       preview: undefined,
       previewProgram: undefined,
+      previewDate: "",
       sourcePath: undefined,
       yaml: "",
       includeSensitive: false,
@@ -852,21 +855,42 @@ export class OccupiedPanel extends HTMLElement {
       }
     }
   }
+  movePreviewDay(days: number) {
+    return this.selectPreviewDate(
+      shiftScheduleDate(
+        this.previewDate || this.document.simulation_date,
+        days,
+      ),
+    );
+  }
+  selectPreviewDate(date: string) {
+    if (this.busy || this.tab !== "preview" || date === this.previewDate) {
+      return;
+    }
+    this.previewDate = date;
+    return this.loadPreview();
+  }
   private loadPreview() {
     if (this.busy || !this.draft || !this.document) {
       return;
     }
     const version = this.version,
-      draft = copy(this.draft);
+      draft = copy(this.draft),
+      date = this.previewDate || this.document.simulation_date;
+    this.previewDate = date;
     this.preview = undefined;
     return this.run(async (epoch) => {
       const result = await this.ws("preview", {
         program: draft,
-        date: this.document.simulation_date,
+        date,
         days: 1,
         seed: "preview-1",
       });
-      if (epoch !== this.epoch || version !== this.version) {
+      if (
+        epoch !== this.epoch ||
+        version !== this.version ||
+        date !== this.previewDate
+      ) {
         return;
       }
       this.preview = result;

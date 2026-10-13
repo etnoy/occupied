@@ -58,6 +58,10 @@ const sv: Record<string, string> = {
   "Preview schedule": "Förhandsvisa schema",
   "Event details": "Händelsedetaljer",
   "Loading schedule…": "Laddar schema…",
+  "Schedule day": "Schemadag",
+  "Previous day": "Föregående dag",
+  "Next day": "Nästa dag",
+  Today: "Idag",
   "No steps are scheduled for this date.":
     "Inga steg är schemalagda detta datum.",
   "Planned device states": "Planerade enhetstillstånd",

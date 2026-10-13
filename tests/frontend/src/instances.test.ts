@@ -271,6 +271,49 @@ void test("a pending preview cannot replace a draft edited while it loads", asyn
   }
 });
 
+void test("preview day navigation loads adjacent dates and Today without overlapping requests", async () => {
+  const f = await fixture();
+  try {
+    f.documents.main.simulation_date = "2026-12-31";
+    f.panel.navigate("preview");
+    await settle();
+    assert.equal(f.panel.previewDate, "2026-12-31");
+    const requests = () =>
+      f.messages.filter((message) => message.type === "occupied/preview");
+    const seed = requests()[0].seed;
+    const pending = f.panel.movePreviewDay(1);
+    assert.equal(f.panel.previewDate, "2027-01-01");
+    assert.equal(f.panel.preview, undefined);
+    void f.panel.movePreviewDay(1);
+    assert.equal(f.panel.previewDate, "2027-01-01");
+    await pending;
+    assert.equal(requests().length, 2);
+    assert.equal(requests()[1].date, "2027-01-01");
+    await f.panel.movePreviewDay(-1);
+    assert.equal(f.panel.previewDate, "2026-12-31");
+    await f.panel.movePreviewDay(-1);
+    assert.equal(f.panel.previewDate, "2026-12-30");
+    await f.panel.selectPreviewDate(f.panel.document.simulation_date);
+    assert.equal(f.panel.previewDate, "2026-12-31");
+    const count = requests().length;
+    await f.panel.selectPreviewDate(f.panel.document.simulation_date);
+    assert.equal(requests().length, count);
+    assert.ok(
+      requests().every(
+        (message) => message.days === 1 && message.seed === seed,
+      ),
+    );
+    f.panel.selectInstance("guest");
+    await settle();
+    assert.equal(f.panel.previewDate, "");
+    f.panel.navigate("preview");
+    await settle();
+    assert.equal(f.panel.previewDate, "2026-10-06");
+  } finally {
+    f.restore();
+  }
+});
+
 void test("Configure routing selects the requested instance and switches all editor state", async () => {
   const f = await fixture();
   try {

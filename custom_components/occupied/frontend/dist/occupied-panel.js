@@ -953,6 +953,10 @@ var sv = {
   "Preview schedule": "F\xF6rhandsvisa schema",
   "Event details": "H\xE4ndelsedetaljer",
   "Loading schedule\u2026": "Laddar schema\u2026",
+  "Schedule day": "Schemadag",
+  "Previous day": "F\xF6reg\xE5ende dag",
+  "Next day": "N\xE4sta dag",
+  Today: "Idag",
   "No steps are scheduled for this date.":
     "Inga steg \xE4r schemalagda detta datum.",
   "Planned device states": "Planerade enhetstillst\xE5nd",
@@ -8094,6 +8098,11 @@ if (typeof window !== "undefined") {
 }
 
 // custom_components/occupied/frontend/time-format.ts
+function shiftScheduleDate(value, days2) {
+  const date = /* @__PURE__ */ new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days2);
+  return date.toISOString().slice(0, 10);
+}
 function formatScheduleDate(value, locale) {
   const weekday = new Intl.DateTimeFormat(locale?.language, {
     weekday: "long",
@@ -11442,29 +11451,33 @@ function PreviewStateGraph($$anchor, $$props) {
 }
 
 // custom_components/occupied/frontend/Timeline.svelte
-var root14 = from_html(`<p class="hint"> </p>`);
-var root_111 = from_html(`<span> </span>`);
-var root_27 = from_html(`<span tabindex="0"> </span>`);
-var root_36 = from_html(
+var root14 = from_html(`<h2> </h2>`);
+var root_111 = from_html(`<p class="hint"> </p>`);
+var root_27 = from_html(`<span> </span>`);
+var root_36 = from_html(`<span tabindex="0"> </span>`);
+var root_45 = from_html(
   `<div class="lane"><span class="lane-label"> </span> <div class="track"></div></div>`,
 );
-var root_45 = from_html(`<p> </p>`);
-var root_55 = from_html(
+var root_55 = from_html(`<p> </p>`);
+var root_63 = from_html(
   `<p class="hint"> </p> <p> </p> <div class="timeline" role="img"><div class="ruler"></div> <!></div> <!>`,
   1,
 );
-var root_63 = from_html(`<th scope="col"> </th>`);
-var root_7 = from_html(`<td> </td>`);
-var root_8 = from_html(`<tr></tr>`);
-var root_9 = from_html(
+var root_7 = from_html(`<th scope="col"> </th>`);
+var root_8 = from_html(`<td> </td>`);
+var root_9 = from_html(`<tr></tr>`);
+var root_10 = from_html(
   `<details><summary> </summary> <!> <input type="search"/> <div><div class="table-wrap"><table><thead><tr></tr></thead><tbody></tbody></table></div> <div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div></div></details>`,
 );
-var root_10 = from_html(`<section><h2> </h2> <!> <!> <!></section>`);
+var root_11 = from_html(`<!> <!> <!>`, 1);
+var root_122 = from_html(`<p role="status"> </p>`);
+var root_132 = from_html(`<section><!> <!></section>`);
 function Timeline($$anchor, $$props) {
   push($$props, true);
   let t = prop($$props, "t", 3, (text2) => text2),
     entityNames = prop($$props, "entityNames", 19, () => ({})),
-    preview = prop($$props, "preview", 3, false);
+    preview = prop($$props, "preview", 3, false),
+    loading = prop($$props, "loading", 3, false);
   let model = user_derived(() =>
     timelineModel($$props.doc, $$props.program, t(), $$props.locale),
   );
@@ -11489,379 +11502,424 @@ function Timeline($$anchor, $$props) {
   var fragment = comment();
   var node = first_child(fragment);
   {
-    var consequent_5 = ($$anchor2) => {
-      const computed_const = user_derived(() => {
-        return get2(model);
-      });
-      var section = root_10();
-      var h2 = child(section);
-      var text_1 = only_child(h2, true);
-      var node_1 = sibling(h2, 2);
+    var consequent_9 = ($$anchor2) => {
+      var section = root_132();
+      var node_1 = child(section);
       {
-        var consequent_1 = ($$anchor3) => {
+        var consequent = ($$anchor3) => {
           var fragment_1 = comment();
           var node_2 = first_child(fragment_1);
-          {
-            var consequent = ($$anchor4) => {
-              PreviewStateGraph($$anchor4, {
-                get plan() {
-                  return get2(computed_const).plan;
-                },
-                get program() {
-                  return $$props.program;
-                },
-                get hass() {
-                  return $$props.hass;
-                },
-                get names() {
-                  return entityNames();
-                },
-                get t() {
-                  return t();
-                },
-              });
-            };
-            var alternate = ($$anchor4) => {
-              var p = root14();
-              var text_2 = only_child(p, true);
-              template_effect(
-                ($0) => set_text(text_2, $0),
-                [() => t()("No steps are scheduled for this date.")],
-              );
-              append($$anchor4, p);
-            };
-            if_block(node_2, ($$render) => {
-              if (get2(model).events.length > 0) $$render(consequent);
-              else $$render(alternate, -1);
-            });
-          }
+          snippet(node_2, () => $$props.heading);
           append($$anchor3, fragment_1);
         };
-        var alternate_1 = ($$anchor3) => {
-          var fragment_3 = root_55();
-          var p_1 = first_child(fragment_3);
-          var text_3 = only_child(p_1, true);
-          var p_2 = sibling(p_1, 2);
-          var text_4 = only_child(p_2);
-          var div = sibling(p_2, 2);
-          var div_1 = child(div);
-          each(
-            div_1,
-            20,
-            () => Array.from({ length: 7 }),
-            index,
-            ($$anchor4, _, n) => {
-              var span = root_111();
-              set_style(span, `left:${(n / 6) * 100}%`);
-              var text_5 = only_child(span, true);
-              template_effect(
-                ($0) => set_text(text_5, $0),
-                [
-                  () =>
-                    stamp(
-                      new Date(
-                        get2(computed_const).start +
-                          (get2(computed_const).width * n) / 6,
-                      ).toISOString(),
-                      get2(computed_const).plan.timezone,
-                      $$props.locale,
-                    ),
-                ],
-              );
-              append($$anchor4, span);
-            },
+        var consequent_1 = ($$anchor3) => {
+          var h2 = root14();
+          var text_1 = only_child(h2, true);
+          template_effect(
+            ($0) => set_text(text_1, $0),
+            [
+              () =>
+                formatScheduleDate(
+                  get2(model).plan.simulation_date,
+                  $$props.locale,
+                ),
+            ],
           );
-          reset(div_1);
-          var node_3 = sibling(div_1, 2);
-          each(
-            node_3,
-            17,
-            () => get2(computed_const).lanes,
-            index,
-            ($$anchor4, $$item) => {
-              var $$array = user_derived(() => to_array(get2($$item), 2));
-              let id = () => get2($$array)[0];
-              let marks = () => get2($$array)[1];
-              var div_2 = root_36();
-              var span_1 = child(div_2);
-              var text_6 = only_child(span_1, true);
-              var div_3 = sibling(span_1, 2);
-              each(div_3, 21, marks, index, ($$anchor5, mark) => {
-                var span_2 = root_27();
-                var text_7 = only_child(span_2, true);
-                template_effect(() => {
-                  set_class(span_2, 1, clsx2(get2(mark).className));
-                  set_attribute2(span_2, "title", get2(mark).title);
-                  set_style(span_2, get2(mark).style);
-                  set_text(text_7, get2(mark).text || "");
-                });
-                append($$anchor5, span_2);
-              });
-              reset(div_3);
-              reset(div_2);
-              template_effect(
-                ($0) => set_text(text_6, $0),
-                [() => get2(computed_const).labels.get(id()) || id()],
-              );
-              append($$anchor4, div_2);
-            },
-          );
-          reset(div);
-          var node_4 = sibling(div, 2);
+          append($$anchor3, h2);
+        };
+        if_block(node_1, ($$render) => {
+          if ($$props.heading) $$render(consequent);
+          else if (get2(model)) $$render(consequent_1, 1);
+        });
+      }
+      var node_3 = sibling(node_1, 2);
+      {
+        var consequent_7 = ($$anchor3) => {
+          const computed_const = user_derived(() => {
+            return get2(model);
+          });
+          var fragment_2 = root_11();
+          var node_4 = first_child(fragment_2);
           {
-            var consequent_2 = ($$anchor4) => {
-              var p_3 = root_45();
-              var text_8 = only_child(p_3, true);
+            var consequent_3 = ($$anchor4) => {
+              var fragment_3 = comment();
+              var node_5 = first_child(fragment_3);
+              {
+                var consequent_2 = ($$anchor5) => {
+                  PreviewStateGraph($$anchor5, {
+                    get plan() {
+                      return get2(computed_const).plan;
+                    },
+                    get program() {
+                      return $$props.program;
+                    },
+                    get hass() {
+                      return $$props.hass;
+                    },
+                    get names() {
+                      return entityNames();
+                    },
+                    get t() {
+                      return t();
+                    },
+                  });
+                };
+                var alternate = ($$anchor5) => {
+                  var p = root_111();
+                  var text_2 = only_child(p, true);
+                  template_effect(
+                    ($0) => set_text(text_2, $0),
+                    [() => t()("No steps are scheduled for this date.")],
+                  );
+                  append($$anchor5, p);
+                };
+                if_block(node_5, ($$render) => {
+                  if (get2(model).events.length > 0) $$render(consequent_2);
+                  else $$render(alternate, -1);
+                });
+              }
+              append($$anchor4, fragment_3);
+            };
+            var alternate_1 = ($$anchor4) => {
+              var fragment_5 = root_63();
+              var p_1 = first_child(fragment_5);
+              var text_3 = only_child(p_1, true);
+              var p_2 = sibling(p_1, 2);
+              var text_4 = only_child(p_2);
+              var div = sibling(p_2, 2);
+              var div_1 = child(div);
+              each(
+                div_1,
+                20,
+                () => Array.from({ length: 7 }),
+                index,
+                ($$anchor5, _, n) => {
+                  var span = root_27();
+                  set_style(span, `left:${(n / 6) * 100}%`);
+                  var text_5 = only_child(span, true);
+                  template_effect(
+                    ($0) => set_text(text_5, $0),
+                    [
+                      () =>
+                        stamp(
+                          new Date(
+                            get2(computed_const).start +
+                              (get2(computed_const).width * n) / 6,
+                          ).toISOString(),
+                          get2(computed_const).plan.timezone,
+                          $$props.locale,
+                        ),
+                    ],
+                  );
+                  append($$anchor5, span);
+                },
+              );
+              reset(div_1);
+              var node_6 = sibling(div_1, 2);
+              each(
+                node_6,
+                17,
+                () => get2(computed_const).lanes,
+                index,
+                ($$anchor5, $$item) => {
+                  var $$array = user_derived(() => to_array(get2($$item), 2));
+                  let id = () => get2($$array)[0];
+                  let marks = () => get2($$array)[1];
+                  var div_2 = root_45();
+                  var span_1 = child(div_2);
+                  var text_6 = only_child(span_1, true);
+                  var div_3 = sibling(span_1, 2);
+                  each(div_3, 21, marks, index, ($$anchor6, mark) => {
+                    var span_2 = root_36();
+                    var text_7 = only_child(span_2, true);
+                    template_effect(() => {
+                      set_class(span_2, 1, clsx2(get2(mark).className));
+                      set_attribute2(span_2, "title", get2(mark).title);
+                      set_style(span_2, get2(mark).style);
+                      set_text(text_7, get2(mark).text || "");
+                    });
+                    append($$anchor6, span_2);
+                  });
+                  reset(div_3);
+                  reset(div_2);
+                  template_effect(
+                    ($0) => set_text(text_6, $0),
+                    [() => get2(computed_const).labels.get(id()) || id()],
+                  );
+                  append($$anchor5, div_2);
+                },
+              );
+              reset(div);
+              var node_7 = sibling(div, 2);
+              {
+                var consequent_4 = ($$anchor5) => {
+                  var p_3 = root_55();
+                  var text_8 = only_child(p_3, true);
+                  template_effect(
+                    ($0) => set_text(text_8, $0),
+                    [
+                      () =>
+                        t()(
+                          "Diagram limited to 800 marks; all events remain available in the table and export.",
+                        ),
+                    ],
+                  );
+                  append($$anchor5, p_3);
+                };
+                if_block(node_7, ($$render) => {
+                  if (get2(computed_const).drawn > 800) $$render(consequent_4);
+                });
+              }
               template_effect(
-                ($0) => set_text(text_8, $0),
+                ($0, $1, $2, $3, $4, $5) => {
+                  set_text(text_3, $0);
+                  set_text(
+                    text_4,
+                    `${$1 ?? ""}: ${$2 ?? ""} \xB7 ${$3 ?? ""}: ${$4 ?? ""}`,
+                  );
+                  set_attribute2(div, "aria-label", $5);
+                },
                 [
                   () =>
                     t()(
-                      "Diagram limited to 800 marks; all events remain available in the table and export.",
+                      "Markers are sampled steps; bars are planned activity/window intervals. Runtime end deadlines and handover ramps are shown separately. Times use the plan timezone.",
                     ),
-                ],
-              );
-              append($$anchor4, p_3);
-            };
-            if_block(node_4, ($$render) => {
-              if (get2(computed_const).drawn > 800) $$render(consequent_2);
-            });
-          }
-          template_effect(
-            ($0, $1, $2, $3, $4, $5) => {
-              set_text(text_3, $0);
-              set_text(
-                text_4,
-                `${$1 ?? ""}: ${$2 ?? ""} \xB7 ${$3 ?? ""}: ${$4 ?? ""}`,
-              );
-              set_attribute2(div, "aria-label", $5);
-            },
-            [
-              () =>
-                t()(
-                  "Markers are sampled steps; bars are planned activity/window intervals. Runtime end deadlines and handover ramps are shown separately. Times use the plan timezone.",
-                ),
-              () => t()("Behavior revision"),
-              () => get2(computed_const).plan.behavior_hash.slice(0, 12),
-              () => t()("Plan revision"),
-              () =>
-                get2(computed_const).plan.source_revision?.slice(0, 12) ||
-                "\u2014",
-              () =>
-                `${t()("Timeline")} ${get2(computed_const).plan.simulation_date}`,
-            ],
-          );
-          append($$anchor3, fragment_3);
-        };
-        if_block(node_1, ($$render) => {
-          if (preview() && $$props.hass) $$render(consequent_1);
-          else $$render(alternate_1, -1);
-        });
-      }
-      var node_5 = sibling(node_1, 2);
-      {
-        var consequent_4 = ($$anchor3) => {
-          var details = root_9();
-          var summary = child(details);
-          var text_9 = only_child(summary);
-          var node_6 = sibling(summary, 2);
-          {
-            var consequent_3 = ($$anchor4) => {
-              var p_4 = root14();
-              var text_10 = only_child(p_4);
-              template_effect(
-                ($0, $1, $2, $3) =>
-                  set_text(
-                    text_10,
-                    `${$0 ?? ""}: ${$1 ?? ""} \xB7 ${$2 ?? ""}: ${$3 ?? ""}`,
-                  ),
-                [
                   () => t()("Behavior revision"),
                   () => get2(computed_const).plan.behavior_hash.slice(0, 12),
                   () => t()("Plan revision"),
                   () =>
                     get2(computed_const).plan.source_revision?.slice(0, 12) ||
                     "\u2014",
+                  () =>
+                    `${t()("Timeline")} ${get2(computed_const).plan.simulation_date}`,
                 ],
               );
-              append($$anchor4, p_4);
+              append($$anchor4, fragment_5);
             };
-            if_block(node_6, ($$render) => {
-              if (preview()) $$render(consequent_3);
+            if_block(node_4, ($$render) => {
+              if (preview() && $$props.hass) $$render(consequent_3);
+              else $$render(alternate_1, -1);
             });
           }
-          var input = sibling(node_6, 2);
-          var div_4 = sibling(input, 2);
-          var div_5 = child(div_4);
-          var table = child(div_5);
-          var thead = child(table);
-          var tr = child(thead);
-          each(
-            tr,
-            20,
-            () => [
-              "Planned time",
-              "Source",
-              "Action",
-              "Targets",
-              "Outcome / actual time",
-            ],
-            index,
-            ($$anchor4, label) => {
-              var th = root_63();
-              var text_11 = only_child(th, true);
-              template_effect(
-                ($0) => set_text(text_11, $0),
-                [() => t()(label)],
-              );
-              append($$anchor4, th);
-            },
-          );
-          reset(tr);
-          reset(thead);
-          var tbody = sibling(thead);
-          each(
-            tbody,
-            21,
-            () =>
-              get2(filtered).slice(
-                get2(currentPage) * 50,
-                get2(currentPage) * 50 + 50,
-              ),
-            index,
-            ($$anchor4, event2) => {
-              var tr_1 = root_8();
+          var node_8 = sibling(node_4, 2);
+          {
+            var consequent_6 = ($$anchor4) => {
+              var details = root_10();
+              var summary = child(details);
+              var text_9 = only_child(summary);
+              var node_9 = sibling(summary, 2);
+              {
+                var consequent_5 = ($$anchor5) => {
+                  var p_4 = root_111();
+                  var text_10 = only_child(p_4);
+                  template_effect(
+                    ($0, $1, $2, $3) =>
+                      set_text(
+                        text_10,
+                        `${$0 ?? ""}: ${$1 ?? ""} \xB7 ${$2 ?? ""}: ${$3 ?? ""}`,
+                      ),
+                    [
+                      () => t()("Behavior revision"),
+                      () =>
+                        get2(computed_const).plan.behavior_hash.slice(0, 12),
+                      () => t()("Plan revision"),
+                      () =>
+                        get2(computed_const).plan.source_revision?.slice(
+                          0,
+                          12,
+                        ) || "\u2014",
+                    ],
+                  );
+                  append($$anchor5, p_4);
+                };
+                if_block(node_9, ($$render) => {
+                  if (preview()) $$render(consequent_5);
+                });
+              }
+              var input = sibling(node_9, 2);
+              var div_4 = sibling(input, 2);
+              var div_5 = child(div_4);
+              var table = child(div_5);
+              var thead = child(table);
+              var tr = child(thead);
               each(
-                tr_1,
-                21,
+                tr,
+                20,
                 () => [
-                  stamp(
-                    get2(event2).time,
-                    get2(computed_const).plan.timezone,
-                    $$props.locale,
-                  ),
-                  `${get2(computed_const).labels.get(get2(event2).source_id) || get2(event2).source_id} \xB7 ${get2(event2).kind}`,
-                  get2(event2).action.action,
-                  get2(event2).action.targets.entities.join(", "),
-                  `${get2(event2).outcome || t()("Preview only")} \xB7 ${stamp(get2(event2).actual_time || get2(event2).dispatch_time, get2(computed_const).plan.timezone, $$props.locale)}`,
+                  "Planned time",
+                  "Source",
+                  "Action",
+                  "Targets",
+                  "Outcome / actual time",
                 ],
                 index,
-                ($$anchor5, value) => {
-                  var td = root_7();
-                  var text_12 = only_child(td, true);
-                  template_effect(() => set_text(text_12, get2(value)));
-                  append($$anchor5, td);
+                ($$anchor5, label) => {
+                  var th = root_7();
+                  var text_11 = only_child(th, true);
+                  template_effect(
+                    ($0) => set_text(text_11, $0),
+                    [() => t()(label)],
+                  );
+                  append($$anchor5, th);
                 },
               );
-              reset(tr_1);
-              append($$anchor4, tr_1);
+              reset(tr);
+              reset(thead);
+              var tbody = sibling(thead);
+              each(
+                tbody,
+                21,
+                () =>
+                  get2(filtered).slice(
+                    get2(currentPage) * 50,
+                    get2(currentPage) * 50 + 50,
+                  ),
+                index,
+                ($$anchor5, event2) => {
+                  var tr_1 = root_9();
+                  each(
+                    tr_1,
+                    21,
+                    () => [
+                      stamp(
+                        get2(event2).time,
+                        get2(computed_const).plan.timezone,
+                        $$props.locale,
+                      ),
+                      `${get2(computed_const).labels.get(get2(event2).source_id) || get2(event2).source_id} \xB7 ${get2(event2).kind}`,
+                      get2(event2).action.action,
+                      get2(event2).action.targets.entities.join(", "),
+                      `${get2(event2).outcome || t()("Preview only")} \xB7 ${stamp(get2(event2).actual_time || get2(event2).dispatch_time, get2(computed_const).plan.timezone, $$props.locale)}`,
+                    ],
+                    index,
+                    ($$anchor6, value) => {
+                      var td = root_8();
+                      var text_12 = only_child(td, true);
+                      template_effect(() => set_text(text_12, get2(value)));
+                      append($$anchor6, td);
+                    },
+                  );
+                  reset(tr_1);
+                  append($$anchor5, tr_1);
+                },
+              );
+              reset(tbody);
+              reset(table);
+              reset(div_5);
+              var div_6 = sibling(div_5, 2);
+              var button = child(div_6);
+              var text_13 = only_child(button, true);
+              var span_3 = sibling(button, 2);
+              var text_14 = only_child(span_3);
+              var button_1 = sibling(span_3, 2);
+              var text_15 = only_child(button_1, true);
+              reset(div_6);
+              reset(div_4);
+              reset(details);
+              template_effect(
+                ($0, $1, $2, $3, $4, $5, $6) => {
+                  details.open = !preview();
+                  set_text(
+                    text_9,
+                    `${$0 ?? ""} \xB7 ${get2(model).events.length ?? ""}`,
+                  );
+                  set_attribute2(input, "placeholder", $1);
+                  set_attribute2(input, "aria-label", $2);
+                  button.disabled = get2(currentPage) === 0;
+                  set_text(text_13, $3);
+                  set_text(
+                    text_14,
+                    `${get2(filtered).length ?? ""}
+                ${$4 ?? ""} \xB7 ${get2(currentPage) + 1}/${$5 ?? ""}`,
+                  );
+                  button_1.disabled =
+                    (get2(currentPage) + 1) * 50 >= get2(filtered).length;
+                  set_text(text_15, $6);
+                },
+                [
+                  () => t()("Event details"),
+                  () => t()("Filter events"),
+                  () => t()("Filter events"),
+                  () => t()("Previous"),
+                  () => t()("events"),
+                  () => Math.max(1, Math.ceil(get2(filtered).length / 50)),
+                  () => t()("Next"),
+                ],
+              );
+              delegated("input", input, (event2) => {
+                set2(query, event2.currentTarget.value.toLowerCase(), true);
+                set2(page, 0);
+              });
+              delegated("click", button, () =>
+                set2(page, get2(currentPage) - 1),
+              );
+              delegated("click", button_1, () =>
+                set2(page, get2(currentPage) + 1),
+              );
+              append($$anchor4, details);
+            };
+            if_block(node_8, ($$render) => {
+              if (!preview() || get2(model).events.length > 0)
+                $$render(consequent_6);
+            });
+          }
+          var node_10 = sibling(node_8, 2);
+          each(
+            node_10,
+            17,
+            () =>
+              (
+                $$props.doc.issues ||
+                get2(computed_const).plan.issues ||
+                []
+              ).filter((issue) => !preview() || issue.severity !== "info"),
+            index,
+            ($$anchor4, issue) => {
+              var p_5 = root_55();
+              var text_16 = only_child(p_5);
+              template_effect(() => {
+                set_class(
+                  p_5,
+                  1,
+                  clsx2(
+                    get2(issue).severity === "warning" ||
+                      get2(issue).severity === "info"
+                      ? "hint"
+                      : "error",
+                  ),
+                );
+                set_text(
+                  text_16,
+                  `${get2(issue).code ?? ""}: ${get2(issue).message ?? ""}`,
+                );
+              });
+              append($$anchor4, p_5);
             },
           );
-          reset(tbody);
-          reset(table);
-          reset(div_5);
-          var div_6 = sibling(div_5, 2);
-          var button = child(div_6);
-          var text_13 = only_child(button, true);
-          var span_3 = sibling(button, 2);
-          var text_14 = only_child(span_3);
-          var button_1 = sibling(span_3, 2);
-          var text_15 = only_child(button_1, true);
-          reset(div_6);
-          reset(div_4);
-          reset(details);
-          template_effect(
-            ($0, $1, $2, $3, $4, $5, $6) => {
-              details.open = !preview();
-              set_text(
-                text_9,
-                `${$0 ?? ""} \xB7 ${get2(model).events.length ?? ""}`,
-              );
-              set_attribute2(input, "placeholder", $1);
-              set_attribute2(input, "aria-label", $2);
-              button.disabled = get2(currentPage) === 0;
-              set_text(text_13, $3);
-              set_text(
-                text_14,
-                `${get2(filtered).length ?? ""}
-              ${$4 ?? ""} \xB7 ${get2(currentPage) + 1}/${$5 ?? ""}`,
-              );
-              button_1.disabled =
-                (get2(currentPage) + 1) * 50 >= get2(filtered).length;
-              set_text(text_15, $6);
-            },
-            [
-              () => t()("Event details"),
-              () => t()("Filter events"),
-              () => t()("Filter events"),
-              () => t()("Previous"),
-              () => t()("events"),
-              () => Math.max(1, Math.ceil(get2(filtered).length / 50)),
-              () => t()("Next"),
-            ],
-          );
-          delegated("input", input, (event2) => {
-            set2(query, event2.currentTarget.value.toLowerCase(), true);
-            set2(page, 0);
-          });
-          delegated("click", button, () => set2(page, get2(currentPage) - 1));
-          delegated("click", button_1, () => set2(page, get2(currentPage) + 1));
-          append($$anchor3, details);
+          append($$anchor3, fragment_2);
         };
-        if_block(node_5, ($$render) => {
-          if (!preview() || get2(model).events.length > 0)
-            $$render(consequent_4);
+        var consequent_8 = ($$anchor3) => {
+          var p_6 = root_122();
+          var text_17 = only_child(p_6, true);
+          template_effect(
+            ($0) => set_text(text_17, $0),
+            [() => t()("Loading schedule\u2026")],
+          );
+          append($$anchor3, p_6);
+        };
+        if_block(node_3, ($$render) => {
+          if (get2(model)) $$render(consequent_7);
+          else if (loading()) $$render(consequent_8, 1);
         });
       }
-      var node_7 = sibling(node_5, 2);
-      each(
-        node_7,
-        17,
-        () =>
-          ($$props.doc.issues || get2(computed_const).plan.issues || []).filter(
-            (issue) => !preview() || issue.severity !== "info",
-          ),
-        index,
-        ($$anchor3, issue) => {
-          var p_5 = root_45();
-          var text_16 = only_child(p_5);
-          template_effect(() => {
-            set_class(
-              p_5,
-              1,
-              clsx2(
-                get2(issue).severity === "warning" ||
-                  get2(issue).severity === "info"
-                  ? "hint"
-                  : "error",
-              ),
-            );
-            set_text(
-              text_16,
-              `${get2(issue).code ?? ""}: ${get2(issue).message ?? ""}`,
-            );
-          });
-          append($$anchor3, p_5);
-        },
-      );
       reset(section);
-      template_effect(
-        ($0) => set_text(text_1, $0),
-        [
-          () =>
-            formatScheduleDate(
-              get2(computed_const).plan.simulation_date,
-              $$props.locale,
-            ),
-        ],
-      );
       append($$anchor2, section);
     };
     var alternate_2 = ($$anchor2) => {
-      var p_6 = root_45();
-      var text_17 = only_child(p_6, true);
+      var p_7 = root_55();
+      var text_18 = only_child(p_7, true);
       template_effect(
-        ($0) => set_text(text_17, $0),
+        ($0) => set_text(text_18, $0),
         [
           () =>
             t()(
@@ -11869,10 +11927,10 @@ function Timeline($$anchor, $$props) {
             ),
         ],
       );
-      append($$anchor2, p_6);
+      append($$anchor2, p_7);
     };
     if_block(node, ($$render) => {
-      if (get2(model)) $$render(consequent_5);
+      if (get2(model) || $$props.heading) $$render(consequent_9);
       else $$render(alternate_2, -1);
     });
   }
@@ -11882,9 +11940,76 @@ function Timeline($$anchor, $$props) {
 delegate(["input", "click"]);
 
 // custom_components/occupied/frontend/PreviewView.svelte
-var root15 = from_html(`<p role="status"> </p>`);
+var root15 = from_html(
+  `<div class="schedule-heading svelte-5w63kc"><h2 aria-live="polite" class="svelte-5w63kc"> </h2> <div class="day-navigation svelte-5w63kc" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-5w63kc"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
+  2,
+);
+var $$css2 = {
+  hash: "svelte-5w63kc",
+  code: ".schedule-heading.svelte-5w63kc {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-bottom:20px;}h2.svelte-5w63kc {margin:0;}.day-navigation.svelte-5w63kc {display:flex;align-items:center;gap:4px;}.day-navigation.svelte-5w63kc button:where(.svelte-5w63kc) {margin:0;}",
+};
 function PreviewView($$anchor, $$props) {
   push($$props, true);
+  append_styles($$anchor, $$css2);
+  const dayHeading = ($$anchor2) => {
+    var div = root15();
+    var h2 = child(div);
+    var text2 = only_child(h2, true);
+    var div_1 = sibling(h2, 2);
+    var ha_icon_button = child(div_1);
+    template_effect(
+      ($0) => set_custom_element_data(ha_icon_button, "title", $0),
+      [() => get2(t)("Previous day")],
+    );
+    action(
+      ha_icon_button,
+      ($$node, $$action_arg) => properties?.($$node, $$action_arg),
+      () => ({
+        path: previousIcon,
+        label: get2(t)("Previous day"),
+        disabled: $$props.panel.busy,
+      }),
+    );
+    var button = sibling(ha_icon_button, 2);
+    var text_1 = only_child(button, true);
+    var ha_icon_button_1 = sibling(button, 2);
+    template_effect(
+      ($0) => set_custom_element_data(ha_icon_button_1, "title", $0),
+      [() => get2(t)("Next day")],
+    );
+    action(
+      ha_icon_button_1,
+      ($$node, $$action_arg) => properties?.($$node, $$action_arg),
+      () => ({
+        path: nextIcon,
+        label: get2(t)("Next day"),
+        disabled: $$props.panel.busy,
+      }),
+    );
+    reset(div_1);
+    reset(div);
+    template_effect(
+      ($0, $1, $2) => {
+        set_text(text2, $0);
+        set_attribute2(div_1, "aria-label", $1);
+        button.disabled =
+          $$props.panel.busy ||
+          get2(date) === $$props.panel.document.simulation_date;
+        set_text(text_1, $2);
+      },
+      [
+        () => formatScheduleDate(get2(date), $$props.panel._hass.locale),
+        () => get2(t)("Schedule day"),
+        () => get2(t)("Today"),
+      ],
+    );
+    delegated("click", ha_icon_button, () => $$props.panel.movePreviewDay(-1));
+    delegated("click", button, () =>
+      $$props.panel.selectPreviewDate($$props.panel.document.simulation_date),
+    );
+    delegated("click", ha_icon_button_1, () => $$props.panel.movePreviewDay(1));
+    append($$anchor2, div);
+  };
   let data = user_derived(() => {
     $$props.revision;
     const t2 = $$props.panel.t;
@@ -11892,6 +12017,13 @@ function PreviewView($$anchor, $$props) {
   });
   let t = user_derived(() => get2(data).t);
   let plan = user_derived(() => $$props.panel.preview?.plans[0]);
+  let date = user_derived(
+    () => $$props.panel.previewDate || $$props.panel.document.simulation_date,
+  );
+  const previousIcon =
+    "M15.41,16.59L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.59Z";
+  const nextIcon =
+    "M8.59,16.59L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.59Z";
   let entityNames = user_derived(() =>
     Object.fromEntries(
       $$props.panel.catalog.entities.map((entity) => [
@@ -11900,52 +12032,39 @@ function PreviewView($$anchor, $$props) {
       ]),
     ),
   );
-  var fragment = comment();
-  var node = first_child(fragment);
   {
-    var consequent = ($$anchor2) => {
-      {
-        let $0 = user_derived(() => ({ plan: get2(plan) }));
-        Timeline($$anchor2, {
-          get doc() {
-            return get2($0);
-          },
-          get program() {
-            return $$props.panel.previewProgram;
-          },
-          get t() {
-            return get2(t);
-          },
-          get locale() {
-            return $$props.panel._hass.locale;
-          },
-          get hass() {
-            return $$props.panel._hass;
-          },
-          get entityNames() {
-            return get2(entityNames);
-          },
-          preview: true,
-        });
-      }
-    };
-    var consequent_1 = ($$anchor2) => {
-      var p = root15();
-      var text2 = only_child(p, true);
-      template_effect(
-        ($0) => set_text(text2, $0),
-        [() => get2(t)("Loading schedule\u2026")],
-      );
-      append($$anchor2, p);
-    };
-    if_block(node, ($$render) => {
-      if (get2(plan)) $$render(consequent);
-      else if ($$props.panel.busy) $$render(consequent_1, 1);
+    let $0 = user_derived(() => ({ plan: get2(plan) }));
+    Timeline($$anchor, {
+      get doc() {
+        return get2($0);
+      },
+      get program() {
+        return $$props.panel.previewProgram;
+      },
+      get t() {
+        return get2(t);
+      },
+      get locale() {
+        return $$props.panel._hass.locale;
+      },
+      get hass() {
+        return $$props.panel._hass;
+      },
+      get entityNames() {
+        return get2(entityNames);
+      },
+      preview: true,
+      get heading() {
+        return dayHeading;
+      },
+      get loading() {
+        return $$props.panel.busy;
+      },
     });
   }
-  append($$anchor, fragment);
   pop();
 }
+delegate(["click"]);
 
 // custom_components/occupied/frontend/ConfigurationView.svelte
 var root16 = from_html(`<p> </p>`);
@@ -12461,8 +12580,8 @@ var root_72 = from_html(`<p class="hint"> </p>`);
 var root_82 = from_html(`<p class="banner" role="status"> </p>`);
 var root_92 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_102 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
-var root_11 = from_html(`<p> </p> <button type="button"> </button>`, 1);
-var root_122 = from_html(
+var root_116 = from_html(`<p> </p> <button type="button"> </button>`, 1);
+var root_123 = from_html(
   `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><header><div><!> <!> <!></div></header> <!> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav aria-label="Occupied"></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
   3,
 );
@@ -12600,7 +12719,7 @@ function App($$anchor, $$props) {
     ["routines", "Your steps"],
     ["settings", "Settings"],
   ];
-  var fragment_2 = root_122();
+  var fragment_2 = root_123();
   var ha_top_app_bar_fixed = first_child(fragment_2);
   set_custom_element_data(ha_top_app_bar_fixed, "back-button", true);
   template_effect(
@@ -12856,7 +12975,7 @@ function App($$anchor, $$props) {
           var node_11 = first_child(fragment_7);
           {
             var consequent_8 = ($$anchor4) => {
-              var fragment_8 = root_11();
+              var fragment_8 = root_116();
               var p_7 = first_child(fragment_8);
               var text_18 = only_child(p_7, true);
               var button_6 = sibling(p_7, 2);
@@ -13070,6 +13189,7 @@ var OccupiedPanel = class extends HTMLElement {
   timelineDate = "";
   preview;
   previewProgram;
+  previewDate = "";
   sourcePath;
   yaml = "";
   includeSensitive = false;
@@ -13301,6 +13421,7 @@ var OccupiedPanel = class extends HTMLElement {
       timelineDate: "",
       preview: void 0,
       previewProgram: void 0,
+      previewDate: "",
       sourcePath: void 0,
       yaml: "",
       includeSensitive: false,
@@ -13838,21 +13959,42 @@ var OccupiedPanel = class extends HTMLElement {
       }
     }
   }
+  movePreviewDay(days2) {
+    return this.selectPreviewDate(
+      shiftScheduleDate(
+        this.previewDate || this.document.simulation_date,
+        days2,
+      ),
+    );
+  }
+  selectPreviewDate(date) {
+    if (this.busy || this.tab !== "preview" || date === this.previewDate) {
+      return;
+    }
+    this.previewDate = date;
+    return this.loadPreview();
+  }
   loadPreview() {
     if (this.busy || !this.draft || !this.document) {
       return;
     }
     const version = this.version,
-      draft = copy(this.draft);
+      draft = copy(this.draft),
+      date = this.previewDate || this.document.simulation_date;
+    this.previewDate = date;
     this.preview = void 0;
     return this.run(async (epoch) => {
       const result = await this.ws("preview", {
         program: draft,
-        date: this.document.simulation_date,
+        date,
         days: 1,
         seed: "preview-1",
       });
-      if (epoch !== this.epoch || version !== this.version) {
+      if (
+        epoch !== this.epoch ||
+        version !== this.version ||
+        date !== this.previewDate
+      ) {
         return;
       }
       this.preview = result;

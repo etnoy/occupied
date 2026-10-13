@@ -1,4 +1,9 @@
 // Generated from time-format.ts by pnpm run build. Do not edit.
+export function shiftScheduleDate(value, days) {
+  const date = new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
 export function formatScheduleDate(value, locale) {
   const weekday = new Intl.DateTimeFormat(locale?.language, {
     weekday: "long",

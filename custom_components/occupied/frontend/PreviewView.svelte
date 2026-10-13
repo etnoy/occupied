@@ -2,6 +2,8 @@
   import type { OccupiedPanel } from "./occupied-panel.js";
 
   import Timeline from "./Timeline.svelte";
+  import { properties } from "./dom.js";
+  import { formatScheduleDate } from "./time-format.js";
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
   let data = $derived.by(() => {
@@ -11,6 +13,11 @@
   });
   let { t } = $derived(data);
   let plan = $derived(panel.preview?.plans[0]);
+  let date = $derived(panel.previewDate || panel.document.simulation_date);
+  const previousIcon =
+    "M15.41,16.59L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.59Z";
+  const nextIcon =
+    "M8.59,16.59L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.59Z";
   let entityNames = $derived(
     Object.fromEntries(
       panel.catalog.entities.map((entity) => [entity.entity_id, entity.name]),
@@ -18,16 +25,73 @@
   );
 </script>
 
-{#if plan}
-  <Timeline
-    doc={{ plan }}
-    program={panel.previewProgram}
-    {t}
-    locale={panel._hass.locale}
-    hass={panel._hass}
-    {entityNames}
-    preview
-  />
-{:else if panel.busy}
-  <p role="status">{t("Loading schedule…")}</p>
-{/if}
+{#snippet dayHeading()}
+  <div class="schedule-heading">
+    <h2 aria-live="polite">{formatScheduleDate(date, panel._hass.locale)}</h2>
+    <div class="day-navigation" role="group" aria-label={t("Schedule day")}>
+      <!-- HA supplies a keyboard-accessible button inside its shadow root. -->
+      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+      <ha-icon-button
+        title={t("Previous day")}
+        use:properties={{
+          path: previousIcon,
+          label: t("Previous day"),
+          disabled: panel.busy,
+        }}
+        onclick={() => panel.movePreviewDay(-1)}
+      ></ha-icon-button>
+      <button
+        type="button"
+        class="text-button"
+        disabled={panel.busy || date === panel.document.simulation_date}
+        onclick={() => panel.selectPreviewDate(panel.document.simulation_date)}
+        >{t("Today")}</button
+      >
+      <!-- HA supplies a keyboard-accessible button inside its shadow root. -->
+      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+      <ha-icon-button
+        title={t("Next day")}
+        use:properties={{
+          path: nextIcon,
+          label: t("Next day"),
+          disabled: panel.busy,
+        }}
+        onclick={() => panel.movePreviewDay(1)}
+      ></ha-icon-button>
+    </div>
+  </div>
+{/snippet}
+
+<Timeline
+  doc={{ plan }}
+  program={panel.previewProgram}
+  {t}
+  locale={panel._hass.locale}
+  hass={panel._hass}
+  {entityNames}
+  preview
+  heading={dayHeading}
+  loading={panel.busy}
+/>
+
+<style>
+  .schedule-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-bottom: 20px;
+  }
+  h2 {
+    margin: 0;
+  }
+  .day-navigation {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .day-navigation button {
+    margin: 0;
+  }
+</style>

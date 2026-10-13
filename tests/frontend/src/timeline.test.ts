@@ -2,6 +2,19 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { previewStateHistory } from "@occupied/timeline.js";
 import type { Plan, PlannedEvent, Program } from "@occupied/types.js";
+import { shiftScheduleDate } from "@occupied/time-format.js";
+
+void test("schedule navigation shifts calendar days across DST, leap days, and year boundaries", () => {
+  for (const [date, offset, expected] of [
+    ["2026-03-29", 1, "2026-03-30"],
+    ["2026-10-25", -1, "2026-10-24"],
+    ["2024-02-28", 1, "2024-02-29"],
+    ["2024-03-01", -1, "2024-02-29"],
+    ["2026-12-31", 1, "2027-01-01"],
+  ] as const) {
+    assert.equal(shiftScheduleDate(date, offset), expected);
+  }
+});
 
 const time = (hour: number) =>
   `2026-10-13T${String(hour).padStart(2, "0")}:00:00Z`;
