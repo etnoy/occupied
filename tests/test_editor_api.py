@@ -372,3 +372,36 @@ async def test_catalog_discovers_time_entities_and_calendar_bounds(hass):
     assert context.time_sources["calendar.work"]["end_time"] == "2026-10-06 10:00:00"
     hass.states.async_set("calendar.work", "unavailable", {"start_time": "2026-10-06 09:00:00"})
     assert planning_context(hass).time_sources["calendar.work"]["start_time"] is None
+
+
+async def test_yaml_editor_save_validates_before_persisting(
+    hass, editor_entry, program_dict, devices, hass_ws_client
+):
+    import yaml
+
+    assert await hass.config_entries.async_setup(editor_entry.entry_id)
+    client = await hass_ws_client(hass)
+    before = program_document(editor_entry.runtime_data)
+    invalid = await request(
+        client,
+        "occupied/save",
+        editor_entry,
+        program="name: [",
+        expected_revision=before["revision"],
+    )
+    assert invalid["success"] and not invalid["result"]["valid"]
+    assert invalid["result"]["issues"]
+    assert program_document(editor_entry.runtime_data) == before
+    code = yaml.safe_dump(program_dict | {"name": "Saved from YAML"})
+    saved = await request(
+        client,
+        "occupied/save",
+        editor_entry,
+        2,
+        program=code,
+        expected_revision=before["revision"],
+    )
+    assert saved["success"] and saved["result"]["valid"]
+    assert saved["result"]["program"]["name"] == "Saved from YAML"
+    assert editor_entry.runtime_data.program.name == "Saved from YAML"
+    assert not devices

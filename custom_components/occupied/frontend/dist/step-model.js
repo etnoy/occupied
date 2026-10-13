@@ -560,7 +560,12 @@ function scheduleDaySuffix(selected, t) {
     sat: "Saturdays",
     sun: "Sundays",
   };
-  return ` ${t("on")} ${selected.map((day) => t(weekdayNames[day] || day)).join(", ")}`;
+  const dayNames = selected.map((day) => t(weekdayNames[day] || day));
+  const lastDay = dayNames.pop();
+  const dayList = dayNames.length
+    ? `${dayNames.join(", ")}${dayNames.length > 1 ? "," : ""} ${t("and")} ${lastDay}`
+    : lastDay;
+  return ` ${t("on")} ${dayList}`;
 }
 export function timingSummary(
   entry,

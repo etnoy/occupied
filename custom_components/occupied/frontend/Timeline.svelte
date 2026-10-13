@@ -15,6 +15,7 @@
     entityNames = {},
     heading,
     loading = false,
+    showLoading = loading,
   }: {
     plan?: Plan;
     program: Program;
@@ -24,6 +25,7 @@
     entityNames?: Record<string, string>;
     heading?: Snippet;
     loading?: boolean;
+    showLoading?: boolean;
   } = $props();
   let labels = $derived(
     new Map(
@@ -117,7 +119,7 @@
         {issue.code}: {issue.message}
       </p>
     {/each}
-  {:else if loading}
+  {:else if showLoading}
     <p role="status">{t("Loading schedule…")}</p>
   {/if}
 </section>

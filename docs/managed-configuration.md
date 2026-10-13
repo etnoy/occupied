@@ -2,17 +2,17 @@
 
 GUI storage, YAML snapshot import and managed-file authority are explicit choices. Snapshot import copies the program into a draft and GUI storage after saving. Managed mode reads a YAML file under HA's config directory, including a read-only mounted file, and keeps that file authoritative. Occupied never writes it or edits Puppet-managed configuration.
 
-Each integration entry can select its own managed file. Use the panel's instance selector or Configure on the integration entry before changing sources. Permissions, reload locks, watchers, Repairs, seeds and runtime stores are independent. Reload services and CLI deployment commands always target a specific `config_entry_id`/`--entry-id`. See [named YAML bootstrap](installation.md#unattended-managed-setup) for unattended creation of multiple entries. Each source file remains a complete program; identifiers inside different programs can be reused.
+Each integration entry can select its own managed file through setup or the authenticated `occupied/source` API. Permissions, reload locks, watchers, Repairs, seeds and runtime stores are independent. Reload services and CLI deployment commands always target a specific `config_entry_id`/`--entry-id`. See [named YAML bootstrap](installation.md#unattended-managed-setup) for unattended creation of multiple entries. Each source file remains a complete program; identifiers inside different programs can be reused.
 
 The panel warns when loaded instances declare the same controlled entities, including resources retained by active cleanup snapshots. Instances do not coordinate device ownership. Scene contents and undeclared targets inside opaque service data cannot be inferred; use separate device targets when independent behavior is required.
 
 ## Read, preview and change the source
 
-Choose a file during native setup, use [unattended bootstrap](installation.md#unattended-managed-setup), or open **Occupied → Settings → Advanced settings**, select **Import, export and managed files**, and choose **Use managed file**. Enter its relative path. The complete candidate must validate and compile before replacing the saved program. Absolute paths, traversal and symlinks outside the config directory are rejected; files are bounded to 1 MiB and read in HA's executor.
+Choose a file during native setup, use [unattended bootstrap](installation.md#unattended-managed-setup), or select it through the authenticated `occupied/source` API with its relative path. The complete candidate must validate and compile before replacing the saved program. Absolute paths, traversal and symlinks outside the config directory are rejected; files are bounded to 1 MiB and read in HA's executor.
 
 File mode exposes the complete saved program. The routine builder finishes with **Add to draft**; forms, previews, ID migration and export can create a temporary draft. **Save changes** is disabled and both backend save/apply APIs enforce file authority. Export the draft, review/deploy the resulting YAML, then reload the managed source. Importing a local browser file does not select it as the managed source.
 
-**Copy saved program to GUI storage** explicitly copies the current valid running program and changes authority. It leaves temporary draft edits separate; validate/save them afterward if desired. Invalid initial files must be corrected before they can be copied. Invalid source-switch candidates and stale revisions leave the existing source unchanged. Source switches keep one running engine and preserve already-started activity cleanup snapshots and deadlines.
+Selecting GUI storage through the `occupied/source` API explicitly copies the current valid running program and changes authority. It leaves temporary draft edits separate; validate/save them afterward if desired. Invalid initial files must be corrected before they can be copied. Invalid source-switch candidates and stale revisions leave the existing source unchanged. Source switches keep one running engine and preserve already-started activity cleanup snapshots and deadlines.
 
 ## Reload and failure recovery
 

@@ -57,8 +57,12 @@ export class OccupiedPanel extends HTMLElement {
   preview?: PreviewResult;
   previewProgram!: Program;
   previewDate = "";
-  sourcePath?: string;
   yaml = "";
+  yamlSaved = "";
+
+  get yamlDirty() {
+    return this.yaml !== this.yamlSaved;
+  }
 
   _hass!: HomeAssistant;
   _loading = false;
@@ -163,7 +167,13 @@ export class OccupiedPanel extends HTMLElement {
   }
   private _locationChanged = () => void this._load();
   private _beforeUnload = (event: BeforeUnloadEvent) => {
-    if (!(this.dirty || (this.stepEditor && hasStepChanges(this.stepEditor)))) {
+    if (
+      !(
+        this.dirty ||
+        this.yamlDirty ||
+        (this.stepEditor && hasStepChanges(this.stepEditor))
+      )
+    ) {
       return;
     }
 
@@ -244,7 +254,11 @@ export class OccupiedPanel extends HTMLElement {
   }
   private _canSwitchInstance() {
     return (
-      !(this.dirty || (this.stepEditor && hasStepChanges(this.stepEditor))) ||
+      !(
+        this.dirty ||
+        this.yamlDirty ||
+        (this.stepEditor && hasStepChanges(this.stepEditor))
+      ) ||
       globalThis.confirm(
         this.t("This instance has unsaved changes. Discard them and switch?"),
       )
@@ -276,8 +290,8 @@ export class OccupiedPanel extends HTMLElement {
       preview: undefined,
       previewProgram: undefined,
       previewDate: "",
-      sourcePath: undefined,
       yaml: "",
+      yamlSaved: "",
     });
     this.renderView();
   }
@@ -413,7 +427,7 @@ export class OccupiedPanel extends HTMLElement {
       if (epoch !== this.epoch) {
         return;
       }
-      if (this.draft && (this.dirty || this.stepEditor)) {
+      if (this.draft && (this.dirty || this.yamlDirty || this.stepEditor)) {
         this.document = doc;
         this.saved = doc.program;
         this.stale = doc.revision !== this.revision;
@@ -512,7 +526,7 @@ export class OccupiedPanel extends HTMLElement {
       programNotice = t(
         "The saved program changed. Your draft is preserved; reload the saved program before saving.",
       );
-    } else if (this.dirty && !this.stepEditor) {
+    } else if ((this.dirty || this.yamlDirty) && !this.stepEditor) {
       programNotice = t("Unsaved edits");
     }
     return [
@@ -552,6 +566,7 @@ export class OccupiedPanel extends HTMLElement {
   }
   discardEdits() {
     this.resetDraft();
+    this.yaml = this.yamlSaved;
     this.error = "";
     this.renderView();
   }
@@ -752,7 +767,10 @@ export class OccupiedPanel extends HTMLElement {
     });
   }
   async reloadSaved(discard = false) {
-    if (this.busy || ((this.dirty || this.stepEditor) && !discard)) {
+    if (
+      this.busy ||
+      ((this.dirty || this.yamlDirty || this.stepEditor) && !discard)
+    ) {
       return;
     }
     const version = this.version;
@@ -809,12 +827,19 @@ export class OccupiedPanel extends HTMLElement {
       this.showIssues(result);
     });
   }
-  selectSource(source: string, config_file?: string) {
+  saveYaml() {
+    if (this.document?.source === "file" || this.stale) {
+      return;
+    }
+    const yaml = this.yaml,
+      version = this.version,
+      expected = this.revision;
+    // The save API validates YAML, the program schema and installed services
+    // before persisting anything, using the same revision guard as step saves.
     return this.run(async (epoch) => {
-      const result = await this.ws("source", {
-        source,
-        ...(config_file && { config_file }),
-        expected_revision: this.revision,
+      const result = await this.ws("save", {
+        program: yaml,
+        expected_revision: expected,
       });
       if (epoch !== this.epoch) {
         return;
@@ -822,58 +847,32 @@ export class OccupiedPanel extends HTMLElement {
       if (!result.valid) {
         return this.showIssues(result);
       }
-      this.adopt({ ...this.document, ...result });
-      this.validatedVersion = -1;
-      if (!this.dirty) {
+      this.adopt({ ...this.document, ...result, needs_apply: false });
+      this.yamlSaved = yaml;
+      this.issues = [];
+      if (version === this.version) {
         this.draft = copy(result.program);
+        this.dirty = false;
+        this.version++;
+        this.validatedVersion = this.version;
       }
-      this.renderView();
-    });
-  }
-  reloadManaged() {
-    return this.run(async (epoch) => {
-      const result = await this.ws("reload");
-      const doc = await this.ws("program");
-      if (epoch !== this.epoch) {
-        return;
-      }
-      this.document = doc;
-      this.saved = doc.program;
-      this.stale = doc.revision !== this.revision;
-      if (!this.dirty) {
-        this.revision = doc.revision;
-        this.draft = copy(doc.program);
-        this.stale = false;
-      }
-      if (!result.valid) {
-        this.showIssues(result);
-      }
-      this.renderView();
-    });
-  }
-  importYaml() {
-    const version = this.version;
-    return this.run(async (epoch) => {
-      const result = await this.ws("validate", { program: this.yaml });
-      if (epoch !== this.epoch || version !== this.version) {
-        return;
-      }
-      this.showIssues(result);
-      if (result.valid) {
-        this.draft = result.program;
-        this.edited(true);
-      }
+      this.flush();
     });
   }
   exportYaml() {
+    if (this.yamlDirty) {
+      return;
+    }
+    const yaml = this.yaml;
     return this.run(async (epoch) => {
       const result = await this.ws("export", { program: copy(this.draft) });
       if (epoch !== this.epoch) {
         return;
       }
       this.showIssues(result);
-      if (result.valid) {
+      if (result.valid && this.yaml === yaml) {
         this.yaml = result.yaml;
+        this.yamlSaved = result.yaml;
       }
     });
   }

@@ -77,6 +77,8 @@ const sv = {
   "Previous day": "Föregående dag",
   "Next day": "Nästa dag",
   Today: "Idag",
+  Yesterday: "Igår",
+  Tomorrow: "Imorgon",
   "No steps are scheduled for this date.":
     "Inga steg är schemalagda detta datum.",
   "Planned device states": "Planerade enhetstillstånd",
@@ -176,7 +178,8 @@ const sv = {
   Refresh: "Uppdatera",
   "Run preview": "Förhandsvisa",
   "Export YAML": "Exportera YAML",
-  "Import as draft": "Importera som utkast",
+  "Edit the YAML and save to validate and apply your changes. Invalid code is kept in the editor.":
+    "Redigera YAML och spara för att validera och tillämpa dina ändringar. Ogiltig kod behålls i redigeraren.",
   Download: "Ladda ner",
   None: "Inga",
   mon: "mån",

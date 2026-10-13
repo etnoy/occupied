@@ -335,8 +335,6 @@ export interface WebSocketResponses {
     yaml: string;
     behavior_hash: string;
   }>;
-  source: ApiResult<ProgramDocument>;
-  reload: { valid: boolean; changed: boolean; issues: Issue[] };
   preview: PreviewResult;
 }
 export interface HomeAssistant {

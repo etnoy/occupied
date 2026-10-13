@@ -912,6 +912,8 @@ var sv = {
   "Previous day": "F\xF6reg\xE5ende dag",
   "Next day": "N\xE4sta dag",
   Today: "Idag",
+  Yesterday: "Ig\xE5r",
+  Tomorrow: "Imorgon",
   "No steps are scheduled for this date.":
     "Inga steg \xE4r schemalagda detta datum.",
   "Planned device states": "Planerade enhetstillst\xE5nd",
@@ -1011,7 +1013,8 @@ var sv = {
   Refresh: "Uppdatera",
   "Run preview": "F\xF6rhandsvisa",
   "Export YAML": "Exportera YAML",
-  "Import as draft": "Importera som utkast",
+  "Edit the YAML and save to validate and apply your changes. Invalid code is kept in the editor.":
+    "Redigera YAML och spara f\xF6r att validera och till\xE4mpa dina \xE4ndringar. Ogiltig kod beh\xE5lls i redigeraren.",
   Download: "Ladda ner",
   None: "Inga",
   mon: "m\xE5n",
@@ -5182,25 +5185,6 @@ function from_html(content, flags2) {
     return clone;
   };
 }
-function text(value = "") {
-  if (!hydrating) {
-    var t = create_text(value + "");
-    assign_nodes(t, t);
-    return t;
-  }
-  var node = hydrate_node;
-  if (node.nodeType !== TEXT_NODE) {
-    node.before((node = create_text()));
-    set_hydrate_node(node);
-  } else {
-    merge_text_nodes(
-      /** @type {Text} */
-      node,
-    );
-  }
-  assign_nodes(node, node);
-  return node;
-}
 function comment() {
   if (hydrating) {
     assign_nodes(hydrate_node, null);
@@ -8044,6 +8028,21 @@ function formatScheduleDate(value, locale) {
   }).format(/* @__PURE__ */ new Date(`${value}T12:00:00Z`));
   return `${weekday} ${value}`;
 }
+function formatPreviewDate(value, today, locale, t) {
+  const valueTime = Date.parse(`${value}T12:00:00Z`);
+  const todayTime = Date.parse(`${today}T12:00:00Z`);
+  const daysFromToday = Math.round((valueTime - todayTime) / 864e5);
+  const relativeLabel =
+    daysFromToday === -1
+      ? t("Yesterday")
+      : daysFromToday === 0
+        ? t("Today")
+        : daysFromToday === 1
+          ? t("Tomorrow")
+          : void 0;
+  const dateLabel = formatScheduleDate(value, locale);
+  return relativeLabel ? `${relativeLabel} \xB7 ${dateLabel}` : dateLabel;
+}
 function usesAmPm(locale) {
   if (!locale) {
     return false;
@@ -8640,7 +8639,12 @@ function scheduleDaySuffix(selected, t) {
     sat: "Saturdays",
     sun: "Sundays",
   };
-  return ` ${t("on")} ${selected.map((day) => t(weekdayNames[day] || day)).join(", ")}`;
+  const dayNames = selected.map((day) => t(weekdayNames[day] || day));
+  const lastDay = dayNames.pop();
+  const dayList = dayNames.length
+    ? `${dayNames.join(", ")}${dayNames.length > 1 ? "," : ""} ${t("and")} ${lastDay}`
+    : lastDay;
+  return ` ${t("on")} ${dayList}`;
 }
 function timingSummary(entry, entries, t = (v) => v, sources = [], locale) {
   if (!entry.when) {
@@ -10875,15 +10879,9 @@ function StepsView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/SettingsView.svelte
-var root12 = from_html(`<p> </p>`);
-var root_19 = from_html(`<p class="error"> <!> </p>`);
-var root_27 = from_html(
-  `<button type="button"> </button> <button type="button"> </button> <!> <!>`,
-  1,
-);
-var root_36 = from_html(
-  `<section><h2> </h2> <p class="hint"> </p> <input type="text" placeholder="occupied/house.yaml"/> <button type="button"> </button> <!></section> <section><h2> </h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <button type="button"> </button><button type="button"> </button></section>`,
-  3,
+var root12 = from_html(
+  `<section><h2> </h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <button type="button" class="primary"> </button><button type="button"> </button></section>`,
+  2,
 );
 var $$css = {
   hash: "svelte-82irif",
@@ -10895,135 +10893,31 @@ function SettingsView($$anchor, $$props) {
   let panel = prop($$props, "panel", 7);
   let data = user_derived(() => {
     $$props.revision;
-    const t2 = panel().t,
-      source3 = panel().document.configuration_source || {
-        mode: panel().document.source || "gui",
-        status: "ready",
-      };
-    return { t: t2, source: source3 };
+    return { t: panel().t };
   });
-  let t = user_derived(() => get2(data).t),
-    source2 = user_derived(() => get2(data).source);
+  let t = user_derived(() => get2(data).t);
   let autoExportStarted = false;
   user_effect(() => {
     $$props.revision;
     if (!autoExportStarted && !panel().busy) {
-      autoExportStarted = true;
-      void panel().exportYaml();
+      let cancelled = false;
+      queueMicrotask(() => {
+        if (cancelled) return;
+        autoExportStarted = true;
+        void panel().exportYaml();
+      });
+      return () => {
+        cancelled = true;
+      };
     }
   });
-  var fragment = root_36();
-  var section = first_child(fragment);
+  var section = root12();
   var h2 = child(section);
   var text2 = only_child(h2, true);
   var p = sibling(h2, 2);
   var text_1 = only_child(p, true);
   var input = sibling(p, 2);
-  remove_input_defaults(input);
-  var button = sibling(input, 2);
-  var text_2 = only_child(button, true);
-  var node = sibling(button, 2);
-  {
-    var consequent_2 = ($$anchor2) => {
-      var fragment_1 = root_27();
-      var button_1 = first_child(fragment_1);
-      var text_3 = only_child(button_1, true);
-      var button_2 = sibling(button_1, 2);
-      var text_4 = only_child(button_2, true);
-      var node_1 = sibling(button_2, 2);
-      {
-        var consequent = ($$anchor3) => {
-          var p_1 = root12();
-          var text_5 = only_child(p_1);
-          template_effect(
-            ($0, $1) =>
-              set_text(
-                text_5,
-                `${$0 ?? ""}:
-        ${$1 ?? ""}`,
-              ),
-            [
-              () => get2(t)("Observed file hash"),
-              () => get2(source2).observed_hash.slice(0, 16),
-            ],
-          );
-          append($$anchor3, p_1);
-        };
-        if_block(node_1, ($$render) => {
-          if (get2(source2).observed_hash) $$render(consequent);
-        });
-      }
-      var node_2 = sibling(node_1, 2);
-      each(
-        node_2,
-        17,
-        () => get2(source2).issues || [],
-        index,
-        ($$anchor3, issue) => {
-          var p_2 = root_19();
-          var text_6 = child(p_2, true);
-          var node_3 = sibling(text_6);
-          {
-            var consequent_1 = ($$anchor4) => {
-              var text_7 = text();
-              template_effect(
-                ($0) => set_text(text_7, $0),
-                [() => ` \xB7 ${get2(t)("Line")} ${get2(issue).line}`],
-              );
-              append($$anchor4, text_7);
-            };
-            var alternate = ($$anchor4) => {
-              var text_8 = text();
-              text_8.nodeValue = "";
-              append($$anchor4, text_8);
-            };
-            if_block(node_3, ($$render) => {
-              if (get2(issue).line) $$render(consequent_1);
-              else $$render(alternate, -1);
-            });
-          }
-          var text_9 = sibling(node_3);
-          reset(p_2);
-          template_effect(() => {
-            set_text(text_6, get2(issue).path || "$");
-            set_text(
-              text_9,
-              `:
-        ${get2(issue).message ?? ""}`,
-            );
-          });
-          append($$anchor3, p_2);
-        },
-      );
-      template_effect(
-        ($0, $1) => {
-          button_1.disabled = panel().busy;
-          set_text(text_3, $0);
-          button_2.disabled =
-            panel().busy || get2(source2).has_valid_program === false;
-          set_text(text_4, $1);
-        },
-        [
-          () => get2(t)("Reload managed file"),
-          () => get2(t)("Copy saved program to GUI storage"),
-        ],
-      );
-      delegated("click", button_1, () => panel().reloadManaged());
-      delegated("click", button_2, () => panel().selectSource("gui"));
-      append($$anchor2, fragment_1);
-    };
-    if_block(node, ($$render) => {
-      if (get2(source2).mode === "file") $$render(consequent_2);
-    });
-  }
-  reset(section);
-  var section_1 = sibling(section, 2);
-  var h2_1 = child(section_1);
-  var text_10 = only_child(h2_1, true);
-  var p_3 = sibling(h2_1, 2);
-  var text_11 = only_child(p_3, true);
-  var input_1 = sibling(p_3, 2);
-  var ha_code_editor = sibling(input_1, 2);
+  var ha_code_editor = sibling(input, 2);
   set_custom_element_data(ha_code_editor, "role", "group");
   template_effect(
     ($0) => set_custom_element_data(ha_code_editor, "aria-label", $0),
@@ -11036,64 +10930,38 @@ function SettingsView($$anchor, $$props) {
     ($$node, $$action_arg) => properties?.($$node, $$action_arg),
     () => ({ mode: "yaml", value: panel().yaml, linewrap: true }),
   );
-  var button_3 = sibling(ha_code_editor, 2);
-  var text_12 = only_child(button_3, true);
-  var button_4 = sibling(button_3);
-  var text_13 = only_child(button_4, true);
-  reset(section_1);
+  var button = sibling(ha_code_editor, 2);
+  var text_2 = only_child(button, true);
+  var button_1 = sibling(button);
+  var text_3 = only_child(button_1, true);
+  reset(section);
   template_effect(
-    ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
+    ($0, $1, $2, $3, $4) => {
       set_text(text2, $0);
       set_text(text_1, $1);
       set_attribute2(input, "aria-label", $2);
-      set_value(
-        input,
-        panel().sourcePath ??
-          get2(source2).config_file ??
-          "occupied/house.yaml",
-      );
-      button.disabled = panel().busy;
-      set_text(text_2, $3);
-      set_text(text_10, $4);
-      set_text(text_11, $5);
-      set_attribute2(input_1, "aria-label", $6);
       ha_code_editor.dir = ha_code_editor.dir;
-      set_text(text_12, $7);
-      button_4.disabled = panel().busy || !panel().yaml;
-      set_text(text_13, $8);
+      button.disabled =
+        panel().busy ||
+        panel().stale ||
+        panel().document.source === "file" ||
+        !panel().yaml;
+      set_text(text_2, $3);
+      button_1.disabled = panel().busy || !panel().yaml;
+      set_text(text_3, $4);
     },
     [
-      () => get2(t)("Configuration source"),
-      () =>
-        get2(t)(
-          get2(source2).mode === "file"
-            ? "The managed file is read only. You can edit, validate and preview a temporary draft; export it and update the file to apply those changes."
-            : "GUI storage is authoritative. Importing YAML creates a draft snapshot. Selecting a managed file below changes the saved program explicitly.",
-        ),
-      () => get2(t)("Relative managed-file path"),
-      () => get2(t)("Use managed file"),
       () => get2(t)("YAML"),
       () =>
         get2(t)(
-          "Import replaces only the draft. Export normalizes the draft. Comments are not retained. Importing a local file does not select it as the managed source.",
+          "Edit the YAML and save to validate and apply your changes. Invalid code is kept in the editor.",
         ),
       () => get2(t)("Choose configuration file"),
-      () => get2(t)("Import as draft"),
+      () => get2(t)("Save changes"),
       () => get2(t)("Download"),
     ],
   );
-  delegated(
-    "input",
-    input,
-    (event2) => (panel().sourcePath = event2.currentTarget.value),
-  );
-  delegated("click", button, () =>
-    panel().selectSource(
-      "file",
-      panel().sourcePath ?? get2(source2).config_file ?? "occupied/house.yaml",
-    ),
-  );
-  delegated("change", input_1, async (event2) => {
+  delegated("change", input, async (event2) => {
     const file = event2.currentTarget.files?.[0];
     if (file) {
       const epoch = panel().epoch;
@@ -11109,14 +10977,14 @@ function SettingsView($$anchor, $$props) {
     panel().yaml = event2.detail.value;
     panel().flush();
   });
-  delegated("click", button_3, () => panel().importYaml());
-  delegated("click", button_4, () =>
+  delegated("click", button, () => panel().saveYaml());
+  delegated("click", button_1, () =>
     download("occupied.yaml", panel().yaml, "text/yaml"),
   );
-  append($$anchor, fragment);
+  append($$anchor, section);
   pop();
 }
-delegate(["input", "click", "change"]);
+delegate(["change", "click"]);
 
 // custom_components/occupied/frontend/ha-controls.ts
 async function loadHaControls() {
@@ -11281,12 +11149,12 @@ function stamp(value, zone, locale) {
 
 // custom_components/occupied/frontend/PreviewStateGraph.svelte
 var root13 = from_html(`<p class="hint"> </p>`);
-var root_110 = from_html(
+var root_19 = from_html(
   `<state-history-chart-timeline></state-history-chart-timeline>`,
   2,
 );
-var root_28 = from_html(`<p role="status"> </p>`);
-var root_37 = from_html(`<!> <!>`, 1);
+var root_27 = from_html(`<p role="status"> </p>`);
+var root_36 = from_html(`<!> <!>`, 1);
 var $$css2 = {
   hash: "svelte-1cnjgem",
   code: "state-history-chart-timeline.svelte-1cnjgem {display:block;width:100%;}state-history-chart-timeline[hidden].svelte-1cnjgem {display:none;}",
@@ -11336,7 +11204,7 @@ function PreviewStateGraph($$anchor, $$props) {
       media.removeEventListener("change", updateNarrow);
     };
   });
-  var fragment = root_37();
+  var fragment = root_36();
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
@@ -11376,7 +11244,7 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, p_1);
     };
     var consequent_2 = ($$anchor2) => {
-      var state_history_chart_timeline = root_110();
+      var state_history_chart_timeline = root_19();
       template_effect(() =>
         set_custom_element_data(
           state_history_chart_timeline,
@@ -11412,7 +11280,7 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, state_history_chart_timeline);
     };
     var consequent_3 = ($$anchor2) => {
-      var p_2 = root_28();
+      var p_2 = root_27();
       var text_2 = only_child(p_2, true);
       template_effect(
         ($0) => set_text(text_2, $0),
@@ -11432,9 +11300,9 @@ function PreviewStateGraph($$anchor, $$props) {
 
 // custom_components/occupied/frontend/Timeline.svelte
 var root14 = from_html(`<h2> </h2>`);
-var root_111 = from_html(`<th scope="col"> </th>`);
-var root_29 = from_html(`<td> </td>`);
-var root_38 = from_html(`<tr></tr>`);
+var root_110 = from_html(`<th scope="col"> </th>`);
+var root_28 = from_html(`<td> </td>`);
+var root_37 = from_html(`<tr></tr>`);
 var root_44 = from_html(
   `<details><summary> </summary> <p class="hint"> </p> <input type="search"/> <div><div class="table-wrap"><table><thead><tr></tr></thead><tbody></tbody></table></div> <div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div></div></details>`,
 );
@@ -11446,7 +11314,8 @@ function Timeline($$anchor, $$props) {
   push($$props, true);
   let t = prop($$props, "t", 3, (text2) => text2),
     entityNames = prop($$props, "entityNames", 19, () => ({})),
-    loading = prop($$props, "loading", 3, false);
+    loading = prop($$props, "loading", 3, false),
+    showLoading = prop($$props, "showLoading", 19, loading);
   let labels = user_derived(
     () =>
       new Map(
@@ -11542,7 +11411,7 @@ function Timeline($$anchor, $$props) {
             () => ["Planned time", "Source", "Action", "Targets"],
             index,
             ($$anchor4, label) => {
-              var th = root_111();
+              var th = root_110();
               var text_4 = only_child(th, true);
               template_effect(($0) => set_text(text_4, $0), [() => t()(label)]);
               append($$anchor4, th);
@@ -11561,7 +11430,7 @@ function Timeline($$anchor, $$props) {
               ),
             index,
             ($$anchor4, event2) => {
-              var tr_1 = root_38();
+              var tr_1 = root_37();
               each(
                 tr_1,
                 21,
@@ -11577,7 +11446,7 @@ function Timeline($$anchor, $$props) {
                 ],
                 index,
                 ($$anchor5, value) => {
-                  var td = root_29();
+                  var td = root_28();
                   var text_5 = only_child(td, true);
                   template_effect(() => set_text(text_5, get2(value)));
                   append($$anchor5, td);
@@ -11685,7 +11554,7 @@ function Timeline($$anchor, $$props) {
     };
     if_block(node_2, ($$render) => {
       if ($$props.plan) $$render(consequent_3);
-      else if (loading()) $$render(consequent_4, 1);
+      else if (showLoading()) $$render(consequent_4, 1);
     });
   }
   reset(section);
@@ -11697,7 +11566,7 @@ delegate(["input", "click"]);
 
 // custom_components/occupied/frontend/PreviewView.svelte
 var root15 = from_html(`<span class="hint" role="status"> </span>`);
-var root_112 = from_html(
+var root_111 = from_html(
   `<div class="schedule-heading svelte-5w63kc"><h2 aria-live="polite" class="svelte-5w63kc"> </h2> <!> <div class="day-navigation svelte-5w63kc" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-5w63kc"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
   2,
 );
@@ -11709,7 +11578,7 @@ function PreviewView($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css3);
   const dayHeading = ($$anchor2) => {
-    var div = root_112();
+    var div = root_111();
     var h2 = child(div);
     var text2 = only_child(h2, true);
     var node = sibling(h2, 2);
@@ -11724,7 +11593,7 @@ function PreviewView($$anchor, $$props) {
         append($$anchor3, span);
       };
       if_block(node, ($$render) => {
-        if ($$props.panel.busy && get2(plan)) $$render(consequent);
+        if (get2(showLoading) && get2(plan)) $$render(consequent);
       });
     }
     var div_1 = sibling(node, 2);
@@ -11770,7 +11639,13 @@ function PreviewView($$anchor, $$props) {
         set_text(text_2, $2);
       },
       [
-        () => formatScheduleDate(get2(date), $$props.panel._hass.locale),
+        () =>
+          formatPreviewDate(
+            get2(date),
+            $$props.panel.document.simulation_date,
+            $$props.panel._hass.locale,
+            get2(t),
+          ),
         () => get2(t)("Schedule day"),
         () => get2(t)("Today"),
       ],
@@ -11782,6 +11657,19 @@ function PreviewView($$anchor, $$props) {
     delegated("click", ha_icon_button_1, () => $$props.panel.movePreviewDay(1));
     append($$anchor2, div);
   };
+  let showLoading = state(false);
+  user_effect(() => {
+    $$props.revision;
+    if (!$$props.panel.busy) {
+      set2(showLoading, false);
+      return;
+    }
+    set2(showLoading, false);
+    const timeout = window.setTimeout(() => {
+      set2(showLoading, true);
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  });
   let data = user_derived(() => {
     $$props.revision;
     const t2 = $$props.panel.t;
@@ -11831,6 +11719,9 @@ function PreviewView($$anchor, $$props) {
     },
     get loading() {
       return $$props.panel.busy;
+    },
+    get showLoading() {
+      return get2(showLoading);
     },
   });
   pop();
@@ -11892,9 +11783,9 @@ var root17 = from_html(
   `<button type="button" class="primary"> </button> <button type="button"> </button>`,
   1,
 );
-var root_113 = from_html(`<button type="button"> </button>`);
-var root_210 = from_html(`<div id="toolbar" class="toolbar"><!> <!></div>`);
-var root_39 = from_html(`<p> </p>`);
+var root_112 = from_html(`<button type="button"> </button>`);
+var root_29 = from_html(`<div id="toolbar" class="toolbar"><!> <!></div>`);
+var root_38 = from_html(`<p> </p>`);
 var root_45 = from_html(`<p id="house"> </p>`);
 var root_55 = from_html(`<option> </option>`);
 var root_64 = from_html(
@@ -11916,9 +11807,12 @@ function App($$anchor, $$props) {
   const [$$stores, $$cleanup] = setup_stores();
   const toolbar = ($$anchor2) => {
     const unsaved = user_derived(
-      () => get2(panel).dirty && !get2(panel).stepEditor,
+      () =>
+        (get2(panel).dirty ||
+          (get2(panel).tab === "settings" && get2(panel).yamlDirty)) &&
+        !get2(panel).stepEditor,
     );
-    var div = root_210();
+    var div = root_29();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
@@ -11939,7 +11833,11 @@ function App($$anchor, $$props) {
           },
           [() => get2(t)("Save changes"), () => get2(t)("Discard edits")],
         );
-        delegated("click", button, () => get2(panel).save());
+        delegated("click", button, () =>
+          get2(panel).tab === "settings"
+            ? get2(panel).saveYaml()
+            : get2(panel).save(),
+        );
         delegated("click", button_1, () => get2(panel).discardEdits());
         append($$anchor3, fragment);
       };
@@ -11950,7 +11848,7 @@ function App($$anchor, $$props) {
     var node_1 = sibling(node, 2);
     {
       var consequent_1 = ($$anchor3) => {
-        var button_2 = root_113();
+        var button_2 = root_112();
         var text_3 = only_child(button_2, true);
         template_effect(
           ($0) => {
@@ -11990,7 +11888,7 @@ function App($$anchor, $$props) {
     var node_2 = first_child(fragment_1);
     {
       var consequent_2 = ($$anchor3) => {
-        var button_3 = root_113();
+        var button_3 = root_112();
         var text_4 = only_child(button_3, true);
         template_effect(() => {
           set_class(button_3, 1, clsx2(get2(className)));
@@ -12000,7 +11898,7 @@ function App($$anchor, $$props) {
         append($$anchor3, button_3);
       };
       var alternate = ($$anchor3) => {
-        var p = root_39();
+        var p = root_38();
         var text_5 = only_child(p, true);
         template_effect(() => {
           set_class(p, 1, clsx2(get2(className)));
@@ -12175,7 +12073,7 @@ function App($$anchor, $$props) {
           set_text(
             text_11,
             `${$0 ?? ""}
-      ${get2(overlap).name ?? ""}: ${$1 ?? ""}. ${$2 ?? ""}`,
+        ${get2(overlap).name ?? ""}: ${$1 ?? ""}. ${$2 ?? ""}`,
           ),
         [
           () => get2(t)("Shared devices with"),
@@ -12202,7 +12100,7 @@ function App($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get2($$item), 2));
       let id = () => get2($$array)[0];
       let label = () => get2($$array)[1];
-      var button_4 = root_113();
+      var button_4 = root_112();
       var text_14 = only_child(button_4, true);
       template_effect(
         ($0) => {
@@ -12316,7 +12214,7 @@ function App($$anchor, $$props) {
               var node_12 = first_child(fragment_9);
               {
                 var consequent_9 = ($$anchor5) => {
-                  var button_7 = root_113();
+                  var button_7 = root_112();
                   var text_20 = only_child(button_7, true);
                   template_effect(
                     ($0) => set_text(text_20, $0),
@@ -12454,8 +12352,11 @@ var OccupiedPanel = class extends HTMLElement {
   preview;
   previewProgram;
   previewDate = "";
-  sourcePath;
   yaml = "";
+  yamlSaved = "";
+  get yamlDirty() {
+    return this.yaml !== this.yamlSaved;
+  }
   _hass;
   _loading = false;
   instances = [];
@@ -12553,7 +12454,13 @@ var OccupiedPanel = class extends HTMLElement {
   }
   _locationChanged = () => void this._load();
   _beforeUnload = (event2) => {
-    if (!(this.dirty || (this.stepEditor && hasStepChanges(this.stepEditor)))) {
+    if (
+      !(
+        this.dirty ||
+        this.yamlDirty ||
+        (this.stepEditor && hasStepChanges(this.stepEditor))
+      )
+    ) {
       return;
     }
     event2.preventDefault();
@@ -12629,7 +12536,11 @@ var OccupiedPanel = class extends HTMLElement {
   }
   _canSwitchInstance() {
     return (
-      !(this.dirty || (this.stepEditor && hasStepChanges(this.stepEditor))) ||
+      !(
+        this.dirty ||
+        this.yamlDirty ||
+        (this.stepEditor && hasStepChanges(this.stepEditor))
+      ) ||
       globalThis.confirm(
         this.t("This instance has unsaved changes. Discard them and switch?"),
       )
@@ -12661,8 +12572,8 @@ var OccupiedPanel = class extends HTMLElement {
       preview: void 0,
       previewProgram: void 0,
       previewDate: "",
-      sourcePath: void 0,
       yaml: "",
+      yamlSaved: "",
     });
     this.renderView();
   }
@@ -12793,7 +12704,7 @@ var OccupiedPanel = class extends HTMLElement {
       if (epoch !== this.epoch) {
         return;
       }
-      if (this.draft && (this.dirty || this.stepEditor)) {
+      if (this.draft && (this.dirty || this.yamlDirty || this.stepEditor)) {
         this.document = doc;
         this.saved = doc.program;
         this.stale = doc.revision !== this.revision;
@@ -12890,7 +12801,7 @@ var OccupiedPanel = class extends HTMLElement {
       programNotice = t(
         "The saved program changed. Your draft is preserved; reload the saved program before saving.",
       );
-    } else if (this.dirty && !this.stepEditor) {
+    } else if ((this.dirty || this.yamlDirty) && !this.stepEditor) {
       programNotice = t("Unsaved edits");
     }
     return [
@@ -12929,6 +12840,7 @@ var OccupiedPanel = class extends HTMLElement {
   }
   discardEdits() {
     this.resetDraft();
+    this.yaml = this.yamlSaved;
     this.error = "";
     this.renderView();
   }
@@ -13125,7 +13037,10 @@ var OccupiedPanel = class extends HTMLElement {
     });
   }
   async reloadSaved(discard = false) {
-    if (this.busy || ((this.dirty || this.stepEditor) && !discard)) {
+    if (
+      this.busy ||
+      ((this.dirty || this.yamlDirty || this.stepEditor) && !discard)
+    ) {
       return;
     }
     const version = this.version;
@@ -13182,12 +13097,17 @@ var OccupiedPanel = class extends HTMLElement {
       this.showIssues(result);
     });
   }
-  selectSource(source2, config_file) {
+  saveYaml() {
+    if (this.document?.source === "file" || this.stale) {
+      return;
+    }
+    const yaml = this.yaml,
+      version = this.version,
+      expected = this.revision;
     return this.run(async (epoch) => {
-      const result = await this.ws("source", {
-        source: source2,
-        ...(config_file && { config_file }),
-        expected_revision: this.revision,
+      const result = await this.ws("save", {
+        program: yaml,
+        expected_revision: expected,
       });
       if (epoch !== this.epoch) {
         return;
@@ -13195,58 +13115,32 @@ var OccupiedPanel = class extends HTMLElement {
       if (!result.valid) {
         return this.showIssues(result);
       }
-      this.adopt({ ...this.document, ...result });
-      this.validatedVersion = -1;
-      if (!this.dirty) {
+      this.adopt({ ...this.document, ...result, needs_apply: false });
+      this.yamlSaved = yaml;
+      this.issues = [];
+      if (version === this.version) {
         this.draft = copy(result.program);
+        this.dirty = false;
+        this.version++;
+        this.validatedVersion = this.version;
       }
-      this.renderView();
-    });
-  }
-  reloadManaged() {
-    return this.run(async (epoch) => {
-      const result = await this.ws("reload");
-      const doc = await this.ws("program");
-      if (epoch !== this.epoch) {
-        return;
-      }
-      this.document = doc;
-      this.saved = doc.program;
-      this.stale = doc.revision !== this.revision;
-      if (!this.dirty) {
-        this.revision = doc.revision;
-        this.draft = copy(doc.program);
-        this.stale = false;
-      }
-      if (!result.valid) {
-        this.showIssues(result);
-      }
-      this.renderView();
-    });
-  }
-  importYaml() {
-    const version = this.version;
-    return this.run(async (epoch) => {
-      const result = await this.ws("validate", { program: this.yaml });
-      if (epoch !== this.epoch || version !== this.version) {
-        return;
-      }
-      this.showIssues(result);
-      if (result.valid) {
-        this.draft = result.program;
-        this.edited(true);
-      }
+      this.flush();
     });
   }
   exportYaml() {
+    if (this.yamlDirty) {
+      return;
+    }
+    const yaml = this.yaml;
     return this.run(async (epoch) => {
       const result = await this.ws("export", { program: copy(this.draft) });
       if (epoch !== this.epoch) {
         return;
       }
       this.showIssues(result);
-      if (result.valid) {
+      if (result.valid && this.yaml === yaml) {
         this.yaml = result.yaml;
+        this.yamlSaved = result.yaml;
       }
     });
   }

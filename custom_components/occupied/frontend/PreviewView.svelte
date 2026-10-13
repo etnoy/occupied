@@ -3,9 +3,22 @@
 
   import Timeline from "./Timeline.svelte";
   import { properties } from "./dom.js";
-  import { formatScheduleDate } from "./time-format.js";
+  import { formatPreviewDate } from "./time-format.js";
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
+  let showLoading = $state(false);
+  $effect(() => {
+    revision;
+    if (!panel.busy) {
+      showLoading = false;
+      return;
+    }
+    showLoading = false;
+    const timeout = window.setTimeout(() => {
+      showLoading = true;
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  });
   let data = $derived.by(() => {
     revision;
     const t = panel.t;
@@ -31,8 +44,15 @@
 
 {#snippet dayHeading()}
   <div class="schedule-heading">
-    <h2 aria-live="polite">{formatScheduleDate(date, panel._hass.locale)}</h2>
-    {#if panel.busy && plan}
+    <h2 aria-live="polite">
+      {formatPreviewDate(
+        date,
+        panel.document.simulation_date,
+        panel._hass.locale,
+        t,
+      )}
+    </h2>
+    {#if showLoading && plan}
       <span class="hint" role="status">{t("Loading schedule…")}</span>
     {/if}
     <div class="day-navigation" role="group" aria-label={t("Schedule day")}>
@@ -78,6 +98,7 @@
   {entityNames}
   heading={dayHeading}
   loading={panel.busy}
+  {showLoading}
 />
 
 <style>

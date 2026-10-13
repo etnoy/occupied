@@ -47,7 +47,9 @@
 </script>
 
 {#snippet toolbar()}
-  {@const unsaved = panel.dirty && !panel.stepEditor}
+  {@const unsaved =
+    (panel.dirty || (panel.tab === "settings" && panel.yamlDirty)) &&
+    !panel.stepEditor}
   <div
     id="toolbar"
     class="toolbar"
@@ -60,7 +62,8 @@
         disabled={panel.busy ||
           panel.document?.source === "file" ||
           panel.stale}
-        onclick={() => panel.save()}
+        onclick={() =>
+          panel.tab === "settings" ? panel.saveYaml() : panel.save()}
       >
         {t("Save changes")}
       </button>
@@ -102,122 +105,122 @@
 {/snippet}
 <ha-top-app-bar-fixed back-button narrow={panel.hasAttribute("narrow")}>
   <div slot="title">Occupied</div>
-<main>
-  <header>
-    <div>
-      {#if !controllerName}
-        <p id="house">{t("Loading controller…")}</p>
-      {:else if controllerName !== "Occupied" && !/^Occupied [0-9a-f]{8}$/.test(controllerName)}
-        <p id="house">{controllerName}</p>
-      {/if}
-      {#if panel.instances.length > 1}
-        <label for="instance-select">{t("Controller")}</label>
-        <select
-          id="instance-select"
-          value={panel.selectedEntry || ""}
-          disabled={panel.busy}
-          onchange={(event) => {
-            panel.selectInstance(event.currentTarget.value);
-            event.currentTarget.value = panel.selectedEntry || "";
-          }}
+  <main>
+    <header>
+      <div>
+        {#if !controllerName}
+          <p id="house">{t("Loading controller…")}</p>
+        {:else if controllerName !== "Occupied" && !/^Occupied [0-9a-f]{8}$/.test(controllerName)}
+          <p id="house">{controllerName}</p>
+        {/if}
+        {#if panel.instances.length > 1}
+          <label for="instance-select">{t("Controller")}</label>
+          <select
+            id="instance-select"
+            value={panel.selectedEntry || ""}
+            disabled={panel.busy}
+            onchange={(event) => {
+              panel.selectInstance(event.currentTarget.value);
+              event.currentTarget.value = panel.selectedEntry || "";
+            }}
+          >
+            {#each panel.instances as instance}
+              <option value={instance.config_entry_id}>
+                {instance.name} · {t(
+                  instance.loaded ? instance.status : "Unloaded",
+                )}
+              </option>
+            {/each}
+          </select>
+        {/if}
+        {#if panel.selectedInstance?.source === "file"}
+          <p class="hint">
+            {t("Managed file")}
+          </p>
+        {/if}
+      </div>
+    </header>
+    {#each panel.selectedInstance?.overlaps || [] as overlap}
+      <p class="banner" role="status">
+        {t("Shared devices with")}
+        {overlap.name}: {overlap.entities.join(", ")}. {t(
+          "Actions and cleanup can interfere between instances.",
+        )}
+      </p>
+    {/each}
+    {@render toolbar()}
+    <div id="notice" class="banner" role="status" hidden={!notices}>
+      {notices}
+    </div>
+    <div id="error" class="error" role="alert" hidden={!panel.error}>
+      {panel.error}
+    </div>
+    <nav aria-label="Occupied">
+      {#each primaryTabs as [id, label]}
+        <button
+          type="button"
+          data-tab={id}
+          aria-current={panel.tab === id ? "page" : "false"}
+          disabled={!panel.selectedInstance?.loaded}
+          onclick={() => panel.navigate(id)}
         >
-          {#each panel.instances as instance}
-            <option value={instance.config_entry_id}>
-              {instance.name} · {t(
-                instance.loaded ? instance.status : "Unloaded",
-              )}
-            </option>
-          {/each}
-        </select>
-      {/if}
-      {#if panel.selectedInstance?.source === "file"}
-        <p class="hint">
-          {t("Managed file")}
-        </p>
+          {t(label)}
+        </button>
+      {/each}
+    </nav>
+    <div id="secondary-nav">
+      {#if !primary}
+        <button
+          type="button"
+          class="text-button"
+          onclick={() => panel.navigate("routines")}
+        >
+          {t("Back to steps")}
+        </button>
       {/if}
     </div>
-  </header>
-  {#each panel.selectedInstance?.overlaps || [] as overlap}
-    <p class="banner" role="status">
-      {t("Shared devices with")}
-      {overlap.name}: {overlap.entities.join(", ")}. {t(
-        "Actions and cleanup can interfere between instances.",
-      )}
-    </p>
-  {/each}
-  {@render toolbar()}
-  <div id="notice" class="banner" role="status" hidden={!notices}>
-    {notices}
-  </div>
-  <div id="error" class="error" role="alert" hidden={!panel.error}>
-    {panel.error}
-  </div>
-  <nav aria-label="Occupied">
-    {#each primaryTabs as [id, label]}
-      <button
-        type="button"
-        data-tab={id}
-        aria-current={panel.tab === id ? "page" : "false"}
-        disabled={!panel.selectedInstance?.loaded}
-        onclick={() => panel.navigate(id)}
-      >
-        {t(label)}
-      </button>
-    {/each}
-  </nav>
-  <div id="secondary-nav">
-    {#if !primary}
-      <button
-        type="button"
-        class="text-button"
-        onclick={() => panel.navigate("routines")}
-      >
-        {t("Back to steps")}
-      </button>
-    {/if}
-  </div>
-  <div id="issues">
+    <div id="issues">
       {#each panel.visibleIssues() as issue}
-      {@render renderIssue(issue, primary)}
-    {/each}
-  </div>
-  <div id="view">
-    {#key `${panel.selectedEntry}:${panel.tab}`}
-      <svelte:boundary>
-        {#snippet failed(error)}
-          <p class="error">{errorMessage(error)}</p>
-          <p class="error">
-            {t(
-              "This draft cannot be shown. Discard edits or import a corrected program from Settings.",
-            )}
-          </p>
-        {/snippet}
-        {#if panel.selectedEntry && !panel.selectedInstance?.loaded}
-          <p>
-            {t(
-              "This instance is unavailable. Check Settings → Devices & services, then retry.",
-            )}
-          </p>
-          <button type="button" onclick={() => panel.retry()}
-            >{t("Retry")}</button
-          >
-        {:else if panel._loading || !panel.draft}
-          {#if panel.error && !panel._loading}<button
-              type="button"
-              onclick={() => panel.retry()}>{t("Retry")}</button
-            >{/if}
-        {:else if panel.stepEditor && !panel.stepEditor.existing}
-          <StepEditor {panel} {revision} />
-        {:else if panel.tab === "routines"}
-          <StepsView {panel} {revision} />
-        {:else if panel.tab === "settings"}
-          <SettingsView {panel} {revision} />
-        {:else if panel.tab === "preview"}
-          <PreviewView {panel} {revision} />
-        {/if}
-      </svelte:boundary>
-    {/key}
-  </div>
-</main>
+        {@render renderIssue(issue, primary)}
+      {/each}
+    </div>
+    <div id="view">
+      {#key `${panel.selectedEntry}:${panel.tab}`}
+        <svelte:boundary>
+          {#snippet failed(error)}
+            <p class="error">{errorMessage(error)}</p>
+            <p class="error">
+              {t(
+                "This draft cannot be shown. Discard edits or import a corrected program from Settings.",
+              )}
+            </p>
+          {/snippet}
+          {#if panel.selectedEntry && !panel.selectedInstance?.loaded}
+            <p>
+              {t(
+                "This instance is unavailable. Check Settings → Devices & services, then retry.",
+              )}
+            </p>
+            <button type="button" onclick={() => panel.retry()}
+              >{t("Retry")}</button
+            >
+          {:else if panel._loading || !panel.draft}
+            {#if panel.error && !panel._loading}<button
+                type="button"
+                onclick={() => panel.retry()}>{t("Retry")}</button
+              >{/if}
+          {:else if panel.stepEditor && !panel.stepEditor.existing}
+            <StepEditor {panel} {revision} />
+          {:else if panel.tab === "routines"}
+            <StepsView {panel} {revision} />
+          {:else if panel.tab === "settings"}
+            <SettingsView {panel} {revision} />
+          {:else if panel.tab === "preview"}
+            <PreviewView {panel} {revision} />
+          {/if}
+        </svelte:boundary>
+      {/key}
+    </div>
+  </main>
 </ha-top-app-bar-fixed>
 {#if panel.pendingStepExit}<UnsavedStepDialog {panel} />{/if}

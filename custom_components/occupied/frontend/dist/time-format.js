@@ -11,6 +11,21 @@ export function formatScheduleDate(value, locale) {
   }).format(new Date(`${value}T12:00:00Z`));
   return `${weekday} ${value}`;
 }
+export function formatPreviewDate(value, today, locale, t) {
+  const valueTime = Date.parse(`${value}T12:00:00Z`);
+  const todayTime = Date.parse(`${today}T12:00:00Z`);
+  const daysFromToday = Math.round((valueTime - todayTime) / 86_400_000);
+  const relativeLabel =
+    daysFromToday === -1
+      ? t("Yesterday")
+      : daysFromToday === 0
+        ? t("Today")
+        : daysFromToday === 1
+          ? t("Tomorrow")
+          : undefined;
+  const dateLabel = formatScheduleDate(value, locale);
+  return relativeLabel ? `${relativeLabel} · ${dateLabel}` : dateLabel;
+}
 function usesAmPm(locale) {
   if (!locale) {
     return false;

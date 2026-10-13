@@ -304,8 +304,7 @@ void test("Configure routing selects the requested instance and switches all edi
   const f = await fixture();
   try {
     assert.equal(f.panel.draft.name, "main");
-    f.panel.yaml = "old export";
-    f.panel.sourcePath = "old.yaml";
+    f.panel.yaml = f.panel.yamlSaved = "old export";
     f.panel.preview = { valid: true, plans: [] };
     f.route("guest");
     await settle();
@@ -314,7 +313,6 @@ void test("Configure routing selects the requested instance and switches all edi
     assert.equal(f.panel.document.source, "file");
     assert.equal(f.panel.revision, "revision-guest");
     assert.equal(f.panel.yaml, "");
-    assert.equal(f.panel.sourcePath, undefined);
     assert.equal(f.panel.preview, undefined);
     assert.ok(f.disposed.includes("occupied/subscribe:main"));
     assert.ok(f.subscriptions.has("occupied/subscribe:guest"));
@@ -480,6 +478,114 @@ void test("unloaded selections remain discoverable and recover without losing dr
     assert.equal(f.panel.stale, true);
     assert.equal(f.panel.saved.name, "main");
     assert.equal(f.panel.revision, "revision-main");
+  } finally {
+    f.restore();
+  }
+});
+
+void test("saving YAML sends code to the validated save API and adopts the saved program", async () => {
+  const f = await fixture();
+  try {
+    const program = { ...f.panel.draft, name: "Edited YAML" };
+    const code = "# Keep this comment\nname: Edited YAML\nschema_version: 1";
+    f.panel.yaml = code;
+    let request: Record<string, unknown> | undefined;
+    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      request = message;
+      return Promise.resolve({
+        valid: true,
+        ...f.panel.document,
+        program,
+        revision: "yaml-save",
+      } as T);
+    };
+    await f.panel.saveYaml();
+    assert.equal(request?.type, "occupied/save");
+    assert.equal(request?.program, code);
+    assert.equal(request?.expected_revision, "revision-main");
+    assert.equal(f.panel.saved.name, "Edited YAML");
+    assert.equal(f.panel.draft.name, "Edited YAML");
+    assert.equal(f.panel.revision, "yaml-save");
+    assert.equal(f.panel.yaml, code);
+    assert.equal(f.panel.yamlDirty, false);
+    assert.equal(f.panel.dirty, false);
+  } finally {
+    f.restore();
+  }
+});
+
+void test("invalid YAML keeps code, draft and saved program with reviewable errors", async () => {
+  const f = await fixture();
+  try {
+    const before = structuredClone(f.panel.saved);
+    f.panel.yaml = "name: [";
+    const issues = [{ severity: "error", message: "Invalid YAML", line: 1 }];
+    f.panel._hass.callWS = <T>() =>
+      Promise.resolve({ valid: false, issues } as T);
+    await f.panel.saveYaml();
+    assert.equal(f.panel.yaml, "name: [");
+    assert.equal(f.panel.yamlDirty, true);
+    assert.deepEqual(f.panel.issues, issues);
+    assert.deepEqual(f.panel.saved, before);
+    assert.deepEqual(f.panel.draft, before);
+    assert.equal(f.panel.revision, "revision-main");
+  } finally {
+    f.restore();
+  }
+});
+
+void test("YAML saves preserve edits made in flight and tab changes do not export over code", async () => {
+  const f = await fixture();
+  try {
+    let resolve!: (value: unknown) => void;
+    f.panel._hass.callWS = <T>() =>
+      new Promise<T>((done) => {
+        resolve = (value) => done(value as T);
+      });
+    f.panel.yaml = "name: Submitted";
+    const pending = f.panel.saveYaml();
+    f.panel.yaml = "name: Newer";
+    resolve({
+      valid: true,
+      ...f.panel.document,
+      program: { ...f.panel.draft, name: "Submitted" },
+      revision: "new",
+    });
+    await pending;
+    assert.equal(f.panel.yaml, "name: Newer");
+    assert.equal(f.panel.yamlSaved, "name: Submitted");
+    assert.equal(f.panel.yamlDirty, true);
+    assert.equal(f.panel.saved.name, "Submitted");
+    await f.panel.exportYaml();
+    assert.equal(f.panel.yaml, "name: Newer");
+    f.route("guest");
+    await settle();
+    assert.equal(f.panel.selectedEntry, "main");
+    assert.equal(f.confirmations, 1);
+    f.panel.discardEdits();
+    assert.equal(f.panel.yaml, "name: Submitted");
+    assert.equal(f.panel.yamlDirty, false);
+  } finally {
+    f.restore();
+  }
+});
+
+void test("YAML save conflicts preserve code and managed files cannot be saved", async () => {
+  const f = await fixture();
+  try {
+    f.panel.yaml = "name: Edited";
+    f.panel._hass.callWS = () =>
+      Promise.reject({ code: "revision_conflict", message: "Reload first" });
+    await f.panel.saveYaml();
+    assert.equal(f.panel.stale, true);
+    assert.equal(f.panel.yaml, "name: Edited");
+    assert.equal(f.panel.yamlDirty, true);
+    f.panel.stale = false;
+    f.panel.document.source = "file";
+    f.panel._hass.callWS = () => {
+      assert.fail("managed save must not send a request");
+    };
+    await f.panel.saveYaml();
   } finally {
     f.restore();
   }

@@ -8,91 +8,34 @@
     $props();
   let data = $derived.by(() => {
     revision;
-    const t = panel.t,
-      source = panel.document.configuration_source || {
-        mode: panel.document.source || "gui",
-        status: "ready",
-      };
-    return { t, source };
+    return { t: panel.t };
   });
-  let { t, source } = $derived(data);
+  let { t } = $derived(data);
   let autoExportStarted = false;
 
   $effect(() => {
     revision;
     if (!autoExportStarted && !panel.busy) {
-      autoExportStarted = true;
-      void panel.exportYaml();
+      // Export flushes controller updates synchronously. Start it after this
+      // render batch, and cancel if the view disappears or becomes busy first.
+      let cancelled = false;
+      queueMicrotask(() => {
+        if (cancelled) return;
+        autoExportStarted = true;
+        void panel.exportYaml();
+      });
+      return () => {
+        cancelled = true;
+      };
     }
   });
 </script>
 
 <section>
-  <h2>{t("Configuration source")}</h2>
-  <p class="hint">
-    {t(
-      source.mode === "file"
-        ? "The managed file is read only. You can edit, validate and preview a temporary draft; export it and update the file to apply those changes."
-        : "GUI storage is authoritative. Importing YAML creates a draft snapshot. Selecting a managed file below changes the saved program explicitly.",
-    )}
-  </p>
-  <input
-    type="text"
-    aria-label={t("Relative managed-file path")}
-    placeholder="occupied/house.yaml"
-    value={panel.sourcePath ?? source.config_file ?? "occupied/house.yaml"}
-    oninput={(event: Event) =>
-      (panel.sourcePath = (event.currentTarget as HTMLInputElement).value)}
-  />
-  <button
-    type="button"
-    disabled={panel.busy}
-    onclick={() =>
-      panel.selectSource(
-        "file",
-        panel.sourcePath ?? source.config_file ?? "occupied/house.yaml",
-      )}
-  >
-    {t("Use managed file")}
-  </button>
-  {#if source.mode === "file"}
-    <button
-      type="button"
-      disabled={panel.busy}
-      onclick={() => panel.reloadManaged()}
-    >
-      {t("Reload managed file")}
-    </button>
-    <button
-      type="button"
-      disabled={panel.busy || source.has_valid_program === false}
-      onclick={() => panel.selectSource("gui")}
-    >
-      {t("Copy saved program to GUI storage")}
-    </button>
-    {#if source.observed_hash}
-      <p>
-        {t("Observed file hash")}:
-        {source.observed_hash.slice(0, 16)}
-      </p>
-    {/if}
-    {#each source.issues || [] as issue}
-      <p class="error">
-        {issue.path || "$"}{#if issue.line}
-          {` · ${t("Line")} ${issue.line}`}
-        {:else}
-          {""}
-        {/if}:
-        {issue.message}
-      </p>
-    {/each}
-  {/if}
-</section>
-<section>
   <h2>{t("YAML")}</h2>
   <p class="hint">
     {t(
-      "Import replaces only the draft. Export normalizes the draft. Comments are not retained. Importing a local file does not select it as the managed source.",
+      "Edit the YAML and save to validate and apply your changes. Invalid code is kept in the editor.",
     )}
   </p>
   <input
@@ -122,8 +65,16 @@
       panel.flush();
     }}
   ></ha-code-editor>
-  <button type="button" onclick={() => panel.importYaml()}>
-    {t("Import as draft")}</button
+  <button
+    type="button"
+    class="primary"
+    disabled={panel.busy ||
+      panel.stale ||
+      panel.document.source === "file" ||
+      !panel.yaml}
+    onclick={() => panel.saveYaml()}
+  >
+    {t("Save changes")}</button
   ><button
     type="button"
     disabled={panel.busy || !panel.yaml}
