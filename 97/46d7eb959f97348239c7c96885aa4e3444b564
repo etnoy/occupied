@@ -1,0 +1,49 @@
+custom_components/occupied/file_config.py
+  s_27cb271437c798::t_71793396d50462 12,174-175
+custom_components/occupied/frontend/AdvancedStepSettings.svelte
+  s_b26c3c28edcf3c::t_10fd7968506bb9 1-125
+custom_components/occupied/frontend/App.svelte
+  s_0501488b9b1b25::t_7a51f364075963 43-44
+custom_components/occupied/frontend/StepEditor.svelte
+  s_27cb271437c798::t_8897561e73481a 7,40,49-51
+custom_components/occupied/frontend/StepsView.svelte
+  s_0501488b9b1b25::t_b07f7822f120e5 32
+custom_components/occupied/frontend/occupied-panel.ts
+  s_b26c3c28edcf3c::t_fc4b3a2f795773 661
+custom_components/occupied/frontend/styles.ts
+  s_27cb271437c798::t_1137e724798621 345-374,412-413,425-426,429-461
+custom_components/occupied/frontend/translations.ts
+  s_27cb271437c798::t_09c8767bc34e05 35,51-66,114-115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "9746d7eb959f97348239c7c96885aa4e3444b564",
+  "prompts": {},
+  "sessions": {
+    "s_0501488b9b1b25": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a135f1-e718-7f20-ba43-62f4cc700d82",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_27cb271437c798": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a135f3-cb09-7191-ad9d-7821abc5a88e",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_b26c3c28edcf3c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a135ef-1a21-7e00-a6a0-f3218896a718",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
