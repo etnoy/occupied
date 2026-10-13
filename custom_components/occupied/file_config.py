@@ -8,8 +8,8 @@ from typing import Any
 import yaml
 from yaml.nodes import MappingNode, Node, SequenceNode
 
-from .models import Program
-from .validation import Issue, ModelPath, ProgramError, validate_program
+from .models import WEEKDAYS, Program
+from .validation import Issue, ModelPath, ProgramError, program_data, validate_program
 
 MAX_FILE_BYTES = 1_048_576
 
@@ -82,7 +82,7 @@ def load_yaml(source: str) -> Program:
                         [
                             Issue(
                                 "yaml_merge",
-                                "Use shared schema defaults instead of YAML merge keys",
+                                "YAML merge keys are not supported",
                                 path,
                                 line=key.start_mark.line + 1,
                             )
@@ -171,5 +171,20 @@ def read_program(path: str | Path) -> Program:
 
 
 def export_yaml(program: Program) -> str:
-    data = program.model_dump(mode="json", exclude_none=True, exclude_defaults=True)
+    data = program_data(program)
+    _omit_all_days(data)
     return yaml.safe_dump(data, allow_unicode=True, sort_keys=False)
+
+
+def _omit_all_days(value: Any) -> None:
+    """Drop explicit all-week selections, which are the implicit default."""
+    if isinstance(value, dict):
+        selected_days = value.get("days")
+        if isinstance(selected_days, list) and set(selected_days) == set(WEEKDAYS):
+            value.pop("days")
+        for key, child in value.items():
+            if key != "data":
+                _omit_all_days(child)
+    elif isinstance(value, list):
+        for child in value:
+            _omit_all_days(child)

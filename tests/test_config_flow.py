@@ -101,7 +101,7 @@ async def test_gui_bootstrap_requires_a_name_before_creating_a_disabled_controll
     await hass.async_block_till_done()
     entry = result["result"]
     assert entry.runtime_data.program.name == name
-    assert not entry.runtime_data.enabled and not entry.runtime_data.program.routines
+    assert not entry.runtime_data.enabled and not entry.runtime_data.program.steps
     assert not devices
     options = await hass.config_entries.options.async_init(entry.entry_id)
     assert options["type"] is FlowResultType.ABORT

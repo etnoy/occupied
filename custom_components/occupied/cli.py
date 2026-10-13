@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .file_config import export_yaml, read_program
 from .lighting import preview_handover, project_lighting
-from .planner import preview_dates
+from .planner import preview_calendar_dates
 from .time_utils import PlanningContext, simulation_date_at
 from .validation import (
     ProgramError,
@@ -19,9 +19,7 @@ from .validation import (
 
 
 def _context_options(parser):
-    parser.add_argument(
-        "--timezone", help="HA timezone context when the program uses home_assistant"
-    )
+    parser.add_argument("--timezone", help="Timezone context for offline previews")
     parser.add_argument("--latitude", type=float)
     parser.add_argument("--longitude", type=float)
     parser.add_argument("--elevation", type=float, default=0)
@@ -45,13 +43,13 @@ def parser() -> argparse.ArgumentParser:
     validate.add_argument("file", type=Path)
     validate.add_argument("--json", action="store_true")
     validate.add_argument(
-        "--date", type=_date, help="ISO schedule date, or today in the program timezone"
+        "--date", type=_date, help="ISO schedule date, or today in the supplied timezone"
     )
     validate.add_argument("--days", type=int, default=1)
     validate.add_argument("--seed", default="0")
     _context_options(validate)
     preview = commands.add_parser(
-        "preview", help="Export sampled UTC/local events, intervals, and explanations"
+        "preview", help="Export sampled UTC/local events and explanations"
     )
     preview.add_argument("file", type=Path)
     preview.add_argument("--date", type=_date, required=True)
@@ -69,11 +67,11 @@ def parser() -> argparse.ArgumentParser:
         "rename-id", help="Emit a validated replacement with typed references rewritten"
     )
     rename.add_argument("file", type=Path)
-    rename.add_argument("kind", choices=("routine", "step", "activity", "window"))
+    rename.add_argument("kind", choices=("step",))
     rename.add_argument("old")
     rename.add_argument("new")
     rename.add_argument("--output", type=Path)
-    export = commands.add_parser("export", help="Emit normalized YAML with shared schema defaults")
+    export = commands.add_parser("export", help="Emit compact normalized YAML")
     export.add_argument("file", type=Path)
     export.add_argument("--output", type=Path)
     reload = commands.add_parser("reload", help="Reload the selected managed file through HA's API")
@@ -122,7 +120,7 @@ def main(argv: list[str] | None = None) -> int:
                 else args.date
             )
             dates = [first + timedelta(days=index) for index in range(args.days)]
-            plans = preview_dates(program, dates, args.seed, context=context)
+            plans = preview_calendar_dates(program, dates, args.seed, context=context)
             result["plans"] = [plan.to_dict() for plan in plans]
             result["valid"] = all(plan.feasible for plan in plans)
             if args.command == "preview":

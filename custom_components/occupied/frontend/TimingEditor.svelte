@@ -4,11 +4,8 @@
   import EditorField from "./EditorField.svelte";
   import FieldError from "./FieldError.svelte";
 
-  import {
-    stepEntries,
-    timingExplanation,
-    timeSourceChoices,
-  } from "./step-model.js";
+  import { stepEntries, timeSourceChoices } from "./step-model.js";
+  import { timingExplanation } from "./util.js";
   let { panel, context }: { panel: OccupiedPanel; context: StepEditorContext } =
     $props();
   let { editor, form, time, t, refresh, changed } = $derived(context);
@@ -16,7 +13,7 @@
   import { focusEditor } from "./step-editor-controller.js";
   let choices = $derived.by(() => {
     context;
-    let choices = timeSourceChoices(panel.draft, editor.id, panel.catalog);
+    let choices = timeSourceChoices(panel.draft, editor.id, panel.catalog, t);
     if (time.anchor && !choices.some((choice) => choice.value === time.anchor))
       choices = [
         ...choices,
@@ -27,10 +24,10 @@
 </script>
 
 <div data-editor-section="time">
-  <h3 id="routine-timing-heading">
+  <h3 id="step-timing-heading">
     {t("Timing")}
   </h3>
-  <fieldset class="timing-options" aria-labelledby="routine-timing-heading">
+  <fieldset class="timing-options" aria-labelledby="step-timing-heading">
     <div class="timing-option-row">
       {#each [["absolute", "Absolute time"], ["relative", "Relative to"]] as [value, label]}
         <label class="timing-option"
@@ -106,9 +103,11 @@
         onChange: (value) => {
           time.anchor = value;
           if (!editor.existing && value.startsWith("step:")) {
-            const parent = stepEntries(panel.draft).find(
-              (step) => step.id === value.slice(5),
-            );
+            const parent = stepEntries(
+              panel.draft,
+              panel.catalog,
+              panel.t,
+            ).find((step) => step.id === value.slice(5));
             if (parent) form.days = [...parent.days];
           }
           changed("anchor");
@@ -175,7 +174,7 @@
   <p class="hint" data-timing-explanation aria-live="polite">
     {timingExplanation(
       time,
-      stepEntries(panel.draft),
+      stepEntries(panel.draft, panel.catalog, panel.t),
       t,
       panel.catalog.time_sources,
       { locale: panel._hass.locale, days: form.days },

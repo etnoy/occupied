@@ -98,7 +98,7 @@ async function fixture() {
         program: {
           schema_version: 1,
           name: instance.name,
-          routines: [],
+          steps: {},
         },
         revision: `revision-${instance.config_entry_id}`,
         source: instance.source,
@@ -125,7 +125,6 @@ async function fixture() {
         end: "2026-10-07T00:00:00Z",
         events: [],
         steps: {},
-        intervals: [],
         issues: [],
       },
     ],
@@ -219,7 +218,7 @@ void test("opening preview automatically loads the current date and regenerates 
     f.panel.navigate("preview");
     await settle();
     assert.equal(requests().length, 1);
-    f.panel.navigate("routines");
+    f.panel.navigate("steps");
     f.panel.change(["name"], "Updated steps");
     f.panel.navigate("preview");
     assert.equal(f.panel.preview, f.preview);
@@ -242,7 +241,7 @@ void test("a pending preview cannot replace a draft edited while it loads", asyn
         }),
     );
     f.panel.navigate("preview");
-    f.panel.navigate("routines");
+    f.panel.navigate("steps");
     f.panel.change(["name"], "New draft");
     resolvePreview(f.preview);
     await settle();

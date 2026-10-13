@@ -49,7 +49,7 @@ export class OccupiedPanel extends HTMLElement {
   epoch = 0;
 
   // View state
-  tab: Tab = "routines";
+  tab: Tab = "steps";
   t = translator("en");
   stepEditor: StepEditor | null = null;
   pendingStepExit: (() => void) | null = null;
@@ -283,7 +283,7 @@ export class OccupiedPanel extends HTMLElement {
       error: "",
       busy: false,
       _loading: false,
-      tab: "routines",
+      tab: "steps",
       stepEditor: null,
       pendingStepExit: null,
       selectedStep: null,
@@ -478,7 +478,7 @@ export class OccupiedPanel extends HTMLElement {
     if (this.tab === tab) {
       return;
     }
-    if (this.dirty || this.yamlDirty) {
+    if (this.yamlDirty) {
       if (
         !globalThis.confirm(
           this.t("There are unsaved edits. Discard them and switch views?"),
@@ -530,12 +530,11 @@ export class OccupiedPanel extends HTMLElement {
   }
   notices() {
     const t = this.t;
-    let programNotice = "";
-    if (this.stale) {
-      programNotice = t(
-        "The saved program changed. Your draft is preserved; reload the saved program before saving.",
-      );
-    }
+    const programNotice = this.stale
+      ? t(
+          "The saved program changed. Your draft is preserved; reload the saved program before saving.",
+        )
+      : "";
     return [
       programNotice,
       this.document?.source === "file"
@@ -578,6 +577,12 @@ export class OccupiedPanel extends HTMLElement {
     if (render) {
       this.renderView();
     }
+  }
+  discardYaml() {
+    this.yaml = this.yamlSaved;
+    this.error = "";
+    this.issues = [];
+    this.flush();
   }
   change(path: Path, value: unknown, rerender = false) {
     if (path.length === 0) {
@@ -902,25 +907,25 @@ Map a backend issue path inside a step to the step editor field.
 function editorField(tail: Path, form: StepForm): string {
   const has = (key: string) => tail.includes(key),
     head = tail[0];
-  if (head === "name" || head === "days") {
-    return head;
+  if (["name", "days", "entities", "data"].includes(String(head))) {
+    return String(head);
   }
-  if (head === "actions") {
-    if (has("targets")) {
-      return "entities";
-    }
-    if (form.kind === "service") {
-      return has("data") ? "data" : "service";
-    }
-    return form.kind === "scene" ? "entities" : "brightness";
+  if (head === "action") {
+    return form.kind === "service" ? "service" : "kind";
   }
-  if (has("relative_to") || has("sun")) {
+  if (head === "timing") {
+    if (has("absolute_time")) {
+      return has("end") ? "end" : "start";
+    }
+    if (has("start_offset")) {
+      return "startOffset";
+    }
+    if (has("end_offset")) {
+      return "endOffset";
+    }
     return "anchor";
   }
-  if (form.timing.mode === "absolute") {
-    return has("latest") ? "end" : "start";
-  }
-  return has("max") ? "endOffset" : "startOffset";
+  return "name";
 }
 
 if (!customElements.get("occupied-panel")) {

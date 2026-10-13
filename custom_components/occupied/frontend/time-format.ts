@@ -8,6 +8,38 @@ export function shiftScheduleDate(value: string, days: number) {
   return date.toISOString().slice(0, 10);
 }
 
+/**
+Resolve local midnight in the plan's timezone, including DST offset changes.
+*/
+export function calendarMidnight(value: string, zone: string) {
+  const target = Date.parse(`${value}T00:00:00Z`);
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: zone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+  let instant = target;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const parts = Object.fromEntries(
+      formatter.formatToParts(instant).map(({ type, value }) => [type, value]),
+    );
+    const local = Date.parse(
+      `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}Z`,
+    );
+    const correction = target - local;
+    if (correction === 0) {
+      return new Date(instant).toISOString();
+    }
+    instant += correction;
+  }
+  return new Date(instant).toISOString();
+}
+
 export function formatScheduleDate(
   value: string,
   locale?: HomeAssistantLocale,
@@ -28,14 +60,14 @@ export function formatPreviewDate(
   const valueTime = Date.parse(`${value}T12:00:00Z`);
   const todayTime = Date.parse(`${today}T12:00:00Z`);
   const daysFromToday = Math.round((valueTime - todayTime) / 86_400_000);
-  const relativeLabel =
-    daysFromToday === -1
-      ? t("Yesterday")
-      : daysFromToday === 0
-        ? t("Today")
-        : daysFromToday === 1
-          ? t("Tomorrow")
-          : undefined;
+  const relativeLabels: Record<number, string> = {
+    [-1]: "Yesterday",
+    0: "Today",
+    1: "Tomorrow",
+  };
+  const relativeLabel = relativeLabels[daysFromToday]
+    ? t(relativeLabels[daysFromToday])
+    : undefined;
   const dateLabel = formatScheduleDate(value, locale);
   return relativeLabel ? `${relativeLabel} · ${dateLabel}` : dateLabel;
 }

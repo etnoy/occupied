@@ -39,7 +39,11 @@ def light_observation(hass, entity):
     attrs = value["attributes"]
     return LightState(
         value["state"],
-        attrs.get("brightness", 255) * 100 / 255 if value["state"] == STATE_ON else 0,
+        attrs["brightness"] * 100 / 255
+        if value["state"] == STATE_ON and "brightness" in attrs
+        else 0
+        if value["state"] == STATE_OFF
+        else None,
         attrs.get("color_temp_kelvin"),
         tuple(attrs["hs_color"]) if "hs_color" in attrs else None,
         tuple(attrs["rgb_color"]) if "rgb_color" in attrs else None,
@@ -69,9 +73,9 @@ def light_matches(hass, entity, target):
     data.pop("state")
     action = ResolvedAction("light.turn_on", (entity,), data, (entity,), True)
     data = service_payload(hass, action)
-    if (
-        "brightness_pct" in data
-        and abs(current.brightness_pct - data["brightness_pct"]) > 100 / 255
+    if "brightness_pct" in data and (
+        current.brightness_pct is None
+        or abs(current.brightness_pct - data["brightness_pct"]) > 100 / 255
     ):
         return False
     for key in ("color_temp_kelvin", "hs_color", "rgb_color"):
@@ -88,7 +92,7 @@ def service_payload(hass, action):
     data = dict(action.data)
     if action.targets:
         data["entity_id"] = list(action.targets) if len(action.targets) > 1 else action.targets[0]
-    if action.action.startswith("light.") and action.targets:
+    if action.action in {"light.turn_on", "light.turn_off"} and action.targets:
         entity = action.targets[0]
         dimmable, transition = light_capabilities(hass, entity)
         if not dimmable:

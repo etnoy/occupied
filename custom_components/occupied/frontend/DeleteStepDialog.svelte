@@ -2,7 +2,7 @@
   import type { OccupiedPanel } from "./occupied-panel.js";
   import type { StepEntry } from "./types.js";
   import { reference } from "./dom.js";
-  import { copy, removeResource } from "./model.js";
+  import { copy, removeStep } from "./model.js";
 
   import { stepEntries, dependentNames } from "./step-model.js";
 
@@ -63,12 +63,12 @@
       disabled={dependents.length > 0}
       onclick={() =>
         panel.attempt(() => {
-          const current = stepEntries(panel.draft).find(
+          const current = stepEntries(panel.draft, panel.catalog, panel.t).find(
             (step) => step.id === entry.id,
           );
           if (!current) return dialog.close();
           const next = copy(panel.draft);
-          removeResource(next, current.path);
+          removeStep(next, current.path);
           dialog.close();
           panel.selectedStep = null;
           panel.stepEditor = null;

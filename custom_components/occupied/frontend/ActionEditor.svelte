@@ -45,6 +45,8 @@
       value={form.service}
       update={(value) => (form.service = value)}
     ></EditorField>
+  {/if}
+  {#if form.kind !== "entities"}
     <EditorField
       {panel}
       {context}

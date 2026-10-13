@@ -2,7 +2,6 @@
 
 import asyncio
 from copy import deepcopy
-from datetime import timedelta
 from unittest.mock import patch
 
 import pytest
@@ -12,8 +11,7 @@ from homeassistant.components.frontend import DATA_PANELS
 from homeassistant.core import CoreState
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.setup import async_setup_component
-from homeassistant.util import dt as dt_util
-from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.occupied import CONFIG_SCHEMA
 from custom_components.occupied.bootstrap import async_bootstrap, check_bootstrap
@@ -26,26 +24,14 @@ def household(name, entity):
     return {
         "schema_version": 1,
         "name": name,
-        "timezone": "UTC",
-        "activation": {
-            "conditions": [
-                {"condition": "state", "entity_id": f"sensor.{name}", "state": ["armed"]}
-            ]
-        },
-        "routines": [
-            {
-                "id": "daily",
-                "name": "Daily",
-                "steps": [
-                    {
-                        "id": "evening",
-                        "name": "Evening",
-                        "when": {"clock_range": {"earliest": "20:00", "latest": "20:30"}},
-                        "actions": [{"action": "turn_on", "targets": {"entities": [entity]}}],
-                    }
-                ],
+        "steps": {
+            "evening": {
+                "name": "Evening",
+                "timing": {"absolute_time": {"start": "20:00", "end": "20:30"}},
+                "action": "turn_on",
+                "entities": [entity],
             }
-        ],
+        },
     }
 
 
@@ -108,7 +94,7 @@ async def test_permissions_plans_and_restart_are_independent(hass, households, s
     await second.async_set_enabled(True)
     before = deepcopy(second.snapshot())
     plans = deepcopy(second._plans)
-    hass.states.async_set("sensor.main", "disarmed")
+    await first.async_set_paused(True)
     await hass.async_block_till_done()
     assert not first.active and second.snapshot() == before
     assert await hass.config_entries.async_reload(main.entry_id)
@@ -116,7 +102,7 @@ async def test_permissions_plans_and_restart_are_independent(hass, households, s
     assert guest.runtime_data is second and second.snapshot() == before
     assert second._plans == plans
     assert main.runtime_data._seed == first._seed
-    assert main.runtime_data.enabled and not main.runtime_data.active
+    assert main.runtime_data.enabled and main.runtime_data.paused and not main.runtime_data.active
     assert not devices
 
 
@@ -135,66 +121,6 @@ async def test_files_reload_fail_and_recover_independently(hass, households, tmp
     assert (await first.source_manager.async_reload())["valid"]
     assert first.program.name == "Main renamed" and second.snapshot() == before
     assert ("occupied", f"managed_file_{main.entry_id}") not in ir.async_get(hass).issues
-
-
-async def test_activity_cleanup_and_deadlines_stay_with_their_instance(
-    hass, households, devices, freezer
-):
-    for name, program in households.items():
-        remote = f"remote.{name}"
-        hass.states.async_set(remote, "off", {"current_activity": "PowerOff"})
-        program["routines"] = [
-            {
-                "id": "daily",
-                "name": "Daily",
-                "activities": [
-                    {
-                        "id": "tv",
-                        "name": "TV",
-                        "when": {"clock_range": {"earliest": "18:05", "latest": "18:05"}},
-                        "duration": {"fixed": "1m"},
-                        "resources": [remote],
-                        "on_start": [
-                            {
-                                "action": "remote.turn_on",
-                                "targets": {"entities": [remote]},
-                                "data": {"activity": "Watch TV"},
-                            }
-                        ],
-                        "on_end": [
-                            {"action": "remote.turn_off", "targets": {"entities": [remote]}}
-                        ],
-                    }
-                ],
-            }
-        ]
-    main, guest = await setup_pair(hass, households, ("gui", "gui"))
-    await main.runtime_data.async_set_enabled(True)
-    await guest.runtime_data.async_set_enabled(True)
-    freezer.move_to(dt_util.utcnow() + timedelta(minutes=5))
-    async_fire_time_changed(hass, dt_util.utcnow())
-    await hass.async_block_till_done()
-    assert hass.states.get("remote.main").state == "on"
-    assert hass.states.get("remote.guest").state == "on"
-    assert not any(document["overlaps"] for document in instance_documents(hass))
-    activity = next(iter(guest.runtime_data._activities.values()))
-    deadline = activity.deadline
-    assert await hass.config_entries.async_unload(main.entry_id)
-    await hass.async_block_till_done()
-    assert hass.states.get("remote.main").state == "off"
-    assert hass.states.get("remote.guest").state == "on"
-    assert next(iter(guest.runtime_data._activities.values())) is activity
-    assert activity.deadline == deadline
-    freezer.move_to(deadline)
-    async_fire_time_changed(hass, dt_util.utcnow())
-    await hass.async_block_till_done()
-    assert hass.states.get("remote.guest").state == "off"
-    assert len(devices) == 4
-    for remote in ("remote.main", "remote.guest"):
-        assert [call.service for call in devices if call.data["entity_id"] == remote] == [
-            "turn_on",
-            "turn_off",
-        ]
 
 
 async def test_saving_one_gui_program_preserves_the_other_revision(

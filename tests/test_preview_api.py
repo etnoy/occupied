@@ -82,7 +82,7 @@ async def test_draft_validation_and_id_migration_return_reviewable_model(
     result = await client.receive_json()
     assert result["result"]["valid"]
     assert (
-        result["result"]["program"]["routines"][0]["steps"][1]["when"]["relative_to"] == "morning"
+        result["result"]["program"]["steps"]["leave"]["timing"]["relative_to"]["step"] == "morning"
     )
     assert not devices
 

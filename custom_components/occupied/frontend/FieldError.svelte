@@ -6,7 +6,7 @@
 {#if errors[key]}
   <p
     class="error"
-    id={`routine-error-${key}`}
+    id={`step-error-${key}`}
     data-builder-error={key}
     role="alert"
   >

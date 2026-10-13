@@ -69,7 +69,6 @@ def diagnostics_data(engine, *, include_sensitive=False):
     result["counts"] = {
         "queued_events": len(snapshot["events"]),
         "recent_outcomes": len(snapshot["outcomes"]),
-        "active_activities": len(snapshot.get("activities", [])),
         "handover_targets": len(snapshot.get("handover", {})),
         "yielded_targets": len(snapshot.get("yielded", [])),
     }

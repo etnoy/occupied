@@ -2,25 +2,27 @@
   import type { OccupiedPanel } from "./occupied-panel.js";
 
   import { startStep, openStep, actionSummary, stepTree } from "./steps.js";
-  import { stepEntries, timingSummary, simpleStep } from "./step-model.js";
-  import { entityName } from "./util.js";
+  import { stepEntries } from "./step-model.js";
+  import { entityName, timingSummary } from "./util.js";
   import StepEditor from "./StepEditor.svelte";
-  import StepActions from "./StepActions.svelte";
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
   let data = $derived.by(() => {
     revision;
-    return { t: panel.t, entries: stepEntries(panel.draft) };
+    return {
+      t: panel.t,
+      entries: stepEntries(panel.draft, panel.catalog, panel.t),
+    };
   });
   let { t, entries } = $derived(data);
 </script>
 
 {#if !entries.length}
-  <section class="routine-empty">
+  <section class="step-empty">
     <button
       type="button"
       class="primary"
-      data-create-routine
+      data-create-step
       disabled={panel.busy}
       onclick={() => startStep(panel)}
     >
@@ -28,8 +30,8 @@
     </button>
   </section>
 {:else}
-  <div class="routine-layout">
-    <div class="routine-list" aria-label={t("Steps")}>
+  <div class="step-layout">
+    <div class="step-list" aria-label={t("Steps")}>
       {#each stepTree(entries) as { entry, depth } (entry.id)}
         {@const editing =
           panel.stepEditor?.existing && panel.stepEditor.id === entry.id}
@@ -37,20 +39,17 @@
           ? panel.stepEditor?.form.enabled === false
           : entry.enabled === false}
         {@const expanded =
-          editing ||
-          (!panel.stepEditor &&
-            !simpleStep(entry) &&
-            panel.selectedStep === entry.id)}
+          editing || (!panel.stepEditor && panel.selectedStep === entry.id)}
         <div
-          class="routine-card"
+          class="step-card"
           class:step-disabled={stepDisabled}
-          data-routine-id={entry.id}
+          data-step-id={entry.id}
           style={`--depth:${Math.min(depth, 3)}`}
         >
           <button
             type="button"
             id={`step-card-${entry.id}`}
-            class="routine-row"
+            class="step-row"
             class:editing
             aria-label={stepDisabled
               ? `${entry.name} · ${t("Disabled")}`
@@ -60,8 +59,8 @@
             aria-controls={`step-editor-${entry.id}`}
             onclick={() => openStep(panel, entry)}
           >
-            <span class="routine-row-content">
-              <span class="routine-row-heading">
+            <span class="step-row-content">
+              <span class="step-row-heading">
                 <strong>{entry.name}</strong>
                 {#if stepDisabled}
                   <span class="step-status-badge">{t("Disabled")}</span>
@@ -75,7 +74,7 @@
               >
             </span>
             {#if !editing}
-              <span class="routine-row-time">
+              <span class="step-row-time">
                 {timingSummary(
                   entry,
                   entries,
@@ -90,15 +89,6 @@
             <div id={`step-editor-${entry.id}`}>
               {#if panel.stepEditor}
                 <StepEditor {panel} {revision} />
-              {:else}
-                <section class="routine-editor">
-                  <p class="hint">
-                    {t(
-                      "Custom actions cannot be edited with the simple step editor.",
-                    )}
-                  </p>
-                  <StepActions {panel} {entry} />
-                </section>
               {/if}
             </div>
           {/if}
@@ -109,7 +99,7 @@
   <button
     type="button"
     class="primary"
-    data-create-routine
+    data-create-step
     disabled={panel.busy}
     onclick={() => startStep(panel)}
   >

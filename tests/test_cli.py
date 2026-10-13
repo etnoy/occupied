@@ -24,7 +24,18 @@ def test_cli_validate_and_week_preview_are_read_only(program_file, capsys):
     assert main(["validate", str(program_file), "--json"]) == 0
     validation = json.loads(capsys.readouterr().out)
     assert validation["valid"]
-    args = ["preview", str(program_file), "--date", "2026-10-06", "--days", "7", "--seed", "proof"]
+    args = [
+        "preview",
+        str(program_file),
+        "--timezone",
+        "UTC",
+        "--date",
+        "2026-10-06",
+        "--days",
+        "7",
+        "--seed",
+        "proof",
+    ]
     assert main(args) == 0
     first = json.loads(capsys.readouterr().out)
     assert len(first["plans"]) == 7
@@ -37,7 +48,7 @@ def test_cli_rename_emits_replacement_and_leaves_source_intact(program_file, cap
     original = program_file.read_bytes()
     assert main(["rename-id", str(program_file), "step", "wake", "morning"]) == 0
     replacement = load_yaml(capsys.readouterr().out)
-    assert replacement.routines[0].steps[1].when.relative_to == "morning"
+    assert replacement.steps["leave"].timing.relative_to.step == "morning"
     assert program_file.read_bytes() == original
 
 
@@ -52,10 +63,12 @@ def test_cli_output_and_projected_handover(program_file, tmp_path):
                 "2026-10-06",
                 "--seed",
                 "proof",
+                "--timezone",
+                "UTC",
                 "--at",
-                "2026-10-06T06:55:00Z",
+                "2026-10-06T07:20:00Z",
                 "--handover-at",
-                "2026-10-06T06:55:00Z",
+                "2026-10-06T07:20:00Z",
                 "--output",
                 str(output),
             ]
@@ -75,24 +88,36 @@ def test_cli_invalid_file_and_infeasible_day_fail_with_diagnostics(
     result = json.loads(capsys.readouterr().err)
     assert result["issues"][0]["line"] == 3
     changed = deepcopy(program_dict)
-    changed["routines"][0]["activity_windows"][0]["on_duration"] = {"fixed": "5h"}
+    changed["steps"]["leave"]["timing"]["relative_to"]["step"] = "unknown"
     program_file.write_text(yaml.safe_dump(changed))
     assert main(["validate", str(program_file), "--date", "2026-10-06", "--json"]) == 2
-    result = json.loads(capsys.readouterr().out)
+    result = json.loads(capsys.readouterr().err)
     assert not result["valid"]
 
 
 @pytest.mark.parametrize(
     "at, expected",
-    [("2026-10-05T23:30:00+00:00", "2026-10-05"), ("2026-10-06T00:30:00+00:00", "2026-10-06")],
+    [("2026-10-05T23:30:00+00:00", "2026-10-06"), ("2026-10-06T00:30:00+00:00", "2026-10-06")],
 )
 def test_today_uses_program_timezone_and_simulation_day(
     program_file, program_dict, freezer, capsys, at, expected
 ):
     freezer.move_to(at)
-    program_dict["timezone"] = "Europe/Stockholm"
     program_file.write_text(yaml.safe_dump(program_dict))
-    assert main(["validate", str(program_file), "--date", "today", "--json"]) == 0
+    assert (
+        main(
+            [
+                "validate",
+                str(program_file),
+                "--date",
+                "today",
+                "--timezone",
+                "Europe/Stockholm",
+                "--json",
+            ]
+        )
+        == 0
+    )
     result = json.loads(capsys.readouterr().out)
     assert result["plans"][0]["simulation_date"] == expected
 

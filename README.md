@@ -1,4 +1,3 @@
-
 # Occupied
 
 <img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/occupied.svg" alt="Logo, a smiling occupied toilet sign" height="200">
@@ -7,41 +6,40 @@ Occupied manages selected Home Assistant entities using schedules, optional rand
 
 It is the spiritual successor of https://github.com/acockburn/occusim
 
-Occupied includes the complete editor and timeline, canonical daily programs, durable plans/journals, gradual lighting handover, owned activity cleanup and restart recovery, dry run, diagnostics, and authoritative managed YAML. See [the editor guide](docs/editor.md), [daily runtime guide](docs/runtime.md), and [managed/Puppet guide](docs/managed-configuration.md).
+A native Home Assistant occupancy simulator with a shared GUI/YAML step model and deterministic daily planning.
 
-## Installation
+Create a controller through **Settings → Devices & services → Add integration → Occupied**, then select **Configure**. Permission starts disabled. The editor creates steps with absolute start windows or relative timing, and one light/switch, scene, or native entity service action. Titles are optional. All weekdays and enabled state are implicit defaults.
 
-1. Add `https://github.com/etnoy/occupied` as a HACS custom repository of type **Integration**. Choose a tagged release, or select `main` to follow development directly. The repository includes the compiled frontend. As an alternative, extract release `occupied.zip` inside `<HA config>/custom_components/occupied/`. See [installation, upgrades and uninstall](docs/installation.md).
-2. Restart Home Assistant.
-3. Open **Settings → Devices & services → Add integration → Occupied**. Enter a controller name (default: **Occupied**) and submit. Each controller needs a distinct name.
-4. Open **Occupied** under **Settings → Devices & services** and select **Configure**. Open the editor or import an Occupied YAML snapshot. Select **Create your first step**, choose entity actions or a Home Assistant scene, and a start time or interval, then **Save step**. Select a step and **Add related step** to schedule what happens before or after it. Saving validates automatically. Existing proof settings remain supported and open with an editable daily starter program.
-5. Use **Preview** to review your steps. **Settings** opens YAML import/export directly. Use the integration's Home Assistant switches to enable management or select dry-run mode; activation conditions still apply.
-
-Each controller is a separate integration entry with its own program, optional managed file, activation conditions, permission, seed and runtime state. The Occupied panel lets you select a controller; Configure opens the selected integration entry. GUI/import mode stores snapshots. Managed-file mode detects changes and supports validated `occupied.reload`; invalid updates retain that controller's running program, and invalid initial files remain inactive. Shared declared device targets show a warning because actions and cleanup can interfere; ownership is not coordinated across controllers. Occupied never writes managed files. No frontend build at installation, AppDaemon, separate daemon, or open browser is required. The tested matrix is Home Assistant Core **2026.9.3 and 2026.9.4**, on Python **3.14.8** (HA requires Python >=3.14.2).
-
-## Canonical programs and offline previews
-
-See [the schema reference](docs/schema.md), [the controller example](examples/house.yaml) and [the GUI export](examples/gui-house.yaml). YAML files and JSON drafts use the same versioned model, defaults, graph validation, and planner. Labels and resource list order do not affect sampled times. Explicit ID migration rewrites typed references atomically.
-
-The CLI requires Python 3.14.2 or later and its three direct planner dependencies. Install the release wheel without HA using `pip install ./occupied-0.1.0-py3-none-any.whl`, use `uv sync --no-dev --locked`, or use the development environment below. You can also invoke it with `python -m custom_components.occupied.cli`.
-
-```sh
-occupied-config validate examples/house.yaml
-occupied-config validate examples/house.yaml --date today --days 7 --timezone Europe/Stockholm
-occupied-config validate examples/house.yaml --date 2026-10-06 --days 7 --seed example
-occupied-config preview examples/house.yaml --date 2026-10-06 --days 7 --seed example --output preview.json
-occupied-config preview examples/house.yaml --date 2026-10-06 --seed example --handover-at 2026-10-06T18:00:00+02:00
-occupied-config export examples/house.yaml --output normalized.yaml
-occupied-config rename-id examples/house.yaml step wake morning_wake --output replacement.yaml
+```yaml
+schema_version: 1
+name: Occupied
+steps:
+  evening:
+    timing:
+      absolute_time: {start: '18:00', end: '18:30'}
+    action: turn_on
+    entities: [light.living_room]
+  bedtime:
+    timing:
+      relative_to: {step: evening, start_offset: 2h}
+    action: turn_off
+    entities: [light.living_room]
 ```
 
-Validation and previews only read the source. Export and ID migration return YAML to stdout unless you explicitly select an output file. Exit status is 0 for valid/feasible results and 2 for invalid input or an infeasible sampled plan. Add `--json` to validation for structured issues, model paths, and YAML source locations. Validate with a date to check schedule feasibility after sun/timezone resolution.
+HA supplies timezone/location, and its controls or automations determine management permission, pause, and dry run. There are no routine containers or managed-light lists. Initial planned state stays Unknown until an explicit action establishes intent. Gentle handover reconciles known light state; manual control yields an entity until the next activation. Generic services and scenes remain opaque.
 
-Previews include UTC and local event times, intervals, stable event IDs, behavior/source hashes, and skipped/infeasible explanations. `--at` projects desired lighting; `--handover-at` projects each target at its completion deadline. A default `home_assistant` timezone needs `--timezone` offline; sun rules need program location or both `--latitude` and `--longitude`.
+GUI storage, YAML snapshots, and authoritative managed files share the same schema. Invalid managed-file updates retain the last valid program. Multiple controllers have independent plans, queues, permissions, and sources.
 
-Authenticated admin WebSocket commands `occupied/validate`, `occupied/preview`, `occupied/export`, and `occupied/rename_id` expose these draft operations to the editor. They require a loaded `config_entry_id` and a `program` JSON object or YAML string. Preview also takes ISO `date`, `seed`, optional `days` (1–31), and optional aware ISO `at`. ID migration takes `kind`, `old`, and `new`. These commands return drafts and previews without changing the live queue or calling device services.
+See [installation](docs/installation.md), [editor](docs/editor.md), [schema](docs/schema.md), [runtime](docs/runtime.md), and [managed configuration](docs/managed-configuration.md). Example programs are in [examples](examples/house.yaml).
 
-The pure planner records nominal activity start/end pairs and declared resources. The daily runtime checks device availability, native start/ownership conditions, actual service latency, persistence, and cancellation. A single-day CLI handover preview reports `next_day_plan_required` across its boundary; the runtime loads the required endpoint date. Admin `occupied/diagnostics` exports redacted counts by default, with controller details available only through explicit `include_sensitive: true`.
+The standalone `occupied-config` CLI validates, exports, previews, and renames typed step IDs without importing Home Assistant or executing device services:
+
+```sh
+occupied-config validate examples/house.yaml --date 2026-10-13 --days 7 --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
+occupied-config preview examples/house.yaml --date 2026-10-13 --seed preview --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
+occupied-config export examples/house.yaml
+occupied-config rename-id examples/house.yaml step wake_up morning
+```
 
 ## Development and verification
 
@@ -92,4 +90,4 @@ The frontend uses Svelte 5 and TypeScript, with `OccupiedPanel` as HA’s custom
 
 Run `pnpm run build` after editing `.ts` or `.svelte` files and commit the generated `custom_components/occupied/frontend/dist/*.js` alongside their sources. The build bundles Svelte and all UI components into the local `occupied-panel.js` asset; the separate model modules support tests. Release ZIPs and wheels include the built frontend, so installations need no Node tooling or external CDN. Test output in `tests/frontend/generated/` stays ignored. `pnpm test` compiles the pure model tests and exercises the committed frontend model modules without rebuilding them. `pnpm run lint` checks the generated application modules; the compiler-generated Svelte bundle is covered by strict template checks. `pnpm run build:check` rejects missing, stale or unexpected assets without rewriting them. CI runs it before lint and tests, alongside `pnpm run typecheck` and `pnpm run format:check`.
 
-`uv.lock` pins the complete test environment, including the HA frontend package. Python tests use virtual device handlers. Node tests cover the step editor’s model and validation logic. Test the UI in an installed Home Assistant instance. CI checks the supported HA matrix, generated schema, examples, hassfest/HACS metadata and installable artifacts; it uses locked Python and frontend development dependencies. See [release verification](docs/releasing.md) and [the editor guide](docs/editor.md). Tests use real HA config entries, entities, native conditions, storage, timers, HTTP, and WebSocket APIs, with virtual physical-device handlers. They cover restart/overdue cleanup, immutable ends after apply, manual control, late/staggered starts, cross-day leases, persistence failure, capability fallbacks, dry run, bounded retries, authenticated apply/diagnostics, and preview isolation. Pure tests cover canonical round trips, ID migration, sampled bounds, resource conflicts, midnight/DST, and handover projection. No existing HA installation or physical devices are modified. Physical-device timing and a hardware soak remain deployment acceptance work.
+`uv.lock` pins the complete test environment, including the HA frontend package. Python tests use virtual device handlers. Node tests cover the step editor’s model and validation logic. Test the UI in an installed Home Assistant instance. CI checks the supported HA matrix, generated schema, examples, hassfest/HACS metadata and installable artifacts; it uses locked Python and frontend development dependencies. See [release verification](docs/releasing.md) and [the editor guide](docs/editor.md). Tests use real HA config entries, entities, storage, timers, HTTP, and WebSocket APIs with virtual device handlers. They cover stable step sampling, midnight/DST, known-source date rules, compact round trips, typed ID renames, unknown startup state, handover, restart, persistence failure, manual control, dry run, managed files, instance isolation, authenticated saves, and preview isolation. No existing HA installation or physical devices are modified. Physical-device timing and a hardware soak remain deployment acceptance work.

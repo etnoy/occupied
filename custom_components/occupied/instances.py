@@ -6,28 +6,14 @@ INSTANCE_SIGNAL = "occupied_instances_changed"
 
 
 def program_entities(program):
-    entities = set(program.lighting.managed_targets.entities)
-    for routine in program.routines:
-        for item in (*routine.steps, *routine.activities):
-            actions = item.actions if hasattr(item, "actions") else (*item.on_start, *item.on_end)
-            entities.update(getattr(item, "resources", ()))
-            for action in actions:
-                entities.update(action.targets.entities)
-                entities.update(action.resources)
-        for window in routine.activity_windows:
-            entities.update(window.targets.entities)
-    return entities
+    from .models import controlled_entities
+
+    return set(controlled_entities(program))
 
 
 def controlled_entities(engine):
     if hasattr(engine, "program"):
-        entities = program_entities(engine.program)
-        for lifecycle in engine._activities.values():
-            entities.update(lifecycle.resources)
-            for _offset, action in lifecycle.end_actions:
-                entities.update(action.targets)
-                entities.update(action.resources)
-        return entities
+        return program_entities(engine.program)
     return {
         engine.config[key] for key in ("light_entity", "remote_entity") if engine.config.get(key)
     }

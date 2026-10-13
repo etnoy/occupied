@@ -40,7 +40,7 @@
   });
   let { t, notices, primary } = $derived(state);
   const primaryTabs: [Tab, string][] = [
-    ["routines", "Steps"],
+    ["steps", "Steps"],
     ["preview", "Preview"],
     ["settings", "Settings"],
   ];
@@ -150,7 +150,7 @@
         <button
           type="button"
           class="text-button"
-          onclick={() => panel.navigate("routines")}
+          onclick={() => panel.navigate("steps")}
         >
           {t("Back to steps")}
         </button>
@@ -188,7 +188,7 @@
               >{/if}
           {:else if panel.stepEditor && !panel.stepEditor.existing}
             <StepEditor {panel} {revision} />
-          {:else if panel.tab === "routines"}
+          {:else if panel.tab === "steps"}
             <StepsView {panel} {revision} />
           {:else if panel.tab === "settings"}
             <SettingsView {panel} {revision} />

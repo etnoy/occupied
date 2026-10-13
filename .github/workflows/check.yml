@@ -36,8 +36,8 @@ jobs:
       - run: .venv/bin/ruff format --check custom_components tests scripts
       - run: .venv/bin/pytest --cov=custom_components.occupied --cov-fail-under=88
       - run: .venv/bin/python scripts/check_release.py
-      - run: .venv/bin/occupied-config validate examples/house.yaml --date 2026-10-06 --days 7 --seed release --timezone Europe/Stockholm
-      - run: .venv/bin/occupied-config validate examples/gui-house.yaml --date 2026-10-06 --days 7 --seed release --timezone Europe/Stockholm
+      - run: .venv/bin/occupied-config validate examples/house.yaml --date 2026-10-06 --days 7 --seed release --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
+      - run: .venv/bin/occupied-config validate examples/gui-house.yaml --date 2026-10-06 --days 7 --seed release --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
 
   frontend:
     runs-on: ubuntu-latest
@@ -92,7 +92,7 @@ jobs:
           uv pip install --python /tmp/occupied-cli/bin/python dist/occupied-*-py3-none-any.whl
           cd /tmp
           /tmp/occupied-cli/bin/python -c 'import sys; from custom_components.occupied.cli import main; assert "homeassistant" not in sys.modules'
-          /tmp/occupied-cli/bin/occupied-config validate "$GITHUB_WORKSPACE/examples/house.yaml" --date 2026-10-06 --days 7 --timezone Europe/Stockholm
+          /tmp/occupied-cli/bin/occupied-config validate "$GITHUB_WORKSPACE/examples/house.yaml" --date 2026-10-06 --days 7 --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: occupied-release

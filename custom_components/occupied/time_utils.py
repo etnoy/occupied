@@ -1,4 +1,4 @@
-"""Pure timezone/sun resolution for one local schedule date."""
+"""Timezone, solar, and known HA times for a local calendar date."""
 
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from astral import Observer
 from astral.sun import dawn, dusk, midnight, noon, sunrise, sunset
 
-from .models import Anchor, Between, ClockRange, EntityRange, Program, SunRange
+from .models import AbsoluteTime, Program, RelativeTo
 from .validation import Issue, ModelPath, ProgramError
 
 
@@ -54,173 +54,93 @@ class SimulationDay:
     def __init__(
         self, program: Program, simulation_date: date, context: PlanningContext, issues: list[Issue]
     ):
-        self.context = context
-        self.program = program
-        self.date = simulation_date
-        self.issues = issues
-        timezone = program.timezone if program.timezone != "home_assistant" else context.timezone
-        if timezone is None:
+        self.context, self.date, self.issues = context, simulation_date, issues
+        try:
+            self.zone = ZoneInfo(context.timezone or "")
+        except (ValueError, KeyError) as err:
             raise ProgramError(
                 [
                     Issue(
-                        "timezone_context",
-                        "home_assistant timezone requires HA context or CLI --timezone",
-                        ("timezone",),
+                        "timezone_context", "Supply a timezone through HA context or CLI --timezone"
                     )
                 ]
-            )
-        try:
-            self.zone = ZoneInfo(timezone)
-        except (ValueError, KeyError) as err:
-            raise ProgramError(
-                [Issue("timezone_context", f"Unknown timezone {timezone}", ("timezone",))]
             ) from err
-        self.boundary = time.fromisoformat(program.day_boundary)
-        self.start = self._local(
-            datetime.combine(simulation_date, self.boundary), ("day_boundary",)
-        )
-        self.end = self._local(
-            datetime.combine(simulation_date + timedelta(days=1), self.boundary), ("day_boundary",)
-        )
-        location = program.location
-        latitude = location.latitude if location else context.latitude
-        longitude = location.longitude if location else context.longitude
-        elevation = location.elevation if location else context.elevation
-        if (latitude is None) != (longitude is None):
+        self.start = self._local(datetime.combine(simulation_date, time()), ())
+        self.end = self._local(datetime.combine(simulation_date + timedelta(days=1), time()), ())
+        if (context.latitude is None) != (context.longitude is None):
             raise ProgramError(
-                [Issue("location_context", "Supply latitude and longitude together", ("location",))]
+                [Issue("location_context", "Supply latitude and longitude together")]
             )
-        if latitude is not None and (not -90 <= latitude <= 90 or not -180 <= longitude <= 180):
+        if context.latitude is not None and (
+            not -90 <= context.latitude <= 90 or not -180 <= context.longitude <= 180
+        ):
+            raise ProgramError([Issue("location_context", "Invalid latitude or longitude")])
+        self.observer = (
+            Observer(context.latitude, context.longitude, context.elevation)
+            if context.latitude is not None
+            else None
+        )
+
+    def _local(self, value, path):
+        instant, adjustment = resolve_local(value, self.zone)
+        if adjustment:
+            self.issues.append(
+                Issue(adjustment, "Local time adjusted for daylight saving time", path, "warning")
+            )
+        return instant
+
+    def clock(self, value, path, day_offset=0):
+        return self._local(
+            datetime.combine(self.date + timedelta(days=day_offset), time.fromisoformat(value)),
+            path,
+        )
+
+    def clock_bounds(self, spec: AbsoluteTime, path: ModelPath):
+        start = self.clock(spec.start, path + ("start",))
+        value = spec.end or spec.start
+        end = self.clock(
+            value, path + ("end",), int(time.fromisoformat(value) < time.fromisoformat(spec.start))
+        )
+        return start, end
+
+    def sun_bounds(self, spec: RelativeTo, path: ModelPath):
+        if self.observer is None:
             raise ProgramError(
                 [
                     Issue(
                         "location_context",
-                        "Latitude/longitude are outside their valid ranges",
-                        ("location",),
+                        "Solar timing requires HA location or CLI latitude/longitude",
+                        path,
                     )
                 ]
             )
-        self.observer = Observer(latitude, longitude, elevation) if latitude is not None else None
-        self._sun_cache: dict[tuple[str, date], datetime | None] = {}
-
-    def _local(self, value: datetime, path: ModelPath, zone: ZoneInfo | None = None) -> datetime:
-        zone = zone or self.zone
-        instant, adjustment = resolve_local(value, zone)
-        if adjustment:
+        try:
+            anchor = {
+                "sunrise": sunrise,
+                "sunset": sunset,
+                "dawn": dawn,
+                "dusk": dusk,
+                "noon": noon,
+                "midnight": midnight,
+            }[spec.sun](self.observer, date=self.date, tzinfo=self.zone).astimezone(UTC)
+        except ValueError:
             self.issues.append(
                 Issue(
-                    adjustment,
-                    f"{value.isoformat()} in {zone.key} resolves to "
-                    f"{instant.astimezone(zone).isoformat()}; "
-                    "first valid/first repeated instant policy",
+                    "sun_unavailable",
+                    f"{spec.sun} is unavailable on {self.date}; step skipped",
                     path,
-                    "info",
+                    "warning",
                 )
             )
-        return instant
-
-    def clock(self, value: str, path: ModelPath, day_offset: int = 0) -> datetime:
-        clock = time.fromisoformat(value)
-        calendar_date = self.date + timedelta(days=day_offset + (clock < self.boundary))
-        return self._local(datetime.combine(calendar_date, clock), path)
-
-    def sun(self, event: str, path: ModelPath, day_offset: int = 0) -> datetime | None:
-        calendar_date = self.date + timedelta(days=day_offset)
-        key = event, calendar_date
-        if key not in self._sun_cache:
-            try:
-                function = {
-                    "sunrise": sunrise,
-                    "sunset": sunset,
-                    "dawn": dawn,
-                    "dusk": dusk,
-                    "noon": noon,
-                    "midnight": midnight,
-                }[event]
-                self._sun_cache[key] = (
-                    function(self.observer, date=calendar_date, tzinfo=self.zone).astimezone(UTC)
-                    if self.observer
-                    else None
-                )
-            except ValueError:
-                self._sun_cache[key] = None
-        if instant := self._sun_cache[key]:
-            return instant
-        self.issues.append(
-            Issue(
-                "sun_unavailable",
-                f"{event} is unavailable on {calendar_date}; affected item skipped"
-                if self.observer
-                else (
-                    "Sun rules need a location; affected item skipped "
-                    "(provide CLI --latitude/--longitude)"
-                ),
-                path,
-                "warning",
-            )
-        )
-        return None
-
-    def clock_bounds(
-        self, spec: ClockRange, path: ModelPath
-    ) -> tuple[datetime, datetime, datetime | None]:
-        if (
-            time.fromisoformat(spec.latest) < time.fromisoformat(spec.earliest)
-            and not spec.cross_midnight
-        ):
-            raise ProgramError(
-                [
-                    Issue(
-                        "cross_midnight",
-                        "A clock range crossing midnight requires cross_midnight: true",
-                        path,
-                    )
-                ]
-            )
-        start = self.clock(spec.earliest, path + ("earliest",))
-        end = self.clock(spec.latest, path + ("latest",))
-        if end < start and spec.cross_midnight:
-            end = self.clock(spec.latest, path + ("latest",), 1)
-        if end < start:
-            raise ProgramError(
-                [
-                    Issue(
-                        "clock_order",
-                        "Clock range ends before its start within this schedule day",
-                        path,
-                    )
-                ]
-            )
-        mode = self.clock(spec.mode, path + ("mode",)) if spec.mode else None
-        if mode is not None and not start <= mode <= end:
-            raise ProgramError(
-                [
-                    Issue(
-                        "clock_mode",
-                        "Triangular mode is outside the resolved clock range",
-                        path + ("mode",),
-                    )
-                ]
-            )
-        return start, end, mode
-
-    def sun_bounds(
-        self, spec: SunRange, path: ModelPath
-    ) -> tuple[datetime, datetime, datetime | None] | None:
-        anchor = self.sun(spec.sun, path)
-        if anchor is None:
             return None
-        offsets = spec.offset_range
-        return (
-            anchor + timedelta(seconds=offsets.lower),
-            anchor + timedelta(seconds=offsets.upper),
-            anchor + timedelta(seconds=offsets.mode) if offsets.mode is not None else None,
+        return anchor + timedelta(seconds=spec.start_offset), anchor + timedelta(
+            seconds=spec.latest_offset
         )
 
     def entity_bounds(
-        self, spec: EntityRange, path: ModelPath
+        self, spec: RelativeTo, path: ModelPath
     ) -> tuple[datetime, datetime, datetime | None] | None:
-        source = self.context.time_sources.get(spec.entity_id, {})
+        source = self.context.time_sources.get(spec.entity, {})
         value = source.get(spec.attribute or "state")
         anchor = None
         try:
@@ -234,7 +154,6 @@ class SimulationDay:
                     candidate = self._local(
                         candidate,
                         path,
-                        ZoneInfo(self.context.timezone) if self.context.timezone else self.zone,
                     )
                 if candidate.tzinfo is not None:
                     candidate = candidate.astimezone(UTC)
@@ -244,7 +163,7 @@ class SimulationDay:
                         self.issues.append(
                             Issue(
                                 "time_source_other_date",
-                                f"{spec.entity_id} has no reported occurrence on this "
+                                f"{spec.entity} has no reported occurrence on this "
                                 "schedule date; item skipped",
                                 path,
                                 "info",
@@ -257,89 +176,25 @@ class SimulationDay:
             self.issues.append(
                 Issue(
                     "time_source_unavailable",
-                    f"{spec.entity_id} has no usable time; item skipped",
+                    f"{spec.entity} has no usable time; item skipped",
                     path,
                     "warning",
                 )
             )
             return None
-        offsets = spec.offset_range
+        offsets = spec
         return (
-            anchor + timedelta(seconds=offsets.lower),
-            anchor + timedelta(seconds=offsets.upper),
-            anchor + timedelta(seconds=offsets.mode) if offsets.mode is not None else None,
+            anchor + timedelta(seconds=offsets.start_offset),
+            anchor + timedelta(seconds=offsets.latest_offset),
         )
 
-    def anchor(
-        self, spec: Anchor, steps: dict[str, datetime], path: ModelPath, extra_day: int = 0
-    ) -> datetime | None:
-        if spec.step is not None:
-            instant = steps.get(spec.step)
-            if instant is None:
-                self.issues.append(
-                    Issue(
-                        "anchor_skipped",
-                        f"Step anchor {spec.step} did not occur; dependent item skipped",
-                        path,
-                        "info",
-                    )
-                )
-                return None
-        elif spec.clock is not None:
-            instant = self.clock(spec.clock, path, spec.day_offset + extra_day)
-        else:
-            instant = self.sun(spec.sun, path, spec.day_offset + extra_day)
-        return instant + timedelta(seconds=spec.offset) if instant is not None else None
 
-    def between(
-        self, spec: Between, steps: dict[str, datetime], path: ModelPath
-    ) -> tuple[datetime, datetime] | None:
-        if spec.start.clock and spec.end.clock and spec.start.day_offset == spec.end.day_offset:
-            if (
-                time.fromisoformat(spec.end.clock) < time.fromisoformat(spec.start.clock)
-                and not spec.cross_midnight
-            ):
-                raise ProgramError(
-                    [
-                        Issue(
-                            "cross_midnight",
-                            "Clock window crossing midnight requires cross_midnight: true",
-                            path,
-                        )
-                    ]
-                )
-        start = self.anchor(spec.start, steps, path + ("start",))
-        end = self.anchor(spec.end, steps, path + ("end",))
-        if start is None or end is None:
-            return None
-        if end <= start and spec.cross_midnight and spec.end.step is None:
-            end = self.anchor(spec.end, steps, path + ("end",), 1)
-        if end <= start:
-            raise ProgramError(
-                [
-                    Issue(
-                        "window_order",
-                        "Window end must follow its start after timezone/DST conversion",
-                        path,
-                    )
-                ]
-            )
-        return start, end
-
-    def contains(self, start: datetime, end: datetime | None = None) -> bool:
-        return self.start <= start < self.end and (end is None or end <= self.end)
-
-
-def simulation_date_at(program: Program, instant: datetime, context: PlanningContext) -> date:
+def simulation_date_at(program, instant, context):
     if instant.tzinfo is None:
-        raise ValueError("An instant must be timezone aware")
-    timezone = program.timezone if program.timezone != "home_assistant" else context.timezone
-    if timezone is None:
+        raise ProgramError([Issue("naive_date", "Use a timezone-aware instant")])
+    try:
+        return instant.astimezone(ZoneInfo(context.timezone or "")).date()
+    except (ValueError, KeyError) as err:
         raise ProgramError(
-            [Issue("timezone_context", "home_assistant timezone requires explicit context")]
-        )
-    local = instant.astimezone(ZoneInfo(timezone))
-    boundary, _ = resolve_local(
-        datetime.combine(local.date(), time.fromisoformat(program.day_boundary)), ZoneInfo(timezone)
-    )
-    return local.date() - timedelta(days=instant.astimezone(UTC) < boundary)
+            [Issue("timezone_context", "Supply HA context or CLI --timezone")]
+        ) from err

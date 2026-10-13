@@ -5,7 +5,7 @@ from typing import Any
 
 from .file_config import export_yaml, load_program
 from .lighting import preview_handover, project_lighting
-from .planner import preview_dates
+from .planner import preview_calendar_dates
 from .time_utils import PlanningContext
 from .validation import behavior_hash, program_data, rename_identifier, validation_warnings
 
@@ -30,7 +30,7 @@ def preview_draft(
     program = load_program(source)
     if not 1 <= days <= 31:
         raise ValueError("Preview between one and 31 schedule dates")
-    plans = preview_dates(
+    plans = preview_calendar_dates(
         program, [start + timedelta(days=index) for index in range(days)], seed, context=context
     )
     result = {

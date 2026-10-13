@@ -65,11 +65,11 @@
   <!-- HA provides keyboard interaction inside its custom element. -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <ha-generic-picker
-    id="routine-anchor"
+    id="step-anchor"
     data-builder-field="anchor"
     aria-label={t("Relative to")}
     aria-invalid={error ? "true" : undefined}
-    aria-describedby={error ? "routine-error-anchor" : undefined}
+    aria-describedby={error ? "step-error-anchor" : undefined}
     tabindex="0"
     use:properties={{
       hass,

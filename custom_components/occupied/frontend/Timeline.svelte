@@ -5,9 +5,10 @@
   import type { HomeAssistantLocale } from "./time-format.js";
   import { formatScheduleDate } from "./time-format.js";
   import { stamp } from "./timeline.js";
-  import { resources } from "./model.js";
+  import { stepEntries } from "./step-model.js";
   let {
     plan,
+    schedulePlans,
     program,
     t = (text: string) => text,
     locale,
@@ -18,6 +19,7 @@
     showLoading = loading,
   }: {
     plan?: Plan;
+    schedulePlans?: Plan[];
     program: Program;
     t?: Translate;
     locale?: HomeAssistantLocale;
@@ -29,7 +31,10 @@
   } = $props();
   let labels = $derived(
     new Map(
-      resources(program || {}).map((resource) => [resource.id, resource.name]),
+      stepEntries(program || {}).map((resource) => [
+        resource.id,
+        resource.name,
+      ]),
     ),
   );
   let query = $state("");
@@ -53,7 +58,14 @@
     <h2>{formatScheduleDate(plan.simulation_date, locale)}</h2>
   {/if}
   {#if plan}
-    <PreviewStateGraph {plan} {program} {hass} names={entityNames} {t} />
+    <PreviewStateGraph
+      {plan}
+      {schedulePlans}
+      {program}
+      {hass}
+      names={entityNames}
+      {t}
+    />
     {#if plan.events.length > 0}
       <details>
         <summary>{t("Event details")} · {plan.events.length}</summary>
@@ -84,7 +96,7 @@
               <tbody>
                 {#each filtered.slice(currentPage * 50, currentPage * 50 + 50) as event}
                   <tr>
-                    {#each [stamp(event.time, plan.timezone, locale), `${labels.get(event.source_id) || event.source_id} · ${event.kind}`, event.action.action, event.action.targets.entities.join(", ")] as value}
+                    {#each [stamp(event.time, plan.timezone, locale), `${labels.get(event.source_id) || event.source_id} · ${event.kind}`, event.action.action, event.action.entities.join(", ")] as value}
                       <td>{value}</td>
                     {/each}
                   </tr>

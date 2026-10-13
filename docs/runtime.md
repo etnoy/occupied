@@ -1,104 +1,29 @@
 # Daily runtime
 
-Occupied runs inside Home Assistant Core 2026.9.4. Canonical daily programs, the pure planner, and the offline CLI share [schema version 1](schema.md). Configure routines through [the editor](editor.md). Each entry can use [authoritative managed YAML with file watching and reload](managed-configuration.md).
+Create a controller and author steps in the [editor](editor.md), or deploy [canonical YAML](schema.md). Permission starts disabled. HA provides management, pause, and dry-run controls. Use HA automations to turn management permission on/off based on household conditions.
 
-## Apply a program
+## Activation and dispatch
 
-Install Occupied and create a controller entry as described in the README. Multiple entries have independent activation conditions, permissions, seeds, plans, history and cleanup; control services always require the intended entry ID. Permission starts disabled. Open the Occupied integration under **Settings → Devices & services** and select **Configure** to validate/save a draft, or prepare a program from [examples/house.yaml](../examples/house.yaml), replace its entities and activity names, and validate/preview it with `occupied-config`. Validation and preview do not control devices.
+When permission becomes active, Occupied samples bounded neighboring source dates using its persistent seed. Selected weekdays refer to the source date, beginning at local midnight. Overnight windows and relative steps can execute on adjacent calendar dates. HA timezone/location supply planning context.
 
-The authenticated HA WebSocket API accepts `occupied/apply` with `config_entry_id` and `program` (a JSON object or YAML string). This admin-only command stores a canonical snapshot. It upgrades a proof entry to the daily engine, or replaces a daily program in place. It neither modifies nor watches the source file. For example, from the HA frontend's browser console:
+Future actions are queued in UTC. Historical generic service calls are marked skipped and never replayed. Each dispatch is durably journaled before the native service call; persistence failure blocks dispatch and deactivates management. Interrupted pending calls become uncertain and are not automatically replayed. Native typed on/off failures have a bounded retry, superseded by newer intents. Missing services/unavailable devices are reported without stalling other steps.
 
-```javascript
-const hass = document.querySelector("home-assistant").hass;
-const entries = await hass.callWS({ type: "config_entries/get" });
-const entryId = entries.find(entry => entry.domain === "occupied").entry_id;
-const yaml = `schema_version: 1
-name: My controller
-activation:
-  conditions:
-    - condition: state
-      entity_id: sensor.alarm
-      state: [armed, armed_away]
-lighting:
-  managed_targets: {entities: [light.hall]}
-  baseline:
-    - targets: {entities: [light.hall]}
-      state: "off"
-routines:
-  - id: evening
-    name: Evening
-    steps:
-      - id: hall_on
-        name: Hall on
-        when:
-          clock_range: {earliest: "18:00", latest: "18:30"}
-        actions:
-          - action: turn_on
-            targets: {entities: [light.hall]}
-            data: {brightness_pct: 60}
-      - id: hall_off
-        name: Hall off
-        when:
-          relative_to: hall_on
-          offset_range: {fixed: 45m}
-        actions:
-          - action: turn_off
-            targets: {entities: [light.hall]}
-`;
-await hass.callWS({ type: "occupied/validate", config_entry_id: entryId, program: yaml });
-await hass.callWS({ type: "occupied/apply", config_entry_id: entryId, program: yaml });
-```
+Completed occurrence identities remain stable when a time helper or timestamp/calendar source changes. Source updates reschedule future work without replaying completed steps for the same source date. Restart retains valid sampled plans, seed, journal, handover, ownership, and yielded state. Obsolete cache shapes are rejected and rebuilt without changing version numbers.
 
-An HA integration can also start Occupied's `import` config flow with canonical JSON/YAML as its data to create the controller directly. The ordinary options form remains for proof settings; daily programs are changed through the Occupied integration editor or apply. Editor saves require the read revision; `occupied/apply` also accepts optional `expected_revision` for API clients. Invalid schema or an infeasible replacement leaves an existing daily program and its queue intact. Metadata-only changes retain sampled times, session, and handover deadlines. Behavior changes replace future work and retain immutable end actions for already-started activities, even if removed from the new program.
+## Known light state and handover
 
-## Permission, dry run and status
+Enabled step actions determine controlled entities. Only direct typed light control can establish a projected light intent. Each date begins Unknown until its first explicit action; activation leaves unknown light state alone. Add a visible midnight step if an initial state is wanted.
 
-The Occupied configuration panel exposes enable/disable, pause/resume, and live/dry selection. Random windows can repeat arbitrary service start/end action lists, including scenes and scripts, and `event.fire` emits native HA events. These generic effects are opaque, so interruption cannot infer a compensating action; define an explicit end action for normal cycle completion. Dashboard entities include enabled and dry-run switches, status/reason, and the next event. Start/resume reevaluates native HA activation conditions; it cannot bypass them. Missing, unknown, or unavailable dependencies block dispatch, including dependencies inside negated predicates. Changes between two allowed states retain the same session.
+Handover reconciles known light intents toward their projected endpoint using the internal ten-minute default. Native transitions are preferred when supported; bounded fallback calls handle other dimmable lights, and stable staggered changes handle non-dimmable lights. An on intent without brightness preserves known/observed brightness or delegates brightness to the device. It never invents a percentage.
 
-Select **Dry run** before enabling a new controller to inspect its behavior. It uses real activation state and a private virtual device-state overlay for typed controls, leases, handover, and activity conditions. Journal entries record `would_dispatch`; no dry-run service calls reach devices. Opaque scripts/scenes have no inferred effects, so conditions dependent on those effects cannot be confirmed automatically in dry run.
+Generic service and scene effects are opaque. Occupied does not infer their device changes or inverse actions. Related steps can schedule later actions, but they do not promise lifecycle cleanup or exclusive resource ownership.
 
-Switching mode stops the previous session according to its explicit cleanup policy. Switching a running live session to dry run can therefore send its owned cancellation actions before entering dry mode. Returning to live discards virtual ownership, snapshots real lights, hands over gradually, and schedules future discrete actions only. Simulated past calls are never replayed.
+Outside manual changes yield an entity until the next activation. Permission loss, pause, unload, and configuration failure invalidate queued work immediately. Stop leaves device states; still-owned native fades are held at their observed level without interfering with another actor's transition.
 
-Admin services `occupied.start`, `stop`, `pause`, and `resume` take `config_entry_id`. `occupied.set_dry_run` additionally takes boolean `dry_run`. Normal dashboard controls follow HA entity permissions. The status API shows up to date activity deadlines, handover progress/endpoints, yielded targets, outcomes, and future work. Sensor attributes stay compact.
+## Dry run, updates, and isolation
 
-## Lighting and outside control
+Dry run uses a virtual state map and records would-dispatch outcomes without calling native services. Live observed state remains unchanged. Each controller has its own seed, journal, permission, queues, source, and subscriptions. Shared explicitly controlled entities appear as overlap warnings.
 
-Only managed lights with an explicit baseline participate in convergence. At activation, the engine reads observed brightness and projects each target at its handover deadline, including intervening typed intents. Default duration is ten minutes; `lighting.handover` overrides it for all participating lights in the controller. Native `TRANSITION` capability and supported color modes determine service payloads. Otherwise dimmable lights use bounded steps, and on/off-only lights change at staggered times. No initial whole-house on/off sweep occurs. Completion gets one bounded reconciliation if the observed state differs.
+Metadata-only edits preserve sampled times, generation, session, and handover deadlines. Behavior edits invalidate future work and recompile. Expected revisions prevent concurrent stale saves. Managed files retain their last valid program on a failed reload; an initially invalid file cannot execute an old GUI cache. See [managed configuration](managed-configuration.md).
 
-Random windows hold per-entity leases. One ending cannot turn off a light held by another interval, or a light already on before Occupied acquired it. Explicit routine intents override random activity; safety-off suppresses later scheduled activation for the target that day. Leases spanning the daily boundary remain effective. Opaque actions declaring a managed light resource wait until that light's handover completes.
-
-By default, external changes yield the entity until the next activation. Expected HA contexts and ownership attributes distinguish Occupied writes where possible; ambiguous provenance yields conservatively. Manual changes suppress queued writes and cleanup. Optional `authoritative_simulation` continues lighting intentions, but it never makes arbitrary activity cleanup safe without matching ownership. Stop/disarm/pause leaves light states by default; `turn_off_owned` affects only still-owned lights. Still-owned native fades are cancelled by holding observed brightness; a yielded fade is left to its external controller.
-
-## Timed activities
-
-Declare exclusive resources, explicit start/end actions, and ownership predicates such as Harmony's `current_activity`. Unavailable resources, failed start conditions, or a remote/media player already in use without explicit start conditions skip the start. Successful dispatch is followed by at most three seconds of observed ownership confirmation. The duration begins after the last successful start action, including stagger/latency, and that deadline never slides because of confirmation or restart.
-
-The runtime rechecks the enclosing day/`within` window after a late start. If the actual lifecycle no longer fits, it runs only configured owned cancellation. Partial-start cancellation touches acquired resources only. Give opaque rollback scripts separate resource-specific actions when their effects cannot be safely split; a rollback that also touches unacquired resources is suppressed with an outcome.
-
-Outside state/activity changes, including separate ownership observer entities, release the lifecycle and suppress its end. `end_if_owned` is the default stop policy; `leave_running` explicitly releases ownership without cleanup. Generic inverses are never inferred. Actual end offsets and actions are captured at start, so editing a program cannot replace an in-progress lifecycle's cleanup.
-
-## Persistence and recovery
-
-Atomic HA stores retain permission, canonical program snapshots, sampled plans/date seeds, pre/post-dispatch journal entries, contexts, leases, observed ownership, native fades, handover endpoints, and activity snapshots/deadlines. Daily seeds derive independently from a persisted controller seed. The date cache expands for declared cross-boundary work, including multi-day leases at cold startup. The daily boundary samples the next date without starting a new activation session. Effective timezone/location changes recompile future timing while retaining owned cleanup.
-
-An HA restart waits for known activation state, restores sampled times, resumes remaining convergence toward its saved deadline, and restores owned activity ends without replaying starts. Overdue ends run only with trustworthy matching ownership; historical discrete actions are skipped. Invalid saved plans regenerate future work while keeping valid lifecycle snapshots. Interrupted `pending` calls become `uncertain` rather than being blindly replayed.
-
-Normal entry reload/unload invalidates timers and explicitly cleans still-owned activities while services are available. HA shutdown preserves recoverable activities without depending on cleanup services. Device calls and local storage are not a distributed transaction: exactly-once physical execution is not promised. Uncertain generic cleanup and failed end services are recorded; they cannot guarantee the device stopped.
-
-Service calls have a ten-second timeout, dispatch batches are capped at 64 events, and idempotent discrete state controls have at most one retry. Generic retries require `replay_safe`; activity starts/cleanup do not get automatic opaque replay. A stale retry is suppressed after a newer command for its resource. Failed/unavailable targets do not stall unrelated work. Failed persistence stops new dispatch before another device call; enabling/resuming retries storage, or reload the entry after resolving the failure. Permission and ownership are rechecked after the journal write immediately before dispatch.
-
-Live compilation rejects programs whose maximum expansion exceeds 50,000 events/10,000 intervals per date, 200,000 cached events, or a 31-date distance in either direction. The journal retains at most 50,000 entries, pruning older finished/historical records while protecting interrupted calls and active cleanup. These live limits apply in addition to the pure schema limits. A rejected daily apply preserves the last valid program.
-
-## Diagnostics
-
-HA's integration diagnostics and admin `occupied/diagnostics` omit controller names, entity IDs, service data, and detailed error text by default. Known credential fields remain redacted even in a sensitive export. To export the actual sampled plans, convergence endpoints, lifecycle snapshots, and journal, explicitly set `include_sensitive: true`:
-
-```javascript
-const diagnostics = await hass.callWS({
-  type: "occupied/diagnostics",
-  config_entry_id: entryId,
-  include_sensitive: true,
-});
-```
-
-`occupied/status` is also admin-only and includes controller details used by the panel. Preview commands remain read-only and use separate seeds. Tests exercise real HA APIs with virtual devices on HA 2026.9.3 and 2026.9.4. Physical-device behavior and hardware soak remain deployment acceptance work. [Managed source reload](managed-configuration.md) uses this engine and preserves active immutable cleanup snapshots; [installation](installation.md) covers upgrades, troubleshooting and removal.
+Admin `occupied/timeline` reports saved plans and actual journal outcomes. `occupied/diagnostics` returns redacted counts by default; explicit sensitive diagnostics include plans and journal. Pure validate/export/preview operations do not alter the live queue or control devices.

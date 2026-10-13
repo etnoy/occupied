@@ -33,7 +33,10 @@
 </script>
 
 <section class="yaml-panel" class:has-changes={yamlDirty}>
-  <h2>{t("YAML")} {#if yamlDirty}<span class="changes">({t("changes")})</span>{/if}</h2>
+  <h2>
+    {t("YAML")}
+    {#if yamlDirty}<span class="changes">({t("changes")})</span>{/if}
+  </h2>
   <p class="hint">
     {t(
       "Edit the YAML and save to validate and apply your changes. Invalid code is kept in the editor.",
@@ -66,26 +69,46 @@
       panel.flush();
     }}
   ></ha-code-editor>
-  <button
-    type="button"
-    class="primary"
-    disabled={panel.busy ||
-      panel.stale ||
-      panel.document.source === "file" ||
-      !panel.yaml}
-    onclick={() => panel.saveYaml()}
-  >
-    {t("Save changes")}</button
-  ><button
-    type="button"
-    disabled={panel.busy || !panel.yaml}
-    onclick={() => download("occupied.yaml", panel.yaml, "text/yaml")}
-  >
-    {t("Download")}
-  </button>
+  <div class="yaml-actions">
+    <button
+      type="button"
+      class="primary"
+      disabled={panel.busy ||
+        panel.stale ||
+        panel.document.source === "file" ||
+        !panel.yaml}
+      onclick={() => panel.saveYaml()}
+    >
+      {t("Save changes")}
+    </button>
+    <button
+      type="button"
+      disabled={panel.busy || !yamlDirty}
+      onclick={() => panel.discardYaml()}
+    >
+      {t("Discard changes")}
+    </button>
+    <button
+      type="button"
+      class="download"
+      disabled={panel.busy || !panel.yaml}
+      onclick={() => download("occupied.yaml", panel.yaml, "text/yaml")}
+    >
+      {t("Download")}
+    </button>
+  </div>
 </section>
 
 <style>
+  .yaml-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .yaml-actions .download {
+    margin-left: auto;
+  }
   ha-code-editor {
     display: block;
     width: 100%;
@@ -95,12 +118,12 @@
   }
   section.yaml-panel {
     border-color: var(--divider-color, #d5dce3);
-    border-left: 1px solid var(--divider-color, #d5dce3);
+    border-left-color: var(--divider-color, #d5dce3);
     background: var(--card-background-color, #fff);
   }
   section.yaml-panel.has-changes {
     border-color: var(--warning-color, #e69500);
-    border-left: 4px solid var(--warning-color, #e69500);
+    border-left-color: var(--warning-color, #e69500);
     background: color-mix(
       in srgb,
       var(--warning-color, #e69500) 18%,

@@ -177,7 +177,7 @@ async def websocket_export(
     {
         **_DRAFT_SCHEMA,
         vol.Required("type"): "occupied/rename_id",
-        vol.Required("kind"): vol.In(["routine", "step", "activity", "window"]),
+        vol.Required("kind"): vol.In(["step"]),
         vol.Required("old"): str,
         vol.Required("new"): str,
     }
@@ -207,13 +207,12 @@ async def websocket_apply(hass, connection, msg):
 
 async def _apply_program(hass, connection, msg, *, editor_save=False):
     from . import resolve_engine
-    from .activation import ActivationGate
     from .editor import current_revision, installed_issues, program_document
     from .engine_daily import DailyEngine
     from .file_config import load_program
     from .managed import source_lock
     from .storage import program_store
-    from .validation import ProgramError, RevisionConflict, condition_data, program_data
+    from .validation import ProgramError, RevisionConflict, program_data
 
     try:
         program = await hass.async_add_executor_job(load_program, msg["program"])
@@ -235,8 +234,6 @@ async def _apply_program(hass, connection, msg, *, editor_save=False):
                 ]
                 if errors:
                     raise ProgramError(errors)
-            gate = ActivationGate(hass, [condition_data(c) for c in program.activation.conditions])
-            await gate.async_prepare()
             if hasattr(engine, "async_replace_program"):
                 await engine.async_replace_program(program, expected_revision=expected)
             else:

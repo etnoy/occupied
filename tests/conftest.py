@@ -78,77 +78,25 @@ def saved_permission(hass_storage, entry):
 
 @pytest.fixture
 def program_dict():
-    """A small canonical program with every principal schedule resource."""
+    """Canonical GUI-editable steps with a typed dependency."""
     return {
         "schema_version": 1,
         "name": "House",
-        "timezone": "UTC",
-        "lighting": {
-            "managed_targets": {"entities": ["light.a", "light.b"]},
-            "baseline": [{"targets": {"entities": ["light.a", "light.b"]}, "state": "off"}],
+        "steps": {
+            "wake": {
+                "name": "Wake",
+                "timing": {"absolute_time": {"start": "06:40", "end": "07:20"}},
+                "action": "light.turn_on",
+                "entities": ["light.a", "light.b"],
+                "data": {"brightness_pct": 60},
+            },
+            "leave": {
+                "name": "Leave",
+                "timing": {
+                    "relative_to": {"step": "wake", "start_offset": "30m", "end_offset": "45m"}
+                },
+                "action": "turn_off",
+                "entities": ["light.a", "light.b"],
+            },
         },
-        "routines": [
-            {
-                "id": "daily",
-                "name": "Daily",
-                "steps": [
-                    {
-                        "id": "wake",
-                        "name": "Wake",
-                        "when": {"clock_range": {"earliest": "06:40", "latest": "07:20"}},
-                        "actions": [
-                            {
-                                "action": "turn_on",
-                                "targets": {"entities": ["light.a", "light.b"]},
-                                "data": {"brightness_pct": 60},
-                            }
-                        ],
-                    },
-                    {
-                        "id": "leave",
-                        "name": "Leave",
-                        "when": {
-                            "relative_to": "wake",
-                            "offset_range": {"min": "30m", "max": "45m"},
-                        },
-                        "actions": [
-                            {"action": "turn_off", "targets": {"entities": ["light.a", "light.b"]}}
-                        ],
-                    },
-                ],
-                "activities": [
-                    {
-                        "id": "tv",
-                        "name": "TV",
-                        "when": {"clock_range": {"earliest": "19:45", "latest": "20:15"}},
-                        "duration": {"fixed": "45m"},
-                        "resources": ["remote.harmony"],
-                        "on_start": [
-                            {
-                                "action": "remote.turn_on",
-                                "targets": {"entities": ["remote.harmony"]},
-                                "data": {"activity": "Watch TV"},
-                            }
-                        ],
-                        "on_end": [
-                            {
-                                "action": "remote.turn_off",
-                                "targets": {"entities": ["remote.harmony"]},
-                            }
-                        ],
-                    }
-                ],
-                "activity_windows": [
-                    {
-                        "id": "room_use",
-                        "name": "Room use",
-                        "between": {"start": {"clock": "08:00"}, "end": {"clock": "12:00"}},
-                        "cycles": {"min": 2, "max": 4},
-                        "on_duration": {"min": "5m", "max": "20m"},
-                        "min_gap": "10m",
-                        "targets": {"entities": ["light.a", "light.b"]},
-                    }
-                ],
-            }
-        ],
     }

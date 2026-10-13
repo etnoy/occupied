@@ -3,16 +3,18 @@
   import type { HomeAssistant, Plan, Program, Translate } from "./types.js";
   import { properties } from "./dom.js";
   import { loadHaHistoryChart } from "./ha-controls.js";
-  import { previewStateHistory } from "./timeline.js";
+  import { calendarStateHistory, previewStateHistory } from "./timeline.js";
 
   let {
     plan,
+    schedulePlans,
     program,
     hass,
     names = {},
     t,
   }: {
     plan: Plan;
+    schedulePlans?: Plan[];
     program: Program;
     hass: HomeAssistant;
     names?: Record<string, string>;
@@ -22,14 +24,9 @@
   let failed = $state(false);
   let narrow = $state(false);
   let data = $derived(
-    previewStateHistory(plan, program, names, t).map((entity) => ({
-      ...entity,
-      data: entity.data.map((state) =>
-        state.state === "unknown"
-          ? { ...state, state: "off", state_localize: t("Off") }
-          : state,
-      ),
-    })),
+    schedulePlans
+      ? calendarStateHistory(schedulePlans, plan, program, names, t)
+      : previewStateHistory(plan, program, names, t),
   );
   // Keep native axis labels/tooltips in the sampled plan's zone, even when
   // HA's display timezone differs. This is a view-only copy of the HA object.

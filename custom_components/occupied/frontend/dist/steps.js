@@ -1,5 +1,5 @@
 // Generated from steps.ts by pnpm run build. Do not edit.
-import { stepEditor, simpleStep } from "./step-model.js";
+import { stepEditor } from "./step-model.js";
 import { focusEditor } from "./step-editor-controller.js";
 export function startStep(panel, entry, parent) {
   if (panel.stepEditor) {
@@ -10,7 +10,7 @@ export function startStep(panel, entry, parent) {
 }
 function showStep(panel, entry, parent) {
   panel.stepEditor = stepEditor(panel.draft, entry, parent);
-  panel.tab = "routines";
+  panel.tab = "steps";
   panel.error = "";
   panel.issues = [];
   panel.renderView();
@@ -22,7 +22,7 @@ function showStep(panel, entry, parent) {
 function scrollStepEditorIntoView(panel, id) {
   panel.shadowRoot
     .getElementById(`step-editor-${id}`)
-    ?.querySelector(".routine-editor")
+    ?.querySelector(".step-editor")
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 /**
@@ -46,27 +46,16 @@ export function openStep(panel, entry) {
   showEntry(panel, entry);
 }
 function showEntry(panel, entry) {
-  if (simpleStep(entry)) {
-    showStep(panel, entry);
-  } else {
-    panel.error = "";
-    panel.issues = [];
-    panel.selectedStep = panel.selectedStep === entry.id ? null : entry.id;
-    panel.renderView();
-    scrollStepEditorIntoView(panel, entry.id);
-  }
+  showStep(panel, entry);
 }
 export function actionSummary(entry, t) {
-  const action = entry.actions?.[0]?.action || "";
-  if (action === "scene.turn_on") {
+  if (entry.action === "scene.turn_on") {
     return t("Activate scene");
   }
-  if (simpleStep(entry)) {
-    return /^(?:(?:light|switch)\.)?turn_(on|off)$/.test(action)
-      ? t(action.endsWith("turn_off") ? "Turn off" : "Turn on")
-      : action;
+  if (entry.action === "turn_on" || entry.action === "turn_off") {
+    return t(entry.action === "turn_off" ? "Turn off" : "Turn on");
   }
-  return t("Custom actions");
+  return entry.action;
 }
 export function stepTree(entries) {
   const seen = new Set(),
@@ -78,14 +67,14 @@ export function stepTree(entries) {
     seen.add(entry.id);
     ordered.push({ entry, depth });
     for (const child of entries) {
-      if (child.when?.relative_to === entry.id) {
+      if (child.timing.relative_to?.step === entry.id) {
         append(child, depth + 1);
       }
     }
   };
   const isRoot = (step) =>
-    !step.when?.relative_to ||
-    entries.every((parent) => parent.id !== step.when?.relative_to);
+    !step.timing.relative_to?.step ||
+    entries.every((parent) => parent.id !== step.timing.relative_to?.step);
   for (const step of entries) {
     if (isRoot(step)) {
       append(step, 0);

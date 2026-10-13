@@ -5,8 +5,7 @@ from datetime import UTC, date, datetime
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.storage import Store
 
-from .models import Action
-from .planner import PLANNER_VERSION, DailyPlan, PlanEvent, PlannedInterval, ResolvedAction
+from .planner import PLANNER_VERSION, DailyPlan, PlanEvent, ResolvedAction
 from .validation import Issue
 
 
@@ -38,69 +37,30 @@ def instant(value: str) -> datetime:
     return result.astimezone(UTC)
 
 
-def action_from_data(data: dict) -> ResolvedAction:
-    action = Action.model_validate(data)
-    if "." not in action.action:
-        raise ValueError("Saved actions must contain resolved services and entity targets")
+def action_from_data(data):
+    action, entities = data["action"], tuple(data["entities"])
+    if "." not in action or not entities:
+        raise ValueError("Saved actions require a resolved service and entities")
     return ResolvedAction(
-        action.action,
-        action.targets.entities,
-        dict(action.data),
-        action.resources,
-        action.replay_safe,
+        action,
+        entities,
+        dict(data.get("data", {})),
+        entities,
+        action in {"light.turn_on", "light.turn_off", "switch.turn_on", "switch.turn_off"},
     )
 
 
-def plan_from_data(data: dict) -> DailyPlan:
+def plan_from_data(data):
     if data["planner_version"] != PLANNER_VERSION:
         raise ValueError("Unsupported saved planner version")
+    # The shape check rejects obsolete caches without changing version numbers.
     events = tuple(
-        PlanEvent(
-            item["id"],
-            instant(item["time"]),
-            item["source_id"],
-            item["kind"],
-            action_from_data(item["action"]),
-            item.get("sequence", index),
-            item["priority"],
-            item["lease_id"],
-        )
-        for index, item in enumerate(data["events"])
-    )
-    intervals = tuple(
-        PlannedInterval(
-            item["id"],
-            item["source_id"],
-            item["kind"],
-            instant(item["start"]),
-            instant(item["end"]),
-            tuple(item["resources"]),
-            item["duration_seconds"],
-            instant(item["start_complete"]) if item["start_complete"] else None,
-            item["stop_behavior"],
-            instant(item["cleanup_complete"]) if item.get("cleanup_complete") else None,
-        )
-        for item in data["intervals"]
+        PlanEvent(i["id"], instant(i["time"]), i["source_id"], action_from_data(i["action"]), index)
+        for index, i in enumerate(data["events"])
     )
     start, end = instant(data["start"]), instant(data["end"])
-    if start >= end or len(events) > 50000 or len(intervals) > 10000:
-        raise ValueError("Invalid or oversized saved plan")
-    if any(
-        item.kind
-        not in {
-            "step",
-            "activity_start",
-            "activity_end",
-            "window_start",
-            "window_end",
-            "window_action_start",
-            "window_action_end",
-        }
-        for item in events
-    ):
-        raise ValueError("Unknown saved event kind")
-    if any(item.start >= item.end for item in intervals):
-        raise ValueError("Invalid saved interval ordering")
+    if start >= end or len(events) > 50000 or any(i.get("kind") != "step" for i in data["events"]):
+        raise ValueError("Invalid saved step plan")
     return DailyPlan(
         date.fromisoformat(data["simulation_date"]),
         str(data["seed"]),
@@ -109,18 +69,17 @@ def plan_from_data(data: dict) -> DailyPlan:
         data["timezone"],
         start,
         end,
-        tuple(sorted(events, key=lambda item: item.order_key)),
-        intervals,
+        tuple(sorted(events, key=lambda e: e.order_key)),
         {key: instant(value) for key, value in data["steps"].items()},
         tuple(
             Issue(
-                item["code"],
-                item["message"],
-                tuple(item.get("model_path", ())),
-                item["severity"],
-                item.get("line"),
-                item.get("column"),
+                i["code"],
+                i["message"],
+                tuple(i.get("model_path", ())),
+                i["severity"],
+                i.get("line"),
+                i.get("column"),
             )
-            for item in data["issues"]
+            for i in data["issues"]
         ),
     )

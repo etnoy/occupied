@@ -18,7 +18,7 @@
   let { editor, form, t, editing, submit, cancel } = $derived(context);
 </script>
 
-<section class="routine-editor">
+<section class="step-editor">
   <div class="step-name-editor">
     <EditorField
       {panel}
@@ -43,7 +43,7 @@
       {t("Cancel")}
     </button>
     {#if editing}
-      {@const entry = stepEntries(panel.draft).find(
+      {@const entry = stepEntries(panel.draft, panel.catalog, panel.t).find(
         (item) => item.id === editor.id,
       )}
       {#if entry}<StepActions {panel} {entry} {context} />{/if}
@@ -53,7 +53,7 @@
     <button
       type="button"
       class="primary"
-      data-routine-submit
+      data-step-submit
       disabled={panel.busy || panel.stale}
       onclick={submit}
     >

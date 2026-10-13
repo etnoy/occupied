@@ -40,10 +40,10 @@
     trailing?: Snippet;
   } = $props();
   let { editor, t, changed } = $derived(context);
-  let id = $derived(`routine-${key}`);
+  let id = $derived(`step-${key}`);
   let invalid = $derived(editor.errors[key] ? true : undefined);
   let described = $derived(
-    editor.errors[key] ? `routine-error-${key}` : undefined,
+    editor.errors[key] ? `step-error-${key}` : undefined,
   );
   let nativeTime = $derived(options.type === "time");
 

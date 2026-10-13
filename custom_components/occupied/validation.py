@@ -1,4 +1,4 @@
-"""Shared strict validation, stable references, and normalized behavior identity."""
+"""Strict step validation, typed references, and stable behavior identity."""
 
 import hashlib
 import heapq
@@ -9,16 +9,7 @@ from typing import Any, Literal
 
 from pydantic import ValidationError
 
-from .models import (
-    Activity,
-    ActivityWindow,
-    Condition,
-    Program,
-    Step,
-    effective_days,
-    effective_handover,
-    merge_defaults,
-)
+from .models import Program
 
 type ModelPath = tuple[str | int, ...]
 
@@ -32,97 +23,79 @@ class Issue:
     line: int | None = None
     column: int | None = None
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self):
         return asdict(self) | {"path": format_path(self.path), "model_path": list(self.path)}
 
 
 class ProgramError(ValueError):
-    def __init__(self, issues: list[Issue] | tuple[Issue, ...]):
+    def __init__(self, issues):
         self.issues = tuple(issues)
-        super().__init__("; ".join(f"{format_path(item.path)}: {item.message}" for item in issues))
+        super().__init__("; ".join(f"{format_path(i.path)}: {i.message}" for i in issues))
 
 
 class RevisionConflict(ValueError):
-    """The editor's base revision no longer matches the live program."""
+    """The editor's revision no longer matches the live program."""
 
 
-def program_revision(program: Program) -> str:
-    """Identify the normalized source, including presentation metadata."""
-    return hashlib.sha256(json.dumps(program_data(program), sort_keys=True).encode()).hexdigest()
+def format_path(path):
+    return "$" + "".join(f"[{p}]" if isinstance(p, int) else f".{p}" for p in path)
 
 
-def format_path(path: ModelPath) -> str:
-    result = "$"
-    for part in path:
-        result += f"[{part}]" if isinstance(part, int) else f".{part}"
-    return result
+def program_data(program):
+    data = program.model_dump(mode="json", exclude_none=True, exclude_defaults=True)
+    for step in data.get("steps", {}).values():
+        source = step["timing"].get("relative_to")
+        if source and source.get("start_offset") == "0s":
+            source.pop("start_offset")
+    return data
 
 
-def items_with_paths(program: Program):
-    for r_index, routine in enumerate(program.routines):
-        for kind in ("steps", "activities", "activity_windows"):
-            for index, item in enumerate(getattr(routine, kind)):
-                yield routine, item, ("routines", r_index, kind, index)
+def program_revision(program):
+    # Presentation order matters to the editor, but never to scheduling.
+    return hashlib.sha256(
+        json.dumps(program_data(program), ensure_ascii=False).encode()
+    ).hexdigest()
 
 
-def actions_with_paths(program: Program):
-    for routine, item, path in items_with_paths(program):
-        fields = (
-            ("actions",)
-            if isinstance(item, Step)
-            else ("on_start", "on_end")
-            if isinstance(item, Activity)
-            else ("on_start", "on_end")
-            if isinstance(item, ActivityWindow)
-            else ()
-        )
-        for field in fields:
-            for index, action in enumerate(getattr(item, field)):
-                yield routine, item, action, path + (field, index)
-
-
-def step_references(item):
-    if isinstance(item, (Step, Activity)) and item.when.relative_to is not None:
-        yield item.when.relative_to, ("when", "relative_to")
-    between = (
-        item.between
-        if isinstance(item, ActivityWindow)
-        else item.within
-        if isinstance(item, Activity)
-        else None
-    )
-    if between is not None:
-        field = "between" if isinstance(item, ActivityWindow) else "within"
-        for side in ("start", "end"):
-            if reference := getattr(between, side).step:
-                yield reference, (field, side, "step")
-
-
-def step_order(program: Program) -> tuple[str, ...]:
-    """A stable Kahn traversal; names and YAML list order never break graph ties."""
-    steps = {item.id: item for _, item, _ in items_with_paths(program) if isinstance(item, Step)}
-    children = {item_id: [] for item_id in steps}
-    degrees = {item_id: 0 for item_id in steps}
-    for item_id, item in steps.items():
-        if parent := item.when.relative_to:
-            if parent not in steps:
-                raise ProgramError([Issue("dangling_step", f"Unknown step anchor {parent}")])
-            children[parent].append(item_id)
-            degrees[item_id] += 1
-    ready = [item_id for item_id, degree in degrees.items() if not degree]
+def step_order(program):
+    children = {key: [] for key in program.steps}
+    degrees = dict.fromkeys(program.steps, 0)
+    for key, item in program.steps.items():
+        source = item.timing.relative_to
+        if source and source.step:
+            parent = source.step
+            if parent not in children:
+                raise ProgramError(
+                    [
+                        Issue(
+                            "dangling_step",
+                            f"Unknown step {parent}",
+                            ("steps", key, "timing", "relative_to", "step"),
+                        )
+                    ]
+                )
+            children[parent].append(key)
+            degrees[key] += 1
+    ready = [key for key, degree in degrees.items() if not degree]
     heapq.heapify(ready)
     result = []
     while ready:
-        item_id = heapq.heappop(ready)
-        result.append(item_id)
-        for child in sorted(children[item_id]):
+        key = heapq.heappop(ready)
+        result.append(key)
+        for child in sorted(children[key]):
             degrees[child] -= 1
             if not degrees[child]:
                 heapq.heappush(ready, child)
-    if len(result) != len(steps):
-        cyclic = sorted(item_id for item_id, degree in degrees.items() if degree)
+    if len(result) != len(children):
         raise ProgramError(
-            [Issue("reference_cycle", f"Cyclic step dependencies: {', '.join(cyclic)}")]
+            [
+                Issue(
+                    "reference_cycle",
+                    "Cyclic step dependencies: "
+                    + ", ".join(key for key in degrees if degrees[key]),
+                    ("steps",),
+                )
+            ]
         )
     return tuple(result)
 
@@ -130,7 +103,7 @@ def step_order(program: Program) -> tuple[str, ...]:
 def validate_light_data(data: Mapping, action: str = "turn_on") -> str | None:
     allowed = (
         {"transition"}
-        if action in {"turn_off", "safety_off"}
+        if action in {"turn_off"}
         else {
             "brightness",
             "brightness_pct",
@@ -176,514 +149,110 @@ def validate_light_data(data: Mapping, action: str = "turn_on") -> str | None:
 
 
 def validate_program(data: Program | Mapping[str, Any]) -> Program:
-    """Validate structure, domain rules, identities, dependency graph and weekdays."""
     try:
         program = data if isinstance(data, Program) else Program.model_validate(data)
     except ValidationError as err:
         raise ProgramError(
-            [
-                Issue("schema", item["msg"], tuple(item["loc"]))
-                for item in err.errors(include_url=False)
-            ]
+            [Issue("schema", i["msg"], tuple(i["loc"])) for i in err.errors()]
         ) from err
-    errors: list[Issue] = []
-    identities: dict[str, set[str]] = {
-        kind: set() for kind in ("routines", "steps", "activities", "activity_windows")
-    }
-    for index, routine in enumerate(program.routines):
-        if routine.id in identities["routines"]:
-            errors.append(
+    issues = []
+    if len(program.steps) > 5000:
+        issues.append(Issue("program_size", "A program supports at most 5000 steps", ("steps",)))
+    for key, step in program.steps.items():
+        path = ("steps", key)
+        action = step.action
+        if {"entity_id", "device_id", "area_id"} & step.data.keys():
+            issues.append(
                 Issue(
-                    "duplicate_id", f"Duplicate routines ID {routine.id}", ("routines", index, "id")
-                )
-            )
-        identities["routines"].add(routine.id)
-    collected = list(items_with_paths(program))
-    if len(collected) > 5000:
-        errors.append(
-            Issue("program_size", "A program supports at most 5000 scheduling items", ("routines",))
-        )
-    for routine, item, path in collected:
-        kind = path[-2]
-        if item.id in identities[kind]:
-            errors.append(Issue("duplicate_id", f"Duplicate {kind} ID {item.id}", path + ("id",)))
-        identities[kind].add(item.id)
-        if not effective_days(routine, item):
-            errors.append(
-                Issue("empty_days", "The effective weekday selection is empty", path + ("days",))
-            )
-        if item.days is not None and not set(item.days) <= set(routine.days):
-            errors.append(
-                Issue(
-                    "weekday_widening",
-                    "An item may only narrow its routine's weekdays",
-                    path + ("days",),
-                )
-            )
-    for r_index, routine in enumerate(program.routines):
-        if not routine.days:
-            errors.append(
-                Issue("empty_days", "A routine must select weekdays", ("routines", r_index, "days"))
-            )
-    steps = {item.id: (routine, item) for routine, item, _ in collected if isinstance(item, Step)}
-    for routine, item, path in collected:
-        for reference, field_path in step_references(item):
-            if reference not in steps:
-                errors.append(
-                    Issue("dangling_step", f"Unknown step anchor {reference}", path + field_path)
-                )
-            elif item.missing_anchor == "error":
-                parent_routine, parent = steps[reference]
-                if not set(effective_days(routine, item)) <= set(
-                    effective_days(parent_routine, parent)
-                ):
-                    errors.append(
-                        Issue(
-                            "anchor_days",
-                            f"Step {reference} is unavailable on some selected days; "
-                            "narrow days or choose missing_anchor: skip",
-                            path + field_path,
-                        )
-                    )
-    if errors:
-        raise ProgramError(errors)
-    try:
-        step_order(program)
-    except ProgramError as err:
-        errors.extend(err.issues)
-    for _routine, _item, action, path in actions_with_paths(program):
-        targets = action.targets.entities
-        if not targets and not action.data and not action.resources:
-            errors.append(
-                Issue(
-                    "empty_action",
-                    "An action must specify targets, data, or declared resources",
-                    path,
-                )
-            )
-        if action.stagger is not None and action.stagger.lower < 0:
-            errors.append(
-                Issue("negative_stagger", "Action stagger must be nonnegative", path + ("stagger",))
-            )
-        if action.action in {"turn_on", "turn_off", "safety_off"}:
-            if not targets or any(
-                entity.split(".", 1)[0] not in {"light", "switch"} for entity in targets
-            ):
-                errors.append(
-                    Issue(
-                        "unsupported_shorthand",
-                        "Typed controls support light/switch targets only",
-                        path + ("targets",),
-                    )
-                )
-            if problem := validate_light_data(action.data, action.action):
-                errors.append(Issue("control_data", problem, path + ("data",)))
-            if any(entity.startswith("switch.") for entity in targets) and set(action.data) - {
-                "transition"
-            }:
-                errors.append(
-                    Issue(
-                        "switch_light_data",
-                        "Separate light settings from switch controls",
-                        path + ("data",),
-                    )
-                )
-        elif action.action in {
-            "light.turn_on",
-            "light.turn_off",
-            "switch.turn_on",
-            "switch.turn_off",
-        }:
-            domain, service = action.action.split(".", 1)
-            if not targets or any(not entity.startswith(domain + ".") for entity in targets):
-                errors.append(
-                    Issue(
-                        "action_domain",
-                        f"{action.action} requires {domain} targets",
-                        path + ("targets",),
-                    )
-                )
-            if domain == "light" and (problem := validate_light_data(action.data, service)):
-                errors.append(Issue("control_data", problem, path + ("data",)))
-            if domain == "switch" and action.data:
-                errors.append(
-                    Issue(
-                        "control_data",
-                        "Switch state controls do not accept light settings",
-                        path + ("data",),
-                    )
-                )
-        elif action.action == "event.fire":
-            event_type = action.data.get("event_type")
-            event_data = action.data.get("event_data", {})
-            if not isinstance(event_type, str) or not event_type.strip():
-                errors.append(
-                    Issue(
-                        "event_type",
-                        "event.fire requires a nonempty event_type",
-                        path + ("data", "event_type"),
-                    )
-                )
-            if not isinstance(event_data, dict):
-                errors.append(
-                    Issue(
-                        "event_data", "event_data must be an object", path + ("data", "event_data")
-                    )
-                )
-            if targets or action.resources or set(action.data) - {"event_type", "event_data"}:
-                errors.append(
-                    Issue(
-                        "event_action",
-                        "event.fire accepts event_type/event_data only and has no targets",
-                        path,
-                    )
-                )
-        elif any(key in action.data for key in ("entity_id", "device_id", "area_id")):
-            errors.append(
-                Issue(
-                    "target_in_data",
-                    "Use the typed targets wrapper rather than targets inside service data",
+                    "data_targets",
+                    "Choose entities using entities, not service data",
                     path + ("data",),
                 )
             )
-    for routine, item, path in collected:
-        defaults = merge_defaults(program, routine)
-        if defaults.stagger.lower < 0:
-            errors.append(Issue("negative_stagger", "Default stagger must be nonnegative", path))
-        if isinstance(item, Activity):
-            duration = item.duration or defaults.activities.duration
-            if duration is None or duration.lower <= 0:
-                errors.append(
+        if action in {"turn_on", "turn_off"}:
+            if any(not e.startswith(("light.", "switch.")) for e in step.entities):
+                issues.append(
                     Issue(
-                        "activity_duration",
-                        "A timed activity needs a positive fixed/ranged duration",
-                        path + ("duration",),
+                        "control_targets",
+                        "Turn on/off requires lights or switches",
+                        path + ("entities",),
                     )
                 )
-            if not item.resources or not item.on_start or not item.on_end:
-                errors.append(
+            if step.data:
+                issues.append(
                     Issue(
-                        "activity_lifecycle",
-                        "Declare resources and explicit nonempty on_start/on_end actions",
-                        path,
-                    )
-                )
-        elif isinstance(item, ActivityWindow):
-            targets = item.targets.entities
-            generic = bool(item.on_start or item.on_end)
-            duration = item.on_duration or defaults.activity_windows.on_duration
-            overlap = (
-                item.overlap if item.overlap is not None else defaults.activity_windows.overlap
-            )
-            gap = item.min_gap if item.min_gap is not None else defaults.activity_windows.min_gap
-            mode = item.target_mode or defaults.activity_windows.target_mode
-            if generic and (targets or not item.on_start or not item.on_end):
-                errors.append(
-                    Issue(
-                        "window_actions",
-                        "Generic windows need on_start/on_end and cannot use targets",
-                        path,
-                    )
-                )
-            if generic and item.data:
-                errors.append(
-                    Issue(
-                        "window_action_data",
-                        "Put service data on the window's individual actions",
+                        "control_data",
+                        "Use an entity service action or scene to specify service data",
                         path + ("data",),
                     )
                 )
-            if not generic and (
-                not targets
-                or any(entity.split(".")[0] not in {"light", "switch"} for entity in targets)
-            ):
-                errors.append(
+        elif action in {"light.turn_on", "light.turn_off", "switch.turn_on", "switch.turn_off"}:
+            domain, service = action.split(".")
+            if any(not e.startswith(domain + ".") for e in step.entities):
+                issues.append(
                     Issue(
-                        "window_targets",
-                        "Activity windows require light/switch targets",
-                        path + ("targets",),
+                        "control_targets",
+                        f"{action} requires {domain} entities",
+                        path + ("entities",),
                     )
                 )
-            if duration.lower <= 0:
-                errors.append(
-                    Issue(
-                        "window_duration",
-                        "Window on_duration must be positive",
-                        path + ("on_duration",),
-                    )
-                )
-            if overlap and gap > 0:
-                errors.append(
-                    Issue(
-                        "overlap_gap",
-                        "Positive off-gaps require non-overlapping cycles",
-                        path + ("min_gap",),
-                    )
-                )
-            if not generic and mode in {"subset", "weighted_subset"}:
-                size = item.subset_size
-                if size is None or size.lower < 1 or size.upper > len(targets):
-                    errors.append(
-                        Issue(
-                            "subset_size",
-                            "Subset size must fit the expanded target set",
-                            path + ("subset_size",),
-                        )
-                    )
-            elif not generic and item.subset_size is not None:
-                errors.append(
-                    Issue(
-                        "subset_size",
-                        "subset_size is only used by subset modes",
-                        path + ("subset_size",),
-                    )
-                )
-            if not generic and set(item.weights) - set(targets):
-                errors.append(
-                    Issue(
-                        "target_weights",
-                        "Weights must refer to expanded window targets",
-                        path + ("weights",),
-                    )
-                )
-            if not generic and (problem := validate_light_data(item.data)):
-                errors.append(Issue("control_data", problem, path + ("data",)))
-            if generic and (item.subset_size is not None or item.weights or item.target_mode):
-                errors.append(
-                    Issue(
-                        "window_target_mode",
-                        "Target selection settings apply only to light/switch windows",
-                        path,
-                    )
-                )
-            if (
-                not generic
-                and any(entity.startswith("switch.") for entity in targets)
-                and item.data
-            ):
-                errors.append(
-                    Issue(
-                        "switch_light_data",
-                        "Separate light settings from switch windows",
-                        path + ("data",),
-                    )
-                )
-    managed = set(program.lighting.managed_targets.entities)
-    if any(not entity.startswith("light.") for entity in managed):
-        errors.append(
-            Issue(
-                "managed_lights",
-                "Managed lighting contains lights only",
-                ("lighting", "managed_targets"),
+            problem = (
+                validate_light_data(step.data, service)
+                if domain == "light"
+                else ("Switch calls take no brightness or color data" if step.data else None)
             )
-        )
-    baselined: set[str] = set()
-    for index, baseline in enumerate(program.lighting.baseline):
-        targets = set(baseline.targets.entities)
-        if targets - managed or targets & baselined:
-            errors.append(
-                Issue(
-                    "lighting_baseline",
-                    "Each baseline target must be managed and occur in at most one baseline",
-                    ("lighting", "baseline", index),
+            if problem:
+                issues.append(Issue("control_data", problem, path + ("data",)))
+        elif action == "scene.turn_on":
+            if len(step.entities) != 1 or not step.entities[0].startswith("scene."):
+                issues.append(
+                    Issue("scene_targets", "Choose one Home Assistant scene", path + ("entities",))
                 )
-            )
-        data = baseline.model_dump(exclude={"targets", "state"}, exclude_none=True)
-        if problem := validate_light_data(data):
-            errors.append(Issue("control_data", problem, ("lighting", "baseline", index)))
-        baselined.update(targets)
-    if errors:
-        raise ProgramError(errors)
+        elif action == "event.fire":
+            issues.append(Issue("action", "Choose an entity service action", path + ("action",)))
+        source = step.timing.relative_to
+        if source and source.step in program.steps:
+            parent = program.steps[source.step]
+            if not set(step.days) <= set(parent.days):
+                issues.append(
+                    Issue(
+                        "anchor_days",
+                        f"This step selects days when {source.step} does not run",
+                        path + ("days",),
+                    )
+                )
+    if issues:
+        raise ProgramError(issues)
+    step_order(program)
     return program
 
 
-def validation_warnings(program: Program) -> tuple[Issue, ...]:
-    """Explain missing baselines, unprojectable effects, and ordered action conflicts."""
-    warnings = []
-    managed = set(program.lighting.managed_targets.entities)
-    baseline_targets = {
-        entity for baseline in program.lighting.baseline for entity in baseline.targets.entities
-    }
-    if missing := managed - baseline_targets:
-        warnings.append(
-            Issue(
-                "undefined_baseline",
-                f"Lights without a baseline are left alone: {', '.join(sorted(missing))}",
-                ("lighting", "baseline"),
-                "warning",
-            )
-        )
-    for _, _, action, path in actions_with_paths(program):
-        if action.action not in {
-            "turn_on",
-            "turn_off",
-            "safety_off",
-            "light.turn_on",
-            "light.turn_off",
-            "switch.turn_on",
-            "switch.turn_off",
-            "event.fire",
-        }:
-            warnings.append(
-                Issue(
-                    "opaque_action",
-                    f"{action.action} has no inferred lighting projection or inverse; "
-                    "effects must be declared as resources",
-                    path,
-                    "warning",
-                )
-            )
-    for _, item, path in items_with_paths(program):
-        if isinstance(item, Step):
-            seen: dict[str, str] = {}
-            for index, action in enumerate(item.actions):
-                for entity in action.targets.entities:
-                    if entity in seen and seen[entity] != action.action:
-                        warnings.append(
-                            Issue(
-                                "ordered_action_conflict",
-                                f"Ordered actions apply {seen[entity]} "
-                                f"then {action.action} to {entity}",
-                                path + ("actions", index),
-                                "warning",
-                            )
-                        )
-                    seen[entity] = action.action
-    return tuple(warnings)
-
-
-def condition_data(condition: Condition) -> dict[str, Any]:
-    if condition.condition != "state":
-        return {
-            "condition": condition.condition,
-            "conditions": [condition_data(child) for child in condition.conditions],
-        }
-    return condition.model_dump(mode="json", exclude={"conditions"}, exclude_none=True)
-
-
-def program_data(program: Program) -> dict[str, Any]:
-    """Export schema choices and shared defaults without expanding every item."""
+def behavior_hash(program):
     data = program.model_dump(mode="json", exclude_none=True)
-    data["activation"]["conditions"] = [
-        condition_data(item) for item in program.activation.conditions
-    ]
-    for routine, raw in zip(program.routines, data["routines"], strict=True):
-        for activity, raw_activity in zip(routine.activities, raw["activities"], strict=True):
-            for field in ("start_conditions", "ownership_conditions"):
-                raw_activity[field] = [condition_data(item) for item in getattr(activity, field)]
-    return data
-
-
-def _without_metadata(data: dict[str, Any]) -> dict[str, Any]:
-    return {key: value for key, value in data.items() if key not in {"name", "description"}}
-
-
-def behavior_data(program: Program) -> dict[str, Any]:
-    """Hash resolved behavior, while preserving ordering inside action sequences/data."""
-    data = _without_metadata(program_data(program))
-    data.pop("defaults")
-    data["lighting"]["handover"] = effective_handover(program).model_dump(mode="json")
-    data["lighting"]["managed_targets"] = list(program.lighting.managed_targets.entities)
-    data["lighting"]["baseline"] = sorted(
-        [
-            baseline.model_dump(mode="json", exclude={"targets"}, exclude_none=True)
-            | {"targets": list(baseline.targets.entities)}
-            for baseline in program.lighting.baseline
-        ],
-        key=lambda item: item["targets"],
-    )
-    normalized_routines = []
-    for routine in program.routines:
-        defaults = merge_defaults(program, routine)
-        raw = _without_metadata(routine.model_dump(mode="json", exclude_none=True))
-        raw.pop("defaults")
-        raw["days"] = sorted(set(routine.days))
-        for field in ("steps", "activities", "activity_windows"):
-            values = []
-            for item in getattr(routine, field):
-                value = _without_metadata(item.model_dump(mode="json", exclude_none=True))
-                value["days"] = list(effective_days(routine, item))
-                value["probability"] = (
-                    item.probability if item.probability is not None else defaults.probability
-                )
-                value["time_distribution"] = item.time_distribution or defaults.time_distribution
-                if isinstance(item, (Step, Activity)):
-                    value["when"]["distribution"] = (
-                        item.when.distribution or value["time_distribution"]
-                    )
-                if isinstance(item, ActivityWindow):
-                    for key in ("on_duration", "min_gap", "overlap", "target_mode"):
-                        setting = getattr(item, key)
-                        value[key] = (
-                            item.model_dump(mode="json")[key]
-                            if setting is not None
-                            else defaults.activity_windows.model_dump(mode="json")[key]
-                        )
-                    value["targets"] = list(item.targets.entities)
-                elif isinstance(item, Activity):
-                    duration = item.duration or defaults.activities.duration
-                    value["duration"] = duration.model_dump(mode="json", exclude_none=True)
-                    value["stop_behavior"] = item.stop_behavior or defaults.activities.stop_behavior
-                    value["resources"] = sorted(set(item.resources))
-                for actions_field in ("actions", "on_start", "on_end"):
-                    if not hasattr(item, actions_field):
-                        continue
-                    actions = []
-                    for action in getattr(item, actions_field):
-                        resolved = action.model_dump(mode="json", exclude_none=True)
-                        resolved["targets"] = list(action.targets.entities)
-                        resolved["resources"] = sorted(set(action.resources))
-                        resolved["target_order"] = action.target_order or defaults.target_order
-                        resolved["stagger"] = (action.stagger or defaults.stagger).model_dump(
-                            mode="json", exclude_none=True
-                        )
-                        actions.append(resolved)
-                    value[actions_field] = actions
-                values.append(value)
-            raw[field] = sorted(values, key=lambda item: item["id"])
-        normalized_routines.append(raw)
-    data["routines"] = sorted(normalized_routines, key=lambda item: item["id"])
-    return data
-
-
-def behavior_hash(program: Program) -> str:
+    data.pop("name")
+    for step in data["steps"].values():
+        step.pop("name", None)
     return hashlib.sha256(
-        json.dumps(
-            behavior_data(program), sort_keys=True, separators=(",", ":"), allow_nan=False
-        ).encode()
+        json.dumps(data, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
     ).hexdigest()
 
 
-def rename_identifier(program: Program, kind: str, old: str, new: str) -> Program:
-    """Rewrite typed references in a new validated transaction; opaque data stays untouched."""
-    fields = {
-        "routine": "routines",
-        "step": "steps",
-        "activity": "activities",
-        "window": "activity_windows",
-    }
-    if kind not in fields:
-        raise ProgramError([Issue("identifier_kind", f"Unknown resource kind {kind}")])
-    field = fields[kind]
+def validation_warnings(program):
+    return ()
+
+
+def rename_identifier(program, kind, old, new):
+    if kind != "step":
+        raise ProgramError([Issue("identifier_kind", "Only step IDs can be renamed")])
     data = program_data(program)
-    resources = (
-        data[field]
-        if kind == "routine"
-        else [item for routine in data["routines"] for item in routine[field]]
-    )
-    matches = [item for item in resources if item["id"] == old]
-    if not matches:
-        raise ProgramError([Issue("unknown_id", f"Unknown {kind} ID {old}")])
-    if new != old and any(item["id"] == new for item in resources):
-        raise ProgramError([Issue("duplicate_id", f"{kind} ID {new} already exists")])
-    matches[0]["id"] = new
-    if kind == "step":
-        for _, item, path in items_with_paths(program):
-            for reference, reference_path in step_references(item):
-                if reference != old:
-                    continue
-                target = data
-                for component in path + reference_path[:-1]:
-                    target = target[component]
-                target[reference_path[-1]] = new
+    steps = data.get("steps", {})
+    if old not in steps:
+        raise ProgramError([Issue("unknown_id", f"Unknown step {old}")])
+    if new != old and new in steps:
+        raise ProgramError([Issue("duplicate_id", f"Step {new} already exists")])
+    data["steps"] = {(new if key == old else key): value for key, value in steps.items()}
+    for step in data["steps"].values():
+        source = step["timing"].get("relative_to")
+        if source and source.get("step") == old:
+            source["step"] = new
     return validate_program(data)

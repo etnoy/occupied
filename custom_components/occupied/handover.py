@@ -36,14 +36,24 @@ def calls_for_target(
     data = target.to_dict()
     data.pop("state")
     data.pop("brightness_pct", None)
-    finish = round((target.brightness_pct or 0) * 255 / 100) if target.state == "on" else 0
-    initial = round((observed.brightness_pct or 100) * 255 / 100) if observed.state == "on" else 0
     service = "turn_on" if target.state == "on" else "turn_off"
     if not dimmable:
         # Stable staggering avoids a whole-house simultaneous on/off edge.
         fraction = int.from_bytes(hashlib.sha256(entity.encode()).digest()[:8]) / (2**64 - 1)
         at = start + timedelta(seconds=duration * (0.5 + fraction / 2))
         return (HandoverCall(at, service, {}),)
+    if target.state == "on" and target.brightness_pct is None:
+        # Delegate unspecified brightness to HA/the device instead of inventing it.
+        payload = data | ({"transition": duration} if native_transition and duration else {})
+        return (
+            HandoverCall(
+                start if native_transition else deadline, service, payload, native_transition
+            ),
+        )
+    if observed.state == "on" and observed.brightness_pct is None:
+        return (HandoverCall(deadline, service, data),)
+    finish = round((target.brightness_pct or 0) * 255 / 100) if target.state == "on" else 0
+    initial = round((observed.brightness_pct or 100) * 255 / 100) if observed.state == "on" else 0
     if native_transition and config.dimming == "auto" and duration:
         payload = data | {"transition": duration}
         if finish:

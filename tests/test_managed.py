@@ -98,10 +98,10 @@ async def test_raw_only_and_metadata_changes_preserve_plans(
     result = await manager.async_reload()
     assert result["valid"] and not result["changed"] and manager.applied_hash != old_hash
     changed = deepcopy(program_dict)
-    changed["routines"][0]["steps"][0]["name"] = "New label"
+    changed["steps"]["wake"]["name"] = "New label"
     managed_file.write_text(yaml.safe_dump(changed))
     assert (await manager.async_reload())["changed"]
-    assert engine.program.routines[0].steps[0].name == "New label"
+    assert engine.program.steps["wake"].name == "New label"
     assert engine._plans == plans and engine.generation == generation
     assert engine.handover_deadline == deadline
 
@@ -129,7 +129,7 @@ async def test_invalid_update_retains_live_program_then_recovers(
         managed_file.write_text("schema_version: 99\nname: Invalid\n")
     else:
         bad = deepcopy(program_dict)
-        bad["routines"][0]["activity_windows"][0]["on_duration"] = {"fixed": "5h"}
+        bad["steps"]["leave"]["timing"]["relative_to"]["step"] = "missing"
         managed_file.write_text(yaml.safe_dump(bad))
     result = await engine.source_manager.async_reload()
     assert not result["valid"] and result["status"] == "error"
@@ -154,10 +154,10 @@ async def test_invalid_initial_file_never_uses_gui_cache(
     }
     engine = await load(hass, file_entry)
     assert engine.enabled and not engine.active and not engine.configuration_ready
-    assert engine.status == "waiting" and not engine.program.routines and not devices
+    assert engine.status == "waiting" and not engine.program.steps and not devices
     managed_file.write_text(yaml.safe_dump(program_dict))
     assert (await engine.source_manager.async_reload())["valid"]
-    assert engine.configuration_ready and engine.program.routines
+    assert engine.configuration_ready and engine.program.steps
 
 
 async def test_debounced_atomic_rename_and_unload_cleanup(

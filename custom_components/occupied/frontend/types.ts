@@ -1,5 +1,4 @@
-// Configuration exchanged with the canonical Python API. Optional fields also
-// describe editable drafts; backend validation remains authoritative.
+// The editable GUI draft is the canonical YAML/JSON model.
 export type Path = (string | number)[];
 export type Translate = (text: string) => string;
 export type JsonValue =
@@ -9,170 +8,36 @@ export type JsonValue =
   | string
   | JsonValue[]
   | { [key: string]: JsonValue };
-export interface Targets {
-  entities?: string[];
-}
-export interface Range<T = string | number> {
-  fixed?: T;
-  min?: T;
-  max?: T;
-  mode?: T;
-}
-export interface ClockRange {
-  earliest: string;
-  latest: string;
-  cross_midnight?: boolean;
-  mode?: string;
-}
-export interface When {
-  clock_range?: ClockRange;
-  sun_range?: { sun: string; offset_range: Range };
-  entity_range?: { entity_id: string; attribute?: string; offset_range: Range };
-  relative_to?: string;
-  offset_range?: Range;
-  distribution?: string;
-}
-export interface Anchor {
-  step?: string;
-  clock?: string;
-  sun?: string;
-  offset?: string;
-  day_offset?: number;
-}
-export interface Condition {
-  condition: string;
-  entity_id?: string | string[];
-  state?: string | string[];
-  attribute?: string;
-  match?: string;
-  conditions?: Condition[];
-}
-export interface ActionData {
-  [key: string]: JsonValue | undefined;
-  brightness?: number;
-  brightness_pct?: number;
-}
-export interface Action {
-  action: string;
-  targets?: Targets;
-  data?: ActionData;
-  resources?: string[];
-  target_order?: string;
-  stagger?: Range;
-  replay_safe?: boolean;
-}
-export interface Handover {
-  duration?: string;
-  target?: string;
-  dimming?: string;
-  non_dimmable?: string;
-  step_interval?: string;
-  cancel_behavior?: string;
-}
-export interface Item {
-  id: string;
-  name: string;
-  enabled?: boolean;
-  description?: string;
-  days?: string[];
-  probability?: number;
-  time_distribution?: string;
-  missing_anchor?: string;
-  allow_cross_boundary?: boolean;
-}
-export interface ScheduledItem extends Item {
-  when?: When;
-  actions?: Action[];
-  duration?: Range;
-  resources?: string[];
-  on_start?: Action[];
-  on_end?: Action[];
-  start_conditions?: Condition[];
-  ownership_conditions?: Condition[];
-  stop_behavior?: string;
-  within?: Between;
-  between?: Between;
-  cycles?: Range<number>;
-  targets?: Targets;
-  on_duration?: Range;
-  min_gap?: string;
-  overlap?: boolean;
-  target_mode?: string;
-  subset_size?: Range<number>;
-  weights?: Record<string, number>;
-  max_simultaneous?: number;
-  data?: ActionData;
-}
-export interface Between {
-  start: Anchor;
-  end: Anchor;
-  cross_midnight?: boolean;
-}
-export interface Defaults {
-  time_distribution?: string;
-  probability?: number;
-  target_order?: string;
-  stagger?: Range;
-  handover?: Handover;
-  activity_windows?: {
-    on_duration?: Range;
-    min_gap?: string;
-    overlap?: boolean;
-    target_mode?: string;
+export interface Timing {
+  absolute_time?: { start: string; end?: string };
+  relative_to?: {
+    step?: string;
+    sun?: string;
+    entity?: string;
+    attribute?: "start_time" | "end_time";
+    start_offset?: string;
+    end_offset?: string;
   };
-  activities?: { duration?: Range; stop_behavior?: string };
 }
-export interface Routine extends Item {
-  steps?: ScheduledItem[];
-  activities?: ScheduledItem[];
-  activity_windows?: ScheduledItem[];
-  defaults?: Defaults;
-}
-export interface Lighting {
-  managed_targets?: Targets;
-  default_brightness_pct?: number;
-  baseline?: {
-    targets: Targets;
-    state: string;
-    brightness_pct?: number;
-    [key: string]: unknown;
-  }[];
-  handover?: Handover;
+export interface Step {
+  name?: string;
+  enabled?: boolean;
+  days?: string[];
+  timing: Timing;
+  action: string;
+  entities: string[];
+  data?: Record<string, JsonValue>;
 }
 export interface Program {
   schema_version?: number;
   name?: string;
-  description?: string;
-  timezone?: string;
-  location?: { latitude: number; longitude: number; elevation?: number };
-  day_boundary?: string;
-  activation?: { conditions: Condition[] };
-  policies?: {
-    late_start?: string;
-    lighting_stop_behavior?: string;
-    manual_override?: string;
-  };
-  defaults?: Defaults;
-  lighting?: Lighting;
-  constraints?: {
-    generation_attempts?: number;
-  };
-  routines?: Routine[];
+  steps?: Record<string, Step>;
 }
-export type EditableResource = ScheduledItem & Partial<Routine>;
-export type ResourceKind = "routine" | "step" | "activity" | "window";
-export type ItemKind = "steps" | "activities" | "activity_windows";
-export type Resource = (Routine | ScheduledItem) & {
-  kind: ResourceKind;
-  routine?: string;
-  when?: When;
-};
-export interface StepEntry extends ScheduledItem {
-  kind: ItemKind;
-  container: Routine;
-  path: ["routines", number, ItemKind, number];
+export interface StepEntry extends Omit<Step, "name" | "days"> {
+  id: string;
+  name: string;
+  path: ["steps", string];
   days: string[];
-  entities: string[];
 }
 export interface TimingForm {
   mode: string;
@@ -190,7 +55,6 @@ export interface StepForm {
   data: string;
   entities: string[];
   action: string;
-  brightness: string | number;
   days: string[];
   timing: TimingForm;
 }
@@ -221,7 +85,6 @@ export interface Catalog {
     state?: string;
     dimmable?: boolean;
     transition?: boolean;
-    activities?: string[];
   }[];
   services: Record<
     string,
@@ -295,9 +158,11 @@ export interface PlannedEvent {
   time: string;
   source_id: string;
   kind: string;
-  priority?: number;
-  lease_id?: string | null;
-  action: Action & { targets: { entities: string[] } };
+  action: {
+    action: string;
+    entities: string[];
+    data?: Record<string, JsonValue>;
+  };
 }
 export interface Plan {
   simulation_date: string;
@@ -306,13 +171,6 @@ export interface Plan {
   source_revision?: string;
   start: string;
   end: string;
-  intervals: {
-    source_id: string;
-    kind: string;
-    start: string;
-    end: string;
-    resources: string[];
-  }[];
   steps: Record<string, string>;
   events: PlannedEvent[];
   issues: Issue[];
@@ -387,7 +245,7 @@ export interface HaGenericPicker extends HTMLElement {
   required: boolean;
 }
 // Primary navigation tabs plus the secondary pages reached from them.
-export type Tab = "routines" | "settings" | "preview";
+export type Tab = "steps" | "settings" | "preview";
 declare global {
   interface HTMLElementTagNameMap {
     "occupied-panel": import("./occupied-panel.js").OccupiedPanel;

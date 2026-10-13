@@ -28,21 +28,19 @@ from homeassistant.util import dt as dt_util
 
 from .actions import light_capabilities, light_matches, light_observation, observe, service_payload
 from .activation import ActivationGate
-from .activities import ActivityLifecycle
 from .const import DOMAIN, SIGNAL_PREFIX
 from .handover import calls_for_target
 from .lighting import LightState, project_lighting
-from .models import Activity, effective_handover, merge_defaults
+from .models import Handover, controlled_entities, projectable_lights
 from .planner import DailyPlan, PlanEvent, ResolvedAction, preview_dates
-from .runtime_planning import MAX_EVENTS, MAX_INTERVALS, runtime_dates
+from .runtime_planning import MAX_EVENTS, runtime_dates
 from .storage import DurableStore, instant, plan_from_data, program_store
 from .time_sources import planning_context, source_entities
-from .time_utils import SimulationDay, simulation_date_at
+from .time_utils import simulation_date_at
 from .validation import (
     ProgramError,
     RevisionConflict,
     behavior_hash,
-    condition_data,
     program_data,
 )
 from .validation import (
@@ -86,7 +84,7 @@ class DailyEngine:
         self.hass, self.entry_id, self.program = hass, entry_id, program
         self.config = {"name": program.name}
         self.signal = f"{SIGNAL_PREFIX}_{entry_id}"
-        self.gate = ActivationGate(hass, [condition_data(c) for c in program.activation.conditions])
+        self.gate = ActivationGate(hass, [])
         self.enabled = self.paused = self.dry_run = self.active = self.started = self.closed = False
         self.session = self.generation = 0
         self.status, self.reason = "disabled", "Permission is disabled"
@@ -105,14 +103,9 @@ class DailyEngine:
         self._plans: dict[date, DailyPlan] = {}
         self._seed = secrets.token_hex(16)
         self._journal = {}
-        self._activities: dict[str, ActivityLifecycle] = {}
-        self._ownership_gates = {}
-        self._ownership_observers = {}
         self._latest_intents = {}
         self._yielded = set()
         self._owned = {}
-        self._leases = {}
-        self._preexisting = set()
         self._handover = {}
         self._native_fades = set()
         self._virtual = {}
@@ -121,12 +114,6 @@ class DailyEngine:
         self._storage_failed = False
         self.configuration_ready = True
         self.source_manager = None
-
-    @property
-    def remote_owned(self):
-        return any(
-            any(e.startswith("remote.") for e in a.resources) for a in self._activities.values()
-        )
 
     @property
     def next_event(self):
@@ -141,14 +128,11 @@ class DailyEngine:
 
     def _context_identity(self, context=None):
         context = context or self._context()
-        location = self.program.location
         return [
-            self.program.timezone
-            if self.program.timezone != "home_assistant"
-            else context.timezone,
-            location.latitude if location else context.latitude,
-            location.longitude if location else context.longitude,
-            location.elevation if location else context.elevation,
+            context.timezone,
+            context.latitude,
+            context.longitude,
+            context.elevation,
             {
                 entity: context.time_sources.get(entity)
                 for entity in sorted(source_entities(self.program))
@@ -178,19 +162,14 @@ class DailyEngine:
         self._contexts.extend(saved.get("contexts", []))
         if saved.get("dry_run") == self.dry_run:
             self._yielded = set(saved.get("yielded", []))
-            self._owned = saved.get("owned", {})
+            self._owned = {
+                key: value
+                for key, value in saved.get("owned", {}).items()
+                if key in controlled_entities(self.program)
+            }
             self._handover = saved.get("handover", {})
             self._native_fades = set(saved.get("native_fades", []))
             self._virtual = saved.get("virtual", {})
-            self._leases = {key: set(value) for key, value in saved.get("leases", {}).items()}
-            self._preexisting = set(saved.get("preexisting", []))
-            for data in saved.get("activities", []):
-                try:
-                    lifecycle = ActivityLifecycle.from_dict(data)
-                    if lifecycle.dry_run == self.dry_run:
-                        self._activities[lifecycle.id] = lifecycle
-                except (KeyError, TypeError, ValueError) as err:
-                    self._record("recovery", "invalid_lifecycle", str(err))
         if (
             saved.get("behavior") == behavior_hash(self.program)
             and self._saved_context == self._context_identity()
@@ -247,33 +226,7 @@ class DailyEngine:
         if self._state_unsub:
             self._state_unsub()
         self._time_source_entities = source_entities(self.program)
-        entities = set(self.gate.entities) | self._time_source_entities
-        self._ownership_observers.clear()
-
-        def observe_conditions(conditions):
-            gate = ActivationGate(self.hass, conditions)
-            entities.update(gate.entities)
-            for entity, attribute in gate.attributes:
-                self._ownership_observers.setdefault(entity, set()).add(attribute)
-
-        for routine in self.program.routines:
-            for item in (*routine.steps, *routine.activities):
-                actions = (
-                    item.actions if hasattr(item, "actions") else (*item.on_start, *item.on_end)
-                )
-                for action in actions:
-                    entities.update(action.targets.entities)
-                    entities.update(action.resources)
-                if isinstance(item, Activity):
-                    entities.update(item.resources)
-                    observe_conditions([condition_data(c) for c in item.start_conditions])
-                    observe_conditions([condition_data(c) for c in item.ownership_conditions])
-            for window in routine.activity_windows:
-                entities.update(window.targets.entities)
-        entities.update(self.program.lighting.managed_targets.entities)
-        for lifecycle in self._activities.values():
-            entities.update(lifecycle.resources)
-            observe_conditions(lifecycle.ownership_conditions)
+        entities = controlled_entities(self.program) | self._time_source_entities
         self._state_unsub = async_track_state_change_event(self.hass, entities, self._state_changed)
 
     async def _async_started(self, _):
@@ -344,46 +297,34 @@ class DailyEngine:
         if entity in self._time_source_entities:
             if self._saved_context != self._context_identity():
                 self.hass.async_create_task(self._async_time_sources_changed())
-            if entity not in self.gate.entities:
+            if entity not in controlled_entities(self.program):
                 return
-        if entity in self.gate.entities:
-            if not self._effective_gate()[0]:
-                self._invalidate()
-            self.hass.async_create_task(self.async_reevaluate())
         if event.context.id in self._contexts or event.context.parent_id in self._contexts:
             if entity in self._owned and (value := self._observe(entity)):
                 self._owned[entity] = value
-            for lifecycle in self._activities.values():
-                if entity in lifecycle.acquired:
-                    lifecycle.observed[entity] = self._observe(entity)
             return
         old, new = event.data.get("old_state"), event.data.get("new_state")
-        if old is not None and new is not None and old.state == new.state:
-            watched = {
-                "brightness",
-                "color_temp_kelvin",
-                "hs_color",
-                "rgb_color",
-                "current_activity",
-                "media_content_id",
-                "source",
-            } | self._ownership_observers.get(entity, set())
-            if all(old.attributes.get(key) == new.attributes.get(key) for key in watched):
-                return
-        if not self.active and not self._activities:
+        watched = {
+            "brightness",
+            "color_temp_kelvin",
+            "hs_color",
+            "rgb_color",
+            "current_activity",
+            "media_content_id",
+            "source",
+        }
+        if (
+            old is not None
+            and new is not None
+            and old.state == new.state
+            and all(old.attributes.get(key) == new.attributes.get(key) for key in watched)
+        ):
             return
-        if self.dry_run:
+        if not self.active or self.dry_run:
             return
-        if self.program.policies.manual_override == "yield_entity_until_next_activation":
-            self._yielded.add(entity)
-            self._owned.pop(entity, None)
-            self._leases.pop(entity, None)
-            self._handover.pop(entity, None)
-        for key, lifecycle in list(self._activities.items()):
-            dependencies = ActivationGate(self.hass, lifecycle.ownership_conditions).entities
-            if entity in lifecycle.resources or entity in dependencies:
-                self._activities.pop(key)
-                self._record(key, "yielded", f"Outside control of {entity}; end suppressed")
+        self._yielded.add(entity)
+        self._owned.pop(entity, None)
+        self._handover.pop(entity, None)
         self.hass.async_create_task(self._async_observation_changed(entity))
 
     async def _async_observation_changed(self, entity):
@@ -402,28 +343,11 @@ class DailyEngine:
             self._cancel_timer = None
 
     async def _persist(self):
-        self._ownership_gates = {
-            key: gate for key, gate in self._ownership_gates.items() if key in self._activities
-        }
         if len(self._journal) > MAX_JOURNAL:
-            protected = {key for a in self._activities.values() for key in a.pending_starts}
-            protected.update(
-                f"{a.id}:end:{index}"
-                for a in self._activities.values()
-                for index in range(len(a.end_actions))
-            )
             candidates = sorted(
                 (value.get("time", ""), key)
                 for key, value in self._journal.items()
-                if key not in protected
-                and (
-                    value.get("status") == "historical_skipped"
-                    or (
-                        value.get("time")
-                        and instant(value["time"]) < dt_util.utcnow()
-                        and value.get("status") not in {"pending", "uncertain"}
-                    )
-                )
+                if value.get("status") not in {"pending", "uncertain"}
             )
             for _, key in candidates[: len(self._journal) - MAX_JOURNAL]:
                 self._journal.pop(key)
@@ -436,11 +360,8 @@ class DailyEngine:
             "context": self._context_identity(),
             "plans": [p.to_dict() for p in self._plans.values()],
             "journal": self._journal,
-            "activities": [a.to_dict() for a in self._activities.values()],
             "yielded": sorted(self._yielded),
             "owned": self._owned,
-            "leases": {key: sorted(value) for key, value in self._leases.items()},
-            "preexisting": sorted(self._preexisting),
             "handover": self._handover,
             "native_fades": sorted(self._native_fades),
             "contexts": list(self._contexts),
@@ -491,10 +412,8 @@ class DailyEngine:
             await self._stop_owned()
             self._handover.clear()
             self._owned.clear()
-            self._leases.clear()
             self._yielded.clear()
             self._virtual.clear()
-            self._preexisting.clear()
             self.dry_run = dry_run
             self._restoring = False
             await self._save_permission()
@@ -525,11 +444,8 @@ class DailyEngine:
             if not self._restoring:
                 self.session += 1
                 self._yielded.clear()
-                self._preexisting.clear()
-                self._leases.clear()
             try:
                 await self._ensure_plans()
-                await self._recover_activities()
                 self._queue_plans()
                 await self._begin_handover(recover=self._restoring)
                 self._restoring = False
@@ -558,11 +474,7 @@ class DailyEngine:
                 partial(preview_dates, self.program, missing, self._seed, context=context)
             )
             for plan in plans:
-                if (
-                    not plan.feasible
-                    or len(plan.events) > MAX_EVENTS
-                    or len(plan.intervals) > MAX_INTERVALS
-                ):
+                if not plan.feasible or len(plan.events) > MAX_EVENTS:
                     raise ValueError(f"Infeasible or oversized plan for {plan.simulation_date}")
                 self._plans[plan.simulation_date] = plan
         self._plans = {
@@ -587,26 +499,12 @@ class DailyEngine:
 
     def _projection_plan(self, at):
         current = self._plan_at(at)
-        events = []
-        for plan in self._plans.values():
-            if plan.simulation_date != current.simulation_date:
-                spanning = {
-                    i.id
-                    for i in plan.intervals
-                    if i.kind == "window" and i.start < current.end and i.end > current.start
-                }
-                events.extend(
-                    replace(e, lease_id=f"{plan.simulation_date}:{e.lease_id}")
-                    for e in plan.events
-                    if e.lease_id in spanning
-                )
-                events.extend(
-                    e for e in plan.events if not e.lease_id and current.start <= e.at < current.end
-                )
-        events.extend(
-            replace(e, lease_id=f"{current.simulation_date}:{e.lease_id}") if e.lease_id else e
-            for e in current.events
-        )
+        events = [
+            event
+            for plan in self._plans.values()
+            for event in plan.events
+            if current.start <= event.at < current.end
+        ]
         return replace(current, events=tuple(sorted(events, key=lambda e: e.order_key)))
 
     async def _ensure_projection_date(self, at):
@@ -630,47 +528,18 @@ class DailyEngine:
         self._queue.clear()
         current = self._plan_at(now)
         for plan in self._plans.values():
-            for interval in plan.intervals:
-                if interval.kind == "window" and interval.start < now < interval.end:
-                    for entity in interval.resources:
-                        leases = self._leases.setdefault(entity, set())
-                        leases.add(f"{plan.simulation_date}:{interval.id}")
-                        value = self._observe(entity)
-                        if value and value["state"] == "on" and entity not in self._owned:
-                            self._preexisting.add(entity)
             for event in plan.events:
                 key = self._key(plan, event)
-                if key in self._journal or event.kind == "activity_end":
+                if key in self._journal:
                     continue
                 if event.at < now:
                     self._journal[key] = {
                         "status": "historical_skipped",
-                        "date": plan.simulation_date.isoformat(),
+                        "date": now.date().isoformat(),
                     }
                 elif event.at < current.end:
                     self._push(event.at, "plan", key, (plan, event), event.order_key[1:])
         self._push(current.end, "boundary", f"boundary:{current.end}", order=(0, 0, "", 0))
-        self._queue_activity_ends()
-
-    def _queue_activity_ends(self):
-        now = dt_util.utcnow()
-        queued = {e.key for e in self._queue if e.kind in {"cleanup", "confirm"}}
-        for lifecycle in self._activities.values():
-            if lifecycle.phase == "confirming" and f"{lifecycle.id}:confirm" not in queued:
-                self._push(
-                    now + timedelta(seconds=1), "confirm", f"{lifecycle.id}:confirm", lifecycle.id
-                )
-            if lifecycle.deadline and lifecycle.phase in {"running", "ending"}:
-                for index, (offset, _) in enumerate(lifecycle.end_actions):
-                    key = f"{lifecycle.id}:end:{index}"
-                    if index not in lifecycle.completed_ends and key not in queued:
-                        self._push(
-                            max(now, lifecycle.deadline + timedelta(seconds=offset)),
-                            "cleanup",
-                            key,
-                            (lifecycle.id, index),
-                            order=(20, 0, lifecycle.source_id, index),
-                        )
 
     async def _begin_handover(self, *, recover=False):
         now = dt_util.utcnow()
@@ -678,12 +547,12 @@ class DailyEngine:
         self._handover = {}
         observed = {
             entity: light_observation(self._lighting_source(), entity)
-            for entity in self.program.lighting.managed_targets.entities
+            for entity in projectable_lights(self.program)
         }
         managed = project_lighting(
             self.program, self._projection_plan(now), now, yielded=frozenset(self._yielded)
         )
-        config = effective_handover(self.program)
+        config = Handover()
         for entity in managed:
             previous = old.get(entity)
             deadline = (
@@ -795,30 +664,6 @@ class DailyEngine:
                         await self._stop_owned()
                         self.status, self.reason = "inactive", f"Cannot compile daily plan: {err}"
                         self.last_error = str(err)
-                elif event.kind == "cleanup":
-                    key, index = event.payload
-                    if lifecycle := self._activities.get(key):
-                        await self._end_action(lifecycle, index)
-                elif event.kind == "confirm":
-                    if lifecycle := self._activities.get(event.payload):
-                        if await self._confirm_owned(lifecycle):
-                            lifecycle.phase = "running"
-                            self._queue_activity_ends()
-                        elif event.attempt < 2 and lifecycle.deadline > dt_util.utcnow():
-                            self._push(
-                                dt_util.utcnow() + timedelta(seconds=1),
-                                "confirm",
-                                event.key,
-                                lifecycle.id,
-                                attempt=event.attempt + 1,
-                            )
-                        else:
-                            self._activities.pop(lifecycle.id, None)
-                            self._record(
-                                lifecycle.id,
-                                "unconfirmed_start",
-                                "Successful dispatch had no bounded ownership confirmation",
-                            )
                 elif event.kind == "handover_done":
                     if data := self._handover.get(event.payload):
                         target = LightState(**data["target"])
@@ -865,9 +710,7 @@ class DailyEngine:
             self._arm_timer()
             self._notify()
 
-    async def _call(
-        self, action, key, generation, *, retry=0, cleanup=False, allow_retry=True, owner=None
-    ):
+    async def _call(self, action, key, generation, *, retry=0, cleanup=False, allow_retry=True):
         previous = self._journal.get(key, {}).get("status")
         if previous in {"dispatched", "would_dispatch"}:
             return True
@@ -884,7 +727,7 @@ class DailyEngine:
             return False
         domain, service = action.action.split(".")
         data = service_payload(self.hass, action)
-        if action.action != "event.fire" and not self.hass.services.has_service(domain, service):
+        if not self.hass.services.has_service(domain, service):
             self._finish(key, "service_missing", action)
             return False
         context = Context()
@@ -901,11 +744,9 @@ class DailyEngine:
         if not await self._persist():
             return False
         # Storage yields to state listeners; check permission/ownership again at dispatch.
-        if (
-            (not cleanup and (generation != self.generation or not self._effective_gate()[0]))
-            or (set(action.targets) | set(action.resources)) & self._yielded
-            or (owner is not None and owner not in self._activities)
-        ):
+        if (not cleanup and (generation != self.generation or not self._effective_gate()[0])) or (
+            set(action.targets) | set(action.resources)
+        ) & self._yielded:
             self._finish(key, "cancelled_before_dispatch", action)
             await self._persist()
             return False
@@ -919,14 +760,9 @@ class DailyEngine:
             return True
         try:
             async with asyncio.timeout(SERVICE_TIMEOUT):
-                if action.action == "event.fire":
-                    self.hass.bus.async_fire(
-                        data["event_type"], data.get("event_data", {}), context=context
-                    )
-                else:
-                    await self.hass.services.async_call(
-                        domain, service, data, blocking=True, context=context
-                    )
+                await self.hass.services.async_call(
+                    domain, service, data, blocking=True, context=context
+                )
         except Exception as err:
             self.last_error = f"{action.action}: {err}"
             self._finish(key, "failed", action, self.last_error)
@@ -948,6 +784,8 @@ class DailyEngine:
         return True
 
     def _simulate(self, action, data):
+        if not action.replay_safe:
+            return
         for entity in action.targets:
             before = self._observe(entity) or {"state": "off", "attributes": {}}
             attrs = dict(before["attributes"])
@@ -982,302 +820,18 @@ class DailyEngine:
         if set(action.targets) & self._yielded:
             self._finish(key, "yielded")
             return
-        if not action.action.startswith(("light.", "switch.")):
-            conflicts = (set(action.resources) | set(action.targets)) & self._handover.keys()
-            if conflicts:
-                at = max(instant(self._handover[entity]["deadline"]) for entity in conflicts)
-                self._push(at, "plan", key, (plan, event), event.order_key[1:])
-                self._record(key, "deferred_handover", "Declared resources are still converging")
-                return
-        if event.kind == "activity_start":
-            await self._start_activity(plan, event, key, generation)
-            return
-        targets = action.targets
-        if event.kind in {"window_start", "window_end"}:
-            interval = next(item for item in plan.intervals if item.id == event.lease_id)
-            entity = targets[0]
-            lease_id = f"{plan.simulation_date}:{event.lease_id}"
-            leases = self._leases.setdefault(entity, set())
-            if event.kind == "window_start":
-                if interval.end <= dt_util.utcnow():
-                    self._finish(key, "expired_interval")
-                    return
-                if not leases and self._observe(entity) and self._observe(entity)["state"] == "on":
-                    if entity not in self._owned:
-                        self._preexisting.add(entity)
-                leases.add(lease_id)
-            else:
-                if lease_id not in leases:
-                    self._finish(key, "unowned_end")
-                    return
-                leases.discard(lease_id)
-                if leases or entity in self._preexisting:
-                    self._finish(key, "lease_retained")
-                    return
-                if entity not in self._owned:
-                    self._finish(key, "unowned_end")
-                    return
-            prior = [
-                item
-                for item in plan.events
-                if item.at <= event.at
-                and entity in item.action.targets
-                and item.kind == "step"
-                and item.action.action
-                in {"light.turn_on", "light.turn_off", "switch.turn_on", "switch.turn_off"}
-            ]
-            if prior:
-                self._finish(key, "routine_priority")
-                return
-        if any(entity in self._handover for entity in targets) and action.action.startswith(
-            "light."
+        if action.action in {"light.turn_on", "light.turn_off"} and any(
+            entity in self._handover for entity in action.targets
         ):
             self._finish(key, "subsumed_handover")
             return
-        # A safety intent remains authoritative through this simulation day.
-        if event.priority != 30 and any(
-            prior.priority == 30
-            and prior.at <= event.at
-            and set(prior.action.targets) & set(targets)
-            for prior in plan.events
-        ):
-            self._finish(key, "safety_priority")
+        conflicts = set(action.targets) & self._handover.keys()
+        if conflicts:
+            at = max(instant(self._handover[e]["deadline"]) for e in conflicts)
+            self._push(at, "plan", key, (plan, event), event.order_key[1:])
+            self._record(key, "deferred_handover", "Target is still converging")
             return
         await self._call(action, key, generation)
-
-    async def _start_activity(self, plan, event, key, generation):
-        activity_id = (
-            f"{'dry' if self.dry_run else 'live'}:{plan.behavior_hash}:"
-            f"{plan.simulation_date}:activity:{event.source_id}"
-        )
-        lifecycle = self._activities.get(activity_id)
-        if lifecycle is None:
-            routine, item = next(
-                (r, a)
-                for r in self.program.routines
-                for a in r.activities
-                if a.id == event.source_id
-            )
-            interval = next(
-                i for i in plan.intervals if i.source_id == item.id and i.kind == "activity"
-            )
-            if interval.end <= dt_util.utcnow() or any(
-                set(item.resources) & set(a.resources) for a in self._activities.values()
-            ):
-                self._finish(key, "activity_unavailable")
-                return
-            gate = ActivationGate(self.hass, [condition_data(c) for c in item.start_conditions])
-            await gate.async_prepare()
-            if not gate.evaluate(VirtualStates(self) if self.dry_run else None)[0] or any(
-                self._observe(e) is None or e in self._yielded for e in item.resources
-            ):
-                self._finish(key, "start_condition_failed")
-                return
-            if not item.start_conditions and any(
-                e.startswith(("remote.", "media_player."))
-                and self._observe(e)["state"] not in {"off", "idle", "standby"}
-                for e in item.resources
-            ):
-                self._finish(key, "already_in_use")
-                return
-            ends = [p for p in plan.events if p.source_id == item.id and p.kind == "activity_end"]
-            starts = {
-                self._key(plan, p)
-                for p in plan.events
-                if p.source_id == item.id and p.kind == "activity_start"
-            }
-            lifecycle = ActivityLifecycle(
-                activity_id,
-                item.id,
-                tuple(item.resources),
-                interval.duration,
-                tuple(((p.at - interval.end).total_seconds(), p.action) for p in ends),
-                [condition_data(c) for c in item.ownership_conditions],
-                item.stop_behavior
-                or merge_defaults(self.program, routine).activities.stop_behavior,
-                starts,
-                dry_run=self.dry_run,
-            )
-            self._activities[activity_id] = lifecycle
-            await self._persist()
-        if await self._call(event.action, key, generation, allow_retry=False):
-            lifecycle.contexts.update(self._contexts)
-            lifecycle.acquired.update(set(event.action.resources) & set(lifecycle.resources))
-            for entity in event.action.targets:
-                if entity in lifecycle.acquired and event.action.action.endswith(
-                    (".turn_on", ".turn_off")
-                ):
-                    expected = {
-                        "state": "on" if event.action.action.endswith(".turn_on") else "off"
-                    }
-                    if "activity" in event.action.data:
-                        expected["current_activity"] = event.action.data["activity"]
-                    lifecycle.desired_states[entity] = expected
-            lifecycle.observed = {e: self._observe(e) for e in lifecycle.acquired}
-            lifecycle.pending_starts.discard(key)
-            if not lifecycle.pending_starts:
-                lifecycle.phase = "running"
-                lifecycle.deadline = dt_util.utcnow() + timedelta(seconds=lifecycle.duration)
-                routine, item = next(
-                    (r, a)
-                    for r in self.program.routines
-                    for a in r.activities
-                    if a.id == event.source_id
-                )
-                day = SimulationDay(self.program, plan.simulation_date, self._context(), [])
-                limit = day.end if not item.allow_cross_boundary else None
-                if item.within:
-                    bounds = day.between(item.within, plan.step_times, ())
-                    limit = bounds[1] if bounds else dt_util.utcnow()
-                cleanup_end = lifecycle.deadline + timedelta(
-                    seconds=max(offset for offset, _ in lifecycle.end_actions)
-                )
-                if limit and cleanup_end > limit:
-                    self._record(
-                        key, "deadline_constraint", "Late startup no longer fits its window"
-                    )
-                    await self._cancel_activity(lifecycle)
-                    return
-                if await self._confirm_owned(lifecycle):
-                    self._queue_activity_ends()
-                else:
-                    lifecycle.phase = "confirming"
-                    self._push(
-                        dt_util.utcnow() + timedelta(seconds=1),
-                        "confirm",
-                        f"{lifecycle.id}:confirm",
-                        lifecycle.id,
-                    )
-            await self._persist()
-            if generation != self.generation or not self._effective_gate()[0]:
-                await self._cancel_activity(lifecycle)
-        else:
-            await self._cancel_activity(lifecycle)
-
-    async def _confirm_owned(self, lifecycle):
-        if any(e in self._yielded for e in lifecycle.resources) or not lifecycle.observed:
-            return False
-        if any(
-            self._observe(e) != expected or expected is None
-            for e, expected in lifecycle.observed.items()
-        ):
-            return False
-        if lifecycle.phase != "ending":
-            for entity, expected in lifecycle.desired_states.items():
-                value = self._observe(entity)
-                if value is None or value["state"] != expected["state"]:
-                    return False
-                if (
-                    "current_activity" in expected
-                    and value["attributes"].get("current_activity") != expected["current_activity"]
-                ):
-                    return False
-        if lifecycle.phase != "ending":
-            gate = self._ownership_gates.get(lifecycle.id)
-            if gate is None:
-                gate = ActivationGate(self.hass, lifecycle.ownership_conditions)
-                await gate.async_prepare()
-                self._ownership_gates[lifecycle.id] = gate
-            return (
-                lifecycle.id in self._activities
-                and gate.evaluate(VirtualStates(self) if self.dry_run else None)[0]
-            )
-        return True
-
-    async def _end_action(self, lifecycle, index):
-        if index in lifecycle.completed_ends or lifecycle.id not in self._activities:
-            return
-        key = f"{lifecycle.id}:end:{index}"
-        if self._journal.get(key, {}).get("status") == "uncertain":
-            self._activities.pop(lifecycle.id, None)
-            self._record(key, "uncertain_cleanup", "Opaque end dispatch is not repeated")
-            return
-        if not await self._confirm_owned(lifecycle):
-            self._activities.pop(lifecycle.id, None)
-            self._record(key, "ownership_lost", "End suppressed without matching observations")
-            return
-        lifecycle.phase = "ending"
-        await self._persist()
-        action = lifecycle.end_actions[index][1]
-        unacquired = (set(action.resources) & set(lifecycle.resources)) - lifecycle.acquired
-        if unacquired - set(action.targets):
-            # Opaque effects cannot be split into a safe partial rollback.
-            lifecycle.completed_ends.add(index)
-            self._finish(key, "unacquired_resource")
-            if len(lifecycle.completed_ends) == len(lifecycle.end_actions):
-                self._activities.pop(lifecycle.id, None)
-            await self._persist()
-            return
-        targets = tuple(
-            e for e in action.targets if e not in lifecycle.resources or e in lifecycle.acquired
-        )
-        if action.targets and not targets:
-            success = True
-            self._finish(key, "unacquired_resource")
-        else:
-            action = replace(
-                action,
-                targets=targets,
-                resources=tuple(e for e in action.resources if e not in unacquired),
-            )
-            success = await self._call(action, key, None, cleanup=True, owner=lifecycle.id)
-        lifecycle.completed_ends.add(index)
-        lifecycle.observed = {e: self._observe(e) for e in lifecycle.acquired}
-        if not success or len(lifecycle.completed_ends) == len(lifecycle.end_actions):
-            self._activities.pop(lifecycle.id, None)
-        await self._persist()
-
-    async def _cancel_activity(self, lifecycle):
-        if lifecycle.stop_behavior == "end_if_owned":
-            for index in range(len(lifecycle.end_actions)):
-                await self._end_action(lifecycle, index)
-        else:
-            self._activities.pop(lifecycle.id, None)
-            self._record(lifecycle.id, "left_running", "Explicit stop policy releases ownership")
-
-    async def _recover_activities(self):
-        for lifecycle in list(self._activities.values()):
-            if lifecycle.phase == "ending":
-                for index in range(len(lifecycle.end_actions)):
-                    saved = self._journal.get(f"{lifecycle.id}:end:{index}", {})
-                    if saved.get("status") in {"dispatched", "would_dispatch"}:
-                        lifecycle.completed_ends.add(index)
-                        lifecycle.observed.update(
-                            {
-                                e: value
-                                for e, value in saved.get("observed", {}).items()
-                                if e in lifecycle.acquired
-                            }
-                        )
-                if len(lifecycle.completed_ends) == len(lifecycle.end_actions):
-                    self._activities.pop(lifecycle.id)
-                    continue
-            if lifecycle.phase == "starting":
-                for key in tuple(lifecycle.pending_starts):
-                    saved = self._journal.get(key, {})
-                    if saved.get("status") in {"dispatched", "would_dispatch"}:
-                        action = saved.get("intended", {})
-                        resources = set(action.get("resources", ())) & set(lifecycle.resources)
-                        lifecycle.acquired.update(resources)
-                        lifecycle.observed.update({e: saved["observed"].get(e) for e in resources})
-                        lifecycle.pending_starts.discard(key)
-                await self._cancel_activity(lifecycle)
-            elif lifecycle.phase == "confirming" and lifecycle.deadline > dt_util.utcnow():
-                self._push(
-                    dt_util.utcnow() + timedelta(seconds=1),
-                    "confirm",
-                    f"{lifecycle.id}:confirm",
-                    lifecycle.id,
-                )
-            elif not await self._confirm_owned(lifecycle):
-                self._activities.pop(lifecycle.id, None)
-                self._record(
-                    lifecycle.id, "ownership_lost", "Saved activity no longer matches observations"
-                )
-            elif lifecycle.deadline and lifecycle.deadline <= dt_util.utcnow():
-                for index, (offset, _) in enumerate(lifecycle.end_actions):
-                    if lifecycle.deadline + timedelta(seconds=offset) <= dt_util.utcnow():
-                        await self._end_action(lifecycle, index)
 
     async def _cancel_native_fades(self, entities=None):
         for entity in set(self._native_fades):
@@ -1290,7 +844,7 @@ class DailyEngine:
             if current is None or self.dry_run:
                 continue
             data = {"transition": 0}
-            if current.state == "on":
+            if current.state == "on" and current.brightness_pct is not None:
                 data["brightness"] = max(1, round(current.brightness_pct * 255 / 100))
             action = ResolvedAction(f"light.turn_{current.state}", (entity,), data, (entity,), True)
             # Hold only the controller's still-owned transition at its observed level.
@@ -1304,23 +858,10 @@ class DailyEngine:
     async def _stop_owned(self):
         await self._cancel_native_fades()
         self._handover.clear()
-        for lifecycle in list(self._activities.values()):
-            await self._cancel_activity(lifecycle)
-        if self.program.policies.lighting_stop_behavior == "turn_off_owned":
-            for entity, expected in list(self._owned.items()):
-                if (
-                    entity not in self._yielded
-                    and entity not in self._preexisting
-                    and self._observe(entity) == expected
-                ):
-                    action = ResolvedAction(
-                        f"{entity.split('.')[0]}.turn_off", (entity,), {}, (entity,), True
-                    )
-                    await self._call(action, f"stop:{self.session}:{entity}", None, cleanup=True)
         self._owned.clear()
 
     async def async_replace_program(self, program, *, expected_revision=None, persist_program=True):
-        gate = ActivationGate(self.hass, [condition_data(c) for c in program.activation.conditions])
+        gate = ActivationGate(self.hass, [])
         await gate.async_prepare()
         today = simulation_date_at(program, dt_util.utcnow(), self._context())
         plans = await self.hass.async_add_executor_job(
@@ -1414,16 +955,6 @@ class DailyEngine:
             if self.handover_deadline
             else None,
             "handover": handover,
-            "remote_owned": self.remote_owned,
-            "remote_deadline": next(
-                (
-                    a.deadline.isoformat()
-                    for a in self._activities.values()
-                    if a.deadline and any(e.startswith("remote.") for e in a.resources)
-                ),
-                None,
-            ),
-            "activities": [a.to_dict() for a in self._activities.values()],
             "yielded": sorted(self._yielded),
             "last_error": self.last_error,
             "source_revision": revision(self.program),

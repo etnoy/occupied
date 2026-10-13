@@ -89,8 +89,7 @@ def time_source_options(hass):
 
 def source_entities(program):
     return {
-        item.when.entity_range.entity_id
-        for routine in program.routines
-        for item in (*routine.steps, *routine.activities)
-        if item.when.entity_range is not None
+        source.entity
+        for step in program.steps.values()
+        if step.enabled and (source := step.timing.relative_to) and source.entity
     }

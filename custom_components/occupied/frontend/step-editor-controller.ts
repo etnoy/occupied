@@ -1,11 +1,6 @@
 import type { OccupiedPanel } from "./occupied-panel.js";
-import { entityName, required } from "./util.js";
-import {
-  stepEntries,
-  editorErrors,
-  offsetErrors,
-  buildStep,
-} from "./step-model.js";
+import { required, offsetErrors } from "./util.js";
+import { stepEntries, editorErrors, buildStep } from "./step-model.js";
 
 export function focusEditor(panel: OccupiedPanel, key?: string) {
   const target = key
@@ -13,13 +8,13 @@ export function focusEditor(panel: OccupiedPanel, key?: string) {
         `[data-builder-field="${CSS.escape(key)}"]`,
       )
     : panel.shadowRoot.querySelector<HTMLElement>(
-        '.routine-editor [aria-invalid="true"]',
+        '.step-editor [aria-invalid="true"]',
       ) ||
       panel.shadowRoot.querySelector<HTMLElement>(
-        '.routine-editor [data-builder-field="days"][aria-describedby]',
+        '.step-editor [data-builder-field="days"][aria-describedby]',
       ) ||
       panel.shadowRoot.querySelector<HTMLElement>(
-        '.routine-editor [data-builder-field="name"]',
+        '.step-editor [data-builder-field="name"]',
       );
   target?.focus();
 }
@@ -62,13 +57,6 @@ export function createStepEditorContext(panel: OccupiedPanel) {
     panel.flush();
   };
   const submit = async () => {
-    if (!editing && !form.name.trim() && form.entities.length > 0) {
-      const target = `${entityName(panel.catalog, form.entities[0])}${form.entities.length > 1 ? ` +${form.entities.length - 1}` : ""}`;
-      form.name =
-        form.kind === "entities"
-          ? `${target} ${t(form.action === "turn_off" ? "off" : "on")}`
-          : target;
-    }
     editor.errors = editorErrors(panel.draft, editor);
     if (Object.keys(editor.errors).length > 0) {
       return refresh();

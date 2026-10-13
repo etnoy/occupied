@@ -4,6 +4,7 @@
   import Timeline from "./Timeline.svelte";
   import { properties } from "./dom.js";
   import { formatPreviewDate } from "./time-format.js";
+  import { calendarDayPlan } from "./timeline.js";
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
   let showLoading = $state(false);
@@ -25,7 +26,12 @@
     return { t };
   });
   let { t } = $derived(data);
-  let plan = $derived(panel.preview?.plans[0]);
+  let plan = $derived(
+    calendarDayPlan(
+      panel.preview?.plans || [],
+      panel.preview?.plans.at(-1)?.simulation_date || panel.previewDate,
+    ),
+  );
   let date = $derived(
     plan?.simulation_date ||
       panel.previewDate ||
@@ -91,6 +97,7 @@
 
 <Timeline
   {plan}
+  schedulePlans={panel.preview?.plans}
   program={panel.previewProgram}
   {t}
   locale={panel._hass.locale}

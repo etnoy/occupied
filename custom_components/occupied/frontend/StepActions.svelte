@@ -97,7 +97,7 @@
     aria-expanded={menuOpen}
     aria-controls={menuId}
     aria-describedby={context?.editor.errors.days
-      ? "routine-error-days"
+      ? "step-error-days"
       : undefined}
     data-builder-field="days"
     disabled={panel.busy}
@@ -142,7 +142,7 @@
         {panel.t(context.form.enabled ? "Disable" : "Enable")}
       </button>
     {/if}
-    {#if entry?.kind === "steps"}
+    {#if entry}
       <button
         type="button"
         role="menuitem"

@@ -1,4 +1,184 @@
 // Generated from occupied-panel.ts by pnpm run build. Do not edit.
+// custom_components/occupied/frontend/time-format.ts
+function shiftScheduleDate(value, days2) {
+  const date = /* @__PURE__ */ new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days2);
+  return date.toISOString().slice(0, 10);
+}
+function calendarMidnight(value, zone) {
+  const target = Date.parse(`${value}T00:00:00Z`);
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: zone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+  let instant = target;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const parts = Object.fromEntries(
+      formatter
+        .formatToParts(instant)
+        .map(({ type, value: value2 }) => [type, value2]),
+    );
+    const local = Date.parse(
+      `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}Z`,
+    );
+    const correction = target - local;
+    if (correction === 0) {
+      return new Date(instant).toISOString();
+    }
+    instant += correction;
+  }
+  return new Date(instant).toISOString();
+}
+function formatScheduleDate(value, locale) {
+  const weekday = new Intl.DateTimeFormat(locale?.language, {
+    weekday: "long",
+    timeZone: "UTC",
+  }).format(/* @__PURE__ */ new Date(`${value}T12:00:00Z`));
+  return `${weekday} ${value}`;
+}
+function formatPreviewDate(value, today, locale, t) {
+  const valueTime = Date.parse(`${value}T12:00:00Z`);
+  const todayTime = Date.parse(`${today}T12:00:00Z`);
+  const daysFromToday = Math.round((valueTime - todayTime) / 864e5);
+  const relativeLabels = {
+    [-1]: "Yesterday",
+    0: "Today",
+    1: "Tomorrow",
+  };
+  const relativeLabel = relativeLabels[daysFromToday]
+    ? t(relativeLabels[daysFromToday])
+    : void 0;
+  const dateLabel = formatScheduleDate(value, locale);
+  return relativeLabel ? `${relativeLabel} \xB7 ${dateLabel}` : dateLabel;
+}
+function usesAmPm(locale) {
+  if (!locale) {
+    return false;
+  }
+  if (locale.time_format === "12") {
+    return true;
+  }
+  if (locale.time_format === "24") {
+    return false;
+  }
+  const language = locale.time_format === "language" ? locale.language : void 0;
+  const hourCycle2 = new Intl.DateTimeFormat(language, {
+    hour: "numeric",
+  }).resolvedOptions().hourCycle;
+  return hourCycle2 === "h11" || hourCycle2 === "h12";
+}
+function formatterLocale(locale) {
+  return locale?.language;
+}
+function hourCycle(locale) {
+  return usesAmPm(locale) ? "h12" : "h23";
+}
+function formatClock(value, locale) {
+  const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
+  if (!match) {
+    return value;
+  }
+  const [, hour, minute, second] = match;
+  const date = new Date(
+    Date.UTC(2020, 0, 1, Number(hour), Number(minute), Number(second || 0)),
+  );
+  return new Intl.DateTimeFormat(formatterLocale(locale), {
+    hour: usesAmPm(locale) ? "numeric" : "2-digit",
+    minute: "2-digit",
+    ...(Number(second) && { second: "2-digit" }),
+    hourCycle: hourCycle(locale),
+    timeZone: "UTC",
+  }).format(date);
+}
+function formatTimestamp(value, zone, locale) {
+  return new Intl.DateTimeFormat(formatterLocale(locale), {
+    dateStyle: "short",
+    timeStyle: "medium",
+    hourCycle: hourCycle(locale),
+    timeZone: zone && zone !== "home_assistant" ? zone : void 0,
+  }).format(new Date(value));
+}
+
+// custom_components/occupied/frontend/model.ts
+var copy = (value) => structuredClone(value);
+var days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+function set(object, path, value) {
+  if (path.length === 0) {
+    throw new Error("Cannot set an empty path");
+  }
+  let parent = object;
+  for (const [i, key2] of path.slice(0, -1).entries()) {
+    parent = parent[key2] ??= typeof path[i + 1] === "number" ? [] : {};
+  }
+  const last = path.at(-1);
+  if (value === void 0) {
+    delete parent[last];
+  } else {
+    parent[last] = value;
+  }
+}
+function identifier(program, name) {
+  let base = name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replaceAll(/[^a-z0-9]+/g, "_")
+    .replaceAll(/^_+|_+$/g, "");
+  if (!/^[a-z]/.test(base)) {
+    base = "item_" + base;
+  }
+  base ||= "item";
+  const used = new Set(Object.keys(program.steps || {}));
+  let id = base,
+    n = 2;
+  while (used.has(id)) {
+    id = `${base}_${n++}`;
+  }
+  return id;
+}
+function references(program, id) {
+  return Object.entries(program.steps || {})
+    .filter(([, step]) => step.timing.relative_to?.step === id)
+    .map(([key2]) => ["steps", key2, "timing", "relative_to", "step"]);
+}
+function removeStep(program, path) {
+  const id = String(path[1]);
+  if (references(program, id).length > 0) {
+    throw new Error(
+      "Other steps depend on this step. Change their timing first.",
+    );
+  }
+  delete program.steps?.[id];
+}
+function parentSteps(program, child2) {
+  const blocked = /* @__PURE__ */ new Set([child2]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [id, step] of Object.entries(program.steps || {})) {
+      if (
+        !(
+          step.timing.relative_to?.step &&
+          blocked.has(step.timing.relative_to.step)
+        ) ||
+        blocked.has(id)
+      ) {
+        continue;
+      }
+      blocked.add(id);
+      changed = true;
+    }
+  }
+  return Object.entries(program.steps || {})
+    .filter(([id]) => !blocked.has(id))
+    .map(([id, step]) => ({ ...step, id, name: step.name || id }));
+}
+
 // custom_components/occupied/frontend/util.ts
 function errorMessage(error) {
   if (error instanceof Error) {
@@ -34,122 +214,225 @@ function download(name, text2, type = "application/json") {
 function entityName(catalog, id) {
   return catalog.entities.find((entity) => entity.entity_id === id)?.name || id;
 }
-
-// custom_components/occupied/frontend/model.ts
-var copy = (value) => structuredClone(value);
-var days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
-var resourceKinds = {
-  steps: "step",
-  activities: "activity",
-  activity_windows: "window",
-};
-function get(object, path) {
-  let value = object;
-  for (const key2 of path) {
-    value = value?.[key2];
+function minutes(value) {
+  if (value === "0") {
+    return 0;
   }
-  return value;
+  if (typeof value === "number") {
+    return value / 60;
+  }
+  const text2 = value || "0s";
+  if (
+    !/^[+-]?(?:\d+(?:\.\d+)?h)?(?:\d+(?:\.\d+)?m)?(?:\d+(?:\.\d+)?s)?$/.test(
+      text2,
+    ) ||
+    ["", "+", "-"].includes(text2)
+  ) {
+    return NaN;
+  }
+  const total = [...text2.matchAll(/(\d+(?:\.\d+)?)([hms])/g)].reduce(
+    (n, [, amount, unit]) =>
+      n + Number(amount) * { h: 60, m: 1, s: 1 / 60 }[unit],
+    0,
+  );
+  return text2.startsWith("-") ? -total : total;
 }
-function set(object, path, value) {
-  if (path.length === 0) {
-    throw new Error("Cannot set an empty path");
+function timingForm(timing = {}) {
+  const clock = timing.absolute_time,
+    source2 = timing.relative_to;
+  let anchor = "";
+  if (source2?.step) {
+    anchor = `step:${source2.step}`;
+  } else if (source2?.sun) {
+    anchor = `sun:${source2.sun}`;
+  } else if (source2?.entity) {
+    const attribute = source2.attribute ? `:${source2.attribute}` : "";
+    anchor = `entity:${source2.entity}${attribute}`;
   }
-  let parent = object;
-  for (const [i, key2] of path.slice(0, -1).entries()) {
-    parent = parent[key2] ??= typeof path[i + 1] === "number" ? [] : {};
+  return {
+    mode: source2 ? "relative" : "absolute",
+    start: clock?.start || "18:00",
+    end: clock?.end || "",
+    anchor,
+    startOffset: source2?.start_offset || "0s",
+    endOffset: source2?.end_offset || "",
+  };
+}
+function offsetErrors(time) {
+  const errors = {},
+    low = minutes(time.startOffset);
+  const formatError = "Use h, m or s, for example 30m, 1h, 1h30m or -10m.";
+  if (!time.startOffset || !Number.isFinite(low)) {
+    errors.startOffset = formatError;
+  } else if (Math.abs(low) > 10080) {
+    errors.startOffset = "Offsets must be within seven days.";
   }
-  const last = path.at(-1);
-  if (value === void 0) {
-    delete parent[last];
+  if (time.endOffset) {
+    const high = minutes(time.endOffset);
+    if (!Number.isFinite(high)) {
+      errors.endOffset = formatError;
+    } else if (Math.abs(high) > 10080) {
+      errors.endOffset = "Offsets must be within seven days.";
+    } else if (Number.isFinite(low) && high < low) {
+      errors.endOffset = "The end offset must be at least the start offset.";
+    }
+  }
+  return errors;
+}
+function scheduleDaySuffix(selected, t) {
+  if (!selected) {
+    return "";
+  }
+  if (selected.length === 0) {
+    return ` ${t("on no days")}`;
+  }
+  if (days.every((day) => selected.includes(day))) {
+    return "";
+  }
+  if (
+    selected.length === 5 &&
+    days.slice(0, 5).every((day) => selected.includes(day))
+  ) {
+    return ` ${t("on weekdays")}`;
+  }
+  if (
+    selected.length === 2 &&
+    days.slice(5).every((day) => selected.includes(day))
+  ) {
+    return ` ${t("on weekends")}`;
+  }
+  const weekdayNames = {
+    mon: "Mondays",
+    tue: "Tuesdays",
+    wed: "Wednesdays",
+    thu: "Thursdays",
+    fri: "Fridays",
+    sat: "Saturdays",
+    sun: "Sundays",
+  };
+  const dayNames = selected.map((day) => t(weekdayNames[day] || day));
+  const lastDay = dayNames.pop();
+  const dayList =
+    dayNames.length > 0
+      ? `${dayNames.join(", ")}${dayNames.length > 1 ? "," : ""} ${t("and")} ${lastDay}`
+      : lastDay;
+  return ` ${t("on")} ${dayList}`;
+}
+function timingSummary(entry, entries, t = (v) => v, sources = [], locale) {
+  if (!entry.timing) {
+    return `${t("Repeated activity window")}${scheduleDaySuffix(entry.days, t)}`;
+  }
+  return timingExplanation(timingForm(entry.timing), entries, t, sources, {
+    includeHints: false,
+    locale,
+    days: entry.days,
+  });
+}
+function timingExplanation(
+  input,
+  entries = [],
+  t = (value) => value,
+  sources = [],
+  { includeHints = true, locale, days: selectedDays } = {},
+) {
+  const runs = `${t("Runs")}${scheduleDaySuffix(selectedDays, t)}`;
+  const time = {
+    start: "",
+    end: "",
+    anchor: "",
+    startOffset: "0s",
+    endOffset: "",
+    ...input,
+  };
+  if (time.mode === "absolute") {
+    const valid = (value) =>
+      /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value);
+    const display = (value) => formatClock(value, locale);
+    const seconds = (value) =>
+      value
+        .split(":")
+        .reduce(
+          (sum, part, index2) => sum + Number(part) * [3600, 60, 1][index2],
+          0,
+        );
+    if (!valid(time.start) || (time.end && !valid(time.end))) {
+      return t("Choose valid start and end times");
+    }
+    const fixedTime = `${runs} ${t("at")} ${display(time.start)}`;
+    if (!time.end) {
+      return `${fixedTime}${includeHints ? `. ${t("Add an end of window to introduce randomness")}` : ""}`;
+    }
+    if (seconds(time.end) === seconds(time.start)) {
+      return `${fixedTime}${includeHints ? `. ${t("Start and end are the same, so the time is fixed")}` : ""}`;
+    }
+    const nextDay =
+      seconds(time.end) < seconds(time.start) ? ` ${t("the next day")}` : "";
+    return `${runs} ${t("at a random time between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}`;
+  }
+  if (Object.keys(offsetErrors(time)).length > 0) {
+    return t("Enter valid offsets to see when this step runs");
+  }
+  if (!time.anchor) {
+    return t("Choose a step or event");
+  }
+  const step = time.anchor.startsWith("step:");
+  let name;
+  if (step) {
+    name =
+      entries.find((entry) => entry.id === time.anchor.slice(5))?.name ||
+      time.anchor.slice(5);
+  } else if (time.anchor.startsWith("sun:")) {
+    name = t(time.anchor.slice(4));
   } else {
-    parent[last] = value;
+    name =
+      sources.find((source2) => source2.value === time.anchor)?.name ||
+      time.anchor
+        .slice(7)
+        .replace(
+          /:(start_time|end_time)$/,
+          (_, attribute) =>
+            ` \xB7 ${t(attribute === "start_time" ? "start" : "end")}`,
+        );
   }
-}
-function resources(program) {
-  return (program.routines || []).flatMap((r2) => [
-    { ...r2, kind: "routine" },
-    ...["steps", "activities", "activity_windows"].flatMap((k) =>
-      (r2[k] || []).map((x) => ({
-        ...x,
-        kind: resourceKinds[k],
-        routine: r2.id,
-      })),
-    ),
-  ]);
-}
-function identifier(program, name) {
-  let base = name
-    .toLowerCase()
-    .normalize("NFKD")
-    .replaceAll(/[^a-z0-9]+/g, "_")
-    .replaceAll(/^_+|_+$/g, "");
-  if (!/^[a-z]/.test(base)) {
-    base = "item_" + base;
+  const low = minutes(time.startOffset),
+    high = time.endOffset ? minutes(time.endOffset) : low;
+  const duration = (offset) => {
+    let remaining = Math.round(Math.abs(offset) * 60 * 1e6) / 1e6;
+    const hours = Math.floor(remaining / 3600);
+    remaining -= hours * 3600;
+    const mins = Math.floor(remaining / 60);
+    const seconds = Math.round((remaining - mins * 60) * 1e6) / 1e6;
+    return [
+      [hours, "hour", "hours"],
+      [mins, "minute", "minutes"],
+      [seconds, "second", "seconds"],
+    ]
+      .filter(([amount]) => amount)
+      .map(
+        ([amount, singular, plural]) =>
+          `${amount} ${t(amount === 1 ? singular : plural)}`,
+      )
+      .join(" ");
+  };
+  const offsetLabel = (offset) =>
+    `${duration(offset)} ${t(offset < 0 ? "before" : "after")}`;
+  if (low === high) {
+    const fixedTime =
+      low === 0
+        ? `${runs} ${t("at the same time as")} ${name}`
+        : `${runs} ${offsetLabel(low)} ${name}`;
+    return `${fixedTime}${includeHints && !time.endOffset ? `. ${t("Add an end offset to introduce randomness")}` : ""}`;
   }
-  base ||= "item";
-  const used = new Set(resources(program).map((x) => x.id));
-  let id = base,
-    n = 2;
-  while (used.has(id)) {
-    id = `${base}_${n++}`;
+  const anchorStart = step ? `${t("the start of")} ${name}` : name;
+  if (low === 0) {
+    return `${runs} ${t("at a random time between")} ${anchorStart} ${t("and")} ${offsetLabel(high)} ${name}`;
   }
-  return id;
-}
-function references(program, id) {
-  const found = [];
-  function visit(value, path) {
-    if (!value || typeof value !== "object") {
-      return;
-    }
-    for (const [key2, child2] of Object.entries(value)) {
-      if (key2 === "data" || key2 === "weights") {
-        continue;
-      }
-      if ((key2 === "relative_to" || key2 === "step") && child2 === id) {
-        found.push([...path, key2]);
-      } else if (typeof child2 === "object") {
-        visit(child2, [...path, Array.isArray(value) ? Number(key2) : key2]);
-      }
-    }
+  if (high === 0) {
+    return `${runs} ${t("at a random time between")} ${offsetLabel(low)} ${name} ${t("and")} ${anchorStart}`;
   }
-  visit(program, []);
-  return found;
-}
-function removeResource(program, path) {
-  const item = get(program, path),
-    ids = [item.id];
-  if (path[0] === "routines" && path.length === 2) {
-    ids.push(
-      ...["steps", "activities", "activity_windows"].flatMap((k) =>
-        (item[k] || []).map((x) => x.id),
-      ),
-    );
-  }
-  const outside = ids
-    .flatMap((id) => references(program, id))
-    .filter((p) => path.some((k, i) => p[i] !== k));
-  if (outside.length > 0) {
-    throw new Error(
-      `Referenced by ${outside.map((p) => p.join(" \u2192 ")).join(", ")}. Remove these references first.`,
-    );
-  }
-  get(program, path.slice(0, -1)).splice(Number(path.at(-1)), 1);
-}
-function parentSteps(program, child2) {
-  const steps = resources(program).filter((x) => x.kind === "step");
-  const blocked = /* @__PURE__ */ new Set([child2]);
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const s of steps) {
-      if (!blocked.has(s.when?.relative_to) || blocked.has(s.id)) {
-        continue;
-      }
-      blocked.add(s.id);
-      changed = true;
-    }
-  }
-  return steps.filter((x) => !blocked.has(x.id));
+  const firstBound =
+    Math.sign(low) === Math.sign(high) ? duration(low) : offsetLabel(low);
+  return `${runs} ${t("at a random time between")} ${firstBound} ${t("and")} ${offsetLabel(high)} ${name}`;
 }
 
 // custom_components/occupied/frontend/styles.ts
@@ -451,16 +734,16 @@ var styles = `
   .page-heading .hint {
     max-width: 500px;
   }
-  .routine-empty {
+  .step-empty {
     text-align: center;
     padding: 60px 32px;
     border-style: dashed;
   }
-  .routine-empty h2 {
+  .step-empty h2 {
     font-size: 25px;
     letter-spacing: -0.5px;
   }
-  .routine-empty p {
+  .step-empty p {
     max-width: 490px;
     margin: 12px auto 24px;
   }
@@ -468,14 +751,14 @@ var styles = `
     font-size: 13px;
     color: var(--secondary-text-color, #596773);
   }
-  .routine-list {
+  .step-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
     margin: 0 0 20px;
     min-width: 0;
   }
-  .routine-card {
+  .step-card {
     width: calc(100% - var(--depth) * 14px);
     margin-left: calc(var(--depth) * 14px);
     border: 1px solid var(--divider-color, #d5dce3);
@@ -483,13 +766,13 @@ var styles = `
     background: var(--card-background-color, #fff);
     overflow: hidden;
   }
-  .routine-card.step-disabled {
+  .step-card.step-disabled {
     border-style: dashed;
   }
-  .routine-card.step-disabled .routine-row {
+  .step-card.step-disabled .step-row {
     color: var(--secondary-text-color, #596773);
   }
-  .routine-row {
+  .step-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
     align-items: center;
@@ -502,11 +785,11 @@ var styles = `
     background: transparent;
     color: inherit;
   }
-  .routine-row:disabled { opacity: 1; cursor: default; }
-  .routine-row.editing { grid-template-columns: minmax(0, 1fr); }
-  .routine-row:not(:disabled):hover { background: var(--secondary-background-color, #e3eef2); }
-  .routine-row[aria-expanded="true"] { border-bottom: 1px solid var(--divider-color, #d5dce3); }
-  .routine-card .routine-editor { margin: 0; }
+  .step-row:disabled { opacity: 1; cursor: default; }
+  .step-row.editing { grid-template-columns: minmax(0, 1fr); }
+  .step-row:not(:disabled):hover { background: var(--secondary-background-color, #e3eef2); }
+  .step-row[aria-expanded="true"] { border-bottom: 1px solid var(--divider-color, #d5dce3); }
+  .step-card .step-editor { margin: 0; }
   .step-editor-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
   .step-actions-menu {
     position: fixed;
@@ -538,13 +821,13 @@ var styles = `
     border-top: 1px solid var(--divider-color, #d5dce3);
     margin: 6px 8px;
   }
-  .routine-row-content {
+  .step-row-content {
     display: flex;
     min-width: 0;
     flex-direction: column;
     gap: 4px;
   }
-  .routine-row-heading {
+  .step-row-heading {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -561,16 +844,16 @@ var styles = `
     line-height: 1.5;
     white-space: nowrap;
   }
-  .routine-row strong {
+  .step-row strong {
     font-size: 16px;
     font-weight: 650;
     overflow-wrap: anywhere;
   }
-  .routine-row-content .hint {
+  .step-row-content .hint {
     font-size: 13px;
     overflow-wrap: anywhere;
   }
-  .routine-row-time {
+  .step-row-time {
     text-align: right;
     font-size: 13px;
     overflow-wrap: anywhere;
@@ -669,12 +952,12 @@ var styles = `
     height: 20px;
     fill: currentColor;
   }
-  .routine-editor {
+  .step-editor {
     max-width: none;
     margin: 0 auto 32px;
     padding: 32px;
   }
-  .routine-editor h3 {
+  .step-editor h3 {
     font-size: 23px;
     font-weight: 600;
     letter-spacing: -0.5px;
@@ -697,10 +980,10 @@ var styles = `
   .builder-footer > button:first-child {
     margin-right: auto;
   }
-  .routine-editor details {
+  .step-editor details {
     padding: 8px 0;
   }
-  .routine-editor .field {
+  .step-editor .field {
     margin: 18px 0;
   }
   .source-picker {
@@ -710,7 +993,7 @@ var styles = `
     display: block;
     width: 100%;
   }
-  .routine-editor .error {
+  .step-editor .error {
     font-size: 13px;
   }
   .timing-options {
@@ -747,14 +1030,14 @@ var styles = `
     accent-color: var(--primary-color, #167b94);
   }
 
-  .routine-editor .step-name-editor .field {
+  .step-editor .step-name-editor .field {
     max-width: none;
     margin: 20px 0 28px;
   }
-  .routine-editor .step-name-editor label {
+  .step-editor .step-name-editor label {
     font-weight: 600;
   }
-  .routine-editor .step-name-editor input {
+  .step-editor .step-name-editor input {
     font-family: inherit;
     font-size: 22px;
     font-weight: 600;
@@ -762,32 +1045,32 @@ var styles = `
     padding: 14px;
   }
 
-  .routine-editor .editor-sections {
+  .step-editor .editor-sections {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 28px;
   }
-  .routine-editor .editor-sections > div {
+  .step-editor .editor-sections > div {
     min-width: 0;
   }
-  .routine-editor h3 {
+  .step-editor h3 {
     margin: 16px 0 8px;
     font-size: 20px;
   }
-  .routine-editor h4 {
+  .step-editor h4 {
     margin: 14px 0 8px;
     font-size: 16px;
     font-weight: 600;
   }
-  .routine-editor .field {
+  .step-editor .field {
     margin: 14px 0;
   }
   @media (max-width: 900px) {
-    .routine-editor .editor-sections {
+    .step-editor .editor-sections {
       grid-template-columns: 1fr;
       gap: 20px;
     }
-    .routine-editor .editor-sections > div + div {
+    .step-editor .editor-sections > div + div {
       border-top: 1px solid var(--divider-color, #d5dce3);
       padding-top: 12px;
     }
@@ -818,15 +1101,15 @@ var styles = `
     .page-heading h2 {
       font-size: 27px;
     }
-    .routine-row {
+    .step-row {
       padding: 14px;
       gap: 10px;
       grid-template-columns: minmax(0, 1fr);
     }
-    .routine-row-time {
+    .step-row-time {
       text-align: left;
     }
-    .routine-editor {
+    .step-editor {
       padding: 20px 16px;
     }
     .builder-footer {
@@ -835,7 +1118,7 @@ var styles = `
     .builder-footer button {
       padding: 8px 12px;
     }
-    .routine-empty {
+    .step-empty {
       padding: 36px 20px;
     }
     .empty-steps {
@@ -3461,7 +3744,7 @@ function proxy(value) {
           sources.set(prop2, s);
         }
         if (s !== void 0) {
-          var v = get2(s);
+          var v = get(s);
           return v === UNINITIALIZED ? void 0 : v;
         }
         return Reflect.get(target, prop2, receiver);
@@ -3471,7 +3754,7 @@ function proxy(value) {
         var descriptor = Reflect.getOwnPropertyDescriptor(target, prop2);
         var s = sources.get(prop2);
         if (s !== void 0) {
-          var value2 = get2(s);
+          var value2 = get(s);
           if (value2 === UNINITIALIZED) {
             return void 0;
           }
@@ -3511,7 +3794,7 @@ function proxy(value) {
             });
             sources.set(prop2, s);
           }
-          var value2 = get2(s);
+          var value2 = get(s);
           if (value2 === UNINITIALIZED) {
             return false;
           }
@@ -3568,7 +3851,7 @@ function proxy(value) {
         return true;
       },
       ownKeys(target) {
-        get2(version);
+        get(version);
         var own_keys = Reflect.ownKeys(target).filter((key3) => {
           var source3 = sources.get(key3);
           return source3 === void 0 || source3.v !== UNINITIALIZED;
@@ -4121,7 +4404,7 @@ function render_effect(fn, flags2 = 0) {
 function template_effect(fn, sync = [], async2 = [], blockers = []) {
   flatten(blockers, sync, async2, (values) => {
     create_effect(RENDER_EFFECT, () => {
-      fn(...values.map(get2));
+      fn(...values.map(get));
     });
   });
 }
@@ -4657,7 +4940,7 @@ function update_effect(effect2) {
     }
   }
 }
-function get2(signal) {
+function get(signal) {
   var flags2 = signal.f;
   var is_derived = (flags2 & DERIVED) !== 0;
   captured_signals?.add(signal);
@@ -4878,10 +5161,10 @@ function deep_read(value, visited = /* @__PURE__ */ new Set()) {
     ) {
       const descriptors = get_descriptors(proto);
       for (let key2 in descriptors) {
-        const get4 = descriptors[key2].get;
-        if (get4) {
+        const get3 = descriptors[key2].get;
+        if (get3) {
           try {
-            get4.call(value);
+            get3.call(value);
           } catch (e) {}
         }
       }
@@ -5241,7 +5524,7 @@ function createSubscriber(start) {
   }
   return () => {
     if (effect_tracking()) {
-      get2(version);
+      get(version);
       render_effect(() => {
         if (subscribers === 0) {
           stop = untrack(() => start(() => increment(version)));
@@ -5603,7 +5886,7 @@ var Boundary = class {
   }
   get_effect_pending() {
     this.#effect_pending_subscriber();
-    return get2(
+    return get(
       /** @type {Source<number>} */
       this.#effect_pending,
     );
@@ -6252,7 +6535,7 @@ function each(
       return;
     }
     state2.pending.delete(batch);
-    var array = get2(each_array);
+    var array = get(each_array);
     state2.fallback = fallback2;
     reconcile(state2, array, anchor, flags2, get_key);
     if (fallback2 !== null) {
@@ -6276,7 +6559,7 @@ function each(
   var effect2 = block(() => {
     var array =
       /** @type {V[]} */
-      get2(each_array);
+      get(each_array);
     var length = array.length;
     let mismatch = false;
     if (hydrating) {
@@ -6374,7 +6657,7 @@ function each(
     if (mismatch) {
       set_hydrating(true);
     }
-    get2(each_array);
+    get(each_array);
   });
   var state2 = {
     effect: effect2,
@@ -7353,7 +7636,7 @@ function writable(value, start = noop) {
   }
   return { set: set3, update: update2, subscribe };
 }
-function get3(store) {
+function get2(store) {
   let value;
   subscribe_to_store(store, (_) => (value = _))();
   return value;
@@ -7390,9 +7673,9 @@ function store_get(store, store_name, stores) {
     }
   }
   if (store && IS_UNMOUNTED in stores) {
-    return get3(store);
+    return get2(store);
   }
-  return get2(entry.source);
+  return get(entry.source);
 }
 function setup_stores() {
   const stores = {};
@@ -7500,7 +7783,7 @@ function prop(props, key2, flags2, fallback2) {
         /** @type {() => V} */
         fallback2,
       );
-      return get2(fallback_signal);
+      return get(fallback_signal);
     }
     if (fallback_dirty) {
       fallback_dirty = false;
@@ -7590,7 +7873,7 @@ function prop(props, key2, flags2, fallback2) {
   if (dev_fallback_default) {
     d.label = key2;
   }
-  if (bindable) get2(d);
+  if (bindable) get(d);
   var parent_effect =
     /** @type {Effect} */
     active_effect;
@@ -7600,7 +7883,7 @@ function prop(props, key2, flags2, fallback2) {
       function (value, mutation) {
         if (arguments.length > 0) {
           const new_value = mutation
-            ? get2(d)
+            ? get(d)
             : runes && bindable
               ? proxy(value)
               : value;
@@ -7617,7 +7900,7 @@ function prop(props, key2, flags2, fallback2) {
         ) {
           return d.v;
         }
-        return get2(d);
+        return get(d);
       }
     )
   );
@@ -7648,13 +7931,13 @@ var Svelte4Component = class {
       { ...(options.props || {}), $$events: {} },
       {
         get(target, prop2) {
-          return get2(
+          return get(
             sources.get(prop2) ?? add_source(prop2, Reflect.get(target, prop2)),
           );
         },
         has(target, prop2) {
           if (prop2 === LEGACY_PROPS) return true;
-          get2(
+          get(
             sources.get(prop2) ?? add_source(prop2, Reflect.get(target, prop2)),
           );
           return Reflect.has(target, prop2);
@@ -8029,146 +8312,39 @@ if (typeof window !== "undefined") {
   );
 }
 
-// custom_components/occupied/frontend/time-format.ts
-function shiftScheduleDate(value, days2) {
-  const date = /* @__PURE__ */ new Date(`${value}T12:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days2);
-  return date.toISOString().slice(0, 10);
-}
-function formatScheduleDate(value, locale) {
-  const weekday = new Intl.DateTimeFormat(locale?.language, {
-    weekday: "long",
-    timeZone: "UTC",
-  }).format(/* @__PURE__ */ new Date(`${value}T12:00:00Z`));
-  return `${weekday} ${value}`;
-}
-function formatPreviewDate(value, today, locale, t) {
-  const valueTime = Date.parse(`${value}T12:00:00Z`);
-  const todayTime = Date.parse(`${today}T12:00:00Z`);
-  const daysFromToday = Math.round((valueTime - todayTime) / 864e5);
-  const relativeLabel =
-    daysFromToday === -1
-      ? t("Yesterday")
-      : daysFromToday === 0
-        ? t("Today")
-        : daysFromToday === 1
-          ? t("Tomorrow")
-          : void 0;
-  const dateLabel = formatScheduleDate(value, locale);
-  return relativeLabel ? `${relativeLabel} \xB7 ${dateLabel}` : dateLabel;
-}
-function usesAmPm(locale) {
-  if (!locale) {
-    return false;
-  }
-  if (locale.time_format === "12") {
-    return true;
-  }
-  if (locale.time_format === "24") {
-    return false;
-  }
-  const language = locale.time_format === "language" ? locale.language : void 0;
-  const hourCycle2 = new Intl.DateTimeFormat(language, {
-    hour: "numeric",
-  }).resolvedOptions().hourCycle;
-  return hourCycle2 === "h11" || hourCycle2 === "h12";
-}
-function formatterLocale(locale) {
-  return locale?.language;
-}
-function hourCycle(locale) {
-  return usesAmPm(locale) ? "h12" : "h23";
-}
-function formatClock(value, locale) {
-  const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
-  if (!match) {
-    return value;
-  }
-  const [, hour, minute, second] = match;
-  const date = new Date(
-    Date.UTC(2020, 0, 1, Number(hour), Number(minute), Number(second || 0)),
-  );
-  return new Intl.DateTimeFormat(formatterLocale(locale), {
-    hour: usesAmPm(locale) ? "numeric" : "2-digit",
-    minute: "2-digit",
-    ...(Number(second) && { second: "2-digit" }),
-    hourCycle: hourCycle(locale),
-    timeZone: "UTC",
-  }).format(date);
-}
-function formatTimestamp(value, zone, locale) {
-  return new Intl.DateTimeFormat(formatterLocale(locale), {
-    dateStyle: "short",
-    timeStyle: "medium",
-    hourCycle: hourCycle(locale),
-    timeZone: zone && zone !== "home_assistant" ? zone : void 0,
-  }).format(new Date(value));
-}
-
 // custom_components/occupied/frontend/step-model.ts
-var same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 var sorted = (values) => [...new Set(values)].sort();
-function targetEntities(targets = {}) {
-  return sorted(targets.entities || []);
-}
-function stepEntries(program) {
-  return (program.routines || []).flatMap((routine, ri) =>
-    ["steps", "activities", "activity_windows"].flatMap((kind) =>
-      (routine[kind] || []).map((item, index2) => ({
-        ...item,
-        kind,
-        container: routine,
-        path: ["routines", ri, kind, index2],
-        days: (routine.days || days).filter(
-          (d) => !item.days || item.days.includes(d),
-        ),
-        entities: targetEntities({
-          entities:
-            kind === "activity_windows"
-              ? targetEntities(item.targets)
-              : (item.actions || item.on_start || []).flatMap((a) =>
-                  targetEntities(a.targets),
-                ),
-        }),
-      })),
-    ),
-  );
-}
-function minutes(value) {
-  if (value === "0") {
-    return 0;
-  }
-  if (typeof value === "number") {
-    return value / 60;
-  }
-  const text2 = value || "0s";
-  if (
-    !/^[+-]?(?:\d+(?:\.\d+)?h)?(?:\d+(?:\.\d+)?m)?(?:\d+(?:\.\d+)?s)?$/.test(
-      text2,
-    ) ||
-    ["", "+", "-"].includes(text2)
-  ) {
-    return NaN;
-  }
-  const total = [...text2.matchAll(/(\d+(?:\.\d+)?)([hms])/g)].reduce(
-    (n, [, amount, unit]) =>
-      n + Number(amount) * { h: 60, m: 1, s: 1 / 60 }[unit],
-    0,
-  );
-  return text2.startsWith("-") ? -total : total;
-}
-function clockMinutes(value) {
-  const [h, m, s = 0] = (value || "").split(":").map(Number);
-  return h * 60 + m + s / 60;
+var actionLabels = {
+  turn_on: "Turn on",
+  turn_off: "Turn off",
+  "scene.turn_on": "Activate scene",
+};
+function stepEntries(program, catalog, t = (value) => value) {
+  return Object.entries(program.steps || {}).map(([id, step]) => ({
+    ...step,
+    id,
+    path: ["steps", id],
+    days: [...(step.days || days)],
+    name:
+      step.name ||
+      `${catalog ? entityName(catalog, step.entities[0]) : step.entities[0]}${step.entities.length > 1 ? ` +${step.entities.length - 1}` : ""} \xB7 ${t(actionLabels[step.action] || step.action)}`,
+  }));
 }
 var solarEvents = ["sunrise", "sunset", "dawn", "dusk", "noon", "midnight"];
-function timeSourceChoices(program, id, catalog = {}) {
+function timeSourceChoices(program, id, catalog = {}, t = (value) => value) {
+  const allowed = new Set(parentSteps(program, id).map((step) => step.id));
   return [
-    ...parentSteps(program, id).map((step) => ({
-      value: `step:${step.id}`,
-      name: step.name,
-      group: "Steps",
-    })),
+    ...stepEntries(
+      program,
+      catalog.entities ? { entities: catalog.entities } : void 0,
+      t,
+    )
+      .filter((step) => allowed.has(step.id))
+      .map((step) => ({
+        value: `step:${step.id}`,
+        name: step.name,
+        group: "Steps",
+      })),
     ...(catalog.time_sources ||
       solarEvents.map((event2) => ({
         value: `sun:${event2}`,
@@ -8177,120 +8353,25 @@ function timeSourceChoices(program, id, catalog = {}) {
       }))),
   ];
 }
-function timingForm(when = {}) {
-  const range =
-    when.offset_range ||
-    when.sun_range?.offset_range ||
-    when.entity_range?.offset_range;
-  const clock = when.clock_range;
-  let anchor = "";
-  if (when.relative_to) {
-    anchor = `step:${when.relative_to}`;
-  } else if (when.sun_range) {
-    anchor = `sun:${when.sun_range.sun}`;
-  } else if (when.entity_range) {
-    const attribute = when.entity_range.attribute
-      ? `:${when.entity_range.attribute}`
-      : "";
-    anchor = `entity:${when.entity_range.entity_id}${attribute}`;
-  }
-  return {
-    mode: clock || !range ? "absolute" : "relative",
-    start: clock?.earliest || "18:00",
-    end: clock && clock.latest !== clock.earliest ? clock.latest : "",
-    anchor,
-    startOffset: range?.fixed ?? range?.min ?? "0s",
-    endOffset:
-      range && range.fixed == null && range.min !== range.max
-        ? (range.max ?? "")
-        : "",
-  };
-}
-function simpleStep(entry) {
-  if (entry.kind !== "steps" || !entry.actions?.length) {
-    return false;
-  }
-  const actions = entry.actions;
-  if (actions.length === 1 && actions[0].action.includes(".")) {
-    const action2 = actions[0];
-    if (!/^(light|switch)\.turn_(on|off)$/.test(action2.action)) {
-      return (
-        entry.entities.length > 0 &&
-        !action2.stagger &&
-        !action2.target_order &&
-        !action2.resources?.length
-      );
-    }
-  }
-  if (
-    actions.some(
-      (a) => !/^(?:(?:light|switch)\.)?turn_(on|off)$/.test(a.action),
-    )
-  ) {
-    return false;
-  }
-  if (
-    actions.some(
-      (a) =>
-        !a.action.endsWith(
-          actions[0].action.endsWith("turn_on") ? "turn_on" : "turn_off",
-        ),
-    )
-  ) {
-    return false;
-  }
-  if (
-    entry.entities.length === 0 ||
-    entry.entities.some((e) => !/^(light|switch)\./.test(e))
-  ) {
-    return false;
-  }
-  if (
-    actions.length > 1 &&
-    (actions.length !== 2 ||
-      !same(actions[1].data || {}, {}) ||
-      actions[0].action !== actions[1].action ||
-      (actions[0].targets?.entities || []).some(
-        (e) => !e.startsWith("light."),
-      ) ||
-      (actions[1].targets?.entities || []).some(
-        (e) => !e.startsWith("switch."),
-      ) ||
-      actions.some((a) => a.stagger || a.target_order || a.resources?.length))
-  ) {
-    return false;
-  }
-  return !!entry.when;
-}
 function stepEditor(program, entry, parent) {
   const source2 = entry || parent;
-  const action2 = source2?.actions?.[0]?.action;
+  const action2 = source2?.action;
   let kind = "entities";
   if (action2 === "scene.turn_on") {
     kind = "scene";
-  } else if (
-    action2 &&
-    !/^(?:(?:light|switch)\.)?turn_(on|off)$/.test(action2)
-  ) {
+  } else if (action2?.includes(".")) {
     kind = "service";
   }
   const form = {
-    name: entry?.name || "",
+    name: entry ? program.steps?.[entry.id]?.name || "" : "",
     enabled: entry?.enabled !== false,
     kind,
-    service: source2?.actions?.[0]?.action || "homeassistant.turn_on",
-    data: JSON.stringify(source2?.actions?.[0]?.data || {}, null, 2),
-    entities: [...(entry?.entities || [])],
-    action: entry?.actions?.[0]?.action.endsWith("turn_off")
-      ? "turn_off"
-      : "turn_on",
-    brightness:
-      entry?.actions?.[0]?.data?.brightness_pct ??
-      (entry?.actions?.[0]?.data?.brightness == null
-        ? ""
-        : Math.round((entry.actions[0].data.brightness * 1e4) / 255) / 100),
-    days: [...(entry?.days || parent?.days || days)],
-    timing: timingForm(entry?.when),
+    service: source2?.action || "homeassistant.turn_on",
+    data: JSON.stringify(source2?.data || {}, null, 2),
+    entities: [...(source2?.entities || [])],
+    action: action2 === "turn_off" ? "turn_off" : "turn_on",
+    days: [...(source2?.days || days)],
+    timing: timingForm(entry?.timing),
   };
   if (parent) {
     Object.assign(form.timing, {
@@ -8310,27 +8391,6 @@ function stepEditor(program, entry, parent) {
 }
 function hasStepChanges(editor) {
   return JSON.stringify(editor.form) !== JSON.stringify(editor.original);
-}
-function offsetErrors(time) {
-  const errors = {},
-    low = minutes(time.startOffset);
-  const formatError = "Use h, m or s, for example 30m, 1h, 1h30m or -10m.";
-  if (!time.startOffset || !Number.isFinite(low)) {
-    errors.startOffset = formatError;
-  } else if (Math.abs(low) > 10080) {
-    errors.startOffset = "Offsets must be within seven days.";
-  }
-  if (time.endOffset) {
-    const high = minutes(time.endOffset);
-    if (!Number.isFinite(high)) {
-      errors.endOffset = formatError;
-    } else if (Math.abs(high) > 10080) {
-      errors.endOffset = "Offsets must be within seven days.";
-    } else if (Number.isFinite(low) && high < low) {
-      errors.endOffset = "The end offset must be at least the start offset.";
-    }
-  }
-  return errors;
 }
 function editorErrors(program, editor) {
   const { form, id } = editor,
@@ -8356,10 +8416,13 @@ function editorErrors(program, editor) {
   ) {
     errors.entities = "Choose lights and switches, or select a service action.";
   }
-  if (form.kind === "service") {
-    if (!/^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$/.test(form.service)) {
-      errors.service = "Choose a service using domain.service.";
-    }
+  if (
+    form.kind === "service" &&
+    !/^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$/.test(form.service)
+  ) {
+    errors.service = "Choose a service using domain.service.";
+  }
+  if (form.kind !== "entities") {
     try {
       const data = JSON.parse(form.data);
       if (!data || Array.isArray(data) || typeof data !== "object") {
@@ -8368,18 +8431,6 @@ function editorErrors(program, editor) {
     } catch {
       errors.data = "Service data must be a JSON object.";
     }
-  }
-  if (editor.existing && !form.name.trim()) {
-    errors.name = "Give this step a name.";
-  }
-  if (
-    form.kind === "entities" &&
-    form.brightness !== "" &&
-    (!Number.isFinite(Number(form.brightness)) ||
-      Number(form.brightness) <= 0 ||
-      Number(form.brightness) > 100)
-  ) {
-    errors.brightness = "Choose a brightness between 1 and 100%.";
   }
   if (form.days.length === 0) {
     errors.days = "Choose at least one day.";
@@ -8397,7 +8448,7 @@ function editorErrors(program, editor) {
     Object.assign(errors, offsetErrors(time));
     if (time.anchor.startsWith("step:")) {
       const parent = stepEntries(program).find(
-        (e) => e.id === time.anchor.slice(5) && e.kind === "steps",
+        (e) => e.id === time.anchor.slice(5),
       );
       if (
         !parent ||
@@ -8421,8 +8472,7 @@ function editorErrors(program, editor) {
   }
   for (const child2 of stepEntries(program)) {
     if (
-      child2.when?.relative_to === id &&
-      child2.missing_anchor !== "skip" &&
+      child2.timing.relative_to?.step === id &&
       child2.days.some((d) => !form.days.includes(d))
     ) {
       errors.days = `${child2.name} depends on this step. Keep its days (${child2.days.join(", ")}) or edit it first.`;
@@ -8430,351 +8480,69 @@ function editorErrors(program, editor) {
   }
   return errors;
 }
-function formWhen(time) {
+function formTiming(time) {
   if (time.mode === "absolute") {
-    const end = time.end || time.start;
     return {
-      clock_range: {
-        earliest: time.start,
-        latest: end,
-        cross_midnight: clockMinutes(end) < clockMinutes(time.start),
-      },
+      absolute_time: { start: time.start, ...(time.end && { end: time.end }) },
     };
   }
-  const startOffset = time.startOffset === "0" ? "0s" : time.startOffset;
-  const endOffset = time.endOffset === "0" ? "0s" : time.endOffset;
-  const range = endOffset
-    ? { min: startOffset, max: endOffset }
-    : { fixed: startOffset };
+  const offsets = {
+    start_offset: String(
+      time.startOffset === "0" ? "0s" : time.startOffset || "0s",
+    ),
+    ...(time.endOffset && {
+      end_offset: String(time.endOffset === "0" ? "0s" : time.endOffset),
+    }),
+  };
   if (time.anchor.startsWith("step:")) {
-    return { relative_to: time.anchor.slice(5), offset_range: range };
+    return { relative_to: { step: time.anchor.slice(5), ...offsets } };
   }
   if (time.anchor.startsWith("entity:")) {
-    const [, entity_id, attribute] = time.anchor.split(":", 3);
+    const [, entity, attribute] = time.anchor.split(":", 3);
     return {
-      entity_range: {
-        entity_id,
+      relative_to: {
+        entity,
         ...(attribute && { attribute }),
-        offset_range: range,
+        ...offsets,
       },
     };
   }
-  return {
-    sun_range: {
-      sun: time.anchor.slice(4),
-      offset_range: range,
-    },
-  };
+  return { relative_to: { sun: time.anchor.slice(4), ...offsets } };
 }
 function buildStep(program, editor) {
   const errors = editorErrors(program, editor);
   if (Object.keys(errors).length > 0) {
     throw new Error(Object.values(errors)[0]);
   }
-  const next2 = copy(program),
-    { form, original } = editor;
-  let entry = stepEntries(next2).find((e) => e.id === editor.id);
-  if (editor.existing && !entry) {
+  if (editor.existing && !program.steps?.[editor.id]) {
     throw new Error(
       "This step changed elsewhere. Cancel and reopen it before saving.",
     );
   }
-  if (!entry) {
-    const container2 = {
-      id: identifier(next2, `${editor.id}_schedule`),
-      name: form.name.trim(),
-      days: [...days],
-      steps: [
-        {
-          id: editor.id,
-          name: form.name.trim(),
-          actions: [],
-          allow_cross_boundary: true,
-        },
-      ],
-      activities: [],
-      activity_windows: [],
-    };
-    (next2.routines ||= []).push(container2);
-    entry = stepEntries(next2).find((e) => e.id === editor.id);
+  const next2 = copy(program),
+    { form } = editor;
+  let action2 = form.action;
+  if (form.kind === "scene") {
+    action2 = "scene.turn_on";
+  } else if (form.kind === "service") {
+    action2 = form.service;
   }
-  if (!entry || !next2.routines) {
-    throw new Error("Step could not be created");
-  }
-  const container = next2.routines[entry.path[1]];
-  const item = container.steps[entry.path[3]];
-  item.actions ||= [];
-  const isNew = !item.when;
-  item.name = form.name.trim();
-  item.enabled = form.enabled;
-  if (isNew || !same(form.timing, original.timing)) {
-    item.when = formWhen(form.timing);
-  }
-  if (isNew || !same(form.days, original.days)) {
-    item.days = [...form.days];
-    if (form.days.some((d) => !(entry.container.days || days).includes(d))) {
-      const container2 = copy(entry.container);
-      container2.id = identifier(next2, `${editor.id}_schedule`);
-      container2.name = item.name;
-      container2.days = [...days];
-      container2.steps = [item];
-      container2.activities = [];
-      container2.activity_windows = [];
-      next2.routines[entry.path[1]].steps.splice(entry.path[3], 1);
-      next2.routines.push(container2);
-    }
-  }
-  const targetsChanged = !same(
-    sorted(form.entities),
-    sorted(original.entities),
-  );
-  const kindChanged = form.kind !== original.kind;
-  const actionChanged = form.action !== original.action || kindChanged;
-  const serviceChanged =
-    form.service !== original.service || form.data !== original.data;
-  const brightnessChanged = form.brightness !== original.brightness;
-  if (form.kind !== "entities") {
-    if (isNew || targetsChanged || kindChanged || serviceChanged) {
-      const action2 = copy(item.actions[0] || { action: form.service });
-      action2.action = form.kind === "scene" ? "scene.turn_on" : form.service;
-      if (isNew || targetsChanged || kindChanged) {
-        action2.targets = { entities: [...form.entities] };
-      }
-      if (form.kind === "scene") {
-        action2.data = kindChanged ? {} : action2.data || {};
-      } else {
-        action2.data = JSON.parse(form.data);
-      }
-      item.actions = [action2];
-    }
-  } else if (isNew || targetsChanged || actionChanged || brightnessChanged) {
-    const action2 = copy(
-      item.actions[0] || { action: form.action, targets: {}, data: {} },
-    );
-    const data = actionChanged ? {} : { ...action2.data };
-    if (form.action === "turn_on" && (isNew || brightnessChanged)) {
-      delete data.brightness;
-      if (form.brightness === "") {
-        delete data.brightness_pct;
-      } else {
-        data.brightness_pct = Number(form.brightness);
-      }
-    }
-    action2.action = form.action;
-    action2.data = data;
-    if (
-      !targetsChanged &&
-      !isNew &&
-      item.actions.length === 1 &&
-      !(
-        form.entities.some((e) => e.startsWith("switch.")) &&
-        Object.keys(data).some((k) => k !== "transition")
-      )
-    ) {
-      item.actions = [action2];
-    } else {
-      const lights = form.entities.filter((e) => e.startsWith("light."));
-      const switches = form.entities.filter((e) => e.startsWith("switch."));
-      item.actions = [];
-      if (lights.length > 0) {
-        item.actions.push({ ...action2, targets: { entities: lights }, data });
-      }
-      if (switches.length > 0) {
-        item.actions.push({
-          ...action2,
-          targets: { entities: switches },
-          data: {},
-        });
-      }
-    }
-  }
-  const lighting = (next2.lighting ||= {});
-  const managed2 = new Set(targetEntities(lighting.managed_targets));
-  const newLights = form.entities.filter(
-    (e) =>
-      form.kind === "entities" &&
-      (isNew || targetsChanged || kindChanged) &&
-      e.startsWith("light.") &&
-      !managed2.has(e),
-  );
-  if (newLights.length > 0) {
-    lighting.managed_targets ||= { entities: [] };
-    lighting.managed_targets.entities = sorted([
-      ...(lighting.managed_targets.entities || []),
-      ...newLights,
-    ]);
-    const baselined = new Set(
-      (lighting.baseline || []).flatMap((b) => targetEntities(b.targets)),
-    );
-    const missing = newLights.filter((e) => !baselined.has(e));
-    if (missing.length > 0) {
-      (lighting.baseline ||= []).push({
-        targets: { entities: missing },
-        state: "off",
-      });
-    }
-  }
+  (next2.steps ||= {})[editor.id] = {
+    ...(form.name.trim() && { name: form.name.trim() }),
+    ...(!form.enabled && { enabled: false }),
+    days: [...form.days],
+    timing: formTiming(form.timing),
+    action: action2,
+    entities: sorted(form.entities),
+    ...(form.kind !== "entities" && { data: JSON.parse(form.data) }),
+  };
   return next2;
 }
 function dependentNames(program, id) {
   const paths = references(program, id);
   return stepEntries(program)
-    .filter((e) => paths.some((p) => e.path.every((k, i) => p[i] === k)))
+    .filter((e) => paths.some((p) => p[1] === e.id))
     .map((e) => e.name);
-}
-function scheduleDaySuffix(selected, t) {
-  if (!selected) {
-    return "";
-  }
-  if (selected.length === 0) {
-    return ` ${t("on no days")}`;
-  }
-  if (days.every((day) => selected.includes(day))) {
-    return "";
-  }
-  if (
-    selected.length === 5 &&
-    days.slice(0, 5).every((day) => selected.includes(day))
-  ) {
-    return ` ${t("on weekdays")}`;
-  }
-  if (
-    selected.length === 2 &&
-    days.slice(5).every((day) => selected.includes(day))
-  ) {
-    return ` ${t("on weekends")}`;
-  }
-  const weekdayNames = {
-    mon: "Mondays",
-    tue: "Tuesdays",
-    wed: "Wednesdays",
-    thu: "Thursdays",
-    fri: "Fridays",
-    sat: "Saturdays",
-    sun: "Sundays",
-  };
-  const dayNames = selected.map((day) => t(weekdayNames[day] || day));
-  const lastDay = dayNames.pop();
-  const dayList = dayNames.length
-    ? `${dayNames.join(", ")}${dayNames.length > 1 ? "," : ""} ${t("and")} ${lastDay}`
-    : lastDay;
-  return ` ${t("on")} ${dayList}`;
-}
-function timingSummary(entry, entries, t = (v) => v, sources = [], locale) {
-  if (!entry.when) {
-    return `${t("Repeated activity window")}${scheduleDaySuffix(entry.days, t)}`;
-  }
-  return timingExplanation(timingForm(entry.when), entries, t, sources, {
-    includeHints: false,
-    locale,
-    days: entry.days,
-  });
-}
-function timingExplanation(
-  input,
-  entries = [],
-  t = (value) => value,
-  sources = [],
-  { includeHints = true, locale, days: selectedDays } = {},
-) {
-  const runs = `${t("Runs")}${scheduleDaySuffix(selectedDays, t)}`;
-  const time = {
-    start: "",
-    end: "",
-    anchor: "",
-    startOffset: "0s",
-    endOffset: "",
-    ...input,
-  };
-  if (time.mode === "absolute") {
-    const valid = (value) =>
-      /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value);
-    const display = (value) => formatClock(value, locale);
-    const seconds = (value) =>
-      value
-        .split(":")
-        .reduce(
-          (sum, part, index2) => sum + Number(part) * [3600, 60, 1][index2],
-          0,
-        );
-    if (!valid(time.start) || (time.end && !valid(time.end))) {
-      return t("Choose valid start and end times");
-    }
-    const fixedTime = `${runs} ${t("at")} ${display(time.start)}`;
-    if (!time.end) {
-      return `${fixedTime}${includeHints ? `. ${t("Add an end of window to introduce randomness")}` : ""}`;
-    }
-    if (seconds(time.end) === seconds(time.start)) {
-      return `${fixedTime}${includeHints ? `. ${t("Start and end are the same, so the time is fixed")}` : ""}`;
-    }
-    const nextDay =
-      seconds(time.end) < seconds(time.start) ? ` ${t("the next day")}` : "";
-    return `${runs} ${t("at a random time between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}`;
-  }
-  if (Object.keys(offsetErrors(time)).length > 0) {
-    return t("Enter valid offsets to see when this step runs");
-  }
-  if (!time.anchor) {
-    return t("Choose a step or event");
-  }
-  const step = time.anchor.startsWith("step:");
-  let name;
-  if (step) {
-    name =
-      entries.find((entry) => entry.id === time.anchor.slice(5))?.name ||
-      time.anchor.slice(5);
-  } else if (time.anchor.startsWith("sun:")) {
-    name = t(time.anchor.slice(4));
-  } else {
-    name =
-      sources.find((source2) => source2.value === time.anchor)?.name ||
-      time.anchor
-        .slice(7)
-        .replace(
-          /:(start_time|end_time)$/,
-          (_, attribute) =>
-            ` \xB7 ${t(attribute === "start_time" ? "start" : "end")}`,
-        );
-  }
-  const low = minutes(time.startOffset),
-    high = time.endOffset ? minutes(time.endOffset) : low;
-  const duration = (offset) => {
-    let remaining = Math.round(Math.abs(offset) * 60 * 1e6) / 1e6;
-    const hours = Math.floor(remaining / 3600);
-    remaining -= hours * 3600;
-    const mins = Math.floor(remaining / 60);
-    const seconds = Math.round((remaining - mins * 60) * 1e6) / 1e6;
-    return [
-      [hours, "hour", "hours"],
-      [mins, "minute", "minutes"],
-      [seconds, "second", "seconds"],
-    ]
-      .filter(([amount]) => amount)
-      .map(
-        ([amount, singular, plural]) =>
-          `${amount} ${t(amount === 1 ? singular : plural)}`,
-      )
-      .join(" ");
-  };
-  const offsetLabel = (offset) =>
-    `${duration(offset)} ${t(offset < 0 ? "before" : "after")}`;
-  if (low === high) {
-    const fixedTime =
-      low === 0
-        ? `${runs} ${t("at the same time as")} ${name}`
-        : `${runs} ${offsetLabel(low)} ${name}`;
-    return `${fixedTime}${includeHints && !time.endOffset ? `. ${t("Add an end offset to introduce randomness")}` : ""}`;
-  }
-  const anchorStart = step ? `${t("the start of")} ${name}` : name;
-  if (low === 0) {
-    return `${runs} ${t("at a random time between")} ${anchorStart} ${t("and")} ${offsetLabel(high)} ${name}`;
-  }
-  if (high === 0) {
-    return `${runs} ${t("at a random time between")} ${offsetLabel(low)} ${name} ${t("and")} ${anchorStart}`;
-  }
-  const firstBound =
-    Math.sign(low) === Math.sign(high) ? duration(low) : offsetLabel(low);
-  return `${runs} ${t("at a random time between")} ${firstBound} ${t("and")} ${offsetLabel(high)} ${name}`;
 }
 
 // custom_components/occupied/frontend/step-editor-controller.ts
@@ -8783,12 +8551,12 @@ function focusEditor(panel, key2) {
     ? panel.shadowRoot.querySelector(
         `[data-builder-field="${CSS.escape(key2)}"]`,
       )
-    : panel.shadowRoot.querySelector('.routine-editor [aria-invalid="true"]') ||
+    : panel.shadowRoot.querySelector('.step-editor [aria-invalid="true"]') ||
       panel.shadowRoot.querySelector(
-        '.routine-editor [data-builder-field="days"][aria-describedby]',
+        '.step-editor [data-builder-field="days"][aria-describedby]',
       ) ||
       panel.shadowRoot.querySelector(
-        '.routine-editor [data-builder-field="name"]',
+        '.step-editor [data-builder-field="name"]',
       );
   target?.focus();
 }
@@ -8828,13 +8596,6 @@ function createStepEditorContext(panel) {
     panel.flush();
   };
   const submit = async () => {
-    if (!editing && !form.name.trim() && form.entities.length > 0) {
-      const target = `${entityName(panel.catalog, form.entities[0])}${form.entities.length > 1 ? ` +${form.entities.length - 1}` : ""}`;
-      form.name =
-        form.kind === "entities"
-          ? `${target} ${t(form.action === "turn_off" ? "off" : "on")}`
-          : target;
-    }
     editor.errors = editorErrors(panel.draft, editor);
     if (Object.keys(editor.errors).length > 0) {
       return refresh();
@@ -8886,7 +8647,7 @@ function startStep(panel, entry, parent) {
 }
 function showStep(panel, entry, parent) {
   panel.stepEditor = stepEditor(panel.draft, entry, parent);
-  panel.tab = "routines";
+  panel.tab = "steps";
   panel.error = "";
   panel.issues = [];
   panel.renderView();
@@ -8898,7 +8659,7 @@ function showStep(panel, entry, parent) {
 function scrollStepEditorIntoView(panel, id) {
   panel.shadowRoot
     .getElementById(`step-editor-${id}`)
-    ?.querySelector(".routine-editor")
+    ?.querySelector(".step-editor")
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 function openStep(panel, entry) {
@@ -8919,27 +8680,16 @@ function openStep(panel, entry) {
   showEntry(panel, entry);
 }
 function showEntry(panel, entry) {
-  if (simpleStep(entry)) {
-    showStep(panel, entry);
-  } else {
-    panel.error = "";
-    panel.issues = [];
-    panel.selectedStep = panel.selectedStep === entry.id ? null : entry.id;
-    panel.renderView();
-    scrollStepEditorIntoView(panel, entry.id);
-  }
+  showStep(panel, entry);
 }
 function actionSummary(entry, t) {
-  const action2 = entry.actions?.[0]?.action || "";
-  if (action2 === "scene.turn_on") {
+  if (entry.action === "scene.turn_on") {
     return t("Activate scene");
   }
-  if (simpleStep(entry)) {
-    return /^(?:(?:light|switch)\.)?turn_(on|off)$/.test(action2)
-      ? t(action2.endsWith("turn_off") ? "Turn off" : "Turn on")
-      : action2;
+  if (entry.action === "turn_on" || entry.action === "turn_off") {
+    return t(entry.action === "turn_off" ? "Turn off" : "Turn on");
   }
-  return t("Custom actions");
+  return entry.action;
 }
 function stepTree(entries) {
   const seen2 = /* @__PURE__ */ new Set(),
@@ -8951,14 +8701,14 @@ function stepTree(entries) {
     seen2.add(entry.id);
     ordered.push({ entry, depth });
     for (const child2 of entries) {
-      if (child2.when?.relative_to === entry.id) {
+      if (child2.timing.relative_to?.step === entry.id) {
         append2(child2, depth + 1);
       }
     }
   };
   const isRoot = (step) =>
-    !step.when?.relative_to ||
-    entries.every((parent) => parent.id !== step.when?.relative_to);
+    !step.timing.relative_to?.step ||
+    entries.every((parent) => parent.id !== step.timing.relative_to?.step);
   for (const step of entries) {
     if (isRoot(step)) {
       append2(step, 0);
@@ -9034,12 +8784,12 @@ function DeleteStepDialog($$anchor, $$props) {
       each(
         ul,
         21,
-        () => get2(dependents),
+        () => get(dependents),
         index,
         ($$anchor3, name) => {
           var li = root();
           var text_3 = only_child(li, true);
-          template_effect(() => set_text(text_3, get2(name)));
+          template_effect(() => set_text(text_3, get(name)));
           append($$anchor3, li);
         },
       );
@@ -9052,8 +8802,8 @@ function DeleteStepDialog($$anchor, $$props) {
           set_text(text_4, $1);
         },
         [
-          () => get2(t)("Used by"),
-          () => get2(t)("Change those relationships before deleting."),
+          () => get(t)("Used by"),
+          () => get(t)("Change those relationships before deleting."),
         ],
       );
       append($$anchor2, fragment);
@@ -9063,12 +8813,12 @@ function DeleteStepDialog($$anchor, $$props) {
       var text_5 = only_child(p_3, true);
       template_effect(
         ($0) => set_text(text_5, $0),
-        [() => get2(t)("This step will be removed when you save changes.")],
+        [() => get(t)("This step will be removed when you save changes.")],
       );
       append($$anchor2, p_3);
     };
     if_block(node_1, ($$render) => {
-      if (get2(dependents).length) $$render(consequent);
+      if (get(dependents).length) $$render(consequent);
       else $$render(alternate, -1);
     });
   }
@@ -9092,13 +8842,13 @@ function DeleteStepDialog($$anchor, $$props) {
       set_text(text2, $0);
       set_text(text_1, $$props.entry.name);
       set_text(text_6, $1);
-      button_1.disabled = get2(dependents).length > 0;
+      button_1.disabled = get(dependents).length > 0;
       set_text(text_7, $2);
     },
     [
-      () => get2(t)("Delete step?"),
-      () => get2(t)("Cancel"),
-      () => get2(t)("Delete step"),
+      () => get(t)("Delete step?"),
+      () => get(t)("Cancel"),
+      () => get(t)("Delete step"),
     ],
   );
   event("close", dialog_1, function (...$$args) {
@@ -9107,12 +8857,14 @@ function DeleteStepDialog($$anchor, $$props) {
   delegated("click", button, () => dialog.close());
   delegated("click", button_1, () =>
     panel().attempt(() => {
-      const current = stepEntries(panel().draft).find(
-        (step) => step.id === $$props.entry.id,
-      );
+      const current = stepEntries(
+        panel().draft,
+        panel().catalog,
+        panel().t,
+      ).find((step) => step.id === $$props.entry.id);
       if (!current) return dialog.close();
       const next2 = copy(panel().draft);
-      removeResource(next2, current.path);
+      removeStep(next2, current.path);
       dialog.close();
       panel().selectedStep = null;
       panel().stepEditor = null;
@@ -9159,26 +8911,26 @@ function AdvancedStepSettings($$anchor, $$props) {
   ];
   let dayError = user_derived(() => {
     const errors = editorErrors($$props.panel.draft, {
-      ...get2(editor),
-      form: { ...get2(form), days: get2(selectedDays) },
+      ...get(editor),
+      form: { ...get(form), days: get(selectedDays) },
     });
     return (
       errors.days ||
-      (get2(form).timing.anchor.startsWith("step:") &&
-      get2(form).timing.mode === "relative"
+      (get(form).timing.anchor.startsWith("step:") &&
+      get(form).timing.mode === "relative"
         ? errors.anchor
         : void 0)
     );
   });
   onMount(() => {
-    set2(selectedDays, [...get2(form).days], true);
+    set2(selectedDays, [...get(form).days], true);
     dialog.showModal();
     dialog.querySelector("input")?.focus();
   });
   function apply2() {
-    if (get2(dayError) || $$props.panel.busy) return;
-    get2(form).days = [...get2(selectedDays)];
-    get2(changed)("days");
+    if (get(dayError) || $$props.panel.busy) return;
+    get(form).days = [...get(selectedDays)];
+    get(changed)("days");
     dialog.close();
   }
   var dialog_1 = root_32();
@@ -9196,9 +8948,9 @@ function AdvancedStepSettings($$anchor, $$props) {
     () => presets,
     index,
     ($$anchor2, $$item) => {
-      var $$array = user_derived(() => to_array(get2($$item), 2));
-      let label = () => get2($$array)[0];
-      let selection = () => get2($$array)[1];
+      var $$array = user_derived(() => to_array(get($$item), 2));
+      let label = () => get($$array)[0];
+      let selection = () => get($$array)[1];
       var button = root2();
       var text_3 = only_child(button, true);
       template_effect(
@@ -9208,9 +8960,9 @@ function AdvancedStepSettings($$anchor, $$props) {
         },
         [
           () =>
-            get2(selectedDays).length === selection().length &&
-            selection().every((day) => get2(selectedDays).includes(day)),
-          () => get2(t)(label()),
+            get(selectedDays).length === selection().length &&
+            selection().every((day) => get(selectedDays).includes(day)),
+          () => get(t)(label()),
         ],
       );
       delegated("click", button, () =>
@@ -9235,22 +8987,22 @@ function AdvancedStepSettings($$anchor, $$props) {
       reset(label_1);
       template_effect(
         ($0, $1) => {
-          set_value(input, get2(day));
+          set_value(input, get(day));
           set_checked(input, $0);
           set_text(text_4, $1);
         },
         [
-          () => get2(selectedDays).includes(get2(day)),
-          () => get2(t)(weekdayNames[index2]),
+          () => get(selectedDays).includes(get(day)),
+          () => get(t)(weekdayNames[index2]),
         ],
       );
       delegated("change", input, (event2) => {
         set2(
           selectedDays,
           days.filter((candidate) =>
-            candidate === get2(day)
+            candidate === get(day)
               ? event2.currentTarget.checked
-              : get2(selectedDays).includes(candidate),
+              : get(selectedDays).includes(candidate),
           ),
           true,
         );
@@ -9267,12 +9019,12 @@ function AdvancedStepSettings($$anchor, $$props) {
       var text_5 = only_child(p_1, true);
       template_effect(
         ($0) => set_text(text_5, $0),
-        [() => get2(t)(get2(dayError))],
+        [() => get(t)(get(dayError))],
       );
       append($$anchor2, p_1);
     };
     if_block(node, ($$render) => {
-      if (get2(dayError)) $$render(consequent);
+      if (get(dayError)) $$render(consequent);
     });
   }
   var p_2 = sibling(node, 2);
@@ -9296,22 +9048,22 @@ function AdvancedStepSettings($$anchor, $$props) {
       set_attribute2(
         fieldset,
         "aria-describedby",
-        get2(dayError) ? "step-weekdays-error" : void 0,
+        get(dayError) ? "step-weekdays-error" : void 0,
       );
       fieldset.disabled = $$props.panel.busy;
       set_text(text_2, $2);
       set_text(text_6, $3);
       set_text(text_7, $4);
-      button_2.disabled = $$props.panel.busy || !!get2(dayError);
+      button_2.disabled = $$props.panel.busy || !!get(dayError);
       set_text(text_8, $5);
     },
     [
-      () => get2(t)("Advanced settings"),
-      () => get2(t)("Choose which days this step should run."),
-      () => get2(t)("Run on"),
-      () => get2(t)("Apply these settings, then save the step."),
-      () => get2(t)("Cancel"),
-      () => get2(t)("Apply"),
+      () => get(t)("Advanced settings"),
+      () => get(t)("Choose which days this step should run."),
+      () => get(t)("Run on"),
+      () => get(t)("Apply these settings, then save the step."),
+      () => get(t)("Cancel"),
+      () => get(t)("Apply"),
     ],
   );
   event("close", dialog_1, function (...$$args) {
@@ -9450,7 +9202,7 @@ function StepActions($$anchor, $$props) {
       append($$anchor2, button_2);
     };
     if_block(node_1, ($$render) => {
-      if ($$props.entry?.kind === "steps") $$render(consequent_1);
+      if ($$props.entry) $$render(consequent_1);
     });
   }
   var node_2 = sibling(node_1, 2);
@@ -9519,7 +9271,7 @@ function StepActions($$anchor, $$props) {
       });
     };
     if_block(node_4, ($$render) => {
-      if (get2(deleteOpen) && $$props.entry) $$render(consequent_4);
+      if (get(deleteOpen) && $$props.entry) $$render(consequent_4);
     });
   }
   var node_5 = sibling(node_4, 2);
@@ -9536,7 +9288,7 @@ function StepActions($$anchor, $$props) {
       });
     };
     if_block(node_5, ($$render) => {
-      if (get2(advancedOpen) && context()) $$render(consequent_5);
+      if (get(advancedOpen) && context()) $$render(consequent_5);
     });
   }
   template_effect(
@@ -9546,15 +9298,15 @@ function StepActions($$anchor, $$props) {
       });
       set_attribute2(button, "aria-label", $0);
       set_attribute2(button, "title", $1);
-      set_attribute2(button, "aria-expanded", get2(menuOpen));
-      set_attribute2(button, "aria-controls", get2(menuId));
+      set_attribute2(button, "aria-expanded", get(menuOpen));
+      set_attribute2(button, "aria-controls", get(menuId));
       set_attribute2(
         button,
         "aria-describedby",
-        context()?.editor.errors.days ? "routine-error-days" : void 0,
+        context()?.editor.errors.days ? "step-error-days" : void 0,
       );
       button.disabled = $$props.panel.busy;
-      set_attribute2(div_1, "id", get2(menuId));
+      set_attribute2(div_1, "id", get(menuId));
       set_attribute2(div_1, "aria-label", $2);
     },
     [
@@ -9563,7 +9315,7 @@ function StepActions($$anchor, $$props) {
       () => $$props.panel.t("Step actions"),
     ],
   );
-  delegated("click", button, () => (get2(menuOpen) ? closeMenu() : openMenu()));
+  delegated("click", button, () => (get(menuOpen) ? closeMenu() : openMenu()));
   delegated("keydown", button, (event2) => {
     if (event2.key === "ArrowDown" || event2.key === "ArrowUp") {
       event2.preventDefault();
@@ -9590,7 +9342,7 @@ function FieldError($$anchor, $$props) {
       var p = root4();
       var text2 = only_child(p, true);
       template_effect(() => {
-        set_attribute2(p, "id", `routine-error-${$$props.key}`);
+        set_attribute2(p, "id", `step-error-${$$props.key}`);
         set_attribute2(p, "data-builder-error", $$props.key);
         set_text(text2, $$props.errors[$$props.key]);
       });
@@ -9618,22 +9370,22 @@ function EditorField($$anchor, $$props) {
   let editor = user_derived(() => $$props.context.editor),
     t = user_derived(() => $$props.context.t),
     changed = user_derived(() => $$props.context.changed);
-  let id = user_derived(() => `routine-${$$props.key}`);
+  let id = user_derived(() => `step-${$$props.key}`);
   let invalid = user_derived(() =>
-    get2(editor).errors[$$props.key] ? true : void 0,
+    get(editor).errors[$$props.key] ? true : void 0,
   );
   let described = user_derived(() =>
-    get2(editor).errors[$$props.key] ? `routine-error-${$$props.key}` : void 0,
+    get(editor).errors[$$props.key] ? `step-error-${$$props.key}` : void 0,
   );
   let nativeTime = user_derived(() => options().type === "time");
   function input(event2) {
     const control = event2.currentTarget;
-    if (get2(nativeTime)) {
+    if (get(nativeTime)) {
       if (!isValueChangedEvent(event2)) return;
       control.value = event2.detail.value || "";
     }
     $$props.update(String(control.value ?? ""));
-    get2(changed)($$props.key);
+    get(changed)($$props.key);
     if (options().render) focusEditor($$props.panel, $$props.key);
   }
   var div = root_6();
@@ -9649,15 +9401,15 @@ function EditorField($$anchor, $$props) {
       template_effect(
         ($0) => {
           set_class(div_1, 1, clsx2($$props.trailing ? "field-label-row" : ""));
-          set_attribute2(label_1, "for", get2(id));
+          set_attribute2(label_1, "for", get(id));
           set_text(text2, $0);
         },
-        [() => get2(t)($$props.label)],
+        [() => get(t)($$props.label)],
       );
       append($$anchor2, div_1);
     };
     if_block(node, ($$render) => {
-      if (!get2(nativeTime) && !options().hideLabel) $$render(consequent);
+      if (!get(nativeTime) && !options().hideLabel) $$render(consequent);
     });
   }
   var node_2 = sibling(node, 2);
@@ -9665,23 +9417,23 @@ function EditorField($$anchor, $$props) {
     var consequent_1 = ($$anchor2) => {
       var ha_selector = root_14();
       template_effect(() =>
-        set_custom_element_data(ha_selector, "id", get2(id)),
+        set_custom_element_data(ha_selector, "id", get(id)),
       );
       template_effect(() =>
         set_custom_element_data(ha_selector, "data-builder-field", $$props.key),
       );
       template_effect(
         ($0) => set_custom_element_data(ha_selector, "aria-label", $0),
-        [() => get2(t)($$props.label)],
+        [() => get(t)($$props.label)],
       );
       template_effect(() =>
-        set_custom_element_data(ha_selector, "aria-invalid", get2(invalid)),
+        set_custom_element_data(ha_selector, "aria-invalid", get(invalid)),
       );
       template_effect(() =>
         set_custom_element_data(
           ha_selector,
           "aria-describedby",
-          get2(described),
+          get(described),
         ),
       );
       set_custom_element_data(ha_selector, "tabindex", "0");
@@ -9691,7 +9443,7 @@ function EditorField($$anchor, $$props) {
         () => ({
           hass: $$props.panel._hass,
           selector: { time: {} },
-          label: get2(t)($$props.label),
+          label: get(t)($$props.label),
           required: !options().optional,
           value: $$props.value || void 0,
         }),
@@ -9707,9 +9459,9 @@ function EditorField($$anchor, $$props) {
         () => options().choices,
         index,
         ($$anchor3, $$item) => {
-          var $$array = user_derived(() => to_array(get2($$item), 2));
-          let v = () => get2($$array)[0];
-          let name = () => get2($$array)[1];
+          var $$array = user_derived(() => to_array(get($$item), 2));
+          let v = () => get($$array)[0];
+          let name = () => get($$array)[1];
           var option = root_24();
           var text_1 = only_child(option, true);
           var option_value = {};
@@ -9720,7 +9472,7 @@ function EditorField($$anchor, $$props) {
                 option.value = (option.__value = option_value) ?? "";
               }
             },
-            [() => get2(t)(name())],
+            [() => get(t)(name())],
           );
           append($$anchor3, option);
         },
@@ -9730,18 +9482,18 @@ function EditorField($$anchor, $$props) {
       init_select(select);
       template_effect(
         ($0, $1) => {
-          set_attribute2(select, "id", get2(id));
+          set_attribute2(select, "id", get(id));
           set_attribute2(select, "data-builder-field", $$props.key);
           set_attribute2(select, "aria-label", $0);
-          set_attribute2(select, "aria-invalid", get2(invalid));
-          set_attribute2(select, "aria-describedby", get2(described));
+          set_attribute2(select, "aria-invalid", get(invalid));
+          set_attribute2(select, "aria-describedby", get(described));
           if (select_value !== (select_value = $1)) {
             ((select.value = (select.__value = select_value) ?? ""),
               select_option(select, select_value));
           }
         },
         [
-          () => (options().hideLabel ? get2(t)($$props.label) : void 0),
+          () => (options().hideLabel ? get(t)($$props.label) : void 0),
           () => String($$props.value),
         ],
       );
@@ -9753,15 +9505,15 @@ function EditorField($$anchor, $$props) {
       remove_textarea_child(textarea);
       template_effect(
         ($0, $1) => {
-          set_attribute2(textarea, "id", get2(id));
+          set_attribute2(textarea, "id", get(id));
           set_attribute2(textarea, "data-builder-field", $$props.key);
           set_attribute2(textarea, "aria-label", $0);
-          set_attribute2(textarea, "aria-invalid", get2(invalid));
-          set_attribute2(textarea, "aria-describedby", get2(described));
+          set_attribute2(textarea, "aria-invalid", get(invalid));
+          set_attribute2(textarea, "aria-describedby", get(described));
           set_value(textarea, $1);
         },
         [
-          () => (options().hideLabel ? get2(t)($$props.label) : void 0),
+          () => (options().hideLabel ? get(t)($$props.label) : void 0),
           () => String($$props.value),
         ],
       );
@@ -9776,17 +9528,17 @@ function EditorField($$anchor, $$props) {
         ($$node, $$action_arg) => validity?.($$node, $$action_arg),
         () =>
           ["startOffset", "endOffset"].includes($$props.key)
-            ? get2(editor).errors[$$props.key] || ""
+            ? get(editor).errors[$$props.key] || ""
             : "",
       );
       template_effect(
         ($0, $1) => {
-          set_attribute2(input_1, "id", get2(id));
+          set_attribute2(input_1, "id", get(id));
           set_attribute2(input_1, "data-builder-field", $$props.key);
           set_attribute2(input_1, "type", options().type || "text");
           set_attribute2(input_1, "aria-label", $0);
-          set_attribute2(input_1, "aria-invalid", get2(invalid));
-          set_attribute2(input_1, "aria-describedby", get2(described));
+          set_attribute2(input_1, "aria-invalid", get(invalid));
+          set_attribute2(input_1, "aria-describedby", get(described));
           set_attribute2(input_1, "min", options().min);
           set_attribute2(input_1, "max", options().max);
           set_attribute2(input_1, "step", options().step);
@@ -9794,7 +9546,7 @@ function EditorField($$anchor, $$props) {
           set_value(input_1, $1);
         },
         [
-          () => (options().hideLabel ? get2(t)($$props.label) : void 0),
+          () => (options().hideLabel ? get(t)($$props.label) : void 0),
           () => String($$props.value),
         ],
       );
@@ -9802,7 +9554,7 @@ function EditorField($$anchor, $$props) {
       append($$anchor2, input_1);
     };
     if_block(node_2, ($$render) => {
-      if (get2(nativeTime)) $$render(consequent_1);
+      if (get(nativeTime)) $$render(consequent_1);
       else if (options().choices) $$render(consequent_2, 1);
       else if (options().multiline) $$render(consequent_3, 2);
       else $$render(alternate, -1);
@@ -9810,13 +9562,13 @@ function EditorField($$anchor, $$props) {
   }
   var node_3 = sibling(node_2, 2);
   {
-    let $0 = user_derived(() => ({ ...get2(editor).errors }));
+    let $0 = user_derived(() => ({ ...get(editor).errors }));
     FieldError(node_3, {
       get key() {
         return $$props.key;
       },
       get errors() {
-        return get2($0);
+        return get($0);
       },
     });
   }
@@ -9871,7 +9623,7 @@ function SourcePicker($$anchor, $$props) {
   }
   var div = root6();
   var ha_generic_picker = child(div);
-  set_custom_element_data(ha_generic_picker, "id", "routine-anchor");
+  set_custom_element_data(ha_generic_picker, "id", "step-anchor");
   set_custom_element_data(ha_generic_picker, "data-builder-field", "anchor");
   template_effect(
     ($0) => set_custom_element_data(ha_generic_picker, "aria-label", $0),
@@ -9888,7 +9640,7 @@ function SourcePicker($$anchor, $$props) {
     set_custom_element_data(
       ha_generic_picker,
       "aria-describedby",
-      error() ? "routine-error-anchor" : void 0,
+      error() ? "step-error-anchor" : void 0,
     ),
   );
   set_custom_element_data(ha_generic_picker, "tabindex", "0");
@@ -9902,7 +9654,7 @@ function SourcePicker($$anchor, $$props) {
       searchLabel: $$props.t("Search steps or time sources"),
       placeholder: $$props.t("Choose a step or event"),
       notFoundLabel: $$props.t("No matching steps or time sources."),
-      getItems: () => get2(items),
+      getItems: () => get(items),
       searchKeys: ["primary", "secondary", "id", "group"],
       valueRenderer,
       allowCustomValue: false,
@@ -9918,7 +9670,7 @@ function SourcePicker($$anchor, $$props) {
     FieldError(node, {
       key: "anchor",
       get errors() {
-        return get2($0);
+        return get($0);
       },
     });
   }
@@ -9937,7 +9689,7 @@ var root_25 = from_html(`<!> <!>`, 1);
 var root_34 = from_html(`<p class="hint"> </p>`);
 var root_42 = from_html(`<!> <!> <!> <!>`, 1);
 var root_52 = from_html(
-  `<div data-editor-section="time"><h3 id="routine-timing-heading"> </h3> <fieldset class="timing-options" aria-labelledby="routine-timing-heading"><div class="timing-option-row"></div> <!></fieldset> <!> <p class="hint" data-timing-explanation="" aria-live="polite"> </p> <!></div>`,
+  `<div data-editor-section="time"><h3 id="step-timing-heading"> </h3> <fieldset class="timing-options" aria-labelledby="step-timing-heading"><div class="timing-option-row"></div> <!></fieldset> <!> <p class="hint" data-timing-explanation="" aria-live="polite"> </p> <!></div>`,
 );
 function TimingEditor($$anchor, $$props) {
   push($$props, true);
@@ -9951,18 +9703,19 @@ function TimingEditor($$anchor, $$props) {
     $$props.context;
     let choices2 = timeSourceChoices(
       $$props.panel.draft,
-      get2(editor).id,
+      get(editor).id,
       $$props.panel.catalog,
+      get(t),
     );
     if (
-      get2(time).anchor &&
-      !choices2.some((choice) => choice.value === get2(time).anchor)
+      get(time).anchor &&
+      !choices2.some((choice) => choice.value === get(time).anchor)
     )
       choices2 = [
         ...choices2,
         {
-          value: get2(time).anchor,
-          name: get2(time).anchor,
+          value: get(time).anchor,
+          name: get(time).anchor,
           group: "Unavailable sources",
         },
       ];
@@ -9983,8 +9736,8 @@ function TimingEditor($$anchor, $$props) {
     index,
     ($$anchor2, $$item) => {
       var $$array = user_derived(() => to_array($$item, 2));
-      let value = () => get2($$array)[0];
-      let label = () => get2($$array)[1];
+      let value = () => get($$array)[0];
+      let label = () => get($$array)[1];
       var label_1 = root7();
       var input = child(label_1);
       remove_input_defaults(input);
@@ -9994,17 +9747,17 @@ function TimingEditor($$anchor, $$props) {
       template_effect(
         ($0) => {
           set_value(input, value());
-          set_checked(input, get2(time).mode === value());
+          set_checked(input, get(time).mode === value());
           set_text(text_1, $0);
         },
-        [() => get2(t)(label())],
+        [() => get(t)(label())],
       );
       delegated("change", input, (event2) => {
         if (!event2.currentTarget.checked) return;
-        get2(time).mode = value();
-        if (value() === "relative" && !get2(time).anchor)
-          get2(time).anchor = "sun:sunrise";
-        get2(changed)("mode");
+        get(time).mode = value();
+        if (value() === "relative" && !get(time).anchor)
+          get(time).anchor = "sun:sunrise";
+        get(changed)("mode");
         $$props.panel.shadowRoot
           .querySelector('[data-builder-field="mode"]:checked')
           ?.focus();
@@ -10015,11 +9768,11 @@ function TimingEditor($$anchor, $$props) {
   reset(div_1);
   var node = sibling(div_1, 2);
   {
-    let $0 = user_derived(() => ({ ...get2(editor).errors }));
+    let $0 = user_derived(() => ({ ...get(editor).errors }));
     FieldError(node, {
       key: "mode",
       get errors() {
-        return get2($0);
+        return get($0);
       },
     });
   }
@@ -10039,9 +9792,9 @@ function TimingEditor($$anchor, $$props) {
         key: "start",
         label: "Start time window",
         get value() {
-          return get2(time).start;
+          return get(time).start;
         },
-        update: (value) => (get2(time).start = value),
+        update: (value) => (get(time).start = value),
         options: { type: "time", step: 1 },
       });
       var node_3 = sibling(node_2, 2);
@@ -10057,11 +9810,11 @@ function TimingEditor($$anchor, $$props) {
             key: "end",
             label: "End of window (optional)",
             get value() {
-              return get2(time).end;
+              return get(time).end;
             },
             update: (value) => {
-              get2(time).end = value;
-              if (!value) get2(editor).showEndTime = false;
+              get(time).end = value;
+              if (!value) get(editor).showEndTime = false;
             },
             options: { type: "time", step: 1, optional: true },
           });
@@ -10071,21 +9824,21 @@ function TimingEditor($$anchor, $$props) {
           var text_2 = only_child(button, true);
           template_effect(
             ($0) => set_text(text_2, $0),
-            [() => get2(t)("Add end of window")],
+            [() => get(t)("Add end of window")],
           );
           delegated("click", button, () => {
-            get2(time).end = get2(time).start;
-            get2(editor).showEndTime = true;
-            get2(changed)("end");
+            get(time).end = get(time).start;
+            get(editor).showEndTime = true;
+            get(changed)("end");
             focusEditor($$props.panel, "end");
           });
           append($$anchor3, button);
         };
         if_block(node_3, ($$render) => {
           if (
-            get2(time).end ||
-            get2(editor).showEndTime ||
-            get2(editor).errors.end
+            get(time).end ||
+            get(editor).showEndTime ||
+            get(editor).errors.end
           )
             $$render(consequent);
           else $$render(alternate, -1);
@@ -10100,19 +9853,21 @@ function TimingEditor($$anchor, $$props) {
         node_4,
         spread_props(() => ({
           hass: $$props.panel._hass,
-          choices: get2(choices),
-          value: get2(time).anchor,
-          t: get2(t),
-          error: get2(editor).errors.anchor,
+          choices: get(choices),
+          value: get(time).anchor,
+          t: get(t),
+          error: get(editor).errors.anchor,
           onChange: (value) => {
-            get2(time).anchor = value;
-            if (!get2(editor).existing && value.startsWith("step:")) {
-              const parent = stepEntries($$props.panel.draft).find(
-                (step) => step.id === value.slice(5),
-              );
-              if (parent) get2(form).days = [...parent.days];
+            get(time).anchor = value;
+            if (!get(editor).existing && value.startsWith("step:")) {
+              const parent = stepEntries(
+                $$props.panel.draft,
+                $$props.panel.catalog,
+                $$props.panel.t,
+              ).find((step) => step.id === value.slice(5));
+              if (parent) get(form).days = [...parent.days];
             }
-            get2(changed)("anchor");
+            get(changed)("anchor");
             const picker = $$props.panel.shadowRoot.querySelector(
               '[data-builder-field="anchor"]',
             );
@@ -10131,16 +9886,16 @@ function TimingEditor($$anchor, $$props) {
             ($0) => set_text(text_3, $0),
             [
               () =>
-                get2(t)(
+                get(t)(
                   "Uses the time currently reported by Home Assistant. Time-only helpers repeat daily; dated sources run only on their reported date.",
                 ),
             ],
           );
           append($$anchor3, p);
         };
-        var d = user_derived(() => get2(time).anchor.startsWith("entity:"));
+        var d = user_derived(() => get(time).anchor.startsWith("entity:"));
         if_block(node_5, ($$render) => {
-          if (get2(d)) $$render(consequent_2);
+          if (get(d)) $$render(consequent_2);
         });
       }
       var node_6 = sibling(node_5, 2);
@@ -10154,9 +9909,9 @@ function TimingEditor($$anchor, $$props) {
         key: "startOffset",
         label: "Start offset",
         get value() {
-          return get2(time).startOffset;
+          return get(time).startOffset;
         },
-        update: (value) => (get2(time).startOffset = value),
+        update: (value) => (get(time).startOffset = value),
         options: { placeholder: "30m or 1h" },
       });
       var node_7 = sibling(node_6, 2);
@@ -10168,12 +9923,12 @@ function TimingEditor($$anchor, $$props) {
               var text_4 = only_child(button_1, true);
               template_effect(
                 ($0) => set_text(text_4, $0),
-                [() => get2(t)("Remove end offset")],
+                [() => get(t)("Remove end offset")],
               );
               delegated("click", button_1, () => {
-                get2(time).endOffset = "";
-                get2(editor).showEndOffset = false;
-                get2(changed)("endOffset");
+                get(time).endOffset = "";
+                get(editor).showEndOffset = false;
+                get(changed)("endOffset");
                 focusEditor($$props.panel, "startOffset");
               });
               append($$anchor4, button_1);
@@ -10188,9 +9943,9 @@ function TimingEditor($$anchor, $$props) {
               key: "endOffset",
               label: "End offset (optional)",
               get value() {
-                return get2(time).endOffset;
+                return get(time).endOffset;
               },
-              update: (value) => (get2(time).endOffset = value),
+              update: (value) => (get(time).endOffset = value),
               options: {},
               trailing,
               $$slots: { trailing: true },
@@ -10202,19 +9957,19 @@ function TimingEditor($$anchor, $$props) {
           var text_5 = only_child(button_2, true);
           template_effect(
             ($0) => set_text(text_5, $0),
-            [() => get2(t)("Add end offset")],
+            [() => get(t)("Add end offset")],
           );
           delegated("click", button_2, () => {
-            get2(editor).showEndOffset = true;
-            get2(refresh)("endOffset");
+            get(editor).showEndOffset = true;
+            get(refresh)("endOffset");
           });
           append($$anchor3, button_2);
         };
         if_block(node_7, ($$render) => {
           if (
-            get2(time).endOffset ||
-            get2(editor).showEndOffset ||
-            get2(editor).errors.endOffset
+            get(time).endOffset ||
+            get(editor).showEndOffset ||
+            get(editor).errors.endOffset
           )
             $$render(consequent_3);
           else $$render(alternate_1, -1);
@@ -10223,7 +9978,7 @@ function TimingEditor($$anchor, $$props) {
       append($$anchor2, fragment_2);
     };
     if_block(node_1, ($$render) => {
-      if (get2(time).mode === "absolute") $$render(consequent_1);
+      if (get(time).mode === "absolute") $$render(consequent_1);
       else $$render(alternate_2, -1);
     });
   }
@@ -10238,7 +9993,7 @@ function TimingEditor($$anchor, $$props) {
         ($0) => set_text(text_7, $0),
         [
           () =>
-            get2(t)(
+            get(t)(
               "This program is managed by a file. Add changes to your draft, then export them from Settings.",
             ),
         ],
@@ -10256,14 +10011,18 @@ function TimingEditor($$anchor, $$props) {
       set_text(text_6, $1);
     },
     [
-      () => get2(t)("Timing"),
+      () => get(t)("Timing"),
       () =>
         timingExplanation(
-          get2(time),
-          stepEntries($$props.panel.draft),
-          get2(t),
+          get(time),
+          stepEntries(
+            $$props.panel.draft,
+            $$props.panel.catalog,
+            $$props.panel.t,
+          ),
+          get(t),
           $$props.panel.catalog.time_sources,
-          { locale: $$props.panel._hass.locale, days: get2(form).days },
+          { locale: $$props.panel._hass.locale, days: get(form).days },
         ),
     ],
   );
@@ -10292,13 +10051,13 @@ function EntitiesEditor($$anchor, $$props) {
   set_custom_element_data(ha_selector, "data-builder-field", "entities");
   template_effect(
     ($0) => set_custom_element_data(ha_selector, "aria-label", $0),
-    [() => get2(t)("Entities")],
+    [() => get(t)("Entities")],
   );
   template_effect(() =>
     set_custom_element_data(
       ha_selector,
       "aria-invalid",
-      get2(editor).errors.entities ? "true" : void 0,
+      get(editor).errors.entities ? "true" : void 0,
     ),
   );
   action(
@@ -10308,13 +10067,13 @@ function EntitiesEditor($$anchor, $$props) {
       hass: $$props.panel._hass,
       selector: {
         entity: {
-          multiple: get2(form).kind !== "scene",
-          ...(get2(form).kind === "service"
+          multiple: get(form).kind !== "scene",
+          ...(get(form).kind === "service"
             ? {}
             : {
                 filter: {
                   domain:
-                    get2(form).kind === "scene"
+                    get(form).kind === "scene"
                       ? ["scene"]
                       : ["light", "switch"],
                 },
@@ -10322,20 +10081,20 @@ function EntitiesEditor($$anchor, $$props) {
         },
       },
       value:
-        get2(form).kind === "scene"
-          ? get2(form).entities[0] || ""
-          : get2(form).entities,
+        get(form).kind === "scene"
+          ? get(form).entities[0] || ""
+          : get(form).entities,
       required: true,
       narrow: $$props.panel.hasAttribute("narrow"),
     }),
   );
   var node = sibling(ha_selector, 2);
   {
-    let $0 = user_derived(() => ({ ...get2(editor).errors }));
+    let $0 = user_derived(() => ({ ...get(editor).errors }));
     FieldError(node, {
       key: "entities",
       get errors() {
-        return get2($0);
+        return get($0);
       },
     });
   }
@@ -10348,7 +10107,7 @@ function EntitiesEditor($$anchor, $$props) {
         ($0) => set_text(text_1, $0),
         [
           () =>
-            get2(t)(
+            get(t)(
               "This selection includes a custom entity. Select lights or switches for this step.",
             ),
         ],
@@ -10357,44 +10116,43 @@ function EntitiesEditor($$anchor, $$props) {
     };
     var d = user_derived(
       () =>
-        get2(form).kind === "entities" &&
-        get2(form).entities.some((id) => !/^(light|switch)\./.test(id)),
+        get(form).kind === "entities" &&
+        get(form).entities.some((id) => !/^(light|switch)\./.test(id)),
     );
     if_block(node_1, ($$render) => {
-      if (get2(d)) $$render(consequent);
+      if (get(d)) $$render(consequent);
     });
   }
   reset(div);
-  template_effect(($0) => set_text(text2, $0), [() => get2(t)("Entities")]);
+  template_effect(($0) => set_text(text2, $0), [() => get(t)("Entities")]);
   event("value-changed", ha_selector, (event2) => {
     if (!isValueChangedEvent(event2)) return;
     event2.currentTarget.value = event2.detail.value;
-    get2(form).entities = Array.isArray(event2.detail.value)
+    get(form).entities = Array.isArray(event2.detail.value)
       ? event2.detail.value
       : event2.detail.value
         ? [event2.detail.value]
         : [];
-    get2(changed)("entities");
+    get(changed)("entities");
   });
   append($$anchor, div);
   pop();
 }
 
 // custom_components/occupied/frontend/ActionEditor.svelte
-var root9 = from_html(`<!> <!>`, 1);
-var root_17 = from_html(
-  `<div data-editor-section="action"><h3> </h3> <!> <!> <!></div>`,
+var root9 = from_html(
+  `<div data-editor-section="action"><h3> </h3> <!> <!> <!> <!></div>`,
 );
 function ActionEditor($$anchor, $$props) {
   let form = user_derived(() => $$props.context.form),
     t = user_derived(() => $$props.context.t);
-  var div = root_17();
+  var div = root9();
   var h3 = child(div);
   var text2 = only_child(h3, true);
   var node = sibling(h3, 2);
   {
     let $0 = user_derived(() =>
-      get2(form).kind === "entities" ? get2(form).action : get2(form).kind,
+      get(form).kind === "entities" ? get(form).action : get(form).kind,
     );
     EditorField(node, {
       get panel() {
@@ -10406,14 +10164,14 @@ function ActionEditor($$anchor, $$props) {
       key: "kind",
       label: "Step type",
       get value() {
-        return get2($0);
+        return get($0);
       },
       update: (value) => {
         const kind =
           value === "turn_on" || value === "turn_off" ? "entities" : value;
-        if (get2(form).kind !== kind) get2(form).entities = [];
-        get2(form).kind = kind;
-        if (kind === "entities") get2(form).action = value;
+        if (get(form).kind !== kind) get(form).entities = [];
+        get(form).kind = kind;
+        if (kind === "entities") get(form).action = value;
       },
       options: {
         hideLabel: true,
@@ -10439,9 +10197,7 @@ function ActionEditor($$anchor, $$props) {
   var node_2 = sibling(node_1, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment = root9();
-      var node_3 = first_child(fragment);
-      EditorField(node_3, {
+      EditorField($$anchor2, {
         get panel() {
           return $$props.panel;
         },
@@ -10451,12 +10207,19 @@ function ActionEditor($$anchor, $$props) {
         key: "service",
         label: "Service (domain.service)",
         get value() {
-          return get2(form).service;
+          return get(form).service;
         },
-        update: (value) => (get2(form).service = value),
+        update: (value) => (get(form).service = value),
       });
-      var node_4 = sibling(node_3, 2);
-      EditorField(node_4, {
+    };
+    if_block(node_2, ($$render) => {
+      if (get(form).kind === "service") $$render(consequent);
+    });
+  }
+  var node_3 = sibling(node_2, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      EditorField($$anchor2, {
         get panel() {
           return $$props.panel;
         },
@@ -10466,25 +10229,24 @@ function ActionEditor($$anchor, $$props) {
         key: "data",
         label: "Service data (JSON)",
         get value() {
-          return get2(form).data;
+          return get(form).data;
         },
-        update: (value) => (get2(form).data = value),
+        update: (value) => (get(form).data = value),
         options: { multiline: true },
       });
-      append($$anchor2, fragment);
     };
-    if_block(node_2, ($$render) => {
-      if (get2(form).kind === "service") $$render(consequent);
+    if_block(node_3, ($$render) => {
+      if (get(form).kind !== "entities") $$render(consequent_1);
     });
   }
   reset(div);
-  template_effect(($0) => set_text(text2, $0), [() => get2(t)("Action")]);
+  template_effect(($0) => set_text(text2, $0), [() => get(t)("Action")]);
   append($$anchor, div);
 }
 
 // custom_components/occupied/frontend/StepEditor.svelte
 var root10 = from_html(
-  `<section class="routine-editor"><div class="step-name-editor"><!></div> <div class="editor-sections"><!> <!></div> <!> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-routine-submit=""> </button></div></section>`,
+  `<section class="step-editor"><div class="step-name-editor"><!></div> <div class="editor-sections"><!> <!></div> <!> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-step-submit=""> </button></div></section>`,
 );
 function StepEditor($$anchor, $$props) {
   push($$props, true);
@@ -10492,35 +10254,35 @@ function StepEditor($$anchor, $$props) {
     $$props.revision;
     return createStepEditorContext($$props.panel);
   });
-  let editor = user_derived(() => get2(context).editor),
-    form = user_derived(() => get2(context).form),
-    t = user_derived(() => get2(context).t),
-    editing = user_derived(() => get2(context).editing),
-    submit = user_derived(() => get2(context).submit),
-    cancel = user_derived(() => get2(context).cancel);
+  let editor = user_derived(() => get(context).editor),
+    form = user_derived(() => get(context).form),
+    t = user_derived(() => get(context).t),
+    editing = user_derived(() => get(context).editing),
+    submit = user_derived(() => get(context).submit),
+    cancel = user_derived(() => get(context).cancel);
   var section = root10();
   var div = child(section);
   var node = child(div);
   {
     let $0 = user_derived(() => ({
       hideLabel: true,
-      placeholder: get2(editing) ? void 0 : get2(t)("Optional title"),
+      placeholder: get(editing) ? void 0 : get(t)("Optional title"),
     }));
     EditorField(node, {
       get panel() {
         return $$props.panel;
       },
       get context() {
-        return get2(context);
+        return get(context);
       },
       key: "name",
       label: "Step name",
       get value() {
-        return get2(form).name;
+        return get(form).name;
       },
-      update: (value) => (get2(form).name = value),
+      update: (value) => (get(form).name = value),
       get options() {
-        return get2($0);
+        return get($0);
       },
     });
   }
@@ -10532,7 +10294,7 @@ function StepEditor($$anchor, $$props) {
       return $$props.panel;
     },
     get context() {
-      return get2(context);
+      return get(context);
     },
   });
   var node_2 = sibling(node_1, 2);
@@ -10541,17 +10303,17 @@ function StepEditor($$anchor, $$props) {
       return $$props.panel;
     },
     get context() {
-      return get2(context);
+      return get(context);
     },
   });
   reset(div_1);
   var node_3 = sibling(div_1, 2);
   {
-    let $0 = user_derived(() => ({ ...get2(editor).errors }));
+    let $0 = user_derived(() => ({ ...get(editor).errors }));
     FieldError(node_3, {
       key: "days",
       get errors() {
-        return get2($0);
+        return get($0);
       },
     });
   }
@@ -10562,9 +10324,11 @@ function StepEditor($$anchor, $$props) {
   {
     var consequent_1 = ($$anchor2) => {
       const entry = user_derived(() =>
-        stepEntries($$props.panel.draft).find(
-          (item) => item.id === get2(editor).id,
-        ),
+        stepEntries(
+          $$props.panel.draft,
+          $$props.panel.catalog,
+          $$props.panel.t,
+        ).find((item) => item.id === get(editor).id),
       );
       var fragment = comment();
       var node_5 = first_child(fragment);
@@ -10575,15 +10339,15 @@ function StepEditor($$anchor, $$props) {
               return $$props.panel;
             },
             get entry() {
-              return get2(entry);
+              return get(entry);
             },
             get context() {
-              return get2(context);
+              return get(context);
             },
           });
         };
         if_block(node_5, ($$render) => {
-          if (get2(entry)) $$render(consequent);
+          if (get(entry)) $$render(consequent);
         });
       }
       append($$anchor2, fragment);
@@ -10594,12 +10358,12 @@ function StepEditor($$anchor, $$props) {
           return $$props.panel;
         },
         get context() {
-          return get2(context);
+          return get(context);
         },
       });
     };
     if_block(node_4, ($$render) => {
-      if (get2(editing)) $$render(consequent_1);
+      if (get(editing)) $$render(consequent_1);
       else $$render(alternate, -1);
     });
   }
@@ -10615,9 +10379,9 @@ function StepEditor($$anchor, $$props) {
       set_text(text_1, $1);
     },
     [
-      () => get2(t)("Cancel"),
+      () => get(t)("Cancel"),
       () =>
-        get2(t)(
+        get(t)(
           $$props.panel.document?.source === "file"
             ? "Add to draft"
             : "Save step",
@@ -10625,10 +10389,10 @@ function StepEditor($$anchor, $$props) {
     ],
   );
   delegated("click", button, function (...$$args) {
-    get2(cancel)?.apply(this, $$args);
+    get(cancel)?.apply(this, $$args);
   });
   delegated("click", button_1, function (...$$args) {
-    get2(submit)?.apply(this, $$args);
+    get(submit)?.apply(this, $$args);
   });
   append($$anchor, section);
   pop();
@@ -10637,19 +10401,16 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/StepsView.svelte
 var root11 = from_html(
-  `<section class="routine-empty"><button type="button" class="primary" data-create-routine=""> </button></section>`,
+  `<section class="step-empty"><button type="button" class="primary" data-create-step=""> </button></section>`,
 );
-var root_18 = from_html(`<span class="step-status-badge"> </span>`);
-var root_26 = from_html(`<span class="routine-row-time"> </span>`);
-var root_35 = from_html(
-  `<section class="routine-editor"><p class="hint"> </p> <!></section>`,
+var root_17 = from_html(`<span class="step-status-badge"> </span>`);
+var root_26 = from_html(`<span class="step-row-time"> </span>`);
+var root_35 = from_html(`<div><!></div>`);
+var root_43 = from_html(
+  `<div><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong> <!></span> <span class="hint"> </span></span> <!></button> <!></div>`,
 );
-var root_43 = from_html(`<div><!></div>`);
 var root_53 = from_html(
-  `<div><button type="button"><span class="routine-row-content"><span class="routine-row-heading"><strong> </strong> <!></span> <span class="hint"> </span></span> <!></button> <!></div>`,
-);
-var root_62 = from_html(
-  `<div class="routine-layout"><div class="routine-list"></div></div> <button type="button" class="primary" data-create-routine=""> </button>`,
+  `<div class="step-layout"><div class="step-list"></div></div> <button type="button" class="primary" data-create-step=""> </button>`,
   1,
 );
 function StepsView($$anchor, $$props) {
@@ -10658,11 +10419,15 @@ function StepsView($$anchor, $$props) {
     $$props.revision;
     return {
       t: $$props.panel.t,
-      entries: stepEntries($$props.panel.draft),
+      entries: stepEntries(
+        $$props.panel.draft,
+        $$props.panel.catalog,
+        $$props.panel.t,
+      ),
     };
   });
-  let t = user_derived(() => get2(data).t),
-    entries = user_derived(() => get2(data).entries);
+  let t = user_derived(() => get(data).t),
+    entries = user_derived(() => get(data).entries);
   var fragment = comment();
   var node = first_child(fragment);
   {
@@ -10676,41 +10441,40 @@ function StepsView($$anchor, $$props) {
           button.disabled = $$props.panel.busy;
           set_text(text2, $0);
         },
-        [() => get2(t)("Create your first step")],
+        [() => get(t)("Create your first step")],
       );
       delegated("click", button, () => startStep($$props.panel));
       append($$anchor2, section);
     };
-    var alternate_1 = ($$anchor2) => {
-      var fragment_1 = root_62();
+    var alternate = ($$anchor2) => {
+      var fragment_1 = root_53();
       var div = first_child(fragment_1);
       var div_1 = child(div);
       each(
         div_1,
         21,
-        () => stepTree(get2(entries)),
+        () => stepTree(get(entries)),
         ({ entry, depth }) => entry.id,
         ($$anchor3, $$item) => {
-          let entry = () => get2($$item).entry;
-          let depth = () => get2($$item).depth;
+          let entry = () => get($$item).entry;
+          let depth = () => get($$item).depth;
           const editing = user_derived(
             () =>
               $$props.panel.stepEditor?.existing &&
               $$props.panel.stepEditor.id === entry().id,
           );
           const stepDisabled = user_derived(() =>
-            get2(editing)
+            get(editing)
               ? $$props.panel.stepEditor?.form.enabled === false
               : entry().enabled === false,
           );
           const expanded = user_derived(
             () =>
-              get2(editing) ||
+              get(editing) ||
               (!$$props.panel.stepEditor &&
-                !simpleStep(entry()) &&
                 $$props.panel.selectedStep === entry().id),
           );
-          var div_2 = root_53();
+          var div_2 = root_43();
           let classes;
           var button_1 = child(div_2);
           let classes_1;
@@ -10721,16 +10485,16 @@ function StepsView($$anchor, $$props) {
           var node_1 = sibling(strong, 2);
           {
             var consequent_1 = ($$anchor4) => {
-              var span_2 = root_18();
+              var span_2 = root_17();
               var text_2 = only_child(span_2, true);
               template_effect(
                 ($0) => set_text(text_2, $0),
-                [() => get2(t)("Disabled")],
+                [() => get(t)("Disabled")],
               );
               append($$anchor4, span_2);
             };
             if_block(node_1, ($$render) => {
-              if (get2(stepDisabled)) $$render(consequent_1);
+              if (get(stepDisabled)) $$render(consequent_1);
             });
           }
           reset(span_1);
@@ -10748,8 +10512,8 @@ function StepsView($$anchor, $$props) {
                   () =>
                     timingSummary(
                       entry(),
-                      get2(entries),
-                      get2(t),
+                      get(entries),
+                      get(t),
                       $$props.panel.catalog.time_sources,
                       $$props.panel._hass.locale,
                     ),
@@ -10758,14 +10522,14 @@ function StepsView($$anchor, $$props) {
               append($$anchor4, span_4);
             };
             if_block(node_2, ($$render) => {
-              if (!get2(editing)) $$render(consequent_2);
+              if (!get(editing)) $$render(consequent_2);
             });
           }
           reset(button_1);
           var node_3 = sibling(button_1, 2);
           {
             var consequent_4 = ($$anchor4) => {
-              var div_3 = root_43();
+              var div_3 = root_35();
               var node_4 = child(div_3);
               {
                 var consequent_3 = ($$anchor5) => {
@@ -10778,34 +10542,8 @@ function StepsView($$anchor, $$props) {
                     },
                   });
                 };
-                var alternate = ($$anchor5) => {
-                  var section_1 = root_35();
-                  var p = child(section_1);
-                  var text_5 = only_child(p, true);
-                  var node_5 = sibling(p, 2);
-                  StepActions(node_5, {
-                    get panel() {
-                      return $$props.panel;
-                    },
-                    get entry() {
-                      return entry();
-                    },
-                  });
-                  reset(section_1);
-                  template_effect(
-                    ($0) => set_text(text_5, $0),
-                    [
-                      () =>
-                        get2(t)(
-                          "Custom actions cannot be edited with the simple step editor.",
-                        ),
-                    ],
-                  );
-                  append($$anchor5, section_1);
-                };
                 if_block(node_4, ($$render) => {
                   if ($$props.panel.stepEditor) $$render(consequent_3);
-                  else $$render(alternate, -1);
                 });
               }
               reset(div_3);
@@ -10815,29 +10553,24 @@ function StepsView($$anchor, $$props) {
               append($$anchor4, div_3);
             };
             if_block(node_3, ($$render) => {
-              if (get2(expanded)) $$render(consequent_4);
+              if (get(expanded)) $$render(consequent_4);
             });
           }
           reset(div_2);
           template_effect(
             ($0, $1, $2, $3) => {
-              classes = set_class(div_2, 1, "routine-card", null, classes, {
-                "step-disabled": get2(stepDisabled),
+              classes = set_class(div_2, 1, "step-card", null, classes, {
+                "step-disabled": get(stepDisabled),
               });
-              set_attribute2(div_2, "data-routine-id", entry().id);
+              set_attribute2(div_2, "data-step-id", entry().id);
               set_style(div_2, $0);
               set_attribute2(button_1, "id", `step-card-${entry().id}`);
-              classes_1 = set_class(
-                button_1,
-                1,
-                "routine-row",
-                null,
-                classes_1,
-                { editing: get2(editing) },
-              );
+              classes_1 = set_class(button_1, 1, "step-row", null, classes_1, {
+                editing: get(editing),
+              });
               set_attribute2(button_1, "aria-label", $1);
               button_1.disabled = $$props.panel.busy;
-              set_attribute2(button_1, "aria-expanded", get2(expanded));
+              set_attribute2(button_1, "aria-expanded", get(expanded));
               set_attribute2(
                 button_1,
                 "aria-controls",
@@ -10853,10 +10586,10 @@ function StepsView($$anchor, $$props) {
             [
               () => `--depth:${Math.min(depth(), 3)}`,
               () =>
-                get2(stepDisabled)
-                  ? `${entry().name} \xB7 ${get2(t)("Disabled")}`
+                get(stepDisabled)
+                  ? `${entry().name} \xB7 ${get(t)("Disabled")}`
                   : entry().name,
-              () => actionSummary(entry(), get2(t)),
+              () => actionSummary(entry(), get(t)),
               () =>
                 entry()
                   .entities.map((id) => entityName($$props.panel.catalog, id))
@@ -10870,21 +10603,21 @@ function StepsView($$anchor, $$props) {
       reset(div_1);
       reset(div);
       var button_2 = sibling(div, 2);
-      var text_6 = only_child(button_2, true);
+      var text_5 = only_child(button_2, true);
       template_effect(
         ($0, $1) => {
           set_attribute2(div_1, "aria-label", $0);
           button_2.disabled = $$props.panel.busy;
-          set_text(text_6, $1);
+          set_text(text_5, $1);
         },
-        [() => get2(t)("Steps"), () => get2(t)("Create step")],
+        [() => get(t)("Steps"), () => get(t)("Create step")],
       );
       delegated("click", button_2, () => startStep($$props.panel));
       append($$anchor2, fragment_1);
     };
     if_block(node, ($$render) => {
-      if (!get2(entries).length) $$render(consequent);
-      else $$render(alternate_1, -1);
+      if (!get(entries).length) $$render(consequent);
+      else $$render(alternate, -1);
     });
   }
   append($$anchor, fragment);
@@ -10894,13 +10627,13 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/SettingsView.svelte
 var root12 = from_html(`<span class="changes svelte-82irif"> </span>`);
-var root_19 = from_html(
-  `<section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <button type="button" class="primary"> </button><button type="button"> </button></section>`,
+var root_18 = from_html(
+  `<section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <div class="yaml-actions svelte-82irif"><button type="button" class="primary"> </button> <button type="button"> </button> <button type="button" class="download svelte-82irif"> </button></div></section>`,
   2,
 );
 var $$css = {
   hash: "svelte-82irif",
-  code: "ha-code-editor.svelte-82irif {display:block;width:100%;margin:8px 0;--code-mirror-height: 420px;--code-mirror-max-height: 60vh;}section.yaml-panel.svelte-82irif {border-color:var(--divider-color, #d5dce3);border-left:1px solid var(--divider-color, #d5dce3);background:var(--card-background-color, #fff);}section.yaml-panel.has-changes.svelte-82irif {border-color:var(--warning-color, #e69500);border-left:4px solid var(--warning-color, #e69500);background:color-mix(\n      in srgb,\n      var(--warning-color, #e69500) 18%,\n      var(--card-background-color, #fff)\n    );}.changes.svelte-82irif {color:var(--warning-color, #e69500);font-size:0.75em;font-weight:500;}",
+  code: ".yaml-actions.svelte-82irif {display:flex;align-items:center;flex-wrap:wrap;gap:8px;}.yaml-actions.svelte-82irif .download:where(.svelte-82irif) {margin-left:auto;}ha-code-editor.svelte-82irif {display:block;width:100%;margin:8px 0;--code-mirror-height: 420px;--code-mirror-max-height: 60vh;}section.yaml-panel.svelte-82irif {border-color:var(--divider-color, #d5dce3);border-left-color:var(--divider-color, #d5dce3);background:var(--card-background-color, #fff);}section.yaml-panel.has-changes.svelte-82irif {border-color:var(--warning-color, #e69500);border-left-color:var(--warning-color, #e69500);background:color-mix(\n      in srgb,\n      var(--warning-color, #e69500) 18%,\n      var(--card-background-color, #fff)\n    );}.changes.svelte-82irif {color:var(--warning-color, #e69500);font-size:0.75em;font-weight:500;}",
 };
 function SettingsView($$anchor, $$props) {
   push($$props, true);
@@ -10910,7 +10643,7 @@ function SettingsView($$anchor, $$props) {
     $$props.revision;
     return { t: panel().t };
   });
-  let t = user_derived(() => get2(data).t);
+  let t = user_derived(() => get(data).t);
   let yamlDirty = user_derived(() => panel().yamlDirty);
   let autoExportStarted = false;
   user_effect(() => {
@@ -10927,7 +10660,7 @@ function SettingsView($$anchor, $$props) {
       };
     }
   });
-  var section = root_19();
+  var section = root_18();
   let classes;
   var h2 = child(section);
   var text2 = child(h2);
@@ -10938,12 +10671,12 @@ function SettingsView($$anchor, $$props) {
       var text_1 = only_child(span);
       template_effect(
         ($0) => set_text(text_1, `(${$0 ?? ""})`),
-        [() => get2(t)("changes")],
+        [() => get(t)("changes")],
       );
       append($$anchor2, span);
     };
     if_block(node, ($$render) => {
-      if (get2(yamlDirty)) $$render(consequent);
+      if (get(yamlDirty)) $$render(consequent);
     });
   }
   reset(h2);
@@ -10954,7 +10687,7 @@ function SettingsView($$anchor, $$props) {
   set_custom_element_data(ha_code_editor, "role", "group");
   template_effect(
     ($0) => set_custom_element_data(ha_code_editor, "aria-label", $0),
-    [() => get2(t)("Occupied YAML")],
+    [() => get(t)("Occupied YAML")],
   );
   set_custom_element_data(ha_code_editor, "dir", "ltr");
   set_class(ha_code_editor, 1, "svelte-82irif");
@@ -10963,20 +10696,24 @@ function SettingsView($$anchor, $$props) {
     ($$node, $$action_arg) => properties?.($$node, $$action_arg),
     () => ({ mode: "yaml", value: panel().yaml, linewrap: true }),
   );
-  var button = sibling(ha_code_editor, 2);
+  var div = sibling(ha_code_editor, 2);
+  var button = child(div);
   var text_3 = only_child(button, true);
-  var button_1 = sibling(button);
+  var button_1 = sibling(button, 2);
   var text_4 = only_child(button_1, true);
+  var button_2 = sibling(button_1, 2);
+  var text_5 = only_child(button_2, true);
+  reset(div);
   reset(section);
   template_effect(
-    ($0, $1, $2, $3, $4) => {
+    ($0, $1, $2, $3, $4, $5) => {
       classes = set_class(
         section,
         1,
         "yaml-panel svelte-82irif",
         null,
         classes,
-        { "has-changes": get2(yamlDirty) },
+        { "has-changes": get(yamlDirty) },
       );
       set_text(text2, `${$0 ?? ""} `);
       set_text(text_2, $1);
@@ -10988,18 +10725,21 @@ function SettingsView($$anchor, $$props) {
         panel().document.source === "file" ||
         !panel().yaml;
       set_text(text_3, $3);
-      button_1.disabled = panel().busy || !panel().yaml;
+      button_1.disabled = panel().busy || !get(yamlDirty);
       set_text(text_4, $4);
+      button_2.disabled = panel().busy || !panel().yaml;
+      set_text(text_5, $5);
     },
     [
-      () => get2(t)("YAML"),
+      () => get(t)("YAML"),
       () =>
-        get2(t)(
+        get(t)(
           "Edit the YAML and save to validate and apply your changes. Invalid code is kept in the editor.",
         ),
-      () => get2(t)("Choose configuration file"),
-      () => get2(t)("Save changes"),
-      () => get2(t)("Download"),
+      () => get(t)("Choose configuration file"),
+      () => get(t)("Save changes"),
+      () => get(t)("Discard changes"),
+      () => get(t)("Download"),
     ],
   );
   delegated("change", input, async (event2) => {
@@ -11019,7 +10759,8 @@ function SettingsView($$anchor, $$props) {
     panel().flush();
   });
   delegated("click", button, () => panel().saveYaml());
-  delegated("click", button_1, () =>
+  delegated("click", button_1, () => panel().discardYaml());
+  delegated("click", button_2, () =>
     download("occupied.yaml", panel().yaml, "text/yaml"),
   );
   append($$anchor, section);
@@ -11077,105 +10818,93 @@ function loadHaHistoryChart() {
 }
 
 // custom_components/occupied/frontend/timeline.ts
-function previewStateHistory(plan, program, names = {}, t = (text2) => text2) {
-  const start = Date.parse(plan.start);
-  const end = Date.parse(plan.end);
-  const resolve = (targets) => new Set(targets?.entities || []);
-  const managed2 = resolve(program.lighting?.managed_targets);
-  const baselines = /* @__PURE__ */ new Map();
-  for (const baseline of program.lighting?.baseline || []) {
-    for (const entity of resolve(baseline.targets)) {
-      if (managed2.has(entity)) {
-        baselines.set(entity, baseline.state);
-      }
-    }
+function calendarDayPlan(plans, date) {
+  const current = plans.find((plan) => plan.simulation_date === date);
+  if (!current) {
+    return void 0;
   }
+  const start = calendarMidnight(date, current.timezone);
+  const end = calendarMidnight(shiftScheduleDate(date, 1), current.timezone);
+  const within = (time) =>
+    Date.parse(time) >= Date.parse(start) && Date.parse(time) < Date.parse(end);
+  return {
+    ...current,
+    start,
+    end,
+    events: plans
+      .flatMap((plan) => plan.events)
+      .filter((event2) => within(event2.time))
+      .sort((a, b) => Date.parse(a.time) - Date.parse(b.time)),
+    issues: plans.flatMap((plan) => plan.issues),
+  };
+}
+function previewStateHistory(plan, _program, names = {}, t = (text2) => text2) {
+  const start = Date.parse(plan.start),
+    end = Date.parse(plan.end);
   const entities = /* @__PURE__ */ new Map();
-  const stateLabel = (state2) => {
-    if (state2 === "on") {
-      return t("On");
-    }
-    if (state2 === "off") {
-      return t("Off");
-    }
-    return t("Unknown");
-  };
-  const get4 = (entity) => {
-    let entry = entities.get(entity);
-    if (!entry) {
-      const baseline = baselines.get(entity) || "unknown";
-      entry = {
-        history: {
-          entity_id: entity,
-          name: names[entity] || entity,
-          data: [
-            {
-              state: baseline,
-              state_localize: stateLabel(baseline),
-              last_changed: start,
-            },
-          ],
-        },
-        baseline,
-        safety: false,
-        leases: /* @__PURE__ */ new Set(),
-      };
-      entities.set(entity, entry);
-    }
-    return entry;
-  };
+  const stateLabels = { on: "On", off: "Off" };
+  const label = (state2) => t(stateLabels[state2] || "Unknown");
   for (const event2 of [...plan.events].sort(
     (a, b) => Date.parse(a.time) - Date.parse(b.time),
   )) {
     const at = Date.parse(event2.time);
-    if (at > end) {
+    if (at >= end) {
       continue;
     }
-    const service = event2.action.action;
-    if (service === "event.fire") {
-      continue;
-    }
-    const typed = /^(light|switch)\.turn_(on|off)$/.test(service);
-    const opaque = !typed;
-    for (const entity of /* @__PURE__ */ new Set([
-      ...event2.action.targets.entities,
-      ...(opaque ? event2.action.resources || [] : []),
-    ])) {
-      if (!entity.startsWith("light.") && !entity.startsWith("switch.")) {
+    const typed = /^(light|switch)\.turn_(on|off)$/.test(event2.action.action);
+    for (const entity of event2.action.entities) {
+      if (!/^(light|switch)\./.test(entity)) {
         continue;
       }
-      const entry = get4(entity);
-      if (typed && event2.kind === "window_start") {
-        entry.leases.add(event2.lease_id || event2.source_id);
-      } else if (typed && event2.kind === "window_end") {
-        entry.leases.delete(event2.lease_id || event2.source_id);
-      } else if (typed && event2.priority === 30) {
-        entry.safety = true;
-      } else if (!entry.safety) {
-        const intended = service.endsWith("turn_on") ? "on" : "off";
-        entry.explicit = typed ? intended : "unknown";
+      let history2 = entities.get(entity);
+      if (!history2) {
+        history2 = {
+          entity_id: entity,
+          name: names[entity] || entity,
+          data: [
+            {
+              state: "unknown",
+              state_localize: label("unknown"),
+              last_changed: start,
+            },
+          ],
+        };
+        entities.set(entity, history2);
       }
-      const state2 = entry.safety
-        ? "off"
-        : (entry.explicit ?? (entry.leases.size > 0 ? "on" : entry.baseline));
-      const data = entry.history.data;
-      const previous = data.at(-1);
+      const intended = event2.action.action.endsWith("turn_on") ? "on" : "off";
+      const state2 = typed ? intended : "unknown";
+      const previous = history2.data.at(-1);
       const time = Math.max(start, at);
       if (previous.last_changed === time) {
         previous.state = state2;
-        previous.state_localize = stateLabel(state2);
+        previous.state_localize = label(state2);
       } else if (previous.state !== state2) {
-        data.push({
+        history2.data.push({
           state: state2,
-          state_localize: stateLabel(state2),
+          state_localize: label(state2),
           last_changed: time,
         });
       }
     }
   }
-  return [...entities.values()]
-    .map((entry) => entry.history)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  return [...entities.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+function calendarStateHistory(
+  plans,
+  day,
+  program,
+  names = {},
+  t = (text2) => text2,
+) {
+  const start = Date.parse(day.start),
+    end = Date.parse(day.end);
+  const events = plans
+    .flatMap((plan) => plan.events)
+    .filter(
+      (event2) =>
+        Date.parse(event2.time) >= start && Date.parse(event2.time) < end,
+    );
+  return previewStateHistory({ ...day, events }, program, names, t);
 }
 function stamp(value, zone, locale) {
   if (!value) {
@@ -11190,7 +10919,7 @@ function stamp(value, zone, locale) {
 
 // custom_components/occupied/frontend/PreviewStateGraph.svelte
 var root13 = from_html(`<p class="hint"> </p>`);
-var root_110 = from_html(
+var root_19 = from_html(
   `<state-history-chart-timeline></state-history-chart-timeline>`,
   2,
 );
@@ -11208,16 +10937,15 @@ function PreviewStateGraph($$anchor, $$props) {
   let failed = state(false);
   let narrow = state(false);
   let data = user_derived(() =>
-    previewStateHistory($$props.plan, $$props.program, names(), $$props.t).map(
-      (entity) => ({
-        ...entity,
-        data: entity.data.map((state2) =>
-          state2.state === "unknown"
-            ? { ...state2, state: "off", state_localize: $$props.t("Off") }
-            : state2,
-        ),
-      }),
-    ),
+    $$props.schedulePlans
+      ? calendarStateHistory(
+          $$props.schedulePlans,
+          $$props.plan,
+          $$props.program,
+          names(),
+          $$props.t,
+        )
+      : previewStateHistory($$props.plan, $$props.program, names(), $$props.t),
   );
   let chartHass = user_derived(() => ({
     ...$$props.hass,
@@ -11265,7 +10993,7 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, p);
     };
     if_block(node, ($$render) => {
-      if (!get2(data).length) $$render(consequent);
+      if (!get(data).length) $$render(consequent);
     });
   }
   var node_1 = sibling(node, 2);
@@ -11285,12 +11013,12 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, p_1);
     };
     var consequent_2 = ($$anchor2) => {
-      var state_history_chart_timeline = root_110();
+      var state_history_chart_timeline = root_19();
       template_effect(() =>
         set_custom_element_data(
           state_history_chart_timeline,
           "hidden",
-          get2(data).length === 0,
+          get(data).length === 0,
         ),
       );
       template_effect(
@@ -11307,14 +11035,14 @@ function PreviewStateGraph($$anchor, $$props) {
         state_history_chart_timeline,
         ($$node, $$action_arg) => properties?.($$node, $$action_arg),
         () => ({
-          hass: get2(chartHass),
-          data: get2(data),
+          hass: get(chartHass),
+          data: get(data),
           names: names(),
           startTime: new Date($$props.plan.start),
           endTime: new Date($$props.plan.end),
           showNames: true,
-          narrow: get2(narrow),
-          paddingYAxis: get2(narrow) ? 105 : 185,
+          narrow: get(narrow),
+          paddingYAxis: get(narrow) ? 105 : 185,
           clickForMoreInfo: false,
         }),
       );
@@ -11330,9 +11058,9 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, p_2);
     };
     if_block(node_1, ($$render) => {
-      if (get2(failed) && get2(data).length > 0) $$render(consequent_1);
-      else if (get2(ready)) $$render(consequent_2, 1);
-      else if (get2(data).length > 0) $$render(consequent_3, 2);
+      if (get(failed) && get(data).length > 0) $$render(consequent_1);
+      else if (get(ready)) $$render(consequent_2, 1);
+      else if (get(data).length > 0) $$render(consequent_3, 2);
     });
   }
   append($$anchor, fragment);
@@ -11341,14 +11069,14 @@ function PreviewStateGraph($$anchor, $$props) {
 
 // custom_components/occupied/frontend/Timeline.svelte
 var root14 = from_html(`<h2> </h2>`);
-var root_111 = from_html(`<th scope="col"> </th>`);
+var root_110 = from_html(`<th scope="col"> </th>`);
 var root_28 = from_html(`<td> </td>`);
 var root_37 = from_html(`<tr></tr>`);
 var root_44 = from_html(
   `<details><summary> </summary> <p class="hint"> </p> <input type="search"/> <div><div class="table-wrap"><table><thead><tr></tr></thead><tbody></tbody></table></div> <div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div></div></details>`,
 );
 var root_54 = from_html(`<p> </p>`);
-var root_63 = from_html(`<!> <!> <!>`, 1);
+var root_62 = from_html(`<!> <!> <!>`, 1);
 var root_7 = from_html(`<p role="status"> </p>`);
 var root_8 = from_html(`<section><!> <!></section>`);
 function Timeline($$anchor, $$props) {
@@ -11360,7 +11088,7 @@ function Timeline($$anchor, $$props) {
   let labels = user_derived(
     () =>
       new Map(
-        resources($$props.program || {}).map((resource) => [
+        stepEntries($$props.program || {}).map((resource) => [
           resource.id,
           resource.name,
         ]),
@@ -11372,17 +11100,14 @@ function Timeline($$anchor, $$props) {
     () =>
       $$props.plan?.events.filter(
         (event2) =>
-          JSON.stringify(event2).toLowerCase().includes(get2(query)) ||
-          (get2(labels).get(event2.source_id) || "")
+          JSON.stringify(event2).toLowerCase().includes(get(query)) ||
+          (get(labels).get(event2.source_id) || "")
             .toLowerCase()
-            .includes(get2(query)),
+            .includes(get(query)),
       ) ?? [],
   );
   let currentPage = user_derived(() =>
-    Math.max(
-      0,
-      Math.min(get2(page), Math.ceil(get2(filtered).length / 50) - 1),
-    ),
+    Math.max(0, Math.min(get(page), Math.ceil(get(filtered).length / 50) - 1)),
   );
   var section = root_8();
   var node = child(section);
@@ -11413,11 +11138,14 @@ function Timeline($$anchor, $$props) {
   var node_2 = sibling(node, 2);
   {
     var consequent_3 = ($$anchor2) => {
-      var fragment_1 = root_63();
+      var fragment_1 = root_62();
       var node_3 = first_child(fragment_1);
       PreviewStateGraph(node_3, {
         get plan() {
           return $$props.plan;
+        },
+        get schedulePlans() {
+          return $$props.schedulePlans;
         },
         get program() {
           return $$props.program;
@@ -11452,7 +11180,7 @@ function Timeline($$anchor, $$props) {
             () => ["Planned time", "Source", "Action", "Targets"],
             index,
             ($$anchor4, label) => {
-              var th = root_111();
+              var th = root_110();
               var text_4 = only_child(th, true);
               template_effect(($0) => set_text(text_4, $0), [() => t()(label)]);
               append($$anchor4, th);
@@ -11465,9 +11193,9 @@ function Timeline($$anchor, $$props) {
             tbody,
             21,
             () =>
-              get2(filtered).slice(
-                get2(currentPage) * 50,
-                get2(currentPage) * 50 + 50,
+              get(filtered).slice(
+                get(currentPage) * 50,
+                get(currentPage) * 50 + 50,
               ),
             index,
             ($$anchor4, event2) => {
@@ -11477,19 +11205,19 @@ function Timeline($$anchor, $$props) {
                 21,
                 () => [
                   stamp(
-                    get2(event2).time,
+                    get(event2).time,
                     $$props.plan.timezone,
                     $$props.locale,
                   ),
-                  `${get2(labels).get(get2(event2).source_id) || get2(event2).source_id} \xB7 ${get2(event2).kind}`,
-                  get2(event2).action.action,
-                  get2(event2).action.targets.entities.join(", "),
+                  `${get(labels).get(get(event2).source_id) || get(event2).source_id} \xB7 ${get(event2).kind}`,
+                  get(event2).action.action,
+                  get(event2).action.entities.join(", "),
                 ],
                 index,
                 ($$anchor5, value) => {
                   var td = root_28();
                   var text_5 = only_child(td, true);
-                  template_effect(() => set_text(text_5, get2(value)));
+                  template_effect(() => set_text(text_5, get(value)));
                   append($$anchor5, td);
                 },
               );
@@ -11522,15 +11250,15 @@ function Timeline($$anchor, $$props) {
               );
               set_attribute2(input, "placeholder", $5);
               set_attribute2(input, "aria-label", $6);
-              button.disabled = get2(currentPage) === 0;
+              button.disabled = get(currentPage) === 0;
               set_text(text_6, $7);
               set_text(
                 text_7,
-                `${get2(filtered).length ?? ""}
-              ${$8 ?? ""} \xB7 ${get2(currentPage) + 1}/${$9 ?? ""}`,
+                `${get(filtered).length ?? ""}
+              ${$8 ?? ""} \xB7 ${get(currentPage) + 1}/${$9 ?? ""}`,
               );
               button_1.disabled =
-                (get2(currentPage) + 1) * 50 >= get2(filtered).length;
+                (get(currentPage) + 1) * 50 >= get(filtered).length;
               set_text(text_8, $10);
             },
             [
@@ -11543,7 +11271,7 @@ function Timeline($$anchor, $$props) {
               () => t()("Filter events"),
               () => t()("Previous"),
               () => t()("events"),
-              () => Math.max(1, Math.ceil(get2(filtered).length / 50)),
+              () => Math.max(1, Math.ceil(get(filtered).length / 50)),
               () => t()("Next"),
             ],
           );
@@ -11551,8 +11279,8 @@ function Timeline($$anchor, $$props) {
             set2(query, event2.currentTarget.value.toLowerCase(), true);
             set2(page, 0);
           });
-          delegated("click", button, () => set2(page, get2(currentPage) - 1));
-          delegated("click", button_1, () => set2(page, get2(currentPage) + 1));
+          delegated("click", button, () => set2(page, get(currentPage) - 1));
+          delegated("click", button_1, () => set2(page, get(currentPage) + 1));
           append($$anchor3, details);
         };
         if_block(node_4, ($$render) => {
@@ -11572,11 +11300,11 @@ function Timeline($$anchor, $$props) {
             set_class(
               p_1,
               1,
-              clsx2(get2(issue).severity === "warning" ? "hint" : "error"),
+              clsx2(get(issue).severity === "warning" ? "hint" : "error"),
             );
             set_text(
               text_9,
-              `${get2(issue).code ?? ""}: ${get2(issue).message ?? ""}`,
+              `${get(issue).code ?? ""}: ${get(issue).message ?? ""}`,
             );
           });
           append($$anchor3, p_1);
@@ -11607,7 +11335,7 @@ delegate(["input", "click"]);
 
 // custom_components/occupied/frontend/PreviewView.svelte
 var root15 = from_html(`<span class="hint" role="status"> </span>`);
-var root_112 = from_html(
+var root_111 = from_html(
   `<div class="schedule-heading svelte-5w63kc"><h2 aria-live="polite" class="svelte-5w63kc"> </h2> <!> <div class="day-navigation svelte-5w63kc" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-5w63kc"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
   2,
 );
@@ -11619,7 +11347,7 @@ function PreviewView($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css3);
   const dayHeading = ($$anchor2) => {
-    var div = root_112();
+    var div = root_111();
     var h2 = child(div);
     var text2 = only_child(h2, true);
     var node = sibling(h2, 2);
@@ -11629,26 +11357,26 @@ function PreviewView($$anchor, $$props) {
         var text_1 = only_child(span, true);
         template_effect(
           ($0) => set_text(text_1, $0),
-          [() => get2(t)("Loading schedule\u2026")],
+          [() => get(t)("Loading schedule\u2026")],
         );
         append($$anchor3, span);
       };
       if_block(node, ($$render) => {
-        if (get2(showLoading) && get2(plan)) $$render(consequent);
+        if (get(showLoading) && get(plan)) $$render(consequent);
       });
     }
     var div_1 = sibling(node, 2);
     var ha_icon_button = child(div_1);
     template_effect(
       ($0) => set_custom_element_data(ha_icon_button, "title", $0),
-      [() => get2(t)("Previous day")],
+      [() => get(t)("Previous day")],
     );
     action(
       ha_icon_button,
       ($$node, $$action_arg) => properties?.($$node, $$action_arg),
       () => ({
         path: previousIcon,
-        label: get2(t)("Previous day"),
+        label: get(t)("Previous day"),
         disabled: $$props.panel.busy,
       }),
     );
@@ -11657,14 +11385,14 @@ function PreviewView($$anchor, $$props) {
     var ha_icon_button_1 = sibling(button, 2);
     template_effect(
       ($0) => set_custom_element_data(ha_icon_button_1, "title", $0),
-      [() => get2(t)("Next day")],
+      [() => get(t)("Next day")],
     );
     action(
       ha_icon_button_1,
       ($$node, $$action_arg) => properties?.($$node, $$action_arg),
       () => ({
         path: nextIcon,
-        label: get2(t)("Next day"),
+        label: get(t)("Next day"),
         disabled: $$props.panel.busy,
       }),
     );
@@ -11676,19 +11404,19 @@ function PreviewView($$anchor, $$props) {
         set_attribute2(div_1, "aria-label", $1);
         button.disabled =
           $$props.panel.busy ||
-          get2(date) === $$props.panel.document.simulation_date;
+          get(date) === $$props.panel.document.simulation_date;
         set_text(text_2, $2);
       },
       [
         () =>
           formatPreviewDate(
-            get2(date),
+            get(date),
             $$props.panel.document.simulation_date,
             $$props.panel._hass.locale,
-            get2(t),
+            get(t),
           ),
-        () => get2(t)("Schedule day"),
-        () => get2(t)("Today"),
+        () => get(t)("Schedule day"),
+        () => get(t)("Today"),
       ],
     );
     delegated("click", ha_icon_button, () => $$props.panel.movePreviewDay(-1));
@@ -11716,11 +11444,17 @@ function PreviewView($$anchor, $$props) {
     const t2 = $$props.panel.t;
     return { t: t2 };
   });
-  let t = user_derived(() => get2(data).t);
-  let plan = user_derived(() => $$props.panel.preview?.plans[0]);
+  let t = user_derived(() => get(data).t);
+  let plan = user_derived(() =>
+    calendarDayPlan(
+      $$props.panel.preview?.plans || [],
+      $$props.panel.preview?.plans.at(-1)?.simulation_date ||
+        $$props.panel.previewDate,
+    ),
+  );
   let date = user_derived(
     () =>
-      get2(plan)?.simulation_date ||
+      get(plan)?.simulation_date ||
       $$props.panel.previewDate ||
       $$props.panel.document.simulation_date,
   );
@@ -11736,35 +11470,41 @@ function PreviewView($$anchor, $$props) {
       ]),
     ),
   );
-  Timeline($$anchor, {
-    get plan() {
-      return get2(plan);
-    },
-    get program() {
-      return $$props.panel.previewProgram;
-    },
-    get t() {
-      return get2(t);
-    },
-    get locale() {
-      return $$props.panel._hass.locale;
-    },
-    get hass() {
-      return $$props.panel._hass;
-    },
-    get entityNames() {
-      return get2(entityNames);
-    },
-    get heading() {
-      return dayHeading;
-    },
-    get loading() {
-      return $$props.panel.busy;
-    },
-    get showLoading() {
-      return get2(showLoading);
-    },
-  });
+  {
+    let $0 = user_derived(() => $$props.panel.preview?.plans);
+    Timeline($$anchor, {
+      get plan() {
+        return get(plan);
+      },
+      get schedulePlans() {
+        return get($0);
+      },
+      get program() {
+        return $$props.panel.previewProgram;
+      },
+      get t() {
+        return get(t);
+      },
+      get locale() {
+        return $$props.panel._hass.locale;
+      },
+      get hass() {
+        return $$props.panel._hass;
+      },
+      get entityNames() {
+        return get(entityNames);
+      },
+      get heading() {
+        return dayHeading;
+      },
+      get loading() {
+        return $$props.panel.busy;
+      },
+      get showLoading() {
+        return get(showLoading);
+      },
+    });
+  }
   pop();
 }
 delegate(["click"]);
@@ -11805,11 +11545,10 @@ function UnsavedStepDialog($$anchor, $$props) {
       set_text(text_3, $3);
     },
     [
-      () => get2(t)("Unsaved changes"),
-      () =>
-        get2(t)("This step has unsaved changes. Discard them and continue?"),
-      () => get2(t)("Keep editing"),
-      () => get2(t)("Discard changes"),
+      () => get(t)("Unsaved changes"),
+      () => get(t)("This step has unsaved changes. Discard them and continue?"),
+      () => get(t)("Keep editing"),
+      () => get(t)("Discard changes"),
     ],
   );
   delegated("click", button, () => $$props.panel.cancelStepExit());
@@ -11821,7 +11560,7 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/App.svelte
 var root17 = from_html(`<button type="button"> </button>`);
-var root_113 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
+var root_112 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
 var root_29 = from_html(`<p> </p>`);
 var root_38 = from_html(`<p id="house"> </p>`);
 var root_45 = from_html(`<option> </option>`);
@@ -11829,7 +11568,7 @@ var root_55 = from_html(
   `<label for="instance-select"> </label> <select id="instance-select"></select>`,
   1,
 );
-var root_64 = from_html(`<p class="hint"> </p>`);
+var root_63 = from_html(`<p class="hint"> </p>`);
 var root_72 = from_html(`<p class="banner" role="status"> </p>`);
 var root_82 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_9 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
@@ -11843,7 +11582,7 @@ function App($$anchor, $$props) {
   const $updates = () => store_get($$props.updates, "$updates", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   const toolbar = ($$anchor2) => {
-    var div = root_113();
+    var div = root_112();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
@@ -11851,16 +11590,16 @@ function App($$anchor, $$props) {
         var text_1 = only_child(button, true);
         template_effect(
           ($0) => {
-            button.disabled = get2(panel).busy;
+            button.disabled = get(panel).busy;
             set_text(text_1, $0);
           },
-          [() => get2(t)("Reload saved program")],
+          [() => get(t)("Reload saved program")],
         );
-        delegated("click", button, () => get2(panel).reloadSaved(true));
+        delegated("click", button, () => get(panel).reloadSaved(true));
         append($$anchor3, button);
       };
       if_block(node, ($$render) => {
-        if (get2(panel).stale) $$render(consequent);
+        if (get(panel).stale) $$render(consequent);
       });
     }
     reset(div);
@@ -11868,7 +11607,7 @@ function App($$anchor, $$props) {
       set_attribute2(
         div,
         "hidden",
-        !get2(panel).selectedInstance?.loaded || !get2(panel).stale,
+        !get(panel).selectedInstance?.loaded || !get(panel).stale,
       ),
     );
     append($$anchor2, div);
@@ -11889,23 +11628,23 @@ function App($$anchor, $$props) {
         var button_1 = root17();
         var text_2 = only_child(button_1, true);
         template_effect(() => {
-          set_class(button_1, 1, clsx2(get2(className)));
-          set_text(text_2, get2(text2));
+          set_class(button_1, 1, clsx2(get(className)));
+          set_text(text_2, get(text2));
         });
-        delegated("click", button_1, () => get2(panel).focusIssue(item()));
+        delegated("click", button_1, () => get(panel).focusIssue(item()));
         append($$anchor3, button_1);
       };
       var alternate = ($$anchor3) => {
         var p = root_29();
         var text_3 = only_child(p, true);
         template_effect(() => {
-          set_class(p, 1, clsx2(get2(className)));
-          set_text(text_3, get2(text2));
+          set_class(p, 1, clsx2(get(className)));
+          set_text(text_3, get(text2));
         });
         append($$anchor3, p);
       };
       if_block(node_1, ($$render) => {
-        if (get2(panel).stepEditor && item().severity !== "warning")
+        if (get(panel).stepEditor && item().severity !== "warning")
           $$render(consequent_1);
         else $$render(alternate, -1);
       });
@@ -11923,21 +11662,21 @@ function App($$anchor, $$props) {
   });
   let revision = user_derived($updates);
   let controllerName = user_derived(
-    () => get2(panel).draft?.name || get2(panel).selectedInstance?.name,
+    () => get(panel).draft?.name || get(panel).selectedInstance?.name,
   );
   let state2 = user_derived(() => {
-    get2(revision);
+    get(revision);
     return {
-      t: get2(panel).t,
-      notices: get2(panel).notices(),
-      primary: primaryTabs.some(([id]) => id === get2(panel).tab),
+      t: get(panel).t,
+      notices: get(panel).notices(),
+      primary: primaryTabs.some(([id]) => id === get(panel).tab),
     };
   });
-  let t = user_derived(() => get2(state2).t),
-    notices = user_derived(() => get2(state2).notices),
-    primary = user_derived(() => get2(state2).primary);
+  let t = user_derived(() => get(state2).t),
+    notices = user_derived(() => get(state2).notices),
+    primary = user_derived(() => get(state2).primary);
   const primaryTabs = [
-    ["routines", "Steps"],
+    ["steps", "Steps"],
     ["preview", "Preview"],
     ["settings", "Settings"],
   ];
@@ -11946,7 +11685,7 @@ function App($$anchor, $$props) {
   set_custom_element_data(ha_top_app_bar_fixed, "back-button", true);
   template_effect(
     ($0) => set_custom_element_data(ha_top_app_bar_fixed, "narrow", $0),
-    [() => get2(panel).hasAttribute("narrow")],
+    [() => get(panel).hasAttribute("narrow")],
   );
   var main = sibling(child(ha_top_app_bar_fixed), 2);
   var header = child(main);
@@ -11958,24 +11697,24 @@ function App($$anchor, $$props) {
       var text_4 = only_child(p_1, true);
       template_effect(
         ($0) => set_text(text_4, $0),
-        [() => get2(t)("Loading controller\u2026")],
+        [() => get(t)("Loading controller\u2026")],
       );
       append($$anchor2, p_1);
     };
     var consequent_3 = ($$anchor2) => {
       var p_2 = root_38();
       var text_5 = only_child(p_2, true);
-      template_effect(() => set_text(text_5, get2(controllerName)));
+      template_effect(() => set_text(text_5, get(controllerName)));
       append($$anchor2, p_2);
     };
     var d = user_derived(
       () =>
-        get2(controllerName) !== "Occupied" &&
-        !/^Occupied [0-9a-f]{8}$/.test(get2(controllerName)),
+        get(controllerName) !== "Occupied" &&
+        !/^Occupied [0-9a-f]{8}$/.test(get(controllerName)),
     );
     if_block(node_2, ($$render) => {
-      if (!get2(controllerName)) $$render(consequent_2);
-      else if (get2(d)) $$render(consequent_3, 1);
+      if (!get(controllerName)) $$render(consequent_2);
+      else if (get(d)) $$render(consequent_3, 1);
     });
   }
   var node_3 = sibling(node_2, 2);
@@ -11988,7 +11727,7 @@ function App($$anchor, $$props) {
       each(
         select,
         21,
-        () => get2(panel).instances,
+        () => get(panel).instances,
         index,
         ($$anchor3, instance) => {
           var option = root_45();
@@ -11996,17 +11735,17 @@ function App($$anchor, $$props) {
           var option_value = {};
           template_effect(
             ($0) => {
-              set_text(text_7, `${get2(instance).name ?? ""} \xB7 ${$0 ?? ""}`);
+              set_text(text_7, `${get(instance).name ?? ""} \xB7 ${$0 ?? ""}`);
               if (
-                option_value !== (option_value = get2(instance).config_entry_id)
+                option_value !== (option_value = get(instance).config_entry_id)
               ) {
                 option.value = (option.__value = option_value) ?? "";
               }
             },
             [
               () =>
-                get2(t)(
-                  get2(instance).loaded ? get2(instance).status : "Unloaded",
+                get(t)(
+                  get(instance).loaded ? get(instance).status : "Unloaded",
                 ),
             ],
           );
@@ -12019,39 +11758,39 @@ function App($$anchor, $$props) {
       template_effect(
         ($0) => {
           set_text(text_6, $0);
-          select.disabled = get2(panel).busy;
+          select.disabled = get(panel).busy;
           if (
-            select_value !== (select_value = get2(panel).selectedEntry || "")
+            select_value !== (select_value = get(panel).selectedEntry || "")
           ) {
             ((select.value = (select.__value = select_value) ?? ""),
               select_option(select, select_value));
           }
         },
-        [() => get2(t)("Controller")],
+        [() => get(t)("Controller")],
       );
       delegated("change", select, (event2) => {
-        get2(panel).selectInstance(event2.currentTarget.value);
-        event2.currentTarget.value = get2(panel).selectedEntry || "";
+        get(panel).selectInstance(event2.currentTarget.value);
+        event2.currentTarget.value = get(panel).selectedEntry || "";
       });
       append($$anchor2, fragment_2);
     };
     if_block(node_3, ($$render) => {
-      if (get2(panel).instances.length > 1) $$render(consequent_4);
+      if (get(panel).instances.length > 1) $$render(consequent_4);
     });
   }
   var node_4 = sibling(node_3, 2);
   {
     var consequent_5 = ($$anchor2) => {
-      var p_3 = root_64();
+      var p_3 = root_63();
       var text_8 = only_child(p_3, true);
       template_effect(
         ($0) => set_text(text_8, $0),
-        [() => get2(t)("Managed file")],
+        [() => get(t)("Managed file")],
       );
       append($$anchor2, p_3);
     };
     if_block(node_4, ($$render) => {
-      if (get2(panel).selectedInstance?.source === "file")
+      if (get(panel).selectedInstance?.source === "file")
         $$render(consequent_5);
     });
   }
@@ -12061,7 +11800,7 @@ function App($$anchor, $$props) {
   each(
     node_5,
     17,
-    () => get2(panel).selectedInstance?.overlaps || [],
+    () => get(panel).selectedInstance?.overlaps || [],
     index,
     ($$anchor2, overlap) => {
       var p_4 = root_72();
@@ -12071,12 +11810,12 @@ function App($$anchor, $$props) {
           set_text(
             text_9,
             `${$0 ?? ""}
-        ${get2(overlap).name ?? ""}: ${$1 ?? ""}. ${$2 ?? ""}`,
+        ${get(overlap).name ?? ""}: ${$1 ?? ""}. ${$2 ?? ""}`,
           ),
         [
-          () => get2(t)("Shared devices with"),
-          () => get2(overlap).entities.join(", "),
-          () => get2(t)("Actions and cleanup can interfere between instances."),
+          () => get(t)("Shared devices with"),
+          () => get(overlap).entities.join(", "),
+          () => get(t)("Actions and cleanup can interfere between instances."),
         ],
       );
       append($$anchor2, p_4);
@@ -12095,9 +11834,9 @@ function App($$anchor, $$props) {
     () => primaryTabs,
     index,
     ($$anchor2, $$item) => {
-      var $$array = user_derived(() => to_array(get2($$item), 2));
-      let id = () => get2($$array)[0];
-      let label = () => get2($$array)[1];
+      var $$array = user_derived(() => to_array(get($$item), 2));
+      let id = () => get($$array)[0];
+      let label = () => get($$array)[1];
       var button_2 = root17();
       var text_12 = only_child(button_2, true);
       template_effect(
@@ -12106,14 +11845,14 @@ function App($$anchor, $$props) {
           set_attribute2(
             button_2,
             "aria-current",
-            get2(panel).tab === id() ? "page" : "false",
+            get(panel).tab === id() ? "page" : "false",
           );
-          button_2.disabled = !get2(panel).selectedInstance?.loaded;
+          button_2.disabled = !get(panel).selectedInstance?.loaded;
           set_text(text_12, $0);
         },
-        [() => get2(t)(label())],
+        [() => get(t)(label())],
       );
-      delegated("click", button_2, () => get2(panel).navigate(id()));
+      delegated("click", button_2, () => get(panel).navigate(id()));
       append($$anchor2, button_2);
     },
   );
@@ -12126,13 +11865,13 @@ function App($$anchor, $$props) {
       var text_13 = only_child(button_3, true);
       template_effect(
         ($0) => set_text(text_13, $0),
-        [() => get2(t)("Back to steps")],
+        [() => get(t)("Back to steps")],
       );
-      delegated("click", button_3, () => get2(panel).navigate("routines"));
+      delegated("click", button_3, () => get(panel).navigate("steps"));
       append($$anchor2, button_3);
     };
     if_block(node_7, ($$render) => {
-      if (!get2(primary)) $$render(consequent_6);
+      if (!get(primary)) $$render(consequent_6);
     });
   }
   reset(div_4);
@@ -12140,13 +11879,13 @@ function App($$anchor, $$props) {
   each(
     div_5,
     21,
-    () => get2(panel).visibleIssues(),
+    () => get(panel).visibleIssues(),
     index,
     ($$anchor2, issue) => {
       renderIssue(
         $$anchor2,
-        () => get2(issue),
-        () => get2(primary),
+        () => get(issue),
+        () => get(primary),
       );
     },
   );
@@ -12155,7 +11894,7 @@ function App($$anchor, $$props) {
   var node_8 = child(div_6);
   key(
     node_8,
-    () => `${get2(panel).selectedEntry}:${get2(panel).tab}`,
+    () => `${get(panel).selectedEntry}:${get(panel).tab}`,
     ($$anchor2) => {
       var fragment_4 = comment();
       var node_9 = first_child(fragment_4);
@@ -12174,7 +11913,7 @@ function App($$anchor, $$props) {
             [
               () => errorMessage(error()),
               () =>
-                get2(t)(
+                get(t)(
                   "This draft cannot be shown. Discard edits or import a corrected program from Settings.",
                 ),
             ],
@@ -12198,13 +11937,13 @@ function App($$anchor, $$props) {
                 },
                 [
                   () =>
-                    get2(t)(
+                    get(t)(
                       "This instance is unavailable. Check Settings \u2192 Devices & services, then retry.",
                     ),
-                  () => get2(t)("Retry"),
+                  () => get(t)("Retry"),
                 ],
               );
-              delegated("click", button_4, () => get2(panel).retry());
+              delegated("click", button_4, () => get(panel).retry());
               append($$anchor4, fragment_7);
             };
             var consequent_9 = ($$anchor4) => {
@@ -12216,13 +11955,13 @@ function App($$anchor, $$props) {
                   var text_18 = only_child(button_5, true);
                   template_effect(
                     ($0) => set_text(text_18, $0),
-                    [() => get2(t)("Retry")],
+                    [() => get(t)("Retry")],
                   );
-                  delegated("click", button_5, () => get2(panel).retry());
+                  delegated("click", button_5, () => get(panel).retry());
                   append($$anchor5, button_5);
                 };
                 if_block(node_11, ($$render) => {
-                  if (get2(panel).error && !get2(panel)._loading)
+                  if (get(panel).error && !get(panel)._loading)
                     $$render(consequent_8);
                 });
               }
@@ -12231,62 +11970,57 @@ function App($$anchor, $$props) {
             var consequent_10 = ($$anchor4) => {
               StepEditor($$anchor4, {
                 get panel() {
-                  return get2(panel);
+                  return get(panel);
                 },
                 get revision() {
-                  return get2(revision);
+                  return get(revision);
                 },
               });
             };
             var consequent_11 = ($$anchor4) => {
               StepsView($$anchor4, {
                 get panel() {
-                  return get2(panel);
+                  return get(panel);
                 },
                 get revision() {
-                  return get2(revision);
+                  return get(revision);
                 },
               });
             };
             var consequent_12 = ($$anchor4) => {
               SettingsView($$anchor4, {
                 get panel() {
-                  return get2(panel);
+                  return get(panel);
                 },
                 get revision() {
-                  return get2(revision);
+                  return get(revision);
                 },
               });
             };
             var consequent_13 = ($$anchor4) => {
               PreviewView($$anchor4, {
                 get panel() {
-                  return get2(panel);
+                  return get(panel);
                 },
                 get revision() {
-                  return get2(revision);
+                  return get(revision);
                 },
               });
             };
             if_block(node_10, ($$render) => {
               if (
-                get2(panel).selectedEntry &&
-                !get2(panel).selectedInstance?.loaded
+                get(panel).selectedEntry &&
+                !get(panel).selectedInstance?.loaded
               )
                 $$render(consequent_7);
-              else if (get2(panel)._loading || !get2(panel).draft)
+              else if (get(panel)._loading || !get(panel).draft)
                 $$render(consequent_9, 1);
-              else if (
-                get2(panel).stepEditor &&
-                !get2(panel).stepEditor.existing
-              )
+              else if (get(panel).stepEditor && !get(panel).stepEditor.existing)
                 $$render(consequent_10, 2);
-              else if (get2(panel).tab === "routines")
-                $$render(consequent_11, 3);
-              else if (get2(panel).tab === "settings")
+              else if (get(panel).tab === "steps") $$render(consequent_11, 3);
+              else if (get(panel).tab === "settings")
                 $$render(consequent_12, 4);
-              else if (get2(panel).tab === "preview")
-                $$render(consequent_13, 5);
+              else if (get(panel).tab === "preview") $$render(consequent_13, 5);
             });
           }
           append($$anchor3, fragment_6);
@@ -12303,19 +12037,19 @@ function App($$anchor, $$props) {
     var consequent_14 = ($$anchor2) => {
       UnsavedStepDialog($$anchor2, {
         get panel() {
-          return get2(panel);
+          return get(panel);
         },
       });
     };
     if_block(node_12, ($$render) => {
-      if (get2(panel).pendingStepExit) $$render(consequent_14);
+      if (get(panel).pendingStepExit) $$render(consequent_14);
     });
   }
   template_effect(() => {
-    set_attribute2(div_2, "hidden", !get2(notices));
-    set_text(text_10, get2(notices));
-    set_attribute2(div_3, "hidden", !get2(panel).error);
-    set_text(text_11, get2(panel).error);
+    set_attribute2(div_2, "hidden", !get(notices));
+    set_text(text_10, get(notices));
+    set_attribute2(div_3, "hidden", !get(panel).error);
+    set_text(text_11, get(panel).error);
   });
   append($$anchor, fragment_1);
   pop();
@@ -12342,7 +12076,7 @@ var OccupiedPanel = class extends HTMLElement {
   // Incremented on reload/disconnect so late responses are discarded.
   epoch = 0;
   // View state
-  tab = "routines";
+  tab = "steps";
   t = translator("en");
   stepEditor = null;
   pendingStepExit = null;
@@ -12563,7 +12297,7 @@ var OccupiedPanel = class extends HTMLElement {
       error: "",
       busy: false,
       _loading: false,
-      tab: "routines",
+      tab: "steps",
       stepEditor: null,
       pendingStepExit: null,
       selectedStep: null,
@@ -12751,7 +12485,7 @@ var OccupiedPanel = class extends HTMLElement {
     if (this.tab === tab) {
       return;
     }
-    if (this.dirty || this.yamlDirty) {
+    if (this.yamlDirty) {
       if (
         !globalThis.confirm(
           this.t("There are unsaved edits. Discard them and switch views?"),
@@ -12803,12 +12537,11 @@ var OccupiedPanel = class extends HTMLElement {
   }
   notices() {
     const t = this.t;
-    let programNotice = "";
-    if (this.stale) {
-      programNotice = t(
-        "The saved program changed. Your draft is preserved; reload the saved program before saving.",
-      );
-    }
+    const programNotice = this.stale
+      ? t(
+          "The saved program changed. Your draft is preserved; reload the saved program before saving.",
+        )
+      : "";
     return [
       programNotice,
       this.document?.source === "file"
@@ -12850,6 +12583,12 @@ var OccupiedPanel = class extends HTMLElement {
     if (render) {
       this.renderView();
     }
+  }
+  discardYaml() {
+    this.yaml = this.yamlSaved;
+    this.error = "";
+    this.issues = [];
+    this.flush();
   }
   change(path, value, rerender = false) {
     if (path.length === 0) {
@@ -13163,25 +12902,25 @@ function isRevisionConflict(error) {
 function editorField(tail, form) {
   const has = (key2) => tail.includes(key2),
     head2 = tail[0];
-  if (head2 === "name" || head2 === "days") {
-    return head2;
+  if (["name", "days", "entities", "data"].includes(String(head2))) {
+    return String(head2);
   }
-  if (head2 === "actions") {
-    if (has("targets")) {
-      return "entities";
-    }
-    if (form.kind === "service") {
-      return has("data") ? "data" : "service";
-    }
-    return form.kind === "scene" ? "entities" : "brightness";
+  if (head2 === "action") {
+    return form.kind === "service" ? "service" : "kind";
   }
-  if (has("relative_to") || has("sun")) {
+  if (head2 === "timing") {
+    if (has("absolute_time")) {
+      return has("end") ? "end" : "start";
+    }
+    if (has("start_offset")) {
+      return "startOffset";
+    }
+    if (has("end_offset")) {
+      return "endOffset";
+    }
     return "anchor";
   }
-  if (form.timing.mode === "absolute") {
-    return has("latest") ? "end" : "start";
-  }
-  return has("max") ? "endOffset" : "startOffset";
+  return "name";
 }
 if (!customElements.get("occupied-panel")) {
   customElements.define("occupied-panel", OccupiedPanel);
