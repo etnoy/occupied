@@ -64,10 +64,13 @@
 {#if !data.length}
   <p class="hint">
     {t(
-      "No light or switch actions on this date. Other actions are listed in Event details.",
+      plan.events.length === 0
+        ? "No steps are scheduled for this date."
+        : "No light or switch actions on this date. Other actions are listed in Event details.",
     )}
   </p>
-{:else if failed}
+{/if}
+{#if failed && data.length > 0}
   <p class="hint">
     {t(
       "The Home Assistant graph could not load. Planned actions are available in Event details.",
@@ -75,6 +78,7 @@
   </p>
 {:else if ready}
   <state-history-chart-timeline
+    hidden={data.length === 0}
     aria-label={t("Planned device states")}
     use:properties={{
       hass: chartHass,
@@ -84,10 +88,13 @@
       endTime: new Date(plan.end),
       showNames: true,
       narrow,
+      // Reserve HA's maximum label width before the chart's first render.
+      // Its deferred measurement can then update without moving the plot.
+      paddingYAxis: narrow ? 105 : 185,
       clickForMoreInfo: false,
     }}
   ></state-history-chart-timeline>
-{:else}
+{:else if data.length > 0}
   <p role="status">{t("Loading graph…")}</p>
 {/if}
 
@@ -95,5 +102,8 @@
   state-history-chart-timeline {
     display: block;
     width: 100%;
+  }
+  state-history-chart-timeline[hidden] {
+    display: none;
   }
 </style>

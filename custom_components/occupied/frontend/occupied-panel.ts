@@ -878,7 +878,6 @@ export class OccupiedPanel extends HTMLElement {
       draft = copy(this.draft),
       date = this.previewDate || this.document.simulation_date;
     this.previewDate = date;
-    this.preview = undefined;
     return this.run(async (epoch) => {
       const result = await this.ws("preview", {
         program: draft,

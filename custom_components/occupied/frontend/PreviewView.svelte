@@ -13,7 +13,11 @@
   });
   let { t } = $derived(data);
   let plan = $derived(panel.preview?.plans[0]);
-  let date = $derived(panel.previewDate || panel.document.simulation_date);
+  let date = $derived(
+    plan?.simulation_date ||
+      panel.previewDate ||
+      panel.document.simulation_date,
+  );
   const previousIcon =
     "M15.41,16.59L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.59Z";
   const nextIcon =
@@ -28,6 +32,9 @@
 {#snippet dayHeading()}
   <div class="schedule-heading">
     <h2 aria-live="polite">{formatScheduleDate(date, panel._hass.locale)}</h2>
+    {#if panel.busy && plan}
+      <span class="hint" role="status">{t("Loading schedule…")}</span>
+    {/if}
     <div class="day-navigation" role="group" aria-label={t("Schedule day")}>
       <!-- HA supplies a keyboard-accessible button inside its shadow root. -->
       <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->

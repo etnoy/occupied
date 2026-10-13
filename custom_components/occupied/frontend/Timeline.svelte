@@ -49,7 +49,7 @@
 </script>
 
 {#if model || heading}
-  <section>
+  <section aria-busy={loading}>
     {#if heading}
       {@render heading()}
     {:else if model}
@@ -58,11 +58,7 @@
     {#if model}
       {@const { plan, labels, start, width, lanes, drawn } = model}
       {#if preview && hass}
-        {#if model.events.length > 0}
-          <PreviewStateGraph {plan} {program} {hass} names={entityNames} {t} />
-        {:else}
-          <p class="hint">{t("No steps are scheduled for this date.")}</p>
-        {/if}
+        <PreviewStateGraph {plan} {program} {hass} names={entityNames} {t} />
       {:else}
         <p class="hint">
           {t(

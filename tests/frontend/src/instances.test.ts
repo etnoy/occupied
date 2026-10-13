@@ -236,7 +236,7 @@ void test("opening preview automatically loads the current date and regenerates 
     f.panel.navigate("routines");
     f.panel.change(["name"], "Updated steps");
     f.panel.navigate("preview");
-    assert.equal(f.panel.preview, undefined);
+    assert.equal(f.panel.preview, f.preview);
     await settle();
     assert.equal(requests().length, 2);
     assert.equal(f.panel.previewProgram.name, "Updated steps");
@@ -283,7 +283,7 @@ void test("preview day navigation loads adjacent dates and Today without overlap
     const seed = requests()[0].seed;
     const pending = f.panel.movePreviewDay(1);
     assert.equal(f.panel.previewDate, "2027-01-01");
-    assert.equal(f.panel.preview, undefined);
+    assert.equal(f.panel.preview, f.preview);
     void f.panel.movePreviewDay(1);
     assert.equal(f.panel.previewDate, "2027-01-01");
     await pending;
