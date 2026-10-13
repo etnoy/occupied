@@ -1,0 +1,33 @@
+custom_components/occupied/cli.py
+  s_19aab2d8ca454e::t_93833202370a5b 70
+custom_components/occupied/models.py
+  s_19aab2d8ca454e::t_46bfa27c64479d 186,190-202,220-234,236-239,246,265,271-273,276-304
+custom_components/occupied/planner.py
+  s_19aab2d8ca454e::t_793ce06eebe11a 12,23,47,87,131-134,152-187,189-196,198-201,203-210,213-215,217-218,220-234,256-290,314
+custom_components/occupied/runtime_planning.py
+  s_19aab2d8ca454e::t_f3aa5add958851 6,22,29-43,54,59-66
+custom_components/occupied/storage.py
+  s_19aab2d8ca454e::t_1e5f5543b67739 58-65,69-74
+custom_components/occupied/time_sources.py
+  s_19aab2d8ca454e::t_fbd50d0ffc0274 5,94-95
+custom_components/occupied/validation.py
+  s_19aab2d8ca454e::t_135bab4524e6bf 12,46-51,163-175,237-240,251-252,254-269
+custom_components/occupied/websocket_api.py
+  s_19aab2d8ca454e::t_e067d8ce11ebd9 180
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "edb80c65f214b0d9f5715650c254b96df42cb8a0",
+  "prompts": {},
+  "sessions": {
+    "s_19aab2d8ca454e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1373b-aa79-7d32-872c-65b77ff75fc4",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
