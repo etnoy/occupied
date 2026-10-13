@@ -39,9 +39,6 @@
     };
   });
   let { t, notices, primary } = $derived(state);
-  let hasUnsavedEdits = $derived(
-    (panel.dirty || panel.yamlDirty) && !panel.stepEditor,
-  );
   const primaryTabs: [Tab, string][] = [
     ["routines", "Steps"],
     ["preview", "Preview"],
@@ -50,34 +47,11 @@
 </script>
 
 {#snippet toolbar()}
-  {@const unsaved =
-    (panel.dirty || (panel.tab === "settings" && panel.yamlDirty)) &&
-    !panel.stepEditor}
   <div
     id="toolbar"
     class="toolbar"
-    hidden={!panel.selectedInstance?.loaded || (!unsaved && !panel.stale)}
+    hidden={!panel.selectedInstance?.loaded || !panel.stale}
   >
-    {#if unsaved}
-      <button
-        type="button"
-        class="primary"
-        disabled={panel.busy ||
-          panel.document?.source === "file" ||
-          panel.stale}
-        onclick={() =>
-          panel.tab === "settings" ? panel.saveYaml() : panel.save()}
-      >
-        {t("Save changes")}
-      </button>
-      <button
-        type="button"
-        disabled={panel.busy || !panel.draft}
-        onclick={() => panel.discardEdits()}
-      >
-        {t("Discard edits")}
-      </button>
-    {/if}
     {#if panel.stale}
       <button
         type="button"
@@ -223,14 +197,6 @@
           {/if}
         </svelte:boundary>
       {/key}
-    </div>
-    <div
-      id="unsaved-edits"
-      class="banner unsaved"
-      role="status"
-      hidden={!hasUnsavedEdits}
-    >
-      {t("Unsaved edits")}
     </div>
   </main>
 </ha-top-app-bar-fixed>

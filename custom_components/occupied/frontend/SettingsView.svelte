@@ -31,7 +31,7 @@
   });
 </script>
 
-<section>
+<section class="yaml-panel">
   <h2>{t("YAML")}</h2>
   <p class="hint">
     {t(
@@ -91,5 +91,14 @@
     margin: 8px 0;
     --code-mirror-height: 420px;
     --code-mirror-max-height: 60vh;
+  }
+  section.yaml-panel {
+    border-color: var(--warning-color, #e69500);
+    border-left: 4px solid var(--warning-color, #e69500);
+    background: color-mix(
+      in srgb,
+      var(--warning-color, #e69500) 18%,
+      var(--card-background-color, #fff)
+    );
   }
 </style>
