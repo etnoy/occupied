@@ -1,0 +1,19 @@
+docs/runtime.md
+  s_1f0d96224bf297::t_174c72cbf4b703 62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "00e01ed328ad1f3166692328b41ec96e497bcc0b",
+  "prompts": {},
+  "sessions": {
+    "s_1f0d96224bf297": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13420-2c71-7b63-8583-106f76b80677",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
