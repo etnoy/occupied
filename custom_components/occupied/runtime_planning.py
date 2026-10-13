@@ -4,7 +4,7 @@ import math
 from datetime import timedelta
 
 from .models import merge_defaults
-from .validation import Issue, ProgramError, resolve_targets, step_order
+from .validation import Issue, ProgramError, step_order
 
 DAY = 86400
 MAX_DATE_DISTANCE = 31
@@ -56,7 +56,7 @@ def runtime_dates(program, today):
         count = 0
         delay = 0
         for action in actions:
-            targets = resolve_targets(program, action.targets)
+            targets = action.targets.entities
             stagger = action.stagger or defaults.stagger
             split = "." not in action.action or action.action.startswith(("light.", "switch."))
             count += max(1, len(targets)) if split or stagger.upper else 1
@@ -97,7 +97,7 @@ def runtime_dates(program, today):
                         high + (DAY if window.between.cross_midnight else 0) + end_delay,
                     )
                 continue
-            size = len(resolve_targets(program, window.targets))
+            size = len(window.targets.entities)
             mode = window.target_mode or defaults.activity_windows.target_mode
             if mode == "one":
                 size = 1

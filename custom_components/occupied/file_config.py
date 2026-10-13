@@ -9,7 +9,7 @@ import yaml
 from yaml.nodes import MappingNode, Node, SequenceNode
 
 from .models import Program
-from .validation import Issue, ModelPath, ProgramError, program_data, validate_program
+from .validation import Issue, ModelPath, ProgramError, validate_program
 
 MAX_FILE_BYTES = 1_048_576
 
@@ -171,4 +171,5 @@ def read_program(path: str | Path) -> Program:
 
 
 def export_yaml(program: Program) -> str:
-    return yaml.safe_dump(program_data(program), allow_unicode=True, sort_keys=False)
+    data = program.model_dump(mode="json", exclude_none=True, exclude_defaults=True)
+    return yaml.safe_dump(data, allow_unicode=True, sort_keys=False)

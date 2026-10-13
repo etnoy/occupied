@@ -98,10 +98,10 @@ async def test_raw_only_and_metadata_changes_preserve_plans(
     result = await manager.async_reload()
     assert result["valid"] and not result["changed"] and manager.applied_hash != old_hash
     changed = deepcopy(program_dict)
-    changed["groups"][0]["name"] = "New label"
+    changed["routines"][0]["steps"][0]["name"] = "New label"
     managed_file.write_text(yaml.safe_dump(changed))
     assert (await manager.async_reload())["changed"]
-    assert engine.program.groups[0].name == "New label"
+    assert engine.program.routines[0].steps[0].name == "New label"
     assert engine._plans == plans and engine.generation == generation
     assert engine.handover_deadline == deadline
 

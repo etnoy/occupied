@@ -29,7 +29,7 @@
   </section>
 {:else}
   <div class="routine-layout">
-    <div class="routine-list" aria-label={t("Your steps")}>
+    <div class="routine-list" aria-label={t("Steps")}>
       {#each stepTree(entries) as { entry, depth } (entry.id)}
         {@const editing =
           panel.stepEditor?.existing && panel.stepEditor.id === entry.id}
@@ -114,13 +114,5 @@
     onclick={() => startStep(panel)}
   >
     {t("Create step")}
-  </button>
-  <button
-    type="button"
-    class="text-button"
-    disabled={panel.busy}
-    onclick={() => panel.navigate("preview")}
-  >
-    {t("Preview schedule")}
   </button>
 {/if}

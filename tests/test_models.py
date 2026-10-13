@@ -11,7 +11,6 @@ from custom_components.occupied.validation import (
     behavior_hash,
     program_data,
     rename_identifier,
-    resolve_targets,
     validate_program,
 )
 
@@ -100,16 +99,15 @@ def test_invalid_and_unsafe_yaml_is_rejected(source):
         load_yaml(source)
 
 
-@pytest.mark.parametrize("kind", ["group", "routine", "step", "activity", "window"])
+@pytest.mark.parametrize("kind", ["routine", "step", "activity", "window"])
 def test_ids_are_unique_across_resource_kind(program_dict, kind):
     field = {
-        "group": "groups",
         "routine": "routines",
         "step": "steps",
         "activity": "activities",
         "window": "activity_windows",
     }[kind]
-    container = program_dict if kind in {"group", "routine"} else program_dict["routines"][0]
+    container = program_dict if kind == "routine" else program_dict["routines"][0]
     container[field].append(deepcopy(container[field][0]))
     with pytest.raises(ProgramError) as raised:
         validate_program(program_dict)
@@ -187,8 +185,8 @@ def test_stable_behavior_hash_ignores_labels_and_resource_order(program_dict):
     original = validate_program(program_dict)
     reordered = deepcopy(program_dict)
     reordered["name"] = "Hus"
-    reordered["groups"][0]["name"] = "Rum åäö"
-    reordered["groups"][0]["entities"].reverse()
+    reordered["lighting"]["managed_targets"]["entities"].reverse()
+    reordered["routines"][0]["steps"][0]["actions"][0]["targets"]["entities"].reverse()
     reordered["routines"][0]["steps"].reverse()
     for step in reordered["routines"][0]["steps"]:
         step["name"] += " renamed"
@@ -219,7 +217,7 @@ def test_ordered_action_list_and_opaque_data_are_behavior(program_dict):
     assert original.routines[0].steps[0].id == "wake"
 
 
-def test_identifier_migration_rewrites_group_and_all_anchor_kinds(program_dict):
+def test_identifier_migration_rewrites_all_anchor_kinds(program_dict):
     routine = program_dict["routines"][0]
     routine["activity_windows"][0]["between"]["start"] = {"step": "wake"}
     routine["activities"][0]["when"] = {"relative_to": "wake", "offset_range": {"fixed": "1h"}}
@@ -229,11 +227,6 @@ def test_identifier_migration_rewrites_group_and_all_anchor_kinds(program_dict):
     assert changed.routines[0].activities[0].when.relative_to == "morning"
     assert changed.routines[0].activities[0].within.start.step == "morning"
     assert changed.routines[0].activity_windows[0].between.start.step == "morning"
-    changed = rename_identifier(changed, "group", "room", "lounge")
-    assert changed.lighting.managed_targets.groups == ("lounge",)
-    assert changed.lighting.baseline[0].targets.groups == ("lounge",)
-    assert changed.routines[0].steps[0].actions[0].targets.groups == ("lounge",)
-    assert changed.routines[0].activity_windows[0].targets.groups == ("lounge",)
 
 
 def test_failed_identifier_migration_is_atomic(program_dict):
@@ -241,7 +234,8 @@ def test_failed_identifier_migration_is_atomic(program_dict):
     before = program_data(program)
     for kind, old, new in [
         ("step", "wake", "leave"),
-        ("group", "room", "Bad ID"),
+        ("routine", "daily", "Bad ID"),
+        ("group", "room", "lounge"),
         ("step", "missing", "morning"),
     ]:
         with pytest.raises(ProgramError):
@@ -249,18 +243,43 @@ def test_failed_identifier_migration_is_atomic(program_dict):
         assert program_data(program) == before
 
 
-def test_targets_deduplicate_group_and_entity_sources(program_dict):
+def test_targets_deduplicate_and_sort_entities(program_dict):
     program_dict["routines"][0]["steps"][0]["actions"][0]["targets"]["entities"] = [
         "light.b",
         "light.b",
         "light.c",
+        "light.a",
     ]
     program = validate_program(program_dict)
-    assert resolve_targets(program, program.routines[0].steps[0].actions[0].targets) == (
+    assert program.routines[0].steps[0].actions[0].targets.entities == (
         "light.a",
         "light.b",
         "light.c",
     )
+
+
+@pytest.mark.parametrize(
+    "path, value",
+    [
+        (("groups",), []),
+        (("lighting", "managed_targets", "groups"), ["room"]),
+        (("lighting", "baseline", 0, "targets", "groups"), ["room"]),
+        (("routines", 0, "steps", 0, "actions", 0, "targets", "groups"), ["room"]),
+        (("routines", 0, "activity_windows", 0, "targets", "groups"), ["room"]),
+        (("constraints", "max_simultaneous_groups"), 1),
+    ],
+)
+def test_removed_group_fields_are_rejected_with_their_model_path(program_dict, path, value):
+    target = program_dict
+    for part in path[:-1]:
+        if isinstance(target, dict):
+            target = target.setdefault(part, {})
+        else:
+            target = target[part]
+    target[path[-1]] = value
+    with pytest.raises(ProgramError) as raised:
+        validate_program(program_dict)
+    assert any(issue.code == "schema" and issue.path == path for issue in raised.value.issues)
 
 
 @pytest.mark.parametrize("model_name", ["SunRange", "Anchor"])

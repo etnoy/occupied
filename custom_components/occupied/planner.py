@@ -31,13 +31,12 @@ from .validation import (
     behavior_hash,
     items_with_paths,
     program_data,
-    resolve_targets,
     step_order,
     validate_program,
     validation_warnings,
 )
 
-PLANNER_VERSION = 4
+PLANNER_VERSION = 5
 
 
 class RandomStreams:
@@ -139,7 +138,6 @@ class PlannedInterval:
     start: datetime
     end: datetime
     resources: tuple[str, ...]
-    groups: tuple[str, ...] = ()
     duration: float | None = None
     start_complete: datetime | None = None
     stop_behavior: str | None = None
@@ -153,7 +151,6 @@ class PlannedInterval:
             "start": self.start.isoformat(),
             "end": self.end.isoformat(),
             "resources": list(self.resources),
-            "groups": list(self.groups),
             "duration_seconds": self.duration,
             "start_complete": self.start_complete.isoformat() if self.start_complete else None,
             "stop_behavior": self.stop_behavior,
@@ -329,7 +326,7 @@ class _Planner:
         cursor = at
         sequence = 0
         for action_index, action in enumerate(actions):
-            targets = list(resolve_targets(self.program, action.targets))
+            targets = list(action.targets.entities)
             order = action.target_order or defaults.target_order
             if order == "shuffled":
                 self.streams.rng(kind, item_id, "target_order", action_index).shuffle(targets)
@@ -517,7 +514,7 @@ class _Planner:
     def select_targets(
         self, item: ActivityWindow, defaults: Defaults, index: int
     ) -> tuple[str, ...]:
-        targets = resolve_targets(self.program, item.targets)
+        targets = item.targets.entities
         mode = item.target_mode or defaults.activity_windows.target_mode
         if mode == "all":
             return targets
@@ -551,13 +548,11 @@ class _Planner:
         distribution = item.time_distribution or defaults.time_distribution
         span = (end - start).total_seconds()
         start_delay = sum(
-            max(0, len(resolve_targets(self.program, action.targets)) - 1)
-            * (action.stagger or defaults.stagger).upper
+            max(0, len(action.targets.entities) - 1) * (action.stagger or defaults.stagger).upper
             for action in item.on_start
         )
         end_delay = sum(
-            max(0, len(resolve_targets(self.program, action.targets)) - 1)
-            * (action.stagger or defaults.stagger).upper
+            max(0, len(action.targets.entities) - 1) * (action.stagger or defaults.stagger).upper
             for action in item.on_end
         )
         minimum_duration = max(bounds.lower, start_delay + (0.001 if item.on_start else 0))
@@ -628,14 +623,6 @@ class _Planner:
             interval_start = start + timedelta(seconds=offset)
             interval_end = min(end, interval_start + timedelta(seconds=duration))
             targets = self.select_targets(item, defaults, index)
-            selected = set(targets)
-            groups = tuple(
-                sorted(
-                    group.id
-                    for group in self.program.groups
-                    if group.id in item.targets.groups and selected.intersection(group.entities)
-                )
-            ) or (f"window:{item.id}",)
             intervals.append(
                 PlannedInterval(
                     f"window:{item.id}:{index}",
@@ -644,28 +631,22 @@ class _Planner:
                     interval_start,
                     interval_end,
                     targets,
-                    groups,
                     (interval_end - interval_start).total_seconds(),
                 )
             )
         return intervals
 
     def concurrency_passes(self, candidate: list[PlannedInterval], item: ActivityWindow) -> bool:
-        windows = [interval for interval in self.intervals if interval.kind == "window"] + candidate
+        if item.max_simultaneous is None:
+            return True
         points = sorted(
-            {instant for interval in windows for instant in (interval.start, interval.end)}
+            {instant for interval in candidate for instant in (interval.start, interval.end)}
         )
         for point in points:
-            active = [interval for interval in windows if interval.start <= point < interval.end]
             if (
-                item.max_simultaneous is not None
-                and sum(interval.source_id == item.id for interval in active)
+                sum(interval.start <= point < interval.end for interval in candidate)
                 > item.max_simultaneous
             ):
-                return False
-            groups = {group for interval in active for group in interval.groups}
-            limit = self.program.constraints.max_simultaneous_groups
-            if limit is not None and len(groups) > limit:
                 return False
         return True
 

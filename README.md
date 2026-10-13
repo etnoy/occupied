@@ -3,7 +3,7 @@
 
 <img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/occupied.svg" alt="Logo, a smiling occupied toilet sign" height="200">
 
-Occupied manages selected Home Assistant entities using schedules, optional randomness and activation conditions. Create separate controllers for entity groups with different rules: one can manage window lights each evening, while another manages ceiling lights only when the alarm is armed.
+Occupied manages selected Home Assistant entities using schedules, optional randomness and activation conditions. Use Home Assistant scenes for reusable sets of device states. Create separate controllers for devices with different rules: one can manage window lights each evening, while another manages ceiling lights only when the alarm is armed.
 
 It is the spiritual successor of https://github.com/acockburn/occusim
 
@@ -15,7 +15,7 @@ Occupied includes the complete editor and timeline, canonical daily programs, du
 2. Restart Home Assistant.
 3. Open **Settings → Devices & services → Add integration → Occupied**. Enter a controller name (default: **Occupied**) and submit. Each controller needs a distinct name.
 4. Open **Occupied** under **Settings → Devices & services** and select **Configure**. Choose the editor, import an Occupied YAML snapshot, or select an authoritative managed file. Select **Create your first step**, choose entity actions or a Home Assistant scene, and a start time or interval, then **Save step**. Select a step and **Add related step** to schedule what happens before or after it. Saving validates automatically. Existing proof settings remain supported and open with an editable daily starter program.
-5. Use **Preview schedule** to review your steps. **Settings** opens YAML import/export and managed-file controls directly. Use the integration's Home Assistant switches to enable management or select dry-run mode; activation conditions still apply.
+5. Use **Preview** to review your steps. **Settings** opens YAML import/export and managed-file controls directly. Use the integration's Home Assistant switches to enable management or select dry-run mode; activation conditions still apply.
 
 Each controller is a separate integration entry with its own program, optional managed file, activation conditions, permission, seed and runtime state. The Occupied panel lets you select a controller; Configure opens the selected integration entry. GUI/import mode stores snapshots. Managed-file mode detects changes and supports validated `occupied.reload`; invalid updates retain that controller's running program, and invalid initial files remain inactive. Shared declared device targets show a warning because actions and cleanup can interfere; ownership is not coordinated across controllers. Occupied never writes managed files. No frontend build at installation, AppDaemon, separate daemon, or open browser is required. The tested matrix is Home Assistant Core **2026.9.3 and 2026.9.4**, on Python **3.14.8** (HA requires Python >=3.14.2).
 

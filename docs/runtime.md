@@ -63,7 +63,7 @@ Admin services `occupied.start`, `stop`, `pause`, and `resume` take `config_entr
 
 ## Lighting and outside control
 
-Only managed lights with an explicit baseline participate in convergence. At activation, the engine reads observed brightness and projects each target at its handover deadline, including intervening typed intents. Default duration is ten minutes; group overrides can differ. Native `TRANSITION` capability and supported color modes determine service payloads. Otherwise dimmable lights use bounded steps, and on/off-only lights change at staggered times. No initial whole-house on/off sweep occurs. Completion gets one bounded reconciliation if the observed state differs.
+Only managed lights with an explicit baseline participate in convergence. At activation, the engine reads observed brightness and projects each target at its handover deadline, including intervening typed intents. Default duration is ten minutes; `lighting.handover` overrides it for all participating lights in the controller. Native `TRANSITION` capability and supported color modes determine service payloads. Otherwise dimmable lights use bounded steps, and on/off-only lights change at staggered times. No initial whole-house on/off sweep occurs. Completion gets one bounded reconciliation if the observed state differs.
 
 Random windows hold per-entity leases. One ending cannot turn off a light held by another interval, or a light already on before Occupied acquired it. Explicit routine intents override random activity; safety-off suppresses later scheduled activation for the target that day. Leases spanning the daily boundary remain effective. Opaque actions declaring a managed light resource wait until that light's handover completes.
 

@@ -138,19 +138,16 @@ def test_handover_projects_completion_rather_than_current_or_next_event(program_
     assert result["targets"]["light.a"]["deadline"] == "2026-10-06T08:10:00+00:00"
 
 
-def test_group_overrides_project_each_completion_and_shared_groups_take_longest(program_dict):
-    program_dict["groups"][0]["handover"] = {"duration": "5m"}
-    program_dict["groups"].append(
-        {"id": "shared", "name": "Shared", "entities": ["light.a"], "handover": {"duration": "15m"}}
-    )
-    program_dict["lighting"]["managed_targets"]["groups"].append("shared")
+def test_lighting_handover_overrides_default_duration_for_all_targets(program_dict):
+    program_dict["defaults"] = {"handover": {"duration": "5m"}}
+    program_dict["lighting"]["handover"] = {"duration": "15m"}
     program, plan = scenario(
         program_dict, [event(8, "step", "turn_on", data={"brightness_pct": 30})]
     )
     result = preview_handover(program, plan, datetime(2026, 10, 6, 8, tzinfo=UTC))
     assert result["targets"]["light.a"]["duration_seconds"] == 900
     assert result["targets"]["light.a"]["target"]["state"] == "on"
-    assert result["targets"]["light.b"]["duration_seconds"] == 300
+    assert result["targets"]["light.b"]["duration_seconds"] == 900
     assert result["targets"]["light.b"]["target"]["state"] == "off"
 
 

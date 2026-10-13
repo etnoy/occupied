@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { OccupiedPanel } from "./occupied-panel.js";
 
-  import { download } from "./util.js";
+  import { properties } from "./dom.js";
+  import { download, isValueChangedEvent } from "./util.js";
 
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
@@ -15,6 +16,15 @@
     return { t, source };
   });
   let { t, source } = $derived(data);
+  let autoExportStarted = false;
+
+  $effect(() => {
+    revision;
+    if (!autoExportStarted && !panel.busy) {
+      autoExportStarted = true;
+      void panel.exportYaml();
+    }
+  });
 </script>
 
 <section>
@@ -79,7 +89,7 @@
   {/if}
 </section>
 <section>
-  <h2>{t("Occupied YAML import/export")}</h2>
+  <h2>{t("YAML")}</h2>
   <p class="hint">
     {t(
       "Import replaces only the draft. Export normalizes the draft. Comments are not retained. Importing a local file does not select it as the managed source.",
@@ -100,22 +110,35 @@
       }
     }}
   />
-  <textarea
-    rows="18"
+  <ha-code-editor
+    role="group"
     aria-label={t("Occupied YAML")}
-    style="width:100%"
-    value={panel.yaml}
-    oninput={(event: Event) =>
-      (panel.yaml = (event.currentTarget as HTMLTextAreaElement).value)}
-  ></textarea>
+    dir="ltr"
+    use:properties={{ mode: "yaml", value: panel.yaml, linewrap: true }}
+    onvalue-changed={(event: Event) => {
+      if (!isValueChangedEvent(event) || typeof event.detail.value !== "string")
+        return;
+      panel.yaml = event.detail.value;
+      panel.flush();
+    }}
+  ></ha-code-editor>
   <button type="button" onclick={() => panel.importYaml()}>
     {t("Import as draft")}</button
-  ><button type="button" onclick={() => panel.exportYaml()}>
-    {t("Export YAML")}</button
   ><button
     type="button"
+    disabled={panel.busy || !panel.yaml}
     onclick={() => download("occupied.yaml", panel.yaml, "text/yaml")}
   >
     {t("Download")}
   </button>
 </section>
+
+<style>
+  ha-code-editor {
+    display: block;
+    width: 100%;
+    margin: 8px 0;
+    --code-mirror-height: 420px;
+    --code-mirror-max-height: 60vh;
+  }
+</style>

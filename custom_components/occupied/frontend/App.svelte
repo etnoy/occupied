@@ -40,7 +40,8 @@
   });
   let { t, notices, primary } = $derived(state);
   const primaryTabs: [Tab, string][] = [
-    ["routines", "Your steps"],
+    ["routines", "Steps"],
+    ["preview", "Preview"],
     ["settings", "Settings"],
   ];
 </script>

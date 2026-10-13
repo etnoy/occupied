@@ -343,6 +343,36 @@ export const styles = `
   .routine-row[aria-expanded="true"] { border-bottom: 1px solid var(--divider-color, #d5dce3); }
   .routine-card .routine-editor { margin: 0; }
   .step-editor-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .step-actions-menu {
+    position: fixed;
+    inset: auto;
+    width: 240px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+    margin: 0;
+    padding: 6px;
+    border: 1px solid var(--divider-color, #d5dce3);
+    border-radius: 10px;
+    background: var(--card-background-color, #fff);
+    color: var(--primary-text-color, #202c37);
+    box-shadow: 0 6px 24px #0003;
+  }
+  .step-actions-menu button {
+    display: block;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    text-align: left;
+  }
+  .step-actions-menu button:hover,
+  .step-actions-menu button:focus-visible {
+    background: var(--secondary-background-color, #e3eef2);
+  }
+  .step-actions-menu [role="separator"] {
+    border-top: 1px solid var(--divider-color, #d5dce3);
+    margin: 6px 8px;
+  }
   .routine-row-content {
     display: flex;
     min-width: 0;
@@ -380,7 +410,8 @@ export const styles = `
     font-size: 13px;
     overflow-wrap: anywhere;
   }
-  .step-delete-dialog {
+  .step-delete-dialog,
+  .step-advanced-dialog {
     width: 440px;
     max-width: calc(100vw - 32px);
     max-height: calc(100vh - 32px);
@@ -392,8 +423,42 @@ export const styles = `
     color: var(--primary-text-color, #202c37);
     box-shadow: 0 6px 24px #0003;
   }
-  .step-delete-dialog::backdrop {
+  .step-delete-dialog::backdrop,
+  .step-advanced-dialog::backdrop {
     background: #0006;
+  }
+  .step-weekdays {
+    padding: 12px;
+  }
+  .step-weekday-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .step-weekday-presets button {
+    padding: 6px 10px;
+  }
+  .step-weekday-presets button[aria-pressed="true"] {
+    border-color: var(--primary-color, #167b94);
+    background: var(--secondary-background-color, #e3eef2);
+    color: var(--primary-color, #167b94);
+  }
+  .step-weekday-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .step-weekday-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    cursor: pointer;
+  }
+  .step-weekday-option input {
+    flex: 0 0 auto;
+    accent-color: var(--primary-color, #167b94);
   }
   .step-exit-overlay {
     position: fixed;

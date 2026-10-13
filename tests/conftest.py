@@ -83,10 +83,9 @@ def program_dict():
         "schema_version": 1,
         "name": "House",
         "timezone": "UTC",
-        "groups": [{"id": "room", "name": "Room", "entities": ["light.a", "light.b"]}],
         "lighting": {
-            "managed_targets": {"groups": ["room"]},
-            "baseline": [{"targets": {"groups": ["room"]}, "state": "off"}],
+            "managed_targets": {"entities": ["light.a", "light.b"]},
+            "baseline": [{"targets": {"entities": ["light.a", "light.b"]}, "state": "off"}],
         },
         "routines": [
             {
@@ -100,7 +99,7 @@ def program_dict():
                         "actions": [
                             {
                                 "action": "turn_on",
-                                "targets": {"groups": ["room"]},
+                                "targets": {"entities": ["light.a", "light.b"]},
                                 "data": {"brightness_pct": 60},
                             }
                         ],
@@ -112,7 +111,9 @@ def program_dict():
                             "relative_to": "wake",
                             "offset_range": {"min": "30m", "max": "45m"},
                         },
-                        "actions": [{"action": "turn_off", "targets": {"groups": ["room"]}}],
+                        "actions": [
+                            {"action": "turn_off", "targets": {"entities": ["light.a", "light.b"]}}
+                        ],
                     },
                 ],
                 "activities": [
@@ -145,7 +146,7 @@ def program_dict():
                         "cycles": {"min": 2, "max": 4},
                         "on_duration": {"min": "5m", "max": "20m"},
                         "min_gap": "10m",
-                        "targets": {"groups": ["room"]},
+                        "targets": {"entities": ["light.a", "light.b"]},
                     }
                 ],
             }

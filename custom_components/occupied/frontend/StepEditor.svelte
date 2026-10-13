@@ -4,6 +4,7 @@
   import { stepEntries } from "./step-model.js";
   import StepActions from "./StepActions.svelte";
   import EditorField from "./EditorField.svelte";
+  import FieldError from "./FieldError.svelte";
 
   import TimingEditor from "./TimingEditor.svelte";
   import ActionEditor from "./ActionEditor.svelte";
@@ -36,6 +37,7 @@
     <TimingEditor {panel} {context} />
     <ActionEditor {panel} {context} />
   </div>
+  <FieldError key="days" errors={{ ...editor.errors }} />
   <div class="builder-footer">
     <button type="button" disabled={panel.busy} onclick={cancel}>
       {t("Cancel")}
@@ -44,7 +46,9 @@
       {@const entry = stepEntries(panel.draft).find(
         (item) => item.id === editor.id,
       )}
-      {#if entry}<StepActions {panel} {entry} />{/if}
+      {#if entry}<StepActions {panel} {entry} {context} />{/if}
+    {:else}
+      <StepActions {panel} {context} />
     {/if}
     <button
       type="button"

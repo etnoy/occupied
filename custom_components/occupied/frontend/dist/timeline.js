@@ -11,14 +11,7 @@ export function previewStateHistory(
 ) {
   const start = Date.parse(plan.start);
   const end = Date.parse(plan.end);
-  const resolve = (targets) =>
-    new Set([
-      ...(targets?.entities || []),
-      ...(targets?.groups || []).flatMap(
-        (id) =>
-          program.groups?.find((group) => group.id === id)?.entities || [],
-      ),
-    ]);
+  const resolve = (targets) => new Set(targets?.entities || []);
   const managed = resolve(program.lighting?.managed_targets);
   const baselines = new Map();
   for (const baseline of program.lighting?.baseline || []) {

@@ -177,7 +177,7 @@ async def websocket_export(
     {
         **_DRAFT_SCHEMA,
         vol.Required("type"): "occupied/rename_id",
-        vol.Required("kind"): vol.In(["group", "routine", "step", "activity", "window"]),
+        vol.Required("kind"): vol.In(["routine", "step", "activity", "window"]),
         vol.Required("old"): str,
         vol.Required("new"): str,
     }

@@ -44,41 +44,25 @@ defaults:
     cancel_behavior: hold_current
 lighting:
   managed_targets:
-    groups:
-    - bedrooms
-    - kitchen
-    - living_room
-    entities: []
+    entities:
+    - light.bedroom
+    - light.hall
+    - light.kitchen
+    - light.living_room
   default_brightness_pct: 70.0
   baseline:
   - targets:
-      groups:
-      - bedrooms
-      - kitchen
-      - living_room
-      entities: []
+      entities:
+      - light.bedroom
+      - light.hall
+      - light.kitchen
+      - light.living_room
     state: 'off'
   handover:
     duration: 10m
     step_interval: 30s
 constraints:
   generation_attempts: 64
-groups:
-- id: bedrooms
-  name: Bedroom lights
-  entities:
-  - light.bedroom
-  - light.hall
-- id: kitchen
-  name: Kitchen lights
-  entities:
-  - light.kitchen
-- id: living_room
-  name: Living room
-  entities:
-  - light.living_room
-  handover:
-    duration: 5m
 routines:
 - id: weekday_mornings
   name: Weekday mornings
@@ -103,9 +87,9 @@ routines:
     actions:
     - action: turn_on
       targets:
-        groups:
-        - bedrooms
-        entities: []
+        entities:
+        - light.bedroom
+        - light.hall
       data:
         brightness_pct: 60
         color_temp_kelvin: 2700
@@ -123,9 +107,8 @@ routines:
     actions:
     - action: turn_on
       targets:
-        groups:
-        - kitchen
-        entities: []
+        entities:
+        - light.kitchen
       data: {}
       resources: []
       replay_safe: false
@@ -141,10 +124,10 @@ routines:
     actions:
     - action: turn_off
       targets:
-        groups:
-        - bedrooms
-        - kitchen
-        entities: []
+        entities:
+        - light.bedroom
+        - light.hall
+        - light.kitchen
       data: {}
       resources: []
       replay_safe: false
@@ -172,9 +155,8 @@ routines:
     actions:
     - action: turn_on
       targets:
-        groups:
-        - kitchen
-        entities: []
+        entities:
+        - light.kitchen
       data: {}
       resources: []
       replay_safe: false
@@ -190,9 +172,8 @@ routines:
     actions:
     - action: turn_off
       targets:
-        groups:
-        - kitchen
-        entities: []
+        entities:
+        - light.kitchen
       data: {}
       resources: []
       replay_safe: false
@@ -224,9 +205,8 @@ routines:
     actions:
     - action: turn_on
       targets:
-        groups:
-        - living_room
-        entities: []
+        entities:
+        - light.living_room
       data:
         brightness_pct: 50
       resources: []
@@ -243,7 +223,6 @@ routines:
     actions:
     - action: turn_on
       targets:
-        groups: []
         entities:
         - light.bedroom
       data:
@@ -252,10 +231,9 @@ routines:
       replay_safe: false
     - action: turn_off
       targets:
-        groups:
-        - kitchen
-        - living_room
-        entities: []
+        entities:
+        - light.kitchen
+        - light.living_room
       data: {}
       resources: []
       replay_safe: false
@@ -271,11 +249,11 @@ routines:
     actions:
     - action: safety_off
       targets:
-        groups:
-        - bedrooms
-        - kitchen
-        - living_room
-        entities: []
+        entities:
+        - light.bedroom
+        - light.hall
+        - light.kitchen
+        - light.living_room
       data: {}
       resources: []
       replay_safe: false
@@ -296,7 +274,6 @@ routines:
     on_start:
     - action: remote.turn_on
       targets:
-        groups: []
         entities:
         - remote.living_room_harmony
       data:
@@ -306,7 +283,6 @@ routines:
     on_end:
     - action: remote.turn_off
       targets:
-        groups: []
         entities:
         - remote.living_room_harmony
       data: {}
@@ -341,9 +317,8 @@ routines:
       min: 2
       max: 4
     targets:
-      groups:
-      - kitchen
-      entities: []
+      entities:
+      - light.kitchen
     target_mode: all
     weights: {}
     data: {}

@@ -32,19 +32,16 @@ export function set(object, path, value) {
   }
 }
 export function resources(program) {
-  return [
-    ...(program.groups || []).map((x) => ({ ...x, kind: "group" })),
-    ...(program.routines || []).flatMap((r) => [
-      { ...r, kind: "routine" },
-      ...["steps", "activities", "activity_windows"].flatMap((k) =>
-        (r[k] || []).map((x) => ({
-          ...x,
-          kind: resourceKinds[k],
-          routine: r.id,
-        })),
-      ),
-    ]),
-  ];
+  return (program.routines || []).flatMap((r) => [
+    { ...r, kind: "routine" },
+    ...["steps", "activities", "activity_windows"].flatMap((k) =>
+      (r[k] || []).map((x) => ({
+        ...x,
+        kind: resourceKinds[k],
+        routine: r.id,
+      })),
+    ),
+  ]);
 }
 export function identifier(program, name) {
   let base = name
@@ -74,10 +71,7 @@ export function references(program, id) {
       if (key === "data" || key === "weights") {
         continue;
       } // Opaque service payloads are never typed references.
-      if (
-        ((key === "relative_to" || key === "step") && child === id) ||
-        (key === "groups" && Array.isArray(child) && child.includes(id))
-      ) {
+      if ((key === "relative_to" || key === "step") && child === id) {
         found.push([...path, key]);
       } else if (typeof child === "object") {
         visit(child, [...path, Array.isArray(value) ? Number(key) : key]);

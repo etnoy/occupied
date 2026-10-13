@@ -124,10 +124,9 @@ class CountRange(Model):
 
 
 class Targets(Model):
-    groups: tuple[Identifier, ...] = ()
     entities: tuple[EntityId, ...] = ()
 
-    @field_validator("groups", "entities")
+    @field_validator("entities")
     @classmethod
     def unique_sorted(cls, value):
         return tuple(sorted(set(value)))
@@ -266,21 +265,6 @@ class Handover(Model):
     cancel_behavior: Literal["hold_current"] = "hold_current"
 
 
-class Group(Model):
-    id: Identifier
-    name: str
-    description: str | None = None
-    entities: tuple[EntityId, ...]
-    handover: PartialHandover | None = None
-
-    @field_validator("entities")
-    @classmethod
-    def unique_sorted(cls, value):
-        if not value:
-            raise ValueError("A target group cannot be empty")
-        return tuple(sorted(set(value)))
-
-
 class PartialWindowDefaults(Model):
     on_duration: DurationRange | None = None
     min_gap: Duration | None = None
@@ -408,7 +392,6 @@ class Policies(Model):
 
 
 class Constraints(Model):
-    max_simultaneous_groups: Annotated[int, Field(gt=0, le=1000, strict=True)] | None = None
     generation_attempts: Annotated[int, Field(ge=1, le=256, strict=True)] = 64
 
 
@@ -430,7 +413,6 @@ class Program(Model):
     defaults: Defaults = Field(default_factory=Defaults)
     lighting: Lighting = Field(default_factory=Lighting)
     constraints: Constraints = Field(default_factory=Constraints)
-    groups: tuple[Group, ...] = ()
     routines: tuple[Routine, ...] = ()
 
     @field_validator("schema_version", mode="before")
@@ -468,9 +450,7 @@ def effective_days(routine: Routine, item: Item) -> tuple[Day, ...]:
     return tuple(day for day in WEEKDAYS if day in chosen)
 
 
-def effective_handover(program: Program, group: Group | None = None) -> Handover:
+def effective_handover(program: Program) -> Handover:
     data = program.defaults.handover.model_dump(mode="json", exclude_none=True)
     data.update(program.lighting.handover.model_dump(mode="json", exclude_none=True))
-    if group is not None and group.handover is not None:
-        data.update(group.handover.model_dump(mode="json", exclude_none=True))
     return Handover.model_validate(data)

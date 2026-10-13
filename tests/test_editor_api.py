@@ -142,7 +142,7 @@ async def test_metadata_save_preserves_sampled_plans_generation_and_deadline(
     )
     doc = program_document(engine)
     changed = deepcopy(program_dict)
-    changed["groups"][0]["name"] = "Renamed room"
+    changed["routines"][0]["steps"][0]["name"] = "Renamed room"
     changed["routines"][0]["name"] = "Renamed routine"
     client = await hass_ws_client(hass)
     result = await request(

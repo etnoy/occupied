@@ -4,7 +4,7 @@ GUI storage, YAML snapshot import and managed-file authority are explicit choice
 
 Each integration entry can select its own managed file. Use the panel's instance selector or Configure on the integration entry before changing sources. Permissions, reload locks, watchers, Repairs, seeds and runtime stores are independent. Reload services and CLI deployment commands always target a specific `config_entry_id`/`--entry-id`. See [named YAML bootstrap](installation.md#unattended-managed-setup) for unattended creation of multiple entries. Each source file remains a complete program; identifiers inside different programs can be reused.
 
-The panel warns when loaded instances declare the same controlled entities, including group members and resources retained by active cleanup snapshots. Instances do not coordinate device ownership. Scene contents and undeclared targets inside opaque service data cannot be inferred; use separate device targets when independent behavior is required.
+The panel warns when loaded instances declare the same controlled entities, including resources retained by active cleanup snapshots. Instances do not coordinate device ownership. Scene contents and undeclared targets inside opaque service data cannot be inferred; use separate device targets when independent behavior is required.
 
 ## Read, preview and change the source
 

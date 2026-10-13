@@ -5,13 +5,8 @@ import { formatClock } from "./time-format.js";
 import { copy, days, identifier, parentSteps, references } from "./model.js";
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const sorted = (values) => [...new Set(values)].sort();
-export function targetEntities(program, targets = {}) {
-  return sorted([
-    ...(targets.entities || []),
-    ...(targets.groups || []).flatMap(
-      (id) => program.groups?.find((g) => g.id === id)?.entities || [],
-    ),
-  ]);
+export function targetEntities(targets = {}) {
+  return sorted(targets.entities || []);
 }
 export function stepEntries(program) {
   return (program.routines || []).flatMap((routine, ri) =>
@@ -24,12 +19,12 @@ export function stepEntries(program) {
         days: (routine.days || days).filter(
           (d) => !item.days || item.days.includes(d),
         ),
-        entities: targetEntities(program, {
+        entities: targetEntities({
           entities:
             kind === "activity_windows"
-              ? targetEntities(program, item.targets)
+              ? targetEntities(item.targets)
               : (item.actions || item.on_start || []).flatMap((a) =>
-                  targetEntities(program, a.targets),
+                  targetEntities(a.targets),
                 ),
         }),
       })),
@@ -160,7 +155,6 @@ export function simpleStep(entry) {
     (actions.length !== 2 ||
       !same(actions[1].data || {}, {}) ||
       actions[0].action !== actions[1].action ||
-      actions.some((a) => a.targets?.groups?.length) ||
       (actions[0].targets?.entities || []).some(
         (e) => !e.startsWith("light."),
       ) ||
@@ -502,7 +496,7 @@ export function buildStep(program, editor) {
   // Only newly managed lights receive an off baseline. Existing baselines and
   // handover overrides are never replaced by step edits.
   const lighting = (next.lighting ||= {});
-  const managed = new Set(targetEntities(next, lighting.managed_targets));
+  const managed = new Set(targetEntities(lighting.managed_targets));
   const newLights = form.entities.filter(
     (e) =>
       form.kind === "entities" &&
@@ -511,13 +505,13 @@ export function buildStep(program, editor) {
       !managed.has(e),
   );
   if (newLights.length > 0) {
-    lighting.managed_targets ||= { entities: [], groups: [] };
+    lighting.managed_targets ||= { entities: [] };
     lighting.managed_targets.entities = sorted([
       ...(lighting.managed_targets.entities || []),
       ...newLights,
     ]);
     const baselined = new Set(
-      (lighting.baseline || []).flatMap((b) => targetEntities(next, b.targets)),
+      (lighting.baseline || []).flatMap((b) => targetEntities(b.targets)),
     );
     const missing = newLights.filter((e) => !baselined.has(e));
     if (missing.length > 0) {
@@ -673,9 +667,11 @@ export function timingExplanation(
   const offsetLabel = (offset) =>
     `${duration(offset)} ${t(offset < 0 ? "before" : "after")}`;
   if (low === high) {
-    return low === 0
-      ? `${runs} ${t("at the same time as")} ${name}`
-      : `${runs} ${offsetLabel(low)} ${name}`;
+    const fixedTime =
+      low === 0
+        ? `${runs} ${t("at the same time as")} ${name}`
+        : `${runs} ${offsetLabel(low)} ${name}`;
+    return `${fixedTime}${includeHints && !time.endOffset ? `. ${t("Add an end offset to introduce randomness")}` : ""}`;
   }
   const anchorStart = step ? `${t("the start of")} ${name}` : name;
   if (low === 0) {

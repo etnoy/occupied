@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from .models import Program, effective_handover
 from .planner import DailyPlan
-from .validation import Issue, ProgramError, resolve_targets
+from .validation import Issue, ProgramError
 
 
 @dataclass(frozen=True)
@@ -58,7 +58,7 @@ def project_lighting(
         raise ProgramError(
             [Issue("projection_day", "Supply the sampled plan covering the projection instant")]
         )
-    managed = set(resolve_targets(program, program.lighting.managed_targets)) - yielded
+    managed = set(program.lighting.managed_targets.entities) - yielded
     baseline = {}
     for item in program.lighting.baseline:
         data = item.model_dump(exclude={"targets", "state"}, exclude_none=True)
@@ -67,7 +67,7 @@ def project_lighting(
             if item.state == "on"
             else LightState("off", 0)
         )
-        for entity in resolve_targets(program, item.targets):
+        for entity in item.targets.entities:
             if entity in managed:
                 baseline[entity] = state
     explicit: dict[str, LightState] = {}
@@ -123,22 +123,11 @@ def preview_handover(
         )
     start = start.astimezone(UTC)
     participating = project_lighting(program, plan, start, yielded=yielded)
-    groups = {group.id: group for group in program.groups}
-    durations = {entity: effective_handover(program).duration for entity in participating}
-    for entity in durations:
-        memberships = [
-            effective_handover(program, groups[group_id]).duration
-            for group_id in program.lighting.managed_targets.groups
-            if entity in groups[group_id].entities
-        ]
-        if entity in program.lighting.managed_targets.entities:
-            memberships.append(effective_handover(program).duration)
-        if memberships:
-            durations[entity] = max(memberships)
+    duration = effective_handover(program).duration
     targets = {}
     issues = []
     completion = start
-    for entity, duration in sorted(durations.items()):
+    for entity in participating:
         deadline = start + timedelta(seconds=duration)
         completion = max(completion, deadline)
         if deadline > plan.end:

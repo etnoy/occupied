@@ -6,19 +6,21 @@ Start with [the controller example](../examples/house.yaml). `occupied-config ex
 
 ## Program, identities, and targets
 
-`schema_version: 1` and `name` are required. The version must be an integer. Optional top-level fields are `description`, `timezone`, `location`, `day_boundary`, `activation`, `policies`, `defaults`, `lighting`, `constraints`, `groups`, and `routines`.
+`schema_version: 1` and `name` are required. The version must be an integer. Optional top-level fields are `description`, `timezone`, `location`, `day_boundary`, `activation`, `policies`, `defaults`, `lighting`, `constraints`, and `routines`.
 
-Each group, routine, step, activity, and window has an `id` and `name`, with optional `description`. IDs match `[a-z][a-z0-9_-]*`; they are unique across all resources of the same kind. Step references identify steps across routines. Names/descriptions are metadata; IDs participate in references, event identity, and random streams. The model does not execute templates or expressions.
+Each routine, step, activity, and window has an `id` and `name`, with optional `description`. IDs match `[a-z][a-z0-9_-]*`; they are unique across all resources of the same kind. Step references identify steps across routines. Names/descriptions are metadata; IDs participate in references, event identity, and random streams. The model does not execute templates or expressions.
 
-Groups contain a nonempty `entities` list and an optional partial `handover` override. Entity IDs use HA's `domain.object_id` form. Every target wrapper contains optional `groups` and `entities` lists:
+Entity IDs use HA's `domain.object_id` form. A target wrapper contains an optional `entities` list. Use Home Assistant scenes to define reusable device states:
 
 ```yaml
-targets:
-  groups: [bedrooms]
-  entities: [light.hall]
+actions:
+  - action: scene.turn_on
+    targets: {entities: [scene.bedrooms_evening]}
+# Direct control remains available for individual devices:
+# targets: {entities: [light.bedroom, light.hall]}
 ```
 
-Groups expand to entities; duplicates are removed and members are sorted. Unknown groups are errors. Renaming an ID through `rename-id`/`occupied/rename_id` rewrites typed target and anchor references, validates the complete replacement, then returns it atomically. Failed migration returns no replacement. Arbitrary service-data strings are not rewritten. The loader and preview never write the source file; choose a separate CLI output path to review a replacement.
+Duplicate target entities are removed and members are sorted. Renaming an ID through `rename-id`/`occupied/rename_id` rewrites typed step anchor references, validates the complete replacement, then returns it atomically. Failed migration returns no replacement. Arbitrary service-data strings are not rewritten. The loader and preview never write the source file; choose a separate CLI output path to review a replacement.
 
 ## Time and duration
 
@@ -83,7 +85,7 @@ Defaults resolve program → partial routine defaults → item/action overrides.
 | `activity_windows.target_mode` | `all` | Routine defaults; window |
 | `activities.duration` | No default | Routine defaults; activity; an effective duration is required |
 | `activities.stop_behavior` | `end_if_owned` | Routine defaults; activity |
-| `handover.duration` | `10m` | `lighting.handover`; group `handover` |
+| `handover.duration` | `10m` | `lighting.handover` |
 
 A routine contains `steps`, `activities`, and `activity_windows`, any of which may be empty. Its `days` defaults to all seven `mon`…`sun` values. An item's optional `days` narrows its routine's days; empty or contradictory selections are errors. Routine `probability` independently gates the entire routine. The resolved item probability then gates individual items. Values range from 0 to 1. Item `time_distribution` also controls duration sampling; `when.distribution` only changes its start.
 
@@ -111,7 +113,7 @@ cycles: {min: 2, max: 4}
 on_duration: {min: 5m, max: 25m}
 min_gap: 10m
 overlap: false
-targets: {groups: [kitchen]}
+targets: {entities: [light.kitchen]}
 ```
 
 Generic cycles can repeat arbitrary service actions. For example, to activate an on-scene and later activate an off-scene:
@@ -142,11 +144,11 @@ actions:
 
 An anchor chooses exactly one `step`, `clock`, or `sun` (`sunrise`/`sunset`), plus optional signed `offset`. Clock/sun anchors support `day_offset: 1`; step anchors preserve the dependency date and use offsets instead. Windows must have positive elapsed length.
 
-`target_mode` is `all`, `one`, `subset`, or `weighted_subset`. Subset modes require `subset_size` using count-range syntax, at least one and no greater than the expanded target count. Positive `weights` keyed by target entity apply to `one`/`weighted_subset`; omitted weights are 1. Selection is without replacement per interval.
+`target_mode` is `all`, `one`, `subset`, or `weighted_subset`. Subset modes require `subset_size` using count-range syntax, at least one and no greater than the target count. Positive `weights` keyed by target entity apply to `one`/`weighted_subset`; omitted weights are 1. Selection is without replacement per interval.
 
 Non-overlapping windows fit the selected count's minimum durations and gaps first, sample durations within the remaining feasible space, and distribute remaining slack across gaps. This conditions broad duration bounds on the available span. `overlap: true` permits independently placed intervals, requires zero minimum gap, and can use a local `max_simultaneous` limit. Cycles do not get silently dropped, and windows are not extended to hide infeasibility. A sampled zero count is explained and emits no intervals.
 
-`constraints.generation_attempts` defaults to 64, from 1 to 256. `max_simultaneous_groups` optionally limits concurrently active random-window groups. Subset windows count only referenced groups containing selected entities; a direct-entity window has its own implicit group. Shared groups count once. Timed generic activities use separate exclusive declared-resource leases. Resource placement uses stable identifier order, bounded retries, and explicit infeasibility issues.
+`constraints.generation_attempts` defaults to 64, from 1 to 256. Window concurrency is controlled by each window's `max_simultaneous`; separate windows may overlap. Timed generic activities use exclusive declared-resource leases. Resource placement uses stable identifier order, bounded retries, and explicit infeasibility issues.
 
 ## Lighting projection and handover
 
@@ -161,7 +163,7 @@ Projection folds the sampled plan to a requested aware instant:
 
 Events sort by UTC instant, priority (window 10, explicit 20, safety 30), then endings before starts at the same priority, stable source identity, and ordered action sequence.
 
-Handover resolves program default → `lighting.handover` → group override. Its target policy is `projected_state_at_completion`; default duration is ten minutes. Preview calculates each target's endpoint at its own deadline, including intervening intents. Shared managed groups use the longest effective duration; a directly managed target also contributes the global duration. Preview reports transient intervals subsumed during convergence and can compare endpoints with caller-supplied observations.
+Handover resolves program default → `lighting.handover`. Its target policy is `projected_state_at_completion`; default duration is ten minutes and applies to all participating lights in a controller. Preview calculates each target's endpoint at the completion deadline, including intervening intents. Preview reports transient intervals subsumed during convergence and can compare endpoints with caller-supplied observations.
 
 Additional handover settings are `dimming: auto|stepped_only`, `non_dimmable: stagger`, positive `step_interval` (default 30s), and `cancel_behavior: hold_current`. The runtime selects native transitions from HA capabilities or uses at most 256 steps per target. Non-dimmable targets change at stable staggered times in the latter half of the handover. Stop holds observed brightness for still-owned native fades; manual control yields the target without cancelling another actor's transition. A single-day preview reports `next_day_plan_required` when a deadline needs the next sampled day; the runtime loads that date.
 

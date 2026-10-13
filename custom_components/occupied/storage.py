@@ -40,7 +40,7 @@ def instant(value: str) -> datetime:
 
 def action_from_data(data: dict) -> ResolvedAction:
     action = Action.model_validate(data)
-    if action.targets.groups or "." not in action.action:
+    if "." not in action.action:
         raise ValueError("Saved actions must contain resolved services and entity targets")
     return ResolvedAction(
         action.action,
@@ -75,7 +75,6 @@ def plan_from_data(data: dict) -> DailyPlan:
             instant(item["start"]),
             instant(item["end"]),
             tuple(item["resources"]),
-            tuple(item["groups"]),
             item["duration_seconds"],
             instant(item["start_complete"]) if item["start_complete"] else None,
             item["stop_behavior"],

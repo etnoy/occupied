@@ -798,20 +798,6 @@
     "Constraints": {
       "additionalProperties": false,
       "properties": {
-        "max_simultaneous_groups": {
-          "anyOf": [
-            {
-              "exclusiveMinimum": 0,
-              "maximum": 1000,
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Max Simultaneous Groups"
-        },
         "generation_attempts": {
           "default": 64,
           "maximum": 256,
@@ -1017,58 +1003,6 @@
         "entity_id"
       ],
       "title": "EntityRange",
-      "type": "object"
-    },
-    "Group": {
-      "additionalProperties": false,
-      "properties": {
-        "id": {
-          "pattern": "^[a-z][a-z0-9_-]*$",
-          "title": "Id",
-          "type": "string"
-        },
-        "name": {
-          "title": "Name",
-          "type": "string"
-        },
-        "description": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Description"
-        },
-        "entities": {
-          "items": {
-            "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
-            "type": "string"
-          },
-          "title": "Entities",
-          "type": "array"
-        },
-        "handover": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/PartialHandover"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "entities"
-      ],
-      "title": "Group",
       "type": "object"
     },
     "Handover": {
@@ -1622,6 +1556,11 @@
           "title": "Allow Cross Boundary",
           "type": "boolean"
         },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
         "when": {
           "$ref": "#/$defs/When"
         },
@@ -1679,15 +1618,6 @@
     "Targets": {
       "additionalProperties": false,
       "properties": {
-        "groups": {
-          "default": [],
-          "items": {
-            "pattern": "^[a-z][a-z0-9_-]*$",
-            "type": "string"
-          },
-          "title": "Groups",
-          "type": "array"
-        },
         "entities": {
           "default": [],
           "items": {
@@ -1861,14 +1791,6 @@
     },
     "constraints": {
       "$ref": "#/$defs/Constraints"
-    },
-    "groups": {
-      "default": [],
-      "items": {
-        "$ref": "#/$defs/Group"
-      },
-      "title": "Groups",
-      "type": "array"
     },
     "routines": {
       "default": [],

@@ -41,10 +41,9 @@ const plan = (events: PlannedEvent[]): Plan => ({
   issues: [],
 });
 const managed: Program = {
-  groups: [{ id: "room", name: "Room", entities: ["light.bedroom"] }],
   lighting: {
-    managed_targets: { groups: ["room"] },
-    baseline: [{ targets: { groups: ["room"] }, state: "off" }],
+    managed_targets: { entities: ["light.bedroom"] },
+    baseline: [{ targets: { entities: ["light.bedroom"] }, state: "off" }],
   },
 };
 const lightEvent = (
@@ -79,7 +78,7 @@ void test("on and relative off steps become one named entity strip with exact tr
   ]);
 });
 
-void test("group baselines establish starting states without borrowing current HA state", () => {
+void test("entity baselines establish starting states without borrowing current HA state", () => {
   const history = previewStateHistory(
     plan([lightEvent(18, "turn_on")]),
     managed,

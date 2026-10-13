@@ -23,7 +23,6 @@ import {
 } from "@occupied/step-model.js";
 
 const program = () => ({
-  groups: [{ id: "room", name: "Room", entities: ["light.a"] }],
   routines: [
     {
       id: "evening",
@@ -36,8 +35,8 @@ const program = () => ({
           actions: [
             {
               action: "turn_on",
-              targets: { groups: ["room"] },
-              data: { step: "dinner", groups: ["room"] },
+              targets: { entities: ["light.a"] },
+              data: { step: "dinner", entities: ["light.a"] },
             },
           ],
         },
@@ -61,10 +60,10 @@ const program = () => ({
 });
 void test("new identifiers derive once and remain unique", () => {
   const p = program();
-  assert.equal(identifier(p, "Room"), "room_2");
+  assert.equal(identifier(p, "Dinner"), "dinner_2");
   assert.equal(identifier(p, "123 bedroom"), "item_123_bedroom");
-  p.groups[0].name = "New label";
-  assert.equal(p.groups[0].id, "room");
+  p.routines[0].steps[0].name = "New label";
+  assert.equal(p.routines[0].steps[0].id, "dinner");
 });
 void test("routine copies rewrite internal typed references while preserving opaque data", () => {
   const p = program(),
@@ -83,8 +82,8 @@ void test("routine copies rewrite internal typed references while preserving opa
     "dinner",
   );
   assert.deepEqual(
-    required(required(required(item.steps)[0].actions)[0].targets).groups,
-    ["room"],
+    required(required(required(item.steps)[0].actions)[0].targets).entities,
+    ["light.a"],
   );
 });
 void test("referenced deletes fail and routine deletion permits internal references", () => {
@@ -94,7 +93,6 @@ void test("referenced deletes fail and routine deletion permits internal referen
     () => removeResource(p, ["routines", 0, "steps", 0]),
     /Referenced/,
   );
-  assert.throws(() => removeResource(p, ["groups", 0]), /Referenced/);
   removeResource(p, ["routines", 0]);
   assert.equal(p.routines.length, 0);
 });
@@ -110,9 +108,8 @@ void test("parent picker excludes self and descendants", () => {
 const empty = () => ({
   schema_version: 1,
   name: "Home",
-  groups: [],
   routines: [],
-  lighting: { managed_targets: { entities: [], groups: [] }, baseline: [] },
+  lighting: { managed_targets: { entities: [] }, baseline: [] },
 });
 function create(
   program: Program,
@@ -138,11 +135,6 @@ void test("entity-first creation supports mixed domains with brightness and mana
     p.routines.length,
     0,
     "building must not mutate the source draft",
-  );
-  assert.equal(
-    required(next.groups).length,
-    0,
-    "entity selection must not require groups",
   );
   assert.equal(simpleStep(entry), true);
   assert.deepEqual(
@@ -176,17 +168,11 @@ void test("related routines use stable step anchors and reject cycles and incomp
   edit.form.days = ["mon"];
   assert.match(editorErrors(next, edit).days, /Kitchen depends/);
 });
-void test("renaming preserves group references, all advanced settings and existing lighting exactly", () => {
+void test("renaming preserves entity targets, all advanced settings and existing lighting exactly", () => {
   const { program: p } = create(empty(), "Evening");
-  required(p.groups).push({
-    id: "living",
-    name: "Living",
-    entities: ["light.living_room"],
-  });
   required(p.routines)[0].probability = 0.8;
   required(p.routines)[0].defaults = { time_distribution: "triangular" };
   const step = required(required(p.routines)[0].steps)[0];
-  required(step.actions)[0].targets = { groups: ["living"] };
   required(step.actions)[0].data = {
     brightness_pct: 60,
     color_temp_kelvin: 2700,
@@ -201,20 +187,18 @@ void test("renaming preserves group references, all advanced settings and existi
   assert.deepEqual(next, expected);
   assert.equal(simpleStep(stepEntries(next)[0]), true);
 });
-void test("editing entity selection does not modify a shared group or replace existing baselines", () => {
+void test("editing entity selection preserves other steps and existing baselines", () => {
   const { program: p } = create(empty(), "Evening");
-  p.groups = [
-    { id: "living", name: "Living", entities: ["light.living_room"] },
-  ];
-  required(required(required(p.routines)[0].steps)[0].actions)[0].targets = {
-    groups: ["living"],
-  };
+  const sibling = structuredClone(required(required(p.routines)[0].steps)[0]);
+  sibling.id = "other";
+  sibling.name = "Other";
+  required(required(p.routines)[0].steps).push(sibling);
   required(required(p.lighting).baseline)[0].state = "on";
   required(required(p.lighting).baseline)[0].brightness_pct = 40;
   const editor = stepEditor(p, stepEntries(p)[0]);
   editor.form.entities.push("light.kitchen");
   const next = buildStep(p, editor);
-  assert.deepEqual(next.groups, p.groups);
+  assert.deepEqual(required(required(next.routines)[0].steps)[1], sibling);
   assert.deepEqual(
     required(required(next.lighting).baseline)[0],
     required(required(p.lighting).baseline)[0],
@@ -357,7 +341,7 @@ void test("scene steps round-trip without adding managed lights", () => {
   assert.match(editorErrors(next, edit).entities, /one Home Assistant scene/);
 });
 
-void test("entity service steps validate data and preserve group targets on action edits", () => {
+void test("entity service steps validate data and preserve entity targets on action edits", () => {
   const p = empty(),
     editor = stepEditor(p);
   Object.assign(editor.form, {
@@ -376,20 +360,12 @@ void test("entity service steps validate data and preserve group targets on acti
     "cover.b",
   ]);
   assert.deepEqual(required(entry.actions)[0].data, { position: 50 });
-  required(next.groups).push({
-    id: "blinds",
-    name: "Blinds",
-    entities: ["cover.a", "cover.b"],
-  });
-  required(required(required(next.routines)[0].steps)[0].actions)[0].targets = {
-    groups: ["blinds"],
-  };
   const edit = stepEditor(next, stepEntries(next)[0]);
   edit.form.data = '{"position": 75}';
   assert.deepEqual(
     required(stepEntries(buildStep(next, edit))[0].actions)[0].targets,
     {
-      groups: ["blinds"],
+      entities: ["cover.a", "cover.b"],
     },
   );
   edit.form.data = "[]";
@@ -599,7 +575,7 @@ void test("timing explanation describes signed offsets and window bounds directl
   ]) {
     assert.equal(
       timingExplanation({ ...base, startOffset, endOffset }, entries),
-      expected,
+      `${expected}${endOffset ? "" : ". Add an end offset to introduce randomness"}`,
     );
   }
   assert.equal(
@@ -622,7 +598,7 @@ void test("timing explanation describes signed offsets and window bounds directl
       { ...base, anchor: "sun:sunset", startOffset: "-20m" },
       entries,
     ),
-    "Runs 20 minutes before sunset",
+    "Runs 20 minutes before sunset. Add an end offset to introduce randomness",
   );
   const sources = [
     { value: "entity:calendar.work:start_time", name: "Work · start" },
@@ -634,7 +610,7 @@ void test("timing explanation describes signed offsets and window bounds directl
       (v) => v,
       sources,
     ),
-    "Runs at the same time as Work · start",
+    "Runs at the same time as Work · start. Add an end offset to introduce randomness",
   );
   assert.equal(
     timingExplanation({
@@ -642,7 +618,7 @@ void test("timing explanation describes signed offsets and window bounds directl
       anchor: "entity:sensor.alarm",
       startOffset: "1h",
     }),
-    "Runs 1 hour after sensor.alarm",
+    "Runs 1 hour after sensor.alarm. Add an end offset to introduce randomness",
   );
 });
 
@@ -706,7 +682,7 @@ void test("unitless zero offsets validate, describe and save as canonical durati
       },
       [{ id: "morning", name: "Morning" }],
     ),
-    "Runs at the same time as Morning",
+    "Runs at the same time as Morning. Add an end offset to introduce randomness",
   );
   assert.match(
     offsetErrors({ startOffset: "30m", endOffset: "0" }).endOffset,

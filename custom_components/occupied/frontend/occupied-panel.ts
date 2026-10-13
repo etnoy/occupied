@@ -658,7 +658,7 @@ export class OccupiedPanel extends HTMLElement {
     editor.errors[field] = issue.message;
     this.renderView();
     this.shadowRoot
-      .querySelector<HTMLElement>('.routine-editor [aria-invalid="true"]')
+      .querySelector<HTMLElement>(`[data-builder-field="${CSS.escape(field)}"]`)
       ?.focus();
   }
 

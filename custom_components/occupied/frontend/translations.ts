@@ -32,7 +32,7 @@ const sv: Record<string, string> = {
   "Solar midnight": "Solmidnatt",
   "Uses the time currently reported by Home Assistant. Time-only helpers repeat daily; dated sources run only on their reported date.":
     "Använder tiden som Home Assistant rapporterar. Hjälpare med enbart tid upprepas dagligen; daterade tidskällor körs bara på det rapporterade datumet.",
-  "Your steps": "Dina steg",
+  Preview: "Förhandsvisning",
   "Step type": "Typ av steg",
   "Activate Home Assistant scene": "Aktivera Home Assistant-scen",
   "Entity service action": "Tjänsteanrop för entiteter",
@@ -48,13 +48,28 @@ const sv: Record<string, string> = {
   "Discard changes": "Kasta ändringar",
   "Edit step": "Redigera steg",
   "Add related step": "Lägg till relaterat steg",
+  "Step actions": "Stegåtgärder",
+  "Advanced settings": "Avancerade inställningar",
+  "Choose which days this step should run.":
+    "Välj vilka dagar steget ska köras.",
+  "Run on": "Kör på",
+  "Apply these settings, then save the step.":
+    "Tillämpa inställningarna och spara sedan steget.",
+  Apply: "Tillämpa",
+  Monday: "Måndag",
+  Tuesday: "Tisdag",
+  Wednesday: "Onsdag",
+  Thursday: "Torsdag",
+  Friday: "Fredag",
+  Saturday: "Lördag",
+  Sunday: "Söndag",
+  "Choose at least one day.": "Välj minst en dag.",
   Enabled: "Aktiverat",
   Disabled: "Inaktiverat",
   "Save step": "Spara steg",
   "Save changes": "Spara ändringar",
   "Step name": "Stegets namn",
   "Optional title": "Valfri titel",
-  "Preview schedule": "Förhandsvisa schema",
   "Event details": "Händelsedetaljer",
   "Loading schedule…": "Laddar schema…",
   "Schedule day": "Schemadag",
@@ -96,6 +111,8 @@ const sv: Record<string, string> = {
   "the start of": "starten av",
   "Add an end of window to introduce randomness":
     "Lägg till ett slut på tidsintervallet för att variera tiden",
+  "Add an end offset to introduce randomness":
+    "Lägg till en slutförskjutning för att variera tiden",
   "Start and end are the same, so the time is fixed":
     "Start och slut är samma, så tiden är fast",
   "End of window (optional)": "Slut på tidsintervall (valfritt)",

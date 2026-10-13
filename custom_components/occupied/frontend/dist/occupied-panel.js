@@ -66,19 +66,16 @@ function set(object, path, value) {
   }
 }
 function resources(program) {
-  return [
-    ...(program.groups || []).map((x) => ({ ...x, kind: "group" })),
-    ...(program.routines || []).flatMap((r2) => [
-      { ...r2, kind: "routine" },
-      ...["steps", "activities", "activity_windows"].flatMap((k) =>
-        (r2[k] || []).map((x) => ({
-          ...x,
-          kind: resourceKinds[k],
-          routine: r2.id,
-        })),
-      ),
-    ]),
-  ];
+  return (program.routines || []).flatMap((r2) => [
+    { ...r2, kind: "routine" },
+    ...["steps", "activities", "activity_windows"].flatMap((k) =>
+      (r2[k] || []).map((x) => ({
+        ...x,
+        kind: resourceKinds[k],
+        routine: r2.id,
+      })),
+    ),
+  ]);
 }
 function identifier(program, name) {
   let base = name
@@ -108,10 +105,7 @@ function references(program, id) {
       if (key2 === "data" || key2 === "weights") {
         continue;
       }
-      if (
-        ((key2 === "relative_to" || key2 === "step") && child2 === id) ||
-        (key2 === "groups" && Array.isArray(child2) && child2.includes(id))
-      ) {
+      if ((key2 === "relative_to" || key2 === "step") && child2 === id) {
         found.push([...path, key2]);
       } else if (typeof child2 === "object") {
         visit(child2, [...path, Array.isArray(value) ? Number(key2) : key2]);
@@ -503,6 +497,36 @@ var styles = `
   .routine-row[aria-expanded="true"] { border-bottom: 1px solid var(--divider-color, #d5dce3); }
   .routine-card .routine-editor { margin: 0; }
   .step-editor-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .step-actions-menu {
+    position: fixed;
+    inset: auto;
+    width: 240px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+    margin: 0;
+    padding: 6px;
+    border: 1px solid var(--divider-color, #d5dce3);
+    border-radius: 10px;
+    background: var(--card-background-color, #fff);
+    color: var(--primary-text-color, #202c37);
+    box-shadow: 0 6px 24px #0003;
+  }
+  .step-actions-menu button {
+    display: block;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    text-align: left;
+  }
+  .step-actions-menu button:hover,
+  .step-actions-menu button:focus-visible {
+    background: var(--secondary-background-color, #e3eef2);
+  }
+  .step-actions-menu [role="separator"] {
+    border-top: 1px solid var(--divider-color, #d5dce3);
+    margin: 6px 8px;
+  }
   .routine-row-content {
     display: flex;
     min-width: 0;
@@ -540,7 +564,8 @@ var styles = `
     font-size: 13px;
     overflow-wrap: anywhere;
   }
-  .step-delete-dialog {
+  .step-delete-dialog,
+  .step-advanced-dialog {
     width: 440px;
     max-width: calc(100vw - 32px);
     max-height: calc(100vh - 32px);
@@ -552,8 +577,42 @@ var styles = `
     color: var(--primary-text-color, #202c37);
     box-shadow: 0 6px 24px #0003;
   }
-  .step-delete-dialog::backdrop {
+  .step-delete-dialog::backdrop,
+  .step-advanced-dialog::backdrop {
     background: #0006;
+  }
+  .step-weekdays {
+    padding: 12px;
+  }
+  .step-weekday-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .step-weekday-presets button {
+    padding: 6px 10px;
+  }
+  .step-weekday-presets button[aria-pressed="true"] {
+    border-color: var(--primary-color, #167b94);
+    background: var(--secondary-background-color, #e3eef2);
+    color: var(--primary-color, #167b94);
+  }
+  .step-weekday-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .step-weekday-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    cursor: pointer;
+  }
+  .step-weekday-option input {
+    flex: 0 0 auto;
+    accent-color: var(--primary-color, #167b94);
   }
   .step-exit-overlay {
     position: fixed;
@@ -809,7 +868,7 @@ var sv = {
   "Solar midnight": "Solmidnatt",
   "Uses the time currently reported by Home Assistant. Time-only helpers repeat daily; dated sources run only on their reported date.":
     "Anv\xE4nder tiden som Home Assistant rapporterar. Hj\xE4lpare med enbart tid upprepas dagligen; daterade tidsk\xE4llor k\xF6rs bara p\xE5 det rapporterade datumet.",
-  "Your steps": "Dina steg",
+  Preview: "F\xF6rhandsvisning",
   "Step type": "Typ av steg",
   "Activate Home Assistant scene": "Aktivera Home Assistant-scen",
   "Entity service action": "Tj\xE4nsteanrop f\xF6r entiteter",
@@ -825,13 +884,28 @@ var sv = {
   "Discard changes": "Kasta \xE4ndringar",
   "Edit step": "Redigera steg",
   "Add related step": "L\xE4gg till relaterat steg",
+  "Step actions": "Steg\xE5tg\xE4rder",
+  "Advanced settings": "Avancerade inst\xE4llningar",
+  "Choose which days this step should run.":
+    "V\xE4lj vilka dagar steget ska k\xF6ras.",
+  "Run on": "K\xF6r p\xE5",
+  "Apply these settings, then save the step.":
+    "Till\xE4mpa inst\xE4llningarna och spara sedan steget.",
+  Apply: "Till\xE4mpa",
+  Monday: "M\xE5ndag",
+  Tuesday: "Tisdag",
+  Wednesday: "Onsdag",
+  Thursday: "Torsdag",
+  Friday: "Fredag",
+  Saturday: "L\xF6rdag",
+  Sunday: "S\xF6ndag",
+  "Choose at least one day.": "V\xE4lj minst en dag.",
   Enabled: "Aktiverat",
   Disabled: "Inaktiverat",
   "Save step": "Spara steg",
   "Save changes": "Spara \xE4ndringar",
   "Step name": "Stegets namn",
   "Optional title": "Valfri titel",
-  "Preview schedule": "F\xF6rhandsvisa schema",
   "Event details": "H\xE4ndelsedetaljer",
   "Loading schedule\u2026": "Laddar schema\u2026",
   "Schedule day": "Schemadag",
@@ -873,6 +947,8 @@ var sv = {
   "the start of": "starten av",
   "Add an end of window to introduce randomness":
     "L\xE4gg till ett slut p\xE5 tidsintervallet f\xF6r att variera tiden",
+  "Add an end offset to introduce randomness":
+    "L\xE4gg till en slutf\xF6rskjutning f\xF6r att variera tiden",
   "Start and end are the same, so the time is fixed":
     "Start och slut \xE4r samma, s\xE5 tiden \xE4r fast",
   "End of window (optional)": "Slut p\xE5 tidsintervall (valfritt)",
@@ -2346,11 +2422,11 @@ var Batch = class _Batch {
         this.#unlink();
         infinite_loop_guard();
       }
-      for (const root17 of this.#resolve()) {
+      for (const root18 of this.#resolve()) {
         try {
-          this.#traverse(root17, effects, render_effects);
+          this.#traverse(root18, effects, render_effects);
         } catch (e) {
-          reset_all(root17);
+          reset_all(root18);
           if (!this.#is_deferred()) this.discard();
           throw e;
         }
@@ -2429,9 +2505,9 @@ var Batch = class _Batch {
    * @param {Effect[]} effects
    * @param {Effect[]} render_effects
    */
-  #traverse(root17, effects, render_effects) {
-    root17.f ^= CLEAN;
-    var effect2 = root17.first;
+  #traverse(root18, effects, render_effects) {
+    root18.f ^= CLEAN;
+    var effect2 = root18.first;
     while (effect2 !== null) {
       var flags2 = effect2.f;
       var is_branch = (flags2 & (BRANCH_EFFECT | ROOT_EFFECT)) !== 0;
@@ -2695,8 +2771,8 @@ var Batch = class _Batch {
         }
         if (batch.#scheduled.length > 0 && !batch.#decrement_queued) {
           batch.apply();
-          for (var root17 of batch.#resolve()) {
-            batch.#traverse(root17, [], []);
+          for (var root18 of batch.#resolve()) {
+            batch.#traverse(root18, [], []);
           }
         }
         batch.deactivate();
@@ -4315,7 +4391,7 @@ function is_dirty(reaction) {
 function schedule_possible_effect_self_invalidation(
   signal,
   effect2,
-  root17 = true,
+  root18 = true,
 ) {
   var reactions = signal.reactions;
   if (reactions === null) return;
@@ -4336,7 +4412,7 @@ function schedule_possible_effect_self_invalidation(
         false,
       );
     } else if (effect2 === reaction) {
-      if (root17) {
+      if (root18) {
         set_signal_status(reaction, DIRTY);
       } else if ((reaction.f & CLEAN) !== 0) {
         set_signal_status(reaction, MAYBE_DIRTY);
@@ -6587,14 +6663,14 @@ function snippet(node, get_snippet, ...args) {
 function append_styles(anchor, css) {
   effect(() => {
     anchor = active_effect?.parent?.nodes?.start ?? anchor;
-    var root17 = anchor.getRootNode();
+    var root18 = anchor.getRootNode();
     var target =
       /** @type {ShadowRoot} */
-      root17.host
+      root18.host
         ? /** @type {ShadowRoot} */
-          root17
+          root18
         : /** @type {Document} */
-          (root17.head ?? /** @type {Document} */ root17.ownerDocument.head);
+          (root18.head ?? /** @type {Document} */ root18.ownerDocument.head);
     if (!target.querySelector("#" + css.hash)) {
       const style = create_element("style");
       style.id = css.hash;
@@ -8019,13 +8095,8 @@ function formatTimestamp(value, zone, locale) {
 // custom_components/occupied/frontend/step-model.ts
 var same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 var sorted = (values) => [...new Set(values)].sort();
-function targetEntities(program, targets = {}) {
-  return sorted([
-    ...(targets.entities || []),
-    ...(targets.groups || []).flatMap(
-      (id) => program.groups?.find((g) => g.id === id)?.entities || [],
-    ),
-  ]);
+function targetEntities(targets = {}) {
+  return sorted(targets.entities || []);
 }
 function stepEntries(program) {
   return (program.routines || []).flatMap((routine, ri) =>
@@ -8038,12 +8109,12 @@ function stepEntries(program) {
         days: (routine.days || days).filter(
           (d) => !item.days || item.days.includes(d),
         ),
-        entities: targetEntities(program, {
+        entities: targetEntities({
           entities:
             kind === "activity_windows"
-              ? targetEntities(program, item.targets)
+              ? targetEntities(item.targets)
               : (item.actions || item.on_start || []).flatMap((a) =>
-                  targetEntities(program, a.targets),
+                  targetEntities(a.targets),
                 ),
         }),
       })),
@@ -8166,7 +8237,6 @@ function simpleStep(entry) {
     (actions.length !== 2 ||
       !same(actions[1].data || {}, {}) ||
       actions[0].action !== actions[1].action ||
-      actions.some((a) => a.targets?.groups?.length) ||
       (actions[0].targets?.entities || []).some(
         (e) => !e.startsWith("light."),
       ) ||
@@ -8506,7 +8576,7 @@ function buildStep(program, editor) {
     }
   }
   const lighting = (next2.lighting ||= {});
-  const managed2 = new Set(targetEntities(next2, lighting.managed_targets));
+  const managed2 = new Set(targetEntities(lighting.managed_targets));
   const newLights = form.entities.filter(
     (e) =>
       form.kind === "entities" &&
@@ -8515,15 +8585,13 @@ function buildStep(program, editor) {
       !managed2.has(e),
   );
   if (newLights.length > 0) {
-    lighting.managed_targets ||= { entities: [], groups: [] };
+    lighting.managed_targets ||= { entities: [] };
     lighting.managed_targets.entities = sorted([
       ...(lighting.managed_targets.entities || []),
       ...newLights,
     ]);
     const baselined = new Set(
-      (lighting.baseline || []).flatMap((b) =>
-        targetEntities(next2, b.targets),
-      ),
+      (lighting.baseline || []).flatMap((b) => targetEntities(b.targets)),
     );
     const missing = newLights.filter((e) => !baselined.has(e));
     if (missing.length > 0) {
@@ -8673,9 +8741,11 @@ function timingExplanation(
   const offsetLabel = (offset) =>
     `${duration(offset)} ${t(offset < 0 ? "before" : "after")}`;
   if (low === high) {
-    return low === 0
-      ? `${runs} ${t("at the same time as")} ${name}`
-      : `${runs} ${offsetLabel(low)} ${name}`;
+    const fixedTime =
+      low === 0
+        ? `${runs} ${t("at the same time as")} ${name}`
+        : `${runs} ${offsetLabel(low)} ${name}`;
+    return `${fixedTime}${includeHints && !time.endOffset ? `. ${t("Add an end offset to introduce randomness")}` : ""}`;
   }
   const anchorStart = step ? `${t("the start of")} ${name}` : name;
   if (low === 0) {
@@ -8697,6 +8767,9 @@ function focusEditor(panel, key2) {
       )
     : panel.shadowRoot.querySelector('.routine-editor [aria-invalid="true"]') ||
       panel.shadowRoot.querySelector(
+        '.routine-editor [data-builder-field="days"][aria-describedby]',
+      ) ||
+      panel.shadowRoot.querySelector(
         '.routine-editor [data-builder-field="name"]',
       );
   target?.focus();
@@ -8716,6 +8789,14 @@ function createStepEditorContext(panel) {
     panel.version++;
     panel.validatedVersion = -1;
     delete editor.errors[key2];
+    if (key2 === "days") {
+      const { anchor } = editorErrors(panel.draft, editor);
+      if (anchor) {
+        editor.errors.anchor = anchor;
+      } else {
+        delete editor.errors.anchor;
+      }
+    }
     if (["startOffset", "endOffset"].includes(key2)) {
       const errors = offsetErrors(time);
       for (const offset of ["startOffset", "endOffset"]) {
@@ -9025,120 +9106,470 @@ function DeleteStepDialog($$anchor, $$props) {
 }
 delegate(["click"]);
 
-// custom_components/occupied/frontend/StepActions.svelte
+// custom_components/occupied/frontend/AdvancedStepSettings.svelte
 var root2 = from_html(`<button type="button"> </button>`);
 var root_12 = from_html(
-  `<div class="step-editor-actions"><!> <!> <button type="button" class="danger icon-button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 3h6v2h5v2h-1v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7H4V5h5V3Zm-2 4v12h10V7H7Zm2 2h2v8H9V9Zm4 0h2v8h-2V9Z"></path></svg></button></div> <!>`,
+  `<label class="step-weekday-option"><input type="checkbox"/> <span> </span></label>`,
+);
+var root_22 = from_html(
+  `<p id="step-weekdays-error" class="error" role="alert"> </p>`,
+);
+var root_32 = from_html(
+  `<dialog class="step-advanced-dialog" aria-labelledby="step-advanced-title" aria-describedby="step-weekdays-description"><h2 id="step-advanced-title"> </h2> <p id="step-weekdays-description" class="hint"> </p> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!> <p class="hint"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
+);
+function AdvancedStepSettings($$anchor, $$props) {
+  push($$props, true);
+  let editor = user_derived(() => $$props.context.editor),
+    form = user_derived(() => $$props.context.form),
+    t = user_derived(() => $$props.context.t),
+    changed = user_derived(() => $$props.context.changed);
+  let selectedDays = state(proxy([]));
+  let dialog;
+  const presets = [
+    ["Every day", days],
+    ["Weekdays", days.slice(0, 5)],
+    ["Weekends", days.slice(5)],
+  ];
+  const weekdayNames = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+  let dayError = user_derived(() => {
+    const errors = editorErrors($$props.panel.draft, {
+      ...get2(editor),
+      form: { ...get2(form), days: get2(selectedDays) },
+    });
+    return (
+      errors.days ||
+      (get2(form).timing.anchor.startsWith("step:") &&
+      get2(form).timing.mode === "relative"
+        ? errors.anchor
+        : void 0)
+    );
+  });
+  onMount(() => {
+    set2(selectedDays, [...get2(form).days], true);
+    dialog.showModal();
+    dialog.querySelector("input")?.focus();
+  });
+  function apply2() {
+    if (get2(dayError) || $$props.panel.busy) return;
+    get2(form).days = [...get2(selectedDays)];
+    get2(changed)("days");
+    dialog.close();
+  }
+  var dialog_1 = root_32();
+  var h2 = child(dialog_1);
+  var text2 = only_child(h2, true);
+  var p = sibling(h2, 2);
+  var text_1 = only_child(p, true);
+  var fieldset = sibling(p, 2);
+  var legend = child(fieldset);
+  var text_2 = only_child(legend, true);
+  var div = sibling(legend, 2);
+  each(
+    div,
+    21,
+    () => presets,
+    index,
+    ($$anchor2, $$item) => {
+      var $$array = user_derived(() => to_array(get2($$item), 2));
+      let label = () => get2($$array)[0];
+      let selection = () => get2($$array)[1];
+      var button = root2();
+      var text_3 = only_child(button, true);
+      template_effect(
+        ($0, $1) => {
+          set_attribute2(button, "aria-pressed", $0);
+          set_text(text_3, $1);
+        },
+        [
+          () =>
+            get2(selectedDays).length === selection().length &&
+            selection().every((day) => get2(selectedDays).includes(day)),
+          () => get2(t)(label()),
+        ],
+      );
+      delegated("click", button, () =>
+        set2(selectedDays, [...selection()], true),
+      );
+      append($$anchor2, button);
+    },
+  );
+  reset(div);
+  var div_1 = sibling(div, 2);
+  each(
+    div_1,
+    21,
+    () => days,
+    index,
+    ($$anchor2, day, index2) => {
+      var label_1 = root_12();
+      var input = child(label_1);
+      remove_input_defaults(input);
+      var span = sibling(input, 2);
+      var text_4 = only_child(span, true);
+      reset(label_1);
+      template_effect(
+        ($0, $1) => {
+          set_value(input, get2(day));
+          set_checked(input, $0);
+          set_text(text_4, $1);
+        },
+        [
+          () => get2(selectedDays).includes(get2(day)),
+          () => get2(t)(weekdayNames[index2]),
+        ],
+      );
+      delegated("change", input, (event2) => {
+        set2(
+          selectedDays,
+          days.filter((candidate) =>
+            candidate === get2(day)
+              ? event2.currentTarget.checked
+              : get2(selectedDays).includes(candidate),
+          ),
+          true,
+        );
+      });
+      append($$anchor2, label_1);
+    },
+  );
+  reset(div_1);
+  reset(fieldset);
+  var node = sibling(fieldset, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var p_1 = root_22();
+      var text_5 = only_child(p_1, true);
+      template_effect(
+        ($0) => set_text(text_5, $0),
+        [() => get2(t)(get2(dayError))],
+      );
+      append($$anchor2, p_1);
+    };
+    if_block(node, ($$render) => {
+      if (get2(dayError)) $$render(consequent);
+    });
+  }
+  var p_2 = sibling(node, 2);
+  var text_6 = only_child(p_2, true);
+  var div_2 = sibling(p_2, 2);
+  var button_1 = child(div_2);
+  var text_7 = only_child(button_1, true);
+  var button_2 = sibling(button_1, 2);
+  var text_8 = only_child(button_2, true);
+  reset(div_2);
+  reset(dialog_1);
+  bind_this(
+    dialog_1,
+    ($$value) => (dialog = $$value),
+    () => dialog,
+  );
+  template_effect(
+    ($0, $1, $2, $3, $4, $5) => {
+      set_text(text2, $0);
+      set_text(text_1, $1);
+      set_attribute2(
+        fieldset,
+        "aria-describedby",
+        get2(dayError) ? "step-weekdays-error" : void 0,
+      );
+      fieldset.disabled = $$props.panel.busy;
+      set_text(text_2, $2);
+      set_text(text_6, $3);
+      set_text(text_7, $4);
+      button_2.disabled = $$props.panel.busy || !!get2(dayError);
+      set_text(text_8, $5);
+    },
+    [
+      () => get2(t)("Advanced settings"),
+      () => get2(t)("Choose which days this step should run."),
+      () => get2(t)("Run on"),
+      () => get2(t)("Apply these settings, then save the step."),
+      () => get2(t)("Cancel"),
+      () => get2(t)("Apply"),
+    ],
+  );
+  event("close", dialog_1, function (...$$args) {
+    $$props.onClose?.apply(this, $$args);
+  });
+  delegated("click", button_1, () => dialog.close());
+  delegated("click", button_2, apply2);
+  append($$anchor, dialog_1);
+  pop();
+}
+delegate(["click", "change"]);
+
+// custom_components/occupied/frontend/StepActions.svelte
+var root3 = from_html(
+  `<button type="button" role="menuitem" tabindex="-1"> </button>`,
+);
+var root_13 = from_html(
+  `<div role="separator"></div> <button type="button" role="menuitem" tabindex="-1" class="danger"> </button>`,
+  1,
+);
+var root_23 = from_html(
+  `<div class="step-editor-actions"><button type="button" aria-haspopup="menu" data-builder-field="days"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"></path></svg></button> <div class="step-actions-menu" popover="auto" role="menu" tabindex="-1"><!> <!> <!> <!></div></div> <!> <!>`,
   1,
 );
 function StepActions($$anchor, $$props) {
   push($$props, true);
-  let panel = prop($$props, "panel", 7);
+  let context = prop($$props, "context", 7);
+  let menuOpen = state(false);
   let deleteOpen = state(false);
+  let advancedOpen = state(false);
   let trigger;
-  function closeDeleteDialog() {
-    flushSync(() => set2(deleteOpen, false));
+  let menu;
+  let menuId = user_derived(
+    () => `step-actions-${$$props.entry?.id || context()?.editor.id}`,
+  );
+  function closeDialog() {
+    flushSync(() => {
+      set2(deleteOpen, false);
+      set2(advancedOpen, false);
+    });
     if (trigger.isConnected) trigger.focus();
   }
-  var fragment = root_12();
+  function closeMenu(restoreFocus = true) {
+    menu.hidePopover();
+    set2(menuOpen, false);
+    if (restoreFocus) trigger.focus();
+  }
+  function positionMenu() {
+    if (!menu.matches(":popover-open")) return;
+    const anchor = trigger.getBoundingClientRect();
+    const bounds = menu.getBoundingClientRect();
+    const above = anchor.top - bounds.height - 8;
+    const top = above >= 16 ? above : anchor.bottom + 8;
+    menu.style.left = `${Math.max(16, Math.min(anchor.right - bounds.width, window.innerWidth - bounds.width - 16))}px`;
+    menu.style.top = `${Math.max(16, Math.min(top, window.innerHeight - bounds.height - 16))}px`;
+  }
+  function openMenu(last = false) {
+    menu.showPopover();
+    set2(menuOpen, true);
+    positionMenu();
+    const items = menu.querySelectorAll("button:not(:disabled)");
+    (last ? items[items.length - 1] : items[0])?.focus({ preventScroll: true });
+  }
+  function menuKeydown(event2) {
+    const items = [...menu.querySelectorAll("button:not(:disabled)")];
+    const index2 = items.indexOf($$props.panel.shadowRoot.activeElement);
+    if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event2.key)) {
+      event2.preventDefault();
+      const next2 =
+        event2.key === "Home"
+          ? 0
+          : event2.key === "End"
+            ? items.length - 1
+            : (index2 + (event2.key === "ArrowDown" ? 1 : -1) + items.length) %
+              items.length;
+      items[next2]?.focus();
+    } else if (event2.key === "Escape") {
+      event2.preventDefault();
+      closeMenu();
+    } else if (event2.key === "Tab") {
+      closeMenu();
+    }
+  }
+  var fragment = root_23();
+  event("resize", $window, positionMenu);
+  event("scroll", $window, positionMenu);
   var div = first_child(fragment);
-  var node = child(div);
+  var button = child(div);
+  let classes;
+  bind_this(
+    button,
+    ($$value) => (trigger = $$value),
+    () => trigger,
+  );
+  var div_1 = sibling(button, 2);
+  var node = child(div_1);
   {
     var consequent = ($$anchor2) => {
-      var button = root2();
-      var text2 = only_child(button, true);
+      var button_1 = root3();
+      var text2 = only_child(button_1, true);
       template_effect(
         ($0) => {
-          button.disabled = panel().busy;
+          button_1.disabled = $$props.panel.busy;
           set_text(text2, $0);
         },
-        [
-          () =>
-            panel().t(panel().stepEditor.form.enabled ? "Disable" : "Enable"),
-        ],
+        [() => $$props.panel.t(context().form.enabled ? "Disable" : "Enable")],
       );
-      delegated("click", button, () => {
-        const editor = panel().stepEditor;
-        if (!editor || editor.id !== $$props.entry.id) return;
-        editor.form.enabled = !editor.form.enabled;
-        editor.changed = true;
-        panel().version++;
-        panel().flush();
+      delegated("click", button_1, () => {
+        closeMenu();
+        if (!context()) return;
+        context().form.enabled = !context().form.enabled;
+        context().changed("enabled");
       });
-      append($$anchor2, button);
+      append($$anchor2, button_1);
     };
     if_block(node, ($$render) => {
-      if (panel().stepEditor?.id === $$props.entry.id) $$render(consequent);
+      if (context()) $$render(consequent);
     });
   }
   var node_1 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var button_1 = root2();
-      var text_1 = only_child(button_1, true);
+      var button_2 = root3();
+      var text_1 = only_child(button_2, true);
       template_effect(
         ($0) => {
-          button_1.disabled = panel().busy;
+          button_2.disabled = $$props.panel.busy;
           set_text(text_1, $0);
         },
-        [() => panel().t("Add related step")],
+        [() => $$props.panel.t("Add related step")],
       );
-      delegated("click", button_1, () =>
-        startStep(panel(), null, $$props.entry),
-      );
-      append($$anchor2, button_1);
+      delegated("click", button_2, () => {
+        closeMenu();
+        if ($$props.entry) startStep($$props.panel, null, $$props.entry);
+      });
+      append($$anchor2, button_2);
     };
     if_block(node_1, ($$render) => {
-      if ($$props.entry.kind === "steps") $$render(consequent_1);
+      if ($$props.entry?.kind === "steps") $$render(consequent_1);
     });
   }
-  var button_2 = sibling(node_1, 2);
-  bind_this(
-    button_2,
-    ($$value) => (trigger = $$value),
-    () => trigger,
-  );
-  reset(div);
-  var node_2 = sibling(div, 2);
+  var node_2 = sibling(node_1, 2);
   {
     var consequent_2 = ($$anchor2) => {
+      var button_3 = root3();
+      var text_2 = only_child(button_3, true);
+      template_effect(
+        ($0) => {
+          button_3.disabled = $$props.panel.busy;
+          set_text(text_2, $0);
+        },
+        [() => $$props.panel.t("Advanced settings")],
+      );
+      delegated("click", button_3, () => {
+        closeMenu(false);
+        flushSync(() => set2(advancedOpen, true));
+      });
+      append($$anchor2, button_3);
+    };
+    if_block(node_2, ($$render) => {
+      if (context()) $$render(consequent_2);
+    });
+  }
+  var node_3 = sibling(node_2, 2);
+  {
+    var consequent_3 = ($$anchor2) => {
+      var fragment_1 = root_13();
+      var button_4 = sibling(first_child(fragment_1), 2);
+      var text_3 = only_child(button_4, true);
+      template_effect(
+        ($0) => {
+          button_4.disabled = $$props.panel.busy;
+          set_text(text_3, $0);
+        },
+        [() => $$props.panel.t("Delete step")],
+      );
+      delegated("click", button_4, () => {
+        closeMenu(false);
+        flushSync(() => set2(deleteOpen, true));
+      });
+      append($$anchor2, fragment_1);
+    };
+    if_block(node_3, ($$render) => {
+      if ($$props.entry) $$render(consequent_3);
+    });
+  }
+  reset(div_1);
+  bind_this(
+    div_1,
+    ($$value) => (menu = $$value),
+    () => menu,
+  );
+  reset(div);
+  var node_4 = sibling(div, 2);
+  {
+    var consequent_4 = ($$anchor2) => {
       DeleteStepDialog($$anchor2, {
         get panel() {
-          return panel();
+          return $$props.panel;
         },
         get entry() {
           return $$props.entry;
         },
-        onClose: closeDeleteDialog,
+        onClose: closeDialog,
       });
     };
-    if_block(node_2, ($$render) => {
-      if (get2(deleteOpen)) $$render(consequent_2);
+    if_block(node_4, ($$render) => {
+      if (get2(deleteOpen) && $$props.entry) $$render(consequent_4);
+    });
+  }
+  var node_5 = sibling(node_4, 2);
+  {
+    var consequent_5 = ($$anchor2) => {
+      AdvancedStepSettings($$anchor2, {
+        get panel() {
+          return $$props.panel;
+        },
+        get context() {
+          return context();
+        },
+        onClose: closeDialog,
+      });
+    };
+    if_block(node_5, ($$render) => {
+      if (get2(advancedOpen) && context()) $$render(consequent_5);
     });
   }
   template_effect(
-    ($0, $1) => {
-      set_attribute2(button_2, "aria-label", $0);
-      set_attribute2(button_2, "title", $1);
-      button_2.disabled = panel().busy;
+    ($0, $1, $2) => {
+      classes = set_class(button, 1, "icon-button", null, classes, {
+        error: !!context()?.editor.errors.days,
+      });
+      set_attribute2(button, "aria-label", $0);
+      set_attribute2(button, "title", $1);
+      set_attribute2(button, "aria-expanded", get2(menuOpen));
+      set_attribute2(button, "aria-controls", get2(menuId));
+      set_attribute2(
+        button,
+        "aria-describedby",
+        context()?.editor.errors.days ? "routine-error-days" : void 0,
+      );
+      button.disabled = $$props.panel.busy;
+      set_attribute2(div_1, "id", get2(menuId));
+      set_attribute2(div_1, "aria-label", $2);
     },
-    [() => panel().t("Delete step"), () => panel().t("Delete step")],
+    [
+      () => $$props.panel.t("Step actions"),
+      () => $$props.panel.t("Step actions"),
+      () => $$props.panel.t("Step actions"),
+    ],
   );
-  delegated("click", button_2, () => flushSync(() => set2(deleteOpen, true)));
+  delegated("click", button, () => (get2(menuOpen) ? closeMenu() : openMenu()));
+  delegated("keydown", button, (event2) => {
+    if (event2.key === "ArrowDown" || event2.key === "ArrowUp") {
+      event2.preventDefault();
+      openMenu(event2.key === "ArrowUp");
+    }
+  });
+  event("toggle", div_1, (event2) =>
+    set2(menuOpen, event2.newState === "open"),
+  );
+  delegated("keydown", div_1, menuKeydown);
   append($$anchor, fragment);
   pop();
 }
-delegate(["click"]);
+delegate(["click", "keydown"]);
 
 // custom_components/occupied/frontend/FieldError.svelte
-var root3 = from_html(`<p class="error" role="alert"> </p>`);
+var root4 = from_html(`<p class="error" role="alert"> </p>`);
 function FieldError($$anchor, $$props) {
   push($$props, true);
   var fragment = comment();
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var p = root3();
+      var p = root4();
       var text2 = only_child(p, true);
       template_effect(() => {
         set_attribute2(p, "id", `routine-error-${$$props.key}`);
@@ -9156,10 +9587,10 @@ function FieldError($$anchor, $$props) {
 }
 
 // custom_components/occupied/frontend/EditorField.svelte
-var root4 = from_html(`<div><label> </label> <!></div>`);
-var root_13 = from_html(`<ha-selector></ha-selector>`, 2);
-var root_22 = from_html(`<option> </option>`);
-var root_32 = from_html(`<select></select>`);
+var root5 = from_html(`<div><label> </label> <!></div>`);
+var root_14 = from_html(`<ha-selector></ha-selector>`, 2);
+var root_24 = from_html(`<option> </option>`);
+var root_33 = from_html(`<select></select>`);
 var root_4 = from_html(`<textarea></textarea>`);
 var root_5 = from_html(`<input/>`);
 var root_6 = from_html(`<div class="field"><!> <!> <!></div>`);
@@ -9191,7 +9622,7 @@ function EditorField($$anchor, $$props) {
   var node = child(div);
   {
     var consequent = ($$anchor2) => {
-      var div_1 = root4();
+      var div_1 = root5();
       var label_1 = child(div_1);
       var text2 = only_child(label_1, true);
       var node_1 = sibling(label_1, 2);
@@ -9214,7 +9645,7 @@ function EditorField($$anchor, $$props) {
   var node_2 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var ha_selector = root_13();
+      var ha_selector = root_14();
       template_effect(() =>
         set_custom_element_data(ha_selector, "id", get2(id)),
       );
@@ -9251,7 +9682,7 @@ function EditorField($$anchor, $$props) {
       append($$anchor2, ha_selector);
     };
     var consequent_2 = ($$anchor2) => {
-      var select = root_32();
+      var select = root_33();
       each(
         select,
         21,
@@ -9261,7 +9692,7 @@ function EditorField($$anchor, $$props) {
           var $$array = user_derived(() => to_array(get2($$item), 2));
           let v = () => get2($$array)[0];
           let name = () => get2($$array)[1];
-          var option = root_22();
+          var option = root_24();
           var text_1 = only_child(option, true);
           var option_value = {};
           template_effect(
@@ -9378,7 +9809,7 @@ function EditorField($$anchor, $$props) {
 delegate(["change", "input"]);
 
 // custom_components/occupied/frontend/SourcePicker.svelte
-var root5 = from_html(
+var root6 = from_html(
   `<div class="field source-picker"><ha-generic-picker></ha-generic-picker> <!></div>`,
   2,
 );
@@ -9420,7 +9851,7 @@ function SourcePicker($$anchor, $$props) {
     control.value = next2 || void 0;
     $$props.onChange(next2);
   }
-  var div = root5();
+  var div = root6();
   var ha_generic_picker = child(div);
   set_custom_element_data(ha_generic_picker, "id", "routine-anchor");
   set_custom_element_data(ha_generic_picker, "data-builder-field", "anchor");
@@ -9480,12 +9911,12 @@ function SourcePicker($$anchor, $$props) {
 }
 
 // custom_components/occupied/frontend/TimingEditor.svelte
-var root6 = from_html(
+var root7 = from_html(
   `<label class="timing-option"><input type="radio" name="step-timing-mode" data-builder-field="mode"/><span> </span></label>`,
 );
-var root_14 = from_html(`<button type="button" class="text-button"> </button>`);
-var root_23 = from_html(`<!> <!>`, 1);
-var root_33 = from_html(`<p class="hint"> </p>`);
+var root_15 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_25 = from_html(`<!> <!>`, 1);
+var root_34 = from_html(`<p class="hint"> </p>`);
 var root_42 = from_html(`<!> <!> <!> <!>`, 1);
 var root_52 = from_html(
   `<div data-editor-section="time"><h3 id="routine-timing-heading"> </h3> <fieldset class="timing-options" aria-labelledby="routine-timing-heading"><div class="timing-option-row"></div> <!></fieldset> <!> <p class="hint" data-timing-explanation="" aria-live="polite"> </p> <!></div>`,
@@ -9536,7 +9967,7 @@ function TimingEditor($$anchor, $$props) {
       var $$array = user_derived(() => to_array($$item, 2));
       let value = () => get2($$array)[0];
       let label = () => get2($$array)[1];
-      var label_1 = root6();
+      var label_1 = root7();
       var input = child(label_1);
       remove_input_defaults(input);
       var span = sibling(input);
@@ -9578,7 +10009,7 @@ function TimingEditor($$anchor, $$props) {
   var node_1 = sibling(fieldset, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment = root_23();
+      var fragment = root_25();
       var node_2 = first_child(fragment);
       EditorField(node_2, {
         get panel() {
@@ -9618,7 +10049,7 @@ function TimingEditor($$anchor, $$props) {
           });
         };
         var alternate = ($$anchor3) => {
-          var button = root_14();
+          var button = root_15();
           var text_2 = only_child(button, true);
           template_effect(
             ($0) => set_text(text_2, $0),
@@ -9676,7 +10107,7 @@ function TimingEditor($$anchor, $$props) {
       var node_5 = sibling(node_4, 2);
       {
         var consequent_2 = ($$anchor3) => {
-          var p = root_33();
+          var p = root_34();
           var text_3 = only_child(p, true);
           template_effect(
             ($0) => set_text(text_3, $0),
@@ -9715,7 +10146,7 @@ function TimingEditor($$anchor, $$props) {
         var consequent_3 = ($$anchor3) => {
           {
             const trailing = ($$anchor4) => {
-              var button_1 = root_14();
+              var button_1 = root_15();
               var text_4 = only_child(button_1, true);
               template_effect(
                 ($0) => set_text(text_4, $0),
@@ -9749,7 +10180,7 @@ function TimingEditor($$anchor, $$props) {
           }
         };
         var alternate_1 = ($$anchor3) => {
-          var button_2 = root_14();
+          var button_2 = root_15();
           var text_5 = only_child(button_2, true);
           template_effect(
             ($0) => set_text(text_5, $0),
@@ -9783,7 +10214,7 @@ function TimingEditor($$anchor, $$props) {
   var node_8 = sibling(p_1, 2);
   {
     var consequent_4 = ($$anchor2) => {
-      var p_2 = root_33();
+      var p_2 = root_34();
       var text_7 = only_child(p_2, true);
       template_effect(
         ($0) => set_text(text_7, $0),
@@ -9824,8 +10255,8 @@ function TimingEditor($$anchor, $$props) {
 delegate(["change", "click"]);
 
 // custom_components/occupied/frontend/EntitiesEditor.svelte
-var root7 = from_html(`<p class="hint"> </p>`);
-var root_15 = from_html(
+var root8 = from_html(`<p class="hint"> </p>`);
+var root_16 = from_html(
   `<div data-editor-section="entities"><h4> </h4> <ha-selector></ha-selector> <!> <!></div>`,
   2,
 );
@@ -9835,7 +10266,7 @@ function EntitiesEditor($$anchor, $$props) {
     form = user_derived(() => $$props.context.form),
     t = user_derived(() => $$props.context.t),
     changed = user_derived(() => $$props.context.changed);
-  var div = root_15();
+  var div = root_16();
   var h4 = child(div);
   var text2 = only_child(h4, true);
   var ha_selector = sibling(h4, 2);
@@ -9893,7 +10324,7 @@ function EntitiesEditor($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent = ($$anchor2) => {
-      var p = root7();
+      var p = root8();
       var text_1 = only_child(p, true);
       template_effect(
         ($0) => set_text(text_1, $0),
@@ -9932,14 +10363,14 @@ function EntitiesEditor($$anchor, $$props) {
 }
 
 // custom_components/occupied/frontend/ActionEditor.svelte
-var root8 = from_html(`<!> <!>`, 1);
-var root_16 = from_html(
+var root9 = from_html(`<!> <!>`, 1);
+var root_17 = from_html(
   `<div data-editor-section="action"><h3> </h3> <!> <!> <!></div>`,
 );
 function ActionEditor($$anchor, $$props) {
   let form = user_derived(() => $$props.context.form),
     t = user_derived(() => $$props.context.t);
-  var div = root_16();
+  var div = root_17();
   var h3 = child(div);
   var text2 = only_child(h3, true);
   var node = sibling(h3, 2);
@@ -9990,7 +10421,7 @@ function ActionEditor($$anchor, $$props) {
   var node_2 = sibling(node_1, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment = root8();
+      var fragment = root9();
       var node_3 = first_child(fragment);
       EditorField(node_3, {
         get panel() {
@@ -10034,8 +10465,8 @@ function ActionEditor($$anchor, $$props) {
 }
 
 // custom_components/occupied/frontend/StepEditor.svelte
-var root9 = from_html(
-  `<section class="routine-editor"><div class="step-name-editor"><!></div> <div class="editor-sections"><!> <!></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-routine-submit=""> </button></div></section>`,
+var root10 = from_html(
+  `<section class="routine-editor"><div class="step-name-editor"><!></div> <div class="editor-sections"><!> <!></div> <!> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-routine-submit=""> </button></div></section>`,
 );
 function StepEditor($$anchor, $$props) {
   push($$props, true);
@@ -10049,7 +10480,7 @@ function StepEditor($$anchor, $$props) {
     editing = user_derived(() => get2(context).editing),
     submit = user_derived(() => get2(context).submit),
     cancel = user_derived(() => get2(context).cancel);
-  var section = root9();
+  var section = root10();
   var div = child(section);
   var node = child(div);
   {
@@ -10096,10 +10527,20 @@ function StepEditor($$anchor, $$props) {
     },
   });
   reset(div_1);
-  var div_2 = sibling(div_1, 2);
+  var node_3 = sibling(div_1, 2);
+  {
+    let $0 = user_derived(() => ({ ...get2(editor).errors }));
+    FieldError(node_3, {
+      key: "days",
+      get errors() {
+        return get2($0);
+      },
+    });
+  }
+  var div_2 = sibling(node_3, 2);
   var button = child(div_2);
   var text2 = only_child(button, true);
-  var node_3 = sibling(button, 2);
+  var node_4 = sibling(button, 2);
   {
     var consequent_1 = ($$anchor2) => {
       const entry = user_derived(() =>
@@ -10108,7 +10549,7 @@ function StepEditor($$anchor, $$props) {
         ),
       );
       var fragment = comment();
-      var node_4 = first_child(fragment);
+      var node_5 = first_child(fragment);
       {
         var consequent = ($$anchor3) => {
           StepActions($$anchor3, {
@@ -10118,19 +10559,33 @@ function StepEditor($$anchor, $$props) {
             get entry() {
               return get2(entry);
             },
+            get context() {
+              return get2(context);
+            },
           });
         };
-        if_block(node_4, ($$render) => {
+        if_block(node_5, ($$render) => {
           if (get2(entry)) $$render(consequent);
         });
       }
       append($$anchor2, fragment);
     };
-    if_block(node_3, ($$render) => {
+    var alternate = ($$anchor2) => {
+      StepActions($$anchor2, {
+        get panel() {
+          return $$props.panel;
+        },
+        get context() {
+          return get2(context);
+        },
+      });
+    };
+    if_block(node_4, ($$render) => {
       if (get2(editing)) $$render(consequent_1);
+      else $$render(alternate, -1);
     });
   }
-  var button_1 = sibling(node_3, 2);
+  var button_1 = sibling(node_4, 2);
   var text_1 = only_child(button_1, true);
   reset(div_2);
   reset(section);
@@ -10163,12 +10618,12 @@ function StepEditor($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/StepsView.svelte
-var root10 = from_html(
+var root11 = from_html(
   `<section class="routine-empty"><button type="button" class="primary" data-create-routine=""> </button></section>`,
 );
-var root_17 = from_html(`<span class="step-status-badge"> </span>`);
-var root_24 = from_html(`<span class="routine-row-time"> </span>`);
-var root_34 = from_html(
+var root_18 = from_html(`<span class="step-status-badge"> </span>`);
+var root_26 = from_html(`<span class="routine-row-time"> </span>`);
+var root_35 = from_html(
   `<section class="routine-editor"><p class="hint"> </p> <!></section>`,
 );
 var root_43 = from_html(`<div><!></div>`);
@@ -10176,7 +10631,7 @@ var root_53 = from_html(
   `<div><button type="button"><span class="routine-row-content"><span class="routine-row-heading"><strong> </strong> <!></span> <span class="hint"> </span></span> <!></button> <!></div>`,
 );
 var root_62 = from_html(
-  `<div class="routine-layout"><div class="routine-list"></div></div> <button type="button" class="primary" data-create-routine=""> </button> <button type="button" class="text-button"> </button>`,
+  `<div class="routine-layout"><div class="routine-list"></div></div> <button type="button" class="primary" data-create-routine=""> </button>`,
   1,
 );
 function StepsView($$anchor, $$props) {
@@ -10194,7 +10649,7 @@ function StepsView($$anchor, $$props) {
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var section = root10();
+      var section = root11();
       var button = child(section);
       var text2 = only_child(button, true);
       reset(section);
@@ -10248,7 +10703,7 @@ function StepsView($$anchor, $$props) {
           var node_1 = sibling(strong, 2);
           {
             var consequent_1 = ($$anchor4) => {
-              var span_2 = root_17();
+              var span_2 = root_18();
               var text_2 = only_child(span_2, true);
               template_effect(
                 ($0) => set_text(text_2, $0),
@@ -10267,7 +10722,7 @@ function StepsView($$anchor, $$props) {
           var node_2 = sibling(span, 2);
           {
             var consequent_2 = ($$anchor4) => {
-              var span_4 = root_24();
+              var span_4 = root_26();
               var text_4 = only_child(span_4, true);
               template_effect(
                 ($0) => set_text(text_4, $0),
@@ -10306,7 +10761,7 @@ function StepsView($$anchor, $$props) {
                   });
                 };
                 var alternate = ($$anchor5) => {
-                  var section_1 = root_34();
+                  var section_1 = root_35();
                   var p = child(section_1);
                   var text_5 = only_child(p, true);
                   var node_5 = sibling(p, 2);
@@ -10398,24 +10853,15 @@ function StepsView($$anchor, $$props) {
       reset(div);
       var button_2 = sibling(div, 2);
       var text_6 = only_child(button_2, true);
-      var button_3 = sibling(button_2, 2);
-      var text_7 = only_child(button_3, true);
       template_effect(
-        ($0, $1, $2) => {
+        ($0, $1) => {
           set_attribute2(div_1, "aria-label", $0);
           button_2.disabled = $$props.panel.busy;
           set_text(text_6, $1);
-          button_3.disabled = $$props.panel.busy;
-          set_text(text_7, $2);
         },
-        [
-          () => get2(t)("Your steps"),
-          () => get2(t)("Create step"),
-          () => get2(t)("Preview schedule"),
-        ],
+        [() => get2(t)("Steps"), () => get2(t)("Create step")],
       );
       delegated("click", button_2, () => startStep($$props.panel));
-      delegated("click", button_3, () => $$props.panel.navigate("preview"));
       append($$anchor2, fragment_1);
     };
     if_block(node, ($$render) => {
@@ -10429,18 +10875,23 @@ function StepsView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/SettingsView.svelte
-var root11 = from_html(`<p> </p>`);
-var root_18 = from_html(`<p class="error"> <!> </p>`);
-var root_25 = from_html(
+var root12 = from_html(`<p> </p>`);
+var root_19 = from_html(`<p class="error"> <!> </p>`);
+var root_27 = from_html(
   `<button type="button"> </button> <button type="button"> </button> <!> <!>`,
   1,
 );
-var root_35 = from_html(
-  `<section><h2> </h2> <p class="hint"> </p> <input type="text" placeholder="occupied/house.yaml"/> <button type="button"> </button> <!></section> <section><h2> </h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <textarea rows="18" style="width:100%"></textarea> <button type="button"> </button><button type="button"> </button><button type="button"> </button></section>`,
-  1,
+var root_36 = from_html(
+  `<section><h2> </h2> <p class="hint"> </p> <input type="text" placeholder="occupied/house.yaml"/> <button type="button"> </button> <!></section> <section><h2> </h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <button type="button"> </button><button type="button"> </button></section>`,
+  3,
 );
+var $$css = {
+  hash: "svelte-82irif",
+  code: "ha-code-editor.svelte-82irif {display:block;width:100%;margin:8px 0;--code-mirror-height: 420px;--code-mirror-max-height: 60vh;}",
+};
 function SettingsView($$anchor, $$props) {
   push($$props, true);
+  append_styles($$anchor, $$css);
   let panel = prop($$props, "panel", 7);
   let data = user_derived(() => {
     $$props.revision;
@@ -10453,7 +10904,15 @@ function SettingsView($$anchor, $$props) {
   });
   let t = user_derived(() => get2(data).t),
     source2 = user_derived(() => get2(data).source);
-  var fragment = root_35();
+  let autoExportStarted = false;
+  user_effect(() => {
+    $$props.revision;
+    if (!autoExportStarted && !panel().busy) {
+      autoExportStarted = true;
+      void panel().exportYaml();
+    }
+  });
+  var fragment = root_36();
   var section = first_child(fragment);
   var h2 = child(section);
   var text2 = only_child(h2, true);
@@ -10466,7 +10925,7 @@ function SettingsView($$anchor, $$props) {
   var node = sibling(button, 2);
   {
     var consequent_2 = ($$anchor2) => {
-      var fragment_1 = root_25();
+      var fragment_1 = root_27();
       var button_1 = first_child(fragment_1);
       var text_3 = only_child(button_1, true);
       var button_2 = sibling(button_1, 2);
@@ -10474,7 +10933,7 @@ function SettingsView($$anchor, $$props) {
       var node_1 = sibling(button_2, 2);
       {
         var consequent = ($$anchor3) => {
-          var p_1 = root11();
+          var p_1 = root12();
           var text_5 = only_child(p_1);
           template_effect(
             ($0, $1) =>
@@ -10501,7 +10960,7 @@ function SettingsView($$anchor, $$props) {
         () => get2(source2).issues || [],
         index,
         ($$anchor3, issue) => {
-          var p_2 = root_18();
+          var p_2 = root_19();
           var text_6 = child(p_2, true);
           var node_3 = sibling(text_6);
           {
@@ -10564,17 +11023,26 @@ function SettingsView($$anchor, $$props) {
   var p_3 = sibling(h2_1, 2);
   var text_11 = only_child(p_3, true);
   var input_1 = sibling(p_3, 2);
-  var textarea = sibling(input_1, 2);
-  remove_textarea_child(textarea);
-  var button_3 = sibling(textarea, 2);
+  var ha_code_editor = sibling(input_1, 2);
+  set_custom_element_data(ha_code_editor, "role", "group");
+  template_effect(
+    ($0) => set_custom_element_data(ha_code_editor, "aria-label", $0),
+    [() => get2(t)("Occupied YAML")],
+  );
+  set_custom_element_data(ha_code_editor, "dir", "ltr");
+  set_class(ha_code_editor, 1, "svelte-82irif");
+  action(
+    ha_code_editor,
+    ($$node, $$action_arg) => properties?.($$node, $$action_arg),
+    () => ({ mode: "yaml", value: panel().yaml, linewrap: true }),
+  );
+  var button_3 = sibling(ha_code_editor, 2);
   var text_12 = only_child(button_3, true);
   var button_4 = sibling(button_3);
   var text_13 = only_child(button_4, true);
-  var button_5 = sibling(button_4);
-  var text_14 = only_child(button_5, true);
   reset(section_1);
   template_effect(
-    ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10) => {
+    ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
       set_text(text2, $0);
       set_text(text_1, $1);
       set_attribute2(input, "aria-label", $2);
@@ -10589,11 +11057,10 @@ function SettingsView($$anchor, $$props) {
       set_text(text_10, $4);
       set_text(text_11, $5);
       set_attribute2(input_1, "aria-label", $6);
-      set_attribute2(textarea, "aria-label", $7);
-      set_value(textarea, panel().yaml);
-      set_text(text_12, $8);
-      set_text(text_13, $9);
-      set_text(text_14, $10);
+      ha_code_editor.dir = ha_code_editor.dir;
+      set_text(text_12, $7);
+      button_4.disabled = panel().busy || !panel().yaml;
+      set_text(text_13, $8);
     },
     [
       () => get2(t)("Configuration source"),
@@ -10605,15 +11072,13 @@ function SettingsView($$anchor, $$props) {
         ),
       () => get2(t)("Relative managed-file path"),
       () => get2(t)("Use managed file"),
-      () => get2(t)("Occupied YAML import/export"),
+      () => get2(t)("YAML"),
       () =>
         get2(t)(
           "Import replaces only the draft. Export normalizes the draft. Comments are not retained. Importing a local file does not select it as the managed source.",
         ),
       () => get2(t)("Choose configuration file"),
-      () => get2(t)("Occupied YAML"),
       () => get2(t)("Import as draft"),
-      () => get2(t)("Export YAML"),
       () => get2(t)("Download"),
     ],
   );
@@ -10638,14 +11103,14 @@ function SettingsView($$anchor, $$props) {
       panel().flush();
     }
   });
-  delegated(
-    "input",
-    textarea,
-    (event2) => (panel().yaml = event2.currentTarget.value),
-  );
+  event("value-changed", ha_code_editor, (event2) => {
+    if (!isValueChangedEvent(event2) || typeof event2.detail.value !== "string")
+      return;
+    panel().yaml = event2.detail.value;
+    panel().flush();
+  });
   delegated("click", button_3, () => panel().importYaml());
-  delegated("click", button_4, () => panel().exportYaml());
-  delegated("click", button_5, () =>
+  delegated("click", button_4, () =>
     download("occupied.yaml", panel().yaml, "text/yaml"),
   );
   append($$anchor, fragment);
@@ -10658,7 +11123,8 @@ async function loadHaControls() {
   if (
     customElements.get("ha-selector") &&
     customElements.get("ha-generic-picker") &&
-    customElements.get("ha-top-app-bar-fixed")
+    customElements.get("ha-top-app-bar-fixed") &&
+    customElements.get("ha-code-editor")
   ) {
     return;
   }
@@ -10677,6 +11143,7 @@ async function loadHaControls() {
     customElements.whenDefined("ha-selector"),
     customElements.whenDefined("ha-generic-picker"),
     customElements.whenDefined("ha-top-app-bar-fixed"),
+    customElements.whenDefined("ha-code-editor"),
   ]);
 }
 var historyChartLoad;
@@ -10704,14 +11171,7 @@ function loadHaHistoryChart() {
 function previewStateHistory(plan, program, names = {}, t = (text2) => text2) {
   const start = Date.parse(plan.start);
   const end = Date.parse(plan.end);
-  const resolve = (targets) =>
-    /* @__PURE__ */ new Set([
-      ...(targets?.entities || []),
-      ...(targets?.groups || []).flatMap(
-        (id) =>
-          program.groups?.find((group) => group.id === id)?.entities || [],
-      ),
-    ]);
+  const resolve = (targets) => new Set(targets?.entities || []);
   const managed2 = resolve(program.lighting?.managed_targets);
   const baselines = /* @__PURE__ */ new Map();
   for (const baseline of program.lighting?.baseline || []) {
@@ -10820,20 +11280,20 @@ function stamp(value, zone, locale) {
 }
 
 // custom_components/occupied/frontend/PreviewStateGraph.svelte
-var root12 = from_html(`<p class="hint"> </p>`);
-var root_19 = from_html(
+var root13 = from_html(`<p class="hint"> </p>`);
+var root_110 = from_html(
   `<state-history-chart-timeline></state-history-chart-timeline>`,
   2,
 );
-var root_26 = from_html(`<p role="status"> </p>`);
-var root_36 = from_html(`<!> <!>`, 1);
-var $$css = {
+var root_28 = from_html(`<p role="status"> </p>`);
+var root_37 = from_html(`<!> <!>`, 1);
+var $$css2 = {
   hash: "svelte-1cnjgem",
   code: "state-history-chart-timeline.svelte-1cnjgem {display:block;width:100%;}state-history-chart-timeline[hidden].svelte-1cnjgem {display:none;}",
 };
 function PreviewStateGraph($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css);
+  append_styles($$anchor, $$css2);
   let names = prop($$props, "names", 19, () => ({}));
   let ready = state(false);
   let failed = state(false);
@@ -10876,11 +11336,11 @@ function PreviewStateGraph($$anchor, $$props) {
       media.removeEventListener("change", updateNarrow);
     };
   });
-  var fragment = root_36();
+  var fragment = root_37();
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var p = root12();
+      var p = root13();
       var text2 = only_child(p, true);
       template_effect(
         ($0) => set_text(text2, $0),
@@ -10902,7 +11362,7 @@ function PreviewStateGraph($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var p_1 = root12();
+      var p_1 = root13();
       var text_1 = only_child(p_1, true);
       template_effect(
         ($0) => set_text(text_1, $0),
@@ -10916,7 +11376,7 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, p_1);
     };
     var consequent_2 = ($$anchor2) => {
-      var state_history_chart_timeline = root_19();
+      var state_history_chart_timeline = root_110();
       template_effect(() =>
         set_custom_element_data(
           state_history_chart_timeline,
@@ -10952,7 +11412,7 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, state_history_chart_timeline);
     };
     var consequent_3 = ($$anchor2) => {
-      var p_2 = root_26();
+      var p_2 = root_28();
       var text_2 = only_child(p_2, true);
       template_effect(
         ($0) => set_text(text_2, $0),
@@ -10971,10 +11431,10 @@ function PreviewStateGraph($$anchor, $$props) {
 }
 
 // custom_components/occupied/frontend/Timeline.svelte
-var root13 = from_html(`<h2> </h2>`);
-var root_110 = from_html(`<th scope="col"> </th>`);
-var root_27 = from_html(`<td> </td>`);
-var root_37 = from_html(`<tr></tr>`);
+var root14 = from_html(`<h2> </h2>`);
+var root_111 = from_html(`<th scope="col"> </th>`);
+var root_29 = from_html(`<td> </td>`);
+var root_38 = from_html(`<tr></tr>`);
 var root_44 = from_html(
   `<details><summary> </summary> <p class="hint"> </p> <input type="search"/> <div><div class="table-wrap"><table><thead><tr></tr></thead><tbody></tbody></table></div> <div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div></div></details>`,
 );
@@ -11024,7 +11484,7 @@ function Timeline($$anchor, $$props) {
       append($$anchor2, fragment);
     };
     var consequent_1 = ($$anchor2) => {
-      var h2 = root13();
+      var h2 = root14();
       var text_1 = only_child(h2, true);
       template_effect(
         ($0) => set_text(text_1, $0),
@@ -11082,7 +11542,7 @@ function Timeline($$anchor, $$props) {
             () => ["Planned time", "Source", "Action", "Targets"],
             index,
             ($$anchor4, label) => {
-              var th = root_110();
+              var th = root_111();
               var text_4 = only_child(th, true);
               template_effect(($0) => set_text(text_4, $0), [() => t()(label)]);
               append($$anchor4, th);
@@ -11101,7 +11561,7 @@ function Timeline($$anchor, $$props) {
               ),
             index,
             ($$anchor4, event2) => {
-              var tr_1 = root_37();
+              var tr_1 = root_38();
               each(
                 tr_1,
                 21,
@@ -11117,7 +11577,7 @@ function Timeline($$anchor, $$props) {
                 ],
                 index,
                 ($$anchor5, value) => {
-                  var td = root_27();
+                  var td = root_29();
                   var text_5 = only_child(td, true);
                   template_effect(() => set_text(text_5, get2(value)));
                   append($$anchor5, td);
@@ -11236,26 +11696,26 @@ function Timeline($$anchor, $$props) {
 delegate(["input", "click"]);
 
 // custom_components/occupied/frontend/PreviewView.svelte
-var root14 = from_html(`<span class="hint" role="status"> </span>`);
-var root_111 = from_html(
+var root15 = from_html(`<span class="hint" role="status"> </span>`);
+var root_112 = from_html(
   `<div class="schedule-heading svelte-5w63kc"><h2 aria-live="polite" class="svelte-5w63kc"> </h2> <!> <div class="day-navigation svelte-5w63kc" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-5w63kc"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
   2,
 );
-var $$css2 = {
+var $$css3 = {
   hash: "svelte-5w63kc",
   code: ".schedule-heading.svelte-5w63kc {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-bottom:20px;}h2.svelte-5w63kc {margin:0;}.day-navigation.svelte-5w63kc {display:flex;align-items:center;gap:4px;}.day-navigation.svelte-5w63kc button:where(.svelte-5w63kc) {margin:0;}",
 };
 function PreviewView($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css2);
+  append_styles($$anchor, $$css3);
   const dayHeading = ($$anchor2) => {
-    var div = root_111();
+    var div = root_112();
     var h2 = child(div);
     var text2 = only_child(h2, true);
     var node = sibling(h2, 2);
     {
       var consequent = ($$anchor3) => {
-        var span = root14();
+        var span = root15();
         var text_1 = only_child(span, true);
         template_effect(
           ($0) => set_text(text_1, $0),
@@ -11378,7 +11838,7 @@ function PreviewView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/UnsavedStepDialog.svelte
-var root15 = from_html(
+var root16 = from_html(
   `<div class="step-exit-overlay"><dialog open="" class="step-exit-dialog" role="alertdialog" aria-modal="true" aria-labelledby="step-exit-title" aria-describedby="step-exit-description"><h2 id="step-exit-title"> </h2> <p id="step-exit-description"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog></div>`,
 );
 function UnsavedStepDialog($$anchor, $$props) {
@@ -11386,7 +11846,7 @@ function UnsavedStepDialog($$anchor, $$props) {
   let t = user_derived(() => $$props.panel.t);
   let keepEditing;
   onMount(() => keepEditing.focus());
-  var div = root15();
+  var div = root16();
   var dialog = child(div);
   var h2 = child(dialog);
   var text2 = only_child(h2, true);
@@ -11428,13 +11888,13 @@ function UnsavedStepDialog($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/App.svelte
-var root16 = from_html(
+var root17 = from_html(
   `<button type="button" class="primary"> </button> <button type="button"> </button>`,
   1,
 );
-var root_112 = from_html(`<button type="button"> </button>`);
-var root_28 = from_html(`<div id="toolbar" class="toolbar"><!> <!></div>`);
-var root_38 = from_html(`<p> </p>`);
+var root_113 = from_html(`<button type="button"> </button>`);
+var root_210 = from_html(`<div id="toolbar" class="toolbar"><!> <!></div>`);
+var root_39 = from_html(`<p> </p>`);
 var root_45 = from_html(`<p id="house"> </p>`);
 var root_55 = from_html(`<option> </option>`);
 var root_64 = from_html(
@@ -11458,11 +11918,11 @@ function App($$anchor, $$props) {
     const unsaved = user_derived(
       () => get2(panel).dirty && !get2(panel).stepEditor,
     );
-    var div = root_28();
+    var div = root_210();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
-        var fragment = root16();
+        var fragment = root17();
         var button = first_child(fragment);
         var text_1 = only_child(button, true);
         var button_1 = sibling(button, 2);
@@ -11490,7 +11950,7 @@ function App($$anchor, $$props) {
     var node_1 = sibling(node, 2);
     {
       var consequent_1 = ($$anchor3) => {
-        var button_2 = root_112();
+        var button_2 = root_113();
         var text_3 = only_child(button_2, true);
         template_effect(
           ($0) => {
@@ -11530,7 +11990,7 @@ function App($$anchor, $$props) {
     var node_2 = first_child(fragment_1);
     {
       var consequent_2 = ($$anchor3) => {
-        var button_3 = root_112();
+        var button_3 = root_113();
         var text_4 = only_child(button_3, true);
         template_effect(() => {
           set_class(button_3, 1, clsx2(get2(className)));
@@ -11540,7 +12000,7 @@ function App($$anchor, $$props) {
         append($$anchor3, button_3);
       };
       var alternate = ($$anchor3) => {
-        var p = root_38();
+        var p = root_39();
         var text_5 = only_child(p, true);
         template_effect(() => {
           set_class(p, 1, clsx2(get2(className)));
@@ -11581,7 +12041,8 @@ function App($$anchor, $$props) {
     notices = user_derived(() => get2(state2).notices),
     primary = user_derived(() => get2(state2).primary);
   const primaryTabs = [
-    ["routines", "Your steps"],
+    ["routines", "Steps"],
+    ["preview", "Preview"],
     ["settings", "Settings"],
   ];
   var fragment_2 = root_122();
@@ -11741,7 +12202,7 @@ function App($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get2($$item), 2));
       let id = () => get2($$array)[0];
       let label = () => get2($$array)[1];
-      var button_4 = root_112();
+      var button_4 = root_113();
       var text_14 = only_child(button_4, true);
       template_effect(
         ($0) => {
@@ -11855,7 +12316,7 @@ function App($$anchor, $$props) {
               var node_12 = first_child(fragment_9);
               {
                 var consequent_9 = ($$anchor5) => {
-                  var button_7 = root_112();
+                  var button_7 = root_113();
                   var text_20 = only_child(button_7, true);
                   template_effect(
                     ($0) => set_text(text_20, $0),
@@ -12574,7 +13035,7 @@ var OccupiedPanel = class extends HTMLElement {
     editor.errors[field] = issue.message;
     this.renderView();
     this.shadowRoot
-      .querySelector('.routine-editor [aria-invalid="true"]')
+      .querySelector(`[data-builder-field="${CSS.escape(field)}"]`)
       ?.focus();
   }
   // --- Backend actions ----------------------------------------------------

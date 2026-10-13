@@ -13,6 +13,9 @@ export function focusEditor(panel, key) {
       )
     : panel.shadowRoot.querySelector('.routine-editor [aria-invalid="true"]') ||
       panel.shadowRoot.querySelector(
+        '.routine-editor [data-builder-field="days"][aria-describedby]',
+      ) ||
+      panel.shadowRoot.querySelector(
         '.routine-editor [data-builder-field="name"]',
       );
   target?.focus();
@@ -32,6 +35,15 @@ export function createStepEditorContext(panel) {
     panel.version++;
     panel.validatedVersion = -1;
     delete editor.errors[key];
+    if (key === "days") {
+      // Weekday edits can resolve an error on the relative time source.
+      const { anchor } = editorErrors(panel.draft, editor);
+      if (anchor) {
+        editor.errors.anchor = anchor;
+      } else {
+        delete editor.errors.anchor;
+      }
+    }
     if (["startOffset", "endOffset"].includes(key)) {
       const errors = offsetErrors(time);
       for (const offset of ["startOffset", "endOffset"]) {

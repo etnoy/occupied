@@ -2,60 +2,195 @@
   import { flushSync } from "svelte";
   import type { OccupiedPanel } from "./occupied-panel.js";
   import type { StepEntry } from "./types.js";
+  import type { StepEditorContext } from "./step-editor-controller.js";
   import { startStep } from "./steps.js";
   import DeleteStepDialog from "./DeleteStepDialog.svelte";
+  import AdvancedStepSettings from "./AdvancedStepSettings.svelte";
 
-  let { panel, entry }: { panel: OccupiedPanel; entry: StepEntry } = $props();
+  let {
+    panel,
+    entry,
+    context,
+  }: {
+    panel: OccupiedPanel;
+    entry?: StepEntry;
+    context?: StepEditorContext;
+  } = $props();
+  let menuOpen = $state(false);
   let deleteOpen = $state(false);
+  let advancedOpen = $state(false);
   let trigger: HTMLButtonElement;
-  function closeDeleteDialog() {
-    flushSync(() => (deleteOpen = false));
+  let menu: HTMLDivElement;
+  let menuId = $derived(`step-actions-${entry?.id || context?.editor.id}`);
+
+  function closeDialog() {
+    flushSync(() => {
+      deleteOpen = false;
+      advancedOpen = false;
+    });
     if (trigger.isConnected) trigger.focus();
+  }
+
+  function closeMenu(restoreFocus = true) {
+    menu.hidePopover();
+    menuOpen = false;
+    if (restoreFocus) trigger.focus();
+  }
+
+  function positionMenu() {
+    if (!menu.matches(":popover-open")) return;
+    const anchor = trigger.getBoundingClientRect();
+    const bounds = menu.getBoundingClientRect();
+    const above = anchor.top - bounds.height - 8;
+    const top = above >= 16 ? above : anchor.bottom + 8;
+    menu.style.left = `${Math.max(16, Math.min(anchor.right - bounds.width, window.innerWidth - bounds.width - 16))}px`;
+    menu.style.top = `${Math.max(16, Math.min(top, window.innerHeight - bounds.height - 16))}px`;
+  }
+
+  function openMenu(last = false) {
+    menu.showPopover();
+    menuOpen = true;
+    positionMenu();
+    const items = menu.querySelectorAll<HTMLButtonElement>(
+      "button:not(:disabled)",
+    );
+    (last ? items[items.length - 1] : items[0])?.focus({ preventScroll: true });
+  }
+
+  function menuKeydown(event: KeyboardEvent) {
+    const items = [
+      ...menu.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"),
+    ];
+    const index = items.indexOf(
+      panel.shadowRoot.activeElement as HTMLButtonElement,
+    );
+    if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+      event.preventDefault();
+      const next =
+        event.key === "Home"
+          ? 0
+          : event.key === "End"
+            ? items.length - 1
+            : (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) %
+              items.length;
+      items[next]?.focus();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      closeMenu();
+    } else if (event.key === "Tab") {
+      closeMenu();
+    }
   }
 </script>
 
+<svelte:window onresize={positionMenu} onscroll={positionMenu} />
+
 <div class="step-editor-actions">
-  {#if panel.stepEditor?.id === entry.id}
-    <button
-      type="button"
-      disabled={panel.busy}
-      onclick={() => {
-        const editor = panel.stepEditor;
-        if (!editor || editor.id !== entry.id) return;
-        editor.form.enabled = !editor.form.enabled;
-        editor.changed = true;
-        panel.version++;
-        panel.flush();
-      }}
-    >
-      {panel.t(panel.stepEditor.form.enabled ? "Disable" : "Enable")}
-    </button>
-  {/if}
-  {#if entry.kind === "steps"}
-    <button
-      type="button"
-      disabled={panel.busy}
-      onclick={() => startStep(panel, null, entry)}
-    >
-      {panel.t("Add related step")}
-    </button>
-  {/if}
   <button
     bind:this={trigger}
     type="button"
-    class="danger icon-button"
-    aria-label={panel.t("Delete step")}
-    title={panel.t("Delete step")}
+    class="icon-button"
+    class:error={!!context?.editor.errors.days}
+    aria-label={panel.t("Step actions")}
+    title={panel.t("Step actions")}
+    aria-haspopup="menu"
+    aria-expanded={menuOpen}
+    aria-controls={menuId}
+    aria-describedby={context?.editor.errors.days
+      ? "routine-error-days"
+      : undefined}
+    data-builder-field="days"
     disabled={panel.busy}
-    onclick={() => flushSync(() => (deleteOpen = true))}
+    onclick={() => (menuOpen ? closeMenu() : openMenu())}
+    onkeydown={(event) => {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        openMenu(event.key === "ArrowUp");
+      }
+    }}
   >
     <svg aria-hidden="true" viewBox="0 0 24 24">
       <path
-        d="M9 3h6v2h5v2h-1v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7H4V5h5V3Zm-2 4v12h10V7H7Zm2 2h2v8H9V9Zm4 0h2v8h-2V9Z"
+        d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"
       />
     </svg>
   </button>
+  <div
+    bind:this={menu}
+    id={menuId}
+    class="step-actions-menu"
+    popover="auto"
+    role="menu"
+    tabindex="-1"
+    aria-label={panel.t("Step actions")}
+    ontoggle={(event) => (menuOpen = event.newState === "open")}
+    onkeydown={menuKeydown}
+  >
+    {#if context}
+      <button
+        type="button"
+        role="menuitem"
+        tabindex="-1"
+        disabled={panel.busy}
+        onclick={() => {
+          closeMenu();
+          if (!context) return;
+          context.form.enabled = !context.form.enabled;
+          context.changed("enabled");
+        }}
+      >
+        {panel.t(context.form.enabled ? "Disable" : "Enable")}
+      </button>
+    {/if}
+    {#if entry?.kind === "steps"}
+      <button
+        type="button"
+        role="menuitem"
+        tabindex="-1"
+        disabled={panel.busy}
+        onclick={() => {
+          closeMenu();
+          if (entry) startStep(panel, null, entry);
+        }}
+      >
+        {panel.t("Add related step")}
+      </button>
+    {/if}
+    {#if context}
+      <button
+        type="button"
+        role="menuitem"
+        tabindex="-1"
+        disabled={panel.busy}
+        onclick={() => {
+          closeMenu(false);
+          flushSync(() => (advancedOpen = true));
+        }}
+      >
+        {panel.t("Advanced settings")}
+      </button>
+    {/if}
+    {#if entry}
+      <div role="separator"></div>
+      <button
+        type="button"
+        role="menuitem"
+        tabindex="-1"
+        class="danger"
+        disabled={panel.busy}
+        onclick={() => {
+          closeMenu(false);
+          flushSync(() => (deleteOpen = true));
+        }}
+      >
+        {panel.t("Delete step")}
+      </button>
+    {/if}
+  </div>
 </div>
-{#if deleteOpen}
-  <DeleteStepDialog {panel} {entry} onClose={closeDeleteDialog} />
+{#if deleteOpen && entry}
+  <DeleteStepDialog {panel} {entry} onClose={closeDialog} />
+{/if}
+{#if advancedOpen && context}
+  <AdvancedStepSettings {panel} {context} onClose={closeDialog} />
 {/if}

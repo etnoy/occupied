@@ -1,22 +1,21 @@
 """Admin instance discovery and declared device overlap warnings."""
 
 from .const import DOMAIN
-from .validation import resolve_targets
 
 INSTANCE_SIGNAL = "occupied_instances_changed"
 
 
 def program_entities(program):
-    entities = set(resolve_targets(program, program.lighting.managed_targets))
+    entities = set(program.lighting.managed_targets.entities)
     for routine in program.routines:
         for item in (*routine.steps, *routine.activities):
             actions = item.actions if hasattr(item, "actions") else (*item.on_start, *item.on_end)
             entities.update(getattr(item, "resources", ()))
             for action in actions:
-                entities.update(resolve_targets(program, action.targets))
+                entities.update(action.targets.entities)
                 entities.update(action.resources)
         for window in routine.activity_windows:
-            entities.update(resolve_targets(program, window.targets))
+            entities.update(window.targets.entities)
     return entities
 
 

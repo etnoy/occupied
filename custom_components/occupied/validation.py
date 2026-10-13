@@ -15,7 +15,6 @@ from .models import (
     Condition,
     Program,
     Step,
-    Targets,
     effective_days,
     effective_handover,
     merge_defaults,
@@ -59,16 +58,6 @@ def format_path(path: ModelPath) -> str:
     return result
 
 
-def resolve_targets(program: Program, targets: Targets) -> tuple[str, ...]:
-    groups = {group.id: group.entities for group in program.groups}
-    entities = set(targets.entities)
-    for group_id in targets.groups:
-        if group_id not in groups:
-            raise ProgramError([Issue("dangling_group", f"Unknown target group {group_id}")])
-        entities.update(groups[group_id])
-    return tuple(sorted(entities))
-
-
 def items_with_paths(program: Program):
     for r_index, routine in enumerate(program.routines):
         for kind in ("steps", "activities", "activity_windows"):
@@ -90,17 +79,6 @@ def actions_with_paths(program: Program):
         for field in fields:
             for index, action in enumerate(getattr(item, field)):
                 yield routine, item, action, path + (field, index)
-
-
-def all_targets(program: Program):
-    yield program.lighting.managed_targets, ("lighting", "managed_targets")
-    for index, baseline in enumerate(program.lighting.baseline):
-        yield baseline.targets, ("lighting", "baseline", index, "targets")
-    for _, _, action, path in actions_with_paths(program):
-        yield action.targets, path + ("targets",)
-    for _, item, path in items_with_paths(program):
-        if isinstance(item, ActivityWindow):
-            yield item.targets, path + ("targets",)
 
 
 def step_references(item):
@@ -210,15 +188,16 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
         ) from err
     errors: list[Issue] = []
     identities: dict[str, set[str]] = {
-        kind: set() for kind in ("groups", "routines", "steps", "activities", "activity_windows")
+        kind: set() for kind in ("routines", "steps", "activities", "activity_windows")
     }
-    for kind in ("groups", "routines"):
-        for index, resource in enumerate(getattr(program, kind)):
-            if resource.id in identities[kind]:
-                errors.append(
-                    Issue("duplicate_id", f"Duplicate {kind} ID {resource.id}", (kind, index, "id"))
+    for index, routine in enumerate(program.routines):
+        if routine.id in identities["routines"]:
+            errors.append(
+                Issue(
+                    "duplicate_id", f"Duplicate routines ID {routine.id}", ("routines", index, "id")
                 )
-            identities[kind].add(resource.id)
+            )
+        identities["routines"].add(routine.id)
     collected = list(items_with_paths(program))
     if len(collected) > 5000:
         errors.append(
@@ -246,14 +225,6 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
             errors.append(
                 Issue("empty_days", "A routine must select weekdays", ("routines", r_index, "days"))
             )
-    for targets, path in all_targets(program):
-        for index, group in enumerate(targets.groups):
-            if group not in identities["groups"]:
-                errors.append(
-                    Issue(
-                        "dangling_group", f"Unknown target group {group}", path + ("groups", index)
-                    )
-                )
     steps = {item.id: (routine, item) for routine, item, _ in collected if isinstance(item, Step)}
     for routine, item, path in collected:
         for reference, field_path in step_references(item):
@@ -281,7 +252,7 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
     except ProgramError as err:
         errors.extend(err.issues)
     for _routine, _item, action, path in actions_with_paths(program):
-        targets = resolve_targets(program, action.targets)
+        targets = action.targets.entities
         if not targets and not action.data and not action.resources:
             errors.append(
                 Issue(
@@ -398,7 +369,7 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
                     )
                 )
         elif isinstance(item, ActivityWindow):
-            targets = resolve_targets(program, item.targets)
+            targets = item.targets.entities
             generic = bool(item.on_start or item.on_end)
             duration = item.on_duration or defaults.activity_windows.on_duration
             overlap = (
@@ -497,7 +468,7 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
                         path + ("data",),
                     )
                 )
-    managed = set(resolve_targets(program, program.lighting.managed_targets))
+    managed = set(program.lighting.managed_targets.entities)
     if any(not entity.startswith("light.") for entity in managed):
         errors.append(
             Issue(
@@ -508,7 +479,7 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
         )
     baselined: set[str] = set()
     for index, baseline in enumerate(program.lighting.baseline):
-        targets = set(resolve_targets(program, baseline.targets))
+        targets = set(baseline.targets.entities)
         if targets - managed or targets & baselined:
             errors.append(
                 Issue(
@@ -529,11 +500,9 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
 def validation_warnings(program: Program) -> tuple[Issue, ...]:
     """Explain missing baselines, unprojectable effects, and ordered action conflicts."""
     warnings = []
-    managed = set(resolve_targets(program, program.lighting.managed_targets))
+    managed = set(program.lighting.managed_targets.entities)
     baseline_targets = {
-        entity
-        for baseline in program.lighting.baseline
-        for entity in resolve_targets(program, baseline.targets)
+        entity for baseline in program.lighting.baseline for entity in baseline.targets.entities
     }
     if missing := managed - baseline_targets:
         warnings.append(
@@ -568,7 +537,7 @@ def validation_warnings(program: Program) -> tuple[Issue, ...]:
         if isinstance(item, Step):
             seen: dict[str, str] = {}
             for index, action in enumerate(item.actions):
-                for entity in resolve_targets(program, action.targets):
+                for entity in action.targets.entities:
                     if entity in seen and seen[entity] != action.action:
                         warnings.append(
                             Issue(
@@ -613,25 +582,16 @@ def behavior_data(program: Program) -> dict[str, Any]:
     """Hash resolved behavior, while preserving ordering inside action sequences/data."""
     data = _without_metadata(program_data(program))
     data.pop("defaults")
-    data["groups"] = sorted(
-        [_without_metadata(group) for group in data["groups"]], key=lambda item: item["id"]
-    )
     data["lighting"]["handover"] = effective_handover(program).model_dump(mode="json")
-    data["lighting"]["managed_targets"] = list(
-        resolve_targets(program, program.lighting.managed_targets)
-    )
+    data["lighting"]["managed_targets"] = list(program.lighting.managed_targets.entities)
     data["lighting"]["baseline"] = sorted(
         [
             baseline.model_dump(mode="json", exclude={"targets"}, exclude_none=True)
-            | {"targets": list(resolve_targets(program, baseline.targets))}
+            | {"targets": list(baseline.targets.entities)}
             for baseline in program.lighting.baseline
         ],
         key=lambda item: item["targets"],
     )
-    for group, raw in zip(
-        sorted(program.groups, key=lambda item: item.id), data["groups"], strict=True
-    ):
-        raw["handover"] = effective_handover(program, group).model_dump(mode="json")
     normalized_routines = []
     for routine in program.routines:
         defaults = merge_defaults(program, routine)
@@ -659,8 +619,7 @@ def behavior_data(program: Program) -> dict[str, Any]:
                             if setting is not None
                             else defaults.activity_windows.model_dump(mode="json")[key]
                         )
-                    value["targets"] = list(resolve_targets(program, item.targets))
-                    value["groups"] = sorted(item.targets.groups)
+                    value["targets"] = list(item.targets.entities)
                 elif isinstance(item, Activity):
                     duration = item.duration or defaults.activities.duration
                     value["duration"] = duration.model_dump(mode="json", exclude_none=True)
@@ -672,7 +631,7 @@ def behavior_data(program: Program) -> dict[str, Any]:
                     actions = []
                     for action in getattr(item, actions_field):
                         resolved = action.model_dump(mode="json", exclude_none=True)
-                        resolved["targets"] = list(resolve_targets(program, action.targets))
+                        resolved["targets"] = list(action.targets.entities)
                         resolved["resources"] = sorted(set(action.resources))
                         resolved["target_order"] = action.target_order or defaults.target_order
                         resolved["stagger"] = (action.stagger or defaults.stagger).model_dump(
@@ -698,7 +657,6 @@ def behavior_hash(program: Program) -> str:
 def rename_identifier(program: Program, kind: str, old: str, new: str) -> Program:
     """Rewrite typed references in a new validated transaction; opaque data stays untouched."""
     fields = {
-        "group": "groups",
         "routine": "routines",
         "step": "steps",
         "activity": "activities",
@@ -710,7 +668,7 @@ def rename_identifier(program: Program, kind: str, old: str, new: str) -> Progra
     data = program_data(program)
     resources = (
         data[field]
-        if kind in {"group", "routine"}
+        if kind == "routine"
         else [item for routine in data["routines"] for item in routine[field]]
     )
     matches = [item for item in resources if item["id"] == old]
@@ -719,13 +677,7 @@ def rename_identifier(program: Program, kind: str, old: str, new: str) -> Progra
     if new != old and any(item["id"] == new for item in resources):
         raise ProgramError([Issue("duplicate_id", f"{kind} ID {new} already exists")])
     matches[0]["id"] = new
-    if kind == "group":
-        for _, path in all_targets(program):
-            target = data
-            for component in path:
-                target = target[component]
-            target["groups"] = [new if value == old else value for value in target["groups"]]
-    elif kind == "step":
+    if kind == "step":
         for _, item, path in items_with_paths(program):
             for reference, reference_path in step_references(item):
                 if reference != old:

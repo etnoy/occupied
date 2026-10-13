@@ -44,7 +44,6 @@ from .validation import (
     behavior_hash,
     condition_data,
     program_data,
-    resolve_targets,
 )
 from .validation import (
     program_revision as revision,
@@ -263,15 +262,15 @@ class DailyEngine:
                     item.actions if hasattr(item, "actions") else (*item.on_start, *item.on_end)
                 )
                 for action in actions:
-                    entities.update(resolve_targets(self.program, action.targets))
+                    entities.update(action.targets.entities)
                     entities.update(action.resources)
                 if isinstance(item, Activity):
                     entities.update(item.resources)
                     observe_conditions([condition_data(c) for c in item.start_conditions])
                     observe_conditions([condition_data(c) for c in item.ownership_conditions])
             for window in routine.activity_windows:
-                entities.update(resolve_targets(self.program, window.targets))
-        entities.update(resolve_targets(self.program, self.program.lighting.managed_targets))
+                entities.update(window.targets.entities)
+        entities.update(self.program.lighting.managed_targets.entities)
         for lifecycle in self._activities.values():
             entities.update(lifecycle.resources)
             observe_conditions(lifecycle.ownership_conditions)
@@ -679,23 +678,13 @@ class DailyEngine:
         self._handover = {}
         observed = {
             entity: light_observation(self._lighting_source(), entity)
-            for entity in resolve_targets(self.program, self.program.lighting.managed_targets)
+            for entity in self.program.lighting.managed_targets.entities
         }
         managed = project_lighting(
             self.program, self._projection_plan(now), now, yielded=frozenset(self._yielded)
         )
+        config = effective_handover(self.program)
         for entity in managed:
-            config = effective_handover(self.program)
-            memberships = [
-                effective_handover(self.program, group)
-                for group in self.program.groups
-                if group.id in self.program.lighting.managed_targets.groups
-                and entity in group.entities
-            ]
-            if entity in self.program.lighting.managed_targets.entities:
-                memberships.append(config)
-            if memberships:
-                config = max(memberships, key=lambda value: value.duration)
             previous = old.get(entity)
             deadline = (
                 instant(previous["deadline"])

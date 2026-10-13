@@ -98,7 +98,6 @@ async function fixture() {
         program: {
           schema_version: 1,
           name: instance.name,
-          groups: [],
           routines: [],
         },
         revision: `revision-${instance.config_entry_id}`,

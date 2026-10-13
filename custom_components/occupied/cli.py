@@ -69,7 +69,7 @@ def parser() -> argparse.ArgumentParser:
         "rename-id", help="Emit a validated replacement with typed references rewritten"
     )
     rename.add_argument("file", type=Path)
-    rename.add_argument("kind", choices=("group", "routine", "step", "activity", "window"))
+    rename.add_argument("kind", choices=("routine", "step", "activity", "window"))
     rename.add_argument("old")
     rename.add_argument("new")
     rename.add_argument("--output", type=Path)

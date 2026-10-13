@@ -11,7 +11,6 @@ export type JsonValue =
   | { [key: string]: JsonValue };
 export interface Targets {
   entities?: string[];
-  groups?: string[];
 }
 export interface Range<T = string | number> {
   fixed?: T;
@@ -109,10 +108,6 @@ export interface Between {
   end: Anchor;
   cross_midnight?: boolean;
 }
-export interface Group extends Item {
-  entities: string[];
-  handover?: Handover;
-}
 export interface Defaults {
   time_distribution?: string;
   probability?: number;
@@ -160,18 +155,14 @@ export interface Program {
   defaults?: Defaults;
   lighting?: Lighting;
   constraints?: {
-    max_simultaneous_groups?: number;
     generation_attempts?: number;
   };
-  groups?: Group[];
   routines?: Routine[];
 }
-export type EditableResource = ScheduledItem &
-  Partial<Group> &
-  Partial<Routine>;
-export type ResourceKind = "group" | "routine" | "step" | "activity" | "window";
+export type EditableResource = ScheduledItem & Partial<Routine>;
+export type ResourceKind = "routine" | "step" | "activity" | "window";
 export type ItemKind = "steps" | "activities" | "activity_windows";
-export type Resource = (Group | Routine | ScheduledItem) & {
+export type Resource = (Routine | ScheduledItem) & {
   kind: ResourceKind;
   routine?: string;
   when?: When;

@@ -53,7 +53,8 @@ def test_renames_reordering_and_unrelated_rules_preserve_draws(program_dict):
     original = generate_plan(validate_program(program_dict), date(2026, 10, 6), "stable")
     edited = deepcopy(program_dict)
     edited["name"] = "Renamed"
-    edited["groups"][0]["entities"].reverse()
+    edited["lighting"]["managed_targets"]["entities"].reverse()
+    edited["routines"][0]["steps"][0]["actions"][0]["targets"]["entities"].reverse()
     edited["routines"][0]["steps"].reverse()
     for step in edited["routines"][0]["steps"]:
         step["name"] += " new"
@@ -274,22 +275,21 @@ def test_endings_precede_same_priority_starts_at_same_instant(program_dict):
     assert events == ["window_end", "window_end", "window_start", "window_start"]
 
 
-def test_global_group_concurrency_uses_bounded_reported_failure(program_dict):
-    program_dict["groups"].append({"id": "other", "name": "Other", "entities": ["light.other"]})
-    program_dict["constraints"] = {"max_simultaneous_groups": 1, "generation_attempts": 3}
+def test_window_concurrency_uses_bounded_reported_failure(program_dict):
+    program_dict["constraints"] = {"generation_attempts": 3}
     window = program_dict["routines"][0]["activity_windows"][0]
     window.update(
         {
-            "cycles": {"fixed": 1},
+            "cycles": {"fixed": 2},
             "on_duration": {"fixed": "1h"},
             "between": {"start": {"clock": "08:00"}, "end": {"clock": "09:00"}},
+            "overlap": True,
+            "min_gap": "0s",
+            "max_simultaneous": 1,
         }
     )
-    second = deepcopy(window)
-    second.update({"id": "other_use", "targets": {"groups": ["other"]}})
-    program_dict["routines"][0]["activity_windows"].append(second)
     plan = generate_plan(validate_program(program_dict), date(2026, 10, 6), 0)
-    assert len([item for item in plan.intervals if item.kind == "window"]) == 1
+    assert not any(item.kind == "window" for item in plan.intervals)
     assert any(
         issue.code == "concurrency_infeasible" and "3 attempts" in issue.message
         for issue in plan.issues
@@ -328,20 +328,15 @@ def test_activity_duration_and_exclusive_lease_include_staggered_actions(
     assert plan.feasible is feasible
 
 
-@pytest.mark.parametrize("other_target, feasible", [("light.a", True), ("light.b", False)])
-def test_subset_concurrency_counts_only_groups_with_selected_targets(
-    program_dict, other_target, feasible
-):
-    program_dict["groups"][0]["entities"] = ["light.a"]
-    program_dict["groups"].append({"id": "other", "name": "Other", "entities": ["light.b"]})
-    program_dict["constraints"] = {"max_simultaneous_groups": 1, "generation_attempts": 2}
+@pytest.mark.parametrize("other_target", ["light.a", "light.b"])
+def test_windows_can_overlap_independently_with_selected_entity_targets(program_dict, other_target):
     window = program_dict["routines"][0]["activity_windows"][0]
     window.update(
         {
             "cycles": {"fixed": 1},
             "on_duration": {"fixed": "1h"},
             "between": {"start": {"clock": "08:00"}, "end": {"clock": "09:00"}},
-            "targets": {"groups": ["room", "other"]},
+            "targets": {"entities": ["light.a", "light.b"]},
             "target_mode": "one",
             "weights": {"light.a": 1e12, "light.b": 1},
         }
@@ -351,9 +346,12 @@ def test_subset_concurrency_counts_only_groups_with_selected_targets(
     second["weights"] = {other_target: 1e12}
     program_dict["routines"][0]["activity_windows"].append(second)
     plan = generate_plan(validate_program(program_dict), date(2026, 10, 6), 0)
-    assert plan.feasible is feasible
+    assert plan.feasible
     first = next(item for item in plan.intervals if item.source_id == "room_use")
-    assert first.groups == ("room",)
+    second = next(item for item in plan.intervals if item.source_id == "second_use")
+    assert first.resources == ("light.a",)
+    assert second.resources == (other_target,)
+    assert (first.start, first.end) == (second.start, second.end)
 
 
 @pytest.mark.parametrize("anchor", ["clock", "sun", "relative"])

@@ -19,7 +19,6 @@ from .validation import (
     behavior_hash,
     program_data,
     program_revision,
-    resolve_targets,
     validate_program,
     validation_warnings,
 )
@@ -28,13 +27,10 @@ from .validation import (
 def starter_program(config):
     """Offer an editable daily draft using the proof's selected entities and gate."""
     light = config.get("light_entity")
-    target = {"groups": ["home_lights"]} if light else {"entities": []}
+    target = {"entities": [light]} if light else {"entities": []}
     raw = {
         "schema_version": 1,
         "name": config.get("name", "House"),
-        "groups": [{"id": "home_lights", "name": "Home lights", "entities": [light]}]
-        if light
-        else [],
         "activation": {"conditions": []},
         "lighting": {
             "managed_targets": target,
@@ -170,7 +166,7 @@ def installed_issues(hass, program):
                 for field in fields:
                     for ai, action in enumerate(getattr(item, field)):
                         path = ("routines", ri, kind, ii, field, ai)
-                        targets = resolve_targets(program, action.targets)
+                        targets = action.targets.entities
                         qualified = "." in action.action
                         service_name = (
                             "turn_off" if action.action == "safety_off" else action.action
