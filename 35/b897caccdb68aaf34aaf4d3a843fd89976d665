@@ -1,0 +1,21 @@
+custom_components/occupied/frontend/App.svelte
+  s_eb83a540b08207::t_ee09d51737a1e0 53
+custom_components/occupied/frontend/SettingsView.svelte
+  s_eb83a540b08207::t_23817a558a24f0 34,95-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "35b897caccdb68aaf34aaf4d3a843fd89976d665",
+  "prompts": {},
+  "sessions": {
+    "s_eb83a540b08207": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a136c6-6bc5-7401-86eb-5b4c73e22992",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
