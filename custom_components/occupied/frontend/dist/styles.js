@@ -429,6 +429,12 @@ export const styles = `
     background: var(--card-background-color, #fff);
     overflow: hidden;
   }
+  .routine-card.step-disabled {
+    border-style: dashed;
+  }
+  .routine-card.step-disabled .routine-row {
+    color: var(--secondary-text-color, #596773);
+  }
   .routine-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
@@ -453,6 +459,23 @@ export const styles = `
     min-width: 0;
     flex-direction: column;
     gap: 4px;
+  }
+  .routine-row-heading {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .step-status-badge {
+    padding: 2px 8px;
+    border: 1px solid var(--divider-color, #d5dce3);
+    border-radius: 999px;
+    background: var(--secondary-background-color, #e3eef2);
+    color: var(--secondary-text-color, #596773);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: nowrap;
   }
   .routine-row strong {
     font-size: 16px;

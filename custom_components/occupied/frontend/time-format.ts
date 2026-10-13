@@ -2,6 +2,17 @@ import type { HomeAssistant } from "./types.js";
 
 export type HomeAssistantLocale = NonNullable<HomeAssistant["locale"]>;
 
+export function formatScheduleDate(
+  value: string,
+  locale?: HomeAssistantLocale,
+) {
+  const weekday = new Intl.DateTimeFormat(locale?.language, {
+    weekday: "long",
+    timeZone: "UTC",
+  }).format(new Date(`${value}T12:00:00Z`));
+  return `${weekday} ${value}`;
+}
+
 function usesAmPm(locale?: HomeAssistantLocale) {
   if (!locale) {
     return false;

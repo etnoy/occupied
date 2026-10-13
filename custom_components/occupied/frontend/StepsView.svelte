@@ -15,19 +15,6 @@
   let { t, entries } = $derived(data);
 </script>
 
-{#if entries.length}
-  <div class="page-heading">
-    <button
-      type="button"
-      class="primary"
-      data-create-routine
-      disabled={panel.busy}
-      onclick={() => startStep(panel)}
-    >
-      {t("Create step")}
-    </button>
-  </div>
-{/if}
 {#if !entries.length}
   <section class="routine-empty">
     <button
@@ -46,6 +33,9 @@
       {#each stepTree(entries) as { entry, depth } (entry.id)}
         {@const editing =
           panel.stepEditor?.existing && panel.stepEditor.id === entry.id}
+        {@const stepDisabled = editing
+          ? panel.stepEditor?.form.enabled === false
+          : entry.enabled === false}
         {@const expanded =
           editing ||
           (!panel.stepEditor &&
@@ -53,6 +43,7 @@
             panel.selectedStep === entry.id)}
         <div
           class="routine-card"
+          class:step-disabled={stepDisabled}
           data-routine-id={entry.id}
           style={`--depth:${Math.min(depth, 3)}`}
         >
@@ -61,20 +52,28 @@
             id={`step-card-${entry.id}`}
             class="routine-row"
             class:editing
-            aria-label={entry.name}
+            aria-label={stepDisabled
+              ? `${entry.name} · ${t("Disabled")}`
+              : entry.name}
             disabled={panel.busy}
             aria-expanded={expanded}
             aria-controls={`step-editor-${entry.id}`}
             onclick={() => openStep(panel, entry)}
           >
-            <span class="routine-row-content"
-              ><strong>{entry.name}</strong><span class="hint"
+            <span class="routine-row-content">
+              <span class="routine-row-heading">
+                <strong>{entry.name}</strong>
+                {#if stepDisabled}
+                  <span class="step-status-badge">{t("Disabled")}</span>
+                {/if}
+              </span>
+              <span class="hint"
                 >{actionSummary(entry, t)} ·
                 {entry.entities
                   .map((id) => entityName(panel.catalog, id))
                   .join(", ")}</span
-              ></span
-            >
+              >
+            </span>
             {#if !editing}
               <span class="routine-row-time">
                 {timingSummary(
@@ -107,6 +106,15 @@
       {/each}
     </div>
   </div>
+  <button
+    type="button"
+    class="primary"
+    data-create-routine
+    disabled={panel.busy}
+    onclick={() => startStep(panel)}
+  >
+    {t("Create step")}
+  </button>
   <button
     type="button"
     class="text-button"

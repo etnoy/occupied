@@ -57,6 +57,20 @@ const sv = {
   "Step name": "Stegets namn",
   "Optional title": "Valfri titel",
   "Preview schedule": "Förhandsvisa schema",
+  "Event details": "Händelsedetaljer",
+  "Export preview": "Exportera förhandsvisning",
+  "Schedule date": "Schemadatum",
+  "Needs attention": "Behöver granskas",
+  "Planned device states": "Planerade enhetstillstånd",
+  "Loading graph…": "Laddar diagram…",
+  On: "På",
+  Unknown: "Okänt",
+  "No light or switch actions on this date. Other actions are listed in Event details.":
+    "Inga åtgärder för lampor eller brytare detta datum. Övriga åtgärder visas i Händelsedetaljer.",
+  "The Home Assistant graph could not load. Planned actions are available in Event details.":
+    "Home Assistant-diagrammet kunde inte laddas. Planerade åtgärder finns i Händelsedetaljer.",
+  "Planned states, not recorded history. Unknown means no starting state or action effect is defined.":
+    "Planerade tillstånd, inte registrerad historik. Okänt betyder att starttillståndet eller åtgärdens effekt inte är definierad.",
   "Back to steps": "Tillbaka till steg",
   "Back to settings": "Tillbaka till inställningar",
   Continue: "Fortsätt",
@@ -67,8 +81,8 @@ const sv = {
   "Absolute time": "Absolut tid",
   "Relative to": "Relativt till",
   "Start time window": "Tidsintervallets start",
-  "Runs at": "Körs kl.",
-  "Runs at a random time between": "Körs vid en slumpmässig tid mellan",
+  at: "kl.",
+  "at a random time between": "vid en slumpmässig tid mellan",
   and: "och",
   "the next day": "nästa dag",
   Runs: "Körs",
@@ -79,12 +93,12 @@ const sv = {
   minutes: "minuter",
   second: "sekund",
   seconds: "sekunder",
-  "Runs at the same time as": "Körs samtidigt som",
+  "at the same time as": "samtidigt som",
   "the start of": "starten av",
-  "Add an end of window to introduce randomness.":
-    "Lägg till ett slut på tidsintervallet för att variera tiden.",
-  "Start and end are the same, so the time is fixed.":
-    "Start och slut är samma, så tiden är fast.",
+  "Add an end of window to introduce randomness":
+    "Lägg till ett slut på tidsintervallet för att variera tiden",
+  "Start and end are the same, so the time is fixed":
+    "Start och slut är samma, så tiden är fast",
   "End of window (optional)": "Slut på tidsintervall (valfritt)",
   "Add end of window": "Lägg till slut på tidsintervall",
   "Start offset": "Startförskjutning",
@@ -126,7 +140,6 @@ const sv = {
     "Enheter styrs när styrningen är aktiverad och aktiveringsvillkoren är uppfyllda.",
   "Saved schedule date": "Sparat schemadatum",
   "Include controller details": "Inkludera styrenhetsdetaljer",
-  Off: "Av",
   Managing: "Styr",
   Waiting: "Väntar",
   Paused: "Pausad",

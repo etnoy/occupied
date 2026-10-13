@@ -18,7 +18,6 @@
   {#if panel.stepEditor?.id === entry.id}
     <button
       type="button"
-      aria-pressed={panel.stepEditor.form.enabled}
       disabled={panel.busy}
       onclick={() => {
         const editor = panel.stepEditor;
@@ -29,7 +28,7 @@
         panel.flush();
       }}
     >
-      {panel.t(panel.stepEditor.form.enabled ? "Enabled" : "Disabled")}
+      {panel.t(panel.stepEditor.form.enabled ? "Disable" : "Enable")}
     </button>
   {/if}
   {#if entry.kind === "steps"}

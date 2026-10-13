@@ -63,7 +63,7 @@ export class OccupiedPanel extends HTMLElement {
   previewVersion?: number;
   previewSettings: { date: string; days: number; seed: string; at?: string } = {
     date: "",
-    days: 7,
+    days: 1,
     seed: "preview-1",
     at: "",
   };
@@ -311,7 +311,7 @@ export class OccupiedPanel extends HTMLElement {
       preview: undefined,
       previewProgram: undefined,
       previewVersion: undefined,
-      previewSettings: { date: "", days: 7, seed: "preview-1", at: "" },
+      previewSettings: { date: "", days: 1, seed: "preview-1", at: "" },
       sourcePath: undefined,
       yaml: "",
       includeSensitive: false,

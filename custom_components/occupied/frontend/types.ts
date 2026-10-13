@@ -333,6 +333,8 @@ export interface PlannedEvent {
   time: string;
   source_id: string;
   kind: string;
+  priority?: number;
+  lease_id?: string | null;
   action: Action & { targets: { entities: string[] } };
   outcome?: string;
   actual_time?: string;
@@ -391,9 +393,11 @@ export interface WebSocketResponses {
 }
 export interface HomeAssistant {
   language?: string;
+  config?: { time_zone?: string; [key: string]: unknown };
   locale?: {
     language?: string;
     time_format?: "language" | "system" | "12" | "24";
+    time_zone?: "local" | "server";
   };
   callWS<T>(message: Record<string, unknown>): Promise<T>;
   callService(

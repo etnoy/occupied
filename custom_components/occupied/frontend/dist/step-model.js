@@ -216,9 +216,6 @@ export function stepEditor(program, entry, parent) {
     errors: {},
   };
 }
-/**
-Compare the current form to its saved baseline, including reverted edits.
-*/
 export function hasStepChanges(editor) {
   return (
     !editor.existing ||
@@ -549,7 +546,7 @@ function scheduleDaySuffix(selected, t) {
     return ` ${t("on no days")}`;
   }
   if (days.every((day) => selected.includes(day))) {
-    return ` ${t("every day")}`;
+    return "";
   }
   if (
     selected.length === 5 &&
@@ -582,7 +579,7 @@ export function timingSummary(
   locale,
 ) {
   if (!entry.when) {
-    return `${t("Repeated activity window")}${scheduleDaySuffix(entry.days, t)}${entry.days ? "." : ""}`;
+    return `${t("Repeated activity window")}${scheduleDaySuffix(entry.days, t)}`;
   }
   return timingExplanation(timingForm(entry.when), entries, t, sources, {
     includeHints: false,
@@ -597,7 +594,7 @@ export function timingExplanation(
   sources = [],
   { includeHints = true, locale, days: selectedDays } = {},
 ) {
-  const recurrence = scheduleDaySuffix(selectedDays, t);
+  const runs = `${t("Runs")}${scheduleDaySuffix(selectedDays, t)}`;
   const time = {
     start: "",
     end: "",
@@ -618,24 +615,24 @@ export function timingExplanation(
           0,
         );
     if (!valid(time.start) || (time.end && !valid(time.end))) {
-      return t("Choose valid start and end times.");
+      return t("Choose valid start and end times");
     }
-    const fixedTime = `${t("Runs at")} ${display(time.start)}${recurrence}${includeHints || selectedDays ? "." : ""}`;
+    const fixedTime = `${runs} ${t("at")} ${display(time.start)}`;
     if (!time.end) {
-      return `${fixedTime}${includeHints ? ` ${t("Add an end of window to introduce randomness.")}` : ""}`;
+      return `${fixedTime}${includeHints ? `. ${t("Add an end of window to introduce randomness")}` : ""}`;
     }
     if (seconds(time.end) === seconds(time.start)) {
-      return `${fixedTime}${includeHints ? ` ${t("Start and end are the same, so the time is fixed.")}` : ""}`;
+      return `${fixedTime}${includeHints ? `. ${t("Start and end are the same, so the time is fixed")}` : ""}`;
     }
     const nextDay =
       seconds(time.end) < seconds(time.start) ? ` ${t("the next day")}` : "";
-    return `${t("Runs at a random time between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}${recurrence}.`;
+    return `${runs} ${t("at a random time between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}`;
   }
   if (Object.keys(offsetErrors(time)).length > 0) {
-    return t("Enter valid offsets to see when this step runs.");
+    return t("Enter valid offsets to see when this step runs");
   }
   if (!time.anchor) {
-    return t("Choose a step or event.");
+    return t("Choose a step or event");
   }
   const step = time.anchor.startsWith("step:");
   let name;
@@ -680,17 +677,17 @@ export function timingExplanation(
     `${duration(offset)} ${t(offset < 0 ? "before" : "after")}`;
   if (low === high) {
     return low === 0
-      ? `${t("Runs at the same time as")} ${name}${recurrence}.`
-      : `${t("Runs")} ${offsetLabel(low)} ${name}${recurrence}.`;
+      ? `${runs} ${t("at the same time as")} ${name}`
+      : `${runs} ${offsetLabel(low)} ${name}`;
   }
   const anchorStart = step ? `${t("the start of")} ${name}` : name;
   if (low === 0) {
-    return `${t("Runs at a random time between")} ${anchorStart} ${t("and")} ${offsetLabel(high)} ${name}${recurrence}.`;
+    return `${runs} ${t("at a random time between")} ${anchorStart} ${t("and")} ${offsetLabel(high)} ${name}`;
   }
   if (high === 0) {
-    return `${t("Runs at a random time between")} ${offsetLabel(low)} ${name} ${t("and")} ${anchorStart}${recurrence}.`;
+    return `${runs} ${t("at a random time between")} ${offsetLabel(low)} ${name} ${t("and")} ${anchorStart}`;
   }
   const firstBound =
     Math.sign(low) === Math.sign(high) ? duration(low) : offsetLabel(low);
-  return `${t("Runs at a random time between")} ${firstBound} ${t("and")} ${offsetLabel(high)} ${name}${recurrence}.`;
+  return `${runs} ${t("at a random time between")} ${firstBound} ${t("and")} ${offsetLabel(high)} ${name}`;
 }

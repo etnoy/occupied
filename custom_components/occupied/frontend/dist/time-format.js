@@ -1,4 +1,11 @@
 // Generated from time-format.ts by pnpm run build. Do not edit.
+export function formatScheduleDate(value, locale) {
+  const weekday = new Intl.DateTimeFormat(locale?.language, {
+    weekday: "long",
+    timeZone: "UTC",
+  }).format(new Date(`${value}T12:00:00Z`));
+  return `${weekday} ${value}`;
+}
 function usesAmPm(locale) {
   if (!locale) {
     return false;

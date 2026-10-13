@@ -38,3 +38,32 @@ export async function loadHaControls() {
     customElements.whenDefined("ha-top-app-bar-fixed"),
   ]);
 }
+
+// Load HA's own chart implementation through its lazy history panel route.
+// The timeline component accepts supplied data and does not fetch recorder history.
+let historyChartLoad: Promise<void> | undefined;
+export function loadHaHistoryChart() {
+  if (customElements.get("state-history-chart-timeline")) {
+    return Promise.resolve();
+  }
+  historyChartLoad ??= (async () => {
+    await customElements.whenDefined("partial-panel-resolver");
+    const resolver = document.createElement(
+      "partial-panel-resolver",
+    ) as HTMLElement & {
+      _getRoutes(panels: { url_path: string; component_name: string }[]): {
+        routes: Record<string, { load(): Promise<unknown> }>;
+      };
+    };
+    await resolver
+      ._getRoutes([{ url_path: "history", component_name: "history" }])
+      .routes.history.load();
+    if (!customElements.get("state-history-chart-timeline")) {
+      throw new Error("Home Assistant history chart is unavailable");
+    }
+  })().catch((error: unknown) => {
+    historyChartLoad = undefined;
+    throw error;
+  });
+  return historyChartLoad;
+}

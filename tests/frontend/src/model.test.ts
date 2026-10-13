@@ -286,7 +286,7 @@ void test("start/end bounds and signed sun offsets preserve overnight semantics"
   );
   assert.equal(
     timingSummary(stepEntries(next)[0], []),
-    "Runs at a random time between 35 minutes and 25 minutes before sunset every day.",
+    "Runs at a random time between 35 minutes and 25 minutes before sunset",
   );
 });
 void test("existing fractional-minute ranges remain editable and untouched on rename", () => {
@@ -565,37 +565,37 @@ void test("timing explanation describes signed offsets and window bounds directl
     endOffset: "",
   };
   for (const [startOffset, endOffset, expected] of [
-    ["2h", "", "Runs 2 hours after Kitchen lights."],
-    ["-20m", "", "Runs 20 minutes before Kitchen lights."],
-    ["0s", "", "Runs at the same time as Kitchen lights."],
+    ["2h", "", "Runs 2 hours after Kitchen lights"],
+    ["-20m", "", "Runs 20 minutes before Kitchen lights"],
+    ["0s", "", "Runs at the same time as Kitchen lights"],
     [
       "-20m",
       "1h",
-      "Runs at a random time between 20 minutes before and 1 hour after Kitchen lights.",
+      "Runs at a random time between 20 minutes before and 1 hour after Kitchen lights",
     ],
     [
       "10m",
       "1h",
-      "Runs at a random time between 10 minutes and 1 hour after Kitchen lights.",
+      "Runs at a random time between 10 minutes and 1 hour after Kitchen lights",
     ],
     [
       "-1h",
       "-20m",
-      "Runs at a random time between 1 hour and 20 minutes before Kitchen lights.",
+      "Runs at a random time between 1 hour and 20 minutes before Kitchen lights",
     ],
     [
       "0s",
       "1h",
-      "Runs at a random time between the start of Kitchen lights and 1 hour after Kitchen lights.",
+      "Runs at a random time between the start of Kitchen lights and 1 hour after Kitchen lights",
     ],
     [
       "-20m",
       "0s",
-      "Runs at a random time between 20 minutes before Kitchen lights and the start of Kitchen lights.",
+      "Runs at a random time between 20 minutes before Kitchen lights and the start of Kitchen lights",
     ],
-    ["1h", "60m", "Runs 1 hour after Kitchen lights."],
-    ["1h30m10s", "", "Runs 1 hour 30 minutes 10 seconds after Kitchen lights."],
-    ["1.5s", "", "Runs 1.5 seconds after Kitchen lights."],
+    ["1h", "60m", "Runs 1 hour after Kitchen lights"],
+    ["1h30m10s", "", "Runs 1 hour 30 minutes 10 seconds after Kitchen lights"],
+    ["1.5s", "", "Runs 1.5 seconds after Kitchen lights"],
   ]) {
     assert.equal(
       timingExplanation({ ...base, startOffset, endOffset }, entries),
@@ -604,25 +604,25 @@ void test("timing explanation describes signed offsets and window bounds directl
   }
   assert.equal(
     timingExplanation({ ...base, startOffset: "bad" }, entries),
-    "Enter valid offsets to see when this step runs.",
+    "Enter valid offsets to see when this step runs",
   );
   assert.equal(
     timingExplanation(
       { ...base, startOffset: "1h", endOffset: "-1h" },
       entries,
     ),
-    "Enter valid offsets to see when this step runs.",
+    "Enter valid offsets to see when this step runs",
   );
   assert.equal(
     timingExplanation({ ...base, anchor: "" }, entries),
-    "Choose a step or event.",
+    "Choose a step or event",
   );
   assert.equal(
     timingExplanation(
       { ...base, anchor: "sun:sunset", startOffset: "-20m" },
       entries,
     ),
-    "Runs 20 minutes before sunset.",
+    "Runs 20 minutes before sunset",
   );
   const sources = [
     { value: "entity:calendar.work:start_time", name: "Work · start" },
@@ -634,7 +634,7 @@ void test("timing explanation describes signed offsets and window bounds directl
       (v) => v,
       sources,
     ),
-    "Runs at the same time as Work · start.",
+    "Runs at the same time as Work · start",
   );
   assert.equal(
     timingExplanation({
@@ -642,7 +642,7 @@ void test("timing explanation describes signed offsets and window bounds directl
       anchor: "entity:sensor.alarm",
       startOffset: "1h",
     }),
-    "Runs 1 hour after sensor.alarm.",
+    "Runs 1 hour after sensor.alarm",
   );
 });
 
@@ -650,19 +650,19 @@ void test("absolute timing explanation follows fixed, random and overnight windo
   const base = { mode: "absolute", start: "18:00", end: "" };
   assert.equal(
     timingExplanation(base),
-    "Runs at 18:00. Add an end of window to introduce randomness.",
+    "Runs at 18:00. Add an end of window to introduce randomness",
   );
   assert.equal(
     timingExplanation({ ...base, end: "18:30" }),
-    "Runs at a random time between 18:00 and 18:30.",
+    "Runs at a random time between 18:00 and 18:30",
   );
   assert.equal(
     timingExplanation({ ...base, start: "23:00", end: "00:30" }),
-    "Runs at a random time between 23:00 and 00:30 the next day.",
+    "Runs at a random time between 23:00 and 00:30 the next day",
   );
   assert.equal(
     timingExplanation({ ...base, end: "18:00:00" }),
-    "Runs at 18:00. Start and end are the same, so the time is fixed.",
+    "Runs at 18:00. Start and end are the same, so the time is fixed",
   );
 });
 
@@ -706,7 +706,7 @@ void test("unitless zero offsets validate, describe and save as canonical durati
       },
       [{ id: "morning", name: "Morning" }],
     ),
-    "Runs at the same time as Morning.",
+    "Runs at the same time as Morning",
   );
   assert.match(
     offsetErrors({ startOffset: "30m", endOffset: "0" }).endOffset,
@@ -730,23 +730,23 @@ void test("step list descriptions share the editor wording without editing hints
           cross_midnight: true,
         },
       },
-      "Runs at a random time between 23:50 and 00:20 the next day.",
+      "Runs at a random time between 23:50 and 00:20 the next day",
     ],
     [
       { relative_to: "kitchen", offset_range: { fixed: "2h" } },
-      "Runs 2 hours after Kitchen lights.",
+      "Runs 2 hours after Kitchen lights",
     ],
     [
       { relative_to: "kitchen", offset_range: { fixed: "0s" } },
-      "Runs at the same time as Kitchen lights.",
+      "Runs at the same time as Kitchen lights",
     ],
     [
       { relative_to: "kitchen", offset_range: { min: "-20m", max: "1h" } },
-      "Runs at a random time between 20 minutes before and 1 hour after Kitchen lights.",
+      "Runs at a random time between 20 minutes before and 1 hour after Kitchen lights",
     ],
     [
       { sun_range: { sun: "sunset", offset_range: { fixed: "-20m" } } },
-      "Runs 20 minutes before sunset.",
+      "Runs 20 minutes before sunset",
     ],
   ];
   for (const [when, expected] of cases) {
@@ -766,7 +766,7 @@ void test("step list descriptions share the editor wording without editing hints
       (v) => v,
       [{ value: "entity:input_datetime.wake", name: "Wake-up time" }],
     ),
-    "Runs at the same time as Wake-up time.",
+    "Runs at the same time as Wake-up time",
   );
 });
 
