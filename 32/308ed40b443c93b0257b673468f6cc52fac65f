@@ -1,0 +1,49 @@
+custom_components/occupied/frontend/PreviewView.svelte
+  s_1f0d96224bf297::t_79155977489b65 15-24,51-69,83-95,98-117,119,123-125,127,130-133,136-152
+custom_components/occupied/frontend/StepActions.svelte
+  s_8b5cf09932f2f8::t_1cb531090c2861 31
+custom_components/occupied/frontend/StepsView.svelte
+  s_8b5cf09932f2f8::t_68b55ce8e898f9 36-38,46,55-57,63-70,75-76,109-117
+custom_components/occupied/frontend/ha-controls.ts
+  s_1f0d96224bf297::t_17f9b6d6c1e6d3 41-69
+custom_components/occupied/frontend/occupied-panel.ts
+  s_1f0d96224bf297::t_a6fd023f897de3 66,314
+custom_components/occupied/frontend/step-model.ts
+  s_1f0d96224bf297::t_afadd7e04ea5b1 586,620,644,665,667,669,672,676,679,682,729-730,734,737,741
+custom_components/occupied/frontend/styles.ts
+  s_8b5cf09932f2f8::t_9f193577c012f6 431-436,462-478
+custom_components/occupied/frontend/timeline.ts
+  s_1f0d96224bf297::t_9af757de69e3a4 1-7,12-143
+custom_components/occupied/frontend/translations.ts
+  s_1f0d96224bf297::t_e4007b80fea704 59-72,83-84,95,97-100
+custom_components/occupied/frontend/types.ts
+  s_1f0d96224bf297::t_5ad2b9916d534a 336-337,396,400
+tests/frontend/src/model.test.ts
+  s_1f0d96224bf297::t_8070dc68636606 289,568-570,574,579,584,589,594,596-598,607,614,618,625,637,645,653,657,661,665,709,733,737,741,745,749,769
+tests/frontend/src/timeline.test.ts
+  s_1f0d96224bf297::t_725621af99e8be 1-172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "32308ed40b443c93b0257b673468f6cc52fac65f",
+  "prompts": {},
+  "sessions": {
+    "s_1f0d96224bf297": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13420-2c71-7b63-8583-106f76b80677",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_8b5cf09932f2f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a133f7-4f66-7492-96ba-ec0e5bf51652",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
