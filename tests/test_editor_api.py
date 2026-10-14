@@ -476,7 +476,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BUILD_STEP = """
 import { readFileSync } from 'node:fs';
 import { buildStep, stepEditor, stepEntries } from
-  './custom_components/occupied/frontend/dist/step-model.js';
+  './custom_components/occupied/frontend/dist/lib/models/step-model.js';
 const { program, form, editing } = JSON.parse(readFileSync(0, 'utf8'));
 const editor = stepEditor(program, editing ? stepEntries(program)[0] : null);
 Object.assign(editor.form, form);

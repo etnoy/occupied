@@ -11,11 +11,11 @@ import svelteStyle from "./scripts/eslint-svelte-style.mjs";
 
 const configDirectory = path.dirname(fileURLToPath(import.meta.url));
 const typescriptFiles = [
-  "custom_components/occupied/frontend/**/*.ts",
-  "tests/frontend/**/*.ts",
+  "custom_components/occupied/frontend/src/**/*.ts",
+  "tests/frontend/src/**/*.ts",
   "scripts/*.ts",
 ];
-const svelteFiles = ["custom_components/occupied/frontend/**/*.svelte"];
+const svelteFiles = ["custom_components/occupied/frontend/src/**/*.svelte"];
 const sourceFiles = [...typescriptFiles, ...svelteFiles];
 
 export default typescriptEslint.config([
@@ -154,11 +154,11 @@ export default typescriptEslint.config([
     rules: { "occupied-svelte/script-spacing": "error" },
   },
   {
-    files: ["custom_components/occupied/frontend/**/*.{ts,svelte}"],
+    files: ["custom_components/occupied/frontend/src/**/*.{ts,svelte}"],
     languageOptions: { globals: globals.browser },
   },
   {
-    files: ["tests/frontend/**/*.ts", "scripts/*.{ts,mjs}"],
+    files: ["tests/frontend/src/**/*.ts", "scripts/*.{ts,mjs}"],
     languageOptions: { globals: globals.node },
   },
 ]);

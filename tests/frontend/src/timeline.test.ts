@@ -1,4 +1,4 @@
-import { translator } from "@occupied/translations.js";
+import { translator } from "@occupied/lib/i18n/translations.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -7,9 +7,12 @@ import {
   previewStateHistory,
   staggerTransitions,
   eventDetails,
-} from "@occupied/timeline.js";
-import type { Plan, PlannedEvent } from "@occupied/types.js";
-import { calendarMidnight, shiftScheduleDate } from "@occupied/time-format.js";
+} from "@occupied/lib/utils/timeline.js";
+import type { Plan, PlannedEvent } from "@occupied/lib/types.js";
+import {
+  calendarMidnight,
+  shiftScheduleDate,
+} from "@occupied/lib/utils/time-format.js";
 
 void test("schedule navigation shifts calendar days across DST, leap days, and year boundaries", () => {
   for (const [date, offset, expected] of [

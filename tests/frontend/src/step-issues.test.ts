@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { stepEntries } from "@occupied/step-model.js";
-import { warningStepId } from "@occupied/step-issues.js";
+import { stepEntries } from "@occupied/lib/models/step-model.js";
+import { warningStepId } from "@occupied/lib/utils/step-issues.js";
 
 const entries = stepEntries({
   schema_version: 1,

@@ -1,6 +1,9 @@
-"""HA lifecycle; imports are deferred so the planner/CLI can run without HA."""
+"""HA lifecycle; HA imports are deferred so the planner/CLI can run without HA."""
 
 from typing import TYPE_CHECKING
+
+# Build Pydantic models in HA's import executor: first use scans plugin metadata on disk.
+from .validation import ProgramError, validate_program
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -132,7 +135,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> 
     from .engine import OccupiedEngine
     from .panel import async_register_panel, async_remove_panel
     from .storage import program_store
-    from .validation import ProgramError, validate_program
 
     managed = entry.data.get("source") == "file"
     from .bootstrap import check_bootstrap

@@ -1,14 +1,14 @@
-import { translator } from "@occupied/translations.js";
+import { translator } from "@occupied/lib/i18n/translations.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import type { Program } from "@occupied/types.js";
+import type { Program } from "@occupied/lib/types.js";
 import {
   copy,
   identifier,
   parentSteps,
   references,
   removeStep,
-} from "@occupied/model.js";
+} from "@occupied/lib/models/model.js";
 import {
   buildStep,
   stepEditor,
@@ -17,8 +17,12 @@ import {
   editorErrors,
   formTiming,
   timeSourceChoices,
-} from "@occupied/step-model.js";
-import { timingForm, timingExplanation, offsetErrors } from "@occupied/util.js";
+} from "@occupied/lib/models/step-model.js";
+import {
+  timingForm,
+  timingExplanation,
+  offsetErrors,
+} from "@occupied/lib/utils/util.js";
 
 const program = (): Program => ({
   schema_version: 1,

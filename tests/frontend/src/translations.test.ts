@@ -5,14 +5,14 @@ import {
   sv,
   translator,
   type TranslationKey,
-} from "@occupied/translations.js";
+} from "@occupied/lib/i18n/translations.js";
 import {
   actionErrors,
   stepEditor,
   timeSourceChoices,
-} from "@occupied/step-model.js";
-import { randomEditor } from "@occupied/random-model.js";
-import { randomExplanation } from "@occupied/random-explanation.js";
+} from "@occupied/lib/models/step-model.js";
+import { randomEditor } from "@occupied/lib/models/random-model.js";
+import { randomExplanation } from "@occupied/lib/utils/random-explanation.js";
 
 const placeholders = (text: string) =>
   [...text.matchAll(/\{\w+\}/g)].map(([placeholder]) => placeholder).sort();

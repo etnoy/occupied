@@ -1,7 +1,7 @@
-import { translator } from "@occupied/translations.js";
+import { translator } from "@occupied/lib/i18n/translations.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import type { Program } from "@occupied/types.js";
+import type { Program } from "@occupied/lib/types.js";
 import {
   randomEditor,
   randomEntries,
@@ -9,14 +9,14 @@ import {
   buildRandom,
   hasRandomChanges,
   countSummary,
-} from "@occupied/random-model.js";
-import { references, removeStep } from "@occupied/model.js";
-import { randomReferences } from "@occupied/model.js";
+} from "@occupied/lib/models/random-model.js";
+import { references, removeStep } from "@occupied/lib/models/model.js";
+import { randomReferences } from "@occupied/lib/models/model.js";
 import {
   dependentNames,
   stepEntries,
   timeSourceChoices,
-} from "@occupied/step-model.js";
+} from "@occupied/lib/models/step-model.js";
 
 function program(): Program {
   return {

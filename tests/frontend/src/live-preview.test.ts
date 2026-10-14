@@ -1,4 +1,4 @@
-import { translator } from "@occupied/translations.js";
+import { translator } from "@occupied/lib/i18n/translations.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -7,8 +7,8 @@ import {
   liveRunning,
   mergeLiveSession,
   liveSessionStatus,
-} from "@occupied/live-preview.js";
-import type { LivePreviewSession } from "@occupied/types.js";
+} from "@occupied/lib/utils/live-preview.js";
+import type { LivePreviewSession } from "@occupied/lib/types.js";
 
 function sessionFixture(): LivePreviewSession {
   return {

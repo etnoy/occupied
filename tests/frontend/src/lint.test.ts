@@ -7,7 +7,7 @@ void test("Svelte lint checks typed scripts, declaration spacing, and template k
   const eslint = new ESLint();
   const filePath = fileURLToPath(
     new URL(
-      "../../../custom_components/occupied/frontend/App.svelte",
+      "../../../custom_components/occupied/frontend/src/App.svelte",
       import.meta.url,
     ),
   );

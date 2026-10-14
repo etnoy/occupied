@@ -1,5 +1,5 @@
-// Generated from occupied-panel.ts by pnpm run build. Do not edit.
-// custom_components/occupied/frontend/translations.ts
+// Generated from custom_components/occupied/frontend/src/occupied-panel.ts by pnpm run build. Do not edit.
+// custom_components/occupied/frontend/src/lib/i18n/translations.ts
 var en = {
   staggered_action: "Staggered action",
   stagger_hint:
@@ -880,7 +880,7 @@ function translator(language) {
   };
 }
 
-// custom_components/occupied/frontend/time-format.ts
+// custom_components/occupied/frontend/src/lib/utils/time-format.ts
 function shiftScheduleDate(value, days2) {
   const date = /* @__PURE__ */ new Date(`${value}T12:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days2);
@@ -986,7 +986,7 @@ function formatTimestamp(value, zone, locale) {
   }).format(new Date(value));
 }
 
-// custom_components/occupied/frontend/model.ts
+// custom_components/occupied/frontend/src/lib/models/model.ts
 var copy = (value) => structuredClone(value);
 var days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 function set(object, path, value) {
@@ -1088,7 +1088,7 @@ function randomReferences(program, id) {
     .map(([key2]) => ["random", key2, "start", "relative_to", "random"]);
 }
 
-// custom_components/occupied/frontend/util.ts
+// custom_components/occupied/frontend/src/lib/utils/util.ts
 function errorMessage(error) {
   if (error instanceof Error) {
     return error.message;
@@ -1383,8 +1383,8 @@ function timingExplanation(
   return `${runs} ${t("at_a_random_time_between")} ${firstBound} ${t("and")} ${offsetLabel(high)} ${name}`;
 }
 
-// custom_components/occupied/frontend/styles.css
-var styles_default =
+// custom_components/occupied/frontend/src/app.css
+var app_default =
   '/* Shared element defaults */\np,\nli {\n  overflow-wrap: anywhere;\n}\n\n:host {\n  display: block;\n  min-height: 100%;\n  background: var(--primary-background-color, #f4f5f8);\n  color: var(--primary-text-color, #202c37);\n  font:\n    15px/1.5 system-ui,\n    sans-serif;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nmain {\n  max-width: 1200px;\n  margin: auto;\n  padding: 24px;\n}\n\nh1 {\n  margin: 0;\n  font-size: 28px;\n}\n\nh2 {\n  font-size: 21px;\n  margin: 0 0 12px;\n}\n\nh3 {\n  font-size: 17px;\n}\n\np {\n  margin: 8px 0;\n}\n\nsmall,\n.hint {\n  color: var(--secondary-text-color, #596773);\n}\n\nheader {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  flex-wrap: wrap;\n}\n\nnav,\n.row,\n.toolbar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\nnav {\n  margin: 18px 0;\n}\n\nnav button[aria-current="page"] {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nsection {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  padding: 20px;\n  margin: 16px 0;\n  min-width: 0;\n}\n\nsection section {\n  border-radius: 8px;\n}\n\ndetails {\n  padding: 12px 0;\n}\n\nsummary {\n  cursor: pointer;\n  font-weight: 600;\n}\n\nbutton,\ninput,\nselect,\ntextarea {\n  font: inherit;\n  color: inherit;\n}\n\nbutton {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #bdc9d2);\n  padding: 8px 14px;\n  border-radius: 8px;\n  cursor: pointer;\n  min-height: 42px;\n}\n\nbutton.primary {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nbutton:disabled {\n  opacity: 0.5;\n  cursor: default;\n}\n\nbutton:focus-visible,\ninput:focus-visible,\nselect:focus-visible,\ntextarea:focus-visible,\nsummary:focus-visible,\na:focus-visible,\n[tabindex]:focus-visible {\n  outline: 3px solid var(--primary-color, #167b94);\n  outline-offset: 2px;\n}\n\n.field {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  margin: 12px 0;\n  max-width: 700px;\n}\n\nlabel {\n  font-weight: 500;\n}\n\ninput:not([type="checkbox"]),\nselect,\ntextarea {\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 6px;\n  background: var(--card-background-color, #fff);\n  padding: 9px;\n  min-width: 0;\n  max-width: 100%;\n}\n\n.field input,\n.field select,\n.field textarea {\n  width: 100%;\n}\n\ntextarea {\n  resize: vertical;\n}\n\n.field textarea {\n  font:\n    14px/1.5 ui-monospace,\n    monospace;\n}\n\ninput[type="checkbox"] {\n  width: 20px;\n  height: 20px;\n  vertical-align: middle;\n}\n\nfieldset {\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 8px;\n  margin: 12px 0;\n  min-width: 0;\n}\n\n.banner {\n  padding: 12px 16px;\n  border-radius: 8px;\n  background: var(--secondary-background-color, #e3eef2);\n  margin: 12px 0;\n  overflow-wrap: anywhere;\n}\n\n.banner.unsaved {\n  border: 1px solid var(--warning-color, #e69500);\n  border-left-width: 4px;\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #e69500) 18%,\n    var(--card-background-color, #fff)\n  );\n  color: var(--primary-text-color, #202c37);\n  font-weight: 600;\n}\n\n.error,\n[aria-invalid="true"] {\n  color: var(--error-color, #b3261e);\n}\n\n[aria-invalid="true"] {\n  border-color: var(--error-color, #b3261e);\n}\n\n[hidden] {\n  display: none !important;\n}\n\n.toolbar {\n  position: sticky;\n  top: 0;\n  padding: 12px 0;\n  background: var(--primary-background-color, #f4f5f8);\n  z-index: 2;\n}\n\n.table-wrap {\n  overflow: auto;\n}\n\ntable {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 13px;\n}\n\nth,\ntd {\n  padding: 9px;\n  text-align: left;\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  max-width: 300px;\n  overflow-wrap: anywhere;\n}\n\nth {\n  white-space: nowrap;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 14px;\n  }\n\n  section {\n    padding: 14px;\n  }\n\n  nav {\n    gap: 5px;\n  }\n\n  nav button {\n    padding: 7px 10px;\n  }\n\n  .row input {\n    width: 100%;\n  }\n}\n\n/* Panel shell overrides: keep these after the shared defaults. */\nmain {\n  max-width: 1120px;\n  padding: 32px;\n}\n\nheader {\n  margin-bottom: 24px;\n}\n\nheader h1 {\n  font-size: 24px;\n  letter-spacing: -0.7px;\n}\n\nheader p {\n  margin: 2px 0;\n  font-size: 13px;\n}\n\nnav {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  gap: 24px;\n  margin: 16px 0 32px;\n}\n\nnav button,\nnav button[aria-current="page"] {\n  border: 0;\n  border-radius: 0;\n  border-bottom: 3px solid transparent;\n  background: transparent;\n  padding: 10px 0;\n  color: var(--secondary-text-color, #596773);\n}\n\nnav button[aria-current="page"] {\n  border-bottom-color: var(--primary-color, #167b94);\n  color: var(--primary-color, #167b94);\n  font-weight: 650;\n}\n\n.field-label-row {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: baseline;\n  gap: 4px 12px;\n}\n\n.field-label-row .text-button {\n  min-height: 24px;\n  padding: 0;\n  border: 0;\n  font-size: 13px;\n}\n\n.text-button {\n  border-color: transparent;\n  background: transparent;\n  color: var(--primary-color, #167b94);\n  padding-left: 4px;\n  padding-right: 4px;\n}\n\n.page-heading {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 24px;\n  margin: 24px 0;\n}\n\n.page-heading h2 {\n  font-size: 30px;\n  letter-spacing: -0.8px;\n  margin: 0;\n}\n\n.page-heading .hint {\n  max-width: 500px;\n}\n\n/* Step lists and empty states */\n.step-empty {\n  text-align: center;\n  padding: 60px 32px;\n  border-style: dashed;\n}\n\n.step-empty h2 {\n  font-size: 25px;\n  letter-spacing: -0.5px;\n}\n\n.step-empty p {\n  max-width: 490px;\n  margin: 12px auto 24px;\n}\n\n.empty-steps {\n  font-size: 13px;\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-list {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  margin: 0 0 20px;\n  min-width: 0;\n}\n\n.step-card {\n  width: calc(100% - var(--depth) * 14px);\n  margin-left: calc(var(--depth) * 14px);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  overflow: hidden;\n}\n\n.step-card.step-disabled {\n  border-style: dashed;\n}\n\n.step-card.step-warning {\n  border-color: var(--warning-color, #ffa600);\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 10%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-card.step-warning .step-row:not(:disabled):hover {\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 18%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-row-warning {\n  display: flex;\n  align-items: flex-start;\n  gap: 8px;\n  color: var(--warning-color, #ffa600);\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-warning ha-icon {\n  --mdc-icon-size: 20px;\n  flex-shrink: 0;\n}\n\n.step-warning-message {\n  display: block;\n}\n\n.step-card.step-disabled .step-row {\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-row {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);\n  align-items: center;\n  gap: 14px;\n  text-align: left;\n  width: 100%;\n  padding: 20px;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  color: inherit;\n}\n\n.step-row:disabled {\n  opacity: 1;\n  cursor: default;\n}\n\n.step-row.editing {\n  grid-template-columns: minmax(0, 1fr);\n}\n\n.step-row:not(:disabled):hover {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-row[aria-expanded="true"] {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n}\n\n.step-card .step-editor {\n  margin: 0;\n}\n\n.step-editor-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n/* Editor action menus */\n.step-actions-menu {\n  position: fixed;\n  inset: auto;\n  width: 240px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  margin: 0;\n  padding: 6px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 10px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-actions-menu button {\n  display: block;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  text-align: left;\n}\n\n.step-actions-menu button:hover,\n.step-actions-menu button:focus-visible {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-actions-menu [role="separator"] {\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  margin: 6px 8px;\n}\n\n.step-row-content {\n  display: flex;\n  min-width: 0;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.step-row-heading {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.step-status-badge {\n  padding: 2px 8px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 999px;\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--secondary-text-color, #596773);\n  font-size: 11px;\n  font-weight: 500;\n  line-height: 1.5;\n  white-space: nowrap;\n}\n\n.step-row strong {\n  font-size: 16px;\n  font-weight: 650;\n  overflow-wrap: anywhere;\n}\n\n.step-row-content .hint {\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-time {\n  text-align: right;\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n/* Editor dialogs */\n.step-delete-dialog,\n.step-advanced-dialog {\n  width: 440px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-delete-dialog::backdrop,\n.step-advanced-dialog::backdrop {\n  background: #0006;\n}\n\n.step-weekdays {\n  padding: 12px;\n}\n\n.step-weekday-presets {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-bottom: 16px;\n}\n\n.step-weekday-presets button {\n  padding: 6px 10px;\n}\n\n.step-weekday-presets button[aria-pressed="true"] {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.step-weekday-options {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.step-weekday-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  min-height: 42px;\n  cursor: pointer;\n}\n\n.step-weekday-option input {\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-exit-overlay {\n  position: fixed;\n  inset: 0;\n  z-index: 10;\n  display: grid;\n  place-items: center;\n  padding: 16px;\n  background: #0004;\n}\n\n.step-exit-dialog {\n  position: relative;\n  inset: auto;\n  width: 440px;\n  max-width: 100%;\n  margin: 0;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-exit-dialog h2 {\n  margin-top: 0;\n}\n\n.step-delete-actions {\n  display: flex;\n  justify-content: flex-end;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n.danger {\n  color: var(--error-color, #b3261e);\n}\n\n.icon-button {\n  display: inline-grid;\n  place-items: center;\n  width: 42px;\n  padding: 8px;\n}\n\n.icon-button svg {\n  width: 20px;\n  height: 20px;\n  fill: currentColor;\n}\n\n.step-editor {\n  max-width: none;\n  margin: 0 auto 32px;\n  padding: 32px;\n}\n\n.step-editor h3 {\n  font-size: 23px;\n  font-weight: 600;\n  letter-spacing: -0.5px;\n  margin: 28px 0 8px;\n}\n\n.entity-native-selector {\n  display: block;\n  width: 100%;\n}\n\n.builder-footer {\n  display: flex;\n  gap: 10px;\n  align-items: center;\n  flex-wrap: wrap;\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  padding-top: 22px;\n  margin-top: 28px;\n}\n\n.builder-footer .step-editor-actions {\n  margin-top: 0;\n}\n\n.builder-footer > button:first-child {\n  margin-right: auto;\n}\n\n.step-editor details {\n  padding: 8px 0;\n}\n\n.step-editor .field {\n  margin: 18px 0;\n}\n\n.source-picker {\n  position: relative;\n}\n\n.source-picker ha-generic-picker {\n  display: block;\n  width: 100%;\n}\n\n.step-editor .error {\n  font-size: 13px;\n}\n\n.timing-options {\n  border: 0;\n  padding: 0;\n  margin: 18px 0;\n}\n\n.timing-option-row {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.timing-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 10px 12px;\n  min-height: 44px;\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 8px;\n  cursor: pointer;\n}\n\n.timing-option:has(input:checked) {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.timing-options input[type="radio"] {\n  width: 18px;\n  height: 18px;\n  padding: 0;\n  margin: 0;\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-editor .step-name-editor .field {\n  max-width: none;\n  margin: 20px 0 28px;\n}\n\n.step-editor .step-name-editor label {\n  font-weight: 600;\n}\n\n.step-editor .step-name-editor input {\n  font-family: inherit;\n  font-size: 22px;\n  font-weight: 600;\n  line-height: 1.4;\n  padding: 14px;\n}\n\n.step-editor .editor-sections {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 28px;\n}\n\n.step-editor .editor-sections > div {\n  min-width: 0;\n}\n\n.step-editor h3 {\n  margin: 16px 0 8px;\n  font-size: 20px;\n}\n\n.step-editor h4 {\n  margin: 14px 0 8px;\n  font-size: 16px;\n  font-weight: 600;\n}\n\n.step-editor .field {\n  margin: 14px 0;\n}\n\n@media (max-width: 900px) {\n  .step-editor .editor-sections {\n    grid-template-columns: 1fr;\n    gap: 20px;\n  }\n\n  .step-editor .editor-sections > div + div {\n    border-top: 1px solid var(--divider-color, #d5dce3);\n    padding-top: 12px;\n  }\n}\n\n#issues:empty {\n  display: none;\n}\n\n#issues button {\n  margin: 0 6px 8px 0;\n  text-align: left;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 18px 14px;\n  }\n\n  header {\n    gap: 10px;\n    margin-bottom: 8px;\n  }\n\n  nav {\n    margin-bottom: 24px;\n  }\n\n  .page-heading {\n    align-items: flex-start;\n    flex-direction: column;\n    gap: 12px;\n  }\n\n  .page-heading h2 {\n    font-size: 27px;\n  }\n\n  .step-row {\n    padding: 14px;\n    gap: 10px;\n    grid-template-columns: minmax(0, 1fr);\n  }\n\n  .step-row-time {\n    text-align: left;\n  }\n\n  .step-editor {\n    padding: 20px 16px;\n  }\n\n  .builder-footer {\n    gap: 6px;\n  }\n\n  .builder-footer button {\n    padding: 8px 12px;\n  }\n\n  .step-empty {\n    padding: 36px 20px;\n  }\n\n  .empty-steps {\n    line-height: 2;\n  }\n}\n';
 
 // node_modules/.pnpm/esm-env@1.2.2/node_modules/esm-env/dev-fallback.js
@@ -8392,7 +8392,7 @@ if (typeof window !== "undefined") {
   );
 }
 
-// custom_components/occupied/frontend/cover.ts
+// custom_components/occupied/frontend/src/lib/utils/cover.ts
 var coverActions = [
   ["cover.open_cover", "open_cover"],
   ["cover.close_cover", "close_cover"],
@@ -8454,7 +8454,7 @@ function coverTarget(action2, previous = {}) {
   return next2;
 }
 
-// custom_components/occupied/frontend/custom-action.ts
+// custom_components/occupied/frontend/src/lib/utils/custom-action.ts
 function actionTargets(source2) {
   if (!source2) {
     return [];
@@ -8590,7 +8590,7 @@ var customExample = actionYaml({
   entities: { "light.example": { state: "on", brightness: 128 } },
 });
 
-// custom_components/occupied/frontend/stagger.ts
+// custom_components/occupied/frontend/src/lib/utils/stagger.ts
 function staggerPeriodError(settings) {
   const seconds = durationSeconds(settings.period ?? "2m");
   return Number.isFinite(seconds) && seconds >= 1 && seconds <= 1800
@@ -8655,7 +8655,7 @@ function applyStagger(form, settings) {
   }
 }
 
-// custom_components/occupied/frontend/step-model.ts
+// custom_components/occupied/frontend/src/lib/models/step-model.ts
 var sorted = (values) => [...new Set(values)].sort();
 var actionLabels = {
   turn_on: "turn_on",
@@ -9075,7 +9075,7 @@ function dependentNames(program, id) {
   ];
 }
 
-// custom_components/occupied/frontend/step-issues.ts
+// custom_components/occupied/frontend/src/lib/utils/step-issues.ts
 function warningStepId(issue, entries) {
   if (issue.severity !== "warning") {
     return;
@@ -9088,7 +9088,7 @@ function warningStepId(issue, entries) {
   )?.id;
 }
 
-// custom_components/occupied/frontend/step-editor-controller.ts
+// custom_components/occupied/frontend/src/lib/controllers/step-editor-controller.ts
 function focusEditor(panel, key2) {
   const target = key2
     ? panel.shadowRoot.querySelector(
@@ -9204,7 +9204,7 @@ function createStepEditorContext(panel) {
   };
 }
 
-// custom_components/occupied/frontend/steps.ts
+// custom_components/occupied/frontend/src/lib/controllers/steps.ts
 function startStep(panel, entry, parent) {
   if (panel.stepEditor) {
     panel.requestStepExit(() => startStep(panel, entry, parent));
@@ -9290,7 +9290,7 @@ function stepTree(entries) {
   return ordered;
 }
 
-// custom_components/occupied/frontend/dom.ts
+// custom_components/occupied/frontend/src/lib/actions/dom.ts
 function properties(node, values) {
   const apply2 = (next2) => {
     for (const [key2, value] of Object.entries(next2)) {
@@ -9319,7 +9319,7 @@ function validity(node, message) {
   };
 }
 
-// custom_components/occupied/frontend/DeleteStepDialog.svelte
+// custom_components/occupied/frontend/src/lib/components/steps/DeleteStepDialog.svelte
 var root = from_html(`<li> </li>`);
 var root_1 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
 var root_2 = from_html(`<p class="hint"> </p>`);
@@ -9447,14 +9447,14 @@ function DeleteStepDialog($$anchor, $$props) {
 }
 delegate(["click"]);
 
-// custom_components/occupied/frontend/StaggerSettings.svelte
+// custom_components/occupied/frontend/src/lib/components/shared/StaggerSettings.svelte
 var root2 = from_html(`<p class="error" role="alert"> </p>`);
 var root_12 = from_html(
-  `<fieldset class="stagger-settings svelte-l2t2tt"><label class="stagger-option svelte-l2t2tt"><input type="checkbox" class="svelte-l2t2tt"/> <span> </span></label> <p class="hint"> </p> <label> </label> <input type="text" placeholder="2m"/> <p class="hint"> </p> <!></fieldset>`,
+  `<fieldset class="stagger-settings svelte-a733qf"><label class="stagger-option svelte-a733qf"><input type="checkbox" class="svelte-a733qf"/> <span> </span></label> <p class="hint"> </p> <label> </label> <input type="text" placeholder="2m"/> <p class="hint"> </p> <!></fieldset>`,
 );
 var $$css = {
-  hash: "svelte-l2t2tt",
-  code: ".stagger-settings.svelte-l2t2tt {border:0;padding:0;margin-top:24px;}.stagger-option.svelte-l2t2tt {display:flex;align-items:center;gap:8px;cursor:pointer;min-height:42px;}.stagger-option.svelte-l2t2tt input:where(.svelte-l2t2tt) {flex:0 0 auto;accent-color:var(--primary-color, #167b94);}",
+  hash: "svelte-a733qf",
+  code: ".stagger-settings.svelte-a733qf {border:0;padding:0;margin-top:24px;}.stagger-option.svelte-a733qf {display:flex;align-items:center;gap:8px;cursor:pointer;min-height:42px;}.stagger-option.svelte-a733qf input:where(.svelte-a733qf) {flex:0 0 auto;accent-color:var(--primary-color, #167b94);}",
 };
 function StaggerSettings($$anchor, $$props) {
   push($$props, true);
@@ -9536,7 +9536,7 @@ function StaggerSettings($$anchor, $$props) {
 }
 delegate(["change", "input"]);
 
-// custom_components/occupied/frontend/AdvancedStepSettings.svelte
+// custom_components/occupied/frontend/src/lib/components/steps/AdvancedStepSettings.svelte
 var root3 = from_html(`<button type="button"> </button>`);
 var root_13 = from_html(
   `<label class="step-weekday-option"><input type="checkbox"/> <span> </span></label>`,
@@ -9770,7 +9770,7 @@ function AdvancedStepSettings($$anchor, $$props) {
 }
 delegate(["click", "change"]);
 
-// custom_components/occupied/frontend/StepActions.svelte
+// custom_components/occupied/frontend/src/lib/components/steps/StepActions.svelte
 var root4 = from_html(
   `<button type="button" role="menuitem" tabindex="-1"> </button>`,
 );
@@ -10037,7 +10037,7 @@ function StepActions($$anchor, $$props) {
 }
 delegate(["click", "keydown"]);
 
-// custom_components/occupied/frontend/FieldError.svelte
+// custom_components/occupied/frontend/src/lib/components/shared/FieldError.svelte
 var root5 = from_html(`<p class="error" role="alert"> </p>`);
 function FieldError($$anchor, $$props) {
   push($$props, true);
@@ -10070,7 +10070,7 @@ function FieldError($$anchor, $$props) {
   pop();
 }
 
-// custom_components/occupied/frontend/EditorField.svelte
+// custom_components/occupied/frontend/src/lib/components/shared/EditorField.svelte
 var root6 = from_html(`<div><label> </label> <!></div>`);
 var root_15 = from_html(`<ha-selector></ha-selector>`, 2);
 var root_24 = from_html(`<option> </option>`);
@@ -10307,7 +10307,7 @@ function EditorField($$anchor, $$props) {
 }
 delegate(["change", "input"]);
 
-// custom_components/occupied/frontend/SourcePicker.svelte
+// custom_components/occupied/frontend/src/lib/components/shared/SourcePicker.svelte
 var root7 = from_html(
   `<div class="field source-picker"><ha-generic-picker></ha-generic-picker> <!></div>`,
   2,
@@ -10430,7 +10430,7 @@ function SourcePicker($$anchor, $$props) {
   pop();
 }
 
-// custom_components/occupied/frontend/random-model.ts
+// custom_components/occupied/frontend/src/lib/models/random-model.ts
 function countBounds(count) {
   return typeof count === "object"
     ? count
@@ -10624,7 +10624,7 @@ function buildRandom(program, editor) {
   return next2;
 }
 
-// custom_components/occupied/frontend/TimingEditor.svelte
+// custom_components/occupied/frontend/src/lib/components/shared/TimingEditor.svelte
 var root8 = from_html(
   `<label class="timing-option"><input type="radio"/><span> </span></label>`,
 );
@@ -11127,7 +11127,7 @@ function TimingEditor($$anchor, $$props) {
 }
 delegate(["change", "click"]);
 
-// custom_components/occupied/frontend/EntitiesEditor.svelte
+// custom_components/occupied/frontend/src/lib/components/shared/EntitiesEditor.svelte
 var root9 = from_html(`<p class="hint"> </p>`);
 var root_17 = from_html(
   `<div data-editor-section="entities"><h4> </h4> <ha-selector></ha-selector> <!> <!></div>`,
@@ -11258,7 +11258,7 @@ function EntitiesEditor($$anchor, $$props) {
   pop();
 }
 
-// custom_components/occupied/frontend/action-kind.ts
+// custom_components/occupied/frontend/src/lib/utils/action-kind.ts
 function changeActionKind(form, value, confirmReplace) {
   const kind = value === "turn_on" || value === "turn_off" ? "entities" : value;
   if (kind === "custom" && form.kind !== "custom") {
@@ -11324,7 +11324,7 @@ function changeActionKind(form, value, confirmReplace) {
   return {};
 }
 
-// custom_components/occupied/frontend/ActionEditor.svelte
+// custom_components/occupied/frontend/src/lib/components/shared/ActionEditor.svelte
 var root10 = from_html(
   `<ha-code-editor></ha-code-editor> <!> <p class="hint"> </p>`,
   3,
@@ -11337,8 +11337,8 @@ var root_26 = from_html(
   `<div data-editor-section="action"><h3> </h3> <!> <!> <!> <!> <!> <!></div>`,
 );
 var $$css2 = {
-  hash: "svelte-9e2py0",
-  code: "ha-code-editor.svelte-9e2py0 {display:block;width:100%;margin:8px 0;--code-mirror-height: 280px;--code-mirror-max-height: 60vh;}",
+  hash: "svelte-10b0fum",
+  code: "ha-code-editor.svelte-10b0fum {display:block;width:100%;margin:8px 0;--code-mirror-height: 280px;--code-mirror-max-height: 60vh;}",
 };
 function ActionEditor($$anchor, $$props) {
   push($$props, true);
@@ -11437,7 +11437,7 @@ function ActionEditor($$anchor, $$props) {
         ),
       );
       set_custom_element_data(ha_code_editor, "dir", "ltr");
-      set_class(ha_code_editor, 1, "svelte-9e2py0");
+      set_class(ha_code_editor, 1, "svelte-10b0fum");
       action(
         ha_code_editor,
         ($$node, $$action_arg) => properties?.($$node, $$action_arg),
@@ -11629,7 +11629,7 @@ function ActionEditor($$anchor, $$props) {
   pop();
 }
 
-// custom_components/occupied/frontend/StepEditor.svelte
+// custom_components/occupied/frontend/src/lib/components/steps/StepEditor.svelte
 var root11 = from_html(
   `<section class="step-editor"><div class="step-name-editor"><!></div> <div class="editor-sections"><!> <!></div> <!> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-step-submit=""> </button></div></section>`,
 );
@@ -11787,7 +11787,7 @@ function StepEditor($$anchor, $$props) {
 }
 delegate(["click"]);
 
-// custom_components/occupied/frontend/StepsView.svelte
+// custom_components/occupied/frontend/src/lib/components/steps/StepsView.svelte
 var root12 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-step=""> </button></section>`,
 );
@@ -12073,15 +12073,15 @@ function StepsView($$anchor, $$props) {
 }
 delegate(["click"]);
 
-// custom_components/occupied/frontend/SettingsView.svelte
-var root13 = from_html(`<span class="changes svelte-82irif"> </span>`);
+// custom_components/occupied/frontend/src/lib/components/settings/SettingsView.svelte
+var root13 = from_html(`<span class="changes svelte-g0xj3p"> </span>`);
 var root_110 = from_html(
-  `<section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <div class="yaml-actions svelte-82irif"><button type="button" class="primary"> </button> <button type="button"> </button> <button type="button" class="download svelte-82irif"> </button></div></section>`,
+  `<section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <div class="yaml-actions svelte-g0xj3p"><button type="button" class="primary"> </button> <button type="button"> </button> <button type="button" class="download svelte-g0xj3p"> </button></div></section>`,
   2,
 );
 var $$css3 = {
-  hash: "svelte-82irif",
-  code: ".yaml-actions.svelte-82irif {display:flex;align-items:center;flex-wrap:wrap;gap:8px;}.yaml-actions.svelte-82irif .download:where(.svelte-82irif) {margin-left:auto;}ha-code-editor.svelte-82irif {display:block;width:100%;margin:8px 0;--code-mirror-height: 420px;--code-mirror-max-height: 60vh;}section.yaml-panel.svelte-82irif {border-color:var(--divider-color, #d5dce3);border-left-color:var(--divider-color, #d5dce3);background:var(--card-background-color, #fff);}section.yaml-panel.has-changes.svelte-82irif {border-color:var(--warning-color, #e69500);border-left-color:var(--warning-color, #e69500);background:color-mix(\n      in srgb,\n      var(--warning-color, #e69500) 18%,\n      var(--card-background-color, #fff)\n    );}.changes.svelte-82irif {color:var(--warning-color, #e69500);font-size:0.75em;font-weight:500;}",
+  hash: "svelte-g0xj3p",
+  code: ".yaml-actions.svelte-g0xj3p {display:flex;align-items:center;flex-wrap:wrap;gap:8px;}.yaml-actions.svelte-g0xj3p .download:where(.svelte-g0xj3p) {margin-left:auto;}ha-code-editor.svelte-g0xj3p {display:block;width:100%;margin:8px 0;--code-mirror-height: 420px;--code-mirror-max-height: 60vh;}section.yaml-panel.svelte-g0xj3p {border-color:var(--divider-color, #d5dce3);border-left-color:var(--divider-color, #d5dce3);background:var(--card-background-color, #fff);}section.yaml-panel.has-changes.svelte-g0xj3p {border-color:var(--warning-color, #e69500);border-left-color:var(--warning-color, #e69500);background:color-mix(\n      in srgb,\n      var(--warning-color, #e69500) 18%,\n      var(--card-background-color, #fff)\n    );}.changes.svelte-g0xj3p {color:var(--warning-color, #e69500);font-size:0.75em;font-weight:500;}",
 };
 function SettingsView($$anchor, $$props) {
   push($$props, true);
@@ -12140,7 +12140,7 @@ function SettingsView($$anchor, $$props) {
     [() => get(t)("occupied_yaml")],
   );
   set_custom_element_data(ha_code_editor, "dir", "ltr");
-  set_class(ha_code_editor, 1, "svelte-82irif");
+  set_class(ha_code_editor, 1, "svelte-g0xj3p");
   action(
     ha_code_editor,
     ($$node, $$action_arg) => properties?.($$node, $$action_arg),
@@ -12160,7 +12160,7 @@ function SettingsView($$anchor, $$props) {
       classes = set_class(
         section,
         1,
-        "yaml-panel svelte-82irif",
+        "yaml-panel svelte-g0xj3p",
         null,
         classes,
         { "has-changes": get(yamlDirty) },
@@ -12221,7 +12221,7 @@ function SettingsView($$anchor, $$props) {
 }
 delegate(["change", "click"]);
 
-// custom_components/occupied/frontend/ha-controls.ts
+// custom_components/occupied/frontend/src/lib/services/ha-controls.ts
 async function loadHaControls() {
   if (
     customElements.get("ha-selector") &&
@@ -12270,7 +12270,7 @@ function loadHaHistoryChart() {
   return historyChartLoad;
 }
 
-// custom_components/occupied/frontend/timeline.ts
+// custom_components/occupied/frontend/src/lib/utils/timeline.ts
 function calendarDayPlan(plans, date) {
   const current = plans.find((plan) => plan.simulation_date === date);
   if (!current) {
@@ -12462,7 +12462,7 @@ function staggerTransitions(plan) {
   return [...groups].map(([id, group]) => ({ id, ...group }));
 }
 
-// custom_components/occupied/frontend/PreviewStateGraph.svelte
+// custom_components/occupied/frontend/src/lib/components/preview/PreviewStateGraph.svelte
 var root14 = from_html(`<p class="hint"> </p>`);
 var root_111 = from_html(
   `<state-history-chart-timeline></state-history-chart-timeline>`,
@@ -12471,8 +12471,8 @@ var root_111 = from_html(
 var root_28 = from_html(`<p role="status"> </p>`);
 var root_36 = from_html(`<!> <!> <!>`, 1);
 var $$css4 = {
-  hash: "svelte-1cnjgem",
-  code: "state-history-chart-timeline.svelte-1cnjgem {display:block;width:100%;}state-history-chart-timeline[hidden].svelte-1cnjgem {display:none;}",
+  hash: "svelte-1kps2qf",
+  code: "state-history-chart-timeline.svelte-1kps2qf {display:block;width:100%;}state-history-chart-timeline[hidden].svelte-1kps2qf {display:none;}",
 };
 function PreviewStateGraph($$anchor, $$props) {
   push($$props, true);
@@ -12591,7 +12591,7 @@ function PreviewStateGraph($$anchor, $$props) {
           ),
         [() => $$props.t("planned_device_states")],
       );
-      set_class(state_history_chart_timeline, 1, "svelte-1cnjgem");
+      set_class(state_history_chart_timeline, 1, "svelte-1kps2qf");
       action(
         state_history_chart_timeline,
         ($$node, $$action_arg) => properties?.($$node, $$action_arg),
@@ -12628,7 +12628,7 @@ function PreviewStateGraph($$anchor, $$props) {
   pop();
 }
 
-// custom_components/occupied/frontend/live-preview.ts
+// custom_components/occupied/frontend/src/lib/utils/live-preview.ts
 function liveRunning(session) {
   return (
     !!session && ["ready", "executing", "stopping"].includes(session.state)
@@ -12706,7 +12706,7 @@ function lastGroupResult(session) {
   return succeeded > 0 ? "partial_success" : "event_failed_or_interrupted";
 }
 
-// custom_components/occupied/frontend/Timeline.svelte
+// custom_components/occupied/frontend/src/lib/components/preview/Timeline.svelte
 var root15 = from_html(`<h2> </h2>`);
 var root_112 = from_html(`<li> <!></li>`);
 var root_29 = from_html(
@@ -12726,8 +12726,8 @@ var root_9 = from_html(`<!> <!> <!>`, 1);
 var root_10 = from_html(`<p role="status"> </p>`);
 var root_11 = from_html(`<section><!> <!></section>`);
 var $$css5 = {
-  hash: "svelte-16g6nis",
-  code: "tr.current.svelte-16g6nis {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-16g6nis {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}",
+  hash: "svelte-1iz1525",
+  code: "tr.current.svelte-1iz1525 {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-1iz1525 {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}",
 };
 function Timeline($$anchor, $$props) {
   push($$props, true);
@@ -13053,7 +13053,7 @@ function Timeline($$anchor, $$props) {
                   "aria-current",
                   get(live)?.current ? "step" : void 0,
                 );
-                classes = set_class(tr_1, 1, "svelte-16g6nis", null, classes, {
+                classes = set_class(tr_1, 1, "svelte-1iz1525", null, classes, {
                   current: get(live)?.current,
                   completed: get(live)?.outcome?.status === "dispatched",
                 });
@@ -13171,39 +13171,39 @@ function Timeline($$anchor, $$props) {
 }
 delegate(["input", "click"]);
 
-// custom_components/occupied/frontend/LivePreviewControls.svelte
+// custom_components/occupied/frontend/src/lib/components/preview/LivePreviewControls.svelte
 var root16 = from_html(
-  `<button type="button" class="primary svelte-100n2ef"> </button> <button type="button" class="svelte-100n2ef"> </button>`,
+  `<button type="button" class="primary svelte-jw9j7k"> </button> <button type="button" class="svelte-jw9j7k"> </button>`,
   1,
 );
 var root_113 = from_html(
-  `<button type="button" class="svelte-100n2ef"> </button>`,
+  `<button type="button" class="svelte-jw9j7k"> </button>`,
 );
 var root_210 = from_html(
-  `<button type="button" class="primary svelte-100n2ef"> </button> <!> <button type="button" class="svelte-100n2ef"> </button>`,
+  `<button type="button" class="primary svelte-jw9j7k"> </button> <!> <button type="button" class="svelte-jw9j7k"> </button>`,
   1,
 );
-var root_38 = from_html(`<div class="live-actions svelte-100n2ef"><!></div>`);
-var root_45 = from_html(`<p class="svelte-100n2ef"> </p>`);
-var root_55 = from_html(`<p class="error svelte-100n2ef"> </p>`);
-var root_65 = from_html(`<p class="hint svelte-100n2ef"> </p>`);
-var root_73 = from_html(`<p class="call svelte-100n2ef"> <!></p>`);
+var root_38 = from_html(`<div class="live-actions svelte-jw9j7k"><!></div>`);
+var root_45 = from_html(`<p class="svelte-jw9j7k"> </p>`);
+var root_55 = from_html(`<p class="error svelte-jw9j7k"> </p>`);
+var root_65 = from_html(`<p class="hint svelte-jw9j7k"> </p>`);
+var root_73 = from_html(`<p class="call svelte-jw9j7k"> <!></p>`);
 var root_82 = from_html(
-  `<p class="svelte-100n2ef"><strong> </strong></p> <!>`,
+  `<p class="svelte-jw9j7k"><strong> </strong></p> <!>`,
   1,
 );
 var root_92 = from_html(
-  `<div role="status" aria-live="polite" aria-atomic="true"><strong> </strong> <p class="svelte-100n2ef"> </p> <!> <!></div> <!> <!> <!> <!> <!>`,
+  `<div role="status" aria-live="polite" aria-atomic="true"><strong> </strong> <p class="svelte-jw9j7k"> </p> <!> <!></div> <!> <!> <!> <!> <!>`,
   1,
 );
-var root_102 = from_html(`<p role="status" class="hint svelte-100n2ef"> </p>`);
+var root_102 = from_html(`<p role="status" class="hint svelte-jw9j7k"> </p>`);
 var root_114 = from_html(
-  `<!> <section class="live-card svelte-100n2ef"><h2 class="svelte-100n2ef"> </h2> <p class="svelte-100n2ef"><strong> </strong></p> <p class="hint svelte-100n2ef"> </p> <!> <!></section> <!>`,
+  `<!> <section class="live-card svelte-jw9j7k"><h2 class="svelte-jw9j7k"> </h2> <p class="svelte-jw9j7k"><strong> </strong></p> <p class="hint svelte-jw9j7k"> </p> <!> <!></section> <!>`,
   1,
 );
 var $$css6 = {
-  hash: "svelte-100n2ef",
-  code: ".live-card.svelte-100n2ef {border:1px solid var(--divider-color, #ddd);border-radius:12px;padding:16px;margin-bottom:16px;}h2.svelte-100n2ef {margin:0;}p.svelte-100n2ef {margin:8px 0;}.call.svelte-100n2ef {overflow-wrap:anywhere;}.live-actions.svelte-100n2ef {position:sticky;top:64px;z-index:2;display:flex;flex-wrap:wrap;gap:8px;padding:12px;margin-bottom:16px;background:var(--card-background-color, white);border:1px solid var(--divider-color, #ddd);border-radius:12px;}.live-actions.svelte-100n2ef button:where(.svelte-100n2ef) {min-height:48px;margin:0;}.primary.svelte-100n2ef {flex:1;}\n\n  @media (max-width: 600px) {.live-actions.svelte-100n2ef {top:calc(56px + env(safe-area-inset-top, 0px));padding-bottom:max(12px, env(safe-area-inset-bottom, 0px));}\n  }",
+  hash: "svelte-jw9j7k",
+  code: ".live-card.svelte-jw9j7k {border:1px solid var(--divider-color, #ddd);border-radius:12px;padding:16px;margin-bottom:16px;}h2.svelte-jw9j7k {margin:0;}p.svelte-jw9j7k {margin:8px 0;}.call.svelte-jw9j7k {overflow-wrap:anywhere;}.live-actions.svelte-jw9j7k {position:sticky;top:64px;z-index:2;display:flex;flex-wrap:wrap;gap:8px;padding:12px;margin-bottom:16px;background:var(--card-background-color, white);border:1px solid var(--divider-color, #ddd);border-radius:12px;}.live-actions.svelte-jw9j7k button:where(.svelte-jw9j7k) {min-height:48px;margin:0;}.primary.svelte-jw9j7k {flex:1;}\n\n  @media (max-width: 600px) {.live-actions.svelte-jw9j7k {top:calc(56px + env(safe-area-inset-top, 0px));padding-bottom:max(12px, env(safe-area-inset-bottom, 0px));}\n  }",
 };
 function LivePreviewControls($$anchor, $$props) {
   push($$props, true);
@@ -13601,16 +13601,16 @@ function LivePreviewControls($$anchor, $$props) {
 }
 delegate(["click"]);
 
-// custom_components/occupied/frontend/PreviewView.svelte
+// custom_components/occupied/frontend/src/lib/components/preview/PreviewView.svelte
 var root17 = from_html(`<span class="hint" role="status"> </span>`);
 var root_115 = from_html(
-  `<div class="schedule-heading svelte-5w63kc"><h2 aria-live="polite" class="svelte-5w63kc"> </h2> <!> <div class="day-navigation svelte-5w63kc" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-5w63kc"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
+  `<div class="schedule-heading svelte-1gez8n9"><h2 aria-live="polite" class="svelte-1gez8n9"> </h2> <!> <div class="day-navigation svelte-1gez8n9" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-1gez8n9"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
   2,
 );
 var root_211 = from_html(`<!> <!>`, 1);
 var $$css7 = {
-  hash: "svelte-5w63kc",
-  code: ".schedule-heading.svelte-5w63kc {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-bottom:20px;}h2.svelte-5w63kc {margin:0;}.day-navigation.svelte-5w63kc {display:flex;align-items:center;gap:4px;}.day-navigation.svelte-5w63kc button:where(.svelte-5w63kc) {margin:0;}",
+  hash: "svelte-1gez8n9",
+  code: ".schedule-heading.svelte-1gez8n9 {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-bottom:20px;}h2.svelte-1gez8n9 {margin:0;}.day-navigation.svelte-1gez8n9 {display:flex;align-items:center;gap:4px;}.day-navigation.svelte-1gez8n9 button:where(.svelte-1gez8n9) {margin:0;}",
 };
 function PreviewView($$anchor, $$props) {
   push($$props, true);
@@ -13812,7 +13812,7 @@ function PreviewView($$anchor, $$props) {
 }
 delegate(["click"]);
 
-// custom_components/occupied/frontend/UnsavedStepDialog.svelte
+// custom_components/occupied/frontend/src/lib/components/shared/UnsavedStepDialog.svelte
 var root18 = from_html(
   `<div class="step-exit-overlay"><dialog open="" class="step-exit-dialog" role="alertdialog" aria-modal="true" aria-labelledby="step-exit-title" aria-describedby="step-exit-description"><h2 id="step-exit-title"> </h2> <p id="step-exit-description"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog></div>`,
 );
@@ -13866,7 +13866,7 @@ function UnsavedStepDialog($$anchor, $$props) {
 }
 delegate(["click"]);
 
-// custom_components/occupied/frontend/random-editor-controller.ts
+// custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts
 function openRandom(panel, entry) {
   if (panel.busy) {
     return;
@@ -14040,7 +14040,7 @@ async function deleteRandom(panel) {
   await panel.save(candidate);
 }
 
-// custom_components/occupied/frontend/DeleteRandomDialog.svelte
+// custom_components/occupied/frontend/src/lib/components/random/DeleteRandomDialog.svelte
 var root19 = from_html(`<li> </li>`);
 var root_116 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
 var root_212 = from_html(
@@ -14148,7 +14148,7 @@ function DeleteRandomDialog($$anchor, $$props) {
 }
 delegate(["click"]);
 
-// custom_components/occupied/frontend/AdvancedRandomSettings.svelte
+// custom_components/occupied/frontend/src/lib/components/random/AdvancedRandomSettings.svelte
 var root20 = from_html(`<button type="button"> </button>`);
 var root_117 = from_html(
   `<label class="step-weekday-option"><input type="checkbox"/><span> </span></label>`,
@@ -14414,7 +14414,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
 }
 delegate(["click", "change"]);
 
-// custom_components/occupied/frontend/RandomActions.svelte
+// custom_components/occupied/frontend/src/lib/components/random/RandomActions.svelte
 var root21 = from_html(
   `<div role="separator"></div> <button type="button" role="menuitem" tabindex="-1" class="danger"> </button>`,
   1,
@@ -14606,7 +14606,7 @@ function RandomActions($$anchor, $$props) {
 }
 delegate(["click", "keydown"]);
 
-// custom_components/occupied/frontend/random-explanation.ts
+// custom_components/occupied/frontend/src/lib/utils/random-explanation.ts
 function randomExplanation(form, program, catalog, t = translator(), locale) {
   const say = (text2, values = {}) => {
     let message = t(text2);
@@ -14830,17 +14830,17 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
   return sentences.join(" ");
 }
 
-// custom_components/occupied/frontend/RandomEventEditor.svelte
+// custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
 var root22 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_119 = from_html(
-  `<label class="same-entities svelte-e4ijcz"><input type="checkbox"/> </label>`,
+  `<label class="same-entities svelte-1n39iyr"><input type="checkbox"/> </label>`,
 );
 var root_214 = from_html(
-  `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-advanced=""> </button> <!> <h3> </h3> <div class="random-frequency svelte-e4ijcz"><div><!> <!></div> <div><!></div> <!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <p class="hint"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section>`,
+  `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-advanced=""> </button> <!> <h3> </h3> <div class="random-frequency svelte-1n39iyr"><div><!> <!></div> <div><!></div> <!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <p class="hint"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section>`,
 );
 var $$css8 = {
-  hash: "svelte-e4ijcz",
-  code: ".random-advanced-button.svelte-e4ijcz {margin-top:16px;}.random-frequency.svelte-e4ijcz {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}.same-entities.svelte-e4ijcz {display:flex;align-items:center;gap:8px;margin-top:16px;}\n\n  @media (max-width: 600px) {.random-frequency.svelte-e4ijcz {grid-template-columns:1fr;gap:0;}\n  }",
+  hash: "svelte-1n39iyr",
+  code: ".random-advanced-button.svelte-1n39iyr {margin-top:16px;}.random-frequency.svelte-1n39iyr {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}.same-entities.svelte-1n39iyr {display:flex;align-items:center;gap:8px;margin-top:16px;}\n\n  @media (max-width: 600px) {.random-frequency.svelte-1n39iyr {grid-template-columns:1fr;gap:0;}\n  }",
 };
 function RandomEventEditor($$anchor, $$props) {
   push($$props, true);
@@ -15200,7 +15200,7 @@ function RandomEventEditor($$anchor, $$props) {
       classes = set_class(
         button,
         1,
-        "random-advanced-button svelte-e4ijcz",
+        "random-advanced-button svelte-1n39iyr",
         null,
         classes,
         { error: !!get(editor).errors.days },
@@ -15256,7 +15256,7 @@ function RandomEventEditor($$anchor, $$props) {
 }
 delegate(["click", "change"]);
 
-// custom_components/occupied/frontend/RandomView.svelte
+// custom_components/occupied/frontend/src/lib/components/random/RandomView.svelte
 var root23 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-random=""> </button></section>`,
 );
@@ -15498,7 +15498,7 @@ function RandomView($$anchor, $$props) {
 }
 delegate(["click"]);
 
-// custom_components/occupied/frontend/App.svelte
+// custom_components/occupied/frontend/src/App.svelte
 var root24 = from_html(`<button type="button"> </button>`);
 var root_121 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
 var root_216 = from_html(`<p> </p>`);
@@ -16033,7 +16033,7 @@ function App($$anchor, $$props) {
 }
 delegate(["click", "change"]);
 
-// custom_components/occupied/frontend/preview-controller.ts
+// custom_components/occupied/frontend/src/lib/controllers/preview-controller.ts
 var PreviewController = class {
   constructor(panel, getEntryId) {
     this.panel = panel;
@@ -16311,7 +16311,7 @@ var PreviewController = class {
   }
 };
 
-// custom_components/occupied/frontend/subscription.ts
+// custom_components/occupied/frontend/src/lib/services/subscription.ts
 var PanelSubscription = class {
   constructor(isConnected, onError) {
     this.isConnected = isConnected;
@@ -16362,7 +16362,7 @@ var PanelSubscription = class {
   }
 };
 
-// custom_components/occupied/frontend/occupied-panel.ts
+// custom_components/occupied/frontend/src/occupied-panel.ts
 var OccupiedPanel = class extends HTMLElement {
   // Program state
   draft;
@@ -16486,7 +16486,7 @@ var OccupiedPanel = class extends HTMLElement {
   connectedCallback() {
     if (!this.component) {
       const style = document.createElement("style");
-      style.textContent = styles_default;
+      style.textContent = app_default;
       this.shadowRoot.append(style);
       this.component = mount(App, {
         target: this.shadowRoot,
@@ -16765,10 +16765,6 @@ var OccupiedPanel = class extends HTMLElement {
       }
     }
   }
-  // --- Rendering ----------------------------------------------------------
-  /**
-  Commit Svelte updates before callers focus a newly rendered field.
-  */
   flush() {
     if (this.component) {
       flushSync(() => this.updates.set(++this.updateRevision));

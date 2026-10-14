@@ -14,7 +14,7 @@ with ZipFile(directory / "occupied.zip") as integration:
     assert "__init__.py" in names and "managed.py" in names and "LICENSE" in names
     assert {
         "frontend/dist/occupied-panel.js",
-        "frontend/dist/dom.js",
+        "frontend/dist/lib/actions/dom.js",
         "translations/en.json",
     } <= names
     assert not any(name.endswith((".ts", ".svelte")) for name in names)
@@ -35,12 +35,13 @@ with tarfile.open(directory / f"occupied-{version}.tar.gz") as source:
         "tsconfig.json",
         "scripts/build-frontend.ts",
         ".prettierrc.json",
-        "custom_components/occupied/frontend/App.svelte",
-        "custom_components/occupied/frontend/ActionEditor.svelte",
-        "custom_components/occupied/frontend/occupied-panel.ts",
+        "custom_components/occupied/frontend/src/App.svelte",
+        "custom_components/occupied/frontend/src/lib/components/shared/ActionEditor.svelte",
+        "custom_components/occupied/frontend/src/occupied-panel.ts",
+        "custom_components/occupied/frontend/src/app.css",
         "tests/frontend/src/model.test.ts",
         "schema/occupied.schema.json",
-        "examples/puppet/occupied.pp",
+        "examples/house.yaml",
         "tests/fixtures/programs/gui-house.yaml",
         "tests/fixtures/programs/scheduling-edge-cases.yaml",
         "scripts/check_artifacts.py",

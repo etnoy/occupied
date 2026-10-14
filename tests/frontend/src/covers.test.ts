@@ -7,20 +7,25 @@ import {
   buildStep,
   stepEditor,
   stepEntries,
-} from "@occupied/step-model.js";
-import { coverActions, coverTarget } from "@occupied/cover.js";
+} from "@occupied/lib/models/step-model.js";
+import { coverActions, coverTarget } from "@occupied/lib/utils/cover.js";
 import {
   randomEditor,
   randomEntries,
   randomErrors,
   buildRandom,
-} from "@occupied/random-model.js";
+} from "@occupied/lib/models/random-model.js";
 import {
   previewStateHistory,
   calendarStateHistory,
-} from "@occupied/timeline.js";
-import type { Action, Plan, PlannedEvent, Program } from "@occupied/types.js";
-import { randomExplanation } from "@occupied/random-explanation.js";
+} from "@occupied/lib/utils/timeline.js";
+import type {
+  Action,
+  Plan,
+  PlannedEvent,
+  Program,
+} from "@occupied/lib/types.js";
+import { randomExplanation } from "@occupied/lib/utils/random-explanation.js";
 
 const cover = (action: string, data?: Action["data"]): Action => ({
   action,

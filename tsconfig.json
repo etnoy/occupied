@@ -18,12 +18,12 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "paths": {
-      "@occupied/*": ["./custom_components/occupied/frontend/*"]
+      "@occupied/*": ["./custom_components/occupied/frontend/src/*"]
     }
   },
   "include": [
-    "custom_components/occupied/frontend/**/*.ts",
-    "custom_components/occupied/frontend/**/*.svelte",
+    "custom_components/occupied/frontend/src/**/*.ts",
+    "custom_components/occupied/frontend/src/**/*.svelte",
     "tests/frontend/**/*.ts",
     "scripts/*.ts"
   ]

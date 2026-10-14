@@ -1,7 +1,7 @@
 // Compile strict TypeScript and refresh or verify the assets shipped to HA/HACS.
 import { execFileSync } from "node:child_process";
 import { readFile, readdir, writeFile, mkdir, rm } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { format, resolveConfig } from "prettier";
 import { build } from "esbuild";
@@ -35,7 +35,7 @@ execFileSync(
 );
 const stale: string[] = [];
 for (const directory of [
-  "custom_components/occupied/frontend",
+  "custom_components/occupied/frontend/src",
   "tests/frontend/src",
 ]) {
   const tests = directory === "tests/frontend/src";
@@ -44,8 +44,12 @@ for (const directory of [
   if ((check && tests) || (testsOnly && !tests)) {
     continue;
   }
-  const destination = tests ? "tests/frontend/generated" : `${directory}/dist`;
-  const filenames = await readdir(resolve(root, directory));
+  const destination = tests
+    ? "tests/frontend/generated"
+    : "custom_components/occupied/frontend/dist";
+  const filenames = await readdir(resolve(root, directory), {
+    recursive: true,
+  });
   const sources = filenames
     .filter((name) => name.endsWith(".ts") && !name.endsWith(".d.ts"))
     .sort();
@@ -53,12 +57,21 @@ for (const directory of [
     const expected = new Set(
       sources.map((name) => name.replace(/\.ts$/, ".js")),
     );
+    for (const name of sources) {
+      for (
+        let parent = dirname(name);
+        parent !== ".";
+        parent = dirname(parent)
+      ) {
+        expected.add(parent);
+      }
+    }
     const existing = await readdir(resolve(root, destination), {
-      withFileTypes: true,
+      recursive: true,
     }).catch(() => []);
     for (const entry of existing) {
-      if (!entry.isFile() || !expected.has(entry.name)) {
-        stale.push(`Unexpected asset: ${destination}/${entry.name}`);
+      if (!expected.has(entry)) {
+        stale.push(`Unexpected asset: ${destination}/${entry}`);
       }
     }
   } else {
@@ -109,7 +122,7 @@ for (const directory of [
         '"../../../custom_components/occupied/frontend/dist/',
       );
     }
-    const banner = `// Generated from ${name} by pnpm run build. Do not edit.\n`;
+    const banner = `// Generated from ${directory}/${name} by pnpm run build. Do not edit.\n`;
     const options = await resolveConfig(resolve(root, relative));
     const content = await format(banner + emitted, {
       ...options,
@@ -123,7 +136,7 @@ for (const directory of [
         stale.push(relative);
       }
     } else {
-      await mkdir(resolve(root, destination), { recursive: true });
+      await mkdir(dirname(resolve(root, relative)), { recursive: true });
       await writeFile(resolve(root, relative), content);
     }
   }

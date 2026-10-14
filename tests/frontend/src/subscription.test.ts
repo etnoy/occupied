@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { PanelSubscription } from "@occupied/subscription.js";
-import type { HomeAssistant } from "@occupied/types.js";
+import { PanelSubscription } from "@occupied/lib/services/subscription.js";
+import type { HomeAssistant } from "@occupied/lib/types.js";
 
 void test("disposing pending subscriptions rejects old snapshots and releases late handles", async () => {
   const callbacks: ((value: unknown) => void)[] = [];

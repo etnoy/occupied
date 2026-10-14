@@ -7,16 +7,16 @@ import type {
   PreviewResult,
   LivePreviewResponse,
   LivePreviewSession,
-} from "@occupied/types.js";
-import { stepEditor, stepEntries } from "@occupied/step-model.js";
-import { startStep } from "@occupied/steps.js";
-import { createStepEditorContext } from "@occupied/step-editor-controller.js";
-import { randomEntries } from "@occupied/random-model.js";
+} from "@occupied/lib/types.js";
+import { stepEditor, stepEntries } from "@occupied/lib/models/step-model.js";
+import { startStep } from "@occupied/lib/controllers/steps.js";
+import { createStepEditorContext } from "@occupied/lib/controllers/step-editor-controller.js";
+import { randomEntries } from "@occupied/lib/models/random-model.js";
 import {
   openRandom,
   createRandomEditorContext,
   deleteRandom,
-} from "@occupied/random-editor-controller.js";
+} from "@occupied/lib/controllers/random-editor-controller.js";
 
 const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
 

@@ -1,9 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import type { Program } from "@occupied/types.js";
-import { buildRandom, randomEditor } from "@occupied/random-model.js";
-import { randomExplanation } from "@occupied/random-explanation.js";
-import { translator } from "@occupied/translations.js";
+import type { Program } from "@occupied/lib/types.js";
+import {
+  buildRandom,
+  randomEditor,
+} from "@occupied/lib/models/random-model.js";
+import { randomExplanation } from "@occupied/lib/utils/random-explanation.js";
+import { translator } from "@occupied/lib/i18n/translations.js";
 
 const program: Program = {
   schema_version: 1,

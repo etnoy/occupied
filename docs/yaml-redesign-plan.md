@@ -120,11 +120,11 @@ Handover mechanics can retain one internal default. User-configurable controller
 
 ## Findings from the original implementation
 
-- [Step serialization](../custom_components/occupied/frontend/step-model.ts) creates the `_schedule` routine, nested step, split action lists, and managed-light baseline.
-- [Timing editor](../custom_components/occupied/frontend/TimingEditor.svelte) exposes Absolute time, Relative to, start/end bounds, and offsets.
-- [Action editor](../custom_components/occupied/frontend/ActionEditor.svelte) exposes one action type, entities, and service data.
-- [Step editor controller](../custom_components/occupied/frontend/step-editor-controller.ts) writes generated titles on creation; step validation requires titles on later edits.
+- [Step serialization](../custom_components/occupied/frontend/src/lib/models/step-model.ts) creates the `_schedule` routine, nested step, split action lists, and managed-light baseline.
+- [Timing editor](../custom_components/occupied/frontend/src/lib/components/shared/TimingEditor.svelte) exposes Absolute time, Relative to, start/end bounds, and offsets.
+- [Action editor](../custom_components/occupied/frontend/src/lib/components/shared/ActionEditor.svelte) exposes one action type, entities, and service data.
+- [Step editor controller](../custom_components/occupied/frontend/src/lib/controllers/step-editor-controller.ts) writes generated titles on creation; step validation requires titles on later edits.
 - [Models](../custom_components/occupied/models.py), [validation and hashing](../custom_components/occupied/validation.py), and [planner](../custom_components/occupied/planner.py) retain routine inheritance and compatibility timing fields.
-- [Lighting projection](../custom_components/occupied/lighting.py), [daily runtime](../custom_components/occupied/engine_daily.py), and [preview timeline](../custom_components/occupied/frontend/timeline.ts) depend on managed targets and baselines.
-- [Steps view](../custom_components/occupied/frontend/StepsView.svelte) presents unsupported imported behaviors as custom steps that cannot be edited with the simple editor.
+- [Lighting projection](../custom_components/occupied/lighting.py), [daily runtime](../custom_components/occupied/engine_daily.py), and [preview timeline](../custom_components/occupied/frontend/src/lib/utils/timeline.ts) depend on managed targets and baselines.
+- [Steps view](../custom_components/occupied/frontend/src/lib/components/steps/StepsView.svelte) presents unsupported imported behaviors as custom steps that cannot be edited with the simple editor.
 - [YAML exporter](../custom_components/occupied/file_config.py) already omits default values and all-week selections; build on that work.

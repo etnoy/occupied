@@ -29,9 +29,11 @@ assert schema == Program.model_json_schema(), "Regenerate schema/occupied.schema
 for path in sorted((ROOT / "examples").glob("*.yaml")):
     program = read_program(path)
     assert behavior_hash(load_yaml(export_yaml(program))) == behavior_hash(program)
-assert {path.name for path in (integration / "frontend" / "dist").glob("*.js")} == {
-    path.with_suffix(".js").name
-    for path in (integration / "frontend").glob("*.ts")
+frontend_source = integration / "frontend" / "src"
+frontend_dist = integration / "frontend" / "dist"
+assert {path.relative_to(frontend_dist) for path in frontend_dist.rglob("*.js")} == {
+    path.relative_to(frontend_source).with_suffix(".js")
+    for path in frontend_source.rglob("*.ts")
     if not path.name.endswith(".d.ts")
 }, "Missing or unexpected frontend assets"
 for name in ("icon.png", "icon@2x.png"):

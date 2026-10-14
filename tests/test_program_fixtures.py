@@ -22,7 +22,7 @@ FIXTURES = ROOT / "tests" / "fixtures" / "programs"
 EDITOR_ROUNDTRIPS = """
 import { readFileSync } from 'node:fs';
 import { buildStep, stepEditor, stepEntries } from
-  './custom_components/occupied/frontend/dist/step-model.js';
+  './custom_components/occupied/frontend/dist/lib/models/step-model.js';
 const program = JSON.parse(readFileSync(0, 'utf8'));
 console.log(JSON.stringify(stepEntries(program).map(entry => ({
   id: entry.id,

@@ -6,25 +6,25 @@ import {
   buildStep,
   stepEditor,
   stepEntries,
-} from "@occupied/step-model.js";
+} from "@occupied/lib/models/step-model.js";
 import {
   applyStagger,
   staggerSettings,
   staggerPeriodError,
   supportsStagger,
-} from "@occupied/stagger.js";
-import { changeActionKind } from "@occupied/action-kind.js";
+} from "@occupied/lib/utils/stagger.js";
+import { changeActionKind } from "@occupied/lib/utils/action-kind.js";
 import {
   actionTargets,
   actionYaml,
   prepareCustomAction,
-} from "@occupied/custom-action.js";
+} from "@occupied/lib/utils/custom-action.js";
 import {
   buildRandom,
   randomEditor,
   randomEntries,
-} from "@occupied/random-model.js";
-import type { Action, Program } from "@occupied/types.js";
+} from "@occupied/lib/models/random-model.js";
+import type { Action, Program } from "@occupied/lib/types.js";
 import type { OccupiedPanel } from "@occupied/occupied-panel.js";
 
 void test("on/off migration uses current unsaved targets and prepares scene-style YAML", () => {
