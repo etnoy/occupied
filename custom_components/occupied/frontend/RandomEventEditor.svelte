@@ -48,38 +48,36 @@
       {panel}
       {context}
       key="name"
-      label="Random event name"
+      label="random_event_name"
       value={form.name}
       update={(value) => (form.name = value)}
-      options={{ hideLabel: true, placeholder: t("Optional title") }}
+      options={{ hideLabel: true, placeholder: t("optional_title") }}
     />
   </div>
   <p class="hint">
-    {t(
-      "Choose a window, a duration, and actions for the start and end of each occurrence.",
-    )}
+    {t("random_create_hint")}
   </p>
   <div class="editor-sections">
     <TimingEditor
       {panel}
       context={context.timing("start")}
-      heading="Window starts"
-      clockLabel="Window start"
-      windowEndLabel="Latest window start (optional)"
-      addWindowEndLabel="Randomize window start"
-      explanationSubject="Window starts"
+      heading="window_starts"
+      clockLabel="window_start"
+      windowEndLabel="latest_window_start_optional"
+      addWindowEndLabel="randomize_window_start"
+      explanationSubject="window_starts"
     />
     <TimingEditor
       {panel}
       context={context.timing("end")}
-      heading="Window ends"
-      clockLabel="Window end"
-      windowEndLabel="Latest window end (optional)"
-      addWindowEndLabel="Randomize window end"
-      explanationSubject="Window ends"
+      heading="window_ends"
+      clockLabel="window_end"
+      windowEndLabel="latest_window_end_optional"
+      addWindowEndLabel="randomize_window_end"
+      explanationSubject="window_ends"
       modes={[
-        ["absolute", "Absolute time"],
-        ["duration", "Duration"],
+        ["absolute", "absolute_time"],
+        ["duration", "duration"],
       ]}
     />
   </div>
@@ -97,17 +95,17 @@
     onclick={(event) => {
       advancedTrigger = event.currentTarget;
       advancedOpen = true;
-    }}>{t("Advanced settings")}</button
+    }}>{t("advanced_settings")}</button
   >
-  <FieldError key="days" errors={{ ...editor.errors }} />
-  <h3>{t("Frequency and duration")}</h3>
+  <FieldError {t} key="days" errors={{ ...editor.errors }} />
+  <h3>{t("frequency_and_duration")}</h3>
   <div class="random-frequency">
     <div>
       <EditorField
         {panel}
         {context}
         key="minCount"
-        label="Minimum events per window"
+        label="minimum_events_per_window"
         value={form.minCount}
         update={(value) => {
           if (!maxCountVisible) {
@@ -126,7 +124,7 @@
             showMaxCount = true;
             changed("maxCount");
             focusEditor(panel, "maxCount");
-          }}>{t("Add maximum events")}</button
+          }}>{t("add_maximum_events")}</button
         >
       {/if}
     </div>
@@ -136,7 +134,7 @@
           {panel}
           {context}
           key="maxCount"
-          label="Maximum events per window"
+          label="maximum_events_per_window"
           value={form.maxCount}
           update={(value) => (form.maxCount = value)}
           options={{ type: "number", min: 0, max: 1000, step: 1 }}
@@ -151,7 +149,7 @@
                 showMaxCount = false;
                 changed("maxCount");
                 focusEditor(panel, "minCount");
-              }}>{t("Remove maximum events")}</button
+              }}>{t("remove_maximum_events")}</button
             >
           {/snippet}
         </EditorField>
@@ -161,7 +159,7 @@
       {panel}
       {context}
       key="minDuration"
-      label="Minimum duration"
+      label="minimum_duration"
       value={form.minDuration}
       update={(value) => (form.minDuration = value)}
       options={{ placeholder: "5m" }}
@@ -170,7 +168,7 @@
       {panel}
       {context}
       key="maxDuration"
-      label="Maximum duration"
+      label="maximum_duration"
       value={form.maxDuration}
       update={(value) => (form.maxDuration = value)}
       options={{ placeholder: "15m" }}
@@ -180,23 +178,23 @@
     {randomExplanation(form, panel.draft, panel.catalog, t, panel._hass.locale)}
   </p>
   <p class="hint">
-    {t("Use durations like 5m, 30s, or 1h.")}
+    {t("duration_hint")}
   </p>
   <div class="editor-sections">
     <ActionEditor
       {panel}
       context={context.action("on")}
-      heading="When event starts"
-      kindLabel="Start action"
-      entityLabel="Start entities"
+      heading="when_event_starts"
+      kindLabel="start_action"
+      entityLabel="start_entities"
     />
     <div>
       <ActionEditor
         {panel}
         context={context.action("off")}
-        heading="When event ends"
-        kindLabel="End action"
-        entityLabel="End entities"
+        heading="when_event_ends"
+        kindLabel="end_action"
+        entityLabel="end_entities"
         hideEntities={form.sameEntities}
       />
       {#if ["entities", "cover"].includes(form.on.kind) && form.on.kind === form.off.kind}
@@ -208,14 +206,14 @@
               form.sameEntities = event.currentTarget.checked;
               changed("sameEntities");
             }}
-          />{t("Use the same entities")}
+          />{t("use_the_same_entities")}
         </label>
       {/if}
     </div>
   </div>
   <div class="builder-footer">
     <button type="button" disabled={panel.busy} onclick={cancel}
-      >{t("Cancel")}</button
+      >{t("cancel")}</button
     >
     <RandomActions {panel} {context} bind:advancedOpen bind:advancedTrigger />
     <button
@@ -226,8 +224,8 @@
       onclick={save}
       >{t(
         panel.document?.source === "file"
-          ? "Add to draft"
-          : "Save random event",
+          ? "add_to_draft"
+          : "save_random_event",
       )}</button
     >
   </div>

@@ -1,4 +1,5 @@
 // Generated from step-model.ts by pnpm run build. Do not edit.
+import { en, translator } from "./translations.js";
 import {
   durationSeconds,
   offsetErrors,
@@ -22,19 +23,19 @@ import {
 import { staggerPeriodError } from "./stagger.js";
 const sorted = (values) => [...new Set(values)].sort();
 const actionLabels = {
-  turn_on: "Turn on",
-  turn_off: "Turn off",
-  "scene.turn_on": "Activate scene",
+  turn_on: "turn_on",
+  turn_off: "turn_off",
+  "scene.turn_on": "activate_scene",
   ...Object.fromEntries(coverActions),
 };
 function stepDisplayName(step, catalog, t) {
   const label =
     step.actions || step.action === "set_state"
-      ? "Custom YAML"
+      ? "custom_yaml"
       : actionLabels[step.action || ""] || step.action || "";
   return `${actionTargetSummary(step, catalog)} · ${t(label)}`;
 }
-export function stepEntries(program, catalog, t = (value) => value) {
+export function stepEntries(program, catalog, t = translator()) {
   return Object.entries(program.steps || {}).map(([id, step]) => ({
     ...step,
     id,
@@ -55,7 +56,7 @@ export function timeSourceChoices(
   program,
   id,
   catalog = {},
-  t = (value) => value,
+  t = translator(),
   randomId,
 ) {
   const allowed = new Set(parentSteps(program, id).map((step) => step.id));
@@ -69,7 +70,7 @@ export function timeSourceChoices(
       .map((step) => ({
         value: `step:${step.id}`,
         name: step.name,
-        group: "Steps",
+        group: t("steps"),
       })),
     ...(randomId
       ? parentRandomEvents(program, randomId).map((event) => {
@@ -81,16 +82,37 @@ export function timeSourceChoices(
               : first);
           return {
             value: `random:${event.id}`,
-            name: `${t("End of")} ${name}`,
-            group: "Random events",
+            name: `${t("end_of")} ${name}`,
+            group: t("random_events"),
           };
         })
       : []),
-    ...(catalog.time_sources ||
+    ...(catalog.time_sources?.map((source) => {
+      const solarLabels = {
+        sunrise: "sunrise_label",
+        sunset: "sunset_label",
+        dawn: "dawn_label",
+        dusk: "dusk_label",
+        noon: "solar_noon",
+        midnight: "solar_midnight",
+      };
+      const groupKey = [
+        "solar_events",
+        "calendars",
+        "home_assistant_times",
+      ].find((key) => en[key] === source.group);
+      return {
+        ...source,
+        name: source.value.startsWith("sun:")
+          ? t(solarLabels[source.value.slice(4)] || source.name)
+          : source.name,
+        group: groupKey ? t(groupKey) : source.group,
+      };
+    }) ||
       solarEvents.map((event) => ({
         value: `sun:${event}`,
-        name: event,
-        group: "Solar events",
+        name: t(event),
+        group: t("solar_events"),
       }))),
   ];
 }
@@ -187,7 +209,7 @@ export function editorErrors(program, editor) {
       ...timingErrors(program, form.timing, id),
     };
   if (form.days.length === 0) {
-    errors.days = "Choose at least one day.";
+    errors.days = "days_required_error";
   }
   return errors;
 }
@@ -201,43 +223,43 @@ export function actionErrors(form) {
   }
   if (form.kind === "custom") {
     if (!form.customYaml?.trim()) {
-      errors.customYaml = "Enter an action mapping or a list of actions.";
+      errors.customYaml = "custom_yaml_required_error";
     }
     return errors;
   }
   if (form.entities.length === 0) {
     errors.entities =
       form.kind === "scene"
-        ? "Select a Home Assistant scene."
-        : "Select at least one entity.";
+        ? "scene_required_error"
+        : "entities_required_error";
   }
   if (form.entities.some((e) => !/^[a-z_][a-z0-9_]*\.[a-z0-9_]+$/.test(e))) {
-    errors.entities = "Choose valid Home Assistant entity IDs.";
+    errors.entities = "entity_ids_error";
   }
   if (
     form.kind === "scene" &&
     (form.entities.length !== 1 || !form.entities[0]?.startsWith("scene."))
   ) {
-    errors.entities = "Select one Home Assistant scene.";
+    errors.entities = "scene_single_error";
   }
   if (
     form.kind === "entities" &&
     form.entities.some((e) => !/^(light|switch)\./.test(e))
   ) {
-    errors.entities = "Choose lights and switches, or select a service action.";
+    errors.entities = "light_switch_entities_error";
   }
   if (
     form.kind === "service" &&
     !/^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$/.test(form.service)
   ) {
-    errors.service = "Choose a service using domain.service.";
+    errors.service = "service_error";
   }
   if (form.kind === "cover") {
     if (form.entities.some((entity) => !entity.startsWith("cover."))) {
-      errors.entities = "Choose cover entities.";
+      errors.entities = "cover_entities_error";
     }
     if (coverActions.every(([action]) => action !== form.service)) {
-      errors.service = "Choose a cover action.";
+      errors.service = "cover_action_error";
     }
     const field = coverField(form.service);
     if (field) {
@@ -249,7 +271,7 @@ export function actionErrors(form) {
         value < 0 ||
         value > 100
       ) {
-        errors[key] = "Choose a whole number from 0 to 100.";
+        errors[key] = "cover_position_error";
       }
     }
   } else if (form.kind === "scene" || form.kind === "service") {
@@ -259,7 +281,7 @@ export function actionErrors(form) {
         throw new TypeError("Expected service data to be a JSON object");
       }
     } catch {
-      errors.data = "Service data must be a JSON object.";
+      errors.data = "service_data_error";
     }
   }
   return errors;
@@ -269,10 +291,10 @@ export function timingErrors(program, time, id, randomId) {
   const clockPattern = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
   if (time.mode === "absolute") {
     if (!clockPattern.test(time.start)) {
-      errors.start = "Choose a start time.";
+      errors.start = "start_time_required_error";
     }
     if (time.end && !clockPattern.test(time.end)) {
-      errors.end = "Choose a valid end time or leave it blank.";
+      errors.end = "end_time_error";
     }
   } else if (time.mode === "relative") {
     Object.assign(errors, offsetErrors(time));
@@ -284,8 +306,7 @@ export function timingErrors(program, time, id, randomId) {
         !parent ||
         parentSteps(program, id).every((e) => e.id !== parent.id)
       ) {
-        errors.anchor =
-          "Choose another step without creating a circular relationship.";
+        errors.anchor = "step_reference_error";
       }
     } else if (time.anchor.startsWith("random:")) {
       if (
@@ -294,8 +315,7 @@ export function timingErrors(program, time, id, randomId) {
           (event) => event.id !== time.anchor.slice(7),
         )
       ) {
-        errors.anchor =
-          "Choose another random event without creating a circular relationship.";
+        errors.anchor = "random_reference_error";
       }
     } else if (
       !solarEvents.map((event) => `sun:${event}`).includes(time.anchor) &&
@@ -303,10 +323,10 @@ export function timingErrors(program, time, id, randomId) {
         time.anchor,
       )
     ) {
-      errors.anchor = "Choose a step or Home Assistant time source.";
+      errors.anchor = "time_source_required_error";
     }
   } else {
-    errors.mode = "Choose absolute time or relative to.";
+    errors.mode = "timing_mode_error";
   }
   return errors;
 }
@@ -360,9 +380,7 @@ export function buildStep(program, editor) {
     throw new Error(Object.values(errors)[0]);
   }
   if (editor.existing && !program.steps?.[editor.id]) {
-    throw new Error(
-      "This step changed elsewhere. Cancel and reopen it before saving.",
-    );
+    throw new Error("step_changed_error");
   }
   const next = copy(program),
     { form } = editor;
@@ -378,7 +396,7 @@ export function buildStep(program, editor) {
 export function buildAction(form) {
   if (form.kind === "custom") {
     if (!form.customActions || form.customAccepted !== form.customYaml) {
-      throw new Error("Validate Custom YAML before adding it to the draft.");
+      throw new Error("custom_yaml_validation_error");
     }
     return { actions: copy(form.customActions) };
   }

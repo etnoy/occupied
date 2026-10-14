@@ -30,22 +30,22 @@
   aria-labelledby="random-delete-title"
   onclose={onClose}
 >
-  <h2 id="random-delete-title">{panel.t("Delete random event?")}</h2>
+  <h2 id="random-delete-title">{panel.t("delete_random_event_confirm")}</h2>
   <p>
-    {panel.t("This removes the random event and all its future occurrences.")}
+    {panel.t("delete_random_event_hint")}
   </p>
   {#if dependents.length}
-    <p>{panel.t("Used by")}:</p>
+    <p>{panel.t("used_by")}:</p>
     <ul>
       {#each dependents as entry (entry.id)}
         <li>{entry.name}</li>
       {/each}
     </ul>
-    <p class="hint">{panel.t("Change those relationships before deleting.")}</p>
+    <p class="hint">{panel.t("delete_dependents_hint")}</p>
   {/if}
   <div class="step-delete-actions">
     <button type="button" disabled={panel.busy} onclick={() => dialog.close()}
-      >{panel.t("Cancel")}</button
+      >{panel.t("cancel")}</button
     >
     <button
       type="button"
@@ -56,7 +56,7 @@
         if (!panel.error && !panel.randomEditor) {
           dialog.close();
         }
-      }}>{panel.t("Delete random event")}</button
+      }}>{panel.t("delete_random_event")}</button
     >
   </div>
 </dialog>

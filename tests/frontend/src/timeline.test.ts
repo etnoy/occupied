@@ -1,3 +1,4 @@
+import { translator } from "@occupied/translations.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -62,7 +63,7 @@ void test("event details preserve random labels, stagger ticks, superseded state
     },
     "Evening",
     "UTC",
-    (text) => text,
+    translator(),
   );
   assert.equal(details.source, "Evening · Random end");
   assert.equal(
@@ -75,7 +76,7 @@ void test("event details preserve random labels, stagger ticks, superseded state
     event(18, "light.turn_off"),
     "Bedtime",
     "UTC",
-    (text) => text,
+    translator(),
   );
   assert.equal(simple.source, "Bedtime · step");
   assert.equal(simple.action, "light.turn_off");

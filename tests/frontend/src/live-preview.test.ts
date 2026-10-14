@@ -1,3 +1,4 @@
+import { translator } from "@occupied/translations.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -39,9 +40,12 @@ function sessionFixture(): LivePreviewSession {
 
 void test("live status distinguishes initial readiness, subsequent events, and terminal states", () => {
   const session = sessionFixture();
-  assert.equal(liveSessionStatus(session), "Ready to start");
+  assert.equal(translator()(liveSessionStatus(session)), "Ready to start");
   session.cursor = 1;
-  assert.equal(liveSessionStatus(session), "Ready for next event");
+  assert.equal(
+    translator()(liveSessionStatus(session)),
+    "Ready for next event",
+  );
   for (const [state, expected] of [
     ["executing", "Running…"],
     ["stopping", "Stopping…"],
@@ -50,7 +54,7 @@ void test("live status distinguishes initial readiness, subsequent events, and t
     ["interrupted", "Interrupted"],
   ] as const) {
     session.state = state;
-    assert.equal(liveSessionStatus(session), expected);
+    assert.equal(translator()(liveSessionStatus(session)), expected);
   }
 });
 
@@ -91,11 +95,14 @@ void test("partial success and interrupted events are never reported as wholly s
     a: { group_id: "first", status: "dispatched", detail: "done" },
     b: { group_id: "first", status: "uncertain", detail: "timed out" },
   };
-  assert.equal(lastGroupResult(session), "Partial success");
+  assert.equal(translator()(lastGroupResult(session)), "Partial success");
   session.outcomes.a.status = "failed";
-  assert.equal(lastGroupResult(session), "Event failed or interrupted");
+  assert.equal(
+    translator()(lastGroupResult(session)),
+    "Event failed or interrupted",
+  );
   session.outcomes.a.status = session.outcomes.b.status = "dispatched";
-  assert.equal(lastGroupResult(session), "Dispatched");
+  assert.equal(translator()(lastGroupResult(session)), "Dispatched");
 });
 
 void test("timeline status follows occurrence identity regardless of filtering", () => {

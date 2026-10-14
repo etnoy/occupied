@@ -8,17 +8,17 @@ export function liveRunning(session?: LivePreviewSession | null) {
 
 export function liveSessionStatus(session: LivePreviewSession): string {
   if (session.state === "ready") {
-    return session.cursor === 0 ? "Ready to start" : "Ready for next event";
+    return session.cursor === 0 ? "ready_to_start" : "ready_for_next_event";
   }
   const labels: Record<
     Exclude<LivePreviewSession["state"], "ready">,
     string
   > = {
-    completed: "Day complete",
-    executing: "Running…",
-    stopping: "Stopping…",
-    stopped: "Stopped",
-    interrupted: "Interrupted",
+    completed: "day_complete",
+    executing: "running",
+    stopping: "stopping",
+    stopped: "stopped",
+    interrupted: "interrupted",
   };
 
   return labels[session.state];
@@ -84,8 +84,8 @@ export function lastGroupResult(session: LivePreviewSession) {
     (outcome) => outcome.status === "dispatched",
   ).length;
   if (succeeded === outcomes.length) {
-    return "Dispatched";
+    return "dispatched_label";
   }
 
-  return succeeded > 0 ? "Partial success" : "Event failed or interrupted";
+  return succeeded > 0 ? "partial_success" : "event_failed_or_interrupted";
 }

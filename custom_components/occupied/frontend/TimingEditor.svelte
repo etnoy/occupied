@@ -12,15 +12,15 @@
   let {
     panel,
     context,
-    heading = "Timing",
-    clockLabel = "Start time window",
-    windowEndLabel = "End of window (optional)",
-    addWindowEndLabel = "Add end of window",
+    heading = "timing",
+    clockLabel = "start_time_window",
+    windowEndLabel = "end_of_window_optional",
+    addWindowEndLabel = "add_end_of_window",
     showExplanation = true,
-    explanationSubject = "Runs",
+    explanationSubject = "runs",
     modes = [
-      ["absolute", "Absolute time"],
-      ["relative", "Relative to"],
+      ["absolute", "absolute_time"],
+      ["relative", "relative_to"],
     ],
   }: {
     panel: OccupiedPanel;
@@ -30,7 +30,7 @@
     windowEndLabel?: string;
     addWindowEndLabel?: string;
     showExplanation?: boolean;
-    explanationSubject?: "Runs" | "Window starts" | "Window ends";
+    explanationSubject?: "runs" | "window_starts" | "window_ends";
     modes?: [string, string][];
   } = $props();
 
@@ -51,7 +51,11 @@
     ) {
       choices = [
         ...choices,
-        { value: time.anchor, name: time.anchor, group: "Unavailable sources" },
+        {
+          value: time.anchor,
+          name: time.anchor,
+          group: t("unavailable_sources"),
+        },
       ];
     }
 
@@ -99,7 +103,7 @@
         >
       {/each}
     </div>
-    <FieldError key="mode" {fieldPrefix} errors={{ ...editor.errors }} />
+    <FieldError {t} key="mode" {fieldPrefix} errors={{ ...editor.errors }} />
   </fieldset>
   {#if time.mode === "absolute"}
     <EditorField
@@ -145,7 +149,7 @@
       {panel}
       {context}
       key="minDuration"
-      label="Minimum window duration"
+      label="minimum_window_duration"
       value={time.minDuration || ""}
       update={(value) => (time.minDuration = value)}
       options={{ placeholder: "1h" }}
@@ -154,7 +158,7 @@
       {panel}
       {context}
       key="maxDuration"
-      label="Maximum window duration"
+      label="maximum_window_duration"
       value={time.maxDuration || ""}
       update={(value) => (time.maxDuration = value)}
       options={{ placeholder: "2h", optional: true }}
@@ -200,21 +204,19 @@
     />
     {#if time.anchor.startsWith("random:")}
       <p class="hint">
-        {t("This start follows the selected window's closing time.")}
+        {t("random_relative_start_hint")}
       </p>
     {/if}
     {#if time.anchor.startsWith("entity:")}
       <p class="hint">
-        {t(
-          "Uses the time currently reported by Home Assistant. Time-only helpers repeat daily; dated sources run only on their reported date.",
-        )}
+        {t("ha_time_source_hint")}
       </p>
     {/if}
     <EditorField
       {panel}
       {context}
       key="startOffset"
-      label="Start offset"
+      label="start_offset"
       value={time.startOffset}
       update={(value) => (time.startOffset = value)}
       options={{ placeholder: "30m or 1h" }}
@@ -224,7 +226,7 @@
         {panel}
         {context}
         key="endOffset"
-        label="End offset (optional)"
+        label="end_offset_optional"
         value={time.endOffset}
         update={(value) => (time.endOffset = value)}
         options={{}}
@@ -238,7 +240,7 @@
               refresh("startOffset");
             }}
           >
-            {t("Remove end offset")}
+            {t("remove_end_offset")}
           </button>{/snippet}</EditorField
       >
     {:else}
@@ -250,14 +252,12 @@
           refresh("endOffset");
         }}
       >
-        {t("Add end offset")}
+        {t("add_end_offset")}
       </button>
     {/if}
   {:else}
     <p class="hint">
-      {t(
-        "Choose Absolute time or Duration to replace this saved relative window end.",
-      )}
+      {t("random_relative_end_hint")}
     </p>
   {/if}
   {#if showExplanation}
@@ -277,16 +277,14 @@
           locale: panel._hass.locale,
           days: form.days,
           subject: explanationSubject,
-          includeHints: explanationSubject === "Runs",
+          includeHints: explanationSubject === "runs",
         },
       )}
     </p>
   {/if}
   {#if panel.document?.source === "file"}
     <p class="hint">
-      {t(
-        "This program is managed by a file. Add changes to your draft, then export them from Settings.",
-      )}
+      {t("managed_file_draft_hint")}
     </p>
   {/if}
 </div>

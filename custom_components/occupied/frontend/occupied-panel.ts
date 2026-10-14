@@ -282,9 +282,7 @@ export class OccupiedPanel extends HTMLElement {
   private _canSwitchInstance() {
     return (
       !(this.dirty || this.yamlDirty || this.hasEditorChanges) ||
-      globalThis.confirm(
-        this.t("This instance has unsaved changes. Discard them and switch?"),
-      )
+      globalThis.confirm(this.t("instance_switch_confirm"))
     );
   }
 
@@ -516,11 +514,7 @@ export class OccupiedPanel extends HTMLElement {
       return;
     }
     if (this.yamlDirty) {
-      if (
-        !globalThis.confirm(
-          this.t("There are unsaved edits. Discard them and switch views?"),
-        )
-      ) {
+      if (!globalThis.confirm(this.t("view_switch_confirm"))) {
         return;
       }
       this.discardEdits(false);
@@ -579,21 +573,13 @@ export class OccupiedPanel extends HTMLElement {
 
   notices() {
     const t = this.t;
-    const programNotice = this.stale
-      ? t(
-          "The saved program changed. Your draft is preserved; reload the saved program before saving.",
-        )
-      : "";
+    const programNotice = this.stale ? t("draft_revision_conflict_hint") : "";
 
     return [
       programNotice,
-      this.document?.source === "file"
-        ? t(
-            "Managed file is authoritative. Export draft changes to your file, then reload.",
-          )
-        : "",
+      this.document?.source === "file" ? t("managed_file_export_hint") : "",
       this.document?.configuration_source?.status === "error"
-        ? t("File error: see Settings or Home Assistant Repairs")
+        ? t("managed_file_error")
         : "",
     ]
       .filter(Boolean)
@@ -659,7 +645,7 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   fail(error: unknown) {
-    this.error = errorMessage(error);
+    this.error = this.t(errorMessage(error));
     this.flush();
   }
 
@@ -703,9 +689,7 @@ export class OccupiedPanel extends HTMLElement {
     this.issues = result.issues || [];
     this.flush();
     if (result.valid === false && this.issues.length === 0) {
-      this.fail(
-        this.t("Preview contains infeasible dates. Review timeline issues."),
-      );
+      this.fail(this.t("preview_infeasible_error"));
     }
   }
 
@@ -738,11 +722,7 @@ export class OccupiedPanel extends HTMLElement {
     const path = issue.model_path || [],
       prefix = editor.candidatePath || [];
     if (prefix.length === 0 || prefix.some((key, i) => path[i] !== key)) {
-      this.fail(
-        this.t(
-          "Finish or cancel this step to edit other configuration issues.",
-        ),
-      );
+      this.fail(this.t("step_edit_in_progress_hint"));
 
       return;
     }
@@ -790,11 +770,7 @@ export class OccupiedPanel extends HTMLElement {
         return;
       }
       if (version !== this.version) {
-        this.fail(
-          this.t(
-            "Your changes are kept. Save again to include the latest edits.",
-          ),
-        );
+        this.fail(this.t("save_newer_edits_hint"));
 
         return;
       }
@@ -835,9 +811,7 @@ export class OccupiedPanel extends HTMLElement {
           this.stepEditor!.original = submittedForm as StepForm;
         }
         if (version !== this.version) {
-          this.fail(
-            this.t("Earlier changes saved. Your newer edits are still open."),
-          );
+          this.fail(this.t("saved_newer_edits_hint"));
 
           return;
         }

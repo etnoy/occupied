@@ -27,7 +27,7 @@
 </script>
 
 {#snippet actionControls()}
-  <div class="live-actions" aria-label={t("Live preview controls")}>
+  <div class="live-actions" aria-label={t("live_preview_controls")}>
     {#if running}
       <button
         type="button"
@@ -39,13 +39,13 @@
           session?.state !== "ready"}
         onclick={() => panel.nextLiveEvent()}
       >
-        {t(executing ? "Running…" : "Next event")}
+        {t(executing ? "running" : "next_event")}
       </button>
       <button
         type="button"
         disabled={panel.liveStopping || session?.state === "stopping"}
         onclick={() => panel.stopLivePreview()}
-        >{t(panel.liveStopping ? "Stopping…" : "Stop")}</button
+        >{t(panel.liveStopping ? "stopping" : "stop")}</button
       >
     {:else}
       <button
@@ -53,21 +53,21 @@
         class="primary"
         disabled={!canStart}
         onclick={() => panel.startLivePreview()}
-        >{t(session ? "Run again" : "Start live preview")}</button
+        >{t(session ? "run_again" : "start_live_preview")}</button
       >
       {#if panel.schedulingPaused}
         <button
           type="button"
           disabled={panel.busy || panel.liveBusy || !panel.liveReady}
           onclick={() => panel.resumeScheduling()}
-          >{t("Resume scheduling")}</button
+          >{t("resume_scheduling")}</button
         >
       {/if}
       <button
         type="button"
         disabled={panel.busy || panel.liveBusy}
         onclick={() => panel.refreshPreviewSchedule()}
-        >{t("Refresh Preview")}</button
+        >{t("refresh_preview")}</button
       >
     {/if}
   </div>
@@ -77,27 +77,23 @@
   {@render actionControls()}
 {/if}
 
-<section class="live-card" aria-label={t("Live preview")}>
-  <h2>{t("Live preview")}</h2>
-  <p><strong>{t("Controls real devices")}</strong></p>
+<section class="live-card" aria-label={t("live_preview")}>
+  <h2>{t("live_preview")}</h2>
+  <p><strong>{t("controls_real_devices")}</strong></p>
   <p class="hint">
-    {t(
-      session
-        ? "Scheduling stays paused until you choose Resume scheduling."
-        : "Normal scheduling pauses until you choose Resume scheduling. Each press runs one event immediately, even with management disabled or dry run selected.",
-    )}
+    {t(session ? "live_preview_paused_hint" : "live_preview_controls_hint")}
   </p>
   {#if session}
     <div role="status" aria-live="polite" aria-atomic="true">
       <strong>{t(liveSessionStatus(session))}</strong>
       <p>
-        {session.date} · {t("{done} of {total} events")
+        {session.date} · {t("live_preview_progress")
           .replace("{done}", () => String(session.cursor))
           .replace("{total}", () => String(session.total))}
       </p>
       {#if session.simulated_time && panel.livePlan}
         <p>
-          {t("Simulated time")}: {stamp(
+          {t("simulated_time")}: {stamp(
             session.simulated_time,
             panel.livePlan.timezone,
             panel._hass.locale,
@@ -105,7 +101,7 @@
         </p>
       {/if}
       {#if lastResult}
-        <p>{t("Last result")}: {t(lastResult)}</p>
+        <p>{t("last_result")}: {t(lastResult)}</p>
       {/if}
     </div>
     {#if session.state === "interrupted"}
@@ -115,25 +111,21 @@
     {/if}
     {#if session.earlier_revision}
       <p class="hint">
-        {t(
-          "This session uses an earlier program revision. Its actions are frozen.",
-        )}
+        {t("live_preview_revision_hint")}
       </p>
     {/if}
     {#if !panel.liveCanAdvance && running}
       <p class="hint">
-        {t(
-          "Only the account that started this session can advance. You can stop it.",
-        )}
+        {t("live_preview_owner_hint")}
       </p>
     {/if}
     {#if session.next_group && running}
-      <p><strong>{t("Next event")}: {session.next_group.title}</strong></p>
+      <p><strong>{t("next_event")}: {session.next_group.title}</strong></p>
       {#each session.next_group.calls as call (call.id)}
         <p class="call">
           {call.action.action} · {call.action.entities.join(", ")}
           {#if call.tick}
-            · {t("Tick {tick} of {count}")
+            · {t("tick_progress")
               .replace("{tick}", () => String(call.tick))
               .replace("{count}", () => String(call.tick_count))}
           {/if}
@@ -145,14 +137,12 @@
     {/each}
   {:else}
     <p class="hint">
-      {t(
-        "Starting prepares the session. Devices run only when you press Next event.",
-      )}
+      {t("live_preview_start_hint")}
     </p>
   {/if}
   {#if !panel.liveReady}
     <p role="status" class="hint">
-      {t("Recovering live preview…")}
+      {t("recovering_live_preview")}
     </p>
   {/if}
 </section>

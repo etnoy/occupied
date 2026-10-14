@@ -1,3 +1,4 @@
+import { translator } from "@occupied/translations.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { Program } from "@occupied/types.js";
@@ -105,7 +106,7 @@ void test("parent and dependent weekdays can be edited independently", () => {
   assert.deepEqual(editorErrors(next, child), {});
   assert.deepEqual(buildStep(next, child).steps?.bed.days, ["tue"]);
   child.form.days = [];
-  assert.match(editorErrors(next, child).days, /at least one day/);
+  assert.equal(editorErrors(next, child).days, "days_required_error");
 });
 void test("cycle errors identify the relevant field", () => {
   const p = program(),
@@ -118,7 +119,7 @@ void test("cycle errors identify the relevant field", () => {
     start: "",
     end: "",
   };
-  assert.match(editorErrors(p, editor).anchor, /circular/);
+  assert.equal(editorErrors(p, editor).anchor, "step_reference_error");
 });
 void test("signed and second-precision sources round-trip", () => {
   for (const relative_to of [
@@ -288,7 +289,7 @@ void test("timing explanation describes signed offsets and window bounds directl
     timingExplanation(
       { ...base, anchor: sources[0].value },
       [],
-      (v) => v,
+      translator(),
       sources,
     ),
     "Runs at the same time as Work · start. Add an end offset to introduce randomness",

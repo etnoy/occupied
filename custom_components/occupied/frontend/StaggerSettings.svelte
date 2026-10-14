@@ -25,14 +25,12 @@
       aria-describedby={`${id}-description`}
       onchange={(event) => (settings.enabled = event.currentTarget.checked)}
     />
-    <span>{t("Staggered action")}</span>
+    <span>{t("staggered_action")}</span>
   </label>
   <p id={`${id}-description`} class="hint">
-    {t(
-      "Factorio style: act on one entity at each evenly spaced tick, in a random order.",
-    )}
+    {t("stagger_hint")}
   </p>
-  <label for={`${id}-period`}>{t("Time window")}</label>
+  <label for={`${id}-period`}>{t("time_window")}</label>
   <input
     id={`${id}-period`}
     type="text"
@@ -44,7 +42,7 @@
     oninput={(event) => (settings.period = event.currentTarget.value)}
   />
   <p id={`${id}-period-help`} class="hint">
-    {t("Default: 2m. Use a duration from 1s to 30m.")}
+    {t("stagger_period_hint")}
   </p>
   {#if error}
     <p id={`${id}-error`} class="error" role="alert">

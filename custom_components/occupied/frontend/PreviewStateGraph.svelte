@@ -69,28 +69,24 @@
   <p class="hint">
     {t(
       plan.events.length === 0
-        ? "No steps are scheduled for this date."
-        : "No light, switch, or cover actions on this date. Other actions are listed in Event details.",
+        ? "schedule_empty_hint"
+        : "preview_devices_empty_hint",
     )}
   </p>
 {/if}
 {#if data.some((entity) => entity.entity_id.startsWith("cover."))}
   <p class="hint">
-    {t(
-      "Cover strips show planned position and tilt targets. Travel time and positions after stop actions are unknown.",
-    )}
+    {t("preview_covers_hint")}
   </p>
 {/if}
 {#if failed && data.length > 0}
   <p class="hint">
-    {t(
-      "The Home Assistant graph could not load. Planned actions are available in Event details.",
-    )}
+    {t("preview_graph_error")}
   </p>
 {:else if ready}
   <state-history-chart-timeline
     hidden={data.length === 0}
-    aria-label={t("Planned device states")}
+    aria-label={t("planned_device_states")}
     use:properties={{
       hass: chartHass,
       data,
@@ -106,7 +102,7 @@
     }}
   ></state-history-chart-timeline>
 {:else if data.length > 0}
-  <p role="status">{t("Loading graph…")}</p>
+  <p role="status">{t("loading_graph")}</p>
 {/if}
 
 <style>

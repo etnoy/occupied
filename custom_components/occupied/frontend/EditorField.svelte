@@ -138,9 +138,9 @@
       value={String(value)}
       oninput={input}
       use:validity={["startOffset", "endOffset"].includes(key)
-        ? editor.errors[key] || ""
+        ? t(editor.errors[key] || "")
         : ""}
     />
   {/if}
-  <FieldError {key} {fieldPrefix} errors={{ ...editor.errors }} />
+  <FieldError {t} {key} {fieldPrefix} errors={{ ...editor.errors }} />
 </div>

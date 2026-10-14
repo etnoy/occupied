@@ -47,9 +47,9 @@ export function formatPreviewDate(value, today, locale, t) {
   const todayTime = Date.parse(`${today}T12:00:00Z`);
   const daysFromToday = Math.round((valueTime - todayTime) / 86_400_000);
   const relativeLabels = {
-    [-1]: "Yesterday",
-    0: "Today",
-    1: "Tomorrow",
+    [-1]: "yesterday",
+    0: "today",
+    1: "tomorrow",
   };
   const relativeLabel = relativeLabels[daysFromToday]
     ? t(relativeLabels[daysFromToday])

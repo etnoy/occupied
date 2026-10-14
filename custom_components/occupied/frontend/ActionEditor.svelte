@@ -12,9 +12,9 @@
   let {
     panel,
     context,
-    heading = "Action",
-    kindLabel = "Step type",
-    entityLabel = "Entities",
+    heading = "action",
+    kindLabel = "step_type",
+    entityLabel = "entities_label",
     hideEntities = false,
   }: {
     panel: OccupiedPanel;
@@ -45,12 +45,12 @@
     options={{
       hideLabel: true,
       choices: [
-        ["turn_on", "Turn on lights/switches"],
-        ["turn_off", "Turn off lights/switches"],
-        ["cover", "Control covers"],
-        ["service", "Entity service action"],
-        ["scene", "Activate Home Assistant scene"],
-        ["custom", "Custom YAML"],
+        ["turn_on", "turn_on_lights_switches"],
+        ["turn_off", "turn_off_lights_switches"],
+        ["cover", "control_covers"],
+        ["service", "entity_service_action"],
+        ["scene", "activate_home_assistant_scene"],
+        ["custom", "custom_yaml"],
       ],
       render: true,
     }}
@@ -60,7 +60,7 @@
   {#if form.kind === "custom"}
     <ha-code-editor
       role="group"
-      aria-label={t("Action YAML")}
+      aria-label={t("action_yaml")}
       aria-describedby={context.editor.errors.customYaml
         ? `step-error-${context.fieldPrefix || ""}customYaml`
         : undefined}
@@ -83,14 +83,13 @@
       }}
     ></ha-code-editor>
     <FieldError
+      {t}
       key="customYaml"
       fieldPrefix={context.fieldPrefix || ""}
       errors={{ ...context.editor.errors }}
     />
     <p class="hint">
-      {t(
-        "Enter one action or an ordered list of actions. Use brightness from 1 to 255. Timing stays in the controls above. A failed call stops the remaining actions.",
-      )}
+      {t("custom_yaml_hint")}
     </p>
   {/if}
   {#if form.kind === "service"}
@@ -98,7 +97,7 @@
       {panel}
       {context}
       key="service"
-      label="Service (domain.service)"
+      label="service"
       value={form.service}
       update={(value) => (form.service = value)}
     ></EditorField>
@@ -108,7 +107,7 @@
       {panel}
       {context}
       key="service"
-      label="Cover action"
+      label="cover_action"
       value={form.service}
       update={(value) => (form.service = value)}
       options={{ choices: coverActions, render: true }}
@@ -118,7 +117,7 @@
         {panel}
         {context}
         key="position"
-        label="Position (%)"
+        label="position"
         value={form.position}
         update={(value) => (form.position = value)}
         options={{ type: "number", min: 0, max: 100, step: 1 }}
@@ -128,21 +127,17 @@
         {panel}
         {context}
         key="tiltPosition"
-        label="Tilt position (%)"
+        label="tilt_position"
         value={form.tiltPosition}
         update={(value) => (form.tiltPosition = value)}
         options={{ type: "number", min: 0, max: 100, step: 1 }}
       />
     {/if}
     <p class="hint">
-      {t(
-        "0% is closed; 100% is open. Device support determines which cover actions are available.",
-      )}
+      {t("cover_position_hint")}
     </p>
     <p class="hint">
-      {t(
-        "Covers run only at scheduled times. Enabling late skips past cover actions.",
-      )}
+      {t("cover_schedule_hint")}
     </p>
   {/if}
   {#if form.kind === "scene" || form.kind === "service"}
@@ -150,7 +145,7 @@
       {panel}
       {context}
       key="data"
-      label="Service data (JSON)"
+      label="service_data"
       value={form.data}
       update={(value) => (form.data = value)}
       options={{ multiline: true }}

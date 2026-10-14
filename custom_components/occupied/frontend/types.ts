@@ -1,7 +1,7 @@
 // The editable GUI draft is the canonical YAML/JSON model.
 export type Path = (string | number)[];
 
-export type Translate = (text: string) => string;
+export type Translate = (key: string) => string;
 
 export type JsonValue =
   | null

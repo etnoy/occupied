@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { translator } from "./translations.js";
   import type { Snippet } from "svelte";
   import type { Plan, Program, Translate, HomeAssistant } from "./types.js";
   import PreviewStateGraph from "./PreviewStateGraph.svelte";
@@ -15,7 +16,7 @@
     plan,
     schedulePlans,
     program,
-    t = (text: string) => text,
+    t = translator(),
     locale,
     hass,
     entityNames = {},
@@ -39,7 +40,7 @@
 
   let labels = $derived(
     new Map([
-      ...stepEntries(program || {}).map(
+      ...stepEntries(program || {}, undefined, t).map(
         (resource) => [`step:${resource.id}`, resource.name] as const,
       ),
       ...randomEntries(program || {}).map(
@@ -88,16 +89,16 @@
     />
     {#if plan.events.length > 0}
       <details>
-        <summary>{t("Event details")} · {plan.events.length}</summary>
+        <summary>{t("event_details")} · {plan.events.length}</summary>
         <p class="hint">
-          {t("Behavior revision")}: {plan.behavior_hash.slice(0, 12)} · {t(
-            "Plan revision",
+          {t("behavior_revision")}: {plan.behavior_hash.slice(0, 12)} · {t(
+            "plan_revision",
           )}: {plan.source_revision?.slice(0, 12) || "—"}
         </p>
         {#each staggerTransitions(plan) as transition (transition)}
           <details>
             <summary>
-              {eventLabel(transition.events[0])} · {t("Staggered action")} · {transition.count}
+              {eventLabel(transition.events[0])} · {t("staggered_action")} · {transition.count}
               {t("entities")}
             </summary>
             <p class="hint">
@@ -106,7 +107,7 @@
                 plan.timezone,
                 locale,
               )}
-              · {t("Period")}: {transition.period}s · {t("Tick interval")}: {Number(
+              · {t("period")}: {transition.period}s · {t("tick_interval")}: {Number(
                 transition.interval.toFixed(3),
               )}s
             </p>
@@ -117,7 +118,7 @@
                     .map((entity) => entityNames[entity] || entity)
                     .join(", ")}
                   {#if tick.superseded}
-                    · {t("Superseded")}
+                    · {t("superseded")}
                   {/if}
                 </li>
               {/each}
@@ -126,8 +127,8 @@
         {/each}
         <input
           type="search"
-          placeholder={t("Filter events")}
-          aria-label={t("Filter events")}
+          placeholder={t("filter_events")}
+          aria-label={t("filter_events")}
           oninput={(event) => {
             query = event.currentTarget.value.toLowerCase();
             page = 0;
@@ -138,11 +139,11 @@
             <table>
               <thead>
                 <tr>
-                  {#each ["Planned time", "Source", "Action", "Targets", "Settings"] as label (label)}
+                  {#each ["planned_time", "source", "action", "targets", "settings"] as label (label)}
                     <th scope="col">{t(label)}</th>
                   {/each}
                   {#if liveSession}
-                    <th scope="col">{t("Result")}</th>
+                    <th scope="col">{t("result")}</th>
                   {/if}
                 </tr>
               </thead>
@@ -176,7 +177,7 @@
                           >
                           <div>{live.outcome.detail}</div>
                         {:else if live?.current}
-                          {t("Next event")}
+                          {t("next_event")}
                         {/if}
                       </td>
                     {/if}
@@ -189,7 +190,7 @@
             <button
               type="button"
               disabled={currentPage === 0}
-              onclick={() => (page = currentPage - 1)}>{t("Previous")}</button
+              onclick={() => (page = currentPage - 1)}>{t("previous")}</button
             >
             <span
               >{filtered.length}
@@ -201,7 +202,7 @@
             <button
               type="button"
               disabled={(currentPage + 1) * 50 >= filtered.length}
-              onclick={() => (page = currentPage + 1)}>{t("Next")}</button
+              onclick={() => (page = currentPage + 1)}>{t("next")}</button
             >
           </div>
         </div>
@@ -213,7 +214,7 @@
       </p>
     {/each}
   {:else if showLoading}
-    <p role="status">{t("Loading schedule…")}</p>
+    <p role="status">{t("loading_schedule")}</p>
   {/if}
 </section>
 

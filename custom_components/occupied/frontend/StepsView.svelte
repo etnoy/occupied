@@ -29,11 +29,9 @@
 
 {#if entries.length === 0}
   <section class="step-empty">
-    <h2>{t("Scheduled activity")}</h2>
+    <h2>{t("scheduled_activity")}</h2>
     <p class="hint">
-      {t(
-        "Run actions at specific times, around sunrise or sunset, or relative to other steps. Choose which devices to control and what they should do.",
-      )}
+      {t("steps_hint")}
     </p>
     <button
       type="button"
@@ -42,12 +40,12 @@
       disabled={panel.busy}
       onclick={() => startStep(panel)}
     >
-      {t("Create your first step")}
+      {t("create_your_first_step")}
     </button>
   </section>
 {:else}
   <div class="step-layout">
-    <div class="step-list" aria-label={t("Steps")}>
+    <div class="step-list" aria-label={t("steps")}>
       {#each stepTree(entries) as { entry, depth } (entry.id)}
         {@const warnings = issues
           .filter(({ stepId }) => stepId === entry.id)
@@ -71,7 +69,7 @@
             class="step-row"
             class:editing={editing && warnings.length === 0}
             aria-label={stepDisabled
-              ? `${entry.name} · ${t("Disabled")}`
+              ? `${entry.name} · ${t("disabled")}`
               : entry.name}
             disabled={panel.busy}
             aria-expanded={expanded}
@@ -85,7 +83,7 @@
               <span class="step-row-heading">
                 <strong>{entry.name}</strong>
                 {#if stepDisabled}
-                  <span class="step-status-badge">{t("Disabled")}</span>
+                  <span class="step-status-badge">{t("disabled")}</span>
                 {/if}
               </span>
               <span class="hint"
@@ -134,6 +132,6 @@
     disabled={panel.busy}
     onclick={() => startStep(panel)}
   >
-    {t("Create step")}
+    {t("create_step")}
   </button>
 {/if}

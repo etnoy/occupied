@@ -100,8 +100,8 @@
     type="button"
     class="icon-button"
     class:error={!!context?.editor.errors.days}
-    aria-label={panel.t("Step actions")}
-    title={panel.t("Step actions")}
+    aria-label={panel.t("step_actions")}
+    title={panel.t("step_actions")}
     aria-haspopup="menu"
     aria-expanded={menuOpen}
     aria-controls={menuId}
@@ -133,7 +133,7 @@
     popover="auto"
     role="menu"
     tabindex="-1"
-    aria-label={panel.t("Step actions")}
+    aria-label={panel.t("step_actions")}
     ontoggle={(event) => (menuOpen = event.newState === "open")}
     onkeydown={menuKeydown}
   >
@@ -152,7 +152,7 @@
           context.changed("enabled");
         }}
       >
-        {panel.t(context.form.enabled ? "Disable" : "Enable")}
+        {panel.t(context.form.enabled ? "disable" : "enable")}
       </button>
     {/if}
     {#if entry}
@@ -168,7 +168,7 @@
           }
         }}
       >
-        {panel.t("Add related step")}
+        {panel.t("add_related_step")}
       </button>
     {/if}
     {#if context}
@@ -182,7 +182,7 @@
           flushSync(() => (advancedOpen = true));
         }}
       >
-        {panel.t("Advanced settings")}
+        {panel.t("advanced_settings")}
       </button>
     {/if}
     {#if entry}
@@ -198,7 +198,7 @@
           flushSync(() => (deleteOpen = true));
         }}
       >
-        {panel.t("Delete step")}
+        {panel.t("delete_step")}
       </button>
     {/if}
   </div>

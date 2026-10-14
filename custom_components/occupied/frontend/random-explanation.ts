@@ -1,3 +1,4 @@
+import { translator } from "./translations.js";
 import type {
   ActionForm,
   Catalog,
@@ -19,7 +20,7 @@ export function randomExplanation(
   form: RandomForm,
   program: Program,
   catalog: Pick<Catalog, "entities" | "time_sources">,
-  t: Translate = (text) => text,
+  t: Translate = translator(),
   locale?: HomeAssistantLocale,
 ): string {
   const say = (text: string, values: Record<string, string | number> = {}) => {
@@ -44,14 +45,14 @@ export function randomExplanation(
     catalog.time_sources,
     {
       includeHints: false,
-      subject: "Window starts",
+      subject: "window_starts",
       days: form.days,
       locale,
     },
   );
   let end = timingExplanation(form.end, entries, t, catalog.time_sources, {
     includeHints: false,
-    subject: "Window ends",
+    subject: "window_ends",
     locale,
   });
   let windowSeconds: number | undefined;
@@ -75,7 +76,7 @@ export function randomExplanation(
     if (Number.isFinite(difference)) {
       windowSeconds = difference < 0 ? difference + 86_400 : difference;
       if (difference < 0) {
-        end += ` ${t("the next day")}`;
+        end += ` ${t("the_next_day")}`;
       }
     }
   }
@@ -94,7 +95,7 @@ export function randomExplanation(
     Number.isFinite(minDuration) &&
     minDuration > windowSeconds;
   const sentences = [
-    ...(form.enabled ? [] : [t("This random event is disabled.")]),
+    ...(form.enabled ? [] : [t("random_disabled_hint")]),
     `${start}.`,
     `${end}.`,
   ];
@@ -110,47 +111,34 @@ export function randomExplanation(
     maximum >= minimum;
   if (validCounts && maximum === 0) {
     sentences.push(
-      t("No events run because the event count is zero."),
-      t("Dependent random events also skip this window."),
+      t("random_zero_count_hint"),
+      t("random_dependents_skip_hint"),
     );
 
     return sentences.join(" ");
   }
   if (cannotFit) {
-    sentences.push(
-      t(
-        "No events can run because the minimum duration is longer than the window.",
-      ),
-    );
+    sentences.push(t("random_duration_exceeds_window"));
   } else if (!validCounts) {
-    sentences.push(
-      t("Choose valid event counts to describe how often events run."),
-    );
+    sentences.push(t("random_counts_prompt"));
   } else if (minimum === maximum) {
     sentences.push(
       minimum === 1
-        ? t("One event starts at a random time during each window.")
-        : say("{count} events start at random times during each window.", {
+        ? t("random_single_event_summary")
+        : say("random_count_summary", {
             count: minimum,
           }),
     );
   } else {
     sentences.push(
-      say(
-        "Between {min} and {max} events start at random times during each window.",
-        {
-          min: minimum,
-          max: maximum,
-        },
-      ),
+      say("random_count_range_summary", {
+        min: minimum,
+        max: maximum,
+      }),
     );
   }
   if (validCounts && minimum === 0) {
-    sentences.push(
-      t(
-        "A window may have no events; dependent random events skip that window.",
-      ),
-    );
+    sentences.push(t("random_empty_window_hint"));
   }
   const duration = (seconds: number) => durationLabel(seconds, t);
   if (
@@ -160,11 +148,9 @@ export function randomExplanation(
     maxDuration < minDuration ||
     maxDuration > 604_800
   ) {
-    sentences.push(
-      t("Choose valid durations to describe how long each event lasts."),
-    );
+    sentences.push(t("random_durations_prompt"));
   } else if (windowSeconds !== undefined && minDuration > windowSeconds) {
-    sentences.push(t("Reduce the minimum duration or extend the window."));
+    sentences.push(t("random_duration_fit_hint"));
   } else {
     const longest =
       windowSeconds === undefined
@@ -172,10 +158,10 @@ export function randomExplanation(
         : Math.min(maxDuration, windowSeconds);
     sentences.push(
       minDuration === longest
-        ? say("Each event lasts {duration}.", {
+        ? say("random_duration_summary", {
             duration: duration(minDuration),
           })
-        : say("Each event lasts between {min} and {max}.", {
+        : say("random_duration_range_summary", {
             min: duration(minDuration),
             max: duration(longest),
           }),
@@ -183,7 +169,7 @@ export function randomExplanation(
   }
   const action = (selected: ActionForm) => {
     if (selected.kind === "custom") {
-      return t("run the Custom YAML actions in order");
+      return t("custom_yaml_summary");
     }
     const names = [...new Set(selected.entities)].map((id) =>
       entityName(catalog, id),
@@ -195,20 +181,18 @@ export function randomExplanation(
     const entities =
       names.length > 0 ? `${names.join(", ")} ${t("and")} ${last}` : last;
     if (selected.kind === "scene") {
-      return say("activate {entities}", { entities });
+      return say("action_activate_summary", { entities });
     }
     if (selected.kind === "cover") {
       const descriptions: Record<string, string> = {
-        "cover.open_cover": "open {entities}",
-        "cover.close_cover": "close {entities}",
-        "cover.stop_cover": "stop {entities}",
-        "cover.set_cover_position":
-          "set the position of {entities} to {position}%",
-        "cover.open_cover_tilt": "open the tilt of {entities}",
-        "cover.close_cover_tilt": "close the tilt of {entities}",
-        "cover.stop_cover_tilt": "stop the tilt of {entities}",
-        "cover.set_cover_tilt_position":
-          "set the tilt of {entities} to {position}%",
+        "cover.open_cover": "action_open_summary",
+        "cover.close_cover": "action_close_summary",
+        "cover.stop_cover": "action_stop_summary",
+        "cover.set_cover_position": "action_position_summary",
+        "cover.open_cover_tilt": "action_open_tilt_summary",
+        "cover.close_cover_tilt": "action_close_tilt_summary",
+        "cover.stop_cover_tilt": "action_stop_tilt_summary",
+        "cover.set_cover_tilt_position": "action_tilt_position_summary",
       };
       const description = descriptions[selected.service];
       if (!description) {
@@ -219,7 +203,7 @@ export function randomExplanation(
           ? selected.position
           : selected.tiltPosition;
       if (
-        description.includes("{position}") &&
+        t(description).includes("{position}") &&
         (!position.trim() ||
           !Number.isSafeInteger(Number(position)) ||
           Number(position) < 0 ||
@@ -232,7 +216,7 @@ export function randomExplanation(
     }
     if (selected.kind === "service") {
       return selected.service.trim()
-        ? say("run {service} for {entities}", {
+        ? say("action_service_summary", {
             service: selected.service.trim(),
             entities,
           })
@@ -241,8 +225,8 @@ export function randomExplanation(
 
     return say(
       selected.action === "turn_off"
-        ? "turn off {entities}"
-        : "turn on {entities}",
+        ? "action_turn_off_summary"
+        : "action_turn_on_summary",
       { entities },
     );
   };
@@ -251,22 +235,16 @@ export function randomExplanation(
     form.sameEntities ? { ...form.off, entities: form.on.entities } : form.off,
   );
   if (on && !cannotFit) {
-    sentences.push(say("When each event starts, {action}.", { action: on }));
+    sentences.push(say("random_start_action_summary", { action: on }));
   }
   if (off && !cannotFit) {
-    sentences.push(say("When each event ends, {action}.", { action: off }));
+    sentences.push(say("random_end_action_summary", { action: off }));
   }
   const conclusion =
     validCounts && maximum === 1
-      ? "The event finishes before the window closes."
-      : "Events may overlap, but all finish before the window closes.";
-  sentences.push(
-    t(
-      cannotFit
-        ? "Duration limits take priority over the event count."
-        : conclusion,
-    ),
-  );
+      ? "random_single_finish_hint"
+      : "random_overlap_hint";
+  sentences.push(t(cannotFit ? "random_duration_priority_hint" : conclusion));
 
   return sentences.join(" ");
 }

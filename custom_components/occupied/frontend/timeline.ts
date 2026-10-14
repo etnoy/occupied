@@ -1,3 +1,4 @@
+import { translator } from "./translations.js";
 import type { Program, Translate, Plan, PlannedEvent } from "./types.js";
 import type { HomeAssistantLocale } from "./time-format.js";
 import { coverTarget, type CoverPosition } from "./cover.js";
@@ -39,14 +40,17 @@ export function previewStateHistory(
   plan: Plan,
   _program: Program,
   names: Record<string, string> = {},
-  t: Translate = (text) => text,
+  t: Translate = translator(),
 ): PreviewHistoryEntity[] {
   const start = Date.parse(plan.start),
     end = Date.parse(plan.end);
   const entities = new Map<string, PreviewHistoryEntity>();
   const covers = new Map<string, CoverPosition>();
-  const stateLabels: Record<string, string> = { on: "On", off: "Off" };
-  const label = (state: string) => t(stateLabels[state] || "Unknown");
+  const stateLabels: Record<string, string> = {
+    on: "on_label",
+    off: "off_label",
+  };
+  const label = (state: string) => t(stateLabels[state] || "unknown");
   for (const event of [...plan.events].sort(
     (a, b) => Date.parse(a.time) - Date.parse(b.time),
   )) {
@@ -88,19 +92,19 @@ export function previewStateHistory(
         covers.set(entity, target);
         const parts: string[] = [];
         if (target.position !== undefined) {
-          let position = t("Position {position}%").replace("{position}", () =>
+          let position = t("cover_position_summary").replace("{position}", () =>
             String(target.position),
           );
           if (target.position === 100) {
-            position = t("Open");
+            position = t("open");
           } else if (target.position === 0) {
-            position = t("Closed");
+            position = t("closed");
           }
           parts.push(position);
         }
         if (target.tilt_position !== undefined) {
           parts.push(
-            t("Tilt {position}%").replace("{position}", () =>
+            t("cover_tilt_summary").replace("{position}", () =>
               String(target.tilt_position),
             ),
           );
@@ -133,7 +137,7 @@ export function calendarStateHistory(
   day: Plan,
   program: Program,
   names: Record<string, string> = {},
-  t: Translate = (text) => text,
+  t: Translate = translator(),
 ): PreviewHistoryEntity[] {
   const start = Date.parse(day.start),
     end = Date.parse(day.end);
@@ -170,18 +174,18 @@ export function eventDetails(
   locale?: HomeAssistantLocale,
 ) {
   const kinds: Record<string, string> = {
-    random_start: "Random start",
-    random_end: "Random end",
+    random_start: "random_start",
+    random_end: "random_end",
   };
   let action = event.action.action;
   if (event.tick) {
-    const tick = t("Tick {tick} of {count}")
+    const tick = t("tick_progress")
       .replace("{tick}", () => String(event.tick))
       .replace("{count}", () => String(event.tick_count));
     action += ` · ${tick} · ${event.period_seconds}s`;
   }
   if (event.superseded) {
-    action += ` · ${t("Superseded")}`;
+    action += ` · ${t("superseded")}`;
   }
 
   return {

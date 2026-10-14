@@ -1,4 +1,885 @@
 // Generated from occupied-panel.ts by pnpm run build. Do not edit.
+// custom_components/occupied/frontend/translations.ts
+var en = {
+  staggered_action: "Staggered action",
+  stagger_hint:
+    "Factorio style: act on one entity at each evenly spaced tick, in a random order.",
+  time_window: "Time window",
+  stagger_period_hint: "Default: 2m. Use a duration from 1s to 30m.",
+  stagger_period_error: "Use a time window from 1s to 30m, for example 2m.",
+  tick_progress: "Tick {tick} of {count}",
+  superseded: "Superseded",
+  period: "Period",
+  tick_interval: "Tick interval",
+  custom_yaml: "Custom YAML",
+  action_yaml: "Action YAML",
+  actions: "actions",
+  custom_yaml_hint:
+    "Enter one action or an ordered list of actions. Use brightness from 1 to 255. Timing stays in the controls above. A failed call stops the remaining actions.",
+  custom_yaml_replace_confirm:
+    "Replace this Custom YAML block with the selected action? Its individual settings or other actions will be removed.",
+  custom_yaml_summary: "run the Custom YAML actions in order",
+  live_preview: "Live preview",
+  controls_real_devices: "Controls real devices",
+  live_preview_paused_hint:
+    "Scheduling stays paused until you choose Resume scheduling.",
+  live_preview_controls_hint:
+    "Normal scheduling pauses until you choose Resume scheduling. Each press runs one event immediately, even with management disabled or dry run selected.",
+  live_preview_start_hint:
+    "Starting prepares the session. Devices run only when you press Next event.",
+  start_live_preview: "Start live preview",
+  ready_to_start: "Ready to start",
+  ready_for_next_event: "Ready for next event",
+  next_event: "Next event",
+  running: "Running\u2026",
+  stopping: "Stopping\u2026",
+  stopped: "Stopped",
+  interrupted: "Interrupted",
+  stop: "Stop",
+  day_complete: "Day complete",
+  run_again: "Run again",
+  resume_scheduling: "Resume scheduling",
+  refresh_preview: "Refresh Preview",
+  live_preview_progress: "{done} of {total} events",
+  simulated_time: "Simulated time",
+  last_result: "Last result",
+  dispatched_label: "Dispatched",
+  partial_success: "Partial success",
+  event_failed_or_interrupted: "Event failed or interrupted",
+  recovering_live_preview: "Recovering live preview\u2026",
+  live_preview_revision_hint:
+    "This session uses an earlier program revision. Its actions are frozen.",
+  live_preview_owner_hint:
+    "Only the account that started this session can advance. You can stop it.",
+  live_preview_controls: "Live preview controls",
+  result: "Result",
+  dispatched: "dispatched",
+  pending: "pending",
+  failed: "failed",
+  unavailable: "unavailable",
+  entity_disabled: "entity_disabled",
+  service_missing: "service_missing",
+  uncertain: "uncertain",
+  cancelled: "cancelled",
+  instance: "Instance",
+  unloaded: "Unloaded",
+  managed_file: "Managed file",
+  gui_storage: "GUI storage",
+  shared_devices_with: "Shared devices with",
+  instance_overlap_hint: "Actions and cleanup can interfere between instances.",
+  instance_switch_confirm:
+    "This instance has unsaved changes. Discard them and switch?",
+  view_switch_confirm:
+    "There are unsaved edits. Discard them and switch views?",
+  instance_unavailable_hint:
+    "This instance is unavailable. Check Settings \u2192 Devices & services, then retry.",
+  steps_and_time_sources: "Steps and time sources",
+  matching_sources: "matching sources",
+  time_sources_no_matches: "No matching steps or time sources.",
+  steps: "Steps",
+  scheduled_activity: "Scheduled activity",
+  steps_hint:
+    "Run actions at specific times, around sunrise or sunset, or relative to other steps. Choose which devices to control and what they should do.",
+  random: "Random",
+  random_activity: "Random activity",
+  random_event: "Random event",
+  random_events: "Random events",
+  random_event_name: "Random event name",
+  random_event_actions: "Random event actions",
+  random_settings_hint: "Apply these settings, then save the random event.",
+  create_your_first_random_event: "Create your first random event",
+  create_random_event: "Create random event",
+  save_random_event: "Save random event",
+  delete_random_event: "Delete random event",
+  delete_random_event_confirm: "Delete random event?",
+  delete_random_event_hint:
+    "This removes the random event and all its future occurrences.",
+  random_unsaved_confirm:
+    "This random event has unsaved changes. Discard them and continue?",
+  random_activity_hint:
+    "Run actions at random times within a window. Choose how often they run and how long each occurrence lasts.",
+  random_create_hint:
+    "Choose a window, a duration, and actions for the start and end of each occurrence.",
+  window_starts: "Window starts",
+  window_ends: "Window ends",
+  duration: "Duration",
+  end_of: "End of",
+  the_end_of: "the end of",
+  minimum_window_duration: "Minimum window duration",
+  maximum_window_duration: "Maximum window duration",
+  window_duration_error: "Choose a positive window duration within seven days.",
+  window_duration_order_error:
+    "Maximum window duration must be at least the minimum.",
+  window_durations_prompt: "Choose valid window durations.",
+  window_duration_summary: "Window closes {duration} after it starts",
+  window_duration_range_summary:
+    "Window closes between {min} and {max} after it starts",
+  random_reference_error:
+    "Choose another random event without creating a circular relationship.",
+  random_relative_start_hint:
+    "This start follows the selected window's closing time.",
+  random_relative_end_hint:
+    "Choose Absolute time or Duration to replace this saved relative window end.",
+  random_dependents_error:
+    "Other random events depend on this window. Change their starts before deleting.",
+  random_duration_exceeds_window:
+    "No events can run because the minimum duration is longer than the window.",
+  random_duration_fit_hint: "Reduce the minimum duration or extend the window.",
+  random_duration_priority_hint:
+    "Duration limits take priority over the event count.",
+  window_start: "Window start",
+  window_end: "Window end",
+  latest_window_start_optional: "Latest window start (optional)",
+  latest_window_end_optional: "Latest window end (optional)",
+  randomize_window_start: "Randomize window start",
+  randomize_window_end: "Randomize window end",
+  frequency_and_duration: "Frequency and duration",
+  minimum_events_per_window: "Minimum events per window",
+  maximum_events_per_window: "Maximum events per window",
+  add_maximum_events: "Add maximum events",
+  remove_maximum_events: "Remove maximum events",
+  random_count_order_error:
+    "Maximum events per window must be at least the minimum.",
+  random_disabled_hint: "This random event is disabled.",
+  random_counts_prompt:
+    "Choose valid event counts to describe how often events run.",
+  random_count_error: "Choose a whole number from 0 to 1000.",
+  random_zero_count_hint: "No events run because the event count is zero.",
+  random_dependents_skip_hint: "Dependent random events also skip this window.",
+  random_empty_window_hint:
+    "A window may have no events; dependent random events skip that window.",
+  random_count_range_summary:
+    "Between {min} and {max} events start at random times during each window.",
+  random_single_event_summary:
+    "One event starts at a random time during each window.",
+  random_count_summary:
+    "{count} events start at random times during each window.",
+  random_durations_prompt:
+    "Choose valid durations to describe how long each event lasts.",
+  random_duration_fit_prompt: "Choose durations that fit inside the window.",
+  random_duration_summary: "Each event lasts {duration}.",
+  random_duration_range_summary: "Each event lasts between {min} and {max}.",
+  action_activate_summary: "activate {entities}",
+  action_service_summary: "run {service} for {entities}",
+  action_turn_on_summary: "turn on {entities}",
+  action_turn_off_summary: "turn off {entities}",
+  action_open_summary: "open {entities}",
+  action_close_summary: "close {entities}",
+  action_stop_summary: "stop {entities}",
+  action_position_summary: "set the position of {entities} to {position}%",
+  action_open_tilt_summary: "open the tilt of {entities}",
+  action_close_tilt_summary: "close the tilt of {entities}",
+  action_stop_tilt_summary: "stop the tilt of {entities}",
+  action_tilt_position_summary: "set the tilt of {entities} to {position}%",
+  random_start_action_summary: "When each event starts, {action}.",
+  random_end_action_summary: "When each event ends, {action}.",
+  random_single_finish_hint: "The event finishes before the window closes.",
+  random_overlap_hint:
+    "Events may overlap, but all finish before the window closes.",
+  times_per_window: "times per window",
+  minimum_duration: "Minimum duration",
+  maximum_duration: "Maximum duration",
+  duration_hint: "Use durations like 5m, 30s, or 1h.",
+  when_event_starts: "When event starts",
+  when_event_ends: "When event ends",
+  random_days_hint: "Choose which days this random event should run.",
+  at_the_start: "At the start",
+  at_the_end: "At the end",
+  start_action: "Start action",
+  end_action: "End action",
+  start_entities: "Start entities",
+  end_entities: "End entities",
+  use_the_same_entities: "Use the same entities",
+  random_start: "Random start",
+  random_end: "Random end",
+  solar_events: "Solar events",
+  home_assistant_times: "Home Assistant times",
+  calendars: "Calendars",
+  unavailable_sources: "Unavailable sources",
+  search_steps_or_time_sources: "Search steps or time sources",
+  start: "start",
+  end: "end",
+  dawn: "dawn",
+  dusk: "dusk",
+  noon: "noon",
+  midnight: "midnight",
+  dawn_label: "Dawn",
+  dusk_label: "Dusk",
+  solar_noon: "Solar noon",
+  solar_midnight: "Solar midnight",
+  ha_time_source_hint:
+    "Uses the time currently reported by Home Assistant. Time-only helpers repeat daily; dated sources run only on their reported date.",
+  preview: "Preview",
+  step_type: "Step type",
+  activate_home_assistant_scene: "Activate Home Assistant scene",
+  entity_service_action: "Entity service action",
+  turn_on_lights_switches: "Turn on lights/switches",
+  turn_off_lights_switches: "Turn off lights/switches",
+  control_covers: "Control covers",
+  cover_action: "Cover action",
+  open_cover: "Open cover",
+  close_cover: "Close cover",
+  stop_cover: "Stop cover",
+  set_cover_position: "Set cover position",
+  open_tilt: "Open tilt",
+  close_tilt: "Close tilt",
+  stop_tilt: "Stop tilt",
+  set_tilt_position: "Set tilt position",
+  position: "Position (%)",
+  tilt_position: "Tilt position (%)",
+  cover_entities_error: "Choose cover entities.",
+  cover_action_error: "Choose a cover action.",
+  cover_position_error: "Choose a whole number from 0 to 100.",
+  cover_position_hint:
+    "0% is closed; 100% is open. Device support determines which cover actions are available.",
+  cover_schedule_hint:
+    "Covers run only at scheduled times. Enabling late skips past cover actions.",
+  settings: "Settings",
+  create_step: "Create step",
+  create_your_first_step: "Create your first step",
+  unsaved_changes: "Unsaved changes",
+  step_unsaved_confirm:
+    "This step has unsaved changes. Discard them and continue?",
+  keep_editing: "Keep editing",
+  discard_changes: "Discard changes",
+  edit_step: "Edit step",
+  add_related_step: "Add related step",
+  step_actions: "Step actions",
+  advanced_settings: "Advanced settings",
+  step_days_hint: "Choose which days this step should run.",
+  run_on: "Run on",
+  step_settings_hint: "Apply these settings, then save the step.",
+  apply: "Apply",
+  monday: "Monday",
+  tuesday: "Tuesday",
+  wednesday: "Wednesday",
+  thursday: "Thursday",
+  friday: "Friday",
+  saturday: "Saturday",
+  sunday: "Sunday",
+  days_required_error: "Choose at least one day.",
+  enabled: "Enabled",
+  disabled: "Disabled",
+  save_step: "Save step",
+  save_changes: "Save changes",
+  step_name: "Step name",
+  optional_title: "Optional title",
+  event_details: "Event details",
+  loading_schedule: "Loading schedule\u2026",
+  schedule_day: "Schedule day",
+  previous_day: "Previous day",
+  next_day: "Next day",
+  today: "Today",
+  yesterday: "Yesterday",
+  tomorrow: "Tomorrow",
+  schedule_empty_hint: "No steps are scheduled for this date.",
+  planned_device_states: "Planned device states",
+  loading_graph: "Loading graph\u2026",
+  on_label: "On",
+  unknown: "Unknown",
+  open: "Open",
+  closed: "Closed",
+  cover_position_summary: "Position {position}%",
+  cover_tilt_summary: "Tilt {position}%",
+  preview_covers_hint:
+    "Cover strips show planned position and tilt targets. Travel time and positions after stop actions are unknown.",
+  preview_devices_empty_hint:
+    "No light, switch, or cover actions on this date. Other actions are listed in Event details.",
+  preview_lights_empty_hint:
+    "No light or switch actions on this date. Other actions are listed in Event details.",
+  preview_graph_error:
+    "The Home Assistant graph could not load. Planned actions are available in Event details.",
+  back_to_steps: "Back to steps",
+  continue: "Continue",
+  cancel: "Cancel",
+  back: "Back",
+  action: "Action",
+  timing: "Timing",
+  absolute_time: "Absolute time",
+  relative_to: "Relative to",
+  start_time_window: "Start time window",
+  at: "at",
+  at_a_random_time_between: "at a random time between",
+  and: "and",
+  the_next_day: "the next day",
+  runs: "Runs",
+  step: "step",
+  hour: "hour",
+  hours: "hours",
+  minute: "minute",
+  minutes: "minutes",
+  second: "second",
+  seconds: "seconds",
+  at_the_same_time_as: "at the same time as",
+  the_start_of: "the start of",
+  time_window_randomness_hint: "Add an end of window to introduce randomness",
+  time_offset_randomness_hint: "Add an end offset to introduce randomness",
+  time_window_fixed_hint: "Start and end are the same, so the time is fixed",
+  end_of_window_optional: "End of window (optional)",
+  add_end_of_window: "Add end of window",
+  start_offset: "Start offset",
+  end_offset_optional: "End offset (optional)",
+  add_end_offset: "Add end offset",
+  remove_end_offset: "Remove end offset",
+  choose_a_step_or_event: "Choose a step or event",
+  window_offsets_prompt: "Enter valid offsets to see the window boundary",
+  turn_on: "Turn on",
+  turn_off: "Turn off",
+  every_day_label: "Every day",
+  every_day: "every day",
+  on_weekdays: "on weekdays",
+  on_weekends: "on weekends",
+  on_no_days: "on no days",
+  on: "on",
+  mondays: "Mondays",
+  tuesdays: "Tuesdays",
+  wednesdays: "Wednesdays",
+  thursdays: "Thursdays",
+  fridays: "Fridays",
+  saturdays: "Saturdays",
+  sundays: "Sundays",
+  weekends: "Weekends",
+  before: "before",
+  after: "after",
+  sunrise_label: "Sunrise",
+  sunset_label: "Sunset",
+  sunrise: "sunrise",
+  sunset: "sunset",
+  search_entities_or_rooms: "Search entities or rooms",
+  selected: "selected",
+  controller: "Controller",
+  managing: "Managing",
+  waiting: "Waiting",
+  paused: "Paused",
+  discard_edits: "Discard edits",
+  reload_saved_program: "Reload saved program",
+  unsaved_edits: "Unsaved edits",
+  loading_controller: "Loading controller\u2026",
+  enable: "Enable",
+  disable: "Disable",
+  entities_label: "Entities",
+  targets: "Targets",
+  delete: "Delete",
+  delete_step_confirm: "Delete step?",
+  delete_step: "Delete step",
+  used_by: "Used by",
+  delete_dependents_hint: "Change those relationships before deleting.",
+  delete_step_hint: "This step will be removed when you save changes.",
+  weekdays: "Weekdays",
+  previous: "Previous",
+  next: "Next",
+  date: "Date",
+  days: "Days",
+  seed: "Seed",
+  refresh: "Refresh",
+  run_preview: "Run preview",
+  export_yaml: "Export YAML",
+  changes: "changes",
+  yaml_editor_hint:
+    "Edit the YAML and save to validate and apply your changes. Invalid code is kept in the editor.",
+  download: "Download",
+  none: "None",
+  mon: "mon",
+  tue: "tue",
+  wed: "wed",
+  thu: "thu",
+  fri: "fri",
+  sat: "sat",
+  sun: "sun",
+  service: "Service (domain.service)",
+  service_data: "Service data (JSON)",
+  draft_invalid_hint:
+    "This draft cannot be shown. Discard edits or import a corrected program from Settings.",
+  custom_entity_hint:
+    "This selection includes a custom entity. Select lights or switches for this step.",
+  managed_file_draft_hint:
+    "This program is managed by a file. Add changes to your draft, then export them from Settings.",
+  submit_newer_edits_hint:
+    "Your changes are kept. Submit again to include the latest edits.",
+  step_dependents_error:
+    "Steps or random events depend on this step. Change their timing first.",
+  draft_revision_conflict_hint:
+    "The saved program changed. Your draft is preserved; reload the saved program before saving.",
+  managed_file_export_hint:
+    "Managed file is authoritative. Export draft changes to your file, then reload.",
+  managed_file_error: "File error: see Settings or Home Assistant Repairs",
+  preview_infeasible_error:
+    "Preview contains infeasible dates. Review timeline issues.",
+  step_edit_in_progress_hint:
+    "Finish or cancel this step to edit other configuration issues.",
+  save_newer_edits_hint:
+    "Your changes are kept. Save again to include the latest edits.",
+  saved_newer_edits_hint:
+    "Earlier changes saved. Your newer edits are still open.",
+  duration_error:
+    "Use a positive duration within seven days, for example 5m or 1h.",
+  duration_order_error:
+    "Maximum duration must be at least the minimum duration.",
+  duration_exceeds_window_error:
+    "Minimum duration does not fit inside this window.",
+  window_end_order_error: "Window end must be after its start.",
+  random_changed_error:
+    "This random event changed elsewhere. Cancel and reopen it before saving.",
+  custom_yaml_required_error: "Enter an action mapping or a list of actions.",
+  scene_required_error: "Select a Home Assistant scene.",
+  entities_required_error: "Select at least one entity.",
+  entity_ids_error: "Choose valid Home Assistant entity IDs.",
+  scene_single_error: "Select one Home Assistant scene.",
+  light_switch_entities_error:
+    "Choose lights and switches, or select a service action.",
+  service_error: "Choose a service using domain.service.",
+  service_data_error: "Service data must be a JSON object.",
+  start_time_required_error: "Choose a start time.",
+  end_time_error: "Choose a valid end time or leave it blank.",
+  step_reference_error:
+    "Choose another step without creating a circular relationship.",
+  time_source_required_error: "Choose a step or Home Assistant time source.",
+  timing_mode_error: "Choose absolute time or relative to.",
+  step_changed_error:
+    "This step changed elsewhere. Cancel and reopen it before saving.",
+  custom_yaml_validation_error:
+    "Validate Custom YAML before adding it to the draft.",
+  offset_format_error: "Use h, m or s, for example 30m, 1h, 1h30m or -10m.",
+  offset_range_error: "Offsets must be within seven days.",
+  offset_order_error: "The end offset must be at least the start offset.",
+  time_window_prompt: "Choose valid start and end times",
+  step_offsets_prompt: "Enter valid offsets to see when this step runs",
+  retry: "Retry",
+  occupied: "Occupied",
+  yaml: "YAML",
+  choose_configuration_file: "Choose configuration file",
+  occupied_yaml: "Occupied YAML",
+  behavior_revision: "Behavior revision",
+  plan_revision: "Plan revision",
+  entities: "entities",
+  filter_events: "Filter events",
+  events: "events",
+  activate_scene: "Activate scene",
+  repeated_activity_window: "Repeated activity window",
+  add_to_draft: "Add to draft",
+  planned_time: "Planned time",
+  source: "Source",
+  off_label: "Off",
+};
+var sv = {
+  staggered_action: "F\xF6rskjuten \xE5tg\xE4rd",
+  stagger_hint:
+    "Factorio-stil: styr en enhet i taget med j\xE4mna tidsintervall, i slumpm\xE4ssig ordning.",
+  time_window: "Tidsf\xF6nster",
+  stagger_period_hint: "Standard: 2m. Ange en tid fr\xE5n 1s till 30m.",
+  stagger_period_error:
+    "Ange ett tidsf\xF6nster fr\xE5n 1s till 30m, till exempel 2m.",
+  tick_progress: "Steg {tick} av {count}",
+  superseded: "Ersatt",
+  period: "Period",
+  tick_interval: "Stegintervall",
+  custom_yaml: "Egen YAML",
+  action_yaml: "\xC5tg\xE4rds-YAML",
+  actions: "\xE5tg\xE4rder",
+  custom_yaml_hint:
+    "Ange en \xE5tg\xE4rd eller en ordnad lista med \xE5tg\xE4rder. Anv\xE4nd brightness fr\xE5n 1 till 255. Tider anges i kontrollerna ovan. Ett misslyckat anrop stoppar \xE5terst\xE5ende \xE5tg\xE4rder.",
+  custom_yaml_replace_confirm:
+    "Ers\xE4tt detta YAML-block med den valda \xE5tg\xE4rden? Individuella inst\xE4llningar eller andra \xE5tg\xE4rder tas bort.",
+  custom_yaml_summary: "k\xF6r YAML-\xE5tg\xE4rderna i ordning",
+  live_preview: "Livef\xF6rhandsvisning",
+  controls_real_devices: "Styr riktiga enheter",
+  live_preview_paused_hint:
+    "Schemal\xE4ggningen f\xF6rblir pausad tills du v\xE4ljer \xC5teruppta schemal\xE4ggning.",
+  live_preview_controls_hint:
+    "Schemal\xE4ggningen pausas tills du v\xE4ljer \xC5teruppta schemal\xE4ggning. Varje tryck k\xF6r en h\xE4ndelse direkt, \xE4ven n\xE4r styrningen \xE4r avst\xE4ngd eller torrk\xF6rning \xE4r vald.",
+  live_preview_start_hint:
+    "Start f\xF6rbereder sessionen. Enheterna styrs f\xF6rst n\xE4r du trycker p\xE5 N\xE4sta h\xE4ndelse.",
+  start_live_preview: "Starta livef\xF6rhandsvisning",
+  ready_to_start: "Redo att starta",
+  ready_for_next_event: "Redo f\xF6r n\xE4sta h\xE4ndelse",
+  next_event: "N\xE4sta h\xE4ndelse",
+  running: "K\xF6r\u2026",
+  stopping: "Stoppar\u2026",
+  stopped: "Stoppad",
+  interrupted: "Avbruten",
+  stop: "Stoppa",
+  day_complete: "Dagen \xE4r klar",
+  run_again: "K\xF6r igen",
+  resume_scheduling: "\xC5teruppta schemal\xE4ggning",
+  refresh_preview: "Uppdatera f\xF6rhandsvisning",
+  live_preview_progress: "{done} av {total} h\xE4ndelser",
+  simulated_time: "Simulerad tid",
+  last_result: "Senaste resultat",
+  dispatched_label: "Utf\xF6rd",
+  partial_success: "Delvis utf\xF6rd",
+  event_failed_or_interrupted: "H\xE4ndelsen misslyckades eller avbr\xF6ts",
+  recovering_live_preview: "H\xE4mtar livef\xF6rhandsvisning\u2026",
+  live_preview_revision_hint:
+    "Sessionen anv\xE4nder en tidigare programversion. Dess \xE5tg\xE4rder \xE4r frysta.",
+  live_preview_owner_hint:
+    "Bara kontot som startade sessionen kan g\xE5 vidare. Du kan stoppa den.",
+  live_preview_controls: "Kontroller f\xF6r livef\xF6rhandsvisning",
+  result: "Resultat",
+  dispatched: "Utf\xF6rd",
+  pending: "P\xE5g\xE5r",
+  failed: "Misslyckad",
+  unavailable: "Otillg\xE4nglig",
+  entity_disabled: "Enhet avst\xE4ngd",
+  service_missing: "Tj\xE4nsten saknas",
+  uncertain: "Os\xE4kert resultat",
+  cancelled: "Avbruten",
+  instance: "Instans",
+  unloaded: "Inte inl\xE4st",
+  managed_file: "Hanterad fil",
+  gui_storage: "Lagring i gr\xE4nssnittet",
+  shared_devices_with: "Delade enheter med",
+  instance_overlap_hint:
+    "\xC5tg\xE4rder och avslut kan p\xE5verka varandra mellan instanser.",
+  instance_switch_confirm:
+    "Den h\xE4r instansen har osparade \xE4ndringar. Kasta dem och byt?",
+  view_switch_confirm:
+    "Det finns osparade \xE4ndringar. Vill du kasta dem och byta vy?",
+  instance_unavailable_hint:
+    "Den h\xE4r instansen \xE4r inte tillg\xE4nglig. Kontrollera Inst\xE4llningar \u2192 Enheter och tj\xE4nster och f\xF6rs\xF6k igen.",
+  steps_and_time_sources: "Steg och tidsk\xE4llor",
+  matching_sources: "matchande tidsk\xE4llor",
+  time_sources_no_matches: "Inga matchande steg eller tidsk\xE4llor.",
+  steps: "Steg",
+  scheduled_activity: "Schemalagd aktivitet",
+  steps_hint:
+    "K\xF6r \xE5tg\xE4rder vid best\xE4mda tider, kring soluppg\xE5ng eller solnedg\xE5ng, eller i f\xF6rh\xE5llande till andra steg. V\xE4lj vilka enheter som ska styras och vad de ska g\xF6ra.",
+  random: "Slumpm\xE4ssigt",
+  random_activity: "Slumpm\xE4ssig aktivitet",
+  random_event: "Slumpm\xE4ssig h\xE4ndelse",
+  random_events: "Slumpm\xE4ssiga h\xE4ndelser",
+  random_event_name: "H\xE4ndelsens namn",
+  random_event_actions: "\xC5tg\xE4rder f\xF6r slumpm\xE4ssig h\xE4ndelse",
+  random_settings_hint:
+    "Till\xE4mpa inst\xE4llningarna och spara sedan den slumpm\xE4ssiga h\xE4ndelsen.",
+  create_your_first_random_event:
+    "Skapa din f\xF6rsta slumpm\xE4ssiga h\xE4ndelse",
+  create_random_event: "Skapa slumpm\xE4ssig h\xE4ndelse",
+  save_random_event: "Spara slumpm\xE4ssig h\xE4ndelse",
+  delete_random_event: "Ta bort slumpm\xE4ssig h\xE4ndelse",
+  delete_random_event_confirm: "Ta bort slumpm\xE4ssig h\xE4ndelse?",
+  delete_random_event_hint:
+    "Detta tar bort den slumpm\xE4ssiga h\xE4ndelsen och alla framtida f\xF6rekomster.",
+  random_unsaved_confirm:
+    "H\xE4ndelsen har osparade \xE4ndringar. Kasta dem och forts\xE4tta?",
+  random_activity_hint:
+    "K\xF6r \xE5tg\xE4rder vid slumpm\xE4ssiga tider inom ett tidsf\xF6nster. V\xE4lj hur ofta de k\xF6rs och hur l\xE4nge varje tillf\xE4lle varar.",
+  random_create_hint:
+    "V\xE4lj ett tidsf\xF6nster, en varaktighet och \xE5tg\xE4rder f\xF6r b\xF6rjan och slutet av varje tillf\xE4lle.",
+  window_starts: "Tidsf\xF6nstret b\xF6rjar",
+  window_ends: "Tidsf\xF6nstret slutar",
+  duration: "Varaktighet",
+  end_of: "Slutet p\xE5",
+  the_end_of: "slutet p\xE5",
+  minimum_window_duration: "Minsta varaktighet f\xF6r tidsf\xF6nstret",
+  maximum_window_duration: "H\xF6gsta varaktighet f\xF6r tidsf\xF6nstret",
+  window_duration_error:
+    "V\xE4lj en positiv varaktighet f\xF6r tidsf\xF6nstret inom sju dagar.",
+  window_duration_order_error:
+    "H\xF6gsta varaktighet f\xF6r tidsf\xF6nstret m\xE5ste vara minst den l\xE4gsta.",
+  window_durations_prompt:
+    "V\xE4lj giltiga varaktigheter f\xF6r tidsf\xF6nstret.",
+  window_duration_summary:
+    "Tidsf\xF6nstret st\xE4ngs {duration} efter att det b\xF6rjar",
+  window_duration_range_summary:
+    "Tidsf\xF6nstret st\xE4ngs mellan {min} och {max} efter att det b\xF6rjar",
+  random_reference_error:
+    "V\xE4lj en annan slumpm\xE4ssig h\xE4ndelse utan att skapa ett cirkul\xE4rt beroende.",
+  random_relative_start_hint:
+    "Starten f\xF6ljer det valda tidsf\xF6nstrets sluttid.",
+  random_relative_end_hint:
+    "V\xE4lj Absolut tid eller Varaktighet f\xF6r att ers\xE4tta det sparade tidsf\xF6nstrets relativa slut.",
+  random_dependents_error:
+    "Andra slumpm\xE4ssiga h\xE4ndelser beror p\xE5 det h\xE4r tidsf\xF6nstret. \xC4ndra deras start innan du tar bort det.",
+  random_duration_exceeds_window:
+    "Inga h\xE4ndelser kan k\xF6ras eftersom minsta varaktighet \xE4r l\xE4ngre \xE4n tidsf\xF6nstret.",
+  random_duration_fit_hint:
+    "Minska den kortaste varaktigheten eller f\xF6rl\xE4ng tidsf\xF6nstret.",
+  random_duration_priority_hint:
+    "Varaktighetsgr\xE4nserna har f\xF6retr\xE4de framf\xF6r antalet h\xE4ndelser.",
+  window_start: "Tidsf\xF6nstrets start",
+  window_end: "Tidsf\xF6nstrets slut",
+  latest_window_start_optional:
+    "Senaste start f\xF6r tidsf\xF6nstret (valfritt)",
+  latest_window_end_optional: "Senaste slut f\xF6r tidsf\xF6nstret (valfritt)",
+  randomize_window_start: "Slumpm\xE4ssig start f\xF6r tidsf\xF6nstret",
+  randomize_window_end: "Slumpm\xE4ssigt slut f\xF6r tidsf\xF6nstret",
+  frequency_and_duration: "Frekvens och varaktighet",
+  minimum_events_per_window: "Minsta antal h\xE4ndelser per tidsf\xF6nster",
+  maximum_events_per_window: "H\xF6gsta antal h\xE4ndelser per tidsf\xF6nster",
+  add_maximum_events: "L\xE4gg till h\xF6gsta antal h\xE4ndelser",
+  remove_maximum_events: "Ta bort h\xF6gsta antal h\xE4ndelser",
+  random_count_order_error:
+    "H\xF6gsta antal h\xE4ndelser per tidsf\xF6nster m\xE5ste vara minst det l\xE4gsta antalet.",
+  random_disabled_hint:
+    "Den h\xE4r slumpm\xE4ssiga h\xE4ndelsen \xE4r inaktiverad.",
+  random_counts_prompt:
+    "V\xE4lj giltiga antal h\xE4ndelser f\xF6r att beskriva hur ofta de k\xF6rs.",
+  random_count_error: "V\xE4lj ett heltal fr\xE5n 0 till 1000.",
+  random_zero_count_hint:
+    "Inga h\xE4ndelser k\xF6rs eftersom antalet h\xE4ndelser \xE4r noll.",
+  random_dependents_skip_hint:
+    "Beroende slumpm\xE4ssiga h\xE4ndelser hoppar ocks\xE5 \xF6ver det h\xE4r tidsf\xF6nstret.",
+  random_empty_window_hint:
+    "Ett tidsf\xF6nster kan sakna h\xE4ndelser; beroende slumpm\xE4ssiga h\xE4ndelser hoppar \xF6ver det tidsf\xF6nstret.",
+  random_count_range_summary:
+    "Mellan {min} och {max} h\xE4ndelser b\xF6rjar vid slumpm\xE4ssiga tider inom varje tidsf\xF6nster.",
+  random_single_event_summary:
+    "En h\xE4ndelse b\xF6rjar vid en slumpm\xE4ssig tid inom varje tidsf\xF6nster.",
+  random_count_summary:
+    "{count} h\xE4ndelser b\xF6rjar vid slumpm\xE4ssiga tider inom varje tidsf\xF6nster.",
+  random_durations_prompt:
+    "V\xE4lj giltiga varaktigheter f\xF6r att beskriva hur l\xE4nge varje h\xE4ndelse varar.",
+  random_duration_fit_prompt:
+    "V\xE4lj varaktigheter som ryms inom tidsf\xF6nstret.",
+  random_duration_summary: "Varje h\xE4ndelse varar {duration}.",
+  random_duration_range_summary:
+    "Varje h\xE4ndelse varar mellan {min} och {max}.",
+  action_activate_summary: "aktivera {entities}",
+  action_service_summary: "k\xF6r {service} f\xF6r {entities}",
+  action_turn_on_summary: "sl\xE5 p\xE5 {entities}",
+  action_turn_off_summary: "sl\xE5 av {entities}",
+  action_open_summary: "\xF6ppna {entities}",
+  action_close_summary: "st\xE4ng {entities}",
+  action_stop_summary: "stoppa {entities}",
+  action_position_summary:
+    "st\xE4ll in positionen f\xF6r {entities} till {position}%",
+  action_open_tilt_summary: "\xF6ppna lamellerna f\xF6r {entities}",
+  action_close_tilt_summary: "st\xE4ng lamellerna f\xF6r {entities}",
+  action_stop_tilt_summary: "stoppa lamellerna f\xF6r {entities}",
+  action_tilt_position_summary:
+    "st\xE4ll in lamellerna f\xF6r {entities} till {position}%",
+  random_start_action_summary: "N\xE4r varje h\xE4ndelse b\xF6rjar, {action}.",
+  random_end_action_summary: "N\xE4r varje h\xE4ndelse slutar, {action}.",
+  random_single_finish_hint:
+    "H\xE4ndelsen avslutas innan tidsf\xF6nstret st\xE4ngs.",
+  random_overlap_hint:
+    "H\xE4ndelser kan \xF6verlappa, men alla avslutas innan tidsf\xF6nstret st\xE4ngs.",
+  times_per_window: "g\xE5nger per tidsf\xF6nster",
+  minimum_duration: "Minsta varaktighet",
+  maximum_duration: "L\xE4ngsta varaktighet",
+  duration_hint: "Ange varaktigheter som 5m, 30s eller 1h.",
+  when_event_starts: "N\xE4r h\xE4ndelsen b\xF6rjar",
+  when_event_ends: "N\xE4r h\xE4ndelsen slutar",
+  random_days_hint:
+    "V\xE4lj vilka dagar den slumpm\xE4ssiga h\xE4ndelsen ska k\xF6ras.",
+  at_the_start: "Vid b\xF6rjan",
+  at_the_end: "Vid slutet",
+  start_action: "Start\xE5tg\xE4rd",
+  end_action: "Slut\xE5tg\xE4rd",
+  start_entities: "Entiteter vid b\xF6rjan",
+  end_entities: "Entiteter vid slutet",
+  use_the_same_entities: "Anv\xE4nd samma entiteter",
+  random_start: "Slumpm\xE4ssig start",
+  random_end: "Slumpm\xE4ssigt slut",
+  solar_events: "Solh\xE4ndelser",
+  home_assistant_times: "Home Assistant-tider",
+  calendars: "Kalendrar",
+  unavailable_sources: "Otillg\xE4ngliga tidsk\xE4llor",
+  search_steps_or_time_sources: "S\xF6k efter steg eller tidsk\xE4llor",
+  start: "start",
+  end: "slut",
+  dawn: "gryning",
+  dusk: "skymning",
+  noon: "solmiddag",
+  midnight: "solmidnatt",
+  dawn_label: "Gryning",
+  dusk_label: "Skymning",
+  solar_noon: "Solmiddag",
+  solar_midnight: "Solmidnatt",
+  ha_time_source_hint:
+    "Anv\xE4nder tiden som Home Assistant rapporterar. Hj\xE4lpare med enbart tid upprepas dagligen; daterade tidsk\xE4llor k\xF6rs bara p\xE5 det rapporterade datumet.",
+  preview: "F\xF6rhandsvisning",
+  step_type: "Typ av steg",
+  activate_home_assistant_scene: "Aktivera Home Assistant-scen",
+  entity_service_action: "Tj\xE4nsteanrop f\xF6r entiteter",
+  turn_on_lights_switches: "Sl\xE5 p\xE5 lampor/brytare",
+  turn_off_lights_switches: "Sl\xE5 av lampor/brytare",
+  control_covers: "Styr gardiner och persienner",
+  cover_action: "\xC5tg\xE4rd f\xF6r gardin eller persienn",
+  open_cover: "\xD6ppna gardin eller persienn",
+  close_cover: "St\xE4ng gardin eller persienn",
+  stop_cover: "Stoppa gardin eller persienn",
+  set_cover_position: "St\xE4ll in position",
+  open_tilt: "\xD6ppna lameller",
+  close_tilt: "St\xE4ng lameller",
+  stop_tilt: "Stoppa lameller",
+  set_tilt_position: "St\xE4ll in lamellernas position",
+  position: "Position (%)",
+  tilt_position: "Lamellernas position (%)",
+  cover_entities_error: "V\xE4lj gardin- eller persiennentiteter.",
+  cover_action_error: "V\xE4lj en \xE5tg\xE4rd f\xF6r gardin eller persienn.",
+  cover_position_error: "V\xE4lj ett heltal fr\xE5n 0 till 100.",
+  cover_position_hint:
+    "0% \xE4r st\xE4ngt; 100% \xE4r \xF6ppet. Enhetens st\xF6d avg\xF6r vilka \xE5tg\xE4rder som \xE4r tillg\xE4ngliga.",
+  cover_schedule_hint:
+    "Gardiner och persienner styrs bara vid schemalagda tider. Vid sen aktivering hoppas tidigare \xE5tg\xE4rder \xF6ver.",
+  settings: "Inst\xE4llningar",
+  create_step: "Skapa steg",
+  create_your_first_step: "Skapa ditt f\xF6rsta steg",
+  unsaved_changes: "Osparade \xE4ndringar",
+  step_unsaved_confirm:
+    "Steget har osparade \xE4ndringar. Kasta dem och forts\xE4tta?",
+  keep_editing: "Forts\xE4tt redigera",
+  discard_changes: "Kasta \xE4ndringar",
+  edit_step: "Redigera steg",
+  add_related_step: "L\xE4gg till relaterat steg",
+  step_actions: "Steg\xE5tg\xE4rder",
+  advanced_settings: "Avancerade inst\xE4llningar",
+  step_days_hint: "V\xE4lj vilka dagar steget ska k\xF6ras.",
+  run_on: "K\xF6r p\xE5",
+  step_settings_hint: "Till\xE4mpa inst\xE4llningarna och spara sedan steget.",
+  apply: "Till\xE4mpa",
+  monday: "M\xE5ndag",
+  tuesday: "Tisdag",
+  wednesday: "Onsdag",
+  thursday: "Torsdag",
+  friday: "Fredag",
+  saturday: "L\xF6rdag",
+  sunday: "S\xF6ndag",
+  days_required_error: "V\xE4lj minst en dag.",
+  enabled: "Aktiverat",
+  disabled: "Inaktiverat",
+  save_step: "Spara steg",
+  save_changes: "Spara \xE4ndringar",
+  step_name: "Stegets namn",
+  optional_title: "Valfri titel",
+  event_details: "H\xE4ndelsedetaljer",
+  loading_schedule: "Laddar schema\u2026",
+  schedule_day: "Schemadag",
+  previous_day: "F\xF6reg\xE5ende dag",
+  next_day: "N\xE4sta dag",
+  today: "Idag",
+  yesterday: "Ig\xE5r",
+  tomorrow: "Imorgon",
+  schedule_empty_hint: "Inga steg \xE4r schemalagda detta datum.",
+  planned_device_states: "Planerade enhetstillst\xE5nd",
+  loading_graph: "Laddar diagram\u2026",
+  on_label: "P\xE5",
+  unknown: "Ok\xE4nt",
+  open: "\xD6ppet",
+  closed: "St\xE4ngt",
+  cover_position_summary: "Position {position}%",
+  cover_tilt_summary: "Lameller {position}%",
+  preview_covers_hint:
+    "Gardiner och persienner visar planerade m\xE5l f\xF6r position och lameller. F\xF6rflyttningstid och position efter stopp \xE4r ok\xE4nda.",
+  preview_devices_empty_hint:
+    "Inga \xE5tg\xE4rder f\xF6r lampor, brytare, gardiner eller persienner detta datum. \xD6vriga \xE5tg\xE4rder visas i H\xE4ndelsedetaljer.",
+  preview_lights_empty_hint:
+    "Inga \xE5tg\xE4rder f\xF6r lampor eller brytare detta datum. \xD6vriga \xE5tg\xE4rder visas i H\xE4ndelsedetaljer.",
+  preview_graph_error:
+    "Home Assistant-diagrammet kunde inte laddas. Planerade \xE5tg\xE4rder finns i H\xE4ndelsedetaljer.",
+  back_to_steps: "Tillbaka till steg",
+  continue: "Forts\xE4tt",
+  cancel: "Avbryt",
+  back: "Tillbaka",
+  action: "\xC5tg\xE4rd",
+  timing: "Tidpunkt",
+  absolute_time: "Absolut tid",
+  relative_to: "Relativt till",
+  start_time_window: "Tidsintervallets start",
+  at: "kl.",
+  at_a_random_time_between: "vid en slumpm\xE4ssig tid mellan",
+  and: "och",
+  the_next_day: "n\xE4sta dag",
+  runs: "K\xF6rs",
+  step: "steg",
+  hour: "timme",
+  hours: "timmar",
+  minute: "minut",
+  minutes: "minuter",
+  second: "sekund",
+  seconds: "sekunder",
+  at_the_same_time_as: "samtidigt som",
+  the_start_of: "starten av",
+  time_window_randomness_hint:
+    "L\xE4gg till ett slut p\xE5 tidsintervallet f\xF6r att variera tiden",
+  time_offset_randomness_hint:
+    "L\xE4gg till en slutf\xF6rskjutning f\xF6r att variera tiden",
+  time_window_fixed_hint: "Start och slut \xE4r samma, s\xE5 tiden \xE4r fast",
+  end_of_window_optional: "Slut p\xE5 tidsintervall (valfritt)",
+  add_end_of_window: "L\xE4gg till slut p\xE5 tidsintervall",
+  start_offset: "Startf\xF6rskjutning",
+  end_offset_optional: "Slutf\xF6rskjutning (valfritt)",
+  add_end_offset: "L\xE4gg till slutf\xF6rskjutning",
+  remove_end_offset: "Ta bort slutf\xF6rskjutning",
+  choose_a_step_or_event: "V\xE4lj ett steg eller en h\xE4ndelse",
+  window_offsets_prompt:
+    "Ange giltiga f\xF6rskjutningar f\xF6r att se tidsf\xF6nstrets gr\xE4ns",
+  turn_on: "Sl\xE5 p\xE5",
+  turn_off: "Sl\xE5 av",
+  every_day_label: "Varje dag",
+  every_day: "varje dag",
+  on_weekdays: "p\xE5 vardagar",
+  on_weekends: "p\xE5 helger",
+  on_no_days: "inga dagar",
+  on: "p\xE5",
+  mondays: "m\xE5ndagar",
+  tuesdays: "tisdagar",
+  wednesdays: "onsdagar",
+  thursdays: "torsdagar",
+  fridays: "fredagar",
+  saturdays: "l\xF6rdagar",
+  sundays: "s\xF6ndagar",
+  weekends: "Helger",
+  before: "f\xF6re",
+  after: "efter",
+  sunrise_label: "Soluppg\xE5ng",
+  sunset_label: "Solnedg\xE5ng",
+  sunrise: "soluppg\xE5ng",
+  sunset: "solnedg\xE5ng",
+  search_entities_or_rooms: "S\xF6k entiteter eller rum",
+  selected: "valda",
+  controller: "Styrenhet",
+  managing: "Styr",
+  waiting: "V\xE4ntar",
+  paused: "Pausad",
+  discard_edits: "\xC5terst\xE4ll \xE4ndringar",
+  reload_saved_program: "L\xE4s in sparat program",
+  unsaved_edits: "Osparade \xE4ndringar",
+  loading_controller: "L\xE4ser in styrenhet\u2026",
+  enable: "Aktivera",
+  disable: "Inaktivera",
+  entities_label: "Entiteter",
+  targets: "M\xE5l",
+  delete: "Radera",
+  delete_step_confirm: "Radera steg?",
+  delete_step: "Radera steg",
+  used_by: "Anv\xE4nds av",
+  delete_dependents_hint: "\xC4ndra dessa relationer innan du raderar steget.",
+  delete_step_hint: "Steget tas bort n\xE4r du sparar \xE4ndringarna.",
+  weekdays: "Veckodagar",
+  previous: "F\xF6reg\xE5ende",
+  next: "N\xE4sta",
+  date: "Datum",
+  days: "Dagar",
+  seed: "Slumpfr\xF6",
+  refresh: "Uppdatera",
+  run_preview: "F\xF6rhandsvisa",
+  export_yaml: "Exportera YAML",
+  changes: "\xE4ndringar",
+  yaml_editor_hint:
+    "Redigera YAML och spara f\xF6r att validera och till\xE4mpa dina \xE4ndringar. Ogiltig kod beh\xE5lls i redigeraren.",
+  download: "Ladda ner",
+  none: "Inga",
+  mon: "m\xE5n",
+  tue: "tis",
+  wed: "ons",
+  thu: "tor",
+  fri: "fre",
+  sat: "l\xF6r",
+  sun: "s\xF6n",
+};
+function translator(language) {
+  const localized = language?.startsWith("sv") ? sv : void 0;
+  return (key2) => {
+    if (!Object.hasOwn(en, key2)) {
+      return key2;
+    }
+    const translationKey = key2;
+    return localized?.[translationKey] ?? en[translationKey];
+  };
+}
+
 // custom_components/occupied/frontend/time-format.ts
 function shiftScheduleDate(value, days2) {
   const date = /* @__PURE__ */ new Date(`${value}T12:00:00Z`);
@@ -47,9 +928,9 @@ function formatPreviewDate(value, today, locale, t) {
   const todayTime = Date.parse(`${today}T12:00:00Z`);
   const daysFromToday = Math.round((valueTime - todayTime) / 864e5);
   const relativeLabels = {
-    [-1]: "Yesterday",
-    0: "Today",
-    1: "Tomorrow",
+    [-1]: "yesterday",
+    0: "today",
+    1: "tomorrow",
   };
   const relativeLabel = relativeLabels[daysFromToday]
     ? t(relativeLabels[daysFromToday])
@@ -157,9 +1038,7 @@ function references(program, id) {
 function removeStep(program, path) {
   const id = String(path[1]);
   if (references(program, id).length > 0) {
-    throw new Error(
-      "Steps or random events depend on this step. Change their timing first.",
-    );
+    throw new Error("step_dependents_error");
   }
   delete program.steps?.[id];
 }
@@ -270,7 +1149,7 @@ function minutes(value) {
 function durationSeconds(value) {
   return !value || value === "0" ? NaN : minutes(value) * 60;
 }
-function durationLabel(value, t = (text2) => text2) {
+function durationLabel(value, t = translator()) {
   let remaining = Math.round(Math.abs(value) * 1e6) / 1e6;
   const hours = Math.floor(remaining / 3600);
   remaining -= hours * 3600;
@@ -322,20 +1201,20 @@ function timingForm(timing = {}) {
 function offsetErrors(time) {
   const errors = {},
     low = minutes(time.startOffset);
-  const formatError = "Use h, m or s, for example 30m, 1h, 1h30m or -10m.";
+  const formatError = "offset_format_error";
   if (!time.startOffset || !Number.isFinite(low)) {
     errors.startOffset = formatError;
   } else if (Math.abs(low) > 10080) {
-    errors.startOffset = "Offsets must be within seven days.";
+    errors.startOffset = "offset_range_error";
   }
   if (time.endOffset) {
     const high = minutes(time.endOffset);
     if (!Number.isFinite(high)) {
       errors.endOffset = formatError;
     } else if (Math.abs(high) > 10080) {
-      errors.endOffset = "Offsets must be within seven days.";
+      errors.endOffset = "offset_range_error";
     } else if (Number.isFinite(low) && high < low) {
-      errors.endOffset = "The end offset must be at least the start offset.";
+      errors.endOffset = "offset_order_error";
     }
   }
   return errors;
@@ -345,7 +1224,7 @@ function scheduleDaySuffix(selected, t) {
     return "";
   }
   if (selected.length === 0) {
-    return ` ${t("on no days")}`;
+    return ` ${t("on_no_days")}`;
   }
   if (days.every((day) => selected.includes(day))) {
     return "";
@@ -354,22 +1233,22 @@ function scheduleDaySuffix(selected, t) {
     selected.length === 5 &&
     days.slice(0, 5).every((day) => selected.includes(day))
   ) {
-    return ` ${t("on weekdays")}`;
+    return ` ${t("on_weekdays")}`;
   }
   if (
     selected.length === 2 &&
     days.slice(5).every((day) => selected.includes(day))
   ) {
-    return ` ${t("on weekends")}`;
+    return ` ${t("on_weekends")}`;
   }
   const weekdayNames = {
-    mon: "Mondays",
-    tue: "Tuesdays",
-    wed: "Wednesdays",
-    thu: "Thursdays",
-    fri: "Fridays",
-    sat: "Saturdays",
-    sun: "Sundays",
+    mon: "mondays",
+    tue: "tuesdays",
+    wed: "wednesdays",
+    thu: "thursdays",
+    fri: "fridays",
+    sat: "saturdays",
+    sun: "sundays",
   };
   const dayNames = selected.map((day) => t(weekdayNames[day] || day));
   const lastDay = dayNames.pop();
@@ -379,9 +1258,9 @@ function scheduleDaySuffix(selected, t) {
       : lastDay;
   return ` ${t("on")} ${dayList}`;
 }
-function timingSummary(entry, entries, t = (v) => v, sources = [], locale) {
+function timingSummary(entry, entries, t = translator(), sources = [], locale) {
   if (!entry.timing) {
-    return `${t("Repeated activity window")}${scheduleDaySuffix(entry.days, t)}`;
+    return `${t("repeated_activity_window")}${scheduleDaySuffix(entry.days, t)}`;
   }
   return timingExplanation(timingForm(entry.timing), entries, t, sources, {
     includeHints: false,
@@ -392,9 +1271,9 @@ function timingSummary(entry, entries, t = (v) => v, sources = [], locale) {
 function timingExplanation(
   input,
   entries = [],
-  t = (value) => value,
+  t = translator(),
   sources = [],
-  { includeHints = true, subject = "Runs", locale, days: selectedDays } = {},
+  { includeHints = true, subject = "runs", locale, days: selectedDays } = {},
 ) {
   const runs = `${t(subject)}${scheduleDaySuffix(selectedDays, t)}`;
   const time = {
@@ -415,12 +1294,12 @@ function timingExplanation(
       maximum < minimum ||
       maximum > 604800
     ) {
-      return t("Choose valid window durations.");
+      return t("window_durations_prompt");
     }
     return t(
       minimum === maximum
-        ? "Window closes {duration} after it starts"
-        : "Window closes between {min} and {max} after it starts",
+        ? "window_duration_summary"
+        : "window_duration_range_summary",
     )
       .replace("{duration}", () => durationLabel(minimum, t))
       .replace("{min}", () => durationLabel(minimum, t))
@@ -438,33 +1317,31 @@ function timingExplanation(
           0,
         );
     if (!valid(time.start) || (time.end && !valid(time.end))) {
-      return t("Choose valid start and end times");
+      return t("time_window_prompt");
     }
     const fixedTime = `${runs} ${t("at")} ${display(time.start)}`;
     if (!time.end) {
-      return `${fixedTime}${includeHints ? `. ${t("Add an end of window to introduce randomness")}` : ""}`;
+      return `${fixedTime}${includeHints ? `. ${t("time_window_randomness_hint")}` : ""}`;
     }
     if (seconds(time.end) === seconds(time.start)) {
-      return `${fixedTime}${includeHints ? `. ${t("Start and end are the same, so the time is fixed")}` : ""}`;
+      return `${fixedTime}${includeHints ? `. ${t("time_window_fixed_hint")}` : ""}`;
     }
     const nextDay =
-      seconds(time.end) < seconds(time.start) ? ` ${t("the next day")}` : "";
-    return `${runs} ${t("at a random time between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}`;
+      seconds(time.end) < seconds(time.start) ? ` ${t("the_next_day")}` : "";
+    return `${runs} ${t("at_a_random_time_between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}`;
   }
   if (Object.keys(offsetErrors(time)).length > 0) {
     return t(
-      subject === "Runs"
-        ? "Enter valid offsets to see when this step runs"
-        : "Enter valid offsets to see the window boundary",
+      subject === "runs" ? "step_offsets_prompt" : "window_offsets_prompt",
     );
   }
   if (!time.anchor) {
-    return t("Choose a step or event");
+    return t("choose_a_step_or_event");
   }
   const step = time.anchor.startsWith("step:");
   let name;
   if (time.anchor.startsWith("random:")) {
-    name = `${t("the end of")} ${entries.find((entry) => entry.id === time.anchor)?.name || time.anchor.slice(7)}`;
+    name = `${t("the_end_of")} ${entries.find((entry) => entry.id === time.anchor)?.name || time.anchor.slice(7)}`;
   } else if (step) {
     name =
       entries.find((entry) => entry.id === time.anchor.slice(5))?.name ||
@@ -490,455 +1367,25 @@ function timingExplanation(
   if (low === high) {
     const fixedTime =
       low === 0
-        ? `${runs} ${t("at the same time as")} ${name}`
+        ? `${runs} ${t("at_the_same_time_as")} ${name}`
         : `${runs} ${offsetLabel(low)} ${name}`;
-    return `${fixedTime}${includeHints && !time.endOffset ? `. ${t("Add an end offset to introduce randomness")}` : ""}`;
+    return `${fixedTime}${includeHints && !time.endOffset ? `. ${t("time_offset_randomness_hint")}` : ""}`;
   }
-  const anchorStart = step ? `${t("the start of")} ${name}` : name;
+  const anchorStart = step ? `${t("the_start_of")} ${name}` : name;
   if (low === 0) {
-    return `${runs} ${t("at a random time between")} ${anchorStart} ${t("and")} ${offsetLabel(high)} ${name}`;
+    return `${runs} ${t("at_a_random_time_between")} ${anchorStart} ${t("and")} ${offsetLabel(high)} ${name}`;
   }
   if (high === 0) {
-    return `${runs} ${t("at a random time between")} ${offsetLabel(low)} ${name} ${t("and")} ${anchorStart}`;
+    return `${runs} ${t("at_a_random_time_between")} ${offsetLabel(low)} ${name} ${t("and")} ${anchorStart}`;
   }
   const firstBound =
     Math.sign(low) === Math.sign(high) ? duration(low) : offsetLabel(low);
-  return `${runs} ${t("at a random time between")} ${firstBound} ${t("and")} ${offsetLabel(high)} ${name}`;
+  return `${runs} ${t("at_a_random_time_between")} ${firstBound} ${t("and")} ${offsetLabel(high)} ${name}`;
 }
 
 // custom_components/occupied/frontend/styles.css
 var styles_default =
   '/* Shared element defaults */\np,\nli {\n  overflow-wrap: anywhere;\n}\n\n:host {\n  display: block;\n  min-height: 100%;\n  background: var(--primary-background-color, #f4f5f8);\n  color: var(--primary-text-color, #202c37);\n  font:\n    15px/1.5 system-ui,\n    sans-serif;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nmain {\n  max-width: 1200px;\n  margin: auto;\n  padding: 24px;\n}\n\nh1 {\n  margin: 0;\n  font-size: 28px;\n}\n\nh2 {\n  font-size: 21px;\n  margin: 0 0 12px;\n}\n\nh3 {\n  font-size: 17px;\n}\n\np {\n  margin: 8px 0;\n}\n\nsmall,\n.hint {\n  color: var(--secondary-text-color, #596773);\n}\n\nheader {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  flex-wrap: wrap;\n}\n\nnav,\n.row,\n.toolbar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\nnav {\n  margin: 18px 0;\n}\n\nnav button[aria-current="page"] {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nsection {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  padding: 20px;\n  margin: 16px 0;\n  min-width: 0;\n}\n\nsection section {\n  border-radius: 8px;\n}\n\ndetails {\n  padding: 12px 0;\n}\n\nsummary {\n  cursor: pointer;\n  font-weight: 600;\n}\n\nbutton,\ninput,\nselect,\ntextarea {\n  font: inherit;\n  color: inherit;\n}\n\nbutton {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #bdc9d2);\n  padding: 8px 14px;\n  border-radius: 8px;\n  cursor: pointer;\n  min-height: 42px;\n}\n\nbutton.primary {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nbutton:disabled {\n  opacity: 0.5;\n  cursor: default;\n}\n\nbutton:focus-visible,\ninput:focus-visible,\nselect:focus-visible,\ntextarea:focus-visible,\nsummary:focus-visible,\na:focus-visible,\n[tabindex]:focus-visible {\n  outline: 3px solid var(--primary-color, #167b94);\n  outline-offset: 2px;\n}\n\n.field {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  margin: 12px 0;\n  max-width: 700px;\n}\n\nlabel {\n  font-weight: 500;\n}\n\ninput:not([type="checkbox"]),\nselect,\ntextarea {\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 6px;\n  background: var(--card-background-color, #fff);\n  padding: 9px;\n  min-width: 0;\n  max-width: 100%;\n}\n\n.field input,\n.field select,\n.field textarea {\n  width: 100%;\n}\n\ntextarea {\n  resize: vertical;\n}\n\n.field textarea {\n  font:\n    14px/1.5 ui-monospace,\n    monospace;\n}\n\ninput[type="checkbox"] {\n  width: 20px;\n  height: 20px;\n  vertical-align: middle;\n}\n\nfieldset {\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 8px;\n  margin: 12px 0;\n  min-width: 0;\n}\n\n.banner {\n  padding: 12px 16px;\n  border-radius: 8px;\n  background: var(--secondary-background-color, #e3eef2);\n  margin: 12px 0;\n  overflow-wrap: anywhere;\n}\n\n.banner.unsaved {\n  border: 1px solid var(--warning-color, #e69500);\n  border-left-width: 4px;\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #e69500) 18%,\n    var(--card-background-color, #fff)\n  );\n  color: var(--primary-text-color, #202c37);\n  font-weight: 600;\n}\n\n.error,\n[aria-invalid="true"] {\n  color: var(--error-color, #b3261e);\n}\n\n[aria-invalid="true"] {\n  border-color: var(--error-color, #b3261e);\n}\n\n[hidden] {\n  display: none !important;\n}\n\n.toolbar {\n  position: sticky;\n  top: 0;\n  padding: 12px 0;\n  background: var(--primary-background-color, #f4f5f8);\n  z-index: 2;\n}\n\n.table-wrap {\n  overflow: auto;\n}\n\ntable {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 13px;\n}\n\nth,\ntd {\n  padding: 9px;\n  text-align: left;\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  max-width: 300px;\n  overflow-wrap: anywhere;\n}\n\nth {\n  white-space: nowrap;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 14px;\n  }\n\n  section {\n    padding: 14px;\n  }\n\n  nav {\n    gap: 5px;\n  }\n\n  nav button {\n    padding: 7px 10px;\n  }\n\n  .row input {\n    width: 100%;\n  }\n}\n\n/* Panel shell overrides: keep these after the shared defaults. */\nmain {\n  max-width: 1120px;\n  padding: 32px;\n}\n\nheader {\n  margin-bottom: 24px;\n}\n\nheader h1 {\n  font-size: 24px;\n  letter-spacing: -0.7px;\n}\n\nheader p {\n  margin: 2px 0;\n  font-size: 13px;\n}\n\nnav {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  gap: 24px;\n  margin: 16px 0 32px;\n}\n\nnav button,\nnav button[aria-current="page"] {\n  border: 0;\n  border-radius: 0;\n  border-bottom: 3px solid transparent;\n  background: transparent;\n  padding: 10px 0;\n  color: var(--secondary-text-color, #596773);\n}\n\nnav button[aria-current="page"] {\n  border-bottom-color: var(--primary-color, #167b94);\n  color: var(--primary-color, #167b94);\n  font-weight: 650;\n}\n\n.field-label-row {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: baseline;\n  gap: 4px 12px;\n}\n\n.field-label-row .text-button {\n  min-height: 24px;\n  padding: 0;\n  border: 0;\n  font-size: 13px;\n}\n\n.text-button {\n  border-color: transparent;\n  background: transparent;\n  color: var(--primary-color, #167b94);\n  padding-left: 4px;\n  padding-right: 4px;\n}\n\n.page-heading {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 24px;\n  margin: 24px 0;\n}\n\n.page-heading h2 {\n  font-size: 30px;\n  letter-spacing: -0.8px;\n  margin: 0;\n}\n\n.page-heading .hint {\n  max-width: 500px;\n}\n\n/* Step lists and empty states */\n.step-empty {\n  text-align: center;\n  padding: 60px 32px;\n  border-style: dashed;\n}\n\n.step-empty h2 {\n  font-size: 25px;\n  letter-spacing: -0.5px;\n}\n\n.step-empty p {\n  max-width: 490px;\n  margin: 12px auto 24px;\n}\n\n.empty-steps {\n  font-size: 13px;\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-list {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  margin: 0 0 20px;\n  min-width: 0;\n}\n\n.step-card {\n  width: calc(100% - var(--depth) * 14px);\n  margin-left: calc(var(--depth) * 14px);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  overflow: hidden;\n}\n\n.step-card.step-disabled {\n  border-style: dashed;\n}\n\n.step-card.step-warning {\n  border-color: var(--warning-color, #ffa600);\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 10%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-card.step-warning .step-row:not(:disabled):hover {\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 18%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-row-warning {\n  display: flex;\n  align-items: flex-start;\n  gap: 8px;\n  color: var(--warning-color, #ffa600);\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-warning ha-icon {\n  --mdc-icon-size: 20px;\n  flex-shrink: 0;\n}\n\n.step-warning-message {\n  display: block;\n}\n\n.step-card.step-disabled .step-row {\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-row {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);\n  align-items: center;\n  gap: 14px;\n  text-align: left;\n  width: 100%;\n  padding: 20px;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  color: inherit;\n}\n\n.step-row:disabled {\n  opacity: 1;\n  cursor: default;\n}\n\n.step-row.editing {\n  grid-template-columns: minmax(0, 1fr);\n}\n\n.step-row:not(:disabled):hover {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-row[aria-expanded="true"] {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n}\n\n.step-card .step-editor {\n  margin: 0;\n}\n\n.step-editor-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n/* Editor action menus */\n.step-actions-menu {\n  position: fixed;\n  inset: auto;\n  width: 240px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  margin: 0;\n  padding: 6px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 10px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-actions-menu button {\n  display: block;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  text-align: left;\n}\n\n.step-actions-menu button:hover,\n.step-actions-menu button:focus-visible {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-actions-menu [role="separator"] {\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  margin: 6px 8px;\n}\n\n.step-row-content {\n  display: flex;\n  min-width: 0;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.step-row-heading {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.step-status-badge {\n  padding: 2px 8px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 999px;\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--secondary-text-color, #596773);\n  font-size: 11px;\n  font-weight: 500;\n  line-height: 1.5;\n  white-space: nowrap;\n}\n\n.step-row strong {\n  font-size: 16px;\n  font-weight: 650;\n  overflow-wrap: anywhere;\n}\n\n.step-row-content .hint {\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-time {\n  text-align: right;\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n/* Editor dialogs */\n.step-delete-dialog,\n.step-advanced-dialog {\n  width: 440px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-delete-dialog::backdrop,\n.step-advanced-dialog::backdrop {\n  background: #0006;\n}\n\n.step-weekdays {\n  padding: 12px;\n}\n\n.step-weekday-presets {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-bottom: 16px;\n}\n\n.step-weekday-presets button {\n  padding: 6px 10px;\n}\n\n.step-weekday-presets button[aria-pressed="true"] {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.step-weekday-options {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.step-weekday-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  min-height: 42px;\n  cursor: pointer;\n}\n\n.step-weekday-option input {\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-exit-overlay {\n  position: fixed;\n  inset: 0;\n  z-index: 10;\n  display: grid;\n  place-items: center;\n  padding: 16px;\n  background: #0004;\n}\n\n.step-exit-dialog {\n  position: relative;\n  inset: auto;\n  width: 440px;\n  max-width: 100%;\n  margin: 0;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-exit-dialog h2 {\n  margin-top: 0;\n}\n\n.step-delete-actions {\n  display: flex;\n  justify-content: flex-end;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n.danger {\n  color: var(--error-color, #b3261e);\n}\n\n.icon-button {\n  display: inline-grid;\n  place-items: center;\n  width: 42px;\n  padding: 8px;\n}\n\n.icon-button svg {\n  width: 20px;\n  height: 20px;\n  fill: currentColor;\n}\n\n.step-editor {\n  max-width: none;\n  margin: 0 auto 32px;\n  padding: 32px;\n}\n\n.step-editor h3 {\n  font-size: 23px;\n  font-weight: 600;\n  letter-spacing: -0.5px;\n  margin: 28px 0 8px;\n}\n\n.entity-native-selector {\n  display: block;\n  width: 100%;\n}\n\n.builder-footer {\n  display: flex;\n  gap: 10px;\n  align-items: center;\n  flex-wrap: wrap;\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  padding-top: 22px;\n  margin-top: 28px;\n}\n\n.builder-footer .step-editor-actions {\n  margin-top: 0;\n}\n\n.builder-footer > button:first-child {\n  margin-right: auto;\n}\n\n.step-editor details {\n  padding: 8px 0;\n}\n\n.step-editor .field {\n  margin: 18px 0;\n}\n\n.source-picker {\n  position: relative;\n}\n\n.source-picker ha-generic-picker {\n  display: block;\n  width: 100%;\n}\n\n.step-editor .error {\n  font-size: 13px;\n}\n\n.timing-options {\n  border: 0;\n  padding: 0;\n  margin: 18px 0;\n}\n\n.timing-option-row {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.timing-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 10px 12px;\n  min-height: 44px;\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 8px;\n  cursor: pointer;\n}\n\n.timing-option:has(input:checked) {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.timing-options input[type="radio"] {\n  width: 18px;\n  height: 18px;\n  padding: 0;\n  margin: 0;\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-editor .step-name-editor .field {\n  max-width: none;\n  margin: 20px 0 28px;\n}\n\n.step-editor .step-name-editor label {\n  font-weight: 600;\n}\n\n.step-editor .step-name-editor input {\n  font-family: inherit;\n  font-size: 22px;\n  font-weight: 600;\n  line-height: 1.4;\n  padding: 14px;\n}\n\n.step-editor .editor-sections {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 28px;\n}\n\n.step-editor .editor-sections > div {\n  min-width: 0;\n}\n\n.step-editor h3 {\n  margin: 16px 0 8px;\n  font-size: 20px;\n}\n\n.step-editor h4 {\n  margin: 14px 0 8px;\n  font-size: 16px;\n  font-weight: 600;\n}\n\n.step-editor .field {\n  margin: 14px 0;\n}\n\n@media (max-width: 900px) {\n  .step-editor .editor-sections {\n    grid-template-columns: 1fr;\n    gap: 20px;\n  }\n\n  .step-editor .editor-sections > div + div {\n    border-top: 1px solid var(--divider-color, #d5dce3);\n    padding-top: 12px;\n  }\n}\n\n#issues:empty {\n  display: none;\n}\n\n#issues button {\n  margin: 0 6px 8px 0;\n  text-align: left;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 18px 14px;\n  }\n\n  header {\n    gap: 10px;\n    margin-bottom: 8px;\n  }\n\n  nav {\n    margin-bottom: 24px;\n  }\n\n  .page-heading {\n    align-items: flex-start;\n    flex-direction: column;\n    gap: 12px;\n  }\n\n  .page-heading h2 {\n    font-size: 27px;\n  }\n\n  .step-row {\n    padding: 14px;\n    gap: 10px;\n    grid-template-columns: minmax(0, 1fr);\n  }\n\n  .step-row-time {\n    text-align: left;\n  }\n\n  .step-editor {\n    padding: 20px 16px;\n  }\n\n  .builder-footer {\n    gap: 6px;\n  }\n\n  .builder-footer button {\n    padding: 8px 12px;\n  }\n\n  .step-empty {\n    padding: 36px 20px;\n  }\n\n  .empty-steps {\n    line-height: 2;\n  }\n}\n';
-
-// custom_components/occupied/frontend/translations.ts
-var sv = {
-  "Staggered action": "F\xF6rskjuten \xE5tg\xE4rd",
-  "Factorio style: act on one entity at each evenly spaced tick, in a random order.":
-    "Factorio-stil: styr en enhet i taget med j\xE4mna tidsintervall, i slumpm\xE4ssig ordning.",
-  "Time window": "Tidsf\xF6nster",
-  "Default: 2m. Use a duration from 1s to 30m.":
-    "Standard: 2m. Ange en tid fr\xE5n 1s till 30m.",
-  "Use a time window from 1s to 30m, for example 2m.":
-    "Ange ett tidsf\xF6nster fr\xE5n 1s till 30m, till exempel 2m.",
-  "Tick {tick} of {count}": "Steg {tick} av {count}",
-  Superseded: "Ersatt",
-  Period: "Period",
-  "Tick interval": "Stegintervall",
-  "Custom YAML": "Egen YAML",
-  "Action YAML": "\xC5tg\xE4rds-YAML",
-  actions: "\xE5tg\xE4rder",
-  "Enter one action or an ordered list of actions. Use brightness from 1 to 255. Timing stays in the controls above. A failed call stops the remaining actions.":
-    "Ange en \xE5tg\xE4rd eller en ordnad lista med \xE5tg\xE4rder. Anv\xE4nd brightness fr\xE5n 1 till 255. Tider anges i kontrollerna ovan. Ett misslyckat anrop stoppar \xE5terst\xE5ende \xE5tg\xE4rder.",
-  "Replace this Custom YAML block with the selected action? Its individual settings or other actions will be removed.":
-    "Ers\xE4tt detta YAML-block med den valda \xE5tg\xE4rden? Individuella inst\xE4llningar eller andra \xE5tg\xE4rder tas bort.",
-  "run the Custom YAML actions in order":
-    "k\xF6r YAML-\xE5tg\xE4rderna i ordning",
-  "Live preview": "Livef\xF6rhandsvisning",
-  "Controls real devices": "Styr riktiga enheter",
-  "Scheduling stays paused until you choose Resume scheduling.":
-    "Schemal\xE4ggningen f\xF6rblir pausad tills du v\xE4ljer \xC5teruppta schemal\xE4ggning.",
-  "Normal scheduling pauses until you choose Resume scheduling. Each press runs one event immediately, even with management disabled or dry run selected.":
-    "Schemal\xE4ggningen pausas tills du v\xE4ljer \xC5teruppta schemal\xE4ggning. Varje tryck k\xF6r en h\xE4ndelse direkt, \xE4ven n\xE4r styrningen \xE4r avst\xE4ngd eller torrk\xF6rning \xE4r vald.",
-  "Starting prepares the session. Devices run only when you press Next event.":
-    "Start f\xF6rbereder sessionen. Enheterna styrs f\xF6rst n\xE4r du trycker p\xE5 N\xE4sta h\xE4ndelse.",
-  "Start live preview": "Starta livef\xF6rhandsvisning",
-  "Ready to start": "Redo att starta",
-  "Ready for next event": "Redo f\xF6r n\xE4sta h\xE4ndelse",
-  "Next event": "N\xE4sta h\xE4ndelse",
-  "Running\u2026": "K\xF6r\u2026",
-  "Stopping\u2026": "Stoppar\u2026",
-  Stopped: "Stoppad",
-  Interrupted: "Avbruten",
-  Stop: "Stoppa",
-  "Day complete": "Dagen \xE4r klar",
-  "Run again": "K\xF6r igen",
-  "Resume scheduling": "\xC5teruppta schemal\xE4ggning",
-  "Refresh Preview": "Uppdatera f\xF6rhandsvisning",
-  "{done} of {total} events": "{done} av {total} h\xE4ndelser",
-  "Simulated time": "Simulerad tid",
-  "Last result": "Senaste resultat",
-  Dispatched: "Utf\xF6rd",
-  "Partial success": "Delvis utf\xF6rd",
-  "Event failed or interrupted": "H\xE4ndelsen misslyckades eller avbr\xF6ts",
-  "Recovering live preview\u2026": "H\xE4mtar livef\xF6rhandsvisning\u2026",
-  "This session uses an earlier program revision. Its actions are frozen.":
-    "Sessionen anv\xE4nder en tidigare programversion. Dess \xE5tg\xE4rder \xE4r frysta.",
-  "Only the account that started this session can advance. You can stop it.":
-    "Bara kontot som startade sessionen kan g\xE5 vidare. Du kan stoppa den.",
-  "Live preview controls": "Kontroller f\xF6r livef\xF6rhandsvisning",
-  Result: "Resultat",
-  dispatched: "Utf\xF6rd",
-  pending: "P\xE5g\xE5r",
-  failed: "Misslyckad",
-  unavailable: "Otillg\xE4nglig",
-  entity_disabled: "Enhet avst\xE4ngd",
-  service_missing: "Tj\xE4nsten saknas",
-  uncertain: "Os\xE4kert resultat",
-  cancelled: "Avbruten",
-  Instance: "Instans",
-  Unloaded: "Inte inl\xE4st",
-  "Managed file": "Hanterad fil",
-  "GUI storage": "Lagring i gr\xE4nssnittet",
-  "Shared devices with": "Delade enheter med",
-  "Actions and cleanup can interfere between instances.":
-    "\xC5tg\xE4rder och avslut kan p\xE5verka varandra mellan instanser.",
-  "This instance has unsaved changes. Discard them and switch?":
-    "Den h\xE4r instansen har osparade \xE4ndringar. Kasta dem och byt?",
-  "There are unsaved edits. Discard them and switch views?":
-    "Det finns osparade \xE4ndringar. Vill du kasta dem och byta vy?",
-  "This instance is unavailable. Check Settings \u2192 Devices & services, then retry.":
-    "Den h\xE4r instansen \xE4r inte tillg\xE4nglig. Kontrollera Inst\xE4llningar \u2192 Enheter och tj\xE4nster och f\xF6rs\xF6k igen.",
-  "Steps and time sources": "Steg och tidsk\xE4llor",
-  "matching sources": "matchande tidsk\xE4llor",
-  "No matching steps or time sources.":
-    "Inga matchande steg eller tidsk\xE4llor.",
-  Steps: "Steg",
-  "Scheduled activity": "Schemalagd aktivitet",
-  "Run actions at specific times, around sunrise or sunset, or relative to other steps. Choose which devices to control and what they should do.":
-    "K\xF6r \xE5tg\xE4rder vid best\xE4mda tider, kring soluppg\xE5ng eller solnedg\xE5ng, eller i f\xF6rh\xE5llande till andra steg. V\xE4lj vilka enheter som ska styras och vad de ska g\xF6ra.",
-  Random: "Slumpm\xE4ssigt",
-  "Random activity": "Slumpm\xE4ssig aktivitet",
-  "Random event": "Slumpm\xE4ssig h\xE4ndelse",
-  "Random events": "Slumpm\xE4ssiga h\xE4ndelser",
-  "Random event name": "H\xE4ndelsens namn",
-  "Random event actions": "\xC5tg\xE4rder f\xF6r slumpm\xE4ssig h\xE4ndelse",
-  "Apply these settings, then save the random event.":
-    "Till\xE4mpa inst\xE4llningarna och spara sedan den slumpm\xE4ssiga h\xE4ndelsen.",
-  "Create your first random event":
-    "Skapa din f\xF6rsta slumpm\xE4ssiga h\xE4ndelse",
-  "Create random event": "Skapa slumpm\xE4ssig h\xE4ndelse",
-  "Save random event": "Spara slumpm\xE4ssig h\xE4ndelse",
-  "Delete random event": "Ta bort slumpm\xE4ssig h\xE4ndelse",
-  "Delete random event?": "Ta bort slumpm\xE4ssig h\xE4ndelse?",
-  "This removes the random event and all its future occurrences.":
-    "Detta tar bort den slumpm\xE4ssiga h\xE4ndelsen och alla framtida f\xF6rekomster.",
-  "This random event has unsaved changes. Discard them and continue?":
-    "H\xE4ndelsen har osparade \xE4ndringar. Kasta dem och forts\xE4tta?",
-  "Run actions at random times within a window. Choose how often they run and how long each occurrence lasts.":
-    "K\xF6r \xE5tg\xE4rder vid slumpm\xE4ssiga tider inom ett tidsf\xF6nster. V\xE4lj hur ofta de k\xF6rs och hur l\xE4nge varje tillf\xE4lle varar.",
-  "Choose a window, a duration, and actions for the start and end of each occurrence.":
-    "V\xE4lj ett tidsf\xF6nster, en varaktighet och \xE5tg\xE4rder f\xF6r b\xF6rjan och slutet av varje tillf\xE4lle.",
-  "Window starts": "Tidsf\xF6nstret b\xF6rjar",
-  "Window ends": "Tidsf\xF6nstret slutar",
-  Duration: "Varaktighet",
-  "End of": "Slutet p\xE5",
-  "the end of": "slutet p\xE5",
-  "Minimum window duration": "Minsta varaktighet f\xF6r tidsf\xF6nstret",
-  "Maximum window duration": "H\xF6gsta varaktighet f\xF6r tidsf\xF6nstret",
-  "Choose a positive window duration within seven days.":
-    "V\xE4lj en positiv varaktighet f\xF6r tidsf\xF6nstret inom sju dagar.",
-  "Maximum window duration must be at least the minimum.":
-    "H\xF6gsta varaktighet f\xF6r tidsf\xF6nstret m\xE5ste vara minst den l\xE4gsta.",
-  "Choose valid window durations.":
-    "V\xE4lj giltiga varaktigheter f\xF6r tidsf\xF6nstret.",
-  "Window closes {duration} after it starts":
-    "Tidsf\xF6nstret st\xE4ngs {duration} efter att det b\xF6rjar",
-  "Window closes between {min} and {max} after it starts":
-    "Tidsf\xF6nstret st\xE4ngs mellan {min} och {max} efter att det b\xF6rjar",
-  "Choose another random event without creating a circular relationship.":
-    "V\xE4lj en annan slumpm\xE4ssig h\xE4ndelse utan att skapa ett cirkul\xE4rt beroende.",
-  "This start follows the selected window's closing time.":
-    "Starten f\xF6ljer det valda tidsf\xF6nstrets sluttid.",
-  "Choose Absolute time or Duration to replace this saved relative window end.":
-    "V\xE4lj Absolut tid eller Varaktighet f\xF6r att ers\xE4tta det sparade tidsf\xF6nstrets relativa slut.",
-  "Other random events depend on this window. Change their starts before deleting.":
-    "Andra slumpm\xE4ssiga h\xE4ndelser beror p\xE5 det h\xE4r tidsf\xF6nstret. \xC4ndra deras start innan du tar bort det.",
-  "No events can run because the minimum duration is longer than the window.":
-    "Inga h\xE4ndelser kan k\xF6ras eftersom minsta varaktighet \xE4r l\xE4ngre \xE4n tidsf\xF6nstret.",
-  "Reduce the minimum duration or extend the window.":
-    "Minska den kortaste varaktigheten eller f\xF6rl\xE4ng tidsf\xF6nstret.",
-  "Duration limits take priority over the event count.":
-    "Varaktighetsgr\xE4nserna har f\xF6retr\xE4de framf\xF6r antalet h\xE4ndelser.",
-  "Window start": "Tidsf\xF6nstrets start",
-  "Window end": "Tidsf\xF6nstrets slut",
-  "Latest window start (optional)":
-    "Senaste start f\xF6r tidsf\xF6nstret (valfritt)",
-  "Latest window end (optional)":
-    "Senaste slut f\xF6r tidsf\xF6nstret (valfritt)",
-  "Randomize window start": "Slumpm\xE4ssig start f\xF6r tidsf\xF6nstret",
-  "Randomize window end": "Slumpm\xE4ssigt slut f\xF6r tidsf\xF6nstret",
-  "Frequency and duration": "Frekvens och varaktighet",
-  "Minimum events per window": "Minsta antal h\xE4ndelser per tidsf\xF6nster",
-  "Maximum events per window":
-    "H\xF6gsta antal h\xE4ndelser per tidsf\xF6nster",
-  "Add maximum events": "L\xE4gg till h\xF6gsta antal h\xE4ndelser",
-  "Remove maximum events": "Ta bort h\xF6gsta antal h\xE4ndelser",
-  "Maximum events per window must be at least the minimum.":
-    "H\xF6gsta antal h\xE4ndelser per tidsf\xF6nster m\xE5ste vara minst det l\xE4gsta antalet.",
-  "This random event is disabled.":
-    "Den h\xE4r slumpm\xE4ssiga h\xE4ndelsen \xE4r inaktiverad.",
-  "Choose valid event counts to describe how often events run.":
-    "V\xE4lj giltiga antal h\xE4ndelser f\xF6r att beskriva hur ofta de k\xF6rs.",
-  "Choose a whole number from 0 to 1000.":
-    "V\xE4lj ett heltal fr\xE5n 0 till 1000.",
-  "No events run because the event count is zero.":
-    "Inga h\xE4ndelser k\xF6rs eftersom antalet h\xE4ndelser \xE4r noll.",
-  "Dependent random events also skip this window.":
-    "Beroende slumpm\xE4ssiga h\xE4ndelser hoppar ocks\xE5 \xF6ver det h\xE4r tidsf\xF6nstret.",
-  "A window may have no events; dependent random events skip that window.":
-    "Ett tidsf\xF6nster kan sakna h\xE4ndelser; beroende slumpm\xE4ssiga h\xE4ndelser hoppar \xF6ver det tidsf\xF6nstret.",
-  "Between {min} and {max} events start at random times during each window.":
-    "Mellan {min} och {max} h\xE4ndelser b\xF6rjar vid slumpm\xE4ssiga tider inom varje tidsf\xF6nster.",
-  "One event starts at a random time during each window.":
-    "En h\xE4ndelse b\xF6rjar vid en slumpm\xE4ssig tid inom varje tidsf\xF6nster.",
-  "{count} events start at random times during each window.":
-    "{count} h\xE4ndelser b\xF6rjar vid slumpm\xE4ssiga tider inom varje tidsf\xF6nster.",
-  "Choose valid durations to describe how long each event lasts.":
-    "V\xE4lj giltiga varaktigheter f\xF6r att beskriva hur l\xE4nge varje h\xE4ndelse varar.",
-  "Choose durations that fit inside the window.":
-    "V\xE4lj varaktigheter som ryms inom tidsf\xF6nstret.",
-  "Each event lasts {duration}.": "Varje h\xE4ndelse varar {duration}.",
-  "Each event lasts between {min} and {max}.":
-    "Varje h\xE4ndelse varar mellan {min} och {max}.",
-  "activate {entities}": "aktivera {entities}",
-  "run {service} for {entities}": "k\xF6r {service} f\xF6r {entities}",
-  "turn on {entities}": "sl\xE5 p\xE5 {entities}",
-  "turn off {entities}": "sl\xE5 av {entities}",
-  "open {entities}": "\xF6ppna {entities}",
-  "close {entities}": "st\xE4ng {entities}",
-  "stop {entities}": "stoppa {entities}",
-  "set the position of {entities} to {position}%":
-    "st\xE4ll in positionen f\xF6r {entities} till {position}%",
-  "open the tilt of {entities}": "\xF6ppna lamellerna f\xF6r {entities}",
-  "close the tilt of {entities}": "st\xE4ng lamellerna f\xF6r {entities}",
-  "stop the tilt of {entities}": "stoppa lamellerna f\xF6r {entities}",
-  "set the tilt of {entities} to {position}%":
-    "st\xE4ll in lamellerna f\xF6r {entities} till {position}%",
-  "When each event starts, {action}.":
-    "N\xE4r varje h\xE4ndelse b\xF6rjar, {action}.",
-  "When each event ends, {action}.":
-    "N\xE4r varje h\xE4ndelse slutar, {action}.",
-  "The event finishes before the window closes.":
-    "H\xE4ndelsen avslutas innan tidsf\xF6nstret st\xE4ngs.",
-  "Events may overlap, but all finish before the window closes.":
-    "H\xE4ndelser kan \xF6verlappa, men alla avslutas innan tidsf\xF6nstret st\xE4ngs.",
-  "times per window": "g\xE5nger per tidsf\xF6nster",
-  "Minimum duration": "Minsta varaktighet",
-  "Maximum duration": "L\xE4ngsta varaktighet",
-  "Use durations like 5m, 30s, or 1h.":
-    "Ange varaktigheter som 5m, 30s eller 1h.",
-  "When event starts": "N\xE4r h\xE4ndelsen b\xF6rjar",
-  "When event ends": "N\xE4r h\xE4ndelsen slutar",
-  "Choose which days this random event should run.":
-    "V\xE4lj vilka dagar den slumpm\xE4ssiga h\xE4ndelsen ska k\xF6ras.",
-  "At the start": "Vid b\xF6rjan",
-  "At the end": "Vid slutet",
-  "Start action": "Start\xE5tg\xE4rd",
-  "End action": "Slut\xE5tg\xE4rd",
-  "Start entities": "Entiteter vid b\xF6rjan",
-  "End entities": "Entiteter vid slutet",
-  "Use the same entities": "Anv\xE4nd samma entiteter",
-  "Random start": "Slumpm\xE4ssig start",
-  "Random end": "Slumpm\xE4ssigt slut",
-  "Solar events": "Solh\xE4ndelser",
-  "Home Assistant times": "Home Assistant-tider",
-  Calendars: "Kalendrar",
-  "Unavailable sources": "Otillg\xE4ngliga tidsk\xE4llor",
-  "Search steps or time sources": "S\xF6k efter steg eller tidsk\xE4llor",
-  start: "start",
-  end: "slut",
-  dawn: "gryning",
-  dusk: "skymning",
-  noon: "solmiddag",
-  midnight: "solmidnatt",
-  Dawn: "Gryning",
-  Dusk: "Skymning",
-  "Solar noon": "Solmiddag",
-  "Solar midnight": "Solmidnatt",
-  "Uses the time currently reported by Home Assistant. Time-only helpers repeat daily; dated sources run only on their reported date.":
-    "Anv\xE4nder tiden som Home Assistant rapporterar. Hj\xE4lpare med enbart tid upprepas dagligen; daterade tidsk\xE4llor k\xF6rs bara p\xE5 det rapporterade datumet.",
-  Preview: "F\xF6rhandsvisning",
-  "Step type": "Typ av steg",
-  "Activate Home Assistant scene": "Aktivera Home Assistant-scen",
-  "Entity service action": "Tj\xE4nsteanrop f\xF6r entiteter",
-  "Turn on lights/switches": "Sl\xE5 p\xE5 lampor/brytare",
-  "Turn off lights/switches": "Sl\xE5 av lampor/brytare",
-  "Control covers": "Styr gardiner och persienner",
-  "Cover action": "\xC5tg\xE4rd f\xF6r gardin eller persienn",
-  "Open cover": "\xD6ppna gardin eller persienn",
-  "Close cover": "St\xE4ng gardin eller persienn",
-  "Stop cover": "Stoppa gardin eller persienn",
-  "Set cover position": "St\xE4ll in position",
-  "Open tilt": "\xD6ppna lameller",
-  "Close tilt": "St\xE4ng lameller",
-  "Stop tilt": "Stoppa lameller",
-  "Set tilt position": "St\xE4ll in lamellernas position",
-  "Position (%)": "Position (%)",
-  "Tilt position (%)": "Lamellernas position (%)",
-  "Choose cover entities.": "V\xE4lj gardin- eller persiennentiteter.",
-  "Choose a cover action.":
-    "V\xE4lj en \xE5tg\xE4rd f\xF6r gardin eller persienn.",
-  "Choose a whole number from 0 to 100.":
-    "V\xE4lj ett heltal fr\xE5n 0 till 100.",
-  "0% is closed; 100% is open. Device support determines which cover actions are available.":
-    "0% \xE4r st\xE4ngt; 100% \xE4r \xF6ppet. Enhetens st\xF6d avg\xF6r vilka \xE5tg\xE4rder som \xE4r tillg\xE4ngliga.",
-  "Covers run only at scheduled times. Enabling late skips past cover actions.":
-    "Gardiner och persienner styrs bara vid schemalagda tider. Vid sen aktivering hoppas tidigare \xE5tg\xE4rder \xF6ver.",
-  Settings: "Inst\xE4llningar",
-  "Create step": "Skapa steg",
-  "Create your first step": "Skapa ditt f\xF6rsta steg",
-  "Unsaved changes": "Osparade \xE4ndringar",
-  "This step has unsaved changes. Discard them and continue?":
-    "Steget har osparade \xE4ndringar. Kasta dem och forts\xE4tta?",
-  "Keep editing": "Forts\xE4tt redigera",
-  "Discard changes": "Kasta \xE4ndringar",
-  "Edit step": "Redigera steg",
-  "Add related step": "L\xE4gg till relaterat steg",
-  "Step actions": "Steg\xE5tg\xE4rder",
-  "Advanced settings": "Avancerade inst\xE4llningar",
-  "Choose which days this step should run.":
-    "V\xE4lj vilka dagar steget ska k\xF6ras.",
-  "Run on": "K\xF6r p\xE5",
-  "Apply these settings, then save the step.":
-    "Till\xE4mpa inst\xE4llningarna och spara sedan steget.",
-  Apply: "Till\xE4mpa",
-  Monday: "M\xE5ndag",
-  Tuesday: "Tisdag",
-  Wednesday: "Onsdag",
-  Thursday: "Torsdag",
-  Friday: "Fredag",
-  Saturday: "L\xF6rdag",
-  Sunday: "S\xF6ndag",
-  "Choose at least one day.": "V\xE4lj minst en dag.",
-  Enabled: "Aktiverat",
-  Disabled: "Inaktiverat",
-  "Save step": "Spara steg",
-  "Save changes": "Spara \xE4ndringar",
-  "Step name": "Stegets namn",
-  "Optional title": "Valfri titel",
-  "Event details": "H\xE4ndelsedetaljer",
-  "Loading schedule\u2026": "Laddar schema\u2026",
-  "Schedule day": "Schemadag",
-  "Previous day": "F\xF6reg\xE5ende dag",
-  "Next day": "N\xE4sta dag",
-  Today: "Idag",
-  Yesterday: "Ig\xE5r",
-  Tomorrow: "Imorgon",
-  "No steps are scheduled for this date.":
-    "Inga steg \xE4r schemalagda detta datum.",
-  "Planned device states": "Planerade enhetstillst\xE5nd",
-  "Loading graph\u2026": "Laddar diagram\u2026",
-  On: "P\xE5",
-  Unknown: "Ok\xE4nt",
-  Open: "\xD6ppet",
-  Closed: "St\xE4ngt",
-  "Position {position}%": "Position {position}%",
-  "Tilt {position}%": "Lameller {position}%",
-  "Cover strips show planned position and tilt targets. Travel time and positions after stop actions are unknown.":
-    "Gardiner och persienner visar planerade m\xE5l f\xF6r position och lameller. F\xF6rflyttningstid och position efter stopp \xE4r ok\xE4nda.",
-  "No light, switch, or cover actions on this date. Other actions are listed in Event details.":
-    "Inga \xE5tg\xE4rder f\xF6r lampor, brytare, gardiner eller persienner detta datum. \xD6vriga \xE5tg\xE4rder visas i H\xE4ndelsedetaljer.",
-  "No light or switch actions on this date. Other actions are listed in Event details.":
-    "Inga \xE5tg\xE4rder f\xF6r lampor eller brytare detta datum. \xD6vriga \xE5tg\xE4rder visas i H\xE4ndelsedetaljer.",
-  "The Home Assistant graph could not load. Planned actions are available in Event details.":
-    "Home Assistant-diagrammet kunde inte laddas. Planerade \xE5tg\xE4rder finns i H\xE4ndelsedetaljer.",
-  "Back to steps": "Tillbaka till steg",
-  Continue: "Forts\xE4tt",
-  Cancel: "Avbryt",
-  Back: "Tillbaka",
-  Action: "\xC5tg\xE4rd",
-  Timing: "Tidpunkt",
-  "Absolute time": "Absolut tid",
-  "Relative to": "Relativt till",
-  "Start time window": "Tidsintervallets start",
-  at: "kl.",
-  "at a random time between": "vid en slumpm\xE4ssig tid mellan",
-  and: "och",
-  "the next day": "n\xE4sta dag",
-  Runs: "K\xF6rs",
-  step: "steg",
-  hour: "timme",
-  hours: "timmar",
-  minute: "minut",
-  minutes: "minuter",
-  second: "sekund",
-  seconds: "sekunder",
-  "at the same time as": "samtidigt som",
-  "the start of": "starten av",
-  "Add an end of window to introduce randomness":
-    "L\xE4gg till ett slut p\xE5 tidsintervallet f\xF6r att variera tiden",
-  "Add an end offset to introduce randomness":
-    "L\xE4gg till en slutf\xF6rskjutning f\xF6r att variera tiden",
-  "Start and end are the same, so the time is fixed":
-    "Start och slut \xE4r samma, s\xE5 tiden \xE4r fast",
-  "End of window (optional)": "Slut p\xE5 tidsintervall (valfritt)",
-  "Add end of window": "L\xE4gg till slut p\xE5 tidsintervall",
-  "Start offset": "Startf\xF6rskjutning",
-  "End offset (optional)": "Slutf\xF6rskjutning (valfritt)",
-  "Add end offset": "L\xE4gg till slutf\xF6rskjutning",
-  "Remove end offset": "Ta bort slutf\xF6rskjutning",
-  "Choose a step or event": "V\xE4lj ett steg eller en h\xE4ndelse",
-  "Enter valid offsets to see the window boundary":
-    "Ange giltiga f\xF6rskjutningar f\xF6r att se tidsf\xF6nstrets gr\xE4ns",
-  "Turn on": "Sl\xE5 p\xE5",
-  "Turn off": "Sl\xE5 av",
-  "Every day": "Varje dag",
-  "every day": "varje dag",
-  "on weekdays": "p\xE5 vardagar",
-  "on weekends": "p\xE5 helger",
-  "on no days": "inga dagar",
-  on: "p\xE5",
-  Mondays: "m\xE5ndagar",
-  Tuesdays: "tisdagar",
-  Wednesdays: "onsdagar",
-  Thursdays: "torsdagar",
-  Fridays: "fredagar",
-  Saturdays: "l\xF6rdagar",
-  Sundays: "s\xF6ndagar",
-  Weekends: "Helger",
-  before: "f\xF6re",
-  after: "efter",
-  Sunrise: "Soluppg\xE5ng",
-  Sunset: "Solnedg\xE5ng",
-  sunrise: "soluppg\xE5ng",
-  sunset: "solnedg\xE5ng",
-  "Search entities or rooms": "S\xF6k entiteter eller rum",
-  selected: "valda",
-  Controller: "Styrenhet",
-  Managing: "Styr",
-  Waiting: "V\xE4ntar",
-  Paused: "Pausad",
-  "Discard edits": "\xC5terst\xE4ll \xE4ndringar",
-  "Reload saved program": "L\xE4s in sparat program",
-  "Unsaved edits": "Osparade \xE4ndringar",
-  "Loading controller\u2026": "L\xE4ser in styrenhet\u2026",
-  Enable: "Aktivera",
-  Disable: "Inaktivera",
-  Entities: "Entiteter",
-  Targets: "M\xE5l",
-  Delete: "Radera",
-  "Delete step?": "Radera steg?",
-  "Delete step": "Radera steg",
-  "Used by": "Anv\xE4nds av",
-  "Change those relationships before deleting.":
-    "\xC4ndra dessa relationer innan du raderar steget.",
-  "This step will be removed when you save changes.":
-    "Steget tas bort n\xE4r du sparar \xE4ndringarna.",
-  Weekdays: "Veckodagar",
-  Previous: "F\xF6reg\xE5ende",
-  Next: "N\xE4sta",
-  Date: "Datum",
-  Days: "Dagar",
-  Seed: "Slumpfr\xF6",
-  Refresh: "Uppdatera",
-  "Run preview": "F\xF6rhandsvisa",
-  "Export YAML": "Exportera YAML",
-  changes: "\xE4ndringar",
-  "Edit the YAML and save to validate and apply your changes. Invalid code is kept in the editor.":
-    "Redigera YAML och spara f\xF6r att validera och till\xE4mpa dina \xE4ndringar. Ogiltig kod beh\xE5lls i redigeraren.",
-  Download: "Ladda ner",
-  None: "Inga",
-  mon: "m\xE5n",
-  tue: "tis",
-  wed: "ons",
-  thu: "tor",
-  fri: "fre",
-  sat: "l\xF6r",
-  sun: "s\xF6n",
-};
-function translator(language) {
-  return (key2) => (language?.startsWith("sv") ? sv[key2] : void 0) || key2;
-}
 
 // node_modules/.pnpm/esm-env@1.2.2/node_modules/esm-env/dev-fallback.js
 var node_env = globalThis.process?.env?.NODE_ENV;
@@ -7947,14 +8394,14 @@ if (typeof window !== "undefined") {
 
 // custom_components/occupied/frontend/cover.ts
 var coverActions = [
-  ["cover.open_cover", "Open cover"],
-  ["cover.close_cover", "Close cover"],
-  ["cover.stop_cover", "Stop cover"],
-  ["cover.set_cover_position", "Set cover position"],
-  ["cover.open_cover_tilt", "Open tilt"],
-  ["cover.close_cover_tilt", "Close tilt"],
-  ["cover.stop_cover_tilt", "Stop tilt"],
-  ["cover.set_cover_tilt_position", "Set tilt position"],
+  ["cover.open_cover", "open_cover"],
+  ["cover.close_cover", "close_cover"],
+  ["cover.stop_cover", "stop_cover"],
+  ["cover.set_cover_position", "set_cover_position"],
+  ["cover.open_cover_tilt", "open_tilt"],
+  ["cover.close_cover_tilt", "close_tilt"],
+  ["cover.stop_cover_tilt", "stop_tilt"],
+  ["cover.set_cover_tilt_position", "set_tilt_position"],
 ];
 function coverField(action2) {
   if (action2 === "cover.set_cover_position") {
@@ -8122,9 +8569,7 @@ async function prepareCustomAction(panel, form) {
     panel.version !== version ||
     panel.activeEditor !== editor
   ) {
-    throw new Error(
-      "Your changes are kept. Submit again to include the latest edits.",
-    );
+    throw new Error("submit_newer_edits_hint");
   }
   if (!result.valid) {
     throw new Error(
@@ -8150,7 +8595,7 @@ function staggerPeriodError(settings) {
   const seconds = durationSeconds(settings.period ?? "2m");
   return Number.isFinite(seconds) && seconds >= 1 && seconds <= 1800
     ? void 0
-    : "Use a time window from 1s to 30m, for example 2m.";
+    : "stagger_period_error";
 }
 function customStaggerAction(form) {
   if (
@@ -8213,19 +8658,19 @@ function applyStagger(form, settings) {
 // custom_components/occupied/frontend/step-model.ts
 var sorted = (values) => [...new Set(values)].sort();
 var actionLabels = {
-  turn_on: "Turn on",
-  turn_off: "Turn off",
-  "scene.turn_on": "Activate scene",
+  turn_on: "turn_on",
+  turn_off: "turn_off",
+  "scene.turn_on": "activate_scene",
   ...Object.fromEntries(coverActions),
 };
 function stepDisplayName(step, catalog, t) {
   const label =
     step.actions || step.action === "set_state"
-      ? "Custom YAML"
+      ? "custom_yaml"
       : actionLabels[step.action || ""] || step.action || "";
   return `${actionTargetSummary(step, catalog)} \xB7 ${t(label)}`;
 }
-function stepEntries(program, catalog, t = (value) => value) {
+function stepEntries(program, catalog, t = translator()) {
   return Object.entries(program.steps || {}).map(([id, step]) => ({
     ...step,
     id,
@@ -8239,7 +8684,7 @@ function timeSourceChoices(
   program,
   id,
   catalog = {},
-  t = (value) => value,
+  t = translator(),
   randomId,
 ) {
   const allowed = new Set(parentSteps(program, id).map((step) => step.id));
@@ -8253,7 +8698,7 @@ function timeSourceChoices(
       .map((step) => ({
         value: `step:${step.id}`,
         name: step.name,
-        group: "Steps",
+        group: t("steps"),
       })),
     ...(randomId
       ? parentRandomEvents(program, randomId).map((event2) => {
@@ -8265,16 +8710,37 @@ function timeSourceChoices(
               : first);
           return {
             value: `random:${event2.id}`,
-            name: `${t("End of")} ${name}`,
-            group: "Random events",
+            name: `${t("end_of")} ${name}`,
+            group: t("random_events"),
           };
         })
       : []),
-    ...(catalog.time_sources ||
+    ...(catalog.time_sources?.map((source2) => {
+      const solarLabels = {
+        sunrise: "sunrise_label",
+        sunset: "sunset_label",
+        dawn: "dawn_label",
+        dusk: "dusk_label",
+        noon: "solar_noon",
+        midnight: "solar_midnight",
+      };
+      const groupKey = [
+        "solar_events",
+        "calendars",
+        "home_assistant_times",
+      ].find((key2) => en[key2] === source2.group);
+      return {
+        ...source2,
+        name: source2.value.startsWith("sun:")
+          ? t(solarLabels[source2.value.slice(4)] || source2.name)
+          : source2.name,
+        group: groupKey ? t(groupKey) : source2.group,
+      };
+    }) ||
       solarEvents.map((event2) => ({
         value: `sun:${event2}`,
-        name: event2,
-        group: "Solar events",
+        name: t(event2),
+        group: t("solar_events"),
       }))),
   ];
 }
@@ -8371,7 +8837,7 @@ function editorErrors(program, editor) {
       ...timingErrors(program, form.timing, id),
     };
   if (form.days.length === 0) {
-    errors.days = "Choose at least one day.";
+    errors.days = "days_required_error";
   }
   return errors;
 }
@@ -8385,43 +8851,43 @@ function actionErrors(form) {
   }
   if (form.kind === "custom") {
     if (!form.customYaml?.trim()) {
-      errors.customYaml = "Enter an action mapping or a list of actions.";
+      errors.customYaml = "custom_yaml_required_error";
     }
     return errors;
   }
   if (form.entities.length === 0) {
     errors.entities =
       form.kind === "scene"
-        ? "Select a Home Assistant scene."
-        : "Select at least one entity.";
+        ? "scene_required_error"
+        : "entities_required_error";
   }
   if (form.entities.some((e) => !/^[a-z_][a-z0-9_]*\.[a-z0-9_]+$/.test(e))) {
-    errors.entities = "Choose valid Home Assistant entity IDs.";
+    errors.entities = "entity_ids_error";
   }
   if (
     form.kind === "scene" &&
     (form.entities.length !== 1 || !form.entities[0]?.startsWith("scene."))
   ) {
-    errors.entities = "Select one Home Assistant scene.";
+    errors.entities = "scene_single_error";
   }
   if (
     form.kind === "entities" &&
     form.entities.some((e) => !/^(light|switch)\./.test(e))
   ) {
-    errors.entities = "Choose lights and switches, or select a service action.";
+    errors.entities = "light_switch_entities_error";
   }
   if (
     form.kind === "service" &&
     !/^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$/.test(form.service)
   ) {
-    errors.service = "Choose a service using domain.service.";
+    errors.service = "service_error";
   }
   if (form.kind === "cover") {
     if (form.entities.some((entity) => !entity.startsWith("cover."))) {
-      errors.entities = "Choose cover entities.";
+      errors.entities = "cover_entities_error";
     }
     if (coverActions.every(([action2]) => action2 !== form.service)) {
-      errors.service = "Choose a cover action.";
+      errors.service = "cover_action_error";
     }
     const field = coverField(form.service);
     if (field) {
@@ -8433,7 +8899,7 @@ function actionErrors(form) {
         value < 0 ||
         value > 100
       ) {
-        errors[key2] = "Choose a whole number from 0 to 100.";
+        errors[key2] = "cover_position_error";
       }
     }
   } else if (form.kind === "scene" || form.kind === "service") {
@@ -8443,7 +8909,7 @@ function actionErrors(form) {
         throw new TypeError("Expected service data to be a JSON object");
       }
     } catch {
-      errors.data = "Service data must be a JSON object.";
+      errors.data = "service_data_error";
     }
   }
   return errors;
@@ -8453,10 +8919,10 @@ function timingErrors(program, time, id, randomId) {
   const clockPattern = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
   if (time.mode === "absolute") {
     if (!clockPattern.test(time.start)) {
-      errors.start = "Choose a start time.";
+      errors.start = "start_time_required_error";
     }
     if (time.end && !clockPattern.test(time.end)) {
-      errors.end = "Choose a valid end time or leave it blank.";
+      errors.end = "end_time_error";
     }
   } else if (time.mode === "relative") {
     Object.assign(errors, offsetErrors(time));
@@ -8468,8 +8934,7 @@ function timingErrors(program, time, id, randomId) {
         !parent ||
         parentSteps(program, id).every((e) => e.id !== parent.id)
       ) {
-        errors.anchor =
-          "Choose another step without creating a circular relationship.";
+        errors.anchor = "step_reference_error";
       }
     } else if (time.anchor.startsWith("random:")) {
       if (
@@ -8478,8 +8943,7 @@ function timingErrors(program, time, id, randomId) {
           (event2) => event2.id !== time.anchor.slice(7),
         )
       ) {
-        errors.anchor =
-          "Choose another random event without creating a circular relationship.";
+        errors.anchor = "random_reference_error";
       }
     } else if (
       !solarEvents.map((event2) => `sun:${event2}`).includes(time.anchor) &&
@@ -8487,10 +8951,10 @@ function timingErrors(program, time, id, randomId) {
         time.anchor,
       )
     ) {
-      errors.anchor = "Choose a step or Home Assistant time source.";
+      errors.anchor = "time_source_required_error";
     }
   } else {
-    errors.mode = "Choose absolute time or relative to.";
+    errors.mode = "timing_mode_error";
   }
   return errors;
 }
@@ -8544,9 +9008,7 @@ function buildStep(program, editor) {
     throw new Error(Object.values(errors)[0]);
   }
   if (editor.existing && !program.steps?.[editor.id]) {
-    throw new Error(
-      "This step changed elsewhere. Cancel and reopen it before saving.",
-    );
+    throw new Error("step_changed_error");
   }
   const next2 = copy(program),
     { form } = editor;
@@ -8562,7 +9024,7 @@ function buildStep(program, editor) {
 function buildAction(form) {
   if (form.kind === "custom") {
     if (!form.customActions || form.customAccepted !== form.customYaml) {
-      throw new Error("Validate Custom YAML before adding it to the draft.");
+      throw new Error("custom_yaml_validation_error");
     }
     return { actions: copy(form.customActions) };
   }
@@ -8789,13 +9251,13 @@ function showEntry(panel, entry) {
 }
 function actionSummary(entry, t) {
   if (entry.actions || entry.action === "set_state") {
-    return `${t("Custom YAML")} \xB7 ${entry.actions?.length || 1} ${t("actions")}`;
+    return `${t("custom_yaml")} \xB7 ${entry.actions?.length || 1} ${t("actions")}`;
   }
   if (entry.action === "scene.turn_on") {
-    return t("Activate scene");
+    return t("activate_scene");
   }
   if (entry.action === "turn_on" || entry.action === "turn_off") {
-    return t(entry.action === "turn_off" ? "Turn off" : "Turn on");
+    return t(entry.action === "turn_off" ? "turn_off" : "turn_on");
   }
   return entry.action;
 }
@@ -8909,10 +9371,7 @@ function DeleteStepDialog($$anchor, $$props) {
           set_text(text_2, `${$0 ?? ""}:`);
           set_text(text_4, $1);
         },
-        [
-          () => get(t)("Used by"),
-          () => get(t)("Change those relationships before deleting."),
-        ],
+        [() => get(t)("used_by"), () => get(t)("delete_dependents_hint")],
       );
       append($$anchor2, fragment);
     };
@@ -8921,7 +9380,7 @@ function DeleteStepDialog($$anchor, $$props) {
       var text_5 = only_child(p_3, true);
       template_effect(
         ($0) => set_text(text_5, $0),
-        [() => get(t)("This step will be removed when you save changes.")],
+        [() => get(t)("delete_step_hint")],
       );
       append($$anchor2, p_3);
     };
@@ -8956,9 +9415,9 @@ function DeleteStepDialog($$anchor, $$props) {
       set_text(text_7, $2);
     },
     [
-      () => get(t)("Delete step?"),
-      () => get(t)("Cancel"),
-      () => get(t)("Delete step"),
+      () => get(t)("delete_step_confirm"),
+      () => get(t)("cancel"),
+      () => get(t)("delete_step"),
     ],
   );
   event("close", dialog_1, function (...$$args) {
@@ -9060,13 +9519,10 @@ function StaggerSettings($$anchor, $$props) {
       set_text(text_3, $3);
     },
     [
-      () => $$props.t("Staggered action"),
-      () =>
-        $$props.t(
-          "Factorio style: act on one entity at each evenly spaced tick, in a random order.",
-        ),
-      () => $$props.t("Time window"),
-      () => $$props.t("Default: 2m. Use a duration from 1s to 30m."),
+      () => $$props.t("staggered_action"),
+      () => $$props.t("stagger_hint"),
+      () => $$props.t("time_window"),
+      () => $$props.t("stagger_period_hint"),
     ],
   );
   delegated("change", input, (event2) =>
@@ -9105,18 +9561,18 @@ function AdvancedStepSettings($$anchor, $$props) {
   );
   let dialog;
   const presets = [
-    ["Every day", days],
-    ["Weekdays", days.slice(0, 5)],
-    ["Weekends", days.slice(5)],
+    ["every_day_label", days],
+    ["weekdays", days.slice(0, 5)],
+    ["weekends", days.slice(5)],
   ];
   const weekdayNames = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
   ];
   let dayError = user_derived(() => {
     const errors = editorErrors($$props.panel.draft, {
@@ -9296,12 +9752,12 @@ function AdvancedStepSettings($$anchor, $$props) {
       set_text(text_8, $5);
     },
     [
-      () => get(t)("Advanced settings"),
-      () => get(t)("Choose which days this step should run."),
-      () => get(t)("Run on"),
-      () => get(t)("Apply these settings, then save the step."),
-      () => get(t)("Cancel"),
-      () => get(t)("Apply"),
+      () => get(t)("advanced_settings"),
+      () => get(t)("step_days_hint"),
+      () => get(t)("run_on"),
+      () => get(t)("step_settings_hint"),
+      () => get(t)("cancel"),
+      () => get(t)("apply"),
     ],
   );
   event("close", dialog_1, function (...$$args) {
@@ -9414,7 +9870,7 @@ function StepActions($$anchor, $$props) {
           button_1.disabled = $$props.panel.busy;
           set_text(text2, $0);
         },
-        [() => $$props.panel.t(context().form.enabled ? "Disable" : "Enable")],
+        [() => $$props.panel.t(context().form.enabled ? "disable" : "enable")],
       );
       delegated("click", button_1, () => {
         closeMenu();
@@ -9440,7 +9896,7 @@ function StepActions($$anchor, $$props) {
           button_2.disabled = $$props.panel.busy;
           set_text(text_1, $0);
         },
-        [() => $$props.panel.t("Add related step")],
+        [() => $$props.panel.t("add_related_step")],
       );
       delegated("click", button_2, () => {
         closeMenu();
@@ -9464,7 +9920,7 @@ function StepActions($$anchor, $$props) {
           button_3.disabled = $$props.panel.busy;
           set_text(text_2, $0);
         },
-        [() => $$props.panel.t("Advanced settings")],
+        [() => $$props.panel.t("advanced_settings")],
       );
       delegated("click", button_3, () => {
         closeMenu(false);
@@ -9487,7 +9943,7 @@ function StepActions($$anchor, $$props) {
           button_4.disabled = $$props.panel.busy;
           set_text(text_3, $0);
         },
-        [() => $$props.panel.t("Delete step")],
+        [() => $$props.panel.t("delete_step")],
       );
       delegated("click", button_4, () => {
         closeMenu(false);
@@ -9559,9 +10015,9 @@ function StepActions($$anchor, $$props) {
       set_attribute2(div_1, "aria-label", $2);
     },
     [
-      () => $$props.panel.t("Step actions"),
-      () => $$props.panel.t("Step actions"),
-      () => $$props.panel.t("Step actions"),
+      () => $$props.panel.t("step_actions"),
+      () => $$props.panel.t("step_actions"),
+      () => $$props.panel.t("step_actions"),
     ],
   );
   delegated("click", button, () => (get(menuOpen) ? closeMenu() : openMenu()));
@@ -9592,15 +10048,18 @@ function FieldError($$anchor, $$props) {
     var consequent = ($$anchor2) => {
       var p = root5();
       var text2 = only_child(p, true);
-      template_effect(() => {
-        set_attribute2(p, "id", `step-error-${fieldPrefix()}${$$props.key}`);
-        set_attribute2(
-          p,
-          "data-builder-error",
-          `${fieldPrefix()}${$$props.key}`,
-        );
-        set_text(text2, $$props.errors[$$props.key]);
-      });
+      template_effect(
+        ($0) => {
+          set_attribute2(p, "id", `step-error-${fieldPrefix()}${$$props.key}`);
+          set_attribute2(
+            p,
+            "data-builder-error",
+            `${fieldPrefix()}${$$props.key}`,
+          );
+          set_text(text2, $0);
+        },
+        [() => $$props.t($$props.errors[$$props.key])],
+      );
       append($$anchor2, p);
     };
     if_block(node, ($$render) => {
@@ -9792,7 +10251,7 @@ function EditorField($$anchor, $$props) {
         ($$node, $$action_arg) => validity?.($$node, $$action_arg),
         () =>
           ["startOffset", "endOffset"].includes($$props.key)
-            ? get(editor).errors[$$props.key] || ""
+            ? get(t)(get(editor).errors[$$props.key] || "")
             : "",
       );
       template_effect(
@@ -9828,6 +10287,9 @@ function EditorField($$anchor, $$props) {
   {
     let $0 = user_derived(() => ({ ...get(editor).errors }));
     FieldError(node_3, {
+      get t() {
+        return get(t);
+      },
       get key() {
         return $$props.key;
       },
@@ -9860,13 +10322,13 @@ function SourcePicker($$anchor, $$props) {
     for (const choice of $$props.choices) {
       if (group !== choice.group) {
         group = choice.group;
-        items2.push($$props.t(group));
+        items2.push(group);
       }
       items2.push({
         id: choice.value,
-        primary: $$props.t(choice.name),
+        primary: choice.name,
         secondary: choice.entity_id,
-        group: $$props.t(choice.group),
+        group: choice.group,
       });
     }
     return items2;
@@ -9874,9 +10336,8 @@ function SourcePicker($$anchor, $$props) {
   function valueRenderer(id) {
     const headline = document.createElement("span");
     headline.slot = "headline";
-    headline.textContent = $$props.t(
-      $$props.choices.find((choice) => choice.value === id)?.name || id,
-    );
+    headline.textContent =
+      $$props.choices.find((choice) => choice.value === id)?.name || id;
     return headline;
   }
   function select(event2) {
@@ -9910,7 +10371,7 @@ function SourcePicker($$anchor, $$props) {
   );
   template_effect(
     ($0) => set_custom_element_data(ha_generic_picker, "aria-label", $0),
-    [() => $$props.t("Relative to")],
+    [() => $$props.t("relative_to")],
   );
   template_effect(() =>
     set_custom_element_data(
@@ -9933,10 +10394,10 @@ function SourcePicker($$anchor, $$props) {
     () => ({
       hass: $$props.hass,
       value: $$props.value || void 0,
-      label: $$props.t("Relative to"),
-      searchLabel: $$props.t("Search steps or time sources"),
-      placeholder: $$props.t("Choose a step or event"),
-      notFoundLabel: $$props.t("No matching steps or time sources."),
+      label: $$props.t("relative_to"),
+      searchLabel: $$props.t("search_steps_or_time_sources"),
+      placeholder: $$props.t("choose_a_step_or_event"),
+      notFoundLabel: $$props.t("time_sources_no_matches"),
       getItems: () => get(items),
       searchKeys: ["primary", "secondary", "id", "group"],
       valueRenderer,
@@ -9944,13 +10405,16 @@ function SourcePicker($$anchor, $$props) {
       noSort: true,
       required: true,
       invalid: !!error(),
-      errorMessage: error(),
+      errorMessage: $$props.t(error()),
     }),
   );
   var node = sibling(ha_generic_picker, 2);
   {
     let $0 = user_derived(() => ({ anchor: error() }));
     FieldError(node, {
+      get t() {
+        return $$props.t;
+      },
       key: "anchor",
       get fieldPrefix() {
         return fieldPrefix();
@@ -10050,15 +10514,12 @@ function randomErrors(program, editor) {
   const minimum = durationSeconds(form.minDuration),
     maximum = durationSeconds(form.maxDuration);
   if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604800) {
-    errors.minDuration =
-      "Use a positive duration within seven days, for example 5m or 1h.";
+    errors.minDuration = "duration_error";
   }
   if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604800) {
-    errors.maxDuration =
-      "Use a positive duration within seven days, for example 5m or 1h.";
+    errors.maxDuration = "duration_error";
   } else if (maximum < minimum) {
-    errors.maxDuration =
-      "Maximum duration must be at least the minimum duration.";
+    errors.maxDuration = "duration_order_error";
   }
   const minCount = Number(form.minCount),
     maxCount = Number(form.maxCount);
@@ -10070,14 +10531,14 @@ function randomErrors(program, editor) {
       count < 0 ||
       count > 1e3
     ) {
-      errors[field] = "Choose a whole number from 0 to 1000.";
+      errors[field] = "random_count_error";
     }
   }
   if (!errors.minCount && !errors.maxCount && maxCount < minCount) {
-    errors.maxCount = "Maximum events per window must be at least the minimum.";
+    errors.maxCount = "random_count_order_error";
   }
   if (form.days.length === 0) {
-    errors.days = "Choose at least one day.";
+    errors.days = "days_required_error";
   }
   if (
     maxCount > 0 &&
@@ -10087,7 +10548,7 @@ function randomErrors(program, editor) {
     minimum >
       durationSeconds(form.end.maxDuration || form.end.minDuration || "")
   ) {
-    errors.minDuration = "Minimum duration does not fit inside this window.";
+    errors.minDuration = "duration_exceeds_window_error";
   }
   if (
     maxCount > 0 &&
@@ -10107,9 +10568,9 @@ function randomErrors(program, editor) {
       span += 86400;
     }
     if (span === 0) {
-      errors["end.start"] = "Window end must be after its start.";
+      errors["end.start"] = "window_end_order_error";
     } else if (minimum > span) {
-      errors.minDuration = "Minimum duration does not fit inside this window.";
+      errors.minDuration = "duration_exceeds_window_error";
     }
   }
   return errors;
@@ -10122,13 +10583,12 @@ function windowEndErrors(program, time) {
   const minimum = durationSeconds(time.minDuration || "");
   const maximum = durationSeconds(time.maxDuration || time.minDuration || "");
   if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604800) {
-    errors.minDuration = "Choose a positive window duration within seven days.";
+    errors.minDuration = "window_duration_error";
   }
   if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604800) {
-    errors.maxDuration = "Choose a positive window duration within seven days.";
+    errors.maxDuration = "window_duration_error";
   } else if (maximum < minimum) {
-    errors.maxDuration =
-      "Maximum window duration must be at least the minimum.";
+    errors.maxDuration = "window_duration_order_error";
   }
   return errors;
 }
@@ -10138,9 +10598,7 @@ function buildRandom(program, editor) {
     throw new Error(Object.values(errors)[0]);
   }
   if (editor.existing && !program.random?.[editor.id]) {
-    throw new Error(
-      "This random event changed elsewhere. Cancel and reopen it before saving.",
-    );
+    throw new Error("random_changed_error");
   }
   const next2 = copy(program),
     { form } = editor;
@@ -10182,25 +10640,25 @@ var root_62 = from_html(
 );
 function TimingEditor($$anchor, $$props) {
   push($$props, true);
-  let heading = prop($$props, "heading", 3, "Timing"),
-    clockLabel = prop($$props, "clockLabel", 3, "Start time window"),
+  let heading = prop($$props, "heading", 3, "timing"),
+    clockLabel = prop($$props, "clockLabel", 3, "start_time_window"),
     windowEndLabel = prop(
       $$props,
       "windowEndLabel",
       3,
-      "End of window (optional)",
+      "end_of_window_optional",
     ),
     addWindowEndLabel = prop(
       $$props,
       "addWindowEndLabel",
       3,
-      "Add end of window",
+      "add_end_of_window",
     ),
     showExplanation = prop($$props, "showExplanation", 3, true),
-    explanationSubject = prop($$props, "explanationSubject", 3, "Runs"),
+    explanationSubject = prop($$props, "explanationSubject", 3, "runs"),
     modes = prop($$props, "modes", 19, () => [
-      ["absolute", "Absolute time"],
-      ["relative", "Relative to"],
+      ["absolute", "absolute_time"],
+      ["relative", "relative_to"],
     ]);
   let editor = user_derived(() => $$props.context.editor),
     form = user_derived(() => $$props.context.form),
@@ -10227,7 +10685,7 @@ function TimingEditor($$anchor, $$props) {
         {
           value: get(time).anchor,
           name: get(time).anchor,
-          group: "Unavailable sources",
+          group: get(t)("unavailable_sources"),
         },
       ];
     }
@@ -10294,6 +10752,9 @@ function TimingEditor($$anchor, $$props) {
   {
     let $0 = user_derived(() => ({ ...get(editor).errors }));
     FieldError(node, {
+      get t() {
+        return get(t);
+      },
       key: "mode",
       get fieldPrefix() {
         return get(fieldPrefix);
@@ -10392,7 +10853,7 @@ function TimingEditor($$anchor, $$props) {
             return $$props.context;
           },
           key: "minDuration",
-          label: "Minimum window duration",
+          label: "minimum_window_duration",
           get value() {
             return get($0);
           },
@@ -10411,7 +10872,7 @@ function TimingEditor($$anchor, $$props) {
             return $$props.context;
           },
           key: "maxDuration",
-          label: "Maximum window duration",
+          label: "maximum_window_duration",
           get value() {
             return get($0);
           },
@@ -10470,12 +10931,7 @@ function TimingEditor($$anchor, $$props) {
           var text_3 = only_child(p, true);
           template_effect(
             ($0) => set_text(text_3, $0),
-            [
-              () =>
-                get(t)(
-                  "This start follows the selected window's closing time.",
-                ),
-            ],
+            [() => get(t)("random_relative_start_hint")],
           );
           append($$anchor3, p);
         };
@@ -10491,12 +10947,7 @@ function TimingEditor($$anchor, $$props) {
           var text_4 = only_child(p_1, true);
           template_effect(
             ($0) => set_text(text_4, $0),
-            [
-              () =>
-                get(t)(
-                  "Uses the time currently reported by Home Assistant. Time-only helpers repeat daily; dated sources run only on their reported date.",
-                ),
-            ],
+            [() => get(t)("ha_time_source_hint")],
           );
           append($$anchor3, p_1);
         };
@@ -10514,7 +10965,7 @@ function TimingEditor($$anchor, $$props) {
           return $$props.context;
         },
         key: "startOffset",
-        label: "Start offset",
+        label: "start_offset",
         get value() {
           return get(time).startOffset;
         },
@@ -10530,7 +10981,7 @@ function TimingEditor($$anchor, $$props) {
               var text_5 = only_child(button_1, true);
               template_effect(
                 ($0) => set_text(text_5, $0),
-                [() => get(t)("Remove end offset")],
+                [() => get(t)("remove_end_offset")],
               );
               delegated("click", button_1, () => {
                 get(time).endOffset = "";
@@ -10548,7 +10999,7 @@ function TimingEditor($$anchor, $$props) {
                 return $$props.context;
               },
               key: "endOffset",
-              label: "End offset (optional)",
+              label: "end_offset_optional",
               get value() {
                 return get(time).endOffset;
               },
@@ -10564,7 +11015,7 @@ function TimingEditor($$anchor, $$props) {
           var text_6 = only_child(button_2, true);
           template_effect(
             ($0) => set_text(text_6, $0),
-            [() => get(t)("Add end offset")],
+            [() => get(t)("add_end_offset")],
           );
           delegated("click", button_2, () => {
             get(editor).showEndOffset = true;
@@ -10590,12 +11041,7 @@ function TimingEditor($$anchor, $$props) {
       var text_7 = only_child(p_2, true);
       template_effect(
         ($0) => set_text(text_7, $0),
-        [
-          () =>
-            get(t)(
-              "Choose Absolute time or Duration to replace this saved relative window end.",
-            ),
-        ],
+        [() => get(t)("random_relative_end_hint")],
       );
       append($$anchor2, p_2);
     };
@@ -10637,7 +11083,7 @@ function TimingEditor($$anchor, $$props) {
                 locale: $$props.panel._hass.locale,
                 days: get(form).days,
                 subject: explanationSubject(),
-                includeHints: explanationSubject() === "Runs",
+                includeHints: explanationSubject() === "runs",
               },
             ),
         ],
@@ -10655,12 +11101,7 @@ function TimingEditor($$anchor, $$props) {
       var text_9 = only_child(p_4, true);
       template_effect(
         ($0) => set_text(text_9, $0),
-        [
-          () =>
-            get(t)(
-              "This program is managed by a file. Add changes to your draft, then export them from Settings.",
-            ),
-        ],
+        [() => get(t)("managed_file_draft_hint")],
       );
       append($$anchor2, p_4);
     };
@@ -10694,7 +11135,7 @@ var root_17 = from_html(
 );
 function EntitiesEditor($$anchor, $$props) {
   push($$props, true);
-  let label = prop($$props, "label", 3, "Entities");
+  let label = prop($$props, "label", 3, "entities_label");
   let editor = user_derived(() => $$props.context.editor),
     form = user_derived(() => $$props.context.form),
     t = user_derived(() => $$props.context.t),
@@ -10766,6 +11207,9 @@ function EntitiesEditor($$anchor, $$props) {
   {
     let $0 = user_derived(() => ({ ...get(editor).errors }));
     FieldError(node, {
+      get t() {
+        return get(t);
+      },
       key: "entities",
       get fieldPrefix() {
         return get(fieldPrefix);
@@ -10782,12 +11226,7 @@ function EntitiesEditor($$anchor, $$props) {
       var text_1 = only_child(p, true);
       template_effect(
         ($0) => set_text(text_1, $0),
-        [
-          () =>
-            get(t)(
-              "This selection includes a custom entity. Select lights or switches for this step.",
-            ),
-        ],
+        [() => get(t)("custom_entity_hint")],
       );
       append($$anchor2, p);
     };
@@ -10862,11 +11301,7 @@ function changeActionKind(form, value, confirmReplace) {
       Object.assign(form, next2, buffer);
       return {};
     }
-    if (
-      !confirmReplace(
-        "Replace this Custom YAML block with the selected action? Its individual settings or other actions will be removed.",
-      )
-    ) {
+    if (!confirmReplace("custom_yaml_replace_confirm")) {
       return {};
     }
   }
@@ -10908,9 +11343,9 @@ var $$css2 = {
 function ActionEditor($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css2);
-  let heading = prop($$props, "heading", 3, "Action"),
-    kindLabel = prop($$props, "kindLabel", 3, "Step type"),
-    entityLabel = prop($$props, "entityLabel", 3, "Entities"),
+  let heading = prop($$props, "heading", 3, "action"),
+    kindLabel = prop($$props, "kindLabel", 3, "step_type"),
+    entityLabel = prop($$props, "entityLabel", 3, "entities_label"),
     hideEntities = prop($$props, "hideEntities", 3, false);
   let form = user_derived(() => $$props.context.form),
     t = user_derived(() => $$props.context.t);
@@ -10945,12 +11380,12 @@ function ActionEditor($$anchor, $$props) {
       options: {
         hideLabel: true,
         choices: [
-          ["turn_on", "Turn on lights/switches"],
-          ["turn_off", "Turn off lights/switches"],
-          ["cover", "Control covers"],
-          ["service", "Entity service action"],
-          ["scene", "Activate Home Assistant scene"],
-          ["custom", "Custom YAML"],
+          ["turn_on", "turn_on_lights_switches"],
+          ["turn_off", "turn_off_lights_switches"],
+          ["cover", "control_covers"],
+          ["service", "entity_service_action"],
+          ["scene", "activate_home_assistant_scene"],
+          ["custom", "custom_yaml"],
         ],
         render: true,
       },
@@ -10983,7 +11418,7 @@ function ActionEditor($$anchor, $$props) {
       set_custom_element_data(ha_code_editor, "role", "group");
       template_effect(
         ($0) => set_custom_element_data(ha_code_editor, "aria-label", $0),
-        [() => get(t)("Action YAML")],
+        [() => get(t)("action_yaml")],
       );
       template_effect(() =>
         set_custom_element_data(
@@ -11017,6 +11452,9 @@ function ActionEditor($$anchor, $$props) {
         let $0 = user_derived(() => $$props.context.fieldPrefix || "");
         let $1 = user_derived(() => ({ ...$$props.context.editor.errors }));
         FieldError(node_3, {
+          get t() {
+            return get(t);
+          },
           key: "customYaml",
           get fieldPrefix() {
             return get($0);
@@ -11033,12 +11471,7 @@ function ActionEditor($$anchor, $$props) {
           ha_code_editor.dir = ha_code_editor.dir;
           set_text(text_1, $0);
         },
-        [
-          () =>
-            get(t)(
-              "Enter one action or an ordered list of actions. Use brightness from 1 to 255. Timing stays in the controls above. A failed call stops the remaining actions.",
-            ),
-        ],
+        [() => get(t)("custom_yaml_hint")],
       );
       event("value-changed", ha_code_editor, (event2) => {
         if (
@@ -11067,7 +11500,7 @@ function ActionEditor($$anchor, $$props) {
           return $$props.context;
         },
         key: "service",
-        label: "Service (domain.service)",
+        label: "service",
         get value() {
           return get(form).service;
         },
@@ -11093,7 +11526,7 @@ function ActionEditor($$anchor, $$props) {
             return $$props.context;
           },
           key: "service",
-          label: "Cover action",
+          label: "cover_action",
           get value() {
             return get(form).service;
           },
@@ -11114,7 +11547,7 @@ function ActionEditor($$anchor, $$props) {
               return $$props.context;
             },
             key: "position",
-            label: "Position (%)",
+            label: "position",
             get value() {
               return get(form).position;
             },
@@ -11131,7 +11564,7 @@ function ActionEditor($$anchor, $$props) {
               return $$props.context;
             },
             key: "tiltPosition",
-            label: "Tilt position (%)",
+            label: "tilt_position",
             get value() {
               return get(form).tiltPosition;
             },
@@ -11156,14 +11589,8 @@ function ActionEditor($$anchor, $$props) {
           set_text(text_3, $1);
         },
         [
-          () =>
-            get(t)(
-              "0% is closed; 100% is open. Device support determines which cover actions are available.",
-            ),
-          () =>
-            get(t)(
-              "Covers run only at scheduled times. Enabling late skips past cover actions.",
-            ),
+          () => get(t)("cover_position_hint"),
+          () => get(t)("cover_schedule_hint"),
         ],
       );
       append($$anchor2, fragment_3);
@@ -11183,7 +11610,7 @@ function ActionEditor($$anchor, $$props) {
           return $$props.context;
         },
         key: "data",
-        label: "Service data (JSON)",
+        label: "service_data",
         get value() {
           return get(form).data;
         },
@@ -11224,7 +11651,7 @@ function StepEditor($$anchor, $$props) {
   {
     let $0 = user_derived(() => ({
       hideLabel: true,
-      placeholder: get(editing) ? void 0 : get(t)("Optional title"),
+      placeholder: get(editing) ? void 0 : get(t)("optional_title"),
     }));
     EditorField(node, {
       get panel() {
@@ -11234,7 +11661,7 @@ function StepEditor($$anchor, $$props) {
         return get(context);
       },
       key: "name",
-      label: "Step name",
+      label: "step_name",
       get value() {
         return get(form).name;
       },
@@ -11269,6 +11696,9 @@ function StepEditor($$anchor, $$props) {
   {
     let $0 = user_derived(() => ({ ...get(editor).errors }));
     FieldError(node_3, {
+      get t() {
+        return get(t);
+      },
       key: "days",
       get errors() {
         return get($0);
@@ -11337,12 +11767,12 @@ function StepEditor($$anchor, $$props) {
       set_text(text_1, $1);
     },
     [
-      () => get(t)("Cancel"),
+      () => get(t)("cancel"),
       () =>
         get(t)(
           $$props.panel.document?.source === "file"
-            ? "Add to draft"
-            : "Save step",
+            ? "add_to_draft"
+            : "save_step",
         ),
     ],
   );
@@ -11416,12 +11846,9 @@ function StepsView($$anchor, $$props) {
           set_text(text_2, $2);
         },
         [
-          () => get(t)("Scheduled activity"),
-          () =>
-            get(t)(
-              "Run actions at specific times, around sunrise or sunset, or relative to other steps. Choose which devices to control and what they should do.",
-            ),
-          () => get(t)("Create your first step"),
+          () => get(t)("scheduled_activity"),
+          () => get(t)("steps_hint"),
+          () => get(t)("create_your_first_step"),
         ],
       );
       delegated("click", button, () => startStep($$props.panel));
@@ -11476,7 +11903,7 @@ function StepsView($$anchor, $$props) {
               var text_4 = only_child(span_2, true);
               template_effect(
                 ($0) => set_text(text_4, $0),
-                [() => get(t)("Disabled")],
+                [() => get(t)("disabled")],
               );
               append($$anchor4, span_2);
             };
@@ -11608,7 +12035,7 @@ function StepsView($$anchor, $$props) {
               () => `--depth:${Math.min(depth(), 3)}`,
               () =>
                 get(stepDisabled)
-                  ? `${entry().name} \xB7 ${get(t)("Disabled")}`
+                  ? `${entry().name} \xB7 ${get(t)("disabled")}`
                   : entry().name,
               () => actionSummary(entry(), get(t)),
               () =>
@@ -11631,7 +12058,7 @@ function StepsView($$anchor, $$props) {
           button_2.disabled = $$props.panel.busy;
           set_text(text_8, $1);
         },
-        [() => get(t)("Steps"), () => get(t)("Create step")],
+        [() => get(t)("steps"), () => get(t)("create_step")],
       );
       delegated("click", button_2, () => startStep($$props.panel));
       append($$anchor2, fragment_1);
@@ -11710,7 +12137,7 @@ function SettingsView($$anchor, $$props) {
   set_custom_element_data(ha_code_editor, "role", "group");
   template_effect(
     ($0) => set_custom_element_data(ha_code_editor, "aria-label", $0),
-    [() => get(t)("Occupied YAML")],
+    [() => get(t)("occupied_yaml")],
   );
   set_custom_element_data(ha_code_editor, "dir", "ltr");
   set_class(ha_code_editor, 1, "svelte-82irif");
@@ -11754,15 +12181,12 @@ function SettingsView($$anchor, $$props) {
       set_text(text_5, $5);
     },
     [
-      () => get(t)("YAML"),
-      () =>
-        get(t)(
-          "Edit the YAML and save to validate and apply your changes. Invalid code is kept in the editor.",
-        ),
-      () => get(t)("Choose configuration file"),
-      () => get(t)("Save changes"),
-      () => get(t)("Discard changes"),
-      () => get(t)("Download"),
+      () => get(t)("yaml"),
+      () => get(t)("yaml_editor_hint"),
+      () => get(t)("choose_configuration_file"),
+      () => get(t)("save_changes"),
+      () => get(t)("discard_changes"),
+      () => get(t)("download"),
     ],
   );
   delegated("change", input, async (event2) => {
@@ -11867,13 +12291,16 @@ function calendarDayPlan(plans, date) {
     issues: plans.flatMap((plan) => plan.issues),
   };
 }
-function previewStateHistory(plan, _program, names = {}, t = (text2) => text2) {
+function previewStateHistory(plan, _program, names = {}, t = translator()) {
   const start = Date.parse(plan.start),
     end = Date.parse(plan.end);
   const entities = /* @__PURE__ */ new Map();
   const covers = /* @__PURE__ */ new Map();
-  const stateLabels = { on: "On", off: "Off" };
-  const label = (state2) => t(stateLabels[state2] || "Unknown");
+  const stateLabels = {
+    on: "on_label",
+    off: "off_label",
+  };
+  const label = (state2) => t(stateLabels[state2] || "unknown");
   for (const event2 of [...plan.events].sort(
     (a, b) => Date.parse(a.time) - Date.parse(b.time),
   )) {
@@ -11915,19 +12342,19 @@ function previewStateHistory(plan, _program, names = {}, t = (text2) => text2) {
         covers.set(entity, target);
         const parts = [];
         if (target.position !== void 0) {
-          let position = t("Position {position}%").replace("{position}", () =>
+          let position = t("cover_position_summary").replace("{position}", () =>
             String(target.position),
           );
           if (target.position === 100) {
-            position = t("Open");
+            position = t("open");
           } else if (target.position === 0) {
-            position = t("Closed");
+            position = t("closed");
           }
           parts.push(position);
         }
         if (target.tilt_position !== void 0) {
           parts.push(
-            t("Tilt {position}%").replace("{position}", () =>
+            t("cover_tilt_summary").replace("{position}", () =>
               String(target.tilt_position),
             ),
           );
@@ -11956,7 +12383,7 @@ function calendarStateHistory(
   day,
   program,
   names = {},
-  t = (text2) => text2,
+  t = translator(),
 ) {
   const start = Date.parse(day.start),
     end = Date.parse(day.end);
@@ -11980,18 +12407,18 @@ function stamp(value, zone, locale) {
 }
 function eventDetails(event2, label, timezone, t, locale) {
   const kinds = {
-    random_start: "Random start",
-    random_end: "Random end",
+    random_start: "random_start",
+    random_end: "random_end",
   };
   let action2 = event2.action.action;
   if (event2.tick) {
-    const tick2 = t("Tick {tick} of {count}")
+    const tick2 = t("tick_progress")
       .replace("{tick}", () => String(event2.tick))
       .replace("{count}", () => String(event2.tick_count));
     action2 += ` \xB7 ${tick2} \xB7 ${event2.period_seconds}s`;
   }
   if (event2.superseded) {
-    action2 += ` \xB7 ${t("Superseded")}`;
+    action2 += ` \xB7 ${t("superseded")}`;
   }
   return {
     time: stamp(event2.time, timezone, locale),
@@ -12106,8 +12533,8 @@ function PreviewStateGraph($$anchor, $$props) {
           () =>
             $$props.t(
               $$props.plan.events.length === 0
-                ? "No steps are scheduled for this date."
-                : "No light, switch, or cover actions on this date. Other actions are listed in Event details.",
+                ? "schedule_empty_hint"
+                : "preview_devices_empty_hint",
             ),
         ],
       );
@@ -12124,12 +12551,7 @@ function PreviewStateGraph($$anchor, $$props) {
       var text_1 = only_child(p_1, true);
       template_effect(
         ($0) => set_text(text_1, $0),
-        [
-          () =>
-            $$props.t(
-              "Cover strips show planned position and tilt targets. Travel time and positions after stop actions are unknown.",
-            ),
-        ],
+        [() => $$props.t("preview_covers_hint")],
       );
       append($$anchor2, p_1);
     };
@@ -12147,12 +12569,7 @@ function PreviewStateGraph($$anchor, $$props) {
       var text_2 = only_child(p_2, true);
       template_effect(
         ($0) => set_text(text_2, $0),
-        [
-          () =>
-            $$props.t(
-              "The Home Assistant graph could not load. Planned actions are available in Event details.",
-            ),
-        ],
+        [() => $$props.t("preview_graph_error")],
       );
       append($$anchor2, p_2);
     };
@@ -12172,7 +12589,7 @@ function PreviewStateGraph($$anchor, $$props) {
             "aria-label",
             $0,
           ),
-        [() => $$props.t("Planned device states")],
+        [() => $$props.t("planned_device_states")],
       );
       set_class(state_history_chart_timeline, 1, "svelte-1cnjgem");
       action(
@@ -12197,7 +12614,7 @@ function PreviewStateGraph($$anchor, $$props) {
       var text_3 = only_child(p_3, true);
       template_effect(
         ($0) => set_text(text_3, $0),
-        [() => $$props.t("Loading graph\u2026")],
+        [() => $$props.t("loading_graph")],
       );
       append($$anchor2, p_3);
     };
@@ -12219,14 +12636,14 @@ function liveRunning(session) {
 }
 function liveSessionStatus(session) {
   if (session.state === "ready") {
-    return session.cursor === 0 ? "Ready to start" : "Ready for next event";
+    return session.cursor === 0 ? "ready_to_start" : "ready_for_next_event";
   }
   const labels = {
-    completed: "Day complete",
-    executing: "Running\u2026",
-    stopping: "Stopping\u2026",
-    stopped: "Stopped",
-    interrupted: "Interrupted",
+    completed: "day_complete",
+    executing: "running",
+    stopping: "stopping",
+    stopped: "stopped",
+    interrupted: "interrupted",
   };
   return labels[session.state];
 }
@@ -12284,9 +12701,9 @@ function lastGroupResult(session) {
     (outcome) => outcome.status === "dispatched",
   ).length;
   if (succeeded === outcomes.length) {
-    return "Dispatched";
+    return "dispatched_label";
   }
-  return succeeded > 0 ? "Partial success" : "Event failed or interrupted";
+  return succeeded > 0 ? "partial_success" : "event_failed_or_interrupted";
 }
 
 // custom_components/occupied/frontend/Timeline.svelte
@@ -12315,7 +12732,7 @@ var $$css5 = {
 function Timeline($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css5);
-  let t = prop($$props, "t", 3, (text2) => text2),
+  let t = prop($$props, "t", 19, translator),
     entityNames = prop($$props, "entityNames", 19, () => ({})),
     loading = prop($$props, "loading", 3, false),
     showLoading = prop($$props, "showLoading", 19, loading),
@@ -12323,7 +12740,7 @@ function Timeline($$anchor, $$props) {
   let labels = user_derived(
     () =>
       new Map([
-        ...stepEntries($$props.program || {}).map((resource) => [
+        ...stepEntries($$props.program || {}, void 0, t()).map((resource) => [
           `step:${resource.id}`,
           resource.name,
         ]),
@@ -12364,9 +12781,9 @@ function Timeline($$anchor, $$props) {
     };
     var consequent_1 = ($$anchor2) => {
       var h2 = root15();
-      var text_1 = only_child(h2, true);
+      var text2 = only_child(h2, true);
       template_effect(
-        ($0) => set_text(text_1, $0),
+        ($0) => set_text(text2, $0),
         [
           () =>
             formatScheduleDate($$props.plan.simulation_date, $$props.locale),
@@ -12409,9 +12826,9 @@ function Timeline($$anchor, $$props) {
         var consequent_7 = ($$anchor3) => {
           var details_1 = root_72();
           var summary = child(details_1);
-          var text_2 = only_child(summary);
+          var text_1 = only_child(summary);
           var p = sibling(summary, 2);
-          var text_3 = only_child(p);
+          var text_2 = only_child(p);
           var node_5 = sibling(p, 2);
           each(
             node_5,
@@ -12421,9 +12838,9 @@ function Timeline($$anchor, $$props) {
             ($$anchor4, transition2) => {
               var details_2 = root_29();
               var summary_1 = child(details_2);
-              var text_4 = only_child(summary_1);
+              var text_3 = only_child(summary_1);
               var p_1 = sibling(summary_1, 2);
-              var text_5 = only_child(p_1);
+              var text_4 = only_child(p_1);
               var ol = sibling(p_1, 2);
               each(
                 ol,
@@ -12432,16 +12849,16 @@ function Timeline($$anchor, $$props) {
                 (tick2) => tick2,
                 ($$anchor5, tick2) => {
                   var li = root_112();
-                  var text_6 = child(li);
-                  var node_6 = sibling(text_6);
+                  var text_5 = child(li);
+                  var node_6 = sibling(text_5);
                   {
                     var consequent_2 = ($$anchor6) => {
-                      var text_7 = text();
+                      var text_6 = text();
                       template_effect(
-                        ($0) => set_text(text_7, `\xB7 ${$0 ?? ""}`),
-                        [() => t()("Superseded")],
+                        ($0) => set_text(text_6, `\xB7 ${$0 ?? ""}`),
+                        [() => t()("superseded")],
                       );
-                      append($$anchor6, text_7);
+                      append($$anchor6, text_6);
                     };
                     if_block(node_6, ($$render) => {
                       if (tick2.superseded) $$render(consequent_2);
@@ -12451,7 +12868,7 @@ function Timeline($$anchor, $$props) {
                   template_effect(
                     ($0, $1) => {
                       set_value(li, tick2.tick);
-                      set_text(text_6, `${$0 ?? ""} \xB7 ${$1 ?? ""} `);
+                      set_text(text_5, `${$0 ?? ""} \xB7 ${$1 ?? ""} `);
                     },
                     [
                       () =>
@@ -12474,19 +12891,19 @@ function Timeline($$anchor, $$props) {
               template_effect(
                 ($0, $1, $2, $3, $4, $5, $6, $7) => {
                   set_text(
-                    text_4,
+                    text_3,
                     `${$0 ?? ""} \xB7 ${$1 ?? ""} \xB7 ${transition2.count ?? ""}
               ${$2 ?? ""}`,
                   );
                   set_text(
-                    text_5,
+                    text_4,
                     `${$3 ?? ""}\u2013${$4 ?? ""}
               \xB7 ${$5 ?? ""}: ${transition2.period ?? ""}s \xB7 ${$6 ?? ""}: ${$7 ?? ""}s`,
                   );
                 },
                 [
                   () => eventLabel(transition2.events[0]),
-                  () => t()("Staggered action"),
+                  () => t()("staggered_action"),
                   () => t()("entities"),
                   () =>
                     stamp(
@@ -12500,8 +12917,8 @@ function Timeline($$anchor, $$props) {
                       $$props.plan.timezone,
                       $$props.locale,
                     ),
-                  () => t()("Period"),
-                  () => t()("Tick interval"),
+                  () => t()("period"),
+                  () => t()("tick_interval"),
                   () => Number(transition2.interval.toFixed(3)),
                 ],
               );
@@ -12518,12 +12935,12 @@ function Timeline($$anchor, $$props) {
           each(
             node_7,
             16,
-            () => ["Planned time", "Source", "Action", "Targets", "Settings"],
+            () => ["planned_time", "source", "action", "targets", "settings"],
             (label) => label,
             ($$anchor4, label) => {
               var th = root_37();
-              var text_8 = only_child(th, true);
-              template_effect(($0) => set_text(text_8, $0), [() => t()(label)]);
+              var text_7 = only_child(th, true);
+              template_effect(($0) => set_text(text_7, $0), [() => t()(label)]);
               append($$anchor4, th);
             },
           );
@@ -12531,10 +12948,10 @@ function Timeline($$anchor, $$props) {
           {
             var consequent_3 = ($$anchor4) => {
               var th_1 = root_37();
-              var text_9 = only_child(th_1, true);
+              var text_8 = only_child(th_1, true);
               template_effect(
-                ($0) => set_text(text_9, $0),
-                [() => t()("Result")],
+                ($0) => set_text(text_8, $0),
+                [() => t()("result")],
               );
               append($$anchor4, th_1);
             };
@@ -12570,15 +12987,15 @@ function Timeline($$anchor, $$props) {
               var tr_1 = root_64();
               let classes;
               var td = child(tr_1);
-              var text_10 = only_child(td, true);
+              var text_9 = only_child(td, true);
               var td_1 = sibling(td);
-              var text_11 = only_child(td_1, true);
+              var text_10 = only_child(td_1, true);
               var td_2 = sibling(td_1);
-              var text_12 = only_child(td_2, true);
+              var text_11 = only_child(td_2, true);
               var td_3 = sibling(td_2);
-              var text_13 = only_child(td_3, true);
+              var text_12 = only_child(td_3, true);
               var td_4 = sibling(td_3);
-              var text_14 = only_child(td_4, true);
+              var text_13 = only_child(td_4, true);
               var node_9 = sibling(td_4);
               {
                 var consequent_6 = ($$anchor5) => {
@@ -12588,9 +13005,9 @@ function Timeline($$anchor, $$props) {
                     var consequent_4 = ($$anchor6) => {
                       var fragment_3 = root_44();
                       var span = first_child(fragment_3);
-                      var text_15 = only_child(span, true);
+                      var text_14 = only_child(span, true);
                       var div_2 = sibling(span, 2);
-                      var text_16 = only_child(div_2, true);
+                      var text_15 = only_child(div_2, true);
                       template_effect(
                         ($0) => {
                           set_class(
@@ -12602,20 +13019,20 @@ function Timeline($$anchor, $$props) {
                                 : "error",
                             ),
                           );
-                          set_text(text_15, $0);
-                          set_text(text_16, get(live).outcome.detail);
+                          set_text(text_14, $0);
+                          set_text(text_15, get(live).outcome.detail);
                         },
                         [() => t()(get(live).outcome.status)],
                       );
                       append($$anchor6, fragment_3);
                     };
                     var consequent_5 = ($$anchor6) => {
-                      var text_17 = text();
+                      var text_16 = text();
                       template_effect(
-                        ($0) => set_text(text_17, $0),
-                        [() => t()("Next event")],
+                        ($0) => set_text(text_16, $0),
+                        [() => t()("next_event")],
                       );
-                      append($$anchor6, text_17);
+                      append($$anchor6, text_16);
                     };
                     if_block(node_10, ($$render) => {
                       if (get(live)?.outcome) $$render(consequent_4);
@@ -12640,11 +13057,11 @@ function Timeline($$anchor, $$props) {
                   current: get(live)?.current,
                   completed: get(live)?.outcome?.status === "dispatched",
                 });
-                set_text(text_10, get(details).time);
-                set_text(text_11, get(details).source);
-                set_text(text_12, get(details).action);
-                set_text(text_13, get(details).targets);
-                set_text(text_14, get(details).settings);
+                set_text(text_9, get(details).time);
+                set_text(text_10, get(details).source);
+                set_text(text_11, get(details).action);
+                set_text(text_12, get(details).targets);
+                set_text(text_13, get(details).settings);
               });
               append($$anchor4, tr_1);
             },
@@ -12654,49 +13071,49 @@ function Timeline($$anchor, $$props) {
           reset(div_1);
           var div_3 = sibling(div_1, 2);
           var button = child(div_3);
-          var text_18 = only_child(button, true);
+          var text_17 = only_child(button, true);
           var span_1 = sibling(button, 2);
-          var text_19 = only_child(span_1);
+          var text_18 = only_child(span_1);
           var button_1 = sibling(span_1, 2);
-          var text_20 = only_child(button_1, true);
+          var text_19 = only_child(button_1, true);
           reset(div_3);
           reset(div);
           reset(details_1);
           template_effect(
             ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10) => {
               set_text(
-                text_2,
+                text_1,
                 `${$0 ?? ""} \xB7 ${$$props.plan.events.length ?? ""}`,
               );
               set_text(
-                text_3,
+                text_2,
                 `${$1 ?? ""}: ${$2 ?? ""} \xB7 ${$3 ?? ""}: ${$4 ?? ""}`,
               );
               set_attribute2(input, "placeholder", $5);
               set_attribute2(input, "aria-label", $6);
               button.disabled = get(currentPage) === 0;
-              set_text(text_18, $7);
+              set_text(text_17, $7);
               set_text(
-                text_19,
+                text_18,
                 `${get(filtered).length ?? ""}
               ${$8 ?? ""} \xB7 ${get(currentPage) + 1}/${$9 ?? ""}`,
               );
               button_1.disabled =
                 (get(currentPage) + 1) * 50 >= get(filtered).length;
-              set_text(text_20, $10);
+              set_text(text_19, $10);
             },
             [
-              () => t()("Event details"),
-              () => t()("Behavior revision"),
+              () => t()("event_details"),
+              () => t()("behavior_revision"),
               () => $$props.plan.behavior_hash.slice(0, 12),
-              () => t()("Plan revision"),
+              () => t()("plan_revision"),
               () => $$props.plan.source_revision?.slice(0, 12) || "\u2014",
-              () => t()("Filter events"),
-              () => t()("Filter events"),
-              () => t()("Previous"),
+              () => t()("filter_events"),
+              () => t()("filter_events"),
+              () => t()("previous"),
               () => t()("events"),
               () => Math.max(1, Math.ceil(get(filtered).length / 50)),
-              () => t()("Next"),
+              () => t()("next"),
             ],
           );
           delegated("input", input, (event2) => {
@@ -12719,14 +13136,14 @@ function Timeline($$anchor, $$props) {
         (issue) => issue,
         ($$anchor3, issue) => {
           var p_2 = root_8();
-          var text_21 = only_child(p_2);
+          var text_20 = only_child(p_2);
           template_effect(() => {
             set_class(
               p_2,
               1,
               clsx2(issue.severity === "warning" ? "hint" : "error"),
             );
-            set_text(text_21, `${issue.code ?? ""}: ${issue.message ?? ""}`);
+            set_text(text_20, `${issue.code ?? ""}: ${issue.message ?? ""}`);
           });
           append($$anchor3, p_2);
         },
@@ -12735,10 +13152,10 @@ function Timeline($$anchor, $$props) {
     };
     var consequent_9 = ($$anchor2) => {
       var p_3 = root_10();
-      var text_22 = only_child(p_3, true);
+      var text_21 = only_child(p_3, true);
       template_effect(
-        ($0) => set_text(text_22, $0),
-        [() => t()("Loading schedule\u2026")],
+        ($0) => set_text(text_21, $0),
+        [() => t()("loading_schedule")],
       );
       append($$anchor2, p_3);
     };
@@ -12815,9 +13232,8 @@ function LivePreviewControls($$anchor, $$props) {
             set_text(text_1, $1);
           },
           [
-            () => get(t)(get(executing) ? "Running\u2026" : "Next event"),
-            () =>
-              get(t)($$props.panel.liveStopping ? "Stopping\u2026" : "Stop"),
+            () => get(t)(get(executing) ? "running" : "next_event"),
+            () => get(t)($$props.panel.liveStopping ? "stopping" : "stop"),
           ],
         );
         delegated("click", button, () => $$props.panel.nextLiveEvent());
@@ -12841,7 +13257,7 @@ function LivePreviewControls($$anchor, $$props) {
                   !$$props.panel.liveReady;
                 set_text(text_3, $0);
               },
-              [() => get(t)("Resume scheduling")],
+              [() => get(t)("resume_scheduling")],
             );
             delegated("click", button_3, () =>
               $$props.panel.resumeScheduling(),
@@ -12862,8 +13278,8 @@ function LivePreviewControls($$anchor, $$props) {
             set_text(text_4, $1);
           },
           [
-            () => get(t)(get(session) ? "Run again" : "Start live preview"),
-            () => get(t)("Refresh Preview"),
+            () => get(t)(get(session) ? "run_again" : "start_live_preview"),
+            () => get(t)("refresh_preview"),
           ],
         );
         delegated("click", button_2, () => $$props.panel.startLivePreview());
@@ -12880,7 +13296,7 @@ function LivePreviewControls($$anchor, $$props) {
     reset(div);
     template_effect(
       ($0) => set_attribute2(div, "aria-label", $0),
-      [() => get(t)("Live preview controls")],
+      [() => get(t)("live_preview_controls")],
     );
     append($$anchor2, div);
   };
@@ -12947,7 +13363,7 @@ function LivePreviewControls($$anchor, $$props) {
           template_effect(
             ($0, $1) => set_text(text_10, `${$0 ?? ""}: ${$1 ?? ""}`),
             [
-              () => get(t)("Simulated time"),
+              () => get(t)("simulated_time"),
               () =>
                 stamp(
                   get(session).simulated_time,
@@ -12970,7 +13386,7 @@ function LivePreviewControls($$anchor, $$props) {
           var text_11 = only_child(p_4);
           template_effect(
             ($0, $1) => set_text(text_11, `${$0 ?? ""}: ${$1 ?? ""}`),
-            [() => get(t)("Last result"), () => get(t)(get(lastResult))],
+            [() => get(t)("last_result"), () => get(t)(get(lastResult))],
           );
           append($$anchor3, p_4);
         };
@@ -12998,12 +13414,7 @@ function LivePreviewControls($$anchor, $$props) {
           var text_13 = only_child(p_6, true);
           template_effect(
             ($0) => set_text(text_13, $0),
-            [
-              () =>
-                get(t)(
-                  "This session uses an earlier program revision. Its actions are frozen.",
-                ),
-            ],
+            [() => get(t)("live_preview_revision_hint")],
           );
           append($$anchor3, p_6);
         };
@@ -13018,12 +13429,7 @@ function LivePreviewControls($$anchor, $$props) {
           var text_14 = only_child(p_7, true);
           template_effect(
             ($0) => set_text(text_14, $0),
-            [
-              () =>
-                get(t)(
-                  "Only the account that started this session can advance. You can stop it.",
-                ),
-            ],
+            [() => get(t)("live_preview_owner_hint")],
           );
           append($$anchor3, p_7);
         };
@@ -13057,7 +13463,7 @@ function LivePreviewControls($$anchor, $$props) {
                     ($0) => set_text(text_17, `\xB7 ${$0 ?? ""}`),
                     [
                       () =>
-                        get(t)("Tick {tick} of {count}")
+                        get(t)("tick_progress")
                           .replace("{tick}", () => String(get(call).tick))
                           .replace("{count}", () =>
                             String(get(call).tick_count),
@@ -13088,7 +13494,7 @@ function LivePreviewControls($$anchor, $$props) {
                 text_15,
                 `${$0 ?? ""}: ${get(session).next_group.title ?? ""}`,
               ),
-            [() => get(t)("Next event")],
+            [() => get(t)("next_event")],
           );
           append($$anchor3, fragment_5);
         };
@@ -13125,7 +13531,7 @@ function LivePreviewControls($$anchor, $$props) {
         [
           () => get(t)(liveSessionStatus(get(session))),
           () =>
-            get(t)("{done} of {total} events")
+            get(t)("live_preview_progress")
               .replace("{done}", () => String(get(session).cursor))
               .replace("{total}", () => String(get(session).total)),
         ],
@@ -13137,12 +13543,7 @@ function LivePreviewControls($$anchor, $$props) {
       var text_19 = only_child(p_11, true);
       template_effect(
         ($0) => set_text(text_19, $0),
-        [
-          () =>
-            get(t)(
-              "Starting prepares the session. Devices run only when you press Next event.",
-            ),
-        ],
+        [() => get(t)("live_preview_start_hint")],
       );
       append($$anchor2, p_11);
     };
@@ -13158,7 +13559,7 @@ function LivePreviewControls($$anchor, $$props) {
       var text_20 = only_child(p_12, true);
       template_effect(
         ($0) => set_text(text_20, $0),
-        [() => get(t)("Recovering live preview\u2026")],
+        [() => get(t)("recovering_live_preview")],
       );
       append($$anchor2, p_12);
     };
@@ -13184,14 +13585,14 @@ function LivePreviewControls($$anchor, $$props) {
       set_text(text_7, $3);
     },
     [
-      () => get(t)("Live preview"),
-      () => get(t)("Live preview"),
-      () => get(t)("Controls real devices"),
+      () => get(t)("live_preview"),
+      () => get(t)("live_preview"),
+      () => get(t)("controls_real_devices"),
       () =>
         get(t)(
           get(session)
-            ? "Scheduling stays paused until you choose Resume scheduling."
-            : "Normal scheduling pauses until you choose Resume scheduling. Each press runs one event immediately, even with management disabled or dry run selected.",
+            ? "live_preview_paused_hint"
+            : "live_preview_controls_hint",
         ),
     ],
   );
@@ -13225,7 +13626,7 @@ function PreviewView($$anchor, $$props) {
         var text_1 = only_child(span, true);
         template_effect(
           ($0) => set_text(text_1, $0),
-          [() => get(t)("Loading schedule\u2026")],
+          [() => get(t)("loading_schedule")],
         );
         append($$anchor3, span);
       };
@@ -13237,14 +13638,14 @@ function PreviewView($$anchor, $$props) {
     var ha_icon_button = child(div_1);
     template_effect(
       ($0) => set_custom_element_data(ha_icon_button, "title", $0),
-      [() => get(t)("Previous day")],
+      [() => get(t)("previous_day")],
     );
     action(
       ha_icon_button,
       ($$node, $$action_arg) => properties?.($$node, $$action_arg),
       () => ({
         path: previousIcon,
-        label: get(t)("Previous day"),
+        label: get(t)("previous_day"),
         disabled:
           $$props.panel.busy ||
           $$props.panel.liveRunning ||
@@ -13256,14 +13657,14 @@ function PreviewView($$anchor, $$props) {
     var ha_icon_button_1 = sibling(button, 2);
     template_effect(
       ($0) => set_custom_element_data(ha_icon_button_1, "title", $0),
-      [() => get(t)("Next day")],
+      [() => get(t)("next_day")],
     );
     action(
       ha_icon_button_1,
       ($$node, $$action_arg) => properties?.($$node, $$action_arg),
       () => ({
         path: nextIcon,
-        label: get(t)("Next day"),
+        label: get(t)("next_day"),
         disabled:
           $$props.panel.busy ||
           $$props.panel.liveRunning ||
@@ -13291,8 +13692,8 @@ function PreviewView($$anchor, $$props) {
             $$props.panel._hass.locale,
             get(t),
           ),
-        () => get(t)("Schedule day"),
-        () => get(t)("Today"),
+        () => get(t)("schedule_day"),
+        () => get(t)("today"),
       ],
     );
     delegated("click", ha_icon_button, () => $$props.panel.movePreviewDay(-1));
@@ -13447,15 +13848,15 @@ function UnsavedStepDialog($$anchor, $$props) {
       set_text(text_3, $3);
     },
     [
-      () => get(t)("Unsaved changes"),
+      () => get(t)("unsaved_changes"),
       () =>
         get(t)(
           $$props.panel.randomEditor
-            ? "This random event has unsaved changes. Discard them and continue?"
-            : "This step has unsaved changes. Discard them and continue?",
+            ? "random_unsaved_confirm"
+            : "step_unsaved_confirm",
         ),
-      () => get(t)("Keep editing"),
-      () => get(t)("Discard changes"),
+      () => get(t)("keep_editing"),
+      () => get(t)("discard_changes"),
     ],
   );
   delegated("click", button, () => $$props.panel.cancelStepExit());
@@ -13626,9 +14027,7 @@ async function deleteRandom(panel) {
   }
   const candidate = copy(panel.draft);
   if (randomReferences(candidate, editor.id).length > 0) {
-    panel.error = panel.t(
-      "Other random events depend on this window. Change their starts before deleting.",
-    );
+    panel.error = panel.t("random_dependents_error");
     panel.flush();
     return;
   }
@@ -13695,8 +14094,8 @@ function DeleteRandomDialog($$anchor, $$props) {
           set_text(text_4, $1);
         },
         [
-          () => $$props.panel.t("Used by"),
-          () => $$props.panel.t("Change those relationships before deleting."),
+          () => $$props.panel.t("used_by"),
+          () => $$props.panel.t("delete_dependents_hint"),
         ],
       );
       append($$anchor2, fragment);
@@ -13728,13 +14127,10 @@ function DeleteRandomDialog($$anchor, $$props) {
       set_text(text_6, $3);
     },
     [
-      () => $$props.panel.t("Delete random event?"),
-      () =>
-        $$props.panel.t(
-          "This removes the random event and all its future occurrences.",
-        ),
-      () => $$props.panel.t("Cancel"),
-      () => $$props.panel.t("Delete random event"),
+      () => $$props.panel.t("delete_random_event_confirm"),
+      () => $$props.panel.t("delete_random_event_hint"),
+      () => $$props.panel.t("cancel"),
+      () => $$props.panel.t("delete_random_event"),
     ],
   );
   event("close", dialog_1, function (...$$args) {
@@ -13778,21 +14174,21 @@ function AdvancedRandomSettings($$anchor, $$props) {
   );
   let dialog;
   const presets = [
-    ["Every day", days],
-    ["Weekdays", days.slice(0, 5)],
-    ["Weekends", days.slice(5)],
+    ["every_day_label", days],
+    ["weekdays", days.slice(0, 5)],
+    ["weekends", days.slice(5)],
   ];
   const weekdays = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
   ];
   let dayError = user_derived(() =>
-    get(selectedDays).length > 0 ? void 0 : get(t)("Choose at least one day."),
+    get(selectedDays).length > 0 ? void 0 : get(t)("days_required_error"),
   );
   onMount(() => {
     dialog.showModal();
@@ -13895,6 +14291,9 @@ function AdvancedRandomSettings($$anchor, $$props) {
   {
     let $0 = user_derived(() => (get(dayError) ? { days: get(dayError) } : {}));
     FieldError(node, {
+      get t() {
+        return get(t);
+      },
       key: "days",
       get errors() {
         return get($0);
@@ -13925,7 +14324,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
       });
       template_effect(
         ($0) => set_text(text_5, $0),
-        [() => get(t)("Start action")],
+        [() => get(t)("start_action")],
       );
       append($$anchor2, fragment);
     };
@@ -13957,7 +14356,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
       });
       template_effect(
         ($0) => set_text(text_6, $0),
-        [() => get(t)("End action")],
+        [() => get(t)("end_action")],
       );
       append($$anchor2, fragment_1);
     };
@@ -13997,12 +14396,12 @@ function AdvancedRandomSettings($$anchor, $$props) {
       set_text(text_9, $5);
     },
     [
-      () => get(t)("Advanced settings"),
-      () => get(t)("Choose which days this random event should run."),
-      () => get(t)("Run on"),
-      () => get(t)("Apply these settings, then save the random event."),
-      () => get(t)("Cancel"),
-      () => get(t)("Apply"),
+      () => get(t)("advanced_settings"),
+      () => get(t)("random_days_hint"),
+      () => get(t)("run_on"),
+      () => get(t)("random_settings_hint"),
+      () => get(t)("cancel"),
+      () => get(t)("apply"),
     ],
   );
   event("close", dialog_1, function (...$$args) {
@@ -14116,7 +14515,7 @@ function RandomActions($$anchor, $$props) {
           button_2.disabled = $$props.panel.busy || $$props.panel.stale;
           set_text(text_1, $0);
         },
-        [() => $$props.panel.t("Delete random event")],
+        [() => $$props.panel.t("delete_random_event")],
       );
       delegated("click", button_2, () => {
         closeMenu(false);
@@ -14179,10 +14578,10 @@ function RandomActions($$anchor, $$props) {
       set_text(text2, $3);
     },
     [
-      () => $$props.panel.t("Random event actions"),
-      () => $$props.panel.t("Random event actions"),
-      () => $$props.panel.t("Random event actions"),
-      () => $$props.panel.t(context().form.enabled ? "Disable" : "Enable"),
+      () => $$props.panel.t("random_event_actions"),
+      () => $$props.panel.t("random_event_actions"),
+      () => $$props.panel.t("random_event_actions"),
+      () => $$props.panel.t(context().form.enabled ? "disable" : "enable"),
     ],
   );
   delegated("click", button, () => (get(menuOpen) ? closeMenu() : openMenu()));
@@ -14208,13 +14607,7 @@ function RandomActions($$anchor, $$props) {
 delegate(["click", "keydown"]);
 
 // custom_components/occupied/frontend/random-explanation.ts
-function randomExplanation(
-  form,
-  program,
-  catalog,
-  t = (text2) => text2,
-  locale,
-) {
+function randomExplanation(form, program, catalog, t = translator(), locale) {
   const say = (text2, values = {}) => {
     let message = t(text2);
     for (const [key2, value] of Object.entries(values)) {
@@ -14236,14 +14629,14 @@ function randomExplanation(
     catalog.time_sources,
     {
       includeHints: false,
-      subject: "Window starts",
+      subject: "window_starts",
       days: form.days,
       locale,
     },
   );
   let end = timingExplanation(form.end, entries, t, catalog.time_sources, {
     includeHints: false,
-    subject: "Window ends",
+    subject: "window_ends",
     locale,
   });
   let windowSeconds;
@@ -14268,7 +14661,7 @@ function randomExplanation(
     if (Number.isFinite(difference)) {
       windowSeconds = difference < 0 ? difference + 86400 : difference;
       if (difference < 0) {
-        end += ` ${t("the next day")}`;
+        end += ` ${t("the_next_day")}`;
       }
     }
   }
@@ -14287,7 +14680,7 @@ function randomExplanation(
     Number.isFinite(minDuration) &&
     minDuration > windowSeconds;
   const sentences = [
-    ...(form.enabled ? [] : [t("This random event is disabled.")]),
+    ...(form.enabled ? [] : [t("random_disabled_hint")]),
     `${start}.`,
     `${end}.`,
   ];
@@ -14303,46 +14696,33 @@ function randomExplanation(
     maximum >= minimum;
   if (validCounts && maximum === 0) {
     sentences.push(
-      t("No events run because the event count is zero."),
-      t("Dependent random events also skip this window."),
+      t("random_zero_count_hint"),
+      t("random_dependents_skip_hint"),
     );
     return sentences.join(" ");
   }
   if (cannotFit) {
-    sentences.push(
-      t(
-        "No events can run because the minimum duration is longer than the window.",
-      ),
-    );
+    sentences.push(t("random_duration_exceeds_window"));
   } else if (!validCounts) {
-    sentences.push(
-      t("Choose valid event counts to describe how often events run."),
-    );
+    sentences.push(t("random_counts_prompt"));
   } else if (minimum === maximum) {
     sentences.push(
       minimum === 1
-        ? t("One event starts at a random time during each window.")
-        : say("{count} events start at random times during each window.", {
+        ? t("random_single_event_summary")
+        : say("random_count_summary", {
             count: minimum,
           }),
     );
   } else {
     sentences.push(
-      say(
-        "Between {min} and {max} events start at random times during each window.",
-        {
-          min: minimum,
-          max: maximum,
-        },
-      ),
+      say("random_count_range_summary", {
+        min: minimum,
+        max: maximum,
+      }),
     );
   }
   if (validCounts && minimum === 0) {
-    sentences.push(
-      t(
-        "A window may have no events; dependent random events skip that window.",
-      ),
-    );
+    sentences.push(t("random_empty_window_hint"));
   }
   const duration = (seconds) => durationLabel(seconds, t);
   if (
@@ -14352,11 +14732,9 @@ function randomExplanation(
     maxDuration < minDuration ||
     maxDuration > 604800
   ) {
-    sentences.push(
-      t("Choose valid durations to describe how long each event lasts."),
-    );
+    sentences.push(t("random_durations_prompt"));
   } else if (windowSeconds !== void 0 && minDuration > windowSeconds) {
-    sentences.push(t("Reduce the minimum duration or extend the window."));
+    sentences.push(t("random_duration_fit_hint"));
   } else {
     const longest =
       windowSeconds === void 0
@@ -14364,10 +14742,10 @@ function randomExplanation(
         : Math.min(maxDuration, windowSeconds);
     sentences.push(
       minDuration === longest
-        ? say("Each event lasts {duration}.", {
+        ? say("random_duration_summary", {
             duration: duration(minDuration),
           })
-        : say("Each event lasts between {min} and {max}.", {
+        : say("random_duration_range_summary", {
             min: duration(minDuration),
             max: duration(longest),
           }),
@@ -14375,7 +14753,7 @@ function randomExplanation(
   }
   const action2 = (selected) => {
     if (selected.kind === "custom") {
-      return t("run the Custom YAML actions in order");
+      return t("custom_yaml_summary");
     }
     const names = [...new Set(selected.entities)].map((id) =>
       entityName(catalog, id),
@@ -14387,20 +14765,18 @@ function randomExplanation(
     const entities =
       names.length > 0 ? `${names.join(", ")} ${t("and")} ${last}` : last;
     if (selected.kind === "scene") {
-      return say("activate {entities}", { entities });
+      return say("action_activate_summary", { entities });
     }
     if (selected.kind === "cover") {
       const descriptions = {
-        "cover.open_cover": "open {entities}",
-        "cover.close_cover": "close {entities}",
-        "cover.stop_cover": "stop {entities}",
-        "cover.set_cover_position":
-          "set the position of {entities} to {position}%",
-        "cover.open_cover_tilt": "open the tilt of {entities}",
-        "cover.close_cover_tilt": "close the tilt of {entities}",
-        "cover.stop_cover_tilt": "stop the tilt of {entities}",
-        "cover.set_cover_tilt_position":
-          "set the tilt of {entities} to {position}%",
+        "cover.open_cover": "action_open_summary",
+        "cover.close_cover": "action_close_summary",
+        "cover.stop_cover": "action_stop_summary",
+        "cover.set_cover_position": "action_position_summary",
+        "cover.open_cover_tilt": "action_open_tilt_summary",
+        "cover.close_cover_tilt": "action_close_tilt_summary",
+        "cover.stop_cover_tilt": "action_stop_tilt_summary",
+        "cover.set_cover_tilt_position": "action_tilt_position_summary",
       };
       const description = descriptions[selected.service];
       if (!description) {
@@ -14411,7 +14787,7 @@ function randomExplanation(
           ? selected.position
           : selected.tiltPosition;
       if (
-        description.includes("{position}") &&
+        t(description).includes("{position}") &&
         (!position.trim() ||
           !Number.isSafeInteger(Number(position)) ||
           Number(position) < 0 ||
@@ -14423,7 +14799,7 @@ function randomExplanation(
     }
     if (selected.kind === "service") {
       return selected.service.trim()
-        ? say("run {service} for {entities}", {
+        ? say("action_service_summary", {
             service: selected.service.trim(),
             entities,
           })
@@ -14431,8 +14807,8 @@ function randomExplanation(
     }
     return say(
       selected.action === "turn_off"
-        ? "turn off {entities}"
-        : "turn on {entities}",
+        ? "action_turn_off_summary"
+        : "action_turn_on_summary",
       { entities },
     );
   };
@@ -14441,22 +14817,16 @@ function randomExplanation(
     form.sameEntities ? { ...form.off, entities: form.on.entities } : form.off,
   );
   if (on2 && !cannotFit) {
-    sentences.push(say("When each event starts, {action}.", { action: on2 }));
+    sentences.push(say("random_start_action_summary", { action: on2 }));
   }
   if (off && !cannotFit) {
-    sentences.push(say("When each event ends, {action}.", { action: off }));
+    sentences.push(say("random_end_action_summary", { action: off }));
   }
   const conclusion =
     validCounts && maximum === 1
-      ? "The event finishes before the window closes."
-      : "Events may overlap, but all finish before the window closes.";
-  sentences.push(
-    t(
-      cannotFit
-        ? "Duration limits take priority over the event count."
-        : conclusion,
-    ),
-  );
+      ? "random_single_finish_hint"
+      : "random_overlap_hint";
+  sentences.push(t(cannotFit ? "random_duration_priority_hint" : conclusion));
   return sentences.join(" ");
 }
 
@@ -14512,7 +14882,7 @@ function RandomEventEditor($$anchor, $$props) {
   {
     let $0 = user_derived(() => ({
       hideLabel: true,
-      placeholder: get(t)("Optional title"),
+      placeholder: get(t)("optional_title"),
     }));
     EditorField(node, {
       get panel() {
@@ -14522,7 +14892,7 @@ function RandomEventEditor($$anchor, $$props) {
         return get(context);
       },
       key: "name",
-      label: "Random event name",
+      label: "random_event_name",
       get value() {
         return get(form).name;
       },
@@ -14546,11 +14916,11 @@ function RandomEventEditor($$anchor, $$props) {
       get context() {
         return get($0);
       },
-      heading: "Window starts",
-      clockLabel: "Window start",
-      windowEndLabel: "Latest window start (optional)",
-      addWindowEndLabel: "Randomize window start",
-      explanationSubject: "Window starts",
+      heading: "window_starts",
+      clockLabel: "window_start",
+      windowEndLabel: "latest_window_start_optional",
+      addWindowEndLabel: "randomize_window_start",
+      explanationSubject: "window_starts",
     });
   }
   var node_2 = sibling(node_1, 2);
@@ -14563,14 +14933,14 @@ function RandomEventEditor($$anchor, $$props) {
       get context() {
         return get($0);
       },
-      heading: "Window ends",
-      clockLabel: "Window end",
-      windowEndLabel: "Latest window end (optional)",
-      addWindowEndLabel: "Randomize window end",
-      explanationSubject: "Window ends",
+      heading: "window_ends",
+      clockLabel: "window_end",
+      windowEndLabel: "latest_window_end_optional",
+      addWindowEndLabel: "randomize_window_end",
+      explanationSubject: "window_ends",
       modes: [
-        ["absolute", "Absolute time"],
-        ["duration", "Duration"],
+        ["absolute", "absolute_time"],
+        ["duration", "duration"],
       ],
     });
   }
@@ -14587,6 +14957,9 @@ function RandomEventEditor($$anchor, $$props) {
   {
     let $0 = user_derived(() => ({ ...get(editor).errors }));
     FieldError(node_3, {
+      get t() {
+        return get(t);
+      },
       key: "days",
       get errors() {
         return get($0);
@@ -14606,7 +14979,7 @@ function RandomEventEditor($$anchor, $$props) {
       return get(context);
     },
     key: "minCount",
-    label: "Minimum events per window",
+    label: "minimum_events_per_window",
     get value() {
       return get(form).minCount;
     },
@@ -14628,7 +15001,7 @@ function RandomEventEditor($$anchor, $$props) {
           button_1.disabled = $$props.panel.busy;
           set_text(text_3, $0);
         },
-        [() => get(t)("Add maximum events")],
+        [() => get(t)("add_maximum_events")],
       );
       delegated("click", button_1, () => {
         set2(showMaxCount, true);
@@ -14655,7 +15028,7 @@ function RandomEventEditor($$anchor, $$props) {
               button_2.disabled = $$props.panel.busy;
               set_text(text_4, $0);
             },
-            [() => get(t)("Remove maximum events")],
+            [() => get(t)("remove_maximum_events")],
           );
           delegated("click", button_2, () => {
             get(form).maxCount = get(form).minCount;
@@ -14673,7 +15046,7 @@ function RandomEventEditor($$anchor, $$props) {
             return get(context);
           },
           key: "maxCount",
-          label: "Maximum events per window",
+          label: "maximum_events_per_window",
           get value() {
             return get(form).maxCount;
           },
@@ -14698,7 +15071,7 @@ function RandomEventEditor($$anchor, $$props) {
       return get(context);
     },
     key: "minDuration",
-    label: "Minimum duration",
+    label: "minimum_duration",
     get value() {
       return get(form).minDuration;
     },
@@ -14714,7 +15087,7 @@ function RandomEventEditor($$anchor, $$props) {
       return get(context);
     },
     key: "maxDuration",
-    label: "Maximum duration",
+    label: "maximum_duration",
     get value() {
       return get(form).maxDuration;
     },
@@ -14737,9 +15110,9 @@ function RandomEventEditor($$anchor, $$props) {
       get context() {
         return get($0);
       },
-      heading: "When event starts",
-      kindLabel: "Start action",
-      entityLabel: "Start entities",
+      heading: "when_event_starts",
+      kindLabel: "start_action",
+      entityLabel: "start_entities",
     });
   }
   var div_6 = sibling(node_9, 2);
@@ -14753,9 +15126,9 @@ function RandomEventEditor($$anchor, $$props) {
       get context() {
         return get($0);
       },
-      heading: "When event ends",
-      kindLabel: "End action",
-      entityLabel: "End entities",
+      heading: "when_event_ends",
+      kindLabel: "end_action",
+      entityLabel: "end_entities",
       get hideEntities() {
         return get(form).sameEntities;
       },
@@ -14774,7 +15147,7 @@ function RandomEventEditor($$anchor, $$props) {
           set_checked(input, get(form).sameEntities);
           set_text(text_7, $0);
         },
-        [() => get(t)("Use the same entities")],
+        [() => get(t)("use_the_same_entities")],
       );
       delegated("change", input, (event2) => {
         get(form).sameEntities = event2.currentTarget.checked;
@@ -14849,12 +15222,9 @@ function RandomEventEditor($$anchor, $$props) {
       set_text(text_9, $6);
     },
     [
-      () =>
-        get(t)(
-          "Choose a window, a duration, and actions for the start and end of each occurrence.",
-        ),
-      () => get(t)("Advanced settings"),
-      () => get(t)("Frequency and duration"),
+      () => get(t)("random_create_hint"),
+      () => get(t)("advanced_settings"),
+      () => get(t)("frequency_and_duration"),
       () =>
         randomExplanation(
           get(form),
@@ -14863,13 +15233,13 @@ function RandomEventEditor($$anchor, $$props) {
           get(t),
           $$props.panel._hass.locale,
         ),
-      () => get(t)("Use durations like 5m, 30s, or 1h."),
-      () => get(t)("Cancel"),
+      () => get(t)("duration_hint"),
+      () => get(t)("cancel"),
       () =>
         get(t)(
           $$props.panel.document?.source === "file"
-            ? "Add to draft"
-            : "Save random event",
+            ? "add_to_draft"
+            : "save_random_event",
         ),
     ],
   );
@@ -14941,12 +15311,9 @@ function RandomView($$anchor, $$props) {
           set_text(text_2, $2);
         },
         [
-          () => get(t)("Random activity"),
-          () =>
-            get(t)(
-              "Run actions at random times within a window. Choose how often they run and how long each occurrence lasts.",
-            ),
-          () => get(t)("Create your first random event"),
+          () => get(t)("random_activity"),
+          () => get(t)("random_activity_hint"),
+          () => get(t)("create_your_first_random_event"),
         ],
       );
       delegated("click", button, () => openRandom($$props.panel));
@@ -14989,7 +15356,7 @@ function RandomView($$anchor, $$props) {
               var text_5 = only_child(span_2, true);
               template_effect(
                 ($0) => set_text(text_5, $0),
-                [() => get(t)("Disabled")],
+                [() => get(t)("disabled")],
               );
               append($$anchor4, span_2);
             };
@@ -15024,7 +15391,7 @@ function RandomView($$anchor, $$props) {
                       get(t),
                       $$props.panel.catalog.time_sources,
                       {
-                        subject: "Window ends",
+                        subject: "window_ends",
                         includeHints: false,
                         locale: $$props.panel._hass.locale,
                       },
@@ -15086,10 +15453,10 @@ function RandomView($$anchor, $$props) {
             [
               () =>
                 get(disabled)
-                  ? `${get(entry).name} \xB7 ${get(t)("Disabled")}`
+                  ? `${get(entry).name} \xB7 ${get(t)("disabled")}`
                   : get(entry).name,
               () => countSummary(get(entry).count),
-              () => get(t)("times per window"),
+              () => get(t)("times_per_window"),
               () =>
                 actionTargets(get(entry).on)
                   .map((id) => entityName($$props.panel.catalog, id))
@@ -15113,12 +15480,9 @@ function RandomView($$anchor, $$props) {
           set_text(text_8, $2);
         },
         [
-          () =>
-            get(t)(
-              "Run actions at random times within a window. Choose how often they run and how long each occurrence lasts.",
-            ),
-          () => get(t)("Random events"),
-          () => get(t)("Create random event"),
+          () => get(t)("random_activity_hint"),
+          () => get(t)("random_events"),
+          () => get(t)("create_random_event"),
         ],
       );
       delegated("click", button_2, () => openRandom($$props.panel));
@@ -15150,7 +15514,7 @@ var root_83 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_93 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
 var root_103 = from_html(`<p> </p> <button type="button"> </button>`, 1);
 var root_1110 = from_html(
-  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><header><div><!> <!> <!></div></header> <!> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav aria-label="Occupied"></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
+  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><header><div><!> <!> <!></div></header> <!> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
   3,
 );
 function App($$anchor, $$props) {
@@ -15169,7 +15533,7 @@ function App($$anchor, $$props) {
             button.disabled = get(panel).busy;
             set_text(text_1, $0);
           },
-          [() => get(t)("Reload saved program")],
+          [() => get(t)("reload_saved_program")],
         );
         delegated("click", button, () => get(panel).reloadSaved(true));
         append($$anchor3, button);
@@ -15263,10 +15627,10 @@ function App($$anchor, $$props) {
     primary = user_derived(() => get(state2).primary),
     issues = user_derived(() => get(state2).issues);
   const primaryTabs = [
-    ["steps", "Steps"],
-    ["random", "Random"],
-    ["preview", "Preview"],
-    ["settings", "Settings"],
+    ["steps", "steps"],
+    ["random", "random"],
+    ["preview", "preview"],
+    ["settings", "settings"],
   ];
   var fragment_1 = root_1110();
   var ha_top_app_bar_fixed = first_child(fragment_1);
@@ -15285,7 +15649,7 @@ function App($$anchor, $$props) {
       var text_4 = only_child(p_1, true);
       template_effect(
         ($0) => set_text(text_4, $0),
-        [() => get(t)("Loading controller\u2026")],
+        [() => get(t)("loading_controller")],
       );
       append($$anchor2, p_1);
     };
@@ -15297,7 +15661,7 @@ function App($$anchor, $$props) {
     };
     var d = user_derived(
       () =>
-        get(controllerName) !== "Occupied" &&
+        get(controllerName) !== en.occupied &&
         !/^Occupied [0-9a-f]{8}$/.test(get(controllerName)),
     );
     if_block(node_2, ($$render) => {
@@ -15333,7 +15697,7 @@ function App($$anchor, $$props) {
             [
               () =>
                 get(t)(
-                  get(instance).loaded ? get(instance).status : "Unloaded",
+                  get(instance).loaded ? get(instance).status : "unloaded",
                 ),
             ],
           );
@@ -15354,7 +15718,7 @@ function App($$anchor, $$props) {
               select_option(select, select_value));
           }
         },
-        [() => get(t)("Controller")],
+        [() => get(t)("controller")],
       );
       delegated("change", select, (event2) => {
         get(panel).selectInstance(event2.currentTarget.value);
@@ -15373,7 +15737,7 @@ function App($$anchor, $$props) {
       var text_8 = only_child(p_3, true);
       template_effect(
         ($0) => set_text(text_8, $0),
-        [() => get(t)("Managed file")],
+        [() => get(t)("managed_file")],
       );
       append($$anchor2, p_3);
     };
@@ -15401,9 +15765,9 @@ function App($$anchor, $$props) {
         ${get(overlap).name ?? ""}: ${$1 ?? ""}. ${$2 ?? ""}`,
           ),
         [
-          () => get(t)("Shared devices with"),
+          () => get(t)("shared_devices_with"),
           () => get(overlap).entities.join(", "),
-          () => get(t)("Actions and cleanup can interfere between instances."),
+          () => get(t)("instance_overlap_hint"),
         ],
       );
       append($$anchor2, p_4);
@@ -15453,7 +15817,7 @@ function App($$anchor, $$props) {
       var text_13 = only_child(button_3, true);
       template_effect(
         ($0) => set_text(text_13, $0),
-        [() => get(t)("Back to steps")],
+        [() => get(t)("back_to_steps")],
       );
       delegated("click", button_3, () => get(panel).navigate("steps"));
       append($$anchor2, button_3);
@@ -15499,11 +15863,8 @@ function App($$anchor, $$props) {
               set_text(text_15, $1);
             },
             [
-              () => errorMessage(error()),
-              () =>
-                get(t)(
-                  "This draft cannot be shown. Discard edits or import a corrected program from Settings.",
-                ),
+              () => get(t)(errorMessage(error())),
+              () => get(t)("draft_invalid_hint"),
             ],
           );
           append($$anchor3, fragment_5);
@@ -15524,11 +15885,8 @@ function App($$anchor, $$props) {
                   set_text(text_17, $1);
                 },
                 [
-                  () =>
-                    get(t)(
-                      "This instance is unavailable. Check Settings \u2192 Devices & services, then retry.",
-                    ),
-                  () => get(t)("Retry"),
+                  () => get(t)("instance_unavailable_hint"),
+                  () => get(t)("retry"),
                 ],
               );
               delegated("click", button_4, () => get(panel).retry());
@@ -15543,7 +15901,7 @@ function App($$anchor, $$props) {
                   var text_18 = only_child(button_5, true);
                   template_effect(
                     ($0) => set_text(text_18, $0),
-                    [() => get(t)("Retry")],
+                    [() => get(t)("retry")],
                   );
                   delegated("click", button_5, () => get(panel).retry());
                   append($$anchor5, button_5);
@@ -15659,12 +16017,16 @@ function App($$anchor, $$props) {
       if (get(panel).pendingStepExit) $$render(consequent_16);
     });
   }
-  template_effect(() => {
-    set_attribute2(div_2, "hidden", !get(notices));
-    set_text(text_10, get(notices));
-    set_attribute2(div_3, "hidden", !get(panel).error);
-    set_text(text_11, get(panel).error);
-  });
+  template_effect(
+    ($0) => {
+      set_attribute2(div_2, "hidden", !get(notices));
+      set_text(text_10, get(notices));
+      set_attribute2(div_3, "hidden", !get(panel).error);
+      set_text(text_11, get(panel).error);
+      set_attribute2(nav, "aria-label", $0);
+    },
+    [() => get(t)("occupied")],
+  );
   append($$anchor, fragment_1);
   pop();
   $$cleanup();
@@ -16213,9 +16575,7 @@ var OccupiedPanel = class extends HTMLElement {
   _canSwitchInstance() {
     return (
       !(this.dirty || this.yamlDirty || this.hasEditorChanges) ||
-      globalThis.confirm(
-        this.t("This instance has unsaved changes. Discard them and switch?"),
-      )
+      globalThis.confirm(this.t("instance_switch_confirm"))
     );
   }
   _resetInstance(entry) {
@@ -16431,11 +16791,7 @@ var OccupiedPanel = class extends HTMLElement {
       return;
     }
     if (this.yamlDirty) {
-      if (
-        !globalThis.confirm(
-          this.t("There are unsaved edits. Discard them and switch views?"),
-        )
-      ) {
+      if (!globalThis.confirm(this.t("view_switch_confirm"))) {
         return;
       }
       this.discardEdits(false);
@@ -16486,20 +16842,12 @@ var OccupiedPanel = class extends HTMLElement {
   }
   notices() {
     const t = this.t;
-    const programNotice = this.stale
-      ? t(
-          "The saved program changed. Your draft is preserved; reload the saved program before saving.",
-        )
-      : "";
+    const programNotice = this.stale ? t("draft_revision_conflict_hint") : "";
     return [
       programNotice,
-      this.document?.source === "file"
-        ? t(
-            "Managed file is authoritative. Export draft changes to your file, then reload.",
-          )
-        : "",
+      this.document?.source === "file" ? t("managed_file_export_hint") : "",
       this.document?.configuration_source?.status === "error"
-        ? t("File error: see Settings or Home Assistant Repairs")
+        ? t("managed_file_error")
         : "",
     ]
       .filter(Boolean)
@@ -16558,7 +16906,7 @@ var OccupiedPanel = class extends HTMLElement {
     }
   }
   fail(error) {
-    this.error = errorMessage(error);
+    this.error = this.t(errorMessage(error));
     this.flush();
   }
   attempt(action2) {
@@ -16599,9 +16947,7 @@ var OccupiedPanel = class extends HTMLElement {
     this.issues = result.issues || [];
     this.flush();
     if (result.valid === false && this.issues.length === 0) {
-      this.fail(
-        this.t("Preview contains infeasible dates. Review timeline issues."),
-      );
+      this.fail(this.t("preview_infeasible_error"));
     }
   }
   /**
@@ -16631,11 +16977,7 @@ var OccupiedPanel = class extends HTMLElement {
     const path = issue.model_path || [],
       prefix = editor.candidatePath || [];
     if (prefix.length === 0 || prefix.some((key2, i) => path[i] !== key2)) {
-      this.fail(
-        this.t(
-          "Finish or cancel this step to edit other configuration issues.",
-        ),
-      );
+      this.fail(this.t("step_edit_in_progress_hint"));
       return;
     }
     const field = this.randomEditor
@@ -16677,11 +17019,7 @@ var OccupiedPanel = class extends HTMLElement {
         return;
       }
       if (version !== this.version) {
-        this.fail(
-          this.t(
-            "Your changes are kept. Save again to include the latest edits.",
-          ),
-        );
+        this.fail(this.t("save_newer_edits_hint"));
         return;
       }
       this.showIssues(validation);
@@ -16718,9 +17056,7 @@ var OccupiedPanel = class extends HTMLElement {
           this.stepEditor.original = submittedForm;
         }
         if (version !== this.version) {
-          this.fail(
-            this.t("Earlier changes saved. Your newer edits are still open."),
-          );
+          this.fail(this.t("saved_newer_edits_hint"));
           return;
         }
         this.stepEditor = null;

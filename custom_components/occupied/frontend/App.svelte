@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { en } from "./translations.js";
   import type { OccupiedPanel } from "./occupied-panel.js";
   import type { Issue, Tab } from "./types.js";
   import { errorMessage } from "./util.js";
@@ -60,10 +61,10 @@
   let { t, notices, primary, issues } = $derived(state);
 
   const primaryTabs: [Tab, string][] = [
-    ["steps", "Steps"],
-    ["random", "Random"],
-    ["preview", "Preview"],
-    ["settings", "Settings"],
+    ["steps", "steps"],
+    ["random", "random"],
+    ["preview", "preview"],
+    ["settings", "settings"],
   ];
 </script>
 
@@ -79,7 +80,7 @@
         disabled={panel.busy}
         onclick={() => panel.reloadSaved(true)}
       >
-        {t("Reload saved program")}
+        {t("reload_saved_program")}
       </button>
     {/if}
   </div>
@@ -107,12 +108,12 @@
     <header>
       <div>
         {#if !controllerName}
-          <p id="house">{t("Loading controller…")}</p>
-        {:else if controllerName !== "Occupied" && !/^Occupied [0-9a-f]{8}$/.test(controllerName)}
+          <p id="house">{t("loading_controller")}</p>
+        {:else if controllerName !== en.occupied && !/^Occupied [0-9a-f]{8}$/.test(controllerName)}
           <p id="house">{controllerName}</p>
         {/if}
         {#if panel.instances.length > 1}
-          <label for="instance-select">{t("Controller")}</label>
+          <label for="instance-select">{t("controller")}</label>
           <select
             id="instance-select"
             value={panel.selectedEntry || ""}
@@ -125,7 +126,7 @@
             {#each panel.instances as instance (instance.config_entry_id)}
               <option value={instance.config_entry_id}>
                 {instance.name} · {t(
-                  instance.loaded ? instance.status : "Unloaded",
+                  instance.loaded ? instance.status : "unloaded",
                 )}
               </option>
             {/each}
@@ -133,16 +134,16 @@
         {/if}
         {#if panel.selectedInstance?.source === "file"}
           <p class="hint">
-            {t("Managed file")}
+            {t("managed_file")}
           </p>
         {/if}
       </div>
     </header>
     {#each panel.selectedInstance?.overlaps || [] as overlap (overlap.config_entry_id)}
       <p class="banner" role="status">
-        {t("Shared devices with")}
+        {t("shared_devices_with")}
         {overlap.name}: {overlap.entities.join(", ")}. {t(
-          "Actions and cleanup can interfere between instances.",
+          "instance_overlap_hint",
         )}
       </p>
     {/each}
@@ -153,7 +154,7 @@
     <div id="error" class="error" role="alert" hidden={!panel.error}>
       {panel.error}
     </div>
-    <nav aria-label="Occupied">
+    <nav aria-label={t("occupied")}>
       {#each primaryTabs as [id, label] (id)}
         <button
           type="button"
@@ -173,7 +174,7 @@
           class="text-button"
           onclick={() => panel.navigate("steps")}
         >
-          {t("Back to steps")}
+          {t("back_to_steps")}
         </button>
       {/if}
     </div>
@@ -186,26 +187,22 @@
       {#key `${panel.selectedEntry}:${panel.tab}`}
         <svelte:boundary>
           {#snippet failed(error)}
-            <p class="error">{errorMessage(error)}</p>
+            <p class="error">{t(errorMessage(error))}</p>
             <p class="error">
-              {t(
-                "This draft cannot be shown. Discard edits or import a corrected program from Settings.",
-              )}
+              {t("draft_invalid_hint")}
             </p>
           {/snippet}
           {#if panel.selectedEntry && !panel.selectedInstance?.loaded}
             <p>
-              {t(
-                "This instance is unavailable. Check Settings → Devices & services, then retry.",
-              )}
+              {t("instance_unavailable_hint")}
             </p>
             <button type="button" onclick={() => panel.retry()}
-              >{t("Retry")}</button
+              >{t("retry")}</button
             >
           {:else if panel._loading || !panel.draft}
             {#if panel.error && !panel._loading}
               <button type="button" onclick={() => panel.retry()}
-                >{t("Retry")}</button
+                >{t("retry")}</button
               >{/if}
           {:else if panel.stepEditor && !panel.stepEditor.existing}
             <StepEditor {panel} {revision} />

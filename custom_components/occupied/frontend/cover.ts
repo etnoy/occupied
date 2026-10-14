@@ -1,14 +1,14 @@
 import type { Action, JsonValue } from "./types.js";
 
 export const coverActions: [string, string][] = [
-  ["cover.open_cover", "Open cover"],
-  ["cover.close_cover", "Close cover"],
-  ["cover.stop_cover", "Stop cover"],
-  ["cover.set_cover_position", "Set cover position"],
-  ["cover.open_cover_tilt", "Open tilt"],
-  ["cover.close_cover_tilt", "Close tilt"],
-  ["cover.stop_cover_tilt", "Stop tilt"],
-  ["cover.set_cover_tilt_position", "Set tilt position"],
+  ["cover.open_cover", "open_cover"],
+  ["cover.close_cover", "close_cover"],
+  ["cover.stop_cover", "stop_cover"],
+  ["cover.set_cover_position", "set_cover_position"],
+  ["cover.open_cover_tilt", "open_tilt"],
+  ["cover.close_cover_tilt", "close_tilt"],
+  ["cover.stop_cover_tilt", "stop_tilt"],
+  ["cover.set_cover_tilt_position", "set_tilt_position"],
 ];
 
 export function coverField(action: string) {

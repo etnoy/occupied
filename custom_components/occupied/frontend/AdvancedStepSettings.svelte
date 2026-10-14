@@ -35,18 +35,18 @@
   let dialog: HTMLDialogElement;
 
   const presets: [string, string[]][] = [
-    ["Every day", days],
-    ["Weekdays", days.slice(0, 5)],
-    ["Weekends", days.slice(5)],
+    ["every_day_label", days],
+    ["weekdays", days.slice(0, 5)],
+    ["weekends", days.slice(5)],
   ];
   const weekdayNames = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
   ];
 
   let dayError = $derived.by(() => {
@@ -90,16 +90,16 @@
   aria-describedby="step-weekdays-description"
   onclose={onClose}
 >
-  <h2 id="step-advanced-title">{t("Advanced settings")}</h2>
+  <h2 id="step-advanced-title">{t("advanced_settings")}</h2>
   <p id="step-weekdays-description" class="hint">
-    {t("Choose which days this step should run.")}
+    {t("step_days_hint")}
   </p>
   <fieldset
     class="step-weekdays"
     aria-describedby={dayError ? "step-weekdays-error" : undefined}
     disabled={panel.busy}
   >
-    <legend>{t("Run on")}</legend>
+    <legend>{t("run_on")}</legend>
     <div class="step-weekday-presets">
       {#each presets as [label, selection] (label)}
         <button
@@ -142,16 +142,16 @@
       disabled={panel.busy}
     />
   {/if}
-  <p class="hint">{t("Apply these settings, then save the step.")}</p>
+  <p class="hint">{t("step_settings_hint")}</p>
   <div class="step-delete-actions">
-    <button type="button" onclick={() => dialog.close()}>{t("Cancel")}</button>
+    <button type="button" onclick={() => dialog.close()}>{t("cancel")}</button>
     <button
       type="button"
       class="primary"
       disabled={panel.busy || !!dayError || !!staggerError}
       onclick={apply}
     >
-      {t("Apply")}
+      {t("apply")}
     </button>
   </div>
 </dialog>

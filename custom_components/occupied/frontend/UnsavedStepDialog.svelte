@@ -20,12 +20,10 @@
     aria-labelledby="step-exit-title"
     aria-describedby="step-exit-description"
   >
-    <h2 id="step-exit-title">{t("Unsaved changes")}</h2>
+    <h2 id="step-exit-title">{t("unsaved_changes")}</h2>
     <p id="step-exit-description">
       {t(
-        panel.randomEditor
-          ? "This random event has unsaved changes. Discard them and continue?"
-          : "This step has unsaved changes. Discard them and continue?",
+        panel.randomEditor ? "random_unsaved_confirm" : "step_unsaved_confirm",
       )}
     </p>
     <div class="step-delete-actions">
@@ -34,14 +32,14 @@
         type="button"
         onclick={() => panel.cancelStepExit()}
       >
-        {t("Keep editing")}
+        {t("keep_editing")}
       </button>
       <button
         type="button"
         class="danger"
         onclick={() => panel.confirmStepExit()}
       >
-        {t("Discard changes")}
+        {t("discard_changes")}
       </button>
     </div>
   </dialog>

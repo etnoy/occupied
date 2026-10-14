@@ -7,7 +7,7 @@ export function staggerPeriodError(settings: Stagger): string | undefined {
 
   return Number.isFinite(seconds) && seconds >= 1 && seconds <= 1800
     ? undefined
-    : "Use a time window from 1s to 30m, for example 2m.";
+    : "stagger_period_error";
 }
 
 function customStaggerAction(form: ActionForm): Action | undefined {

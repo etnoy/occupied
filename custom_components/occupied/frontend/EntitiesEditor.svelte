@@ -9,7 +9,7 @@
   let {
     panel,
     context,
-    label = "Entities",
+    label = "entities_label",
   }: {
     panel: OccupiedPanel;
     context: ActionEditorContext;
@@ -68,12 +68,10 @@
       narrow: panel.hasAttribute("narrow"),
     }}
   ></ha-selector>
-  <FieldError key="entities" {fieldPrefix} errors={{ ...editor.errors }} />
+  <FieldError {t} key="entities" {fieldPrefix} errors={{ ...editor.errors }} />
   {#if form.kind === "entities" && form.entities.some((id) => !/^(light|switch)\./.test(id))}
     <p class="hint">
-      {t(
-        "This selection includes a custom entity. Select lights or switches for this step.",
-      )}
+      {t("custom_entity_hint")}
     </p>
   {/if}
 </div>

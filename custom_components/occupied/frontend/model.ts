@@ -79,9 +79,7 @@ export function references(program: Program, id: string): Path[] {
 export function removeStep(program: Program, path: Path) {
   const id = String(path[1]);
   if (references(program, id).length > 0) {
-    throw new Error(
-      "Steps or random events depend on this step. Change their timing first.",
-    );
+    throw new Error("step_dependents_error");
   }
   delete program.steps?.[id];
 }

@@ -100,8 +100,8 @@
     bind:this={trigger}
     type="button"
     class="icon-button"
-    aria-label={panel.t("Random event actions")}
-    title={panel.t("Random event actions")}
+    aria-label={panel.t("random_event_actions")}
+    title={panel.t("random_event_actions")}
     aria-haspopup="menu"
     aria-expanded={menuOpen}
     aria-controls={menuId}
@@ -130,7 +130,7 @@
     popover="auto"
     role="menu"
     tabindex="-1"
-    aria-label={panel.t("Random event actions")}
+    aria-label={panel.t("random_event_actions")}
     ontoggle={(event) => (menuOpen = event.newState === "open")}
     onkeydown={menuKeydown}
   >
@@ -145,7 +145,7 @@
         context.changed("enabled");
       }}
     >
-      {panel.t(context.form.enabled ? "Disable" : "Enable")}
+      {panel.t(context.form.enabled ? "disable" : "enable")}
     </button>
     {#if context.editor.existing}
       <div role="separator"></div>
@@ -160,7 +160,7 @@
           flushSync(() => (deleteOpen = true));
         }}
       >
-        {panel.t("Delete random event")}
+        {panel.t("delete_random_event")}
       </button>
     {/if}
   </div>

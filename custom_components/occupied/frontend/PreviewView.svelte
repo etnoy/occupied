@@ -71,16 +71,16 @@
       )}
     </h2>
     {#if showLoading && plan}
-      <span class="hint" role="status">{t("Loading schedule…")}</span>
+      <span class="hint" role="status">{t("loading_schedule")}</span>
     {/if}
-    <div class="day-navigation" role="group" aria-label={t("Schedule day")}>
+    <div class="day-navigation" role="group" aria-label={t("schedule_day")}>
       <!-- HA supplies a keyboard-accessible button inside its shadow root. -->
       <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <ha-icon-button
-        title={t("Previous day")}
+        title={t("previous_day")}
         use:properties={{
           path: previousIcon,
-          label: t("Previous day"),
+          label: t("previous_day"),
           disabled: panel.busy || panel.liveRunning || panel.liveBusy,
         }}
         onclick={() => panel.movePreviewDay(-1)}
@@ -93,15 +93,15 @@
           panel.liveBusy ||
           date === panel.document.simulation_date}
         onclick={() => panel.selectPreviewDate(panel.document.simulation_date)}
-        >{t("Today")}</button
+        >{t("today")}</button
       >
       <!-- HA supplies a keyboard-accessible button inside its shadow root. -->
       <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <ha-icon-button
-        title={t("Next day")}
+        title={t("next_day")}
         use:properties={{
           path: nextIcon,
-          label: t("Next day"),
+          label: t("next_day"),
           disabled: panel.busy || panel.liveRunning || panel.liveBusy,
         }}
         onclick={() => panel.movePreviewDay(1)}

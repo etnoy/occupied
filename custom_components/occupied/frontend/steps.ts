@@ -68,13 +68,13 @@ function showEntry(panel: OccupiedPanel, entry: StepEntry) {
 
 export function actionSummary(entry: StepEntry, t: Translate) {
   if (entry.actions || entry.action === "set_state") {
-    return `${t("Custom YAML")} · ${entry.actions?.length || 1} ${t("actions")}`;
+    return `${t("custom_yaml")} · ${entry.actions?.length || 1} ${t("actions")}`;
   }
   if (entry.action === "scene.turn_on") {
-    return t("Activate scene");
+    return t("activate_scene");
   }
   if (entry.action === "turn_on" || entry.action === "turn_off") {
-    return t(entry.action === "turn_off" ? "Turn off" : "Turn on");
+    return t(entry.action === "turn_off" ? "turn_off" : "turn_on");
   }
 
   return entry.action;

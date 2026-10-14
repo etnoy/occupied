@@ -34,13 +34,13 @@
     for (const choice of choices) {
       if (group !== choice.group) {
         group = choice.group;
-        items.push(t(group));
+        items.push(group);
       }
       items.push({
         id: choice.value,
-        primary: t(choice.name),
+        primary: choice.name,
         secondary: choice.entity_id,
-        group: t(choice.group),
+        group: choice.group,
       });
     }
 
@@ -50,9 +50,8 @@
   function valueRenderer(id: string) {
     const headline = document.createElement("span");
     headline.slot = "headline";
-    headline.textContent = t(
-      choices.find((choice) => choice.value === id)?.name || id,
-    );
+    headline.textContent =
+      choices.find((choice) => choice.value === id)?.name || id;
 
     return headline;
   }
@@ -78,17 +77,17 @@
   <ha-generic-picker
     id={`step-${fieldPrefix}anchor`}
     data-builder-field={`${fieldPrefix}anchor`}
-    aria-label={t("Relative to")}
+    aria-label={t("relative_to")}
     aria-invalid={error ? "true" : undefined}
     aria-describedby={error ? `step-error-${fieldPrefix}anchor` : undefined}
     tabindex="0"
     use:properties={{
       hass,
       value: value || undefined,
-      label: t("Relative to"),
-      searchLabel: t("Search steps or time sources"),
-      placeholder: t("Choose a step or event"),
-      notFoundLabel: t("No matching steps or time sources."),
+      label: t("relative_to"),
+      searchLabel: t("search_steps_or_time_sources"),
+      placeholder: t("choose_a_step_or_event"),
+      notFoundLabel: t("time_sources_no_matches"),
       getItems: () => items,
       searchKeys: ["primary", "secondary", "id", "group"],
       valueRenderer,
@@ -96,9 +95,9 @@
       noSort: true,
       required: true,
       invalid: !!error,
-      errorMessage: error,
+      errorMessage: t(error),
     }}
     onvalue-changed={select}
   ></ha-generic-picker>
-  <FieldError key="anchor" {fieldPrefix} errors={{ anchor: error }} />
+  <FieldError {t} key="anchor" {fieldPrefix} errors={{ anchor: error }} />
 </div>

@@ -157,7 +157,7 @@ void test("unvalidated text cannot save stale actions and late responses cannot 
     actions: [{ action: "turn_on", entities: ["light.sofa"] }],
   });
   form.customYaml += "\n# changed";
-  assert.throws(() => buildAction(form), /Validate Custom YAML/);
+  assert.throws(() => buildAction(form), /custom_yaml_validation_error/);
   let resolve!: (value: unknown) => void;
   const panel = {
     version: 1,
@@ -173,8 +173,8 @@ void test("unvalidated text cannot save stale actions and late responses cannot 
     valid: true,
     actions: [{ action: "turn_off", entities: ["light.sofa"] }],
   });
-  await assert.rejects(pending, /latest edits/);
-  assert.throws(() => buildAction(form), /Validate Custom YAML/);
+  await assert.rejects(pending, /submit_newer_edits_hint/);
+  assert.throws(() => buildAction(form), /custom_yaml_validation_error/);
 });
 
 void test("migration quotes service-data keys that YAML could interpret as booleans", () => {

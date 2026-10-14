@@ -27,12 +27,12 @@
       {panel}
       {context}
       key="name"
-      label="Step name"
+      label="step_name"
       value={form.name}
       update={(value) => (form.name = value)}
       options={{
         hideLabel: true,
-        placeholder: editing ? undefined : t("Optional title"),
+        placeholder: editing ? undefined : t("optional_title"),
       }}
     ></EditorField>
   </div>
@@ -40,10 +40,10 @@
     <TimingEditor {panel} {context} />
     <ActionEditor {panel} {context} />
   </div>
-  <FieldError key="days" errors={{ ...editor.errors }} />
+  <FieldError {t} key="days" errors={{ ...editor.errors }} />
   <div class="builder-footer">
     <button type="button" disabled={panel.busy} onclick={cancel}>
-      {t("Cancel")}
+      {t("cancel")}
     </button>
     {#if editing}
       {@const entry = stepEntries(panel.draft, panel.catalog, panel.t).find(
@@ -61,7 +61,7 @@
       disabled={panel.busy || panel.stale}
       onclick={submit}
     >
-      {t(panel.document?.source === "file" ? "Add to draft" : "Save step")}
+      {t(panel.document?.source === "file" ? "add_to_draft" : "save_step")}
     </button>
   </div>
 </section>

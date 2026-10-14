@@ -49,11 +49,7 @@ export function changeActionKind(form, value, confirmReplace) {
       Object.assign(form, next, buffer);
       return {};
     }
-    if (
-      !confirmReplace(
-        "Replace this Custom YAML block with the selected action? Its individual settings or other actions will be removed.",
-      )
-    ) {
+    if (!confirmReplace("custom_yaml_replace_confirm")) {
       return {};
     }
   }

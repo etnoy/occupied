@@ -41,20 +41,18 @@
 
 <section class="yaml-panel" class:has-changes={yamlDirty}>
   <h2>
-    {t("YAML")}
+    {t("yaml")}
     {#if yamlDirty}
       <span class="changes">({t("changes")})</span>
     {/if}
   </h2>
   <p class="hint">
-    {t(
-      "Edit the YAML and save to validate and apply your changes. Invalid code is kept in the editor.",
-    )}
+    {t("yaml_editor_hint")}
   </p>
   <input
     type="file"
     accept=".yaml,.yml,.json"
-    aria-label={t("Choose configuration file")}
+    aria-label={t("choose_configuration_file")}
     onchange={async (event: Event) => {
       const file = (event.currentTarget as HTMLInputElement).files?.[0];
       if (file) {
@@ -70,7 +68,7 @@
   />
   <ha-code-editor
     role="group"
-    aria-label={t("Occupied YAML")}
+    aria-label={t("occupied_yaml")}
     dir="ltr"
     use:properties={{ mode: "yaml", value: panel.yaml, linewrap: true }}
     onvalue-changed={(event: Event) => {
@@ -94,14 +92,14 @@
         !panel.yaml}
       onclick={() => panel.saveYaml()}
     >
-      {t("Save changes")}
+      {t("save_changes")}
     </button>
     <button
       type="button"
       disabled={panel.busy || !yamlDirty}
       onclick={() => panel.discardYaml()}
     >
-      {t("Discard changes")}
+      {t("discard_changes")}
     </button>
     <button
       type="button"
@@ -109,7 +107,7 @@
       disabled={panel.busy || !panel.yaml}
       onclick={() => download("occupied.yaml", panel.yaml, "text/yaml")}
     >
-      {t("Download")}
+      {t("download")}
     </button>
   </div>
 </section>

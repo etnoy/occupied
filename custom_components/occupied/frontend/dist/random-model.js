@@ -92,15 +92,12 @@ export function randomErrors(program, editor) {
   const minimum = durationSeconds(form.minDuration),
     maximum = durationSeconds(form.maxDuration);
   if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604_800) {
-    errors.minDuration =
-      "Use a positive duration within seven days, for example 5m or 1h.";
+    errors.minDuration = "duration_error";
   }
   if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604_800) {
-    errors.maxDuration =
-      "Use a positive duration within seven days, for example 5m or 1h.";
+    errors.maxDuration = "duration_error";
   } else if (maximum < minimum) {
-    errors.maxDuration =
-      "Maximum duration must be at least the minimum duration.";
+    errors.maxDuration = "duration_order_error";
   }
   const minCount = Number(form.minCount),
     maxCount = Number(form.maxCount);
@@ -112,14 +109,14 @@ export function randomErrors(program, editor) {
       count < 0 ||
       count > 1000
     ) {
-      errors[field] = "Choose a whole number from 0 to 1000.";
+      errors[field] = "random_count_error";
     }
   }
   if (!errors.minCount && !errors.maxCount && maxCount < minCount) {
-    errors.maxCount = "Maximum events per window must be at least the minimum.";
+    errors.maxCount = "random_count_order_error";
   }
   if (form.days.length === 0) {
-    errors.days = "Choose at least one day.";
+    errors.days = "days_required_error";
   }
   if (
     maxCount > 0 &&
@@ -129,7 +126,7 @@ export function randomErrors(program, editor) {
     minimum >
       durationSeconds(form.end.maxDuration || form.end.minDuration || "")
   ) {
-    errors.minDuration = "Minimum duration does not fit inside this window.";
+    errors.minDuration = "duration_exceeds_window_error";
   }
   if (
     maxCount > 0 &&
@@ -149,9 +146,9 @@ export function randomErrors(program, editor) {
       span += 86_400;
     }
     if (span === 0) {
-      errors["end.start"] = "Window end must be after its start.";
+      errors["end.start"] = "window_end_order_error";
     } else if (minimum > span) {
-      errors.minDuration = "Minimum duration does not fit inside this window.";
+      errors.minDuration = "duration_exceeds_window_error";
     }
   }
   return errors;
@@ -164,13 +161,12 @@ export function windowEndErrors(program, time) {
   const minimum = durationSeconds(time.minDuration || "");
   const maximum = durationSeconds(time.maxDuration || time.minDuration || "");
   if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604_800) {
-    errors.minDuration = "Choose a positive window duration within seven days.";
+    errors.minDuration = "window_duration_error";
   }
   if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604_800) {
-    errors.maxDuration = "Choose a positive window duration within seven days.";
+    errors.maxDuration = "window_duration_error";
   } else if (maximum < minimum) {
-    errors.maxDuration =
-      "Maximum window duration must be at least the minimum.";
+    errors.maxDuration = "window_duration_order_error";
   }
   return errors;
 }
@@ -180,9 +176,7 @@ export function buildRandom(program, editor) {
     throw new Error(Object.values(errors)[0]);
   }
   if (editor.existing && !program.random?.[editor.id]) {
-    throw new Error(
-      "This random event changed elsewhere. Cancel and reopen it before saving.",
-    );
+    throw new Error("random_changed_error");
   }
   const next = copy(program),
     { form } = editor;

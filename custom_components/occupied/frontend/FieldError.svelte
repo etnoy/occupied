@@ -1,10 +1,14 @@
 <script lang="ts">
+  import type { Translate } from "./types.js";
+
   let {
     key,
+    t,
     errors,
     fieldPrefix = "",
   }: {
     key: string;
+    t: Translate;
     errors: Record<string, string>;
     fieldPrefix?: string;
   } = $props();
@@ -17,6 +21,6 @@
     data-builder-error={`${fieldPrefix}${key}`}
     role="alert"
   >
-    {errors[key]}
+    {t(errors[key])}
   </p>
 {/if}

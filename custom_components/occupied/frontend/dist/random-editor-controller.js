@@ -164,9 +164,7 @@ export async function deleteRandom(panel) {
   }
   const candidate = copy(panel.draft);
   if (randomReferences(candidate, editor.id).length > 0) {
-    panel.error = panel.t(
-      "Other random events depend on this window. Change their starts before deleting.",
-    );
+    panel.error = panel.t("random_dependents_error");
     panel.flush();
     return;
   }

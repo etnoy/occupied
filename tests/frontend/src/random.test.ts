@@ -1,3 +1,4 @@
+import { translator } from "@occupied/translations.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { Program } from "@occupied/types.js";
@@ -242,12 +243,12 @@ void test("window-start sources include other random windows and exclude self an
     ["random", child.id, "start", "relative_to", "random"],
   ]);
   assert.ok(
-    timeSourceChoices(next, undefined, {}, (text) => text, "new_random").some(
+    timeSourceChoices(next, undefined, {}, translator(), "new_random").some(
       (choice) => choice.value === `random:${parent.id}`,
     ),
   );
   assert.ok(
-    timeSourceChoices(next, undefined, {}, (text) => text, parent.id).every(
+    timeSourceChoices(next, undefined, {}, translator(), parent.id).every(
       (choice) => !choice.value.startsWith("random:"),
     ),
   );
@@ -374,5 +375,5 @@ void test("independent end targets are preserved and random IDs stay stable thro
   );
   assert.notEqual(randomEditor(next).id, editor.id);
   delete next.random![editor.id];
-  assert.throws(() => buildRandom(next, reopened), /changed elsewhere/);
+  assert.throws(() => buildRandom(next, reopened), /random_changed_error/);
 });

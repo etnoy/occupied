@@ -40,28 +40,28 @@
   aria-describedby="step-delete-description"
   onclose={onClose}
 >
-  <h2 id="step-delete-title">{t("Delete step?")}</h2>
+  <h2 id="step-delete-title">{t("delete_step_confirm")}</h2>
   <div id="step-delete-description">
     <p>{entry.name}</p>
     {#if dependents.length}
-      <p>{t("Used by")}:</p>
+      <p>{t("used_by")}:</p>
       <ul>
         {#each dependents as name, index (index)}
           <li>{name}</li>
         {/each}
       </ul>
       <p class="hint">
-        {t("Change those relationships before deleting.")}
+        {t("delete_dependents_hint")}
       </p>
     {:else}
       <p class="hint">
-        {t("This step will be removed when you save changes.")}
+        {t("delete_step_hint")}
       </p>
     {/if}
   </div>
   <div class="step-delete-actions">
     <button type="button" onclick={() => dialog.close()}>
-      {t("Cancel")}
+      {t("cancel")}
     </button>
     <button
       type="button"
@@ -83,7 +83,7 @@
           panel.change([], next, true);
         })}
     >
-      {t("Delete step")}
+      {t("delete_step")}
     </button>
   </div>
 </dialog>

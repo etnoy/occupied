@@ -1,4 +1,5 @@
 // Generated from timeline.ts by pnpm run build. Do not edit.
+import { translator } from "./translations.js";
 import { coverTarget } from "./cover.js";
 import {
   calendarMidnight,
@@ -29,14 +30,17 @@ export function previewStateHistory(
   plan,
   _program,
   names = {},
-  t = (text) => text,
+  t = translator(),
 ) {
   const start = Date.parse(plan.start),
     end = Date.parse(plan.end);
   const entities = new Map();
   const covers = new Map();
-  const stateLabels = { on: "On", off: "Off" };
-  const label = (state) => t(stateLabels[state] || "Unknown");
+  const stateLabels = {
+    on: "on_label",
+    off: "off_label",
+  };
+  const label = (state) => t(stateLabels[state] || "unknown");
   for (const event of [...plan.events].sort(
     (a, b) => Date.parse(a.time) - Date.parse(b.time),
   )) {
@@ -78,19 +82,19 @@ export function previewStateHistory(
         covers.set(entity, target);
         const parts = [];
         if (target.position !== undefined) {
-          let position = t("Position {position}%").replace("{position}", () =>
+          let position = t("cover_position_summary").replace("{position}", () =>
             String(target.position),
           );
           if (target.position === 100) {
-            position = t("Open");
+            position = t("open");
           } else if (target.position === 0) {
-            position = t("Closed");
+            position = t("closed");
           }
           parts.push(position);
         }
         if (target.tilt_position !== undefined) {
           parts.push(
-            t("Tilt {position}%").replace("{position}", () =>
+            t("cover_tilt_summary").replace("{position}", () =>
               String(target.tilt_position),
             ),
           );
@@ -121,7 +125,7 @@ export function calendarStateHistory(
   day,
   program,
   names = {},
-  t = (text) => text,
+  t = translator(),
 ) {
   const start = Date.parse(day.start),
     end = Date.parse(day.end);
@@ -145,18 +149,18 @@ export function stamp(value, zone, locale) {
 }
 export function eventDetails(event, label, timezone, t, locale) {
   const kinds = {
-    random_start: "Random start",
-    random_end: "Random end",
+    random_start: "random_start",
+    random_end: "random_end",
   };
   let action = event.action.action;
   if (event.tick) {
-    const tick = t("Tick {tick} of {count}")
+    const tick = t("tick_progress")
       .replace("{tick}", () => String(event.tick))
       .replace("{count}", () => String(event.tick_count));
     action += ` · ${tick} · ${event.period_seconds}s`;
   }
   if (event.superseded) {
-    action += ` · ${t("Superseded")}`;
+    action += ` · ${t("superseded")}`;
   }
   return {
     time: stamp(event.time, timezone, locale),

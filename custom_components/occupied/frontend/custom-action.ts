@@ -134,9 +134,7 @@ export async function prepareCustomAction(
     panel.version !== version ||
     panel.activeEditor !== editor
   ) {
-    throw new Error(
-      "Your changes are kept. Submit again to include the latest edits.",
-    );
+    throw new Error("submit_newer_edits_hint");
   }
   if (!result.valid) {
     throw new Error(

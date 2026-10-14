@@ -35,11 +35,9 @@
 
 {#if entries.length === 0}
   <section class="step-empty">
-    <h2>{t("Random activity")}</h2>
+    <h2>{t("random_activity")}</h2>
     <p class="hint">
-      {t(
-        "Run actions at random times within a window. Choose how often they run and how long each occurrence lasts.",
-      )}
+      {t("random_activity_hint")}
     </p>
     <button
       type="button"
@@ -47,16 +45,14 @@
       data-create-random
       disabled={panel.busy}
       onclick={() => openRandom(panel)}
-      >{t("Create your first random event")}</button
+      >{t("create_your_first_random_event")}</button
     >
   </section>
 {:else}
   <p class="hint">
-    {t(
-      "Run actions at random times within a window. Choose how often they run and how long each occurrence lasts.",
-    )}
+    {t("random_activity_hint")}
   </p>
-  <div class="step-list" aria-label={t("Random events")}>
+  <div class="step-list" aria-label={t("random_events")}>
     {#each entries as entry (entry.id)}
       {@const editing =
         panel.randomEditor?.existing && panel.randomEditor.id === entry.id}
@@ -74,7 +70,7 @@
           class="step-row"
           class:editing
           aria-label={disabled
-            ? `${entry.name} · ${t("Disabled")}`
+            ? `${entry.name} · ${t("disabled")}`
             : entry.name}
           aria-expanded={editing}
           aria-controls={`random-editor-${entry.id}`}
@@ -84,12 +80,12 @@
           <span class="step-row-content">
             <span class="step-row-heading"
               ><strong>{entry.name}</strong>{#if disabled}
-                <span class="step-status-badge">{t("Disabled")}</span
+                <span class="step-status-badge">{t("disabled")}</span
                 >{/if}</span
             >
             <span class="hint"
               >{countSummary(entry.count)}
-              {t("times per window")} · {entry.min_duration ||
+              {t("times_per_window")} · {entry.min_duration ||
                 "5m"}–{entry.max_duration || "15m"} · {actionTargets(entry.on)
                 .map((id) => entityName(panel.catalog, id))
                 .join(", ")}</span
@@ -109,7 +105,7 @@
                 t,
                 panel.catalog.time_sources,
                 {
-                  subject: "Window ends",
+                  subject: "window_ends",
                   includeHints: false,
                   locale: panel._hass.locale,
                 },
@@ -128,6 +124,6 @@
     class="primary"
     data-create-random
     disabled={panel.busy}
-    onclick={() => openRandom(panel)}>{t("Create random event")}</button
+    onclick={() => openRandom(panel)}>{t("create_random_event")}</button
   >
 {/if}

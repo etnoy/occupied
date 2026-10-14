@@ -38,22 +38,22 @@
   let dialog: HTMLDialogElement;
 
   const presets: [string, string[]][] = [
-    ["Every day", days],
-    ["Weekdays", days.slice(0, 5)],
-    ["Weekends", days.slice(5)],
+    ["every_day_label", days],
+    ["weekdays", days.slice(0, 5)],
+    ["weekends", days.slice(5)],
   ];
   const weekdays = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
   ];
 
   let dayError = $derived(
-    selectedDays.length > 0 ? undefined : t("Choose at least one day."),
+    selectedDays.length > 0 ? undefined : t("days_required_error"),
   );
 
   onMount(() => {
@@ -86,16 +86,16 @@
   aria-describedby="random-weekdays-description"
   onclose={onClose}
 >
-  <h2 id="random-advanced-title">{t("Advanced settings")}</h2>
+  <h2 id="random-advanced-title">{t("advanced_settings")}</h2>
   <p id="random-weekdays-description" class="hint">
-    {t("Choose which days this random event should run.")}
+    {t("random_days_hint")}
   </p>
   <fieldset
     class="step-weekdays"
     aria-describedby={dayError ? "step-error-days" : undefined}
     disabled={panel.busy}
   >
-    <legend>{t("Run on")}</legend>
+    <legend>{t("run_on")}</legend>
     <div class="step-weekday-presets">
       {#each presets as [label, selection] (label)}
         <button
@@ -123,9 +123,9 @@
       {/each}
     </div>
   </fieldset>
-  <FieldError key="days" errors={dayError ? { days: dayError } : {}} />
+  <FieldError {t} key="days" errors={dayError ? { days: dayError } : {}} />
   {#if canStartStagger}
-    <h3>{t("Start action")}</h3>
+    <h3>{t("start_action")}</h3>
     <StaggerSettings
       bind:settings={startStagger}
       {t}
@@ -134,7 +134,7 @@
     />
   {/if}
   {#if canEndStagger}
-    <h3>{t("End action")}</h3>
+    <h3>{t("end_action")}</h3>
     <StaggerSettings
       bind:settings={endStagger}
       {t}
@@ -142,16 +142,16 @@
       disabled={panel.busy}
     />
   {/if}
-  <p class="hint">{t("Apply these settings, then save the random event.")}</p>
+  <p class="hint">{t("random_settings_hint")}</p>
   <div class="step-delete-actions">
-    <button type="button" onclick={() => dialog.close()}>{t("Cancel")}</button>
+    <button type="button" onclick={() => dialog.close()}>{t("cancel")}</button>
     <button
       type="button"
       class="primary"
       disabled={panel.busy || !!dayError || !!staggerError}
       onclick={apply}
     >
-      {t("Apply")}
+      {t("apply")}
     </button>
   </div>
 </dialog>

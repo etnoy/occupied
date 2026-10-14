@@ -1,4 +1,5 @@
 // Generated from util.ts by pnpm run build. Do not edit.
+import { translator } from "./translations.js";
 import { formatClock } from "./time-format.js";
 import { days } from "./model.js";
 export function errorMessage(error) {
@@ -61,7 +62,7 @@ function minutes(value) {
 export function durationSeconds(value) {
   return !value || value === "0" ? NaN : minutes(value) * 60;
 }
-export function durationLabel(value, t = (text) => text) {
+export function durationLabel(value, t = translator()) {
   let remaining = Math.round(Math.abs(value) * 1e6) / 1e6;
   const hours = Math.floor(remaining / 3600);
   remaining -= hours * 3600;
@@ -113,20 +114,20 @@ export function timingForm(timing = {}) {
 export function offsetErrors(time) {
   const errors = {},
     low = minutes(time.startOffset);
-  const formatError = "Use h, m or s, for example 30m, 1h, 1h30m or -10m.";
+  const formatError = "offset_format_error";
   if (!time.startOffset || !Number.isFinite(low)) {
     errors.startOffset = formatError;
   } else if (Math.abs(low) > 10_080) {
-    errors.startOffset = "Offsets must be within seven days.";
+    errors.startOffset = "offset_range_error";
   }
   if (time.endOffset) {
     const high = minutes(time.endOffset);
     if (!Number.isFinite(high)) {
       errors.endOffset = formatError;
     } else if (Math.abs(high) > 10_080) {
-      errors.endOffset = "Offsets must be within seven days.";
+      errors.endOffset = "offset_range_error";
     } else if (Number.isFinite(low) && high < low) {
-      errors.endOffset = "The end offset must be at least the start offset.";
+      errors.endOffset = "offset_order_error";
     }
   }
   return errors;
@@ -136,7 +137,7 @@ function scheduleDaySuffix(selected, t) {
     return "";
   }
   if (selected.length === 0) {
-    return ` ${t("on no days")}`;
+    return ` ${t("on_no_days")}`;
   }
   if (days.every((day) => selected.includes(day))) {
     return "";
@@ -145,22 +146,22 @@ function scheduleDaySuffix(selected, t) {
     selected.length === 5 &&
     days.slice(0, 5).every((day) => selected.includes(day))
   ) {
-    return ` ${t("on weekdays")}`;
+    return ` ${t("on_weekdays")}`;
   }
   if (
     selected.length === 2 &&
     days.slice(5).every((day) => selected.includes(day))
   ) {
-    return ` ${t("on weekends")}`;
+    return ` ${t("on_weekends")}`;
   }
   const weekdayNames = {
-    mon: "Mondays",
-    tue: "Tuesdays",
-    wed: "Wednesdays",
-    thu: "Thursdays",
-    fri: "Fridays",
-    sat: "Saturdays",
-    sun: "Sundays",
+    mon: "mondays",
+    tue: "tuesdays",
+    wed: "wednesdays",
+    thu: "thursdays",
+    fri: "fridays",
+    sat: "saturdays",
+    sun: "sundays",
   };
   const dayNames = selected.map((day) => t(weekdayNames[day] || day));
   const lastDay = dayNames.pop();
@@ -173,12 +174,12 @@ function scheduleDaySuffix(selected, t) {
 export function timingSummary(
   entry,
   entries,
-  t = (v) => v,
+  t = translator(),
   sources = [],
   locale,
 ) {
   if (!entry.timing) {
-    return `${t("Repeated activity window")}${scheduleDaySuffix(entry.days, t)}`;
+    return `${t("repeated_activity_window")}${scheduleDaySuffix(entry.days, t)}`;
   }
   return timingExplanation(timingForm(entry.timing), entries, t, sources, {
     includeHints: false,
@@ -189,9 +190,9 @@ export function timingSummary(
 export function timingExplanation(
   input,
   entries = [],
-  t = (value) => value,
+  t = translator(),
   sources = [],
-  { includeHints = true, subject = "Runs", locale, days: selectedDays } = {},
+  { includeHints = true, subject = "runs", locale, days: selectedDays } = {},
 ) {
   const runs = `${t(subject)}${scheduleDaySuffix(selectedDays, t)}`;
   const time = {
@@ -212,12 +213,12 @@ export function timingExplanation(
       maximum < minimum ||
       maximum > 604_800
     ) {
-      return t("Choose valid window durations.");
+      return t("window_durations_prompt");
     }
     return t(
       minimum === maximum
-        ? "Window closes {duration} after it starts"
-        : "Window closes between {min} and {max} after it starts",
+        ? "window_duration_summary"
+        : "window_duration_range_summary",
     )
       .replace("{duration}", () => durationLabel(minimum, t))
       .replace("{min}", () => durationLabel(minimum, t))
@@ -235,33 +236,31 @@ export function timingExplanation(
           0,
         );
     if (!valid(time.start) || (time.end && !valid(time.end))) {
-      return t("Choose valid start and end times");
+      return t("time_window_prompt");
     }
     const fixedTime = `${runs} ${t("at")} ${display(time.start)}`;
     if (!time.end) {
-      return `${fixedTime}${includeHints ? `. ${t("Add an end of window to introduce randomness")}` : ""}`;
+      return `${fixedTime}${includeHints ? `. ${t("time_window_randomness_hint")}` : ""}`;
     }
     if (seconds(time.end) === seconds(time.start)) {
-      return `${fixedTime}${includeHints ? `. ${t("Start and end are the same, so the time is fixed")}` : ""}`;
+      return `${fixedTime}${includeHints ? `. ${t("time_window_fixed_hint")}` : ""}`;
     }
     const nextDay =
-      seconds(time.end) < seconds(time.start) ? ` ${t("the next day")}` : "";
-    return `${runs} ${t("at a random time between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}`;
+      seconds(time.end) < seconds(time.start) ? ` ${t("the_next_day")}` : "";
+    return `${runs} ${t("at_a_random_time_between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}`;
   }
   if (Object.keys(offsetErrors(time)).length > 0) {
     return t(
-      subject === "Runs"
-        ? "Enter valid offsets to see when this step runs"
-        : "Enter valid offsets to see the window boundary",
+      subject === "runs" ? "step_offsets_prompt" : "window_offsets_prompt",
     );
   }
   if (!time.anchor) {
-    return t("Choose a step or event");
+    return t("choose_a_step_or_event");
   }
   const step = time.anchor.startsWith("step:");
   let name;
   if (time.anchor.startsWith("random:")) {
-    name = `${t("the end of")} ${entries.find((entry) => entry.id === time.anchor)?.name || time.anchor.slice(7)}`;
+    name = `${t("the_end_of")} ${entries.find((entry) => entry.id === time.anchor)?.name || time.anchor.slice(7)}`;
   } else if (step) {
     name =
       entries.find((entry) => entry.id === time.anchor.slice(5))?.name ||
@@ -287,18 +286,18 @@ export function timingExplanation(
   if (low === high) {
     const fixedTime =
       low === 0
-        ? `${runs} ${t("at the same time as")} ${name}`
+        ? `${runs} ${t("at_the_same_time_as")} ${name}`
         : `${runs} ${offsetLabel(low)} ${name}`;
-    return `${fixedTime}${includeHints && !time.endOffset ? `. ${t("Add an end offset to introduce randomness")}` : ""}`;
+    return `${fixedTime}${includeHints && !time.endOffset ? `. ${t("time_offset_randomness_hint")}` : ""}`;
   }
-  const anchorStart = step ? `${t("the start of")} ${name}` : name;
+  const anchorStart = step ? `${t("the_start_of")} ${name}` : name;
   if (low === 0) {
-    return `${runs} ${t("at a random time between")} ${anchorStart} ${t("and")} ${offsetLabel(high)} ${name}`;
+    return `${runs} ${t("at_a_random_time_between")} ${anchorStart} ${t("and")} ${offsetLabel(high)} ${name}`;
   }
   if (high === 0) {
-    return `${runs} ${t("at a random time between")} ${offsetLabel(low)} ${name} ${t("and")} ${anchorStart}`;
+    return `${runs} ${t("at_a_random_time_between")} ${offsetLabel(low)} ${name} ${t("and")} ${anchorStart}`;
   }
   const firstBound =
     Math.sign(low) === Math.sign(high) ? duration(low) : offsetLabel(low);
-  return `${runs} ${t("at a random time between")} ${firstBound} ${t("and")} ${offsetLabel(high)} ${name}`;
+  return `${runs} ${t("at_a_random_time_between")} ${firstBound} ${t("and")} ${offsetLabel(high)} ${name}`;
 }
