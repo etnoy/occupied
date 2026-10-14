@@ -1,5 +1,6 @@
-import type { Action, ActionForm } from "./types.js";
+import type { Action, ActionForm, Catalog } from "./types.js";
 import type { OccupiedPanel } from "./occupied-panel.js";
+import { entityName } from "./util.js";
 
 export function actionTargets(source?: Action): string[] {
   if (!source) {
@@ -10,9 +11,21 @@ export function actionTargets(source?: Action): string[] {
       ...new Set(source.actions.flatMap((action) => actionTargets(action))),
     ];
   }
+
   return Array.isArray(source.entities)
     ? source.entities
     : Object.keys(source.entities || {});
+}
+
+export function actionTargetSummary(
+  source: Action,
+  catalog?: Pick<Catalog, "entities">,
+): string {
+  const targets = actionTargets(source);
+  const first = catalog ? entityName(catalog, targets[0]) : targets[0];
+  const remaining = targets.length > 1 ? ` +${targets.length - 1}` : "";
+
+  return `${first}${remaining}`;
 }
 
 // Emit readable YAML; strict parsing and semantic validation belong to the backend.
@@ -22,9 +35,11 @@ export function actionYaml(value: unknown, level = 0): string {
     if (value.every((item) => typeof item !== "object" || item === null)) {
       return JSON.stringify(value);
     }
+
     return value
       .map((item) => {
         const lines = actionYaml(item, level + 1).split("\n");
+
         return `${pad}- ${lines[0].trimStart()}${lines.length > 1 ? "\n" + lines.slice(1).join("\n") : ""}`;
       })
       .join("\n");
@@ -53,12 +68,14 @@ export function actionYaml(value: unknown, level = 0): string {
           ].includes(key)
             ? key
             : JSON.stringify(key);
+
         return scalar
           ? `${pad}${name}: ${JSON.stringify(item)}`
           : `${pad}${name}:\n${actionYaml(item, level + 1)}`;
       })
       .join("\n");
   }
+
   return JSON.stringify(value);
 }
 
@@ -97,6 +114,7 @@ export function simpleMapping(source: Action): Action | undefined {
       entities: entries.map(([entity]) => entity),
     };
   }
+
   return;
 }
 
@@ -132,6 +150,7 @@ export async function prepareCustomAction(
   }
   form.customActions = result.actions;
   form.customAccepted = text;
+
   return true;
 }
 

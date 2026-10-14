@@ -23,6 +23,7 @@
   },
   "include": [
     "custom_components/occupied/frontend/**/*.ts",
+    "custom_components/occupied/frontend/**/*.svelte",
     "tests/frontend/**/*.ts",
     "scripts/*.ts"
   ]

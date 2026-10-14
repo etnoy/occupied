@@ -8,6 +8,7 @@ export function warningStepId(
   if (issue.severity !== "warning") {
     return;
   }
+
   return entries.find((entry) =>
     issue.model_path
       ? entry.path.every((key, index) => issue.model_path?.[index] === key)

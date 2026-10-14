@@ -9,10 +9,13 @@
   import TimingEditor from "./TimingEditor.svelte";
   import ActionEditor from "./ActionEditor.svelte";
   import { createStepEditorContext } from "./step-editor-controller.js";
+
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
+
   let context = $derived.by(() => {
-    revision;
+    void revision;
+
     return createStepEditorContext(panel);
   });
   let { editor, form, t, editing, submit, cancel } = $derived(context);
@@ -46,7 +49,8 @@
       {@const entry = stepEntries(panel.draft, panel.catalog, panel.t).find(
         (item) => item.id === editor.id,
       )}
-      {#if entry}<StepActions {panel} {entry} {context} />{/if}
+      {#if entry}
+        <StepActions {panel} {entry} {context} />{/if}
     {:else}
       <StepActions {panel} {context} />
     {/if}

@@ -27,8 +27,13 @@ import {
   references,
 } from "./model.js";
 import { coverActions, coverField, isCoverAction } from "./cover.js";
-import { actionTargets, actionYaml } from "./custom-action.js";
+import {
+  actionTargets,
+  actionTargetSummary,
+  actionYaml,
+} from "./custom-action.js";
 import { staggerPeriodError } from "./stagger.js";
+
 const sorted = (values: string[]) => [...new Set(values)].sort();
 const actionLabels: Record<string, string> = {
   turn_on: "Turn on",
@@ -36,6 +41,20 @@ const actionLabels: Record<string, string> = {
   "scene.turn_on": "Activate scene",
   ...Object.fromEntries(coverActions),
 };
+
+function stepDisplayName(
+  step: Action,
+  catalog: Pick<Catalog, "entities"> | undefined,
+  t: Translate,
+): string {
+  const label =
+    step.actions || step.action === "set_state"
+      ? "Custom YAML"
+      : actionLabels[step.action || ""] || step.action || "";
+
+  return `${actionTargetSummary(step, catalog)} · ${t(label)}`;
+}
+
 export function stepEntries(
   program: Program,
   catalog?: Pick<Catalog, "entities">,
@@ -46,11 +65,10 @@ export function stepEntries(
     id,
     path: ["steps", id],
     days: [...(step.days || days)],
-    name:
-      step.name ||
-      `${catalog ? entityName(catalog, actionTargets(step)[0]) : actionTargets(step)[0]}${actionTargets(step).length > 1 ? ` +${actionTargets(step).length - 1}` : ""} · ${t(step.actions || step.action === "set_state" ? "Custom YAML" : actionLabels[step.action || ""] || step.action || "")}`,
+    name: step.name || stepDisplayName(step, catalog, t),
   }));
 }
+
 export const solarEvents = [
   "sunrise",
   "sunset",
@@ -59,6 +77,7 @@ export const solarEvents = [
   "noon",
   "midnight",
 ];
+
 export function timeSourceChoices(
   program: Program,
   id?: string,
@@ -67,6 +86,7 @@ export function timeSourceChoices(
   randomId?: string,
 ): TimeSource[] {
   const allowed = new Set(parentSteps(program, id).map((step) => step.id));
+
   return [
     ...stepEntries(
       program,
@@ -80,11 +100,20 @@ export function timeSourceChoices(
         group: "Steps",
       })),
     ...(randomId
-      ? parentRandomEvents(program, randomId).map((event) => ({
-          value: `random:${event.id}`,
-          name: `${t("End of")} ${event.name || (catalog.entities ? entityName({ entities: catalog.entities }, actionTargets(event.on)[0]) : actionTargets(event.on)[0])}`,
-          group: "Random events",
-        }))
+      ? parentRandomEvents(program, randomId).map((event) => {
+          const first = actionTargets(event.on)[0];
+          const name =
+            event.name ||
+            (catalog.entities
+              ? entityName({ entities: catalog.entities }, first)
+              : first);
+
+          return {
+            value: `random:${event.id}`,
+            name: `${t("End of")} ${name}`,
+            group: "Random events",
+          };
+        })
       : []),
     ...(catalog.time_sources ||
       solarEvents.map((event) => ({
@@ -115,6 +144,7 @@ export function stepEditor(
       startOffset: "30m",
     });
   }
+
   return {
     id: entry?.id || identifier(program, "step"),
     existing: !!entry,
@@ -124,6 +154,7 @@ export function stepEditor(
     errors: {},
   };
 }
+
 export function actionForm(source?: Action): ActionForm {
   const action = source?.action;
   let kind = "entities";
@@ -140,6 +171,7 @@ export function actionForm(source?: Action): ActionForm {
   } else if (action?.includes(".")) {
     kind = "service";
   }
+
   return {
     kind,
     ...(source?.stagger && { stagger: copy(source.stagger) }),
@@ -182,9 +214,11 @@ export function actionForm(source?: Action): ActionForm {
     tiltPosition: String(source?.data?.tilt_position ?? ""),
   };
 }
+
 export function hasStepChanges(editor: StepEditor) {
   return JSON.stringify(editor.form) !== JSON.stringify(editor.original);
 }
+
 export function editorErrors(program: Program, editor: StepEditor) {
   const { form, id } = editor,
     errors = {
@@ -194,8 +228,10 @@ export function editorErrors(program: Program, editor: StepEditor) {
   if (form.days.length === 0) {
     errors.days = "Choose at least one day.";
   }
+
   return errors;
 }
+
 export function actionErrors(form: ActionForm): FieldErrors {
   const errors: FieldErrors = {};
   if (form.stagger) {
@@ -208,6 +244,7 @@ export function actionErrors(form: ActionForm): FieldErrors {
     if (!form.customYaml?.trim()) {
       errors.customYaml = "Enter an action mapping or a list of actions.";
     }
+
     return errors;
   }
   if (form.entities.length === 0) {
@@ -267,8 +304,10 @@ export function actionErrors(form: ActionForm): FieldErrors {
       errors.data = "Service data must be a JSON object.";
     }
   }
+
   return errors;
 }
+
 export function timingErrors(
   program: Program,
   time: TimingForm,
@@ -318,6 +357,7 @@ export function timingErrors(
   } else {
     errors.mode = "Choose absolute time or relative to.";
   }
+
   return errors;
 }
 
@@ -355,6 +395,7 @@ export function formTiming(time: TimingForm): Timing {
   }
   if (time.anchor.startsWith("entity:")) {
     const [, entity, attribute] = time.anchor.split(":", 3);
+
     return {
       relative_to: {
         entity,
@@ -363,8 +404,10 @@ export function formTiming(time: TimingForm): Timing {
       },
     };
   }
+
   return { relative_to: { sun: time.anchor.slice(4), ...offsets } };
 }
+
 export function buildStep(program: Program, editor: StepEditor) {
   const errors = editorErrors(program, editor);
   if (Object.keys(errors).length > 0) {
@@ -384,13 +427,16 @@ export function buildStep(program: Program, editor: StepEditor) {
     timing: formTiming(form.timing),
     ...buildAction(form),
   };
+
   return next;
 }
+
 export function buildAction(form: ActionForm): Action {
   if (form.kind === "custom") {
     if (!form.customActions || form.customAccepted !== form.customYaml) {
       throw new Error("Validate Custom YAML before adding it to the draft.");
     }
+
     return { actions: copy(form.customActions) };
   }
   let action = form.action;
@@ -401,6 +447,7 @@ export function buildAction(form: ActionForm): Action {
   }
   if (form.kind === "cover") {
     const field = coverField(action);
+
     return {
       action,
       entities: sorted(form.entities),
@@ -413,6 +460,7 @@ export function buildAction(form: ActionForm): Action {
       }),
     };
   }
+
   return {
     action,
     entities: sorted(form.entities),
@@ -428,8 +476,10 @@ export function buildAction(form: ActionForm): Action {
     ...(form.kind !== "entities" && { data: JSON.parse(form.data) }),
   };
 }
+
 export function dependentNames(program: Program, id: string) {
   const paths = references(program, id);
+
   return [
     ...stepEntries(program)
       .filter((e) => paths.some((p) => p[0] === "steps" && p[1] === e.id))

@@ -5,6 +5,7 @@ import {
   lastGroupResult,
   liveRunning,
   mergeLiveSession,
+  liveSessionStatus,
 } from "@occupied/live-preview.js";
 import type { LivePreviewSession } from "@occupied/types.js";
 
@@ -35,6 +36,23 @@ function sessionFixture(): LivePreviewSession {
     outcomes: {},
   };
 }
+
+void test("live status distinguishes initial readiness, subsequent events, and terminal states", () => {
+  const session = sessionFixture();
+  assert.equal(liveSessionStatus(session), "Ready to start");
+  session.cursor = 1;
+  assert.equal(liveSessionStatus(session), "Ready for next event");
+  for (const [state, expected] of [
+    ["executing", "Running…"],
+    ["stopping", "Stopping…"],
+    ["completed", "Day complete"],
+    ["stopped", "Stopped"],
+    ["interrupted", "Interrupted"],
+  ] as const) {
+    session.state = state;
+    assert.equal(liveSessionStatus(session), expected);
+  }
+});
 
 void test("session updates preserve earlier call results and reject cursor regression", () => {
   const previous = {

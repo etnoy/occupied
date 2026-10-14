@@ -1,6 +1,8 @@
 // The editable GUI draft is the canonical YAML/JSON model.
 export type Path = (string | number)[];
+
 export type Translate = (text: string) => string;
+
 export type JsonValue =
   | null
   | boolean
@@ -8,6 +10,7 @@ export type JsonValue =
   | string
   | JsonValue[]
   | { [key: string]: JsonValue };
+
 export interface Timing {
   absolute_time?: { start: string; end?: string };
   duration?: { min: string; max?: string };
@@ -21,10 +24,12 @@ export interface Timing {
     end_offset?: string;
   };
 }
+
 export interface Stagger {
   enabled?: boolean;
   period?: string;
 }
+
 export interface Action {
   stagger?: Stagger;
   action?: string;
@@ -32,14 +37,17 @@ export interface Action {
   actions?: Action[];
   data?: Record<string, JsonValue>;
 }
+
 export interface Schedule {
   name?: string;
   enabled?: boolean;
   days?: string[];
 }
+
 export interface Step extends Schedule, Action {
   timing: Timing;
 }
+
 export interface RandomEvent extends Schedule {
   start: Timing;
   end: Timing;
@@ -49,18 +57,21 @@ export interface RandomEvent extends Schedule {
   on: Action;
   off: Action;
 }
+
 export interface Program {
   schema_version?: number;
   name?: string;
   steps?: Record<string, Step>;
   random?: Record<string, RandomEvent>;
 }
+
 export interface StepEntry extends Omit<Step, "name" | "days"> {
   id: string;
   name: string;
   path: ["steps", string];
   days: string[];
 }
+
 export interface TimingForm {
   mode: string;
   start: string;
@@ -71,6 +82,7 @@ export interface TimingForm {
   minDuration?: string;
   maxDuration?: string;
 }
+
 export interface ActionForm {
   stagger?: Stagger;
   customYaml?: string;
@@ -84,13 +96,16 @@ export interface ActionForm {
   position: string;
   tiltPosition: string;
 }
+
 export interface StepForm extends ActionForm {
   name: string;
   enabled: boolean;
   days: string[];
   timing: TimingForm;
 }
+
 export type FieldErrors = Record<string, string>;
+
 export interface StepEditor {
   id: string;
   existing: boolean;
@@ -102,12 +117,14 @@ export interface StepEditor {
   showEndTime?: boolean;
   showEndOffset?: boolean;
 }
+
 export interface RandomEntry extends RandomEvent {
   id: string;
   name: string;
   path: ["random", string];
   days: string[];
 }
+
 export interface RandomForm {
   name: string;
   enabled: boolean;
@@ -122,6 +139,7 @@ export interface RandomForm {
   off: ActionForm;
   sameEntities: boolean;
 }
+
 export interface RandomEditorState {
   id: string;
   existing: boolean;
@@ -132,15 +150,18 @@ export interface RandomEditorState {
   startOptions: Pick<StepEditor, "showEndTime" | "showEndOffset">;
   endOptions: Pick<StepEditor, "showEndTime" | "showEndOffset">;
 }
+
 export interface EditorContext {
   editor: Pick<StepEditor, "id" | "existing" | "errors">;
   t: Translate;
   changed: (key: string) => void;
   fieldPrefix?: string;
 }
+
 export interface ActionEditorContext extends EditorContext {
   form: ActionForm;
 }
+
 export interface TimingEditorContext extends EditorContext {
   editor: Pick<
     StepEditor,
@@ -152,12 +173,14 @@ export interface TimingEditorContext extends EditorContext {
   randomId?: string;
   refresh: (key?: string) => void;
 }
+
 export interface TimeSource {
   value: string;
   name: string;
   group: string;
   entity_id?: string;
 }
+
 export interface Catalog {
   entities: {
     entity_id: string;
@@ -190,6 +213,7 @@ export interface Catalog {
   >;
   time_sources?: TimeSource[];
 }
+
 export interface Issue {
   message: string;
   severity?: string;
@@ -198,6 +222,7 @@ export interface Issue {
   model_path?: Path;
   line?: number;
 }
+
 export interface ConfigurationSource {
   mode: string;
   status?: string;
@@ -206,6 +231,7 @@ export interface ConfigurationSource {
   observed_hash?: string;
   issues?: Issue[];
 }
+
 export interface ProgramDocument {
   program: Program;
   warnings?: Issue[];
@@ -216,6 +242,7 @@ export interface ProgramDocument {
   simulation_date: string;
   timezone: string;
 }
+
 export interface InstanceDocument {
   config_entry_id: string;
   name: string;
@@ -230,9 +257,11 @@ export interface InstanceDocument {
   live_preview?: LivePreviewSession | null;
   overlaps: { config_entry_id: string; name: string; entities: string[] }[];
 }
+
 export type ApiResult<T> =
   | ({ valid: true; issues?: Issue[] } & T)
   | { valid: false; issues: Issue[] };
+
 export interface RuntimeSnapshot {
   loaded?: boolean;
   source_revision?: string;
@@ -240,6 +269,7 @@ export interface RuntimeSnapshot {
   paused?: boolean;
   live_preview?: LivePreviewSession | null;
 }
+
 export interface PlannedEvent {
   scheduled?: boolean;
   occurrence_id?: string;
@@ -262,6 +292,7 @@ export interface PlannedEvent {
     data?: Record<string, JsonValue>;
   };
 }
+
 export interface Plan {
   simulation_date: string;
   timezone: string;
@@ -275,18 +306,21 @@ export interface Plan {
   events: PlannedEvent[];
   issues: Issue[];
 }
+
 export interface PreviewResult {
   valid: boolean;
   issues?: Issue[];
   plans: Plan[];
   plan_fingerprint?: string;
 }
+
 export interface LiveCallOutcome {
   group_id: string;
   status: string;
   detail: string;
   action?: PlannedEvent["action"];
 }
+
 export interface LivePreviewSession {
   id: string;
   user_id: string;
@@ -318,6 +352,7 @@ export interface LivePreviewSession {
   storage_failed: boolean;
   outcomes: Record<string, LiveCallOutcome>;
 }
+
 export interface LivePreviewResponse {
   session: LivePreviewSession | null;
   can_advance: boolean;
@@ -325,6 +360,7 @@ export interface LivePreviewResponse {
   plan?: Plan;
   call_outcomes?: Record<string, LiveCallOutcome>;
 }
+
 export interface WebSocketResponses {
   instances: InstanceDocument[];
   program: ProgramDocument;
@@ -345,6 +381,7 @@ export interface WebSocketResponses {
   "live_preview/status": LivePreviewResponse;
   "live_preview/stop": LivePreviewResponse;
 }
+
 export interface HomeAssistant {
   language?: string;
   config?: { time_zone?: string; [key: string]: unknown };
@@ -363,11 +400,13 @@ export interface HomeAssistant {
     ): Promise<() => void>;
   };
 }
+
 export interface SelectorConfig {
   entity?: { multiple?: boolean; filter?: { domain: string[] } };
   time?: Record<string, never>;
   [key: string]: unknown;
 }
+
 export interface HaSelector extends HTMLElement {
   hass?: HomeAssistant;
   selector: SelectorConfig;
@@ -376,12 +415,14 @@ export interface HaSelector extends HTMLElement {
   required: boolean;
   narrow: boolean;
 }
+
 export interface PickerItem {
   id: string;
   primary: string;
   secondary?: string;
   group: string;
 }
+
 export interface HaGenericPicker extends HTMLElement {
   hass?: HomeAssistant;
   value?: string;
@@ -396,14 +437,17 @@ export interface HaGenericPicker extends HTMLElement {
   noSort: boolean;
   required: boolean;
 }
+
 // Primary navigation tabs plus the secondary pages reached from them.
 export type Tab = "steps" | "random" | "settings" | "preview";
+
 declare global {
   interface HTMLElementTagNameMap {
     "occupied-panel": import("./occupied-panel.js").OccupiedPanel;
     "ha-selector": HaSelector;
     "ha-generic-picker": HaGenericPicker;
   }
+
   interface HTMLElementEventMap {
     // HA's fireEvent uses a plain Event with detail attached. CustomEvent
     // implements the same contract, but cannot be required at runtime.

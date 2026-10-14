@@ -21,14 +21,19 @@
     context: StepEditorContext;
     onClose: () => void;
   } = $props();
+
   let { editor, form, t, changed } = $derived(context);
+
   let selectedDays = $state<string[]>([]);
   let selectedStagger = $state(untrack(() => staggerSettings(form)));
+
   let canStagger = $derived(supportsStagger(form));
   let staggerError = $derived(
     canStagger ? staggerPeriodError(selectedStagger) : undefined,
   );
+
   let dialog: HTMLDialogElement;
+
   const presets: [string, string[]][] = [
     ["Every day", days],
     ["Weekdays", days.slice(0, 5)],
@@ -43,11 +48,13 @@
     "Saturday",
     "Sunday",
   ];
+
   let dayError = $derived.by(() => {
     const errors = editorErrors(panel.draft, {
       ...editor,
       form: { ...form, days: selectedDays },
     });
+
     return (
       errors.days ||
       (form.timing.anchor.startsWith("step:") && form.timing.mode === "relative"
@@ -63,7 +70,9 @@
   });
 
   function apply() {
-    if (dayError || staggerError || panel.busy) return;
+    if (dayError || staggerError || panel.busy) {
+      return;
+    }
     form.days = [...selectedDays];
     changed("days");
     if (canStagger) {
@@ -92,7 +101,7 @@
   >
     <legend>{t("Run on")}</legend>
     <div class="step-weekday-presets">
-      {#each presets as [label, selection]}
+      {#each presets as [label, selection] (label)}
         <button
           type="button"
           aria-pressed={selectedDays.length === selection.length &&
@@ -104,17 +113,16 @@
       {/each}
     </div>
     <div class="step-weekday-options">
-      {#each days as day, index}
+      {#each days as day, index (day)}
         <label class="step-weekday-option">
           <input
             type="checkbox"
             value={day}
             checked={selectedDays.includes(day)}
             onchange={(event) => {
+              const checked = event.currentTarget.checked;
               selectedDays = days.filter((candidate) =>
-                candidate === day
-                  ? event.currentTarget.checked
-                  : selectedDays.includes(candidate),
+                candidate === day ? checked : selectedDays.includes(candidate),
               );
             }}
           />

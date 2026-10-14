@@ -19,6 +19,7 @@
     render?: boolean;
     hideLabel?: boolean;
   }
+
   let {
     panel,
     context,
@@ -38,6 +39,7 @@
     options?: FieldOptions;
     trailing?: Snippet;
   } = $props();
+
   let { editor, t, changed } = $derived(context);
   let fieldPrefix = $derived(context.fieldPrefix || "");
   let field = $derived(`${fieldPrefix}${key}`);
@@ -55,14 +57,20 @@
       | HTMLTextAreaElement
       | HaSelector;
     if (nativeTime) {
-      if (!isValueChangedEvent(event)) return;
+      if (!isValueChangedEvent(event)) {
+        return;
+      }
       control.value = event.detail.value || "";
     }
     update(String(control.value ?? ""));
     changed(key);
     // Restore the displayed choice when a guarded conversion was canceled.
-    if (control instanceof HTMLSelectElement) control.value = String(value);
-    if (options.render) focusEditor(panel, field);
+    if (control instanceof HTMLSelectElement) {
+      control.value = String(value);
+    }
+    if (options.render) {
+      focusEditor(panel, field);
+    }
   }
 </script>
 
@@ -102,7 +110,7 @@
       value={String(value)}
       onchange={input}
     >
-      {#each options.choices as [v, name]}
+      {#each options.choices as [v, name] (v)}
         <option value={v}>{t(name)}</option>
       {/each}
     </select>

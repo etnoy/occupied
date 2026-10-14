@@ -6,25 +6,32 @@
 
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
+
   let data = $derived.by(() => {
-    revision;
+    void revision;
+
     return { t: panel.t };
   });
+
   let { t } = $derived(data);
   let yamlDirty = $derived(panel.yamlDirty);
+
   let autoExportStarted = false;
 
   $effect(() => {
-    revision;
+    void revision;
     if (!autoExportStarted && !panel.busy) {
       // Export flushes controller updates synchronously. Start it after this
       // render batch, and cancel if the view disappears or becomes busy first.
       let cancelled = false;
       queueMicrotask(() => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         autoExportStarted = true;
         void panel.exportYaml();
       });
+
       return () => {
         cancelled = true;
       };
@@ -35,7 +42,9 @@
 <section class="yaml-panel" class:has-changes={yamlDirty}>
   <h2>
     {t("YAML")}
-    {#if yamlDirty}<span class="changes">({t("changes")})</span>{/if}
+    {#if yamlDirty}
+      <span class="changes">({t("changes")})</span>
+    {/if}
   </h2>
   <p class="hint">
     {t(
@@ -51,7 +60,9 @@
       if (file) {
         const epoch = panel.epoch;
         const yaml = await file.text();
-        if (epoch !== panel.epoch) return;
+        if (epoch !== panel.epoch) {
+          return;
+        }
         panel.yaml = yaml;
         panel.flush();
       }
@@ -63,8 +74,12 @@
     dir="ltr"
     use:properties={{ mode: "yaml", value: panel.yaml, linewrap: true }}
     onvalue-changed={(event: Event) => {
-      if (!isValueChangedEvent(event) || typeof event.detail.value !== "string")
+      if (
+        !isValueChangedEvent(event) ||
+        typeof event.detail.value !== "string"
+      ) {
         return;
+      }
       panel.yaml = event.detail.value;
       panel.flush();
     }}
@@ -106,9 +121,11 @@
     flex-wrap: wrap;
     gap: 8px;
   }
+
   .yaml-actions .download {
     margin-left: auto;
   }
+
   ha-code-editor {
     display: block;
     width: 100%;
@@ -116,11 +133,13 @@
     --code-mirror-height: 420px;
     --code-mirror-max-height: 60vh;
   }
+
   section.yaml-panel {
     border-color: var(--divider-color, #d5dce3);
     border-left-color: var(--divider-color, #d5dce3);
     background: var(--card-background-color, #fff);
   }
+
   section.yaml-panel.has-changes {
     border-color: var(--warning-color, #e69500);
     border-left-color: var(--warning-color, #e69500);
@@ -130,6 +149,7 @@
       var(--card-background-color, #fff)
     );
   }
+
   .changes {
     color: var(--warning-color, #e69500);
     font-size: 0.75em;

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Stagger, Translate } from "./types.js";
   import { staggerPeriodError } from "./stagger.js";
+
   let {
     settings = $bindable(),
     t,
@@ -12,6 +13,7 @@
     id: string;
     disabled?: boolean;
   } = $props();
+
   let error = $derived(staggerPeriodError(settings));
 </script>
 
@@ -44,9 +46,11 @@
   <p id={`${id}-period-help`} class="hint">
     {t("Default: 2m. Use a duration from 1s to 30m.")}
   </p>
-  {#if error}<p id={`${id}-error`} class="error" role="alert">
+  {#if error}
+    <p id={`${id}-error`} class="error" role="alert">
       {t(error)}
-    </p>{/if}
+    </p>
+  {/if}
 </fieldset>
 
 <style>
@@ -55,6 +59,7 @@
     padding: 0;
     margin-top: 24px;
   }
+
   .stagger-option {
     display: flex;
     align-items: center;
@@ -62,6 +67,7 @@
     cursor: pointer;
     min-height: 42px;
   }
+
   .stagger-option input {
     flex: 0 0 auto;
     accent-color: var(--primary-color, #167b94);

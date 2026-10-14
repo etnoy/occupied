@@ -20,8 +20,10 @@ export function changeActionKind(
       if (form.entities.length === 0 && form.kind === "entities") {
         form.customYaml ||= customExample;
         form.kind = "custom";
+
         return {};
       }
+
       return errors;
     }
     if (!form.customYaml) {
@@ -32,6 +34,7 @@ export function changeActionKind(
       form.customActions = [source];
     }
     form.kind = "custom";
+
     return {};
   }
   if (form.kind === "custom" && kind !== "custom") {
@@ -52,6 +55,7 @@ export function changeActionKind(
         customActions: form.customActions,
       };
       Object.assign(form, next, buffer);
+
       return {};
     }
     if (
@@ -78,5 +82,6 @@ export function changeActionKind(
   ) {
     form.service = "cover.open_cover";
   }
+
   return {};
 }

@@ -143,6 +143,32 @@ export function stamp(value, zone, locale) {
     return value;
   }
 }
+export function eventDetails(event, label, timezone, t, locale) {
+  const kinds = {
+    random_start: "Random start",
+    random_end: "Random end",
+  };
+  let action = event.action.action;
+  if (event.tick) {
+    const tick = t("Tick {tick} of {count}")
+      .replace("{tick}", () => String(event.tick))
+      .replace("{count}", () => String(event.tick_count));
+    action += ` · ${tick} · ${event.period_seconds}s`;
+  }
+  if (event.superseded) {
+    action += ` · ${t("Superseded")}`;
+  }
+  return {
+    time: stamp(event.time, timezone, locale),
+    source: `${label} · ${t(kinds[event.kind] || event.kind)}`,
+    action,
+    targets: event.action.entities.join(", "),
+    settings:
+      Object.keys(event.action.data || {}).length > 0
+        ? JSON.stringify(event.action.data)
+        : "—",
+  };
+}
 export function staggerTransitions(plan) {
   const groups = new Map();
   for (const event of plan.events) {

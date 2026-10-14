@@ -1,4 +1,5 @@
 // Generated from custom-action.ts by pnpm run build. Do not edit.
+import { entityName } from "./util.js";
 export function actionTargets(source) {
   if (!source) {
     return [];
@@ -11,6 +12,12 @@ export function actionTargets(source) {
   return Array.isArray(source.entities)
     ? source.entities
     : Object.keys(source.entities || {});
+}
+export function actionTargetSummary(source, catalog) {
+  const targets = actionTargets(source);
+  const first = catalog ? entityName(catalog, targets[0]) : targets[0];
+  const remaining = targets.length > 1 ? ` +${targets.length - 1}` : "";
+  return `${first}${remaining}`;
 }
 // Emit readable YAML; strict parsing and semantic validation belong to the backend.
 export function actionYaml(value, level = 0) {

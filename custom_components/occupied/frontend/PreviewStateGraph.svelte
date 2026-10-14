@@ -20,9 +20,11 @@
     names?: Record<string, string>;
     t: Translate;
   } = $props();
+
   let ready = $state(false);
   let failed = $state(false);
   let narrow = $state(false);
+
   let data = $derived(
     schedulePlans
       ? calendarStateHistory(schedulePlans, plan, program, names, t)
@@ -35,22 +37,27 @@
     config: { ...hass.config, time_zone: plan.timezone },
     locale: { ...hass.locale, time_zone: "server" },
   });
+
   onMount(() => {
     let disposed = false;
-    const media = window.matchMedia("(max-width: 600px)");
+    const media = globalThis.matchMedia("(max-width: 600px)");
     const updateNarrow = () => {
       narrow = media.matches;
     };
     updateNarrow();
     media.addEventListener("change", updateNarrow);
-    loadHaHistoryChart().then(
-      () => {
-        if (!disposed) ready = true;
-      },
-      () => {
-        if (!disposed) failed = true;
-      },
-    );
+    void loadHaHistoryChart()
+      .then(() => {
+        if (!disposed) {
+          ready = true;
+        }
+      })
+      .catch(() => {
+        if (!disposed) {
+          failed = true;
+        }
+      });
+
     return () => {
       disposed = true;
       media.removeEventListener("change", updateNarrow);
@@ -58,7 +65,7 @@
   });
 </script>
 
-{#if !data.length}
+{#if data.length === 0}
   <p class="hint">
     {t(
       plan.events.length === 0
@@ -107,6 +114,7 @@
     display: block;
     width: 100%;
   }
+
   state-history-chart-timeline[hidden] {
     display: none;
   }

@@ -27,6 +27,7 @@ export function randomExplanation(
     for (const [key, value] of Object.entries(values)) {
       message = message.replaceAll(`{${key}}`, () => String(value));
     }
+
     return message;
   };
   const entries = [
@@ -112,6 +113,7 @@ export function randomExplanation(
       t("No events run because the event count is zero."),
       t("Dependent random events also skip this window."),
     );
+
     return sentences.join(" ");
   }
   if (cannotFit) {
@@ -225,6 +227,7 @@ export function randomExplanation(
       ) {
         return "";
       }
+
       return say(description, { entities, position });
     }
     if (selected.kind === "service") {
@@ -235,6 +238,7 @@ export function randomExplanation(
           })
         : "";
     }
+
     return say(
       selected.action === "turn_off"
         ? "turn off {entities}"
@@ -263,5 +267,6 @@ export function randomExplanation(
         : conclusion,
     ),
   );
+
   return sentences.join(" ");
 }

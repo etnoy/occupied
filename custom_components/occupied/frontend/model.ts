@@ -1,6 +1,9 @@
 import type { Program, Path } from "./types.js";
+
 export const copy = <T>(value: T): T => structuredClone(value);
+
 export const days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
 export function get<T = unknown>(object: unknown, path: Path): T {
   let value: unknown = object;
   for (const key of path) {
@@ -8,10 +11,12 @@ export function get<T = unknown>(object: unknown, path: Path): T {
       key
     ];
   }
+
   // Dynamic JSON paths are the boundary of the advanced editor. Callers supply
   // the expected field type; the backend validates edited values before saving.
   return value as T;
 }
+
 export function set(object: unknown, path: Path, value: unknown) {
   if (path.length === 0) {
     throw new Error("Cannot set an empty path");
@@ -52,8 +57,10 @@ export function identifier(
   while (used.has(id)) {
     id = `${base}_${n++}`;
   }
+
   return id;
 }
+
 export function references(program: Program, id: string): Path[] {
   const result: Path[] = Object.entries(program.steps || {})
     .filter(([, step]) => step.timing.relative_to?.step === id)
@@ -65,8 +72,10 @@ export function references(program: Program, id: string): Path[] {
       }
     }
   }
+
   return result;
 }
+
 export function removeStep(program: Program, path: Path) {
   const id = String(path[1]);
   if (references(program, id).length > 0) {
@@ -76,6 +85,7 @@ export function removeStep(program: Program, path: Path) {
   }
   delete program.steps?.[id];
 }
+
 export function parentSteps(program: Program, child?: string) {
   const blocked = new Set([child]);
   let changed = true;
@@ -96,6 +106,7 @@ export function parentSteps(program: Program, child?: string) {
       changed = true;
     }
   }
+
   return Object.entries(program.steps || {})
     .filter(([id]) => !blocked.has(id))
     .map(([id, step]) => ({ ...step, id, name: step.name || id }));
@@ -114,6 +125,7 @@ export function parentRandomEvents(program: Program, child?: string) {
       }
     }
   }
+
   return Object.entries(program.random || {})
     .filter(([id]) => !blocked.has(id))
     .map(([id, event]) => ({ ...event, id }));

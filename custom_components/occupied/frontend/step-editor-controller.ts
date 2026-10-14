@@ -68,6 +68,7 @@ export function createStepEditorContext(panel: OccupiedPanel) {
       } catch (error) {
         editor.errors.customYaml =
           error instanceof Error ? error.message : String(error);
+
         return refresh("customYaml");
       }
       const candidate = buildStep(panel.draft, editor);
@@ -88,6 +89,7 @@ export function createStepEditorContext(panel: OccupiedPanel) {
             if (validation.issues.length > 0) {
               panel.focusIssue(validation.issues[0]);
             }
+
             return;
           }
         }
@@ -107,6 +109,7 @@ export function createStepEditorContext(panel: OccupiedPanel) {
       panel.shadowRoot.getElementById(`step-card-${editor.id}`)?.focus();
     });
   };
+
   return {
     panel,
     // New facades notify Svelte of in-place form and validation changes.

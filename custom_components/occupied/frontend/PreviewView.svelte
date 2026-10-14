@@ -6,24 +6,31 @@
   import { properties } from "./dom.js";
   import { formatPreviewDate } from "./time-format.js";
   import { calendarDayPlan } from "./timeline.js";
+
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
+
   let showLoading = $state(false);
+
   $effect(() => {
-    revision;
+    void revision;
     if (!panel.busy) {
       showLoading = false;
+
       return;
     }
     showLoading = false;
-    const timeout = window.setTimeout(() => {
+    const timeout = globalThis.setTimeout(() => {
       showLoading = true;
     }, 250);
-    return () => window.clearTimeout(timeout);
+
+    return () => globalThis.clearTimeout(timeout);
   });
+
   let data = $derived.by(() => {
-    revision;
+    void revision;
     const t = panel.t;
+
     return { t };
   });
   let { t } = $derived(data);
@@ -40,10 +47,12 @@
       panel.previewDate ||
       panel.document.simulation_date,
   );
+
   const previousIcon =
     "M15.41,16.59L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.59Z";
   const nextIcon =
     "M8.59,16.59L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.59Z";
+
   let entityNames = $derived(
     Object.fromEntries(
       panel.catalog.entities.map((entity) => [entity.entity_id, entity.name]),
@@ -129,14 +138,17 @@
     gap: 8px 16px;
     margin-bottom: 20px;
   }
+
   h2 {
     margin: 0;
   }
+
   .day-navigation {
     display: flex;
     align-items: center;
     gap: 4px;
   }
+
   .day-navigation button {
     margin: 0;
   }

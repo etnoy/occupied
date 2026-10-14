@@ -10,6 +10,7 @@ export function properties(node: HTMLElement, values: Record<string, unknown>) {
     }
   };
   apply(values);
+
   return { update: apply };
 }
 
@@ -18,6 +19,7 @@ export function reference(
   callback: (node: HTMLElement) => void,
 ) {
   callback(node);
+
   return {
     update(next: (node: HTMLElement) => void) {
       next(node);
@@ -27,6 +29,7 @@ export function reference(
 
 export function validity(node: HTMLInputElement, message: string) {
   node.setCustomValidity(message);
+
   return {
     update(next: string) {
       node.setCustomValidity(next);

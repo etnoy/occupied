@@ -6,6 +6,24 @@ export function liveRunning(session?: LivePreviewSession | null) {
   );
 }
 
+export function liveSessionStatus(session: LivePreviewSession): string {
+  if (session.state === "ready") {
+    return session.cursor === 0 ? "Ready to start" : "Ready for next event";
+  }
+  const labels: Record<
+    Exclude<LivePreviewSession["state"], "ready">,
+    string
+  > = {
+    completed: "Day complete",
+    executing: "Running…",
+    stopping: "Stopping…",
+    stopped: "Stopped",
+    interrupted: "Interrupted",
+  };
+
+  return labels[session.state];
+}
+
 export function mergeLiveSession(
   previous: LivePreviewSession | null,
   incoming: LivePreviewSession | null,
@@ -34,6 +52,7 @@ export function mergeLiveSession(
   if (terminal.has(previous.state) && !terminal.has(incoming.state)) {
     return previous;
   }
+
   return {
     ...incoming,
     outcomes: { ...previous.outcomes, ...incoming.outcomes },
@@ -50,6 +69,7 @@ export function eventLiveResult(
   const outcome = event.id ? session.outcomes[event.id] : undefined;
   const current =
     session.next_group?.id === event.group_id && liveRunning(session);
+
   return { current, outcome };
 }
 
@@ -66,5 +86,6 @@ export function lastGroupResult(session: LivePreviewSession) {
   if (succeeded === outcomes.length) {
     return "Dispatched";
   }
+
   return succeeded > 0 ? "Partial success" : "Event failed or interrupted";
 }

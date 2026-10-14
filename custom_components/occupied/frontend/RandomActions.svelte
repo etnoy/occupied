@@ -16,10 +16,12 @@
     advancedOpen?: boolean;
     advancedTrigger?: HTMLButtonElement;
   } = $props();
+
   let menuOpen = $state(false);
   let deleteOpen = $state(false);
   let trigger: HTMLButtonElement;
   let menu: HTMLDivElement;
+
   let menuId = $derived(`random-actions-${context.editor.id}`);
 
   function closeDialog() {
@@ -29,17 +31,23 @@
       deleteOpen = false;
       advancedOpen = false;
     });
-    if (focusTarget.isConnected) focusTarget.focus();
+    if (focusTarget.isConnected) {
+      focusTarget.focus();
+    }
   }
 
   function closeMenu(restoreFocus = true) {
     menu.hidePopover();
     menuOpen = false;
-    if (restoreFocus) trigger.focus();
+    if (restoreFocus) {
+      trigger.focus();
+    }
   }
 
   function positionMenu() {
-    if (!menu.matches(":popover-open")) return;
+    if (!menu.matches(":popover-open")) {
+      return;
+    }
     const anchor = trigger.getBoundingClientRect();
     const bounds = menu.getBoundingClientRect();
     const above = anchor.top - bounds.height - 8;
@@ -52,10 +60,10 @@
     menu.showPopover();
     menuOpen = true;
     positionMenu();
-    const items = menu.querySelectorAll<HTMLButtonElement>(
-      "button:not(:disabled)",
-    );
-    (last ? items[items.length - 1] : items[0])?.focus({ preventScroll: true });
+    const items = [
+      ...menu.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"),
+    ];
+    (last ? items.at(-1) : items[0])?.focus({ preventScroll: true });
   }
 
   function menuKeydown(event: KeyboardEvent) {
@@ -67,13 +75,14 @@
     );
     if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
       event.preventDefault();
-      const next =
-        event.key === "Home"
-          ? 0
-          : event.key === "End"
-            ? items.length - 1
-            : (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) %
-              items.length;
+      let next =
+        (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) %
+        items.length;
+      if (event.key === "Home") {
+        next = 0;
+      } else if (event.key === "End") {
+        next = items.length - 1;
+      }
       items[next]?.focus();
     } else if (event.key === "Escape") {
       event.preventDefault();
@@ -100,10 +109,12 @@
     disabled={panel.busy}
     onclick={() => (menuOpen ? closeMenu() : openMenu())}
     onkeydown={(event) => {
-      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-        event.preventDefault();
-        openMenu(event.key === "ArrowUp");
+      if (!(event.key === "ArrowDown" || event.key === "ArrowUp")) {
+        return;
       }
+
+      event.preventDefault();
+      openMenu(event.key === "ArrowUp");
     }}
   >
     <svg aria-hidden="true" viewBox="0 0 24 24">

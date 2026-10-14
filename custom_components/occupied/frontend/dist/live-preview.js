@@ -4,6 +4,19 @@ export function liveRunning(session) {
     !!session && ["ready", "executing", "stopping"].includes(session.state)
   );
 }
+export function liveSessionStatus(session) {
+  if (session.state === "ready") {
+    return session.cursor === 0 ? "Ready to start" : "Ready for next event";
+  }
+  const labels = {
+    completed: "Day complete",
+    executing: "Running…",
+    stopping: "Stopping…",
+    stopped: "Stopped",
+    interrupted: "Interrupted",
+  };
+  return labels[session.state];
+}
 export function mergeLiveSession(previous, incoming) {
   if (!incoming || previous?.id !== incoming.id) {
     return incoming;

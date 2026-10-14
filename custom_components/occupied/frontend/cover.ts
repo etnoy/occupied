@@ -18,11 +18,13 @@ export function coverField(action: string) {
   if (action === "cover.set_cover_tilt_position") {
     return "tilt_position";
   }
+
   return;
 }
 
 export function isCoverAction(action: Pick<Action, "action" | "data">) {
   const field = coverField(action.action || "");
+
   return (
     coverActions.some(([service]) => service === action.action) &&
     Object.keys(action.data || {}).every((key) => key === field) &&
@@ -71,5 +73,6 @@ export function coverTarget(
       delete next[field];
     }
   }
+
   return next;
 }

@@ -5,6 +5,7 @@ export type HomeAssistantLocale = NonNullable<HomeAssistant["locale"]>;
 export function shiftScheduleDate(value: string, days: number) {
   const date = new Date(`${value}T12:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
+
   return date.toISOString().slice(0, 10);
 }
 
@@ -37,6 +38,7 @@ export function calendarMidnight(value: string, zone: string) {
     }
     instant += correction;
   }
+
   return new Date(instant).toISOString();
 }
 
@@ -48,6 +50,7 @@ export function formatScheduleDate(
     weekday: "long",
     timeZone: "UTC",
   }).format(new Date(`${value}T12:00:00Z`));
+
   return `${weekday} ${value}`;
 }
 
@@ -69,6 +72,7 @@ export function formatPreviewDate(
     ? t(relativeLabels[daysFromToday])
     : undefined;
   const dateLabel = formatScheduleDate(value, locale);
+
   return relativeLabel ? `${relativeLabel} · ${dateLabel}` : dateLabel;
 }
 
@@ -88,6 +92,7 @@ function usesAmPm(locale?: HomeAssistantLocale) {
   const hourCycle = new Intl.DateTimeFormat(language, {
     hour: "numeric",
   }).resolvedOptions().hourCycle;
+
   return hourCycle === "h11" || hourCycle === "h12";
 }
 
@@ -112,6 +117,7 @@ export function formatClock(value: string, locale?: HomeAssistantLocale) {
   const date = new Date(
     Date.UTC(2020, 0, 1, Number(hour), Number(minute), Number(second || 0)),
   );
+
   return new Intl.DateTimeFormat(formatterLocale(locale), {
     hour: usesAmPm(locale) ? "numeric" : "2-digit",
     minute: "2-digit",

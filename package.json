@@ -6,20 +6,23 @@
   "scripts": {
     "build": "node scripts/build-frontend.ts",
     "build:check": "node scripts/build-frontend.ts --check",
-    "lint": "eslint \"custom_components/occupied/frontend/**/*.ts\" \"tests/frontend/**/*.ts\" \"scripts/*.ts\" --max-warnings 0",
+    "lint": "eslint \"custom_components/occupied/frontend/**/*.{ts,svelte}\" \"tests/frontend/**/*.ts\" \"scripts/*.{ts,mjs}\" --max-warnings 0",
     "typecheck": "tsc --noEmit && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "test": "pnpm run build:tests && node --test tests/frontend/generated/*.test.js",
-    "format:check": "prettier --check custom_components/occupied/frontend tests/frontend scripts/*.ts eslint.config.mjs tsconfig.json package.json .prettierrc.json .github/workflows",
-    "format:fix": "prettier --write \"custom_components/occupied/frontend/*.{ts,svelte}\" \"tests/frontend/src/*.ts\" scripts/*.ts eslint.config.mjs tsconfig.json package.json .prettierrc.json .github/workflows && pnpm run build",
-    "build:tests": "node scripts/build-frontend.ts --tests-only"
+    "format:check": "prettier --check custom_components/occupied/frontend tests/frontend \"scripts/*.{ts,mjs}\" eslint.config.mjs tsconfig.json package.json .prettierrc.json .github/workflows",
+    "format:fix": "prettier --write \"custom_components/occupied/frontend/*.{ts,svelte,css}\" \"tests/frontend/src/*.ts\" \"scripts/*.{ts,mjs}\" eslint.config.mjs tsconfig.json package.json .prettierrc.json .github/workflows && pnpm run build",
+    "build:tests": "node scripts/build-frontend.ts --tests-only",
+    "lint:fix": "eslint \"custom_components/occupied/frontend/**/*.{ts,svelte}\" \"tests/frontend/**/*.ts\" \"scripts/*.{ts,mjs}\" --fix --max-warnings 0 && pnpm run build"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@stylistic/eslint-plugin": "5.10.0",
     "@types/node": "24.19.1",
     "esbuild": "0.28.2",
     "eslint": "10.9.1",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.6",
+    "eslint-plugin-svelte": "3.23.1",
     "eslint-plugin-unicorn": "74.0.0",
     "globals": "17.11.0",
     "prettier": "3.6.2",

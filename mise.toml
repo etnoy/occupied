@@ -11,7 +11,7 @@ description = "Run the Python test suite"
 run = "python -m pytest"
 
 [tasks.lint]
-description = "Lint Python and frontend JavaScript; type check TypeScript and Svelte"
+description = "Lint Python, TypeScript, and Svelte; check frontend types"
 run = [
   "ruff check custom_components tests scripts",
   "pnpm run lint",
@@ -19,11 +19,10 @@ run = [
 ]
 
 [tasks."lint-fix"]
-description = "Fix Python lint issues, rebuild JavaScript, and check frontend code"
+description = "Fix Python and frontend lint issues, rebuild assets, and check types"
 run = [
   "ruff check --fix custom_components tests scripts",
-  "pnpm run build",
-  "pnpm run lint",
+  "pnpm run lint:fix",
   "pnpm run typecheck",
 ]
 

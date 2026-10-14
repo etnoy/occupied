@@ -5,6 +5,7 @@
   import { properties } from "./dom.js";
   import type { HaSelector } from "./types.js";
   import { isValueChangedEvent } from "./util.js";
+
   let {
     panel,
     context,
@@ -14,8 +15,19 @@
     context: ActionEditorContext;
     label?: string;
   } = $props();
+
   let { editor, form, t, changed } = $derived(context);
   let fieldPrefix = $derived(context.fieldPrefix || "");
+  let domains = $derived.by(() => {
+    if (form.kind === "scene") {
+      return ["scene"];
+    }
+    if (form.kind === "cover") {
+      return ["cover"];
+    }
+
+    return ["light", "switch"];
+  });
 </script>
 
 <div data-editor-section="entities">
@@ -29,13 +41,16 @@
       ? `step-error-${fieldPrefix}entities`
       : undefined}
     onvalue-changed={(event: Event) => {
-      if (!isValueChangedEvent(event)) return;
+      if (!isValueChangedEvent(event)) {
+        return;
+      }
       (event.currentTarget as HaSelector).value = event.detail.value;
-      form.entities = Array.isArray(event.detail.value)
-        ? event.detail.value
-        : event.detail.value
-          ? [event.detail.value]
-          : [];
+      const value = event.detail.value;
+      if (Array.isArray(value)) {
+        form.entities = value;
+      } else {
+        form.entities = typeof value === "string" && value ? [value] : [];
+      }
       changed("entities");
     }}
     use:properties={{
@@ -43,18 +58,9 @@
       selector: {
         entity: {
           multiple: form.kind !== "scene",
-          ...(form.kind === "service"
-            ? {}
-            : {
-                filter: {
-                  domain:
-                    form.kind === "scene"
-                      ? ["scene"]
-                      : form.kind === "cover"
-                        ? ["cover"]
-                        : ["light", "switch"],
-                },
-              }),
+          ...(form.kind !== "service" && {
+            filter: { domain: domains },
+          }),
         },
       },
       value: form.kind === "scene" ? form.entities[0] || "" : form.entities,

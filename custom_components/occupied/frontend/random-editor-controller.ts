@@ -23,6 +23,7 @@ export function openRandom(panel: OccupiedPanel, entry?: RandomEntry) {
         openRandom(panel, entry);
       }
     });
+
     return;
   }
   panel.randomEditor = randomEditor(panel.draft, entry);
@@ -86,13 +87,16 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
         if (options && (key === "showEndTime" || key === "showEndOffset")) {
           return options[key];
         }
+
         return Reflect.get(target, key);
       },
       set(target, key, value) {
         if (options && (key === "showEndTime" || key === "showEndOffset")) {
           options[key] = value;
+
           return true;
         }
+
         return Reflect.set(target, key, value);
       },
     });
@@ -125,6 +129,7 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
         } catch (error) {
           editor.errors[`${phase}.customYaml`] =
             error instanceof Error ? error.message : String(error);
+
           return refresh(`${phase}.customYaml`);
         }
       }
@@ -144,6 +149,7 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
             if (validation.issues.length > 0) {
               panel.focusIssue(validation.issues[0]);
             }
+
             return;
           }
         }
@@ -161,6 +167,7 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
       panel.shadowRoot.getElementById(`random-card-${editor.id}`)?.focus(),
     );
   const context: EditorContext = { editor: new Proxy(editor, {}), t, changed };
+
   return {
     ...context,
     form: new Proxy(form, {}),
@@ -182,12 +189,14 @@ export async function deleteRandom(panel: OccupiedPanel) {
       "Other random events depend on this window. Change their starts before deleting.",
     );
     panel.flush();
+
     return;
   }
   delete candidate.random?.[editor.id];
   if (panel.document?.source === "file") {
     panel.randomEditor = null;
     panel.change([], candidate, true);
+
     return;
   }
   // Keep the open editor until the guarded save succeeds, preserving edits on failure.

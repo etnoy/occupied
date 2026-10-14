@@ -52,6 +52,7 @@ async function fixture() {
           querySelector: () => null,
           getElementById: () => null,
         };
+
         attachShadow() {
           return this.shadowRoot;
         }
@@ -82,6 +83,7 @@ async function fixture() {
         dispatchEvent() {},
         confirm: () => {
           confirmations++;
+
           return accepted;
         },
       },
@@ -172,6 +174,7 @@ async function fixture() {
       ) {
         return (await liveOverride(message)) as T;
       }
+
       return responses[String(message.type)] as T;
     },
     connection: {
@@ -187,6 +190,7 @@ async function fixture() {
       ) => {
         const key = `${message.type}:${message.config_entry_id || "all"}`;
         subscriptions.set(key, callback as (snapshot: unknown) => void);
+
         return Promise.resolve(() => {
           disposed.push(key);
           subscriptions.delete(key);
@@ -197,6 +201,7 @@ async function fixture() {
   panel.hass = hass;
   panel.panel = {};
   await settle();
+
   return {
     panel,
     documents,
@@ -312,6 +317,7 @@ void test("Next never advances optimistically or resends after a lost response",
       if (message.type === "occupied/live_preview/next") {
         return Promise.reject(new Error("Connection lost after dispatch"));
       }
+
       return Promise.resolve({
         session: { ...session, cursor: 1, last_group_id: "first" },
         can_advance: true,
@@ -724,6 +730,7 @@ void test("Save step validates and saves new and edited steps, then closes the e
     const requests: Record<string, unknown>[] = [];
     f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
       requests.push(structuredClone(message));
+
       return Promise.resolve({
         ...f.panel.document,
         valid: true,
@@ -779,6 +786,7 @@ void test("random creation, editing, and deletion use the guarded save flow", as
     const requests: Record<string, unknown>[] = [];
     f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
       requests.push(structuredClone(message));
+
       return Promise.resolve({
         ...f.panel.document,
         valid: true,
@@ -907,6 +915,7 @@ void test("saving YAML sends code to the validated save API and adopts the saved
     let request: Record<string, unknown> | undefined;
     f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
       request = message;
+
       return Promise.resolve({
         valid: true,
         ...f.panel.document,

@@ -4,12 +4,13 @@
   import PreviewStateGraph from "./PreviewStateGraph.svelte";
   import type { HomeAssistantLocale } from "./time-format.js";
   import { formatScheduleDate } from "./time-format.js";
-  import { stamp, staggerTransitions } from "./timeline.js";
+  import { stamp, staggerTransitions, eventDetails } from "./timeline.js";
   import { stepEntries } from "./step-model.js";
   import { randomEntries } from "./random-model.js";
   import type { PlannedEvent } from "./types.js";
   import type { LivePreviewSession } from "./types.js";
   import { eventLiveResult } from "./live-preview.js";
+
   let {
     plan,
     schedulePlans,
@@ -35,6 +36,7 @@
     showLoading?: boolean;
     liveSession?: LivePreviewSession | null;
   } = $props();
+
   let labels = $derived(
     new Map([
       ...stepEntries(program || {}).map(
@@ -45,6 +47,7 @@
       ),
     ]),
   );
+
   function eventLabel(event: PlannedEvent) {
     return (
       labels.get(
@@ -52,8 +55,10 @@
       ) || event.source_id
     );
   }
+
   let query = $state("");
   let page = $state(0);
+
   let filtered = $derived(
     plan?.events.filter(
       (event) =>
@@ -89,7 +94,7 @@
             "Plan revision",
           )}: {plan.source_revision?.slice(0, 12) || "—"}
         </p>
-        {#each staggerTransitions(plan) as transition}
+        {#each staggerTransitions(plan) as transition (transition)}
           <details>
             <summary>
               {eventLabel(transition.events[0])} · {t("Staggered action")} · {transition.count}
@@ -106,13 +111,14 @@
               )}s
             </p>
             <ol>
-              {#each transition.events as tick}
+              {#each transition.events as tick (tick)}
                 <li value={tick.tick}>
                   {stamp(tick.time, plan.timezone, locale)} · {tick.action.entities
                     .map((entity) => entityNames[entity] || entity)
                     .join(", ")}
                   {#if tick.superseded}
-                    · {t("Superseded")}{/if}
+                    · {t("Superseded")}
+                  {/if}
                 </li>
               {/each}
             </ol>
@@ -130,25 +136,36 @@
         <div>
           <div class="table-wrap">
             <table>
-              <thead
-                ><tr>
-                  {#each ["Planned time", "Source", "Action", "Targets", "Settings"] as label}
+              <thead>
+                <tr>
+                  {#each ["Planned time", "Source", "Action", "Targets", "Settings"] as label (label)}
                     <th scope="col">{t(label)}</th>
                   {/each}
-                  {#if liveSession}<th scope="col">{t("Result")}</th>{/if}
-                </tr></thead
-              >
+                  {#if liveSession}
+                    <th scope="col">{t("Result")}</th>
+                  {/if}
+                </tr>
+              </thead>
               <tbody>
-                {#each filtered.slice(currentPage * 50, currentPage * 50 + 50) as event}
+                {#each filtered.slice(currentPage * 50, currentPage * 50 + 50) as event (event)}
                   {@const live = eventLiveResult(event, liveSession)}
+                  {@const details = eventDetails(
+                    event,
+                    eventLabel(event),
+                    plan.timezone,
+                    t,
+                    locale,
+                  )}
                   <tr
                     class:current={live?.current}
                     class:completed={live?.outcome?.status === "dispatched"}
                     aria-current={live?.current ? "step" : undefined}
                   >
-                    {#each [stamp(event.time, plan.timezone, locale), `${eventLabel(event)} · ${t(event.kind === "random_start" ? "Random start" : event.kind === "random_end" ? "Random end" : event.kind)}`, `${event.action.action}${event.tick ? ` · ${t("Tick {tick} of {count}").replace("{tick}", String(event.tick)).replace("{count}", String(event.tick_count))} · ${event.period_seconds}s` : ""}${event.superseded ? ` · ${t("Superseded")}` : ""}`, event.action.entities.join(", "), Object.keys(event.action.data || {}).length ? JSON.stringify(event.action.data) : "—"] as value}
-                      <td>{value}</td>
-                    {/each}
+                    <td>{details.time}</td>
+                    <td>{details.source}</td>
+                    <td>{details.action}</td>
+                    <td>{details.targets}</td>
+                    <td>{details.settings}</td>
                     {#if liveSession}
                       <td>
                         {#if live?.outcome}
@@ -158,7 +175,9 @@
                               : "error"}>{t(live.outcome.status)}</span
                           >
                           <div>{live.outcome.detail}</div>
-                        {:else if live?.current}{t("Next event")}{/if}
+                        {:else if live?.current}
+                          {t("Next event")}
+                        {/if}
                       </td>
                     {/if}
                   </tr>
@@ -188,7 +207,7 @@
         </div>
       </details>
     {/if}
-    {#each plan.issues.filter((issue) => issue.severity !== "info") as issue}
+    {#each plan.issues.filter((issue) => issue.severity !== "info") as issue (issue)}
       <p class={issue.severity === "warning" ? "hint" : "error"}>
         {issue.code}: {issue.message}
       </p>
@@ -204,6 +223,7 @@
     outline: 2px solid var(--primary-color, #03a9f4);
     outline-offset: -2px;
   }
+
   tr.completed {
     background: color-mix(
       in srgb,

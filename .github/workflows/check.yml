@@ -55,9 +55,12 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Verify committed frontend assets before running tests
         run: pnpm run build:check
-      - run: pnpm run lint
-      - run: pnpm run typecheck
-      - run: pnpm run format:check
+      - name: Lint TypeScript and Svelte scripts and templates
+        run: pnpm run lint
+      - name: Check TypeScript and Svelte types
+        run: pnpm run typecheck
+      - name: Check formatting including Svelte and CSS
+        run: pnpm run format:check
       - run: pnpm test
 
   hassfest:

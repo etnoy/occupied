@@ -506,717 +506,9 @@ function timingExplanation(
   return `${runs} ${t("at a random time between")} ${firstBound} ${t("and")} ${offsetLabel(high)} ${name}`;
 }
 
-// custom_components/occupied/frontend/styles.ts
-var styles = `
-  p,
-  li {
-    overflow-wrap: anywhere;
-  }
-  :host {
-    display: block;
-    min-height: 100%;
-    background: var(--primary-background-color, #f4f5f8);
-    color: var(--primary-text-color, #202c37);
-    font:
-      15px/1.5 system-ui,
-      sans-serif;
-  }
-  * {
-    box-sizing: border-box;
-  }
-  main {
-    max-width: 1200px;
-    margin: auto;
-    padding: 24px;
-  }
-  h1 {
-    margin: 0;
-    font-size: 28px;
-  }
-  h2 {
-    font-size: 21px;
-    margin: 0 0 12px;
-  }
-  h3 {
-    font-size: 17px;
-  }
-  p {
-    margin: 8px 0;
-  }
-  small,
-  .hint {
-    color: var(--secondary-text-color, #596773);
-  }
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-  nav,
-  .row,
-  .toolbar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  nav {
-    margin: 18px 0;
-  }
-  nav button[aria-current="page"] {
-    background: var(--primary-color, #167b94);
-    color: white;
-  }
-  section {
-    background: var(--card-background-color, #fff);
-    border: 1px solid var(--divider-color, #d5dce3);
-    border-radius: 12px;
-    padding: 20px;
-    margin: 16px 0;
-    min-width: 0;
-  }
-  section section {
-    border-radius: 8px;
-  }
-  details {
-    padding: 12px 0;
-  }
-  summary {
-    cursor: pointer;
-    font-weight: 600;
-  }
-  button,
-  input,
-  select,
-  textarea {
-    font: inherit;
-    color: inherit;
-  }
-  button {
-    background: var(--card-background-color, #fff);
-    border: 1px solid var(--divider-color, #bdc9d2);
-    padding: 8px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    min-height: 42px;
-  }
-  button.primary {
-    background: var(--primary-color, #167b94);
-    color: white;
-  }
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-  button:focus-visible,
-  input:focus-visible,
-  select:focus-visible,
-  textarea:focus-visible,
-  summary:focus-visible,
-  a:focus-visible,
-  [tabindex]:focus-visible {
-    outline: 3px solid var(--primary-color, #167b94);
-    outline-offset: 2px;
-  }
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    margin: 12px 0;
-    max-width: 700px;
-  }
-  label {
-    font-weight: 500;
-  }
-  input:not([type="checkbox"]),
-  select,
-  textarea {
-    border: 1px solid var(--divider-color, #bdc9d2);
-    border-radius: 6px;
-    background: var(--card-background-color, #fff);
-    padding: 9px;
-    min-width: 0;
-    max-width: 100%;
-  }
-  .field input,
-  .field select,
-  .field textarea {
-    width: 100%;
-  }
-  textarea {
-    resize: vertical;
-  }
-  .field textarea {
-    font:
-      14px/1.5 ui-monospace,
-      monospace;
-  }
-  input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    vertical-align: middle;
-  }
-  fieldset {
-    border: 1px solid var(--divider-color, #d5dce3);
-    border-radius: 8px;
-    margin: 12px 0;
-    min-width: 0;
-  }
-  .banner {
-    padding: 12px 16px;
-    border-radius: 8px;
-    background: var(--secondary-background-color, #e3eef2);
-    margin: 12px 0;
-    overflow-wrap: anywhere;
-  }
-  .banner.unsaved {
-    border: 1px solid var(--warning-color, #e69500);
-    border-left-width: 4px;
-    background: color-mix(
-      in srgb,
-      var(--warning-color, #e69500) 18%,
-      var(--card-background-color, #fff)
-    );
-    color: var(--primary-text-color, #202c37);
-    font-weight: 600;
-  }
-  .error,
-  [aria-invalid="true"] {
-    color: var(--error-color, #b3261e);
-  }
-  [aria-invalid="true"] {
-    border-color: var(--error-color, #b3261e);
-  }
-  [hidden] {
-    display: none !important;
-  }
-  .toolbar {
-    position: sticky;
-    top: 0;
-    padding: 12px 0;
-    background: var(--primary-background-color, #f4f5f8);
-    z-index: 2;
-  }
-  .table-wrap {
-    overflow: auto;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-  th,
-  td {
-    padding: 9px;
-    text-align: left;
-    border-bottom: 1px solid var(--divider-color, #d5dce3);
-    max-width: 300px;
-    overflow-wrap: anywhere;
-  }
-  th {
-    white-space: nowrap;
-  }
-  @media (max-width: 600px) {
-    main {
-      padding: 14px;
-    }
-    section {
-      padding: 14px;
-    }
-    nav {
-      gap: 5px;
-    }
-    nav button {
-      padding: 7px 10px;
-    }
-    .row input {
-      width: 100%;
-    }
-  }
-
-  /* Routine builder */
-  main {
-    max-width: 1120px;
-    padding: 32px;
-  }
-  header {
-    margin-bottom: 24px;
-  }
-  header h1 {
-    font-size: 24px;
-    letter-spacing: -0.7px;
-  }
-  header p {
-    margin: 2px 0;
-    font-size: 13px;
-  }
-  nav {
-    border-bottom: 1px solid var(--divider-color, #d5dce3);
-    gap: 24px;
-    margin: 16px 0 32px;
-  }
-  nav button,
-  nav button[aria-current="page"] {
-    border: 0;
-    border-radius: 0;
-    border-bottom: 3px solid transparent;
-    background: transparent;
-    padding: 10px 0;
-    color: var(--secondary-text-color, #596773);
-  }
-  nav button[aria-current="page"] {
-    border-bottom-color: var(--primary-color, #167b94);
-    color: var(--primary-color, #167b94);
-    font-weight: 650;
-  }
-  .field-label-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 4px 12px;
-  }
-  .field-label-row .text-button {
-    min-height: 24px;
-    padding: 0;
-    border: 0;
-    font-size: 13px;
-  }
-  .text-button {
-    border-color: transparent;
-    background: transparent;
-    color: var(--primary-color, #167b94);
-    padding-left: 4px;
-    padding-right: 4px;
-  }
-  .page-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-    margin: 24px 0;
-  }
-  .page-heading h2 {
-    font-size: 30px;
-    letter-spacing: -0.8px;
-    margin: 0;
-  }
-  .page-heading .hint {
-    max-width: 500px;
-  }
-  .step-empty {
-    text-align: center;
-    padding: 60px 32px;
-    border-style: dashed;
-  }
-  .step-empty h2 {
-    font-size: 25px;
-    letter-spacing: -0.5px;
-  }
-  .step-empty p {
-    max-width: 490px;
-    margin: 12px auto 24px;
-  }
-  .empty-steps {
-    font-size: 13px;
-    color: var(--secondary-text-color, #596773);
-  }
-  .step-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin: 0 0 20px;
-    min-width: 0;
-  }
-  .step-card {
-    width: calc(100% - var(--depth) * 14px);
-    margin-left: calc(var(--depth) * 14px);
-    border: 1px solid var(--divider-color, #d5dce3);
-    border-radius: 12px;
-    background: var(--card-background-color, #fff);
-    overflow: hidden;
-  }
-  .step-card.step-disabled {
-    border-style: dashed;
-  }
-  .step-card.step-warning {
-    border-color: var(--warning-color, #ffa600);
-    background: color-mix(in srgb, var(--warning-color, #ffa600) 10%, var(--card-background-color, #fff));
-  }
-  .step-card.step-warning .step-row:not(:disabled):hover {
-    background: color-mix(in srgb, var(--warning-color, #ffa600) 18%, var(--card-background-color, #fff));
-  }
-  .step-row-warning {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    color: var(--warning-color, #ffa600);
-    font-size: 13px;
-    overflow-wrap: anywhere;
-  }
-  .step-row-warning ha-icon {
-    --mdc-icon-size: 20px;
-    flex-shrink: 0;
-  }
-  .step-warning-message { display: block; }
-  .step-card.step-disabled .step-row {
-    color: var(--secondary-text-color, #596773);
-  }
-  .step-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
-    align-items: center;
-    gap: 14px;
-    text-align: left;
-    width: 100%;
-    padding: 20px;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    color: inherit;
-  }
-  .step-row:disabled { opacity: 1; cursor: default; }
-  .step-row.editing { grid-template-columns: minmax(0, 1fr); }
-  .step-row:not(:disabled):hover { background: var(--secondary-background-color, #e3eef2); }
-  .step-row[aria-expanded="true"] { border-bottom: 1px solid var(--divider-color, #d5dce3); }
-  .step-card .step-editor { margin: 0; }
-  .step-editor-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-  .step-actions-menu {
-    position: fixed;
-    inset: auto;
-    width: 240px;
-    max-width: calc(100vw - 32px);
-    max-height: calc(100vh - 32px);
-    overflow: auto;
-    margin: 0;
-    padding: 6px;
-    border: 1px solid var(--divider-color, #d5dce3);
-    border-radius: 10px;
-    background: var(--card-background-color, #fff);
-    color: var(--primary-text-color, #202c37);
-    box-shadow: 0 6px 24px #0003;
-  }
-  .step-actions-menu button {
-    display: block;
-    width: 100%;
-    border: 0;
-    background: transparent;
-    text-align: left;
-  }
-  .step-actions-menu button:hover,
-  .step-actions-menu button:focus-visible {
-    background: var(--secondary-background-color, #e3eef2);
-  }
-  .step-actions-menu [role="separator"] {
-    border-top: 1px solid var(--divider-color, #d5dce3);
-    margin: 6px 8px;
-  }
-  .step-row-content {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .step-row-heading {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .step-status-badge {
-    padding: 2px 8px;
-    border: 1px solid var(--divider-color, #d5dce3);
-    border-radius: 999px;
-    background: var(--secondary-background-color, #e3eef2);
-    color: var(--secondary-text-color, #596773);
-    font-size: 11px;
-    font-weight: 500;
-    line-height: 1.5;
-    white-space: nowrap;
-  }
-  .step-row strong {
-    font-size: 16px;
-    font-weight: 650;
-    overflow-wrap: anywhere;
-  }
-  .step-row-content .hint {
-    font-size: 13px;
-    overflow-wrap: anywhere;
-  }
-  .step-row-time {
-    text-align: right;
-    font-size: 13px;
-    overflow-wrap: anywhere;
-  }
-  .step-delete-dialog,
-  .step-advanced-dialog {
-    width: 440px;
-    max-width: calc(100vw - 32px);
-    max-height: calc(100vh - 32px);
-    overflow: auto;
-    padding: 24px;
-    border: 1px solid var(--divider-color, #d5dce3);
-    border-radius: 12px;
-    background: var(--card-background-color, #fff);
-    color: var(--primary-text-color, #202c37);
-    box-shadow: 0 6px 24px #0003;
-  }
-  .step-delete-dialog::backdrop,
-  .step-advanced-dialog::backdrop {
-    background: #0006;
-  }
-  .step-weekdays {
-    padding: 12px;
-  }
-  .step-weekday-presets {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  .step-weekday-presets button {
-    padding: 6px 10px;
-  }
-  .step-weekday-presets button[aria-pressed="true"] {
-    border-color: var(--primary-color, #167b94);
-    background: var(--secondary-background-color, #e3eef2);
-    color: var(--primary-color, #167b94);
-  }
-  .step-weekday-options {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-  .step-weekday-option {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 42px;
-    cursor: pointer;
-  }
-  .step-weekday-option input {
-    flex: 0 0 auto;
-    accent-color: var(--primary-color, #167b94);
-  }
-  .step-exit-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 10;
-    display: grid;
-    place-items: center;
-    padding: 16px;
-    background: #0004;
-  }
-  .step-exit-dialog {
-    position: relative;
-    inset: auto;
-    width: 440px;
-    max-width: 100%;
-    margin: 0;
-    padding: 24px;
-    border: 1px solid var(--divider-color, #d5dce3);
-    border-radius: 12px;
-    background: var(--card-background-color, #fff);
-    color: var(--primary-text-color, #202c37);
-    box-shadow: 0 6px 24px #0003;
-  }
-  .step-exit-dialog h2 { margin-top: 0; }
-  .step-delete-actions {
-    display: flex;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 24px;
-  }
-  .danger {
-    color: var(--error-color, #b3261e);
-  }
-  .icon-button {
-    display: inline-grid;
-    place-items: center;
-    width: 42px;
-    padding: 8px;
-  }
-  .icon-button svg {
-    width: 20px;
-    height: 20px;
-    fill: currentColor;
-  }
-  .step-editor {
-    max-width: none;
-    margin: 0 auto 32px;
-    padding: 32px;
-  }
-  .step-editor h3 {
-    font-size: 23px;
-    font-weight: 600;
-    letter-spacing: -0.5px;
-    margin: 28px 0 8px;
-  }
-  .entity-native-selector {
-    display: block;
-    width: 100%;
-  }
-  .builder-footer {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-    border-top: 1px solid var(--divider-color, #d5dce3);
-    padding-top: 22px;
-    margin-top: 28px;
-  }
-  .builder-footer .step-editor-actions { margin-top: 0; }
-  .builder-footer > button:first-child {
-    margin-right: auto;
-  }
-  .step-editor details {
-    padding: 8px 0;
-  }
-  .step-editor .field {
-    margin: 18px 0;
-  }
-  .source-picker {
-    position: relative;
-  }
-  .source-picker ha-generic-picker {
-    display: block;
-    width: 100%;
-  }
-  .step-editor .error {
-    font-size: 13px;
-  }
-  .timing-options {
-    border: 0;
-    padding: 0;
-    margin: 18px 0;
-  }
-  .timing-option-row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-  .timing-option {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    min-height: 44px;
-    border: 1px solid var(--divider-color, #bdc9d2);
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  .timing-option:has(input:checked) {
-    border-color: var(--primary-color, #167b94);
-    background: var(--secondary-background-color, #e3eef2);
-    color: var(--primary-color, #167b94);
-  }
-  .timing-options input[type="radio"] {
-    width: 18px;
-    height: 18px;
-    padding: 0;
-    margin: 0;
-    flex: 0 0 auto;
-    accent-color: var(--primary-color, #167b94);
-  }
-
-  .step-editor .step-name-editor .field {
-    max-width: none;
-    margin: 20px 0 28px;
-  }
-  .step-editor .step-name-editor label {
-    font-weight: 600;
-  }
-  .step-editor .step-name-editor input {
-    font-family: inherit;
-    font-size: 22px;
-    font-weight: 600;
-    line-height: 1.4;
-    padding: 14px;
-  }
-
-  .step-editor .editor-sections {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 28px;
-  }
-  .step-editor .editor-sections > div {
-    min-width: 0;
-  }
-  .step-editor h3 {
-    margin: 16px 0 8px;
-    font-size: 20px;
-  }
-  .step-editor h4 {
-    margin: 14px 0 8px;
-    font-size: 16px;
-    font-weight: 600;
-  }
-  .step-editor .field {
-    margin: 14px 0;
-  }
-  @media (max-width: 900px) {
-    .step-editor .editor-sections {
-      grid-template-columns: 1fr;
-      gap: 20px;
-    }
-    .step-editor .editor-sections > div + div {
-      border-top: 1px solid var(--divider-color, #d5dce3);
-      padding-top: 12px;
-    }
-  }
-  #issues:empty {
-    display: none;
-  }
-  #issues button {
-    margin: 0 6px 8px 0;
-    text-align: left;
-  }
-  @media (max-width: 600px) {
-    main {
-      padding: 18px 14px;
-    }
-    header {
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-    nav {
-      margin-bottom: 24px;
-    }
-    .page-heading {
-      align-items: flex-start;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .page-heading h2 {
-      font-size: 27px;
-    }
-    .step-row {
-      padding: 14px;
-      gap: 10px;
-      grid-template-columns: minmax(0, 1fr);
-    }
-    .step-row-time {
-      text-align: left;
-    }
-    .step-editor {
-      padding: 20px 16px;
-    }
-    .builder-footer {
-      gap: 6px;
-    }
-    .builder-footer button {
-      padding: 8px 12px;
-    }
-    .step-empty {
-      padding: 36px 20px;
-    }
-    .empty-steps {
-      line-height: 2;
-    }
-  }
-`;
+// custom_components/occupied/frontend/styles.css
+var styles_default =
+  '/* Shared element defaults */\np,\nli {\n  overflow-wrap: anywhere;\n}\n\n:host {\n  display: block;\n  min-height: 100%;\n  background: var(--primary-background-color, #f4f5f8);\n  color: var(--primary-text-color, #202c37);\n  font:\n    15px/1.5 system-ui,\n    sans-serif;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nmain {\n  max-width: 1200px;\n  margin: auto;\n  padding: 24px;\n}\n\nh1 {\n  margin: 0;\n  font-size: 28px;\n}\n\nh2 {\n  font-size: 21px;\n  margin: 0 0 12px;\n}\n\nh3 {\n  font-size: 17px;\n}\n\np {\n  margin: 8px 0;\n}\n\nsmall,\n.hint {\n  color: var(--secondary-text-color, #596773);\n}\n\nheader {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  flex-wrap: wrap;\n}\n\nnav,\n.row,\n.toolbar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\nnav {\n  margin: 18px 0;\n}\n\nnav button[aria-current="page"] {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nsection {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  padding: 20px;\n  margin: 16px 0;\n  min-width: 0;\n}\n\nsection section {\n  border-radius: 8px;\n}\n\ndetails {\n  padding: 12px 0;\n}\n\nsummary {\n  cursor: pointer;\n  font-weight: 600;\n}\n\nbutton,\ninput,\nselect,\ntextarea {\n  font: inherit;\n  color: inherit;\n}\n\nbutton {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #bdc9d2);\n  padding: 8px 14px;\n  border-radius: 8px;\n  cursor: pointer;\n  min-height: 42px;\n}\n\nbutton.primary {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nbutton:disabled {\n  opacity: 0.5;\n  cursor: default;\n}\n\nbutton:focus-visible,\ninput:focus-visible,\nselect:focus-visible,\ntextarea:focus-visible,\nsummary:focus-visible,\na:focus-visible,\n[tabindex]:focus-visible {\n  outline: 3px solid var(--primary-color, #167b94);\n  outline-offset: 2px;\n}\n\n.field {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  margin: 12px 0;\n  max-width: 700px;\n}\n\nlabel {\n  font-weight: 500;\n}\n\ninput:not([type="checkbox"]),\nselect,\ntextarea {\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 6px;\n  background: var(--card-background-color, #fff);\n  padding: 9px;\n  min-width: 0;\n  max-width: 100%;\n}\n\n.field input,\n.field select,\n.field textarea {\n  width: 100%;\n}\n\ntextarea {\n  resize: vertical;\n}\n\n.field textarea {\n  font:\n    14px/1.5 ui-monospace,\n    monospace;\n}\n\ninput[type="checkbox"] {\n  width: 20px;\n  height: 20px;\n  vertical-align: middle;\n}\n\nfieldset {\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 8px;\n  margin: 12px 0;\n  min-width: 0;\n}\n\n.banner {\n  padding: 12px 16px;\n  border-radius: 8px;\n  background: var(--secondary-background-color, #e3eef2);\n  margin: 12px 0;\n  overflow-wrap: anywhere;\n}\n\n.banner.unsaved {\n  border: 1px solid var(--warning-color, #e69500);\n  border-left-width: 4px;\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #e69500) 18%,\n    var(--card-background-color, #fff)\n  );\n  color: var(--primary-text-color, #202c37);\n  font-weight: 600;\n}\n\n.error,\n[aria-invalid="true"] {\n  color: var(--error-color, #b3261e);\n}\n\n[aria-invalid="true"] {\n  border-color: var(--error-color, #b3261e);\n}\n\n[hidden] {\n  display: none !important;\n}\n\n.toolbar {\n  position: sticky;\n  top: 0;\n  padding: 12px 0;\n  background: var(--primary-background-color, #f4f5f8);\n  z-index: 2;\n}\n\n.table-wrap {\n  overflow: auto;\n}\n\ntable {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 13px;\n}\n\nth,\ntd {\n  padding: 9px;\n  text-align: left;\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  max-width: 300px;\n  overflow-wrap: anywhere;\n}\n\nth {\n  white-space: nowrap;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 14px;\n  }\n\n  section {\n    padding: 14px;\n  }\n\n  nav {\n    gap: 5px;\n  }\n\n  nav button {\n    padding: 7px 10px;\n  }\n\n  .row input {\n    width: 100%;\n  }\n}\n\n/* Panel shell overrides: keep these after the shared defaults. */\nmain {\n  max-width: 1120px;\n  padding: 32px;\n}\n\nheader {\n  margin-bottom: 24px;\n}\n\nheader h1 {\n  font-size: 24px;\n  letter-spacing: -0.7px;\n}\n\nheader p {\n  margin: 2px 0;\n  font-size: 13px;\n}\n\nnav {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  gap: 24px;\n  margin: 16px 0 32px;\n}\n\nnav button,\nnav button[aria-current="page"] {\n  border: 0;\n  border-radius: 0;\n  border-bottom: 3px solid transparent;\n  background: transparent;\n  padding: 10px 0;\n  color: var(--secondary-text-color, #596773);\n}\n\nnav button[aria-current="page"] {\n  border-bottom-color: var(--primary-color, #167b94);\n  color: var(--primary-color, #167b94);\n  font-weight: 650;\n}\n\n.field-label-row {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: baseline;\n  gap: 4px 12px;\n}\n\n.field-label-row .text-button {\n  min-height: 24px;\n  padding: 0;\n  border: 0;\n  font-size: 13px;\n}\n\n.text-button {\n  border-color: transparent;\n  background: transparent;\n  color: var(--primary-color, #167b94);\n  padding-left: 4px;\n  padding-right: 4px;\n}\n\n.page-heading {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 24px;\n  margin: 24px 0;\n}\n\n.page-heading h2 {\n  font-size: 30px;\n  letter-spacing: -0.8px;\n  margin: 0;\n}\n\n.page-heading .hint {\n  max-width: 500px;\n}\n\n/* Step lists and empty states */\n.step-empty {\n  text-align: center;\n  padding: 60px 32px;\n  border-style: dashed;\n}\n\n.step-empty h2 {\n  font-size: 25px;\n  letter-spacing: -0.5px;\n}\n\n.step-empty p {\n  max-width: 490px;\n  margin: 12px auto 24px;\n}\n\n.empty-steps {\n  font-size: 13px;\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-list {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  margin: 0 0 20px;\n  min-width: 0;\n}\n\n.step-card {\n  width: calc(100% - var(--depth) * 14px);\n  margin-left: calc(var(--depth) * 14px);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  overflow: hidden;\n}\n\n.step-card.step-disabled {\n  border-style: dashed;\n}\n\n.step-card.step-warning {\n  border-color: var(--warning-color, #ffa600);\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 10%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-card.step-warning .step-row:not(:disabled):hover {\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 18%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-row-warning {\n  display: flex;\n  align-items: flex-start;\n  gap: 8px;\n  color: var(--warning-color, #ffa600);\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-warning ha-icon {\n  --mdc-icon-size: 20px;\n  flex-shrink: 0;\n}\n\n.step-warning-message {\n  display: block;\n}\n\n.step-card.step-disabled .step-row {\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-row {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);\n  align-items: center;\n  gap: 14px;\n  text-align: left;\n  width: 100%;\n  padding: 20px;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  color: inherit;\n}\n\n.step-row:disabled {\n  opacity: 1;\n  cursor: default;\n}\n\n.step-row.editing {\n  grid-template-columns: minmax(0, 1fr);\n}\n\n.step-row:not(:disabled):hover {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-row[aria-expanded="true"] {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n}\n\n.step-card .step-editor {\n  margin: 0;\n}\n\n.step-editor-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n/* Editor action menus */\n.step-actions-menu {\n  position: fixed;\n  inset: auto;\n  width: 240px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  margin: 0;\n  padding: 6px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 10px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-actions-menu button {\n  display: block;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  text-align: left;\n}\n\n.step-actions-menu button:hover,\n.step-actions-menu button:focus-visible {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-actions-menu [role="separator"] {\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  margin: 6px 8px;\n}\n\n.step-row-content {\n  display: flex;\n  min-width: 0;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.step-row-heading {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.step-status-badge {\n  padding: 2px 8px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 999px;\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--secondary-text-color, #596773);\n  font-size: 11px;\n  font-weight: 500;\n  line-height: 1.5;\n  white-space: nowrap;\n}\n\n.step-row strong {\n  font-size: 16px;\n  font-weight: 650;\n  overflow-wrap: anywhere;\n}\n\n.step-row-content .hint {\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-time {\n  text-align: right;\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n/* Editor dialogs */\n.step-delete-dialog,\n.step-advanced-dialog {\n  width: 440px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-delete-dialog::backdrop,\n.step-advanced-dialog::backdrop {\n  background: #0006;\n}\n\n.step-weekdays {\n  padding: 12px;\n}\n\n.step-weekday-presets {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-bottom: 16px;\n}\n\n.step-weekday-presets button {\n  padding: 6px 10px;\n}\n\n.step-weekday-presets button[aria-pressed="true"] {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.step-weekday-options {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.step-weekday-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  min-height: 42px;\n  cursor: pointer;\n}\n\n.step-weekday-option input {\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-exit-overlay {\n  position: fixed;\n  inset: 0;\n  z-index: 10;\n  display: grid;\n  place-items: center;\n  padding: 16px;\n  background: #0004;\n}\n\n.step-exit-dialog {\n  position: relative;\n  inset: auto;\n  width: 440px;\n  max-width: 100%;\n  margin: 0;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-exit-dialog h2 {\n  margin-top: 0;\n}\n\n.step-delete-actions {\n  display: flex;\n  justify-content: flex-end;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n.danger {\n  color: var(--error-color, #b3261e);\n}\n\n.icon-button {\n  display: inline-grid;\n  place-items: center;\n  width: 42px;\n  padding: 8px;\n}\n\n.icon-button svg {\n  width: 20px;\n  height: 20px;\n  fill: currentColor;\n}\n\n.step-editor {\n  max-width: none;\n  margin: 0 auto 32px;\n  padding: 32px;\n}\n\n.step-editor h3 {\n  font-size: 23px;\n  font-weight: 600;\n  letter-spacing: -0.5px;\n  margin: 28px 0 8px;\n}\n\n.entity-native-selector {\n  display: block;\n  width: 100%;\n}\n\n.builder-footer {\n  display: flex;\n  gap: 10px;\n  align-items: center;\n  flex-wrap: wrap;\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  padding-top: 22px;\n  margin-top: 28px;\n}\n\n.builder-footer .step-editor-actions {\n  margin-top: 0;\n}\n\n.builder-footer > button:first-child {\n  margin-right: auto;\n}\n\n.step-editor details {\n  padding: 8px 0;\n}\n\n.step-editor .field {\n  margin: 18px 0;\n}\n\n.source-picker {\n  position: relative;\n}\n\n.source-picker ha-generic-picker {\n  display: block;\n  width: 100%;\n}\n\n.step-editor .error {\n  font-size: 13px;\n}\n\n.timing-options {\n  border: 0;\n  padding: 0;\n  margin: 18px 0;\n}\n\n.timing-option-row {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.timing-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 10px 12px;\n  min-height: 44px;\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 8px;\n  cursor: pointer;\n}\n\n.timing-option:has(input:checked) {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.timing-options input[type="radio"] {\n  width: 18px;\n  height: 18px;\n  padding: 0;\n  margin: 0;\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-editor .step-name-editor .field {\n  max-width: none;\n  margin: 20px 0 28px;\n}\n\n.step-editor .step-name-editor label {\n  font-weight: 600;\n}\n\n.step-editor .step-name-editor input {\n  font-family: inherit;\n  font-size: 22px;\n  font-weight: 600;\n  line-height: 1.4;\n  padding: 14px;\n}\n\n.step-editor .editor-sections {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 28px;\n}\n\n.step-editor .editor-sections > div {\n  min-width: 0;\n}\n\n.step-editor h3 {\n  margin: 16px 0 8px;\n  font-size: 20px;\n}\n\n.step-editor h4 {\n  margin: 14px 0 8px;\n  font-size: 16px;\n  font-weight: 600;\n}\n\n.step-editor .field {\n  margin: 14px 0;\n}\n\n@media (max-width: 900px) {\n  .step-editor .editor-sections {\n    grid-template-columns: 1fr;\n    gap: 20px;\n  }\n\n  .step-editor .editor-sections > div + div {\n    border-top: 1px solid var(--divider-color, #d5dce3);\n    padding-top: 12px;\n  }\n}\n\n#issues:empty {\n  display: none;\n}\n\n#issues button {\n  margin: 0 6px 8px 0;\n  text-align: left;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 18px 14px;\n  }\n\n  header {\n    gap: 10px;\n    margin-bottom: 8px;\n  }\n\n  nav {\n    margin-bottom: 24px;\n  }\n\n  .page-heading {\n    align-items: flex-start;\n    flex-direction: column;\n    gap: 12px;\n  }\n\n  .page-heading h2 {\n    font-size: 27px;\n  }\n\n  .step-row {\n    padding: 14px;\n    gap: 10px;\n    grid-template-columns: minmax(0, 1fr);\n  }\n\n  .step-row-time {\n    text-align: left;\n  }\n\n  .step-editor {\n    padding: 20px 16px;\n  }\n\n  .builder-footer {\n    gap: 6px;\n  }\n\n  .builder-footer button {\n    padding: 8px 12px;\n  }\n\n  .step-empty {\n    padding: 36px 20px;\n  }\n\n  .empty-steps {\n    line-height: 2;\n  }\n}\n';
 
 // custom_components/occupied/frontend/translations.ts
 var sv = {
@@ -5572,12 +4864,12 @@ var RUNES =
 // node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dev/css.js
 var all_styles = /* @__PURE__ */ new Map();
 function register_style(hash2, style) {
-  var styles2 = all_styles.get(hash2);
-  if (!styles2) {
-    styles2 = /* @__PURE__ */ new Set();
-    all_styles.set(hash2, styles2);
+  var styles = all_styles.get(hash2);
+  if (!styles) {
+    styles = /* @__PURE__ */ new Set();
+    all_styles.set(hash2, styles);
   }
-  styles2.add(style);
+  styles.add(style);
 }
 
 // node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/elements/events.js
@@ -7391,11 +6683,11 @@ function to_class(value, hash2, directives) {
   }
   return classname === "" ? null : classname;
 }
-function append_styles2(styles2, important = false) {
+function append_styles2(styles, important = false) {
   var separator = important ? " !important;" : ";";
   var css = "";
-  for (var key2 of Object.keys(styles2)) {
-    var value = styles2[key2];
+  for (var key2 of Object.keys(styles)) {
+    var value = styles[key2];
     if (value != null && value !== "") {
       css += " " + key2 + ": " + value + separator;
     }
@@ -7408,16 +6700,16 @@ function to_css_name(name) {
   }
   return name;
 }
-function to_style(value, styles2) {
-  if (styles2) {
+function to_style(value, styles) {
+  if (styles) {
     var new_style = "";
     var normal_styles;
     var important_styles;
-    if (Array.isArray(styles2)) {
-      normal_styles = styles2[0];
-      important_styles = styles2[1];
+    if (Array.isArray(styles)) {
+      normal_styles = styles[0];
+      important_styles = styles[1];
     } else {
-      normal_styles = styles2;
+      normal_styles = styles;
     }
     if (value) {
       value = String(value)
@@ -8729,6 +8021,12 @@ function actionTargets(source2) {
     ? source2.entities
     : Object.keys(source2.entities || {});
 }
+function actionTargetSummary(source2, catalog) {
+  const targets = actionTargets(source2);
+  const first = catalog ? entityName(catalog, targets[0]) : targets[0];
+  const remaining = targets.length > 1 ? ` +${targets.length - 1}` : "";
+  return `${first}${remaining}`;
+}
 function actionYaml(value, level = 0) {
   const pad = "  ".repeat(level);
   if (Array.isArray(value)) {
@@ -8920,15 +8218,20 @@ var actionLabels = {
   "scene.turn_on": "Activate scene",
   ...Object.fromEntries(coverActions),
 };
+function stepDisplayName(step, catalog, t) {
+  const label =
+    step.actions || step.action === "set_state"
+      ? "Custom YAML"
+      : actionLabels[step.action || ""] || step.action || "";
+  return `${actionTargetSummary(step, catalog)} \xB7 ${t(label)}`;
+}
 function stepEntries(program, catalog, t = (value) => value) {
   return Object.entries(program.steps || {}).map(([id, step]) => ({
     ...step,
     id,
     path: ["steps", id],
     days: [...(step.days || days)],
-    name:
-      step.name ||
-      `${catalog ? entityName(catalog, actionTargets(step)[0]) : actionTargets(step)[0]}${actionTargets(step).length > 1 ? ` +${actionTargets(step).length - 1}` : ""} \xB7 ${t(step.actions || step.action === "set_state" ? "Custom YAML" : actionLabels[step.action || ""] || step.action || "")}`,
+    name: step.name || stepDisplayName(step, catalog, t),
   }));
 }
 var solarEvents = ["sunrise", "sunset", "dawn", "dusk", "noon", "midnight"];
@@ -8953,11 +8256,19 @@ function timeSourceChoices(
         group: "Steps",
       })),
     ...(randomId
-      ? parentRandomEvents(program, randomId).map((event2) => ({
-          value: `random:${event2.id}`,
-          name: `${t("End of")} ${event2.name || (catalog.entities ? entityName({ entities: catalog.entities }, actionTargets(event2.on)[0]) : actionTargets(event2.on)[0])}`,
-          group: "Random events",
-        }))
+      ? parentRandomEvents(program, randomId).map((event2) => {
+          const first = actionTargets(event2.on)[0];
+          const name =
+            event2.name ||
+            (catalog.entities
+              ? entityName({ entities: catalog.entities }, first)
+              : first);
+          return {
+            value: `random:${event2.id}`,
+            name: `${t("End of")} ${name}`,
+            group: "Random events",
+          };
+        })
       : []),
     ...(catalog.time_sources ||
       solarEvents.map((event2) => ({
@@ -9631,7 +8942,9 @@ function DeleteStepDialog($$anchor, $$props) {
     dialog_1,
     ($$node, $$action_arg) => reference?.($$node, $$action_arg),
     () => (node) => {
-      if (node) dialog = node;
+      if (node) {
+        dialog = node;
+      }
     },
   );
   template_effect(
@@ -9659,7 +8972,9 @@ function DeleteStepDialog($$anchor, $$props) {
         panel().catalog,
         panel().t,
       ).find((step) => step.id === $$props.entry.id);
-      if (!current) return dialog.close();
+      if (!current) {
+        return dialog.close();
+      }
       const next2 = copy(panel().draft);
       removeStep(next2, current.path);
       dialog.close();
@@ -9822,7 +9137,9 @@ function AdvancedStepSettings($$anchor, $$props) {
     dialog.querySelector("input")?.focus();
   });
   function apply2() {
-    if (get(dayError) || get(staggerError) || $$props.panel.busy) return;
+    if (get(dayError) || get(staggerError) || $$props.panel.busy) {
+      return;
+    }
     get(form).days = [...get(selectedDays)];
     get(changed)("days");
     if (get(canStagger)) {
@@ -9844,7 +9161,7 @@ function AdvancedStepSettings($$anchor, $$props) {
     div,
     21,
     () => presets,
-    index,
+    ([label, selection]) => label,
     ($$anchor2, $$item) => {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let label = () => get($$array)[0];
@@ -9873,9 +9190,9 @@ function AdvancedStepSettings($$anchor, $$props) {
   var div_1 = sibling(div, 2);
   each(
     div_1,
-    21,
+    22,
     () => days,
-    index,
+    (day) => day,
     ($$anchor2, day, index2) => {
       var label_1 = root_13();
       var input = child(label_1);
@@ -9885,22 +9202,21 @@ function AdvancedStepSettings($$anchor, $$props) {
       reset(label_1);
       template_effect(
         ($0, $1) => {
-          set_value(input, get(day));
+          set_value(input, day);
           set_checked(input, $0);
           set_text(text_4, $1);
         },
         [
-          () => get(selectedDays).includes(get(day)),
-          () => get(t)(weekdayNames[index2]),
+          () => get(selectedDays).includes(day),
+          () => get(t)(weekdayNames[get(index2)]),
         ],
       );
       delegated("change", input, (event2) => {
+        const checked = event2.currentTarget.checked;
         set2(
           selectedDays,
           days.filter((candidate) =>
-            candidate === get(day)
-              ? event2.currentTarget.checked
-              : get(selectedDays).includes(candidate),
+            candidate === day ? checked : get(selectedDays).includes(candidate),
           ),
           true,
         );
@@ -10026,15 +9342,21 @@ function StepActions($$anchor, $$props) {
       set2(deleteOpen, false);
       set2(advancedOpen, false);
     });
-    if (trigger.isConnected) trigger.focus();
+    if (trigger.isConnected) {
+      trigger.focus();
+    }
   }
   function closeMenu(restoreFocus = true) {
     menu.hidePopover();
     set2(menuOpen, false);
-    if (restoreFocus) trigger.focus();
+    if (restoreFocus) {
+      trigger.focus();
+    }
   }
   function positionMenu() {
-    if (!menu.matches(":popover-open")) return;
+    if (!menu.matches(":popover-open")) {
+      return;
+    }
     const anchor = trigger.getBoundingClientRect();
     const bounds = menu.getBoundingClientRect();
     const above = anchor.top - bounds.height - 8;
@@ -10046,21 +9368,22 @@ function StepActions($$anchor, $$props) {
     menu.showPopover();
     set2(menuOpen, true);
     positionMenu();
-    const items = menu.querySelectorAll("button:not(:disabled)");
-    (last ? items[items.length - 1] : items[0])?.focus({ preventScroll: true });
+    const items = [...menu.querySelectorAll("button:not(:disabled)")];
+    (last ? items.at(-1) : items[0])?.focus({ preventScroll: true });
   }
   function menuKeydown(event2) {
     const items = [...menu.querySelectorAll("button:not(:disabled)")];
     const index2 = items.indexOf($$props.panel.shadowRoot.activeElement);
     if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event2.key)) {
       event2.preventDefault();
-      const next2 =
-        event2.key === "Home"
-          ? 0
-          : event2.key === "End"
-            ? items.length - 1
-            : (index2 + (event2.key === "ArrowDown" ? 1 : -1) + items.length) %
-              items.length;
+      let next2 =
+        (index2 + (event2.key === "ArrowDown" ? 1 : -1) + items.length) %
+        items.length;
+      if (event2.key === "Home") {
+        next2 = 0;
+      } else if (event2.key === "End") {
+        next2 = items.length - 1;
+      }
       items[next2]?.focus();
     } else if (event2.key === "Escape") {
       event2.preventDefault();
@@ -10095,7 +9418,9 @@ function StepActions($$anchor, $$props) {
       );
       delegated("click", button_1, () => {
         closeMenu();
-        if (!context()) return;
+        if (!context()) {
+          return;
+        }
         context().form.enabled = !context().form.enabled;
         context().changed("enabled");
       });
@@ -10119,7 +9444,9 @@ function StepActions($$anchor, $$props) {
       );
       delegated("click", button_2, () => {
         closeMenu();
-        if ($$props.entry) startStep($$props.panel, null, $$props.entry);
+        if ($$props.entry) {
+          startStep($$props.panel, null, $$props.entry);
+        }
       });
       append($$anchor2, button_2);
     };
@@ -10239,10 +9566,11 @@ function StepActions($$anchor, $$props) {
   );
   delegated("click", button, () => (get(menuOpen) ? closeMenu() : openMenu()));
   delegated("keydown", button, (event2) => {
-    if (event2.key === "ArrowDown" || event2.key === "ArrowUp") {
-      event2.preventDefault();
-      openMenu(event2.key === "ArrowUp");
+    if (!(event2.key === "ArrowDown" || event2.key === "ArrowUp")) {
+      return;
     }
+    event2.preventDefault();
+    openMenu(event2.key === "ArrowUp");
   });
   event("toggle", div_1, (event2) =>
     set2(menuOpen, event2.newState === "open"),
@@ -10310,14 +9638,19 @@ function EditorField($$anchor, $$props) {
   function input(event2) {
     const control = event2.currentTarget;
     if (get(nativeTime)) {
-      if (!isValueChangedEvent(event2)) return;
+      if (!isValueChangedEvent(event2)) {
+        return;
+      }
       control.value = event2.detail.value || "";
     }
     $$props.update(String(control.value ?? ""));
     get(changed)($$props.key);
-    if (control instanceof HTMLSelectElement)
+    if (control instanceof HTMLSelectElement) {
       control.value = String($$props.value);
-    if (options().render) focusEditor($$props.panel, get(field));
+    }
+    if (options().render) {
+      focusEditor($$props.panel, get(field));
+    }
   }
   var div = root_6();
   var node = child(div);
@@ -10388,7 +9721,7 @@ function EditorField($$anchor, $$props) {
         select,
         21,
         () => options().choices,
-        index,
+        ([v, name]) => v,
         ($$anchor3, $$item) => {
           var $$array = user_derived(() => to_array(get($$item), 2));
           let v = () => get($$array)[0];
@@ -10512,6 +9845,127 @@ function EditorField($$anchor, $$props) {
 }
 delegate(["change", "input"]);
 
+// custom_components/occupied/frontend/SourcePicker.svelte
+var root7 = from_html(
+  `<div class="field source-picker"><ha-generic-picker></ha-generic-picker> <!></div>`,
+  2,
+);
+function SourcePicker($$anchor, $$props) {
+  push($$props, true);
+  let error = prop($$props, "error", 3, ""),
+    fieldPrefix = prop($$props, "fieldPrefix", 3, "");
+  let items = user_derived(() => {
+    const items2 = [];
+    let group;
+    for (const choice of $$props.choices) {
+      if (group !== choice.group) {
+        group = choice.group;
+        items2.push($$props.t(group));
+      }
+      items2.push({
+        id: choice.value,
+        primary: $$props.t(choice.name),
+        secondary: choice.entity_id,
+        group: $$props.t(choice.group),
+      });
+    }
+    return items2;
+  });
+  function valueRenderer(id) {
+    const headline = document.createElement("span");
+    headline.slot = "headline";
+    headline.textContent = $$props.t(
+      $$props.choices.find((choice) => choice.value === id)?.name || id,
+    );
+    return headline;
+  }
+  function select(event2) {
+    if (!isValueChangedEvent(event2)) {
+      return;
+    }
+    const next2 =
+      typeof event2.detail.value === "string" ? event2.detail.value : "";
+    if (next2 && $$props.choices.every((choice) => choice.value !== next2)) {
+      return;
+    }
+    const control = event2.currentTarget;
+    control.value = next2 || void 0;
+    $$props.onChange(next2);
+  }
+  var div = root7();
+  var ha_generic_picker = child(div);
+  template_effect(() =>
+    set_custom_element_data(
+      ha_generic_picker,
+      "id",
+      `step-${fieldPrefix()}anchor`,
+    ),
+  );
+  template_effect(() =>
+    set_custom_element_data(
+      ha_generic_picker,
+      "data-builder-field",
+      `${fieldPrefix()}anchor`,
+    ),
+  );
+  template_effect(
+    ($0) => set_custom_element_data(ha_generic_picker, "aria-label", $0),
+    [() => $$props.t("Relative to")],
+  );
+  template_effect(() =>
+    set_custom_element_data(
+      ha_generic_picker,
+      "aria-invalid",
+      error() ? "true" : void 0,
+    ),
+  );
+  template_effect(() =>
+    set_custom_element_data(
+      ha_generic_picker,
+      "aria-describedby",
+      error() ? `step-error-${fieldPrefix()}anchor` : void 0,
+    ),
+  );
+  set_custom_element_data(ha_generic_picker, "tabindex", "0");
+  action(
+    ha_generic_picker,
+    ($$node, $$action_arg) => properties?.($$node, $$action_arg),
+    () => ({
+      hass: $$props.hass,
+      value: $$props.value || void 0,
+      label: $$props.t("Relative to"),
+      searchLabel: $$props.t("Search steps or time sources"),
+      placeholder: $$props.t("Choose a step or event"),
+      notFoundLabel: $$props.t("No matching steps or time sources."),
+      getItems: () => get(items),
+      searchKeys: ["primary", "secondary", "id", "group"],
+      valueRenderer,
+      allowCustomValue: false,
+      noSort: true,
+      required: true,
+      invalid: !!error(),
+      errorMessage: error(),
+    }),
+  );
+  var node = sibling(ha_generic_picker, 2);
+  {
+    let $0 = user_derived(() => ({ anchor: error() }));
+    FieldError(node, {
+      key: "anchor",
+      get fieldPrefix() {
+        return fieldPrefix();
+      },
+      get errors() {
+        return get($0);
+      },
+    });
+  }
+  reset(div);
+  event("value-changed", ha_generic_picker, select);
+  append($$anchor, div);
+  pop();
+}
+
 // custom_components/occupied/frontend/random-model.ts
 function countBounds(count) {
   return typeof count === "object"
@@ -10528,9 +9982,7 @@ function randomEntries(program, catalog) {
     id,
     path: ["random", id],
     days: [...(event2.days || days)],
-    name:
-      event2.name ||
-      `${catalog ? entityName(catalog, actionTargets(event2.on)[0]) : actionTargets(event2.on)[0]}${actionTargets(event2.on).length > 1 ? ` +${actionTargets(event2.on).length - 1}` : ""}`,
+    name: event2.name || actionTargetSummary(event2.on, catalog),
   }));
 }
 function randomEditor(program, entry) {
@@ -10714,124 +10166,6 @@ function buildRandom(program, editor) {
   return next2;
 }
 
-// custom_components/occupied/frontend/SourcePicker.svelte
-var root7 = from_html(
-  `<div class="field source-picker"><ha-generic-picker></ha-generic-picker> <!></div>`,
-  2,
-);
-function SourcePicker($$anchor, $$props) {
-  push($$props, true);
-  let error = prop($$props, "error", 3, ""),
-    fieldPrefix = prop($$props, "fieldPrefix", 3, "");
-  let items = user_derived(() => {
-    const items2 = [];
-    let group;
-    for (const choice of $$props.choices) {
-      if (group !== choice.group) {
-        group = choice.group;
-        items2.push($$props.t(group));
-      }
-      items2.push({
-        id: choice.value,
-        primary: $$props.t(choice.name),
-        secondary: choice.entity_id,
-        group: $$props.t(choice.group),
-      });
-    }
-    return items2;
-  });
-  function valueRenderer(id) {
-    const headline = document.createElement("span");
-    headline.slot = "headline";
-    headline.textContent = $$props.t(
-      $$props.choices.find((choice) => choice.value === id)?.name || id,
-    );
-    return headline;
-  }
-  function select(event2) {
-    if (!isValueChangedEvent(event2)) return;
-    const next2 =
-      typeof event2.detail.value === "string" ? event2.detail.value : "";
-    if (next2 && !$$props.choices.some((choice) => choice.value === next2))
-      return;
-    const control = event2.currentTarget;
-    control.value = next2 || void 0;
-    $$props.onChange(next2);
-  }
-  var div = root7();
-  var ha_generic_picker = child(div);
-  template_effect(() =>
-    set_custom_element_data(
-      ha_generic_picker,
-      "id",
-      `step-${fieldPrefix()}anchor`,
-    ),
-  );
-  template_effect(() =>
-    set_custom_element_data(
-      ha_generic_picker,
-      "data-builder-field",
-      `${fieldPrefix()}anchor`,
-    ),
-  );
-  template_effect(
-    ($0) => set_custom_element_data(ha_generic_picker, "aria-label", $0),
-    [() => $$props.t("Relative to")],
-  );
-  template_effect(() =>
-    set_custom_element_data(
-      ha_generic_picker,
-      "aria-invalid",
-      error() ? "true" : void 0,
-    ),
-  );
-  template_effect(() =>
-    set_custom_element_data(
-      ha_generic_picker,
-      "aria-describedby",
-      error() ? `step-error-${fieldPrefix()}anchor` : void 0,
-    ),
-  );
-  set_custom_element_data(ha_generic_picker, "tabindex", "0");
-  action(
-    ha_generic_picker,
-    ($$node, $$action_arg) => properties?.($$node, $$action_arg),
-    () => ({
-      hass: $$props.hass,
-      value: $$props.value || void 0,
-      label: $$props.t("Relative to"),
-      searchLabel: $$props.t("Search steps or time sources"),
-      placeholder: $$props.t("Choose a step or event"),
-      notFoundLabel: $$props.t("No matching steps or time sources."),
-      getItems: () => get(items),
-      searchKeys: ["primary", "secondary", "id", "group"],
-      valueRenderer,
-      allowCustomValue: false,
-      noSort: true,
-      required: true,
-      invalid: !!error(),
-      errorMessage: error(),
-    }),
-  );
-  var node = sibling(ha_generic_picker, 2);
-  {
-    let $0 = user_derived(() => ({ anchor: error() }));
-    FieldError(node, {
-      key: "anchor",
-      get fieldPrefix() {
-        return fieldPrefix();
-      },
-      get errors() {
-        return get($0);
-      },
-    });
-  }
-  reset(div);
-  event("value-changed", ha_generic_picker, select);
-  append($$anchor, div);
-  pop();
-}
-
 // custom_components/occupied/frontend/TimingEditor.svelte
 var root8 = from_html(
   `<label class="timing-option"><input type="radio"/><span> </span></label>`,
@@ -10876,7 +10210,7 @@ function TimingEditor($$anchor, $$props) {
     changed = user_derived(() => $$props.context.changed);
   let fieldPrefix = user_derived(() => $$props.context.fieldPrefix || "");
   let choices = user_derived(() => {
-    $$props.context;
+    void $$props.context;
     let choices2 = timeSourceChoices(
       $$props.panel.draft,
       $$props.context.stepId,
@@ -10886,8 +10220,8 @@ function TimingEditor($$anchor, $$props) {
     );
     if (
       get(time).anchor &&
-      !choices2.some((choice) => choice.value === get(time).anchor)
-    )
+      choices2.every((choice) => choice.value !== get(time).anchor)
+    ) {
       choices2 = [
         ...choices2,
         {
@@ -10896,6 +10230,7 @@ function TimingEditor($$anchor, $$props) {
           group: "Unavailable sources",
         },
       ];
+    }
     return choices2;
   });
   var div = root_62();
@@ -10903,42 +10238,57 @@ function TimingEditor($$anchor, $$props) {
   var text2 = only_child(h3, true);
   var fieldset = sibling(h3, 2);
   var div_1 = child(fieldset);
-  each(div_1, 21, modes, index, ($$anchor2, $$item) => {
-    var $$array = user_derived(() => to_array(get($$item), 2));
-    let value = () => get($$array)[0];
-    let label = () => get($$array)[1];
-    var label_1 = root8();
-    var input = child(label_1);
-    remove_input_defaults(input);
-    var span = sibling(input);
-    var text_1 = only_child(span, true);
-    reset(label_1);
-    template_effect(
-      ($0) => {
-        set_attribute2(input, "name", `step-${get(fieldPrefix)}timing-mode`);
-        set_value(input, value());
-        set_attribute2(input, "data-builder-field", `${get(fieldPrefix)}mode`);
-        set_checked(input, get(time).mode === value());
-        set_text(text_1, $0);
-      },
-      [() => get(t)(label())],
-    );
-    delegated("change", input, (event2) => {
-      if (!event2.currentTarget.checked) return;
-      get(time).mode = value();
-      if (value() === "relative" && !get(time).anchor)
-        get(time).anchor = "sun:sunrise";
-      if (value() === "duration") {
-        get(time).minDuration ||= "1h";
-        get(time).maxDuration ||= get(time).minDuration;
-      }
-      get(changed)("mode");
-      $$props.panel.shadowRoot
-        .querySelector(`[data-builder-field="${get(fieldPrefix)}mode"]:checked`)
-        ?.focus();
-    });
-    append($$anchor2, label_1);
-  });
+  each(
+    div_1,
+    21,
+    modes,
+    ([value, label]) => value,
+    ($$anchor2, $$item) => {
+      var $$array = user_derived(() => to_array(get($$item), 2));
+      let value = () => get($$array)[0];
+      let label = () => get($$array)[1];
+      var label_1 = root8();
+      var input = child(label_1);
+      remove_input_defaults(input);
+      var span = sibling(input);
+      var text_1 = only_child(span, true);
+      reset(label_1);
+      template_effect(
+        ($0) => {
+          set_attribute2(input, "name", `step-${get(fieldPrefix)}timing-mode`);
+          set_value(input, value());
+          set_attribute2(
+            input,
+            "data-builder-field",
+            `${get(fieldPrefix)}mode`,
+          );
+          set_checked(input, get(time).mode === value());
+          set_text(text_1, $0);
+        },
+        [() => get(t)(label())],
+      );
+      delegated("change", input, (event2) => {
+        if (!event2.currentTarget.checked) {
+          return;
+        }
+        get(time).mode = value();
+        if (value() === "relative" && !get(time).anchor) {
+          get(time).anchor = "sun:sunrise";
+        }
+        if (value() === "duration") {
+          get(time).minDuration ||= "1h";
+          get(time).maxDuration ||= get(time).minDuration;
+        }
+        get(changed)("mode");
+        $$props.panel.shadowRoot
+          .querySelector(
+            `[data-builder-field="${CSS.escape(get(fieldPrefix))}mode"]:checked`,
+          )
+          ?.focus();
+      });
+      append($$anchor2, label_1);
+    },
+  );
   reset(div_1);
   var node = sibling(div_1, 2);
   {
@@ -10995,7 +10345,9 @@ function TimingEditor($$anchor, $$props) {
             },
             update: (value) => {
               get(time).end = value;
-              if (!value) get(editor).showEndTime = false;
+              if (!value) {
+                get(editor).showEndTime = false;
+              }
             },
             options: { type: "time", step: 1, optional: true },
           });
@@ -11089,17 +10441,21 @@ function TimingEditor($$anchor, $$props) {
                 $$props.panel.catalog,
                 $$props.panel.t,
               ).find((step) => step.id === value.slice(5));
-              if (parent) get(form).days = [...parent.days];
+              if (parent) {
+                get(form).days = [...parent.days];
+              }
             }
             if (!get(editor).existing && value.startsWith("random:")) {
               const parent = randomEntries($$props.panel.draft).find(
                 (entry) => entry.id === value.slice(7),
               );
-              if (parent) get(form).days = [...parent.days];
+              if (parent) {
+                get(form).days = [...parent.days];
+              }
             }
             get(changed)("anchor");
             const picker = $$props.panel.shadowRoot.querySelector(
-              `[data-builder-field="${get(fieldPrefix)}anchor"]`,
+              `[data-builder-field="${CSS.escape(get(fieldPrefix))}anchor"]`,
             );
             if (picker && $$props.panel.shadowRoot.activeElement !== picker) {
               picker.focus();
@@ -11344,6 +10700,15 @@ function EntitiesEditor($$anchor, $$props) {
     t = user_derived(() => $$props.context.t),
     changed = user_derived(() => $$props.context.changed);
   let fieldPrefix = user_derived(() => $$props.context.fieldPrefix || "");
+  let domains = user_derived(() => {
+    if (get(form).kind === "scene") {
+      return ["scene"];
+    }
+    if (get(form).kind === "cover") {
+      return ["cover"];
+    }
+    return ["light", "switch"];
+  });
   var div = root_17();
   var h4 = child(div);
   var text2 = only_child(h4, true);
@@ -11384,18 +10749,9 @@ function EntitiesEditor($$anchor, $$props) {
       selector: {
         entity: {
           multiple: get(form).kind !== "scene",
-          ...(get(form).kind === "service"
-            ? {}
-            : {
-                filter: {
-                  domain:
-                    get(form).kind === "scene"
-                      ? ["scene"]
-                      : get(form).kind === "cover"
-                        ? ["cover"]
-                        : ["light", "switch"],
-                },
-              }),
+          ...(get(form).kind !== "service" && {
+            filter: { domain: get(domains) },
+          }),
         },
       },
       value:
@@ -11447,13 +10803,16 @@ function EntitiesEditor($$anchor, $$props) {
   reset(div);
   template_effect(($0) => set_text(text2, $0), [() => get(t)(label())]);
   event("value-changed", ha_selector, (event2) => {
-    if (!isValueChangedEvent(event2)) return;
+    if (!isValueChangedEvent(event2)) {
+      return;
+    }
     event2.currentTarget.value = event2.detail.value;
-    get(form).entities = Array.isArray(event2.detail.value)
-      ? event2.detail.value
-      : event2.detail.value
-        ? [event2.detail.value]
-        : [];
+    const value = event2.detail.value;
+    if (Array.isArray(value)) {
+      get(form).entities = value;
+    } else {
+      get(form).entities = typeof value === "string" && value ? [value] : [];
+    }
     get(changed)("entities");
   });
   append($$anchor, div);
@@ -11685,8 +11044,9 @@ function ActionEditor($$anchor, $$props) {
         if (
           !isValueChangedEvent(event2) ||
           typeof event2.detail.value !== "string"
-        )
+        ) {
           return;
+        }
         get(form).customYaml = event2.detail.value;
         $$props.context.changed("customYaml");
       });
@@ -11849,7 +11209,7 @@ var root11 = from_html(
 function StepEditor($$anchor, $$props) {
   push($$props, true);
   let context = user_derived(() => {
-    $$props.revision;
+    void $$props.revision;
     return createStepEditorContext($$props.panel);
   });
   let editor = user_derived(() => get(context).editor),
@@ -12019,7 +11379,7 @@ var root_7 = from_html(
 function StepsView($$anchor, $$props) {
   push($$props, true);
   let data = user_derived(() => {
-    $$props.revision;
+    void $$props.revision;
     const entries2 = stepEntries(
       $$props.panel.draft,
       $$props.panel.catalog,
@@ -12089,10 +11449,11 @@ function StepsView($$anchor, $$props) {
               $$props.panel.stepEditor?.existing &&
               $$props.panel.stepEditor.id === entry().id,
           );
-          const stepDisabled = user_derived(() =>
-            get(editing)
-              ? $$props.panel.stepEditor?.form.enabled === false
-              : entry().enabled === false,
+          const stepDisabled = user_derived(
+            () =>
+              (get(editing)
+                ? $$props.panel.stepEditor?.form.enabled
+                : entry().enabled) === false,
           );
           const expanded = user_derived(
             () =>
@@ -12137,13 +11498,13 @@ function StepsView($$anchor, $$props) {
               var span_5 = sibling(ha_icon, 2);
               each(
                 span_5,
-                21,
+                20,
                 () => get(warnings),
-                index,
+                (warning) => warning,
                 ($$anchor5, warning) => {
                   var span_6 = root_27();
                   var text_6 = only_child(span_6, true);
-                  template_effect(() => set_text(text_6, get(warning).message));
+                  template_effect(() => set_text(text_6, warning.message));
                   append($$anchor5, span_6);
                 },
               );
@@ -12219,7 +11580,7 @@ function StepsView($$anchor, $$props) {
               set_style(div_2, $0);
               set_attribute2(button_1, "id", `step-card-${entry().id}`);
               classes_1 = set_class(button_1, 1, "step-row", null, classes_1, {
-                editing: get(editing) && !get(warnings).length,
+                editing: get(editing) && get(warnings).length === 0,
               });
               set_attribute2(button_1, "aria-label", $1);
               button_1.disabled = $$props.panel.busy;
@@ -12232,7 +11593,9 @@ function StepsView($$anchor, $$props) {
               set_attribute2(
                 button_1,
                 "aria-describedby",
-                get(warnings).length ? `step-warning-${entry().id}` : void 0,
+                get(warnings).length > 0
+                  ? `step-warning-${entry().id}`
+                  : void 0,
               );
               set_text(text_3, entry().name);
               set_text(
@@ -12274,7 +11637,7 @@ function StepsView($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     if_block(node, ($$render) => {
-      if (!get(entries).length) $$render(consequent);
+      if (get(entries).length === 0) $$render(consequent);
       else $$render(alternate, -1);
     });
   }
@@ -12298,18 +11661,20 @@ function SettingsView($$anchor, $$props) {
   append_styles($$anchor, $$css3);
   let panel = prop($$props, "panel", 7);
   let data = user_derived(() => {
-    $$props.revision;
+    void $$props.revision;
     return { t: panel().t };
   });
   let t = user_derived(() => get(data).t);
   let yamlDirty = user_derived(() => panel().yamlDirty);
   let autoExportStarted = false;
   user_effect(() => {
-    $$props.revision;
+    void $$props.revision;
     if (!autoExportStarted && !panel().busy) {
       let cancelled = false;
       queueMicrotask(() => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         autoExportStarted = true;
         void panel().exportYaml();
       });
@@ -12405,14 +11770,20 @@ function SettingsView($$anchor, $$props) {
     if (file) {
       const epoch = panel().epoch;
       const yaml = await file.text();
-      if (epoch !== panel().epoch) return;
+      if (epoch !== panel().epoch) {
+        return;
+      }
       panel().yaml = yaml;
       panel().flush();
     }
   });
   event("value-changed", ha_code_editor, (event2) => {
-    if (!isValueChangedEvent(event2) || typeof event2.detail.value !== "string")
+    if (
+      !isValueChangedEvent(event2) ||
+      typeof event2.detail.value !== "string"
+    ) {
       return;
+    }
     panel().yaml = event2.detail.value;
     panel().flush();
   });
@@ -12607,6 +11978,32 @@ function stamp(value, zone, locale) {
     return value;
   }
 }
+function eventDetails(event2, label, timezone, t, locale) {
+  const kinds = {
+    random_start: "Random start",
+    random_end: "Random end",
+  };
+  let action2 = event2.action.action;
+  if (event2.tick) {
+    const tick2 = t("Tick {tick} of {count}")
+      .replace("{tick}", () => String(event2.tick))
+      .replace("{count}", () => String(event2.tick_count));
+    action2 += ` \xB7 ${tick2} \xB7 ${event2.period_seconds}s`;
+  }
+  if (event2.superseded) {
+    action2 += ` \xB7 ${t("Superseded")}`;
+  }
+  return {
+    time: stamp(event2.time, timezone, locale),
+    source: `${label} \xB7 ${t(kinds[event2.kind] || event2.kind)}`,
+    action: action2,
+    targets: event2.action.entities.join(", "),
+    settings:
+      Object.keys(event2.action.data || {}).length > 0
+        ? JSON.stringify(event2.action.data)
+        : "\u2014",
+  };
+}
 function staggerTransitions(plan) {
   const groups = /* @__PURE__ */ new Map();
   for (const event2 of plan.events) {
@@ -12675,20 +12072,23 @@ function PreviewStateGraph($$anchor, $$props) {
   }));
   onMount(() => {
     let disposed = false;
-    const media = window.matchMedia("(max-width: 600px)");
+    const media = globalThis.matchMedia("(max-width: 600px)");
     const updateNarrow = () => {
       set2(narrow, media.matches, true);
     };
     updateNarrow();
     media.addEventListener("change", updateNarrow);
-    loadHaHistoryChart().then(
-      () => {
-        if (!disposed) set2(ready, true);
-      },
-      () => {
-        if (!disposed) set2(failed, true);
-      },
-    );
+    void loadHaHistoryChart()
+      .then(() => {
+        if (!disposed) {
+          set2(ready, true);
+        }
+      })
+      .catch(() => {
+        if (!disposed) {
+          set2(failed, true);
+        }
+      });
     return () => {
       disposed = true;
       media.removeEventListener("change", updateNarrow);
@@ -12714,7 +12114,7 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, p);
     };
     if_block(node, ($$render) => {
-      if (!get(data).length) $$render(consequent);
+      if (get(data).length === 0) $$render(consequent);
     });
   }
   var node_1 = sibling(node, 2);
@@ -12817,6 +12217,19 @@ function liveRunning(session) {
     !!session && ["ready", "executing", "stopping"].includes(session.state)
   );
 }
+function liveSessionStatus(session) {
+  if (session.state === "ready") {
+    return session.cursor === 0 ? "Ready to start" : "Ready for next event";
+  }
+  const labels = {
+    completed: "Day complete",
+    executing: "Running\u2026",
+    stopping: "Stopping\u2026",
+    stopped: "Stopped",
+    interrupted: "Interrupted",
+  };
+  return labels[session.state];
+}
 function mergeLiveSession(previous, incoming) {
   if (!incoming || previous?.id !== incoming.id) {
     return incoming;
@@ -12883,17 +12296,18 @@ var root_29 = from_html(
   `<details><summary> </summary> <p class="hint"> </p> <ol></ol></details>`,
 );
 var root_37 = from_html(`<th scope="col"> </th>`);
-var root_44 = from_html(`<td> </td>`);
-var root_54 = from_html(`<span> </span> <div> </div>`, 1);
-var root_64 = from_html(`<td><!></td>`);
-var root_72 = from_html(`<tr><!><!></tr>`);
-var root_8 = from_html(
+var root_44 = from_html(`<span> </span> <div> </div>`, 1);
+var root_54 = from_html(`<td><!></td>`);
+var root_64 = from_html(
+  `<tr><td> </td><td> </td><td> </td><td> </td><td> </td><!></tr>`,
+);
+var root_72 = from_html(
   `<details><summary> </summary> <p class="hint"> </p> <!> <input type="search"/> <div><div class="table-wrap"><table><thead><tr><!><!></tr></thead><tbody></tbody></table></div> <div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div></div></details>`,
 );
-var root_9 = from_html(`<p> </p>`);
-var root_10 = from_html(`<!> <!> <!>`, 1);
-var root_11 = from_html(`<p role="status"> </p>`);
-var root_122 = from_html(`<section><!> <!></section>`);
+var root_8 = from_html(`<p> </p>`);
+var root_9 = from_html(`<!> <!> <!>`, 1);
+var root_10 = from_html(`<p role="status"> </p>`);
+var root_11 = from_html(`<section><!> <!></section>`);
 var $$css5 = {
   hash: "svelte-16g6nis",
   code: "tr.current.svelte-16g6nis {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-16g6nis {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}",
@@ -12939,7 +12353,7 @@ function Timeline($$anchor, $$props) {
   let currentPage = user_derived(() =>
     Math.max(0, Math.min(get(page), Math.ceil(get(filtered).length / 50) - 1)),
   );
-  var section = root_122();
+  var section = root_11();
   var node = child(section);
   {
     var consequent = ($$anchor2) => {
@@ -12968,7 +12382,7 @@ function Timeline($$anchor, $$props) {
   var node_2 = sibling(node, 2);
   {
     var consequent_8 = ($$anchor2) => {
-      var fragment_1 = root_10();
+      var fragment_1 = root_9();
       var node_3 = first_child(fragment_1);
       PreviewStateGraph(node_3, {
         get plan() {
@@ -12993,29 +12407,29 @@ function Timeline($$anchor, $$props) {
       var node_4 = sibling(node_3, 2);
       {
         var consequent_7 = ($$anchor3) => {
-          var details = root_8();
-          var summary = child(details);
+          var details_1 = root_72();
+          var summary = child(details_1);
           var text_2 = only_child(summary);
           var p = sibling(summary, 2);
           var text_3 = only_child(p);
           var node_5 = sibling(p, 2);
           each(
             node_5,
-            17,
+            16,
             () => staggerTransitions($$props.plan),
-            index,
+            (transition2) => transition2,
             ($$anchor4, transition2) => {
-              var details_1 = root_29();
-              var summary_1 = child(details_1);
+              var details_2 = root_29();
+              var summary_1 = child(details_2);
               var text_4 = only_child(summary_1);
               var p_1 = sibling(summary_1, 2);
               var text_5 = only_child(p_1);
               var ol = sibling(p_1, 2);
               each(
                 ol,
-                21,
-                () => get(transition2).events,
-                index,
+                20,
+                () => transition2.events,
+                (tick2) => tick2,
                 ($$anchor5, tick2) => {
                   var li = root_112();
                   var text_6 = child(li);
@@ -13030,27 +12444,25 @@ function Timeline($$anchor, $$props) {
                       append($$anchor6, text_7);
                     };
                     if_block(node_6, ($$render) => {
-                      if (get(tick2).superseded) $$render(consequent_2);
+                      if (tick2.superseded) $$render(consequent_2);
                     });
                   }
                   reset(li);
                   template_effect(
                     ($0, $1) => {
-                      set_value(li, get(tick2).tick);
+                      set_value(li, tick2.tick);
                       set_text(text_6, `${$0 ?? ""} \xB7 ${$1 ?? ""} `);
                     },
                     [
                       () =>
                         stamp(
-                          get(tick2).time,
+                          tick2.time,
                           $$props.plan.timezone,
                           $$props.locale,
                         ),
                       () =>
-                        get(tick2)
-                          .action.entities.map(
-                            (entity) => entityNames()[entity] || entity,
-                          )
+                        tick2.action.entities
+                          .map((entity) => entityNames()[entity] || entity)
                           .join(", "),
                     ],
                   );
@@ -13058,42 +12470,42 @@ function Timeline($$anchor, $$props) {
                 },
               );
               reset(ol);
-              reset(details_1);
+              reset(details_2);
               template_effect(
                 ($0, $1, $2, $3, $4, $5, $6, $7) => {
                   set_text(
                     text_4,
-                    `${$0 ?? ""} \xB7 ${$1 ?? ""} \xB7 ${get(transition2).count ?? ""}
+                    `${$0 ?? ""} \xB7 ${$1 ?? ""} \xB7 ${transition2.count ?? ""}
               ${$2 ?? ""}`,
                   );
                   set_text(
                     text_5,
                     `${$3 ?? ""}\u2013${$4 ?? ""}
-              \xB7 ${$5 ?? ""}: ${get(transition2).period ?? ""}s \xB7 ${$6 ?? ""}: ${$7 ?? ""}s`,
+              \xB7 ${$5 ?? ""}: ${transition2.period ?? ""}s \xB7 ${$6 ?? ""}: ${$7 ?? ""}s`,
                   );
                 },
                 [
-                  () => eventLabel(get(transition2).events[0]),
+                  () => eventLabel(transition2.events[0]),
                   () => t()("Staggered action"),
                   () => t()("entities"),
                   () =>
                     stamp(
-                      get(transition2).start,
+                      transition2.start,
                       $$props.plan.timezone,
                       $$props.locale,
                     ),
                   () =>
                     stamp(
-                      get(transition2).end,
+                      transition2.end,
                       $$props.plan.timezone,
                       $$props.locale,
                     ),
                   () => t()("Period"),
                   () => t()("Tick interval"),
-                  () => Number(get(transition2).interval.toFixed(3)),
+                  () => Number(transition2.interval.toFixed(3)),
                 ],
               );
-              append($$anchor4, details_1);
+              append($$anchor4, details_2);
             },
           );
           var input = sibling(node_5, 2);
@@ -13107,7 +12519,7 @@ function Timeline($$anchor, $$props) {
             node_7,
             16,
             () => ["Planned time", "Source", "Action", "Targets", "Settings"],
-            index,
+            (label) => label,
             ($$anchor4, label) => {
               var th = root_37();
               var text_8 = only_child(th, true);
@@ -13135,65 +12547,50 @@ function Timeline($$anchor, $$props) {
           var tbody = sibling(thead);
           each(
             tbody,
-            21,
+            20,
             () =>
               get(filtered).slice(
                 get(currentPage) * 50,
                 get(currentPage) * 50 + 50,
               ),
-            index,
+            (event2) => event2,
             ($$anchor4, event2) => {
               const live = user_derived(() =>
-                eventLiveResult(get(event2), liveSession()),
+                eventLiveResult(event2, liveSession()),
               );
-              var tr_1 = root_72();
+              const details = user_derived(() =>
+                eventDetails(
+                  event2,
+                  eventLabel(event2),
+                  $$props.plan.timezone,
+                  t(),
+                  $$props.locale,
+                ),
+              );
+              var tr_1 = root_64();
               let classes;
-              var node_9 = child(tr_1);
-              each(
-                node_9,
-                17,
-                () => [
-                  stamp(
-                    get(event2).time,
-                    $$props.plan.timezone,
-                    $$props.locale,
-                  ),
-                  `${eventLabel(get(event2))} \xB7 ${t()(get(event2).kind === "random_start" ? "Random start" : get(event2).kind === "random_end" ? "Random end" : get(event2).kind)}`,
-                  `${get(event2).action.action}${
-                    get(event2).tick
-                      ? ` \xB7 ${t()("Tick {tick} of {count}")
-                          .replace("{tick}", String(get(event2).tick))
-                          .replace(
-                            "{count}",
-                            String(get(event2).tick_count),
-                          )} \xB7 ${get(event2).period_seconds}s`
-                      : ""
-                  }${get(event2).superseded ? ` \xB7 ${t()("Superseded")}` : ""}`,
-                  get(event2).action.entities.join(", "),
-                  Object.keys(get(event2).action.data || {}).length
-                    ? JSON.stringify(get(event2).action.data)
-                    : "\u2014",
-                ],
-                index,
-                ($$anchor5, value) => {
-                  var td = root_44();
-                  var text_10 = only_child(td, true);
-                  template_effect(() => set_text(text_10, get(value)));
-                  append($$anchor5, td);
-                },
-              );
-              var node_10 = sibling(node_9);
+              var td = child(tr_1);
+              var text_10 = only_child(td, true);
+              var td_1 = sibling(td);
+              var text_11 = only_child(td_1, true);
+              var td_2 = sibling(td_1);
+              var text_12 = only_child(td_2, true);
+              var td_3 = sibling(td_2);
+              var text_13 = only_child(td_3, true);
+              var td_4 = sibling(td_3);
+              var text_14 = only_child(td_4, true);
+              var node_9 = sibling(td_4);
               {
                 var consequent_6 = ($$anchor5) => {
-                  var td_1 = root_64();
-                  var node_11 = child(td_1);
+                  var td_5 = root_54();
+                  var node_10 = child(td_5);
                   {
                     var consequent_4 = ($$anchor6) => {
-                      var fragment_3 = root_54();
+                      var fragment_3 = root_44();
                       var span = first_child(fragment_3);
-                      var text_11 = only_child(span, true);
+                      var text_15 = only_child(span, true);
                       var div_2 = sibling(span, 2);
-                      var text_12 = only_child(div_2, true);
+                      var text_16 = only_child(div_2, true);
                       template_effect(
                         ($0) => {
                           set_class(
@@ -13205,30 +12602,30 @@ function Timeline($$anchor, $$props) {
                                 : "error",
                             ),
                           );
-                          set_text(text_11, $0);
-                          set_text(text_12, get(live).outcome.detail);
+                          set_text(text_15, $0);
+                          set_text(text_16, get(live).outcome.detail);
                         },
                         [() => t()(get(live).outcome.status)],
                       );
                       append($$anchor6, fragment_3);
                     };
                     var consequent_5 = ($$anchor6) => {
-                      var text_13 = text();
+                      var text_17 = text();
                       template_effect(
-                        ($0) => set_text(text_13, $0),
+                        ($0) => set_text(text_17, $0),
                         [() => t()("Next event")],
                       );
-                      append($$anchor6, text_13);
+                      append($$anchor6, text_17);
                     };
-                    if_block(node_11, ($$render) => {
+                    if_block(node_10, ($$render) => {
                       if (get(live)?.outcome) $$render(consequent_4);
                       else if (get(live)?.current) $$render(consequent_5, 1);
                     });
                   }
-                  reset(td_1);
-                  append($$anchor5, td_1);
+                  reset(td_5);
+                  append($$anchor5, td_5);
                 };
-                if_block(node_10, ($$render) => {
+                if_block(node_9, ($$render) => {
                   if (liveSession()) $$render(consequent_6);
                 });
               }
@@ -13243,6 +12640,11 @@ function Timeline($$anchor, $$props) {
                   current: get(live)?.current,
                   completed: get(live)?.outcome?.status === "dispatched",
                 });
+                set_text(text_10, get(details).time);
+                set_text(text_11, get(details).source);
+                set_text(text_12, get(details).action);
+                set_text(text_13, get(details).targets);
+                set_text(text_14, get(details).settings);
               });
               append($$anchor4, tr_1);
             },
@@ -13252,14 +12654,14 @@ function Timeline($$anchor, $$props) {
           reset(div_1);
           var div_3 = sibling(div_1, 2);
           var button = child(div_3);
-          var text_14 = only_child(button, true);
+          var text_18 = only_child(button, true);
           var span_1 = sibling(button, 2);
-          var text_15 = only_child(span_1);
+          var text_19 = only_child(span_1);
           var button_1 = sibling(span_1, 2);
-          var text_16 = only_child(button_1, true);
+          var text_20 = only_child(button_1, true);
           reset(div_3);
           reset(div);
-          reset(details);
+          reset(details_1);
           template_effect(
             ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10) => {
               set_text(
@@ -13273,15 +12675,15 @@ function Timeline($$anchor, $$props) {
               set_attribute2(input, "placeholder", $5);
               set_attribute2(input, "aria-label", $6);
               button.disabled = get(currentPage) === 0;
-              set_text(text_14, $7);
+              set_text(text_18, $7);
               set_text(
-                text_15,
+                text_19,
                 `${get(filtered).length ?? ""}
               ${$8 ?? ""} \xB7 ${get(currentPage) + 1}/${$9 ?? ""}`,
               );
               button_1.disabled =
                 (get(currentPage) + 1) * 50 >= get(filtered).length;
-              set_text(text_16, $10);
+              set_text(text_20, $10);
             },
             [
               () => t()("Event details"),
@@ -13303,31 +12705,28 @@ function Timeline($$anchor, $$props) {
           });
           delegated("click", button, () => set2(page, get(currentPage) - 1));
           delegated("click", button_1, () => set2(page, get(currentPage) + 1));
-          append($$anchor3, details);
+          append($$anchor3, details_1);
         };
         if_block(node_4, ($$render) => {
           if ($$props.plan.events.length > 0) $$render(consequent_7);
         });
       }
-      var node_12 = sibling(node_4, 2);
+      var node_11 = sibling(node_4, 2);
       each(
-        node_12,
-        17,
+        node_11,
+        16,
         () => $$props.plan.issues.filter((issue) => issue.severity !== "info"),
-        index,
+        (issue) => issue,
         ($$anchor3, issue) => {
-          var p_2 = root_9();
-          var text_17 = only_child(p_2);
+          var p_2 = root_8();
+          var text_21 = only_child(p_2);
           template_effect(() => {
             set_class(
               p_2,
               1,
-              clsx2(get(issue).severity === "warning" ? "hint" : "error"),
+              clsx2(issue.severity === "warning" ? "hint" : "error"),
             );
-            set_text(
-              text_17,
-              `${get(issue).code ?? ""}: ${get(issue).message ?? ""}`,
-            );
+            set_text(text_21, `${issue.code ?? ""}: ${issue.message ?? ""}`);
           });
           append($$anchor3, p_2);
         },
@@ -13335,10 +12734,10 @@ function Timeline($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var consequent_9 = ($$anchor2) => {
-      var p_3 = root_11();
-      var text_18 = only_child(p_3, true);
+      var p_3 = root_10();
+      var text_22 = only_child(p_3, true);
       template_effect(
-        ($0) => set_text(text_18, $0),
+        ($0) => set_text(text_22, $0),
         [() => t()("Loading schedule\u2026")],
       );
       append($$anchor2, p_3);
@@ -13387,7 +12786,7 @@ var root_114 = from_html(
 );
 var $$css6 = {
   hash: "svelte-100n2ef",
-  code: ".live-card.svelte-100n2ef {border:1px solid var(--divider-color, #ddd);border-radius:12px;padding:16px;margin-bottom:16px;}h2.svelte-100n2ef {margin:0;}p.svelte-100n2ef {margin:8px 0;}.call.svelte-100n2ef {overflow-wrap:anywhere;}.live-actions.svelte-100n2ef {position:sticky;top:64px;z-index:2;display:flex;flex-wrap:wrap;gap:8px;padding:12px;margin-bottom:16px;background:var(--card-background-color, white);border:1px solid var(--divider-color, #ddd);border-radius:12px;}.live-actions.svelte-100n2ef button:where(.svelte-100n2ef) {min-height:48px;margin:0;}.primary.svelte-100n2ef {flex:1;}\n  @media (max-width: 600px) {.live-actions.svelte-100n2ef {top:calc(56px + env(safe-area-inset-top, 0px));padding-bottom:max(12px, env(safe-area-inset-bottom, 0px));}\n  }",
+  code: ".live-card.svelte-100n2ef {border:1px solid var(--divider-color, #ddd);border-radius:12px;padding:16px;margin-bottom:16px;}h2.svelte-100n2ef {margin:0;}p.svelte-100n2ef {margin:8px 0;}.call.svelte-100n2ef {overflow-wrap:anywhere;}.live-actions.svelte-100n2ef {position:sticky;top:64px;z-index:2;display:flex;flex-wrap:wrap;gap:8px;padding:12px;margin-bottom:16px;background:var(--card-background-color, white);border:1px solid var(--divider-color, #ddd);border-radius:12px;}.live-actions.svelte-100n2ef button:where(.svelte-100n2ef) {min-height:48px;margin:0;}.primary.svelte-100n2ef {flex:1;}\n\n  @media (max-width: 600px) {.live-actions.svelte-100n2ef {top:calc(56px + env(safe-area-inset-top, 0px));padding-bottom:max(12px, env(safe-area-inset-bottom, 0px));}\n  }",
 };
 function LivePreviewControls($$anchor, $$props) {
   push($$props, true);
@@ -13646,7 +13045,7 @@ function LivePreviewControls($$anchor, $$props) {
             node_10,
             17,
             () => get(session).next_group.calls,
-            index,
+            (call) => call.id,
             ($$anchor4, call) => {
               var p_9 = root_73();
               var text_16 = child(p_9);
@@ -13659,8 +13058,10 @@ function LivePreviewControls($$anchor, $$props) {
                     [
                       () =>
                         get(t)("Tick {tick} of {count}")
-                          .replace("{tick}", String(get(call).tick))
-                          .replace("{count}", String(get(call).tick_count)),
+                          .replace("{tick}", () => String(get(call).tick))
+                          .replace("{count}", () =>
+                            String(get(call).tick_count),
+                          ),
                     ],
                   );
                   append($$anchor5, text_17);
@@ -13698,19 +13099,19 @@ function LivePreviewControls($$anchor, $$props) {
       var node_12 = sibling(node_9, 2);
       each(
         node_12,
-        17,
+        16,
         () =>
           get(currentOutcomes).filter(
             (outcome) => outcome.status !== "dispatched",
           ),
-        index,
+        (outcome) => outcome,
         ($$anchor3, outcome) => {
           var p_10 = root_55();
           var text_18 = only_child(p_10);
           template_effect(() =>
             set_text(
               text_18,
-              `${(get(outcome).action?.action || "") ?? ""}: ${get(outcome).detail ?? ""}`,
+              `${(outcome.action?.action || "") ?? ""}: ${outcome.detail ?? ""}`,
             ),
           );
           append($$anchor3, p_10);
@@ -13722,26 +13123,11 @@ function LivePreviewControls($$anchor, $$props) {
           set_text(text_9, `${get(session).date ?? ""} \xB7 ${$1 ?? ""}`);
         },
         [
-          () =>
-            get(t)(
-              get(session).state === "completed"
-                ? "Day complete"
-                : get(session).state === "ready" && get(session).cursor === 0
-                  ? "Ready to start"
-                  : get(session).state === "executing"
-                    ? "Running\u2026"
-                    : get(session).state === "stopping"
-                      ? "Stopping\u2026"
-                      : get(session).state === "stopped"
-                        ? "Stopped"
-                        : get(session).state === "interrupted"
-                          ? "Interrupted"
-                          : "Ready for next event",
-            ),
+          () => get(t)(liveSessionStatus(get(session))),
           () =>
             get(t)("{done} of {total} events")
-              .replace("{done}", String(get(session).cursor))
-              .replace("{total}", String(get(session).total)),
+              .replace("{done}", () => String(get(session).cursor))
+              .replace("{total}", () => String(get(session).total)),
         ],
       );
       append($$anchor2, fragment_4);
@@ -13918,19 +13304,19 @@ function PreviewView($$anchor, $$props) {
   };
   let showLoading = state(false);
   user_effect(() => {
-    $$props.revision;
+    void $$props.revision;
     if (!$$props.panel.busy) {
       set2(showLoading, false);
       return;
     }
     set2(showLoading, false);
-    const timeout = window.setTimeout(() => {
+    const timeout = globalThis.setTimeout(() => {
       set2(showLoading, true);
     }, 250);
-    return () => window.clearTimeout(timeout);
+    return () => globalThis.clearTimeout(timeout);
   });
   let data = user_derived(() => {
-    $$props.revision;
+    void $$props.revision;
     const t2 = $$props.panel.t;
     return { t: t2 };
   });
@@ -14292,7 +13678,7 @@ function DeleteRandomDialog($$anchor, $$props) {
         ul,
         21,
         () => get(dependents),
-        index,
+        (entry) => entry.id,
         ($$anchor3, entry) => {
           var li = root19();
           var text_3 = only_child(li, true);
@@ -14338,7 +13724,7 @@ function DeleteRandomDialog($$anchor, $$props) {
       button.disabled = $$props.panel.busy;
       set_text(text_5, $2);
       button_1.disabled =
-        $$props.panel.busy || $$props.panel.stale || !!get(dependents).length;
+        $$props.panel.busy || $$props.panel.stale || get(dependents).length > 0;
       set_text(text_6, $3);
     },
     [
@@ -14357,7 +13743,9 @@ function DeleteRandomDialog($$anchor, $$props) {
   delegated("click", button, () => dialog.close());
   delegated("click", button_1, async () => {
     await deleteRandom($$props.panel);
-    if (!$$props.panel.error && !$$props.panel.randomEditor) dialog.close();
+    if (!$$props.panel.error && !$$props.panel.randomEditor) {
+      dialog.close();
+    }
   });
   append($$anchor, dialog_1);
   pop();
@@ -14404,14 +13792,16 @@ function AdvancedRandomSettings($$anchor, $$props) {
     "Sunday",
   ];
   let dayError = user_derived(() =>
-    get(selectedDays).length ? void 0 : get(t)("Choose at least one day."),
+    get(selectedDays).length > 0 ? void 0 : get(t)("Choose at least one day."),
   );
   onMount(() => {
     dialog.showModal();
     dialog.querySelector("input")?.focus();
   });
   function apply2() {
-    if ($$props.panel.busy || get(dayError) || get(staggerError)) return;
+    if ($$props.panel.busy || get(dayError) || get(staggerError)) {
+      return;
+    }
     get(form).days = [...get(selectedDays)];
     get(changed)("days");
     if (get(canStartStagger)) {
@@ -14437,7 +13827,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
     div,
     21,
     () => presets,
-    index,
+    ([label, selection]) => label,
     ($$anchor2, $$item) => {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let label = () => get($$array)[0];
@@ -14466,9 +13856,9 @@ function AdvancedRandomSettings($$anchor, $$props) {
   var div_1 = sibling(div, 2);
   each(
     div_1,
-    21,
+    22,
     () => days,
-    index,
+    (day) => day,
     ($$anchor2, day, index2) => {
       var label_1 = root_117();
       var input = child(label_1);
@@ -14482,17 +13872,16 @@ function AdvancedRandomSettings($$anchor, $$props) {
           set_text(text_4, $1);
         },
         [
-          () => get(selectedDays).includes(get(day)),
-          () => get(t)(weekdays[index2]),
+          () => get(selectedDays).includes(day),
+          () => get(t)(weekdays[get(index2)]),
         ],
       );
       delegated("change", input, (event2) => {
+        const checked = event2.currentTarget.checked;
         set2(
           selectedDays,
           days.filter((candidate) =>
-            candidate === get(day)
-              ? event2.currentTarget.checked
-              : get(selectedDays).includes(candidate),
+            candidate === day ? checked : get(selectedDays).includes(candidate),
           ),
           true,
         );
@@ -14653,15 +14042,21 @@ function RandomActions($$anchor, $$props) {
       set2(deleteOpen, false);
       advancedOpen(false);
     });
-    if (focusTarget.isConnected) focusTarget.focus();
+    if (focusTarget.isConnected) {
+      focusTarget.focus();
+    }
   }
   function closeMenu(restoreFocus = true) {
     menu.hidePopover();
     set2(menuOpen, false);
-    if (restoreFocus) trigger.focus();
+    if (restoreFocus) {
+      trigger.focus();
+    }
   }
   function positionMenu() {
-    if (!menu.matches(":popover-open")) return;
+    if (!menu.matches(":popover-open")) {
+      return;
+    }
     const anchor = trigger.getBoundingClientRect();
     const bounds = menu.getBoundingClientRect();
     const above = anchor.top - bounds.height - 8;
@@ -14673,21 +14068,22 @@ function RandomActions($$anchor, $$props) {
     menu.showPopover();
     set2(menuOpen, true);
     positionMenu();
-    const items = menu.querySelectorAll("button:not(:disabled)");
-    (last ? items[items.length - 1] : items[0])?.focus({ preventScroll: true });
+    const items = [...menu.querySelectorAll("button:not(:disabled)")];
+    (last ? items.at(-1) : items[0])?.focus({ preventScroll: true });
   }
   function menuKeydown(event2) {
     const items = [...menu.querySelectorAll("button:not(:disabled)")];
     const index2 = items.indexOf($$props.panel.shadowRoot.activeElement);
     if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event2.key)) {
       event2.preventDefault();
-      const next2 =
-        event2.key === "Home"
-          ? 0
-          : event2.key === "End"
-            ? items.length - 1
-            : (index2 + (event2.key === "ArrowDown" ? 1 : -1) + items.length) %
-              items.length;
+      let next2 =
+        (index2 + (event2.key === "ArrowDown" ? 1 : -1) + items.length) %
+        items.length;
+      if (event2.key === "Home") {
+        next2 = 0;
+      } else if (event2.key === "End") {
+        next2 = items.length - 1;
+      }
       items[next2]?.focus();
     } else if (event2.key === "Escape") {
       event2.preventDefault();
@@ -14791,10 +14187,11 @@ function RandomActions($$anchor, $$props) {
   );
   delegated("click", button, () => (get(menuOpen) ? closeMenu() : openMenu()));
   delegated("keydown", button, (event2) => {
-    if (event2.key === "ArrowDown" || event2.key === "ArrowUp") {
-      event2.preventDefault();
-      openMenu(event2.key === "ArrowUp");
+    if (!(event2.key === "ArrowDown" || event2.key === "ArrowUp")) {
+      return;
     }
+    event2.preventDefault();
+    openMenu(event2.key === "ArrowUp");
   });
   event("toggle", div_1, (event2) =>
     set2(menuOpen, event2.newState === "open"),
@@ -15073,13 +14470,13 @@ var root_214 = from_html(
 );
 var $$css8 = {
   hash: "svelte-e4ijcz",
-  code: ".random-advanced-button.svelte-e4ijcz {margin-top:16px;}.random-frequency.svelte-e4ijcz {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}.same-entities.svelte-e4ijcz {display:flex;align-items:center;gap:8px;margin-top:16px;}\n  @media (max-width: 600px) {.random-frequency.svelte-e4ijcz {grid-template-columns:1fr;gap:0;}\n  }",
+  code: ".random-advanced-button.svelte-e4ijcz {margin-top:16px;}.random-frequency.svelte-e4ijcz {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}.same-entities.svelte-e4ijcz {display:flex;align-items:center;gap:8px;margin-top:16px;}\n\n  @media (max-width: 600px) {.random-frequency.svelte-e4ijcz {grid-template-columns:1fr;gap:0;}\n  }",
 };
 function RandomEventEditor($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css8);
   let context = user_derived(() => {
-    $$props.revision;
+    void $$props.revision;
     return createRandomEditorContext($$props.panel);
   });
   let editor = user_derived(() => get(context).editor),
@@ -15214,7 +14611,9 @@ function RandomEventEditor($$anchor, $$props) {
       return get(form).minCount;
     },
     update: (value) => {
-      if (!get(maxCountVisible)) get(form).maxCount = value;
+      if (!get(maxCountVisible)) {
+        get(form).maxCount = value;
+      }
       get(form).minCount = value;
     },
     options: { type: "number", min: 0, max: 1e3, step: 1 },
@@ -15503,7 +14902,7 @@ var root_46 = from_html(
 function RandomView($$anchor, $$props) {
   push($$props, true);
   let data = user_derived(() => {
-    $$props.revision;
+    void $$props.revision;
     return {
       t: $$props.panel.t,
       entries: randomEntries($$props.panel.draft, $$props.panel.catalog),
@@ -15569,10 +14968,11 @@ function RandomView($$anchor, $$props) {
               $$props.panel.randomEditor?.existing &&
               $$props.panel.randomEditor.id === get(entry).id,
           );
-          const disabled = user_derived(() =>
-            get(editing)
-              ? $$props.panel.randomEditor?.form.enabled === false
-              : get(entry).enabled === false,
+          const disabled = user_derived(
+            () =>
+              (get(editing)
+                ? $$props.panel.randomEditor?.form.enabled
+                : get(entry).enabled) === false,
           );
           var div_1 = root_310();
           let classes;
@@ -15725,7 +15125,7 @@ function RandomView($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     if_block(node, ($$render) => {
-      if (!get(entries).length) $$render(consequent);
+      if (get(entries).length === 0) $$render(consequent);
       else $$render(alternate, -1);
     });
   }
@@ -15828,7 +15228,7 @@ function App($$anchor, $$props) {
     append($$anchor2, fragment);
   };
   let panel = user_derived(() => {
-    $updates();
+    void $updates();
     return new Proxy($$props.panel, {
       get(target, key2) {
         const value = Reflect.get(target, key2, target);
@@ -15841,7 +15241,7 @@ function App($$anchor, $$props) {
     () => get(panel).draft?.name || get(panel).selectedInstance?.name,
   );
   let state2 = user_derived(() => {
-    get(revision);
+    void get(revision);
     const showingSteps =
       get(panel).tab === "steps" &&
       get(panel).draft &&
@@ -15916,7 +15316,7 @@ function App($$anchor, $$props) {
         select,
         21,
         () => get(panel).instances,
-        index,
+        (instance) => instance.config_entry_id,
         ($$anchor3, instance) => {
           var option = root_47();
           var text_7 = only_child(option);
@@ -15989,7 +15389,7 @@ function App($$anchor, $$props) {
     node_5,
     17,
     () => get(panel).selectedInstance?.overlaps || [],
-    index,
+    (overlap) => overlap.config_entry_id,
     ($$anchor2, overlap) => {
       var p_4 = root_74();
       var text_9 = only_child(p_4);
@@ -16020,7 +15420,7 @@ function App($$anchor, $$props) {
     nav,
     21,
     () => primaryTabs,
-    index,
+    ([id, label]) => id,
     ($$anchor2, $$item) => {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let id = () => get($$array)[0];
@@ -16066,13 +15466,13 @@ function App($$anchor, $$props) {
   var div_5 = sibling(div_4, 2);
   each(
     div_5,
-    21,
+    20,
     () => get(issues),
-    index,
+    (issue) => issue,
     ($$anchor2, issue) => {
       renderIssue(
         $$anchor2,
-        () => get(issue),
+        () => issue,
         () => get(primary),
       );
     },
@@ -16271,6 +15671,335 @@ function App($$anchor, $$props) {
 }
 delegate(["click", "change"]);
 
+// custom_components/occupied/frontend/preview-controller.ts
+var PreviewController = class {
+  constructor(panel, getEntryId) {
+    this.panel = panel;
+    this.getEntryId = getEntryId;
+  }
+  panel;
+  getEntryId;
+  recoveryEpoch = 0;
+  connection;
+  invalidate() {
+    this.panel.liveReady = false;
+    this.recoveryEpoch++;
+  }
+  connect(connection) {
+    this.connection = connection;
+    connection.addEventListener?.("ready", this.connected);
+    connection.addEventListener?.("disconnected", this.disconnected);
+  }
+  disconnect() {
+    this.connection?.removeEventListener?.("ready", this.connected);
+    this.connection?.removeEventListener?.("disconnected", this.disconnected);
+    this.connection = void 0;
+    this.invalidate();
+  }
+  movePreviewDay(days2) {
+    return this.selectPreviewDate(
+      shiftScheduleDate(
+        this.panel.previewDate || this.panel.document.simulation_date,
+        days2,
+      ),
+    );
+  }
+  selectPreviewDate(date) {
+    if (
+      this.panel.busy ||
+      this.panel.liveBusy ||
+      this.panel.liveRunning ||
+      this.panel.tab !== "preview" ||
+      date === this.panel.previewDate
+    ) {
+      return;
+    }
+    this.panel.previewDate = date;
+    this.panel.liveVisible = false;
+    return this.loadPreview();
+  }
+  loadPreview() {
+    if (
+      this.panel.busy ||
+      !this.panel.draft ||
+      !this.panel.document ||
+      this.panel.liveRunning ||
+      (this.panel.liveVisible && this.panel.livePlan)
+    ) {
+      return;
+    }
+    const version = this.panel.version,
+      draft = copy(this.panel.draft),
+      date = this.panel.previewDate || this.panel.document.simulation_date;
+    this.panel.previewDate = date;
+    return this.panel.run(async (epoch) => {
+      const result = await this.panel.ws("preview", {
+        program: draft,
+        date,
+        days: 1,
+        seed: "preview-1",
+      });
+      if (
+        epoch !== this.panel.epoch ||
+        version !== this.panel.version ||
+        date !== this.panel.previewDate
+      ) {
+        return;
+      }
+      this.panel.preview = result;
+      this.panel.previewProgram = draft;
+      this.panel.showIssues(result);
+    });
+  }
+  disconnected = () => {
+    this.invalidate();
+    this.panel.flush();
+  };
+  connected = () => void this.recoverLivePreview();
+  visibilityChanged = () => {
+    if (document.visibilityState === "visible") {
+      void this.recoverLivePreview();
+    } else {
+      this.disconnected();
+    }
+  };
+  adoptLive(result) {
+    this.panel.liveSession = mergeLiveSession(
+      this.panel.liveSession,
+      result.session,
+    );
+    if (this.panel.liveSession && result.call_outcomes) {
+      this.panel.liveSession.outcomes = {
+        ...this.panel.liveSession.outcomes,
+        ...result.call_outcomes,
+      };
+    }
+    this.panel.liveCanAdvance = result.can_advance;
+    this.panel.schedulingPaused =
+      this.panel.liveSession?.paused ?? this.panel.schedulingPaused;
+    if (result.plan && result.program) {
+      this.panel.livePlan = result.plan;
+      this.panel.liveProgram = result.program;
+      this.panel.liveVisible =
+        !!result.session && (this.panel.liveRunning || result.session.paused);
+      if (this.panel.liveVisible) {
+        this.panel.previewDate = result.session.date;
+      }
+    }
+    this.panel.flush();
+  }
+  async recoverLivePreview() {
+    if (!this.getEntryId() || !this.panel.isConnected) {
+      return;
+    }
+    const epoch = this.panel.epoch,
+      recovery = ++this.recoveryEpoch;
+    this.panel.liveReady = false;
+    this.panel.flush();
+    try {
+      const result = await this.panel.ws("live_preview/status");
+      if (epoch !== this.panel.epoch || recovery !== this.recoveryEpoch) {
+        return;
+      }
+      this.adoptLive(result);
+      this.panel.liveReady = true;
+    } catch (error) {
+      if (epoch === this.panel.epoch && recovery === this.recoveryEpoch) {
+        this.panel.fail(error);
+      }
+    } finally {
+      if (epoch === this.panel.epoch && recovery === this.recoveryEpoch) {
+        this.panel.flush();
+      }
+    }
+  }
+  async startLivePreview() {
+    if (
+      this.panel.liveBusy ||
+      this.panel.liveRunning ||
+      !this.panel.liveReady ||
+      this.panel.busy
+    ) {
+      return;
+    }
+    const frozen = this.panel.liveVisible && this.panel.liveSession;
+    const program = frozen ? this.panel.liveProgram : this.panel.previewProgram;
+    const fingerprint = frozen
+      ? this.panel.liveSession?.plan_fingerprint
+      : this.panel.preview?.plan_fingerprint;
+    if (!program || !fingerprint) {
+      return;
+    }
+    const epoch = this.panel.epoch;
+    this.panel.liveBusy = true;
+    this.panel.error = "";
+    this.panel.flush();
+    try {
+      const result = await this.panel.ws("live_preview/start", {
+        program: copy(program),
+        date: this.panel.previewDate,
+        seed: "preview-1",
+        expected_plan_fingerprint: fingerprint,
+        request_id: crypto.randomUUID(),
+      });
+      if (epoch === this.panel.epoch) {
+        this.adoptLive(result);
+      }
+    } catch (error) {
+      if (epoch === this.panel.epoch) {
+        this.panel.fail(error);
+        await this.recoverLivePreview();
+      }
+    } finally {
+      if (epoch === this.panel.epoch) {
+        this.panel.liveBusy = false;
+        this.panel.flush();
+      }
+    }
+  }
+  async nextLiveEvent() {
+    const session = this.panel.liveSession;
+    if (
+      !session?.next_group ||
+      session.state !== "ready" ||
+      !this.panel.liveReady ||
+      !this.panel.liveCanAdvance ||
+      this.panel.liveBusy ||
+      this.panel.liveStopping
+    ) {
+      return;
+    }
+    const epoch = this.panel.epoch;
+    this.panel.liveBusy = true;
+    this.panel.error = "";
+    this.panel.flush();
+    try {
+      const result = await this.panel.ws("live_preview/next", {
+        session_id: session.id,
+        expected_group_id: session.next_group.id,
+        request_id: crypto.randomUUID(),
+      });
+      if (
+        epoch === this.panel.epoch &&
+        this.panel.liveSession?.id === session.id
+      ) {
+        this.adoptLive(result);
+      }
+    } catch (error) {
+      if (epoch === this.panel.epoch) {
+        this.panel.fail(error);
+        await this.recoverLivePreview();
+      }
+    } finally {
+      if (epoch === this.panel.epoch) {
+        this.panel.liveBusy = false;
+        this.panel.flush();
+      }
+    }
+  }
+  async stopLivePreview() {
+    const session = this.panel.liveSession;
+    if (!session || !this.panel.liveRunning || this.panel.liveStopping) {
+      return;
+    }
+    const epoch = this.panel.epoch;
+    this.panel.liveStopping = true;
+    this.panel.flush();
+    try {
+      const result = await this.panel.ws("live_preview/stop", {
+        session_id: session.id,
+      });
+      if (
+        epoch === this.panel.epoch &&
+        this.panel.liveSession?.id === session.id
+      ) {
+        this.adoptLive(result);
+      }
+    } catch (error) {
+      if (epoch === this.panel.epoch) {
+        this.panel.fail(error);
+        await this.recoverLivePreview();
+      }
+    } finally {
+      if (epoch === this.panel.epoch) {
+        this.panel.liveStopping = false;
+        this.panel.flush();
+      }
+    }
+  }
+  resumeScheduling() {
+    return this.panel.run(async (epoch) => {
+      await this.panel._hass.callWS({
+        type: "call_service",
+        domain: "occupied",
+        service: "resume",
+        service_data: { config_entry_id: this.getEntryId() },
+      });
+      if (epoch === this.panel.epoch) {
+        await this.recoverLivePreview();
+      }
+    });
+  }
+  refreshPreviewSchedule() {
+    if (this.panel.liveRunning || this.panel.liveBusy) {
+      return;
+    }
+    this.panel.liveVisible = false;
+    return this.loadPreview();
+  }
+};
+
+// custom_components/occupied/frontend/subscription.ts
+var PanelSubscription = class {
+  constructor(isConnected, onError) {
+    this.isConnected = isConnected;
+    this.onError = onError;
+  }
+  isConnected;
+  onError;
+  epoch = 0;
+  pending = false;
+  unsubscribe = null;
+  get active() {
+    return this.pending || this.unsubscribe !== null;
+  }
+  dispose() {
+    this.epoch++;
+    this.unsubscribe?.();
+    this.unsubscribe = null;
+    this.pending = false;
+  }
+  async subscribe(connection, message, onValue, onSubscribed) {
+    if (this.active || !this.isConnected()) {
+      return;
+    }
+    this.pending = true;
+    const epoch = this.epoch;
+    const isCurrent = () => epoch === this.epoch && this.isConnected();
+    try {
+      const unsubscribe = await connection.subscribeMessage((value) => {
+        if (isCurrent()) {
+          onValue(value);
+        }
+      }, message);
+      if (isCurrent()) {
+        this.unsubscribe = unsubscribe;
+        await onSubscribed?.();
+      } else {
+        unsubscribe();
+      }
+    } catch (error) {
+      if (epoch === this.epoch) {
+        this.onError(error);
+      }
+    } finally {
+      if (epoch === this.epoch) {
+        this.pending = false;
+      }
+    }
+  }
+};
+
 // custom_components/occupied/frontend/occupied-panel.ts
 var OccupiedPanel = class extends HTMLElement {
   // Program state
@@ -16317,7 +16046,6 @@ var OccupiedPanel = class extends HTMLElement {
   liveStopping = false;
   liveCanAdvance = false;
   schedulingPaused = false;
-  _liveRecoveryEpoch = 0;
   get liveRunning() {
     return liveRunning(this.liveSession);
   }
@@ -16332,17 +16060,20 @@ var OccupiedPanel = class extends HTMLElement {
   selectedEntry = null;
   _instancesReady = false;
   _instancesEpoch = 0;
-  _instancesUnsubscribe = null;
-  _instancesSubscribing = false;
   _panel;
   _loadedEntry = null;
-  _subscriptionEpoch = 0;
-  _unsubscribe = null;
-  _subscribing = false;
-  _liveConnection;
   updates = writable(0);
   updateRevision = 0;
   component;
+  instanceSubscription = new PanelSubscription(
+    () => this.isConnected,
+    (error) => this.fail(error),
+  );
+  runtimeSubscription = new PanelSubscription(
+    () => this.isConnected,
+    (error) => this.fail(error),
+  );
+  previewController = new PreviewController(this, () => this._loadedEntry);
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -16393,7 +16124,7 @@ var OccupiedPanel = class extends HTMLElement {
   connectedCallback() {
     if (!this.component) {
       const style = document.createElement("style");
-      style.textContent = styles;
+      style.textContent = styles_default;
       this.shadowRoot.append(style);
       this.component = mount(App, {
         target: this.shadowRoot,
@@ -16405,7 +16136,10 @@ var OccupiedPanel = class extends HTMLElement {
     window.addEventListener("beforeunload", this._beforeUnload);
     globalThis.addEventListener("location-changed", this._locationChanged);
     globalThis.addEventListener("popstate", this._locationChanged);
-    document.addEventListener("visibilitychange", this._liveVisibilityChanged);
+    document.addEventListener(
+      "visibilitychange",
+      this.previewController.visibilityChanged,
+    );
   }
   disconnectedCallback() {
     if (this.component) {
@@ -16425,7 +16159,7 @@ var OccupiedPanel = class extends HTMLElement {
     globalThis.removeEventListener("popstate", this._locationChanged);
     document.removeEventListener(
       "visibilitychange",
-      this._liveVisibilityChanged,
+      this.previewController.visibilityChanged,
     );
   }
   _locationChanged = () => void this._load();
@@ -16439,52 +16173,24 @@ var OccupiedPanel = class extends HTMLElement {
   // --- Backend connection -------------------------------------------------
   _disposeInstances() {
     this._instancesEpoch++;
-    this._instancesUnsubscribe?.();
-    this._instancesUnsubscribe = null;
-    this._instancesSubscribing = false;
+    this.instanceSubscription.dispose();
   }
-  async _subscribeInstances() {
-    if (
-      this._instancesUnsubscribe ||
-      this._instancesSubscribing ||
-      !this.isConnected
-    ) {
-      return;
-    }
-    this._instancesSubscribing = true;
-    const epoch = this._instancesEpoch;
-    try {
-      const unsubscribe = await this._hass.connection.subscribeMessage(
-        (instances) => {
-          if (epoch !== this._instancesEpoch || !this.isConnected) {
-            return;
-          }
-          this.instances = instances;
-          this.flush();
-          if (!this.selectedInstance?.loaded && this._loadedEntry) {
-            this.epoch++;
-            this._loadedEntry = null;
-            this._loading = this.busy = false;
-            this._disposeSubscription();
-          }
-          void this._load();
-        },
-        { type: "occupied/instances_subscribe" },
-      );
-      if (epoch !== this._instancesEpoch || !this.isConnected) {
-        unsubscribe();
-      } else {
-        this._instancesUnsubscribe = unsubscribe;
-      }
-    } catch (error) {
-      if (epoch === this._instancesEpoch) {
-        this.fail(error);
-      }
-    } finally {
-      if (epoch === this._instancesEpoch) {
-        this._instancesSubscribing = false;
-      }
-    }
+  _subscribeInstances() {
+    return this.instanceSubscription.subscribe(
+      this._hass.connection,
+      { type: "occupied/instances_subscribe" },
+      (instances) => {
+        this.instances = instances;
+        this.flush();
+        if (!this.selectedInstance?.loaded && this._loadedEntry) {
+          this.epoch++;
+          this._loadedEntry = null;
+          this._loading = this.busy = false;
+          this._disposeSubscription();
+        }
+        void this._load();
+      },
+    );
   }
   _writeSelection(entry, replace = false) {
     const url = new URL(location.href);
@@ -16561,66 +16267,29 @@ var OccupiedPanel = class extends HTMLElement {
     });
   }
   _disposeSubscription() {
-    this._liveConnection?.removeEventListener?.("ready", this._liveConnected);
-    this._liveConnection?.removeEventListener?.(
-      "disconnected",
-      this._liveDisconnected,
-    );
-    this._liveConnection = void 0;
-    this.liveReady = false;
-    this._liveRecoveryEpoch++;
-    this._subscriptionEpoch++;
-    this._unsubscribe?.();
-    this._unsubscribe = null;
-    this._subscribing = false;
+    this.previewController.disconnect();
+    this.runtimeSubscription.dispose();
   }
   async _subscribe() {
     if (
       !this.isConnected ||
       !this._loadedEntry ||
       !this._hass?.connection ||
-      this._unsubscribe ||
-      this._subscribing
+      this.runtimeSubscription.active
     ) {
       return;
     }
-    this._subscribing = true;
-    this._liveConnection = this._hass.connection;
-    this._hass.connection.addEventListener?.("ready", this._liveConnected);
-    this._hass.connection.addEventListener?.(
-      "disconnected",
-      this._liveDisconnected,
+    this.previewController.connect(this._hass.connection);
+    await this.runtimeSubscription.subscribe(
+      this._hass.connection,
+      { type: "occupied/subscribe", config_entry_id: this._loadedEntry },
+      (snapshot2) => this._onSnapshot(snapshot2),
+      () => this.recoverLivePreview(),
     );
-    const epoch = this._subscriptionEpoch;
-    try {
-      const unsubscribe = await this._hass.connection.subscribeMessage(
-        (snapshot2) => {
-          if (epoch === this._subscriptionEpoch && this.isConnected) {
-            this._onSnapshot(snapshot2);
-          }
-        },
-        { type: "occupied/subscribe", config_entry_id: this._loadedEntry },
-      );
-      if (epoch !== this._subscriptionEpoch || !this.isConnected) {
-        unsubscribe();
-      } else {
-        this._unsubscribe = unsubscribe;
-        await this.recoverLivePreview();
-      }
-    } catch (error) {
-      if (epoch === this._subscriptionEpoch) {
-        this.fail(error);
-      }
-    } finally {
-      if (epoch === this._subscriptionEpoch) {
-        this._subscribing = false;
-      }
-    }
   }
   _onSnapshot(snapshot2) {
     if (snapshot2.loaded === false) {
-      this.liveReady = false;
-      this._liveRecoveryEpoch++;
+      this.previewController.invalidate();
     }
     this.schedulingPaused = snapshot2.paused ?? this.schedulingPaused;
     if (snapshot2.live_preview !== void 0) {
@@ -16747,7 +16416,7 @@ var OccupiedPanel = class extends HTMLElement {
   }
   renderView() {
     if (this.tab === "preview") {
-      void this.loadPreview();
+      void this.previewController.loadPreview();
     }
     this.flush();
   }
@@ -17093,242 +16762,30 @@ var OccupiedPanel = class extends HTMLElement {
       this.renderView();
     });
   }
+  // Preview orchestration lives separately from editor and connection state.
   movePreviewDay(days2) {
-    return this.selectPreviewDate(
-      shiftScheduleDate(
-        this.previewDate || this.document.simulation_date,
-        days2,
-      ),
-    );
+    return this.previewController.movePreviewDay(days2);
   }
   selectPreviewDate(date) {
-    if (
-      this.busy ||
-      this.liveBusy ||
-      this.liveRunning ||
-      this.tab !== "preview" ||
-      date === this.previewDate
-    ) {
-      return;
-    }
-    this.previewDate = date;
-    this.liveVisible = false;
-    return this.loadPreview();
+    return this.previewController.selectPreviewDate(date);
   }
-  loadPreview() {
-    if (
-      this.busy ||
-      !this.draft ||
-      !this.document ||
-      this.liveRunning ||
-      (this.liveVisible && this.livePlan)
-    ) {
-      return;
-    }
-    const version = this.version,
-      draft = copy(this.draft),
-      date = this.previewDate || this.document.simulation_date;
-    this.previewDate = date;
-    return this.run(async (epoch) => {
-      const result = await this.ws("preview", {
-        program: draft,
-        date,
-        days: 1,
-        seed: "preview-1",
-      });
-      if (
-        epoch !== this.epoch ||
-        version !== this.version ||
-        date !== this.previewDate
-      ) {
-        return;
-      }
-      this.preview = result;
-      this.previewProgram = draft;
-      this.showIssues(result);
-    });
+  recoverLivePreview() {
+    return this.previewController.recoverLivePreview();
   }
-  _liveDisconnected = () => {
-    this.liveReady = false;
-    this._liveRecoveryEpoch++;
-    this.flush();
-  };
-  _liveConnected = () => void this.recoverLivePreview();
-  _liveVisibilityChanged = () => {
-    if (document.visibilityState === "visible") {
-      void this.recoverLivePreview();
-    } else {
-      this._liveDisconnected();
-    }
-  };
-  adoptLive(result) {
-    this.liveSession = mergeLiveSession(this.liveSession, result.session);
-    if (this.liveSession && result.call_outcomes) {
-      this.liveSession.outcomes = {
-        ...this.liveSession.outcomes,
-        ...result.call_outcomes,
-      };
-    }
-    this.liveCanAdvance = result.can_advance;
-    this.schedulingPaused = this.liveSession?.paused ?? this.schedulingPaused;
-    if (result.plan && result.program) {
-      this.livePlan = result.plan;
-      this.liveProgram = result.program;
-      this.liveVisible =
-        !!result.session && (this.liveRunning || result.session.paused);
-      if (this.liveVisible) {
-        this.previewDate = result.session.date;
-      }
-    }
-    this.flush();
+  startLivePreview() {
+    return this.previewController.startLivePreview();
   }
-  async recoverLivePreview() {
-    if (!this._loadedEntry || !this.isConnected) {
-      return;
-    }
-    const epoch = this.epoch,
-      recovery = ++this._liveRecoveryEpoch;
-    this.liveReady = false;
-    this.flush();
-    try {
-      const result = await this.ws("live_preview/status");
-      if (epoch !== this.epoch || recovery !== this._liveRecoveryEpoch) {
-        return;
-      }
-      this.adoptLive(result);
-      this.liveReady = true;
-    } catch (error) {
-      if (epoch === this.epoch && recovery === this._liveRecoveryEpoch) {
-        this.fail(error);
-      }
-    } finally {
-      if (epoch === this.epoch && recovery === this._liveRecoveryEpoch) {
-        this.flush();
-      }
-    }
+  nextLiveEvent() {
+    return this.previewController.nextLiveEvent();
   }
-  async startLivePreview() {
-    if (this.liveBusy || this.liveRunning || !this.liveReady || this.busy) {
-      return;
-    }
-    const frozen = this.liveVisible && this.liveSession;
-    const program = frozen ? this.liveProgram : this.previewProgram;
-    const fingerprint = frozen
-      ? this.liveSession?.plan_fingerprint
-      : this.preview?.plan_fingerprint;
-    if (!program || !fingerprint) {
-      return;
-    }
-    const epoch = this.epoch;
-    this.liveBusy = true;
-    this.error = "";
-    this.flush();
-    try {
-      const result = await this.ws("live_preview/start", {
-        program: copy(program),
-        date: this.previewDate,
-        seed: "preview-1",
-        expected_plan_fingerprint: fingerprint,
-        request_id: crypto.randomUUID(),
-      });
-      if (epoch === this.epoch) {
-        this.adoptLive(result);
-      }
-    } catch (error) {
-      if (epoch === this.epoch) {
-        this.fail(error);
-        await this.recoverLivePreview();
-      }
-    } finally {
-      if (epoch === this.epoch) {
-        this.liveBusy = false;
-        this.flush();
-      }
-    }
-  }
-  async nextLiveEvent() {
-    const session = this.liveSession;
-    if (
-      !session?.next_group ||
-      session.state !== "ready" ||
-      !this.liveReady ||
-      !this.liveCanAdvance ||
-      this.liveBusy ||
-      this.liveStopping
-    ) {
-      return;
-    }
-    const epoch = this.epoch;
-    this.liveBusy = true;
-    this.error = "";
-    this.flush();
-    try {
-      const result = await this.ws("live_preview/next", {
-        session_id: session.id,
-        expected_group_id: session.next_group.id,
-        request_id: crypto.randomUUID(),
-      });
-      if (epoch === this.epoch && this.liveSession?.id === session.id) {
-        this.adoptLive(result);
-      }
-    } catch (error) {
-      if (epoch === this.epoch) {
-        this.fail(error);
-        await this.recoverLivePreview();
-      }
-    } finally {
-      if (epoch === this.epoch) {
-        this.liveBusy = false;
-        this.flush();
-      }
-    }
-  }
-  async stopLivePreview() {
-    const session = this.liveSession;
-    if (!session || !this.liveRunning || this.liveStopping) {
-      return;
-    }
-    const epoch = this.epoch;
-    this.liveStopping = true;
-    this.flush();
-    try {
-      const result = await this.ws("live_preview/stop", {
-        session_id: session.id,
-      });
-      if (epoch === this.epoch && this.liveSession?.id === session.id) {
-        this.adoptLive(result);
-      }
-    } catch (error) {
-      if (epoch === this.epoch) {
-        this.fail(error);
-        await this.recoverLivePreview();
-      }
-    } finally {
-      if (epoch === this.epoch) {
-        this.liveStopping = false;
-        this.flush();
-      }
-    }
+  stopLivePreview() {
+    return this.previewController.stopLivePreview();
   }
   resumeScheduling() {
-    return this.run(async (epoch) => {
-      await this._hass.callWS({
-        type: "call_service",
-        domain: "occupied",
-        service: "resume",
-        service_data: { config_entry_id: this._loadedEntry },
-      });
-      if (epoch === this.epoch) {
-        await this.recoverLivePreview();
-      }
-    });
+    return this.previewController.resumeScheduling();
   }
   refreshPreviewSchedule() {
-    if (this.liveRunning || this.liveBusy) {
-      return;
-    }
-    this.liveVisible = false;
-    return this.loadPreview();
+    return this.previewController.refreshPreviewSchedule();
   }
   saveYaml() {
     if (this.document?.source === "file" || this.stale) {

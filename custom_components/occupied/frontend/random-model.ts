@@ -7,7 +7,7 @@ import type {
   FieldErrors,
   Catalog,
 } from "./types.js";
-import { actionTargets } from "./custom-action.js";
+import { actionTargetSummary } from "./custom-action.js";
 import { copy, days, identifier } from "./model.js";
 import {
   actionForm,
@@ -16,7 +16,7 @@ import {
   timingErrors,
   formTiming,
 } from "./step-model.js";
-import { timingForm, entityName, durationSeconds } from "./util.js";
+import { timingForm, durationSeconds } from "./util.js";
 
 export function countBounds(count: RandomEvent["count"]) {
   return typeof count === "object"
@@ -26,6 +26,7 @@ export function countBounds(count: RandomEvent["count"]) {
 
 export function countSummary(count: RandomEvent["count"]): string {
   const { min, max } = countBounds(count);
+
   return min === max ? String(min) : `${min}–${max}`;
 }
 
@@ -38,9 +39,7 @@ export function randomEntries(
     id,
     path: ["random", id],
     days: [...(event.days || days)],
-    name:
-      event.name ||
-      `${catalog ? entityName(catalog, actionTargets(event.on)[0]) : actionTargets(event.on)[0]}${actionTargets(event.on).length > 1 ? ` +${actionTargets(event.on).length - 1}` : ""}`,
+    name: event.name || actionTargetSummary(event.on, catalog),
   }));
 }
 
@@ -70,6 +69,7 @@ export function randomEditor(
       JSON.stringify([...on.entities].sort()) ===
         JSON.stringify([...off.entities].sort()),
   };
+
   return {
     id: entry?.id || identifier(program, "random", "random"),
     existing: !!entry,
@@ -183,6 +183,7 @@ export function randomErrors(
       errors.minDuration = "Minimum duration does not fit inside this window.";
     }
   }
+
   return errors;
 }
 
@@ -205,6 +206,7 @@ export function windowEndErrors(
     errors.maxDuration =
       "Maximum window duration must be at least the minimum.";
   }
+
   return errors;
 }
 
@@ -242,5 +244,6 @@ export function buildRandom(
         : form.off,
     ),
   };
+
   return next;
 }

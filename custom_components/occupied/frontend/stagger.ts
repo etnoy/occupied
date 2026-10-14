@@ -4,6 +4,7 @@ import { actionTargets, actionYaml } from "./custom-action.js";
 
 export function staggerPeriodError(settings: Stagger): string | undefined {
   const seconds = durationSeconds(settings.period ?? "2m");
+
   return Number.isFinite(seconds) && seconds >= 1 && seconds <= 1800
     ? undefined
     : "Use a time window from 1s to 30m, for example 2m.";
@@ -29,6 +30,7 @@ function customStaggerAction(form: ActionForm): Action | undefined {
       ? action
       : undefined;
   }
+
   return /^(?:(?:light|switch)\.)?turn_(on|off)$/.test(action.action || "")
     ? action
     : undefined;
@@ -46,6 +48,7 @@ export function supportsStagger(form: ActionForm): boolean {
 export function staggerSettings(form: ActionForm): Stagger {
   const current =
     form.kind === "custom" ? customStaggerAction(form)?.stagger : form.stagger;
+
   return {
     enabled: current?.enabled ?? false,
     period: current?.period ?? "2m",

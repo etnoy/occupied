@@ -11,10 +11,13 @@
     timingForm,
   } from "./util.js";
   import RandomEventEditor from "./RandomEventEditor.svelte";
+
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
+
   let data = $derived.by(() => {
-    revision;
+    void revision;
+
     return {
       t: panel.t,
       entries: randomEntries(panel.draft, panel.catalog),
@@ -30,7 +33,7 @@
   let { t, entries, steps } = $derived(data);
 </script>
 
-{#if !entries.length}
+{#if entries.length === 0}
   <section class="step-empty">
     <h2>{t("Random activity")}</h2>
     <p class="hint">
@@ -57,9 +60,8 @@
     {#each entries as entry (entry.id)}
       {@const editing =
         panel.randomEditor?.existing && panel.randomEditor.id === entry.id}
-      {@const disabled = editing
-        ? panel.randomEditor?.form.enabled === false
-        : entry.enabled === false}
+      {@const disabled =
+        (editing ? panel.randomEditor?.form.enabled : entry.enabled) === false}
       <div
         class="step-card"
         class:step-disabled={disabled}
@@ -81,8 +83,8 @@
         >
           <span class="step-row-content">
             <span class="step-row-heading"
-              ><strong>{entry.name}</strong>{#if disabled}<span
-                  class="step-status-badge">{t("Disabled")}</span
+              ><strong>{entry.name}</strong>{#if disabled}
+                <span class="step-status-badge">{t("Disabled")}</span
                 >{/if}</span
             >
             <span class="hint"
@@ -93,7 +95,8 @@
                 .join(", ")}</span
             >
           </span>
-          {#if !editing}<span class="step-row-time"
+          {#if !editing}
+            <span class="step-row-time"
               >{timingSummary(
                 { timing: entry.start },
                 steps,
@@ -114,7 +117,8 @@
             >{/if}
         </button>
         <div id={`random-editor-${entry.id}`}>
-          {#if editing}<RandomEventEditor {panel} {revision} />{/if}
+          {#if editing}
+            <RandomEventEditor {panel} {revision} />{/if}
         </div>
       </div>
     {/each}

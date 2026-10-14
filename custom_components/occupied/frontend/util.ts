@@ -18,6 +18,7 @@ export function errorMessage(error: unknown): string {
   if (typeof error === "object" && error !== null && "message" in error) {
     return String(error.message);
   }
+
   return String(error);
 }
 
@@ -36,6 +37,7 @@ export function required<T>(value: T | null | undefined): T {
   if (value == null) {
     throw new Error("Required editor element or value is missing");
   }
+
   return value;
 }
 
@@ -79,6 +81,7 @@ function minutes(value: string | number | undefined) {
         ({ h: 60, m: 1, s: 1 / 60 } as Record<string, number>)[unit],
     0,
   );
+
   return text.startsWith("-") ? -total : total;
 }
 
@@ -95,6 +98,7 @@ export function durationLabel(
   remaining -= hours * 3600;
   const mins = Math.floor(remaining / 60);
   const seconds = Math.round((remaining - mins * 60) * 1e6) / 1e6;
+
   return (
     [
       [hours, "hour", "hours"],
@@ -128,6 +132,7 @@ export function timingForm(timing: Timing = {}): TimingForm {
   if (timing.duration) {
     mode = "duration";
   }
+
   return {
     mode,
     start: clock?.start || "18:00",
@@ -164,6 +169,7 @@ export function offsetErrors(
       errors.endOffset = "The end offset must be at least the start offset.";
     }
   }
+
   return errors;
 }
 
@@ -204,6 +210,7 @@ function scheduleDaySuffix(selected: string[] | undefined, t: Translate) {
     dayNames.length > 0
       ? `${dayNames.join(", ")}${dayNames.length > 1 ? "," : ""} ${t("and")} ${lastDay}`
       : lastDay;
+
   return ` ${t("on")} ${dayList}`;
 }
 
@@ -217,6 +224,7 @@ export function timingSummary(
   if (!entry.timing) {
     return `${t("Repeated activity window")}${scheduleDaySuffix(entry.days, t)}`;
   }
+
   return timingExplanation(timingForm(entry.timing), entries, t, sources, {
     includeHints: false,
     locale,
@@ -262,6 +270,7 @@ export function timingExplanation(
     ) {
       return t("Choose valid window durations.");
     }
+
     return t(
       minimum === maximum
         ? "Window closes {duration} after it starts"
@@ -294,6 +303,7 @@ export function timingExplanation(
     }
     const nextDay =
       seconds(time.end) < seconds(time.start) ? ` ${t("the next day")}` : "";
+
     return `${runs} ${t("at a random time between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}`;
   }
   if (Object.keys(offsetErrors(time)).length > 0) {
@@ -337,6 +347,7 @@ export function timingExplanation(
       low === 0
         ? `${runs} ${t("at the same time as")} ${name}`
         : `${runs} ${offsetLabel(low)} ${name}`;
+
     return `${fixedTime}${includeHints && !time.endOffset ? `. ${t("Add an end offset to introduce randomness")}` : ""}`;
   }
   const anchorStart = step ? `${t("the start of")} ${name}` : name;
@@ -348,5 +359,6 @@ export function timingExplanation(
   }
   const firstBound =
     Math.sign(low) === Math.sign(high) ? duration(low) : offsetLabel(low);
+
   return `${runs} ${t("at a random time between")} ${firstBound} ${t("and")} ${offsetLabel(high)} ${name}`;
 }

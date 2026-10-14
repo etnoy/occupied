@@ -27,6 +27,7 @@
     error?: string;
     fieldPrefix?: string;
   } = $props();
+
   let items = $derived.by(() => {
     const items: (string | PickerItem)[] = [];
     let group;
@@ -42,21 +43,29 @@
         group: t(choice.group),
       });
     }
+
     return items;
   });
+
   function valueRenderer(id: string) {
     const headline = document.createElement("span");
     headline.slot = "headline";
     headline.textContent = t(
       choices.find((choice) => choice.value === id)?.name || id,
     );
+
     return headline;
   }
+
   function select(event: Event) {
-    if (!isValueChangedEvent(event)) return;
+    if (!isValueChangedEvent(event)) {
+      return;
+    }
     const next =
       typeof event.detail.value === "string" ? event.detail.value : "";
-    if (next && !choices.some((choice) => choice.value === next)) return;
+    if (next && choices.every((choice) => choice.value !== next)) {
+      return;
+    }
     const control = event.currentTarget as HaGenericPicker;
     control.value = next || undefined;
     onChange(next);

@@ -21,17 +21,22 @@
     context: RandomEditorContext;
     onClose: () => void;
   } = $props();
+
   let { form, t, changed } = $derived(context);
+
   let selectedDays = $state(untrack(() => [...form.days]));
   let startStagger = $state(untrack(() => staggerSettings(form.on)));
   let endStagger = $state(untrack(() => staggerSettings(form.off)));
+
   let canStartStagger = $derived(supportsStagger(form.on));
   let canEndStagger = $derived(supportsStagger(form.off));
   let staggerError = $derived(
     (canStartStagger && staggerPeriodError(startStagger)) ||
       (canEndStagger && staggerPeriodError(endStagger)),
   );
+
   let dialog: HTMLDialogElement;
+
   const presets: [string, string[]][] = [
     ["Every day", days],
     ["Weekdays", days.slice(0, 5)],
@@ -46,8 +51,9 @@
     "Saturday",
     "Sunday",
   ];
+
   let dayError = $derived(
-    selectedDays.length ? undefined : t("Choose at least one day."),
+    selectedDays.length > 0 ? undefined : t("Choose at least one day."),
   );
 
   onMount(() => {
@@ -56,7 +62,9 @@
   });
 
   function apply() {
-    if (panel.busy || dayError || staggerError) return;
+    if (panel.busy || dayError || staggerError) {
+      return;
+    }
     form.days = [...selectedDays];
     changed("days");
     if (canStartStagger) {
@@ -89,7 +97,7 @@
   >
     <legend>{t("Run on")}</legend>
     <div class="step-weekday-presets">
-      {#each presets as [label, selection]}
+      {#each presets as [label, selection] (label)}
         <button
           type="button"
           aria-pressed={selectedDays.length === selection.length &&
@@ -99,16 +107,15 @@
       {/each}
     </div>
     <div class="step-weekday-options">
-      {#each days as day, index}
+      {#each days as day, index (day)}
         <label class="step-weekday-option">
           <input
             type="checkbox"
             checked={selectedDays.includes(day)}
             onchange={(event) => {
+              const checked = event.currentTarget.checked;
               selectedDays = days.filter((candidate) =>
-                candidate === day
-                  ? event.currentTarget.checked
-                  : selectedDays.includes(candidate),
+                candidate === day ? checked : selectedDays.includes(candidate),
               );
             }}
           /><span>{t(weekdays[index])}</span>

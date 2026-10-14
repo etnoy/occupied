@@ -1,5 +1,5 @@
 // Generated from random-model.ts by pnpm run build. Do not edit.
-import { actionTargets } from "./custom-action.js";
+import { actionTargetSummary } from "./custom-action.js";
 import { copy, days, identifier } from "./model.js";
 import {
   actionForm,
@@ -8,7 +8,7 @@ import {
   timingErrors,
   formTiming,
 } from "./step-model.js";
-import { timingForm, entityName, durationSeconds } from "./util.js";
+import { timingForm, durationSeconds } from "./util.js";
 export function countBounds(count) {
   return typeof count === "object"
     ? count
@@ -24,9 +24,7 @@ export function randomEntries(program, catalog) {
     id,
     path: ["random", id],
     days: [...(event.days || days)],
-    name:
-      event.name ||
-      `${catalog ? entityName(catalog, actionTargets(event.on)[0]) : actionTargets(event.on)[0]}${actionTargets(event.on).length > 1 ? ` +${actionTargets(event.on).length - 1}` : ""}`,
+    name: event.name || actionTargetSummary(event.on, catalog),
   }));
 }
 export function randomEditor(program, entry) {

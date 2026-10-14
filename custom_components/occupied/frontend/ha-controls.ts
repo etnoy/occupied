@@ -44,6 +44,7 @@ export async function loadHaControls() {
 // Load HA's own chart implementation through its lazy history panel route.
 // The timeline component accepts supplied data and does not fetch recorder history.
 let historyChartLoad: Promise<void> | undefined;
+
 export function loadHaHistoryChart() {
   if (customElements.get("state-history-chart-timeline")) {
     return Promise.resolve();
@@ -67,5 +68,6 @@ export function loadHaHistoryChart() {
     historyChartLoad = undefined;
     throw error;
   });
+
   return historyChartLoad;
 }

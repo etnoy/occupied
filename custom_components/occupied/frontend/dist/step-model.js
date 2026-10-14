@@ -14,7 +14,11 @@ import {
   references,
 } from "./model.js";
 import { coverActions, coverField, isCoverAction } from "./cover.js";
-import { actionTargets, actionYaml } from "./custom-action.js";
+import {
+  actionTargets,
+  actionTargetSummary,
+  actionYaml,
+} from "./custom-action.js";
 import { staggerPeriodError } from "./stagger.js";
 const sorted = (values) => [...new Set(values)].sort();
 const actionLabels = {
@@ -23,15 +27,20 @@ const actionLabels = {
   "scene.turn_on": "Activate scene",
   ...Object.fromEntries(coverActions),
 };
+function stepDisplayName(step, catalog, t) {
+  const label =
+    step.actions || step.action === "set_state"
+      ? "Custom YAML"
+      : actionLabels[step.action || ""] || step.action || "";
+  return `${actionTargetSummary(step, catalog)} · ${t(label)}`;
+}
 export function stepEntries(program, catalog, t = (value) => value) {
   return Object.entries(program.steps || {}).map(([id, step]) => ({
     ...step,
     id,
     path: ["steps", id],
     days: [...(step.days || days)],
-    name:
-      step.name ||
-      `${catalog ? entityName(catalog, actionTargets(step)[0]) : actionTargets(step)[0]}${actionTargets(step).length > 1 ? ` +${actionTargets(step).length - 1}` : ""} · ${t(step.actions || step.action === "set_state" ? "Custom YAML" : actionLabels[step.action || ""] || step.action || "")}`,
+    name: step.name || stepDisplayName(step, catalog, t),
   }));
 }
 export const solarEvents = [
@@ -63,11 +72,19 @@ export function timeSourceChoices(
         group: "Steps",
       })),
     ...(randomId
-      ? parentRandomEvents(program, randomId).map((event) => ({
-          value: `random:${event.id}`,
-          name: `${t("End of")} ${event.name || (catalog.entities ? entityName({ entities: catalog.entities }, actionTargets(event.on)[0]) : actionTargets(event.on)[0])}`,
-          group: "Random events",
-        }))
+      ? parentRandomEvents(program, randomId).map((event) => {
+          const first = actionTargets(event.on)[0];
+          const name =
+            event.name ||
+            (catalog.entities
+              ? entityName({ entities: catalog.entities }, first)
+              : first);
+          return {
+            value: `random:${event.id}`,
+            name: `${t("End of")} ${name}`,
+            group: "Random events",
+          };
+        })
       : []),
     ...(catalog.time_sources ||
       solarEvents.map((event) => ({

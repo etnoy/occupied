@@ -7,11 +7,14 @@
   import { warningStepId } from "./step-issues.js";
   import { entityName, timingSummary } from "./util.js";
   import StepEditor from "./StepEditor.svelte";
+
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
+
   let data = $derived.by(() => {
-    revision;
+    void revision;
     const entries = stepEntries(panel.draft, panel.catalog, panel.t);
+
     return {
       t: panel.t,
       entries,
@@ -24,7 +27,7 @@
   let { t, entries, issues } = $derived(data);
 </script>
 
-{#if !entries.length}
+{#if entries.length === 0}
   <section class="step-empty">
     <h2>{t("Scheduled activity")}</h2>
     <p class="hint">
@@ -51,9 +54,8 @@
           .map(({ issue }) => issue)}
         {@const editing =
           panel.stepEditor?.existing && panel.stepEditor.id === entry.id}
-        {@const stepDisabled = editing
-          ? panel.stepEditor?.form.enabled === false
-          : entry.enabled === false}
+        {@const stepDisabled =
+          (editing ? panel.stepEditor?.form.enabled : entry.enabled) === false}
         {@const expanded =
           editing || (!panel.stepEditor && panel.selectedStep === entry.id)}
         <div
@@ -67,14 +69,14 @@
             type="button"
             id={`step-card-${entry.id}`}
             class="step-row"
-            class:editing={editing && !warnings.length}
+            class:editing={editing && warnings.length === 0}
             aria-label={stepDisabled
               ? `${entry.name} · ${t("Disabled")}`
               : entry.name}
             disabled={panel.busy}
             aria-expanded={expanded}
             aria-controls={`step-editor-${entry.id}`}
-            aria-describedby={warnings.length
+            aria-describedby={warnings.length > 0
               ? `step-warning-${entry.id}`
               : undefined}
             onclick={() => openStep(panel, entry)}
@@ -97,7 +99,7 @@
               <span class="step-row-warning" id={`step-warning-${entry.id}`}>
                 <ha-icon icon="mdi:alert-outline" aria-hidden="true"></ha-icon>
                 <span>
-                  {#each warnings as warning}
+                  {#each warnings as warning (warning)}
                     <span class="step-warning-message">{warning.message}</span>
                   {/each}
                 </span>

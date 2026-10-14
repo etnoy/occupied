@@ -5,9 +5,11 @@ import {
   calendarStateHistory,
   previewStateHistory,
   staggerTransitions,
+  eventDetails,
 } from "@occupied/timeline.js";
 import type { Plan, PlannedEvent } from "@occupied/types.js";
 import { calendarMidnight, shiftScheduleDate } from "@occupied/time-format.js";
+
 void test("schedule navigation shifts calendar days across DST, leap days, and year boundaries", () => {
   for (const [date, offset, expected] of [
     ["2026-03-29", 1, "2026-03-30"],
@@ -41,6 +43,43 @@ const plan = (events: PlannedEvent[]): Plan => ({
   events,
   steps: {},
   issues: [],
+});
+
+void test("event details preserve random labels, stagger ticks, superseded state, and settings", () => {
+  const details = eventDetails(
+    {
+      ...event(18, "light.turn_on"),
+      kind: "random_end",
+      tick: 2,
+      tick_count: 3,
+      period_seconds: 120,
+      superseded: true,
+      action: {
+        action: "light.turn_on",
+        entities: ["light.a", "light.b"],
+        data: { brightness: 100 },
+      },
+    },
+    "Evening",
+    "UTC",
+    (text) => text,
+  );
+  assert.equal(details.source, "Evening · Random end");
+  assert.equal(
+    details.action,
+    "light.turn_on · Tick 2 of 3 · 120s · Superseded",
+  );
+  assert.equal(details.targets, "light.a, light.b");
+  assert.equal(details.settings, '{"brightness":100}');
+  const simple = eventDetails(
+    event(18, "light.turn_off"),
+    "Bedtime",
+    "UTC",
+    (text) => text,
+  );
+  assert.equal(simple.source, "Bedtime · step");
+  assert.equal(simple.action, "light.turn_off");
+  assert.equal(simple.settings, "—");
 });
 void test("unknown starting state is preserved until the first typed action", () => {
   const histories = previewStateHistory(

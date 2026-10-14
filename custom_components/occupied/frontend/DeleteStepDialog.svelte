@@ -7,6 +7,7 @@
   import { stepEntries, dependentNames } from "./step-model.js";
 
   import { onMount } from "svelte";
+
   let {
     panel,
     entry,
@@ -16,9 +17,12 @@
     entry: StepEntry;
     onClose: () => void;
   } = $props();
+
   let t = $derived(panel.t);
   let dependents = $derived(dependentNames(panel.draft, entry.id));
+
   let dialog: HTMLDialogElement;
+
   onMount(() => {
     dialog.showModal();
     dialog.querySelector<HTMLButtonElement>("button")?.focus();
@@ -27,7 +31,9 @@
 
 <dialog
   use:reference={(node) => {
-    if (node) dialog = node as HTMLDialogElement;
+    if (node) {
+      dialog = node as HTMLDialogElement;
+    }
   }}
   class="step-delete-dialog"
   aria-labelledby="step-delete-title"
@@ -40,7 +46,7 @@
     {#if dependents.length}
       <p>{t("Used by")}:</p>
       <ul>
-        {#each dependents as name}
+        {#each dependents as name, index (index)}
           <li>{name}</li>
         {/each}
       </ul>
@@ -66,7 +72,9 @@
           const current = stepEntries(panel.draft, panel.catalog, panel.t).find(
             (step) => step.id === entry.id,
           );
-          if (!current) return dialog.close();
+          if (!current) {
+            return dialog.close();
+          }
           const next = copy(panel.draft);
           removeStep(next, current.path);
           dialog.close();

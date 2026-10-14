@@ -1,4 +1,4 @@
-import type { Program, Translate, Plan } from "./types.js";
+import type { Program, Translate, Plan, PlannedEvent } from "./types.js";
 import type { HomeAssistantLocale } from "./time-format.js";
 import { coverTarget, type CoverPosition } from "./cover.js";
 import {
@@ -6,6 +6,7 @@ import {
   shiftScheduleDate,
   formatTimestamp,
 } from "./time-format.js";
+
 export function calendarDayPlan(plans: Plan[], date: string): Plan | undefined {
   const current = plans.find((plan) => plan.simulation_date === date);
   if (!current) {
@@ -15,6 +16,7 @@ export function calendarDayPlan(plans: Plan[], date: string): Plan | undefined {
   const end = calendarMidnight(shiftScheduleDate(date, 1), current.timezone);
   const within = (time: string) =>
     Date.parse(time) >= Date.parse(start) && Date.parse(time) < Date.parse(end);
+
   return {
     ...current,
     start,
@@ -32,6 +34,7 @@ export interface PreviewHistoryEntity {
   name: string;
   data: { state: string; state_localize: string; last_changed: number }[];
 }
+
 export function previewStateHistory(
   plan: Plan,
   _program: Program,
@@ -119,8 +122,10 @@ export function previewStateHistory(
       }
     }
   }
+
   return [...entities.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
+
 // Calendar dates now coincide with the displayed local day. Include overnight
 // events from surrounding source dates without carrying yesterday's state forward.
 export function calendarStateHistory(
@@ -138,6 +143,7 @@ export function calendarStateHistory(
       (event) =>
         Date.parse(event.time) >= start && Date.parse(event.time) < end,
     );
+
   return previewStateHistory({ ...day, events }, program, names, t);
 }
 
@@ -154,6 +160,40 @@ export function stamp(
   } catch {
     return value;
   }
+}
+
+export function eventDetails(
+  event: PlannedEvent,
+  label: string,
+  timezone: string,
+  t: Translate,
+  locale?: HomeAssistantLocale,
+) {
+  const kinds: Record<string, string> = {
+    random_start: "Random start",
+    random_end: "Random end",
+  };
+  let action = event.action.action;
+  if (event.tick) {
+    const tick = t("Tick {tick} of {count}")
+      .replace("{tick}", () => String(event.tick))
+      .replace("{count}", () => String(event.tick_count));
+    action += ` · ${tick} · ${event.period_seconds}s`;
+  }
+  if (event.superseded) {
+    action += ` · ${t("Superseded")}`;
+  }
+
+  return {
+    time: stamp(event.time, timezone, locale),
+    source: `${label} · ${t(kinds[event.kind] || event.kind)}`,
+    action,
+    targets: event.action.entities.join(", "),
+    settings:
+      Object.keys(event.action.data || {}).length > 0
+        ? JSON.stringify(event.action.data)
+        : "—",
+  };
 }
 
 export function staggerTransitions(plan: Plan) {
@@ -194,5 +234,6 @@ export function staggerTransitions(plan: Plan) {
     }
     group.events.push(event);
   }
+
   return [...groups].map(([id, group]) => ({ id, ...group }));
 }

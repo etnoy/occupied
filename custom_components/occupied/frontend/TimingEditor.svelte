@@ -3,10 +3,12 @@
   import type { TimingEditorContext } from "./types.js";
   import EditorField from "./EditorField.svelte";
   import FieldError from "./FieldError.svelte";
+  import SourcePicker from "./SourcePicker.svelte";
 
   import { stepEntries, timeSourceChoices } from "./step-model.js";
   import { timingExplanation } from "./util.js";
   import { randomEntries } from "./random-model.js";
+
   let {
     panel,
     context,
@@ -31,11 +33,11 @@
     explanationSubject?: "Runs" | "Window starts" | "Window ends";
     modes?: [string, string][];
   } = $props();
+
   let { editor, form, time, t, refresh, changed } = $derived(context);
-  import SourcePicker from "./SourcePicker.svelte";
   let fieldPrefix = $derived(context.fieldPrefix || "");
   let choices = $derived.by(() => {
-    context;
+    void context;
     let choices = timeSourceChoices(
       panel.draft,
       context.stepId,
@@ -43,11 +45,16 @@
       t,
       context.randomId,
     );
-    if (time.anchor && !choices.some((choice) => choice.value === time.anchor))
+    if (
+      time.anchor &&
+      choices.every((choice) => choice.value !== time.anchor)
+    ) {
       choices = [
         ...choices,
         { value: time.anchor, name: time.anchor, group: "Unavailable sources" },
       ];
+    }
+
     return choices;
   });
 </script>
@@ -61,7 +68,7 @@
     aria-labelledby={`step-${fieldPrefix}timing-heading`}
   >
     <div class="timing-option-row">
-      {#each modes as [value, label]}
+      {#each modes as [value, label] (value)}
         <label class="timing-option"
           ><input
             type="radio"
@@ -70,10 +77,13 @@
             data-builder-field={`${fieldPrefix}mode`}
             checked={time.mode === value}
             onchange={(event: Event) => {
-              if (!(event.currentTarget as HTMLInputElement).checked) return;
+              if (!(event.currentTarget as HTMLInputElement).checked) {
+                return;
+              }
               time.mode = value;
-              if (value === "relative" && !time.anchor)
+              if (value === "relative" && !time.anchor) {
                 time.anchor = "sun:sunrise";
+              }
               if (value === "duration") {
                 time.minDuration ||= "1h";
                 time.maxDuration ||= time.minDuration;
@@ -81,7 +91,7 @@
               changed("mode");
               panel.shadowRoot
                 .querySelector<HTMLElement>(
-                  `[data-builder-field="${fieldPrefix}mode"]:checked`,
+                  `[data-builder-field="${CSS.escape(fieldPrefix)}mode"]:checked`,
                 )
                 ?.focus();
             }}
@@ -110,7 +120,9 @@
         value={time.end}
         update={(value) => {
           time.end = value;
-          if (!value) editor.showEndTime = false;
+          if (!value) {
+            editor.showEndTime = false;
+          }
         }}
         options={{ type: "time", step: 1, optional: true }}
       ></EditorField>
@@ -164,17 +176,21 @@
               panel.catalog,
               panel.t,
             ).find((step) => step.id === value.slice(5));
-            if (parent) form.days = [...parent.days];
+            if (parent) {
+              form.days = [...parent.days];
+            }
           }
           if (!editor.existing && value.startsWith("random:")) {
             const parent = randomEntries(panel.draft).find(
               (entry) => entry.id === value.slice(7),
             );
-            if (parent) form.days = [...parent.days];
+            if (parent) {
+              form.days = [...parent.days];
+            }
           }
           changed("anchor");
           const picker = panel.shadowRoot.querySelector<HTMLElement>(
-            `[data-builder-field="${fieldPrefix}anchor"]`,
+            `[data-builder-field="${CSS.escape(fieldPrefix)}anchor"]`,
           );
           if (picker && panel.shadowRoot.activeElement !== picker) {
             picker.focus();
@@ -244,11 +260,8 @@
       )}
     </p>
   {/if}
-  {#if showExplanation}<p
-      class="hint"
-      data-timing-explanation
-      aria-live="polite"
-    >
+  {#if showExplanation}
+    <p class="hint" data-timing-explanation aria-live="polite">
       {timingExplanation(
         time,
         [
@@ -267,7 +280,8 @@
           includeHints: explanationSubject === "Runs",
         },
       )}
-    </p>{/if}
+    </p>
+  {/if}
   {#if panel.document?.source === "file"}
     <p class="hint">
       {t(

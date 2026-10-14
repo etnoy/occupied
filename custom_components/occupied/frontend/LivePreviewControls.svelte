@@ -1,8 +1,10 @@
 <script lang="ts">
   import type { OccupiedPanel } from "./occupied-panel.js";
-  import { lastGroupResult } from "./live-preview.js";
+  import { lastGroupResult, liveSessionStatus } from "./live-preview.js";
   import { stamp } from "./timeline.js";
+
   let { panel }: { panel: OccupiedPanel } = $props();
+
   let t = $derived(panel.t);
   let session = $derived(panel.liveVisible ? panel.liveSession : null);
   let running = $derived(panel.liveRunning);
@@ -87,27 +89,11 @@
   </p>
   {#if session}
     <div role="status" aria-live="polite" aria-atomic="true">
-      <strong
-        >{t(
-          session.state === "completed"
-            ? "Day complete"
-            : session.state === "ready" && session.cursor === 0
-              ? "Ready to start"
-              : session.state === "executing"
-                ? "Running…"
-                : session.state === "stopping"
-                  ? "Stopping…"
-                  : session.state === "stopped"
-                    ? "Stopped"
-                    : session.state === "interrupted"
-                      ? "Interrupted"
-                      : "Ready for next event",
-        )}</strong
-      >
+      <strong>{t(liveSessionStatus(session))}</strong>
       <p>
         {session.date} · {t("{done} of {total} events")
-          .replace("{done}", String(session.cursor))
-          .replace("{total}", String(session.total))}
+          .replace("{done}", () => String(session.cursor))
+          .replace("{total}", () => String(session.total))}
       </p>
       {#if session.simulated_time && panel.livePlan}
         <p>
@@ -118,11 +104,15 @@
           )}
         </p>
       {/if}
-      {#if lastResult}<p>{t("Last result")}: {t(lastResult)}</p>{/if}
+      {#if lastResult}
+        <p>{t("Last result")}: {t(lastResult)}</p>
+      {/if}
     </div>
-    {#if session.state === "interrupted"}<p class="error">
+    {#if session.state === "interrupted"}
+      <p class="error">
         {session.detail}
-      </p>{/if}
+      </p>
+    {/if}
     {#if session.earlier_revision}
       <p class="hint">
         {t(
@@ -139,18 +129,18 @@
     {/if}
     {#if session.next_group && running}
       <p><strong>{t("Next event")}: {session.next_group.title}</strong></p>
-      {#each session.next_group.calls as call}
+      {#each session.next_group.calls as call (call.id)}
         <p class="call">
           {call.action.action} · {call.action.entities.join(", ")}
           {#if call.tick}
             · {t("Tick {tick} of {count}")
-              .replace("{tick}", String(call.tick))
-              .replace("{count}", String(call.tick_count))}
+              .replace("{tick}", () => String(call.tick))
+              .replace("{count}", () => String(call.tick_count))}
           {/if}
         </p>
       {/each}
     {/if}
-    {#each currentOutcomes.filter((outcome) => outcome.status !== "dispatched") as outcome}
+    {#each currentOutcomes.filter((outcome) => outcome.status !== "dispatched") as outcome (outcome)}
       <p class="error">{outcome.action?.action || ""}: {outcome.detail}</p>
     {/each}
   {:else}
@@ -160,9 +150,11 @@
       )}
     </p>
   {/if}
-  {#if !panel.liveReady}<p role="status" class="hint">
+  {#if !panel.liveReady}
+    <p role="status" class="hint">
       {t("Recovering live preview…")}
-    </p>{/if}
+    </p>
+  {/if}
 </section>
 
 {#if !session}
@@ -176,15 +168,19 @@
     padding: 16px;
     margin-bottom: 16px;
   }
+
   h2 {
     margin: 0;
   }
+
   p {
     margin: 8px 0;
   }
+
   .call {
     overflow-wrap: anywhere;
   }
+
   .live-actions {
     position: sticky;
     top: 64px;
@@ -198,13 +194,16 @@
     border: 1px solid var(--divider-color, #ddd);
     border-radius: 12px;
   }
+
   .live-actions button {
     min-height: 48px;
     margin: 0;
   }
+
   .primary {
     flex: 1;
   }
+
   @media (max-width: 600px) {
     .live-actions {
       top: calc(56px + env(safe-area-inset-top, 0px));

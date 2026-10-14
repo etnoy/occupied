@@ -3,7 +3,9 @@
   import { onMount } from "svelte";
 
   let { panel }: { panel: OccupiedPanel } = $props();
+
   let t = $derived(panel.t);
+
   let keepEditing: HTMLButtonElement;
 
   onMount(() => keepEditing.focus());

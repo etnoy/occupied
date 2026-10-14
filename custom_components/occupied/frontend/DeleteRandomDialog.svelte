@@ -4,9 +4,12 @@
   import { deleteRandom } from "./random-editor-controller.js";
   import { randomReferences } from "./model.js";
   import { randomEntries } from "./random-model.js";
+
   let { panel, onClose }: { panel: OccupiedPanel; onClose: () => void } =
     $props();
+
   let dialog: HTMLDialogElement;
+
   let dependents = $derived(
     randomEntries(panel.draft, panel.catalog).filter((entry) =>
       randomReferences(panel.draft, panel.randomEditor?.id || "").some(
@@ -14,6 +17,7 @@
       ),
     ),
   );
+
   onMount(() => {
     dialog.showModal();
     dialog.querySelector<HTMLButtonElement>("button")?.focus();
@@ -33,7 +37,9 @@
   {#if dependents.length}
     <p>{panel.t("Used by")}:</p>
     <ul>
-      {#each dependents as entry}<li>{entry.name}</li>{/each}
+      {#each dependents as entry (entry.id)}
+        <li>{entry.name}</li>
+      {/each}
     </ul>
     <p class="hint">{panel.t("Change those relationships before deleting.")}</p>
   {/if}
@@ -44,10 +50,12 @@
     <button
       type="button"
       class="danger"
-      disabled={panel.busy || panel.stale || !!dependents.length}
+      disabled={panel.busy || panel.stale || dependents.length > 0}
       onclick={async () => {
         await deleteRandom(panel);
-        if (!panel.error && !panel.randomEditor) dialog.close();
+        if (!panel.error && !panel.randomEditor) {
+          dialog.close();
+        }
       }}>{panel.t("Delete random event")}</button
     >
   </div>

@@ -80,6 +80,8 @@ for (const directory of [
         write: false,
         legalComments: "inline",
         conditions: ["browser"],
+        // The shared stylesheet is injected into the panel's shadow root.
+        loader: { ".css": "text" },
         plugins: [
           {
             name: "svelte",
@@ -91,6 +93,7 @@ for (const directory of [
                   generate: "client",
                   css: "injected",
                 });
+
                 return { contents: compiled.js.code, loader: "js" };
               });
             },

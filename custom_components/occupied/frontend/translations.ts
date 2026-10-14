@@ -413,6 +413,7 @@ const sv: Record<string, string> = {
   sat: "lör",
   sun: "sön",
 };
+
 export function translator(language?: string) {
   return (key: string) =>
     (language?.startsWith("sv") ? sv[key] : undefined) || key;

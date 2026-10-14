@@ -12,6 +12,7 @@
   import UnsavedStepDialog from "./UnsavedStepDialog.svelte";
   import RandomView from "./RandomView.svelte";
   import RandomEventEditor from "./RandomEventEditor.svelte";
+
   let {
     panel: controller,
     updates,
@@ -19,13 +20,16 @@
     panel: OccupiedPanel;
     updates: import("svelte/store").Readable<number>;
   } = $props();
+
   // A fresh read-through facade makes mutable controller state reactive without
   // proxying Home Assistant's large state object. Bind DOM methods to their host.
   let panel = $derived.by(() => {
-    $updates;
+    void $updates;
+
     return new Proxy(controller, {
       get(target, key) {
         const value = Reflect.get(target, key, target);
+
         return typeof value === "function" ? value.bind(target) : value;
       },
     });
@@ -35,7 +39,7 @@
     panel.draft?.name || panel.selectedInstance?.name,
   );
   let state = $derived.by(() => {
-    revision;
+    void revision;
     const showingSteps =
       panel.tab === "steps" &&
       panel.draft &&
@@ -43,6 +47,7 @@
       !panel._loading &&
       (!panel.stepEditor || panel.stepEditor.existing);
     const entries = showingSteps ? stepEntries(panel.draft) : [];
+
     return {
       t: panel.t,
       notices: panel.notices(),
@@ -53,6 +58,7 @@
     };
   });
   let { t, notices, primary, issues } = $derived(state);
+
   const primaryTabs: [Tab, string][] = [
     ["steps", "Steps"],
     ["random", "Random"],
@@ -116,7 +122,7 @@
               event.currentTarget.value = panel.selectedEntry || "";
             }}
           >
-            {#each panel.instances as instance}
+            {#each panel.instances as instance (instance.config_entry_id)}
               <option value={instance.config_entry_id}>
                 {instance.name} · {t(
                   instance.loaded ? instance.status : "Unloaded",
@@ -132,7 +138,7 @@
         {/if}
       </div>
     </header>
-    {#each panel.selectedInstance?.overlaps || [] as overlap}
+    {#each panel.selectedInstance?.overlaps || [] as overlap (overlap.config_entry_id)}
       <p class="banner" role="status">
         {t("Shared devices with")}
         {overlap.name}: {overlap.entities.join(", ")}. {t(
@@ -148,7 +154,7 @@
       {panel.error}
     </div>
     <nav aria-label="Occupied">
-      {#each primaryTabs as [id, label]}
+      {#each primaryTabs as [id, label] (id)}
         <button
           type="button"
           data-tab={id}
@@ -172,7 +178,7 @@
       {/if}
     </div>
     <div id="issues">
-      {#each issues as issue}
+      {#each issues as issue (issue)}
         {@render renderIssue(issue, primary)}
       {/each}
     </div>
@@ -197,9 +203,9 @@
               >{t("Retry")}</button
             >
           {:else if panel._loading || !panel.draft}
-            {#if panel.error && !panel._loading}<button
-                type="button"
-                onclick={() => panel.retry()}>{t("Retry")}</button
+            {#if panel.error && !panel._loading}
+              <button type="button" onclick={() => panel.retry()}
+                >{t("Retry")}</button
               >{/if}
           {:else if panel.stepEditor && !panel.stepEditor.existing}
             <StepEditor {panel} {revision} />
@@ -219,4 +225,5 @@
     </div>
   </main>
 </ha-top-app-bar-fixed>
-{#if panel.pendingStepExit}<UnsavedStepDialog {panel} />{/if}
+{#if panel.pendingStepExit}
+  <UnsavedStepDialog {panel} />{/if}

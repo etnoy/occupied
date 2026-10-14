@@ -9,24 +9,30 @@
   import FieldError from "./FieldError.svelte";
   import { focusEditor } from "./step-editor-controller.js";
   import { randomExplanation } from "./random-explanation.js";
+
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
+
   let context = $derived.by(() => {
-    revision;
+    void revision;
+
     return createRandomEditorContext(panel);
   });
   let { editor, form, t, changed, submit, cancel } = $derived(context);
+
   let advancedOpen = $state(false);
   let advancedButton: HTMLButtonElement;
   let advancedTrigger = $state<HTMLButtonElement>();
   let showMaxCount = $state(
     untrack(() => Number(form.minCount) !== Number(form.maxCount)),
   );
+
   let maxCountVisible = $derived(
     showMaxCount ||
       Number(form.minCount) !== Number(form.maxCount) ||
       !!editor.errors.maxCount,
   );
+
   async function save() {
     await submit();
     if (panel.randomEditor?.errors.days) {
@@ -104,7 +110,9 @@
         label="Minimum events per window"
         value={form.minCount}
         update={(value) => {
-          if (!maxCountVisible) form.maxCount = value;
+          if (!maxCountVisible) {
+            form.maxCount = value;
+          }
           form.minCount = value;
         }}
         options={{ type: "number", min: 0, max: 1000, step: 1 }}
@@ -229,17 +237,20 @@
   .random-advanced-button {
     margin-top: 16px;
   }
+
   .random-frequency {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
   }
+
   .same-entities {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-top: 16px;
   }
+
   @media (max-width: 600px) {
     .random-frequency {
       grid-template-columns: 1fr;

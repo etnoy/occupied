@@ -24,6 +24,7 @@
     entityLabel?: string;
     hideEntities?: boolean;
   } = $props();
+
   let { form, t } = $derived(context);
 </script>
 
@@ -54,11 +55,8 @@
       render: true,
     }}
   ></EditorField>
-  {#if !hideEntities && form.kind !== "custom"}<EntitiesEditor
-      {panel}
-      {context}
-      label={entityLabel}
-    />{/if}
+  {#if !hideEntities && form.kind !== "custom"}
+    <EntitiesEditor {panel} {context} label={entityLabel} />{/if}
   {#if form.kind === "custom"}
     <ha-code-editor
       role="group"
@@ -77,8 +75,9 @@
         if (
           !isValueChangedEvent(event) ||
           typeof event.detail.value !== "string"
-        )
+        ) {
           return;
+        }
         form.customYaml = event.detail.value;
         context.changed("customYaml");
       }}

@@ -1,10 +1,13 @@
 import js from "@eslint/js";
+import stylistic from "@stylistic/eslint-plugin";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
+import svelte from "eslint-plugin-svelte";
 import eslintPluginUnicorn from "eslint-plugin-unicorn";
 import globals from "globals";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import typescriptEslint from "typescript-eslint";
+import svelteStyle from "./scripts/eslint-svelte-style.mjs";
 
 const configDirectory = path.dirname(fileURLToPath(import.meta.url));
 const typescriptFiles = [
@@ -12,12 +15,16 @@ const typescriptFiles = [
   "tests/frontend/**/*.ts",
   "scripts/*.ts",
 ];
+const svelteFiles = ["custom_components/occupied/frontend/**/*.svelte"];
+const sourceFiles = [...typescriptFiles, ...svelteFiles];
 
 export default typescriptEslint.config([
   eslintPluginUnicorn.configs.recommended,
-  eslintPluginPrettierRecommended,
   js.configs.recommended,
   typescriptEslint.configs.recommended,
+  svelte.configs.recommended,
+  svelte.configs.prettier,
+  eslintPluginPrettierRecommended,
   {
     ignores: [
       "eslint.config.mjs",
@@ -25,17 +32,51 @@ export default typescriptEslint.config([
     ],
   },
   {
-    files: typescriptFiles,
+    files: sourceFiles,
+    plugins: { "@stylistic": stylistic },
     languageOptions: {
-      parser: typescriptEslint.parser,
       ecmaVersion: "latest",
       sourceType: "module",
       parserOptions: {
         project: "tsconfig.json",
         tsconfigRootDir: configDirectory,
+        extraFileExtensions: [".svelte"],
       },
     },
     rules: {
+      "@stylistic/padding-line-between-statements": [
+        "error",
+        { blankLine: "always", prev: "import", next: "*" },
+        { blankLine: "any", prev: "import", next: "import" },
+        {
+          blankLine: "always",
+          prev: "*",
+          next: ["function", "class", "interface", "type", "export"],
+        },
+        {
+          blankLine: "always",
+          prev: ["function", "class", "interface", "type", "export"],
+          next: "*",
+        },
+        { blankLine: "always", prev: "*", next: "return" },
+      ],
+      "@stylistic/lines-between-class-members": [
+        "error",
+        {
+          enforce: [
+            { blankLine: "always", prev: "method", next: "*" },
+            { blankLine: "always", prev: "*", next: "method" },
+          ],
+        },
+      ],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            ":matches(Program, SvelteScriptElement) > :not(ImportDeclaration) ~ ImportDeclaration",
+          message: "Keep imports at the top of the script.",
+        },
+      ],
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
@@ -101,11 +142,23 @@ export default typescriptEslint.config([
     },
   },
   {
-    files: ["custom_components/occupied/frontend/**/*.ts"],
+    files: typescriptFiles,
+    languageOptions: { parser: typescriptEslint.parser },
+  },
+  {
+    files: svelteFiles,
+    plugins: { "occupied-svelte": svelteStyle },
+    languageOptions: {
+      parserOptions: { parser: typescriptEslint.parser },
+    },
+    rules: { "occupied-svelte/script-spacing": "error" },
+  },
+  {
+    files: ["custom_components/occupied/frontend/**/*.{ts,svelte}"],
     languageOptions: { globals: globals.browser },
   },
   {
-    files: ["tests/frontend/**/*.ts", "scripts/*.ts"],
+    files: ["tests/frontend/**/*.ts", "scripts/*.{ts,mjs}"],
     languageOptions: { globals: globals.node },
   },
 ]);

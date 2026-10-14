@@ -17,20 +17,20 @@ import type {
   RandomEditorState,
   RandomForm,
   LivePreviewSession,
-  LivePreviewResponse,
   Plan,
 } from "./types.js";
 import { errorMessage } from "./util.js";
 import { copy, set } from "./model.js";
-import { styles } from "./styles.js";
+import styles from "./styles.css";
 import { translator } from "./translations.js";
 import { mount, unmount, flushSync } from "svelte";
 import { writable } from "svelte/store";
 import App from "./App.svelte";
+import { PreviewController } from "./preview-controller.js";
+import { PanelSubscription } from "./subscription.js";
 import { loadHaControls } from "./ha-controls.js";
 import { hasStepChanges } from "./step-model.js";
 import { hasRandomChanges } from "./random-model.js";
-import { shiftScheduleDate } from "./time-format.js";
 import { liveRunning, mergeLiveSession } from "./live-preview.js";
 
 type PanelConfig = { config?: { config_entry_id?: string } };
@@ -69,8 +69,10 @@ export class OccupiedPanel extends HTMLElement {
     if (this.stepEditor) {
       return hasStepChanges(this.stepEditor);
     }
+
     return this.randomEditor ? hasRandomChanges(this.randomEditor) : false;
   }
+
   pendingStepExit: (() => void) | null = null;
   selectedStep: string | null = null;
   preview?: PreviewResult;
@@ -85,11 +87,11 @@ export class OccupiedPanel extends HTMLElement {
   liveStopping = false;
   liveCanAdvance = false;
   schedulingPaused = false;
-  private _liveRecoveryEpoch = 0;
 
   get liveRunning() {
     return liveRunning(this.liveSession);
   }
+
   yaml = "";
   yamlSaved = "";
 
@@ -103,17 +105,25 @@ export class OccupiedPanel extends HTMLElement {
   selectedEntry: string | null = null;
   private _instancesReady = false;
   private _instancesEpoch = 0;
-  private _instancesUnsubscribe: (() => void) | null = null;
-  private _instancesSubscribing = false;
   private _panel?: PanelConfig;
   private _loadedEntry: string | null = null;
-  private _subscriptionEpoch = 0;
-  private _unsubscribe: (() => void) | null = null;
-  private _subscribing = false;
-  private _liveConnection?: HomeAssistant["connection"];
   private updates = writable(0);
   private updateRevision = 0;
   private component?: ReturnType<typeof mount>;
+  private readonly instanceSubscription = new PanelSubscription<
+    InstanceDocument[]
+  >(
+    () => this.isConnected,
+    (error) => this.fail(error),
+  );
+  private readonly runtimeSubscription = new PanelSubscription<RuntimeSnapshot>(
+    () => this.isConnected,
+    (error) => this.fail(error),
+  );
+  private readonly previewController = new PreviewController(
+    this,
+    () => this._loadedEntry,
+  );
 
   constructor() {
     super();
@@ -145,10 +155,12 @@ export class OccupiedPanel extends HTMLElement {
     }
     void this._load();
   }
+
   set panel(value: PanelConfig) {
     this._panel = value;
     void this._load();
   }
+
   set narrow(value: boolean) {
     const narrow = !!value;
     if (this.hasAttribute("narrow") === narrow) {
@@ -157,6 +169,7 @@ export class OccupiedPanel extends HTMLElement {
     this.toggleAttribute("narrow", narrow);
     this.flush();
   }
+
   set route(_value: unknown) {
     void this._load();
   }
@@ -182,8 +195,12 @@ export class OccupiedPanel extends HTMLElement {
     window.addEventListener("beforeunload", this._beforeUnload);
     globalThis.addEventListener("location-changed", this._locationChanged);
     globalThis.addEventListener("popstate", this._locationChanged);
-    document.addEventListener("visibilitychange", this._liveVisibilityChanged);
+    document.addEventListener(
+      "visibilitychange",
+      this.previewController.visibilityChanged,
+    );
   }
+
   disconnectedCallback() {
     if (this.component) {
       void unmount(this.component);
@@ -202,9 +219,10 @@ export class OccupiedPanel extends HTMLElement {
     globalThis.removeEventListener("popstate", this._locationChanged);
     document.removeEventListener(
       "visibilitychange",
-      this._liveVisibilityChanged,
+      this.previewController.visibilityChanged,
     );
   }
+
   private _locationChanged = () => void this._load();
   private _beforeUnload = (event: BeforeUnloadEvent) => {
     if (!(this.dirty || this.yamlDirty || this.hasEditorChanges)) {
@@ -219,73 +237,48 @@ export class OccupiedPanel extends HTMLElement {
 
   private _disposeInstances() {
     this._instancesEpoch++;
-    this._instancesUnsubscribe?.();
-    this._instancesUnsubscribe = null;
-    this._instancesSubscribing = false;
+    this.instanceSubscription.dispose();
   }
-  private async _subscribeInstances() {
-    if (
-      this._instancesUnsubscribe ||
-      this._instancesSubscribing ||
-      !this.isConnected
-    ) {
-      return;
-    }
-    this._instancesSubscribing = true;
-    const epoch = this._instancesEpoch;
-    try {
-      const unsubscribe = await this._hass.connection.subscribeMessage<
-        InstanceDocument[]
-      >(
-        (instances) => {
-          if (epoch !== this._instancesEpoch || !this.isConnected) {
-            return;
-          }
-          this.instances = instances;
-          this.flush();
-          if (!this.selectedInstance?.loaded && this._loadedEntry) {
-            this.epoch++;
-            this._loadedEntry = null;
-            this._loading = this.busy = false;
-            this._disposeSubscription();
-          }
-          void this._load();
-        },
-        { type: "occupied/instances_subscribe" },
-      );
-      if (epoch !== this._instancesEpoch || !this.isConnected) {
-        unsubscribe();
-      } else {
-        this._instancesUnsubscribe = unsubscribe;
-      }
-    } catch (error) {
-      if (epoch === this._instancesEpoch) {
-        this.fail(error);
-      }
-    } finally {
-      if (epoch === this._instancesEpoch) {
-        this._instancesSubscribing = false;
-      }
-    }
+
+  private _subscribeInstances() {
+    return this.instanceSubscription.subscribe(
+      this._hass.connection,
+      { type: "occupied/instances_subscribe" },
+      (instances) => {
+        this.instances = instances;
+        this.flush();
+        if (!this.selectedInstance?.loaded && this._loadedEntry) {
+          this.epoch++;
+          this._loadedEntry = null;
+          this._loading = this.busy = false;
+          this._disposeSubscription();
+        }
+        void this._load();
+      },
+    );
   }
+
   private _writeSelection(entry: string, replace = false) {
     const url = new URL(location.href);
     url.searchParams.set("config_entry", entry);
     history[replace ? "replaceState" : "pushState"](null, "", url);
     globalThis.dispatchEvent(new Event("location-changed"));
   }
+
   selectInstance(entry: string) {
     if (entry === this.selectedEntry || this.busy) {
       return;
     }
     if (!this._canSwitchInstance()) {
       this.flush();
+
       return;
     }
     this._resetInstance(entry);
     this._writeSelection(entry);
     void this._load();
   }
+
   private _canSwitchInstance() {
     return (
       !(this.dirty || this.yamlDirty || this.hasEditorChanges) ||
@@ -294,6 +287,7 @@ export class OccupiedPanel extends HTMLElement {
       )
     );
   }
+
   private _resetInstance(entry: string) {
     this.epoch++;
     this._disposeSubscription();
@@ -346,68 +340,33 @@ export class OccupiedPanel extends HTMLElement {
       ...data,
     });
   }
+
   private _disposeSubscription() {
-    this._liveConnection?.removeEventListener?.("ready", this._liveConnected);
-    this._liveConnection?.removeEventListener?.(
-      "disconnected",
-      this._liveDisconnected,
-    );
-    this._liveConnection = undefined;
-    this.liveReady = false;
-    this._liveRecoveryEpoch++;
-    this._subscriptionEpoch++;
-    this._unsubscribe?.();
-    this._unsubscribe = null;
-    this._subscribing = false;
+    this.previewController.disconnect();
+    this.runtimeSubscription.dispose();
   }
+
   private async _subscribe() {
     if (
       !this.isConnected ||
       !this._loadedEntry ||
       !this._hass?.connection ||
-      this._unsubscribe ||
-      this._subscribing
+      this.runtimeSubscription.active
     ) {
       return;
     }
-    this._subscribing = true;
-    this._liveConnection = this._hass.connection;
-    this._hass.connection.addEventListener?.("ready", this._liveConnected);
-    this._hass.connection.addEventListener?.(
-      "disconnected",
-      this._liveDisconnected,
+    this.previewController.connect(this._hass.connection);
+    await this.runtimeSubscription.subscribe(
+      this._hass.connection,
+      { type: "occupied/subscribe", config_entry_id: this._loadedEntry },
+      (snapshot) => this._onSnapshot(snapshot),
+      () => this.recoverLivePreview(),
     );
-    const epoch = this._subscriptionEpoch;
-    try {
-      const unsubscribe =
-        await this._hass.connection.subscribeMessage<RuntimeSnapshot>(
-          (snapshot) => {
-            if (epoch === this._subscriptionEpoch && this.isConnected) {
-              this._onSnapshot(snapshot);
-            }
-          },
-          { type: "occupied/subscribe", config_entry_id: this._loadedEntry },
-        );
-      if (epoch !== this._subscriptionEpoch || !this.isConnected) {
-        unsubscribe();
-      } else {
-        this._unsubscribe = unsubscribe;
-        await this.recoverLivePreview();
-      }
-    } catch (error) {
-      if (epoch === this._subscriptionEpoch) {
-        this.fail(error);
-      }
-    } finally {
-      if (epoch === this._subscriptionEpoch) {
-        this._subscribing = false;
-      }
-    }
   }
+
   private _onSnapshot(snapshot: RuntimeSnapshot) {
     if (snapshot.loaded === false) {
-      this.liveReady = false;
-      this._liveRecoveryEpoch++;
+      this.previewController.invalidate();
     }
     this.schedulingPaused = snapshot.paused ?? this.schedulingPaused;
     if (snapshot.live_preview !== undefined) {
@@ -435,6 +394,7 @@ export class OccupiedPanel extends HTMLElement {
       void this.reloadSaved();
     }
   }
+
   private async _load() {
     if (!this.isConnected || !this._hass || !this._panel) {
       return;
@@ -455,6 +415,7 @@ export class OccupiedPanel extends HTMLElement {
         if (epoch === this._instancesEpoch) {
           this.fail(error);
         }
+
         return;
       }
     }
@@ -466,6 +427,7 @@ export class OccupiedPanel extends HTMLElement {
       this.instances[0]?.config_entry_id;
     if (!entry) {
       this.flush();
+
       return;
     }
     if (entry !== this.selectedEntry) {
@@ -473,6 +435,7 @@ export class OccupiedPanel extends HTMLElement {
         if (this.selectedEntry) {
           this._writeSelection(this.selectedEntry, true);
         }
+
         return;
       }
       this._resetInstance(entry);
@@ -533,17 +496,20 @@ export class OccupiedPanel extends HTMLElement {
       flushSync(() => this.updates.set(++this.updateRevision));
     }
   }
+
   renderView() {
     if (this.tab === "preview") {
-      void this.loadPreview();
+      void this.previewController.loadPreview();
     }
     this.flush();
   }
+
   navigate(tab: Tab) {
     if (this.activeEditor) {
       this.requestStepExit(() => {
         this.navigate(tab);
       });
+
       return;
     }
     if (this.tab === tab) {
@@ -565,29 +531,35 @@ export class OccupiedPanel extends HTMLElement {
     }
     this.renderView();
   }
+
   requestStepExit(action: () => void) {
     const editor = this.activeEditor;
     if (!editor) {
       action();
+
       return;
     }
     if (this.hasEditorChanges) {
       this.pendingStepExit = action;
       this.flush();
+
       return;
     }
     this.finishStepExit(action);
   }
+
   cancelStepExit() {
     this.pendingStepExit = null;
     this.flush();
   }
+
   confirmStepExit() {
     const action = this.pendingStepExit;
     if (action) {
       this.finishStepExit(action);
     }
   }
+
   private finishStepExit(action: () => void) {
     this.pendingStepExit = null;
     this.stepEditor = null;
@@ -599,10 +571,12 @@ export class OccupiedPanel extends HTMLElement {
     action();
     this.renderView();
   }
+
   retry() {
     this._instancesReady = false;
     void this._load();
   }
+
   notices() {
     const t = this.t;
     const programNotice = this.stale
@@ -610,6 +584,7 @@ export class OccupiedPanel extends HTMLElement {
           "The saved program changed. Your draft is preserved; reload the saved program before saving.",
         )
       : "";
+
     return [
       programNotice,
       this.document?.source === "file"
@@ -635,6 +610,7 @@ export class OccupiedPanel extends HTMLElement {
     this.revision = doc.revision;
     this.stale = false;
   }
+
   /**
   Replace the draft with the saved program, dropping local edits.
   */
@@ -645,6 +621,7 @@ export class OccupiedPanel extends HTMLElement {
     this.validatedVersion = -1;
     this.issues = [];
   }
+
   discardEdits(render = true) {
     this.resetDraft();
     this.yaml = this.yamlSaved;
@@ -653,12 +630,14 @@ export class OccupiedPanel extends HTMLElement {
       this.renderView();
     }
   }
+
   discardYaml() {
     this.yaml = this.yamlSaved;
     this.error = "";
     this.issues = [];
     this.flush();
   }
+
   change(path: Path, value: unknown, rerender = false) {
     if (path.length === 0) {
       this.draft = value as Program;
@@ -667,6 +646,7 @@ export class OccupiedPanel extends HTMLElement {
     }
     this.edited(rerender);
   }
+
   edited(rerender = false) {
     this.version++;
     this.dirty = true;
@@ -677,10 +657,12 @@ export class OccupiedPanel extends HTMLElement {
       this.flush();
     }
   }
+
   fail(error: unknown) {
     this.error = errorMessage(error);
     this.flush();
   }
+
   attempt(action: () => unknown) {
     try {
       action();
@@ -688,6 +670,7 @@ export class OccupiedPanel extends HTMLElement {
       this.fail(error);
     }
   }
+
   /**
   Run one backend action at a time; failures are shown, not thrown.
   */
@@ -715,6 +698,7 @@ export class OccupiedPanel extends HTMLElement {
       }
     }
   }
+
   showIssues(result: { valid?: boolean; issues?: Issue[] }) {
     this.issues = result.issues || [];
     this.flush();
@@ -724,6 +708,7 @@ export class OccupiedPanel extends HTMLElement {
       );
     }
   }
+
   /**
   Saved-program warnings persist independently of temporary editor issues.
   */
@@ -738,8 +723,10 @@ export class OccupiedPanel extends HTMLElement {
       ]);
       issues.set(key, issue);
     }
+
     return [...issues.values()];
   }
+
   /**
   Show a backend issue on the step editor field it belongs to.
   */
@@ -756,6 +743,7 @@ export class OccupiedPanel extends HTMLElement {
           "Finish or cancel this step to edit other configuration issues.",
         ),
       );
+
       return;
     }
     const field = this.randomEditor
@@ -773,6 +761,7 @@ export class OccupiedPanel extends HTMLElement {
   validate() {
     const version = this.version,
       draft = copy(this.draft);
+
     return this.run(async (epoch) => {
       const result = await this.ws("editor_validate", { program: draft });
       if (epoch !== this.epoch || version !== this.version) {
@@ -784,6 +773,7 @@ export class OccupiedPanel extends HTMLElement {
       }
     });
   }
+
   save(candidate?: Program) {
     if (this.document?.source === "file" || this.stale) {
       return;
@@ -793,6 +783,7 @@ export class OccupiedPanel extends HTMLElement {
       expected = this.revision,
       editor = this.activeEditor,
       submittedForm = editor ? copy(editor.form) : null;
+
     return this.run(async (epoch) => {
       const validation = await this.ws("editor_validate", { program: draft });
       if (epoch !== this.epoch) {
@@ -804,6 +795,7 @@ export class OccupiedPanel extends HTMLElement {
             "Your changes are kept. Save again to include the latest edits.",
           ),
         );
+
         return;
       }
       this.showIssues(validation);
@@ -813,6 +805,7 @@ export class OccupiedPanel extends HTMLElement {
             this.issues.find((i) => i.severity !== "warning") || this.issues[0],
           );
         }
+
         return;
       }
       this.validatedVersion = version;
@@ -845,6 +838,7 @@ export class OccupiedPanel extends HTMLElement {
           this.fail(
             this.t("Earlier changes saved. Your newer edits are still open."),
           );
+
           return;
         }
         this.stepEditor = null;
@@ -866,6 +860,7 @@ export class OccupiedPanel extends HTMLElement {
       }
     });
   }
+
   async reloadSaved(discard = false) {
     if (
       this.busy ||
@@ -874,6 +869,7 @@ export class OccupiedPanel extends HTMLElement {
       return;
     }
     const version = this.version;
+
     return this.run(async (epoch) => {
       const doc = await this.ws("program");
       if (epoch !== this.epoch || version !== this.version) {
@@ -886,251 +882,40 @@ export class OccupiedPanel extends HTMLElement {
       this.renderView();
     });
   }
+
+  // Preview orchestration lives separately from editor and connection state.
   movePreviewDay(days: number) {
-    return this.selectPreviewDate(
-      shiftScheduleDate(
-        this.previewDate || this.document.simulation_date,
-        days,
-      ),
-    );
+    return this.previewController.movePreviewDay(days);
   }
+
   selectPreviewDate(date: string) {
-    if (
-      this.busy ||
-      this.liveBusy ||
-      this.liveRunning ||
-      this.tab !== "preview" ||
-      date === this.previewDate
-    ) {
-      return;
-    }
-    this.previewDate = date;
-    this.liveVisible = false;
-    return this.loadPreview();
-  }
-  private loadPreview() {
-    if (
-      this.busy ||
-      !this.draft ||
-      !this.document ||
-      this.liveRunning ||
-      (this.liveVisible && this.livePlan)
-    ) {
-      return;
-    }
-    const version = this.version,
-      draft = copy(this.draft),
-      date = this.previewDate || this.document.simulation_date;
-    this.previewDate = date;
-    return this.run(async (epoch) => {
-      const result = await this.ws("preview", {
-        program: draft,
-        date,
-        days: 1,
-        seed: "preview-1",
-      });
-      if (
-        epoch !== this.epoch ||
-        version !== this.version ||
-        date !== this.previewDate
-      ) {
-        return;
-      }
-      this.preview = result;
-      this.previewProgram = draft;
-      this.showIssues(result);
-    });
+    return this.previewController.selectPreviewDate(date);
   }
 
-  private _liveDisconnected = () => {
-    this.liveReady = false;
-    this._liveRecoveryEpoch++;
-    this.flush();
-  };
-  private _liveConnected = () => void this.recoverLivePreview();
-  private _liveVisibilityChanged = () => {
-    if (document.visibilityState === "visible") {
-      void this.recoverLivePreview();
-    } else {
-      this._liveDisconnected();
-    }
-  };
-
-  private adoptLive(result: LivePreviewResponse) {
-    this.liveSession = mergeLiveSession(this.liveSession, result.session);
-    if (this.liveSession && result.call_outcomes) {
-      this.liveSession.outcomes = {
-        ...this.liveSession.outcomes,
-        ...result.call_outcomes,
-      };
-    }
-    this.liveCanAdvance = result.can_advance;
-    this.schedulingPaused = this.liveSession?.paused ?? this.schedulingPaused;
-    if (result.plan && result.program) {
-      this.livePlan = result.plan;
-      this.liveProgram = result.program;
-      this.liveVisible =
-        !!result.session && (this.liveRunning || result.session.paused);
-      if (this.liveVisible) {
-        this.previewDate = result.session!.date;
-      }
-    }
-    this.flush();
+  recoverLivePreview() {
+    return this.previewController.recoverLivePreview();
   }
 
-  async recoverLivePreview() {
-    if (!this._loadedEntry || !this.isConnected) {
-      return;
-    }
-    const epoch = this.epoch,
-      recovery = ++this._liveRecoveryEpoch;
-    this.liveReady = false;
-    this.flush();
-    try {
-      const result = await this.ws("live_preview/status");
-      if (epoch !== this.epoch || recovery !== this._liveRecoveryEpoch) {
-        return;
-      }
-      this.adoptLive(result);
-      this.liveReady = true;
-    } catch (error) {
-      if (epoch === this.epoch && recovery === this._liveRecoveryEpoch) {
-        this.fail(error);
-      }
-    } finally {
-      if (epoch === this.epoch && recovery === this._liveRecoveryEpoch) {
-        this.flush();
-      }
-    }
+  startLivePreview() {
+    return this.previewController.startLivePreview();
   }
 
-  async startLivePreview() {
-    if (this.liveBusy || this.liveRunning || !this.liveReady || this.busy) {
-      return;
-    }
-    const frozen = this.liveVisible && this.liveSession;
-    const program = frozen ? this.liveProgram : this.previewProgram;
-    const fingerprint = frozen
-      ? this.liveSession?.plan_fingerprint
-      : this.preview?.plan_fingerprint;
-    if (!program || !fingerprint) {
-      return;
-    }
-    const epoch = this.epoch;
-    this.liveBusy = true;
-    this.error = "";
-    this.flush();
-    try {
-      const result = await this.ws("live_preview/start", {
-        program: copy(program),
-        date: this.previewDate,
-        seed: "preview-1",
-        expected_plan_fingerprint: fingerprint,
-        request_id: crypto.randomUUID(),
-      });
-      if (epoch === this.epoch) {
-        this.adoptLive(result);
-      }
-    } catch (error) {
-      if (epoch === this.epoch) {
-        this.fail(error);
-        await this.recoverLivePreview();
-      }
-    } finally {
-      if (epoch === this.epoch) {
-        this.liveBusy = false;
-        this.flush();
-      }
-    }
+  nextLiveEvent() {
+    return this.previewController.nextLiveEvent();
   }
 
-  async nextLiveEvent() {
-    const session = this.liveSession;
-    if (
-      !session?.next_group ||
-      session.state !== "ready" ||
-      !this.liveReady ||
-      !this.liveCanAdvance ||
-      this.liveBusy ||
-      this.liveStopping
-    ) {
-      return;
-    }
-    const epoch = this.epoch;
-    this.liveBusy = true;
-    this.error = "";
-    this.flush();
-    try {
-      const result = await this.ws("live_preview/next", {
-        session_id: session.id,
-        expected_group_id: session.next_group.id,
-        request_id: crypto.randomUUID(),
-      });
-      if (epoch === this.epoch && this.liveSession?.id === session.id) {
-        this.adoptLive(result);
-      }
-    } catch (error) {
-      if (epoch === this.epoch) {
-        this.fail(error);
-        await this.recoverLivePreview();
-      }
-    } finally {
-      if (epoch === this.epoch) {
-        this.liveBusy = false;
-        this.flush();
-      }
-    }
-  }
-
-  async stopLivePreview() {
-    const session = this.liveSession;
-    if (!session || !this.liveRunning || this.liveStopping) {
-      return;
-    }
-    const epoch = this.epoch;
-    this.liveStopping = true;
-    this.flush();
-    try {
-      const result = await this.ws("live_preview/stop", {
-        session_id: session.id,
-      });
-      if (epoch === this.epoch && this.liveSession?.id === session.id) {
-        this.adoptLive(result);
-      }
-    } catch (error) {
-      if (epoch === this.epoch) {
-        this.fail(error);
-        await this.recoverLivePreview();
-      }
-    } finally {
-      if (epoch === this.epoch) {
-        this.liveStopping = false;
-        this.flush();
-      }
-    }
+  stopLivePreview() {
+    return this.previewController.stopLivePreview();
   }
 
   resumeScheduling() {
-    return this.run(async (epoch) => {
-      await this._hass.callWS({
-        type: "call_service",
-        domain: "occupied",
-        service: "resume",
-        service_data: { config_entry_id: this._loadedEntry },
-      });
-      if (epoch === this.epoch) {
-        await this.recoverLivePreview();
-      }
-    });
+    return this.previewController.resumeScheduling();
   }
 
   refreshPreviewSchedule() {
-    if (this.liveRunning || this.liveBusy) {
-      return;
-    }
-    this.liveVisible = false;
-    return this.loadPreview();
+    return this.previewController.refreshPreviewSchedule();
   }
+
   saveYaml() {
     if (this.document?.source === "file" || this.stale) {
       return;
@@ -1138,6 +923,7 @@ export class OccupiedPanel extends HTMLElement {
     const yaml = this.yaml,
       version = this.version,
       expected = this.revision;
+
     // The save API validates YAML, the program schema and installed services
     // before persisting anything, using the same revision guard as step saves.
     return this.run(async (epoch) => {
@@ -1163,11 +949,13 @@ export class OccupiedPanel extends HTMLElement {
       this.flush();
     });
   }
+
   exportYaml() {
     if (this.yamlDirty) {
       return;
     }
     const yaml = this.yaml;
+
     return this.run(async (epoch) => {
       const result = await this.ws("export", { program: copy(this.draft) });
       if (epoch !== this.epoch) {
@@ -1219,8 +1007,10 @@ function editorField(tail: Path, form: Pick<StepForm, "kind">): string {
     if (has("end_offset")) {
       return "endOffset";
     }
+
     return "anchor";
   }
+
   return "name";
 }
 
@@ -1237,8 +1027,10 @@ function randomEditorField(tail: Path, form: RandomForm): string {
       } else if (form[head].mode === "duration") {
         field = "minDuration";
       }
+
       return `${head}.${field}`;
     }
+
     return `${head}.${editorField(["timing", ...tail.slice(1)], form.on)}`;
   }
   if (head === "on" || head === "off") {
@@ -1247,6 +1039,7 @@ function randomEditorField(tail: Path, form: RandomForm): string {
   if (head === "count") {
     return tail[1] === "max" ? "maxCount" : "minCount";
   }
+
   return (
     (
       {

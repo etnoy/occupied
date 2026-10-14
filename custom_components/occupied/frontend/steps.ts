@@ -10,6 +10,7 @@ export function startStep(
 ) {
   if (panel.stepEditor) {
     panel.requestStepExit(() => startStep(panel, entry, parent));
+
     return;
   }
   showStep(panel, entry, parent);
@@ -50,10 +51,12 @@ export function openStep(panel: OccupiedPanel, entry: StepEntry) {
       panel.selectedStep = null;
       panel.shadowRoot.getElementById(`step-card-${entry.id}`)?.focus();
     });
+
     return;
   }
   if (panel.stepEditor) {
     panel.requestStepExit(() => openStep(panel, entry));
+
     return;
   }
   showEntry(panel, entry);
@@ -62,6 +65,7 @@ export function openStep(panel: OccupiedPanel, entry: StepEntry) {
 function showEntry(panel: OccupiedPanel, entry: StepEntry) {
   showStep(panel, entry);
 }
+
 export function actionSummary(entry: StepEntry, t: Translate) {
   if (entry.actions || entry.action === "set_state") {
     return `${t("Custom YAML")} · ${entry.actions?.length || 1} ${t("actions")}`;
@@ -72,6 +76,7 @@ export function actionSummary(entry: StepEntry, t: Translate) {
   if (entry.action === "turn_on" || entry.action === "turn_off") {
     return t(entry.action === "turn_off" ? "Turn off" : "Turn on");
   }
+
   return entry.action;
 }
 
@@ -102,5 +107,6 @@ export function stepTree(entries: StepEntry[]) {
   for (const step of entries) {
     append(step, 0);
   }
+
   return ordered;
 }
