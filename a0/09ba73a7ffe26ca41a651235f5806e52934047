@@ -1,0 +1,43 @@
+custom_components/occupied/__init__.py
+  s_6b9de65232b078::t_f68856e1002097 214
+custom_components/occupied/actions.py
+  s_6b9de65232b078::t_5e4d47f4d7187a 3-4,10-24
+custom_components/occupied/frontend/PreviewView.svelte
+  s_6b9de65232b078::t_547c603c0473e9 5,31-36,75,82-85,96,104,107-113
+custom_components/occupied/frontend/Timeline.svelte
+  s_6b9de65232b078::t_d99e8e8360018c 11-12,24,36,109,114-119,123-134,171-185
+custom_components/occupied/frontend/live-preview.ts
+  s_6b9de65232b078::t_fe0c83676a0c1b 1-70
+custom_components/occupied/frontend/types.ts
+  s_6b9de65232b078::t_415084e06f1cc6 220,227,230-231,234-237,252-253,264-308,324-327,339-340
+custom_components/occupied/instances.py
+  s_6b9de65232b078::t_940d217151f990 41,46-47
+custom_components/occupied/planner.py
+  s_6b9de65232b078::t_28e2f67dece910 77-81,89-91,120,134-147
+custom_components/occupied/preview.py
+  s_6b9de65232b078::t_3b170e359cf7f7 3-4,11,14-36,67-79
+custom_components/occupied/websocket_api.py
+  s_6b9de65232b078::t_fac80aa01aa0dd 32-35,269-362
+docs/editor.md
+  s_6b9de65232b078::t_0dc2a63b07761e 51-63,68-69
+docs/runtime.md
+  s_6b9de65232b078::t_244d74edd29854 38-47
+tests/frontend/src/live-preview.test.ts
+  s_6b9de65232b078::t_2c511aa0609b58 1-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a009ba73a7ffe26ca41a651235f5806e52934047",
+  "prompts": {},
+  "sessions": {
+    "s_6b9de65232b078": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a139fa-2fa9-74a1-8f10-6eb3cb128820",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
