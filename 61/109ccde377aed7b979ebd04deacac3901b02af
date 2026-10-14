@@ -1,0 +1,47 @@
+custom_components/occupied/custom_actions.py
+  s_a925cb6b04d064::t_4f3f8e2d2c440a 1-40
+custom_components/occupied/file_config.py
+  s_a925cb6b04d064::t_0eb50a418bd0e8 59-61,128,132
+custom_components/occupied/frontend/EditorField.svelte
+  s_a925cb6b04d064::t_a158d576b78a8c 63-64
+custom_components/occupied/frontend/RandomView.svelte
+  s_a925cb6b04d064::t_79c3c1aaa0ab95 2,91
+custom_components/occupied/frontend/StepsView.svelte
+  s_a925cb6b04d064::t_b5d7cbd1ca54dc 2,91
+custom_components/occupied/frontend/cover.ts
+  s_a925cb6b04d064::t_e5f069af742a4f 25,57,60,62,64
+custom_components/occupied/frontend/random-model.ts
+  s_a925cb6b04d064::t_cde51ffd6ab78f 10,43
+custom_components/occupied/frontend/steps.ts
+  s_a925cb6b04d064::t_b1838c6cf9a836 66-68
+custom_components/occupied/frontend/types.ts
+  s_a925cb6b04d064::t_51b9da31335481 25-27,70-72,318
+custom_components/occupied/live_preview.py
+  s_a925cb6b04d064::t_a416aef352cd98 386-387
+custom_components/occupied/storage.py
+  s_a925cb6b04d064::t_57b010302eb73a 65
+custom_components/occupied/validation.py
+  s_a925cb6b04d064::t_5a906ea7cba67c 245-291
+custom_components/occupied/websocket_api.py
+  s_a925cb6b04d064::t_4eea21d8d42e75 27,562-587
+tests/frontend/src/covers.test.ts
+  s_a925cb6b04d064::t_2a40df3005ab13 171-175
+tests/test_daily_runtime.py
+  s_a925cb6b04d064::t_6bec7553283a43 513-556
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "61109ccde377aed7b979ebd04deacac3901b02af",
+  "prompts": {},
+  "sessions": {
+    "s_a925cb6b04d064": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13a26-eeab-7161-96ed-1371db40d473",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
