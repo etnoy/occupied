@@ -186,6 +186,28 @@ function parentSteps(program, child2) {
     .filter(([id]) => !blocked.has(id))
     .map(([id, step]) => ({ ...step, id, name: step.name || id }));
 }
+function parentRandomEvents(program, child2) {
+  const blocked = /* @__PURE__ */ new Set([child2]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [id, event2] of Object.entries(program.random || {})) {
+      const parent = event2.start.relative_to?.random;
+      if (parent && blocked.has(parent) && !blocked.has(id)) {
+        blocked.add(id);
+        changed = true;
+      }
+    }
+  }
+  return Object.entries(program.random || {})
+    .filter(([id]) => !blocked.has(id))
+    .map(([id, event2]) => ({ ...event2, id }));
+}
+function randomReferences(program, id) {
+  return Object.entries(program.random || {})
+    .filter(([, event2]) => event2.start.relative_to?.random === id)
+    .map(([key2]) => ["random", key2, "start", "relative_to", "random"]);
+}
 
 // custom_components/occupied/frontend/util.ts
 function errorMessage(error) {
@@ -248,25 +270,53 @@ function minutes(value) {
 function durationSeconds(value) {
   return !value || value === "0" ? NaN : minutes(value) * 60;
 }
+function durationLabel(value, t = (text2) => text2) {
+  let remaining = Math.round(Math.abs(value) * 1e6) / 1e6;
+  const hours = Math.floor(remaining / 3600);
+  remaining -= hours * 3600;
+  const mins = Math.floor(remaining / 60);
+  const seconds = Math.round((remaining - mins * 60) * 1e6) / 1e6;
+  return [
+    [hours, "hour", "hours"],
+    [mins, "minute", "minutes"],
+    [seconds, "second", "seconds"],
+  ]
+    .filter(([amount]) => amount > 0)
+    .map(
+      ([amount, singular, plural]) =>
+        `${amount} ${t(amount === 1 ? singular : plural)}`,
+    )
+    .join(" ");
+}
 function timingForm(timing = {}) {
   const clock = timing.absolute_time,
     source2 = timing.relative_to;
   let anchor = "";
   if (source2?.step) {
     anchor = `step:${source2.step}`;
+  } else if (source2?.random) {
+    anchor = `random:${source2.random}`;
   } else if (source2?.sun) {
     anchor = `sun:${source2.sun}`;
   } else if (source2?.entity) {
     const attribute = source2.attribute ? `:${source2.attribute}` : "";
     anchor = `entity:${source2.entity}${attribute}`;
   }
+  let mode = source2 ? "relative" : "absolute";
+  if (timing.duration) {
+    mode = "duration";
+  }
   return {
-    mode: source2 ? "relative" : "absolute",
+    mode,
     start: clock?.start || "18:00",
     end: clock?.end || "",
     anchor,
     startOffset: source2?.start_offset || "0s",
     endOffset: source2?.end_offset || "",
+    ...(timing.duration && {
+      minDuration: timing.duration.min,
+      maxDuration: timing.duration.max || timing.duration.min,
+    }),
   };
 }
 function offsetErrors(time) {
@@ -344,9 +394,9 @@ function timingExplanation(
   entries = [],
   t = (value) => value,
   sources = [],
-  { includeHints = true, locale, days: selectedDays } = {},
+  { includeHints = true, subject = "Runs", locale, days: selectedDays } = {},
 ) {
-  const runs = `${t("Runs")}${scheduleDaySuffix(selectedDays, t)}`;
+  const runs = `${t(subject)}${scheduleDaySuffix(selectedDays, t)}`;
   const time = {
     start: "",
     end: "",
@@ -355,6 +405,27 @@ function timingExplanation(
     endOffset: "",
     ...input,
   };
+  if (time.mode === "duration") {
+    const minimum = durationSeconds(time.minDuration || "");
+    const maximum = durationSeconds(time.maxDuration || time.minDuration || "");
+    if (
+      !Number.isFinite(minimum) ||
+      !Number.isFinite(maximum) ||
+      minimum <= 0 ||
+      maximum < minimum ||
+      maximum > 604800
+    ) {
+      return t("Choose valid window durations.");
+    }
+    return t(
+      minimum === maximum
+        ? "Window closes {duration} after it starts"
+        : "Window closes between {min} and {max} after it starts",
+    )
+      .replace("{duration}", () => durationLabel(minimum, t))
+      .replace("{min}", () => durationLabel(minimum, t))
+      .replace("{max}", () => durationLabel(maximum, t));
+  }
   if (time.mode === "absolute") {
     const valid = (value) =>
       /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value);
@@ -381,14 +452,20 @@ function timingExplanation(
     return `${runs} ${t("at a random time between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}`;
   }
   if (Object.keys(offsetErrors(time)).length > 0) {
-    return t("Enter valid offsets to see when this step runs");
+    return t(
+      subject === "Runs"
+        ? "Enter valid offsets to see when this step runs"
+        : "Enter valid offsets to see the window boundary",
+    );
   }
   if (!time.anchor) {
     return t("Choose a step or event");
   }
   const step = time.anchor.startsWith("step:");
   let name;
-  if (step) {
+  if (time.anchor.startsWith("random:")) {
+    name = `${t("the end of")} ${entries.find((entry) => entry.id === time.anchor)?.name || time.anchor.slice(7)}`;
+  } else if (step) {
     name =
       entries.find((entry) => entry.id === time.anchor.slice(5))?.name ||
       time.anchor.slice(5);
@@ -407,24 +484,7 @@ function timingExplanation(
   }
   const low = minutes(time.startOffset),
     high = time.endOffset ? minutes(time.endOffset) : low;
-  const duration = (offset) => {
-    let remaining = Math.round(Math.abs(offset) * 60 * 1e6) / 1e6;
-    const hours = Math.floor(remaining / 3600);
-    remaining -= hours * 3600;
-    const mins = Math.floor(remaining / 60);
-    const seconds = Math.round((remaining - mins * 60) * 1e6) / 1e6;
-    return [
-      [hours, "hour", "hours"],
-      [mins, "minute", "minutes"],
-      [seconds, "second", "seconds"],
-    ]
-      .filter(([amount]) => amount)
-      .map(
-        ([amount, singular, plural]) =>
-          `${amount} ${t(amount === 1 ? singular : plural)}`,
-      )
-      .join(" ");
-  };
+  const duration = (offset) => durationLabel(Math.abs(offset) * 60, t);
   const offsetLabel = (offset) =>
     `${duration(offset)} ${t(offset < 0 ? "before" : "after")}`;
   if (low === high) {
@@ -1178,11 +1238,17 @@ var sv = {
   "No matching steps or time sources.":
     "Inga matchande steg eller tidsk\xE4llor.",
   Steps: "Steg",
+  "Scheduled activity": "Schemalagd aktivitet",
+  "Run actions at specific times, around sunrise or sunset, or relative to other steps. Choose which devices to control and what they should do.":
+    "K\xF6r \xE5tg\xE4rder vid best\xE4mda tider, kring soluppg\xE5ng eller solnedg\xE5ng, eller i f\xF6rh\xE5llande till andra steg. V\xE4lj vilka enheter som ska styras och vad de ska g\xF6ra.",
   Random: "Slumpm\xE4ssigt",
   "Random activity": "Slumpm\xE4ssig aktivitet",
   "Random event": "Slumpm\xE4ssig h\xE4ndelse",
   "Random events": "Slumpm\xE4ssiga h\xE4ndelser",
   "Random event name": "H\xE4ndelsens namn",
+  "Random event actions": "\xC5tg\xE4rder f\xF6r slumpm\xE4ssig h\xE4ndelse",
+  "Apply these settings, then save the random event.":
+    "Till\xE4mpa inst\xE4llningarna och spara sedan den slumpm\xE4ssiga h\xE4ndelsen.",
   "Create your first random event":
     "Skapa din f\xF6rsta slumpm\xE4ssiga h\xE4ndelse",
   "Create random event": "Skapa slumpm\xE4ssig h\xE4ndelse",
@@ -1199,13 +1265,107 @@ var sv = {
     "V\xE4lj ett tidsf\xF6nster, en varaktighet och \xE5tg\xE4rder f\xF6r b\xF6rjan och slutet av varje tillf\xE4lle.",
   "Window starts": "Tidsf\xF6nstret b\xF6rjar",
   "Window ends": "Tidsf\xF6nstret slutar",
+  Duration: "Varaktighet",
+  "End of": "Slutet p\xE5",
+  "the end of": "slutet p\xE5",
+  "Minimum window duration": "Minsta varaktighet f\xF6r tidsf\xF6nstret",
+  "Maximum window duration": "H\xF6gsta varaktighet f\xF6r tidsf\xF6nstret",
+  "Choose a positive window duration within seven days.":
+    "V\xE4lj en positiv varaktighet f\xF6r tidsf\xF6nstret inom sju dagar.",
+  "Maximum window duration must be at least the minimum.":
+    "H\xF6gsta varaktighet f\xF6r tidsf\xF6nstret m\xE5ste vara minst den l\xE4gsta.",
+  "Choose valid window durations.":
+    "V\xE4lj giltiga varaktigheter f\xF6r tidsf\xF6nstret.",
+  "Window closes {duration} after it starts":
+    "Tidsf\xF6nstret st\xE4ngs {duration} efter att det b\xF6rjar",
+  "Window closes between {min} and {max} after it starts":
+    "Tidsf\xF6nstret st\xE4ngs mellan {min} och {max} efter att det b\xF6rjar",
+  "Choose another random event without creating a circular relationship.":
+    "V\xE4lj en annan slumpm\xE4ssig h\xE4ndelse utan att skapa ett cirkul\xE4rt beroende.",
+  "This start follows the selected window's closing time.":
+    "Starten f\xF6ljer det valda tidsf\xF6nstrets sluttid.",
+  "Choose Absolute time or Duration to replace this saved relative window end.":
+    "V\xE4lj Absolut tid eller Varaktighet f\xF6r att ers\xE4tta det sparade tidsf\xF6nstrets relativa slut.",
+  "Other random events depend on this window. Change their starts before deleting.":
+    "Andra slumpm\xE4ssiga h\xE4ndelser beror p\xE5 det h\xE4r tidsf\xF6nstret. \xC4ndra deras start innan du tar bort det.",
+  "No events can run because the minimum duration is longer than the window.":
+    "Inga h\xE4ndelser kan k\xF6ras eftersom minsta varaktighet \xE4r l\xE4ngre \xE4n tidsf\xF6nstret.",
+  "Reduce the minimum duration or extend the window.":
+    "Minska den kortaste varaktigheten eller f\xF6rl\xE4ng tidsf\xF6nstret.",
+  "Duration limits take priority over the event count.":
+    "Varaktighetsgr\xE4nserna har f\xF6retr\xE4de framf\xF6r antalet h\xE4ndelser.",
+  "Window start": "Tidsf\xF6nstrets start",
+  "Window end": "Tidsf\xF6nstrets slut",
+  "Latest window start (optional)":
+    "Senaste start f\xF6r tidsf\xF6nstret (valfritt)",
+  "Latest window end (optional)":
+    "Senaste slut f\xF6r tidsf\xF6nstret (valfritt)",
+  "Randomize window start": "Slumpm\xE4ssig start f\xF6r tidsf\xF6nstret",
+  "Randomize window end": "Slumpm\xE4ssigt slut f\xF6r tidsf\xF6nstret",
   "Frequency and duration": "Frekvens och varaktighet",
-  "Times per window": "Antal g\xE5nger per tidsf\xF6nster",
+  "Minimum events per window": "Minsta antal h\xE4ndelser per tidsf\xF6nster",
+  "Maximum events per window":
+    "H\xF6gsta antal h\xE4ndelser per tidsf\xF6nster",
+  "Add maximum events": "L\xE4gg till h\xF6gsta antal h\xE4ndelser",
+  "Remove maximum events": "Ta bort h\xF6gsta antal h\xE4ndelser",
+  "Maximum events per window must be at least the minimum.":
+    "H\xF6gsta antal h\xE4ndelser per tidsf\xF6nster m\xE5ste vara minst det l\xE4gsta antalet.",
+  "This random event is disabled.":
+    "Den h\xE4r slumpm\xE4ssiga h\xE4ndelsen \xE4r inaktiverad.",
+  "Choose valid event counts to describe how often events run.":
+    "V\xE4lj giltiga antal h\xE4ndelser f\xF6r att beskriva hur ofta de k\xF6rs.",
+  "Choose a whole number from 0 to 1000.":
+    "V\xE4lj ett heltal fr\xE5n 0 till 1000.",
+  "No events run because the event count is zero.":
+    "Inga h\xE4ndelser k\xF6rs eftersom antalet h\xE4ndelser \xE4r noll.",
+  "Dependent random events also skip this window.":
+    "Beroende slumpm\xE4ssiga h\xE4ndelser hoppar ocks\xE5 \xF6ver det h\xE4r tidsf\xF6nstret.",
+  "A window may have no events; dependent random events skip that window.":
+    "Ett tidsf\xF6nster kan sakna h\xE4ndelser; beroende slumpm\xE4ssiga h\xE4ndelser hoppar \xF6ver det tidsf\xF6nstret.",
+  "Between {min} and {max} events start at random times during each window.":
+    "Mellan {min} och {max} h\xE4ndelser b\xF6rjar vid slumpm\xE4ssiga tider inom varje tidsf\xF6nster.",
+  "One event starts at a random time during each window.":
+    "En h\xE4ndelse b\xF6rjar vid en slumpm\xE4ssig tid inom varje tidsf\xF6nster.",
+  "{count} events start at random times during each window.":
+    "{count} h\xE4ndelser b\xF6rjar vid slumpm\xE4ssiga tider inom varje tidsf\xF6nster.",
+  "Choose valid durations to describe how long each event lasts.":
+    "V\xE4lj giltiga varaktigheter f\xF6r att beskriva hur l\xE4nge varje h\xE4ndelse varar.",
+  "Choose durations that fit inside the window.":
+    "V\xE4lj varaktigheter som ryms inom tidsf\xF6nstret.",
+  "Each event lasts {duration}.": "Varje h\xE4ndelse varar {duration}.",
+  "Each event lasts between {min} and {max}.":
+    "Varje h\xE4ndelse varar mellan {min} och {max}.",
+  "activate {entities}": "aktivera {entities}",
+  "run {service} for {entities}": "k\xF6r {service} f\xF6r {entities}",
+  "turn on {entities}": "sl\xE5 p\xE5 {entities}",
+  "turn off {entities}": "sl\xE5 av {entities}",
+  "open {entities}": "\xF6ppna {entities}",
+  "close {entities}": "st\xE4ng {entities}",
+  "stop {entities}": "stoppa {entities}",
+  "set the position of {entities} to {position}%":
+    "st\xE4ll in positionen f\xF6r {entities} till {position}%",
+  "open the tilt of {entities}": "\xF6ppna lamellerna f\xF6r {entities}",
+  "close the tilt of {entities}": "st\xE4ng lamellerna f\xF6r {entities}",
+  "stop the tilt of {entities}": "stoppa lamellerna f\xF6r {entities}",
+  "set the tilt of {entities} to {position}%":
+    "st\xE4ll in lamellerna f\xF6r {entities} till {position}%",
+  "When each event starts, {action}.":
+    "N\xE4r varje h\xE4ndelse b\xF6rjar, {action}.",
+  "When each event ends, {action}.":
+    "N\xE4r varje h\xE4ndelse slutar, {action}.",
+  "The event finishes before the window closes.":
+    "H\xE4ndelsen avslutas innan tidsf\xF6nstret st\xE4ngs.",
+  "Events may overlap, but all finish before the window closes.":
+    "H\xE4ndelser kan \xF6verlappa, men alla avslutas innan tidsf\xF6nstret st\xE4ngs.",
   "times per window": "g\xE5nger per tidsf\xF6nster",
   "Minimum duration": "Minsta varaktighet",
   "Maximum duration": "L\xE4ngsta varaktighet",
-  "Use durations like 5m, 30s, or 1h. Occurrences may overlap; every end action stays inside the window.":
-    "Ange varaktigheter som 5m, 30s eller 1h. Tillf\xE4llen kan \xF6verlappa; varje slut\xE5tg\xE4rd sker inom tidsf\xF6nstret.",
+  "Use durations like 5m, 30s, or 1h.":
+    "Ange varaktigheter som 5m, 30s eller 1h.",
+  "When event starts": "N\xE4r h\xE4ndelsen b\xF6rjar",
+  "When event ends": "N\xE4r h\xE4ndelsen slutar",
+  "Choose which days this random event should run.":
+    "V\xE4lj vilka dagar den slumpm\xE4ssiga h\xE4ndelsen ska k\xF6ras.",
   "At the start": "Vid b\xF6rjan",
   "At the end": "Vid slutet",
   "Start action": "Start\xE5tg\xE4rd",
@@ -1238,6 +1398,27 @@ var sv = {
   "Entity service action": "Tj\xE4nsteanrop f\xF6r entiteter",
   "Turn on lights/switches": "Sl\xE5 p\xE5 lampor/brytare",
   "Turn off lights/switches": "Sl\xE5 av lampor/brytare",
+  "Control covers": "Styr gardiner och persienner",
+  "Cover action": "\xC5tg\xE4rd f\xF6r gardin eller persienn",
+  "Open cover": "\xD6ppna gardin eller persienn",
+  "Close cover": "St\xE4ng gardin eller persienn",
+  "Stop cover": "Stoppa gardin eller persienn",
+  "Set cover position": "St\xE4ll in position",
+  "Open tilt": "\xD6ppna lameller",
+  "Close tilt": "St\xE4ng lameller",
+  "Stop tilt": "Stoppa lameller",
+  "Set tilt position": "St\xE4ll in lamellernas position",
+  "Position (%)": "Position (%)",
+  "Tilt position (%)": "Lamellernas position (%)",
+  "Choose cover entities.": "V\xE4lj gardin- eller persiennentiteter.",
+  "Choose a cover action.":
+    "V\xE4lj en \xE5tg\xE4rd f\xF6r gardin eller persienn.",
+  "Choose a whole number from 0 to 100.":
+    "V\xE4lj ett heltal fr\xE5n 0 till 100.",
+  "0% is closed; 100% is open. Device support determines which cover actions are available.":
+    "0% \xE4r st\xE4ngt; 100% \xE4r \xF6ppet. Enhetens st\xF6d avg\xF6r vilka \xE5tg\xE4rder som \xE4r tillg\xE4ngliga.",
+  "Covers run only at scheduled times. Enabling late skips past cover actions.":
+    "Gardiner och persienner styrs bara vid schemalagda tider. Vid sen aktivering hoppas tidigare \xE5tg\xE4rder \xF6ver.",
   Settings: "Inst\xE4llningar",
   "Create step": "Skapa steg",
   "Create your first step": "Skapa ditt f\xF6rsta steg",
@@ -1284,6 +1465,14 @@ var sv = {
   "Loading graph\u2026": "Laddar diagram\u2026",
   On: "P\xE5",
   Unknown: "Ok\xE4nt",
+  Open: "\xD6ppet",
+  Closed: "St\xE4ngt",
+  "Position {position}%": "Position {position}%",
+  "Tilt {position}%": "Lameller {position}%",
+  "Cover strips show planned position and tilt targets. Travel time and positions after stop actions are unknown.":
+    "Gardiner och persienner visar planerade m\xE5l f\xF6r position och lameller. F\xF6rflyttningstid och position efter stopp \xE4r ok\xE4nda.",
+  "No light, switch, or cover actions on this date. Other actions are listed in Event details.":
+    "Inga \xE5tg\xE4rder f\xF6r lampor, brytare, gardiner eller persienner detta datum. \xD6vriga \xE5tg\xE4rder visas i H\xE4ndelsedetaljer.",
   "No light or switch actions on this date. Other actions are listed in Event details.":
     "Inga \xE5tg\xE4rder f\xF6r lampor eller brytare detta datum. \xD6vriga \xE5tg\xE4rder visas i H\xE4ndelsedetaljer.",
   "The Home Assistant graph could not load. Planned actions are available in Event details.":
@@ -1324,6 +1513,8 @@ var sv = {
   "Add end offset": "L\xE4gg till slutf\xF6rskjutning",
   "Remove end offset": "Ta bort slutf\xF6rskjutning",
   "Choose a step or event": "V\xE4lj ett steg eller en h\xE4ndelse",
+  "Enter valid offsets to see the window boundary":
+    "Ange giltiga f\xF6rskjutningar f\xF6r att se tidsf\xF6nstrets gr\xE4ns",
   "Turn on": "Sl\xE5 p\xE5",
   "Turn off": "Sl\xE5 av",
   "Every day": "Varje dag",
@@ -2790,11 +2981,11 @@ var Batch = class _Batch {
         this.#unlink();
         infinite_loop_guard();
       }
-      for (const root21 of this.#resolve()) {
+      for (const root23 of this.#resolve()) {
         try {
-          this.#traverse(root21, effects, render_effects);
+          this.#traverse(root23, effects, render_effects);
         } catch (e) {
-          reset_all(root21);
+          reset_all(root23);
           if (!this.#is_deferred()) this.discard();
           throw e;
         }
@@ -2873,9 +3064,9 @@ var Batch = class _Batch {
    * @param {Effect[]} effects
    * @param {Effect[]} render_effects
    */
-  #traverse(root21, effects, render_effects) {
-    root21.f ^= CLEAN;
-    var effect2 = root21.first;
+  #traverse(root23, effects, render_effects) {
+    root23.f ^= CLEAN;
+    var effect2 = root23.first;
     while (effect2 !== null) {
       var flags2 = effect2.f;
       var is_branch = (flags2 & (BRANCH_EFFECT | ROOT_EFFECT)) !== 0;
@@ -3139,8 +3330,8 @@ var Batch = class _Batch {
         }
         if (batch.#scheduled.length > 0 && !batch.#decrement_queued) {
           batch.apply();
-          for (var root21 of batch.#resolve()) {
-            batch.#traverse(root21, [], []);
+          for (var root23 of batch.#resolve()) {
+            batch.#traverse(root23, [], []);
           }
         }
         batch.deactivate();
@@ -4759,7 +4950,7 @@ function is_dirty(reaction) {
 function schedule_possible_effect_self_invalidation(
   signal,
   effect2,
-  root21 = true,
+  root23 = true,
 ) {
   var reactions = signal.reactions;
   if (reactions === null) return;
@@ -4780,7 +4971,7 @@ function schedule_possible_effect_self_invalidation(
         false,
       );
     } else if (effect2 === reaction) {
-      if (root21) {
+      if (root23) {
         set_signal_status(reaction, DIRTY);
       } else if ((reaction.f & CLEAN) !== 0) {
         set_signal_status(reaction, MAYBE_DIRTY);
@@ -7012,14 +7203,14 @@ function snippet(node, get_snippet, ...args) {
 function append_styles(anchor, css) {
   effect(() => {
     anchor = active_effect?.parent?.nodes?.start ?? anchor;
-    var root21 = anchor.getRootNode();
+    var root23 = anchor.getRootNode();
     var target =
       /** @type {ShadowRoot} */
-      root21.host
+      root23.host
         ? /** @type {ShadowRoot} */
-          root21
+          root23
         : /** @type {Document} */
-          (root21.head ?? /** @type {Document} */ root21.ownerDocument.head);
+          (root23.head ?? /** @type {Document} */ root23.ownerDocument.head);
     if (!target.querySelector("#" + css.hash)) {
       const style = create_element("style");
       style.id = css.hash;
@@ -8380,12 +8571,75 @@ if (typeof window !== "undefined") {
   );
 }
 
+// custom_components/occupied/frontend/cover.ts
+var coverActions = [
+  ["cover.open_cover", "Open cover"],
+  ["cover.close_cover", "Close cover"],
+  ["cover.stop_cover", "Stop cover"],
+  ["cover.set_cover_position", "Set cover position"],
+  ["cover.open_cover_tilt", "Open tilt"],
+  ["cover.close_cover_tilt", "Close tilt"],
+  ["cover.stop_cover_tilt", "Stop tilt"],
+  ["cover.set_cover_tilt_position", "Set tilt position"],
+];
+function coverField(action2) {
+  if (action2 === "cover.set_cover_position") {
+    return "position";
+  }
+  if (action2 === "cover.set_cover_tilt_position") {
+    return "tilt_position";
+  }
+  return;
+}
+function isCoverAction(action2) {
+  const field = coverField(action2.action);
+  return (
+    coverActions.some(([service]) => service === action2.action) &&
+    Object.keys(action2.data || {}).every((key2) => key2 === field) &&
+    (!field || validCoverPosition(action2.data?.[field]))
+  );
+}
+function validCoverPosition(value) {
+  return (
+    typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 0 &&
+    value <= 100
+  );
+}
+function coverTarget(action2, previous = {}) {
+  if (!isCoverAction(action2)) {
+    return {};
+  }
+  const next2 = { ...previous };
+  const tilt =
+    action2.action.endsWith("_tilt") ||
+    action2.action === "cover.set_cover_tilt_position";
+  const field = tilt ? "tilt_position" : "position";
+  if (action2.action.includes(".stop_")) {
+    delete next2[field];
+  } else if (action2.action.includes(".open_")) {
+    next2[field] = 100;
+  } else if (action2.action.includes(".close_")) {
+    next2[field] = 0;
+  } else {
+    const value = action2.data?.[field];
+    if (validCoverPosition(value)) {
+      next2[field] = value;
+    } else {
+      delete next2[field];
+    }
+  }
+  return next2;
+}
+
 // custom_components/occupied/frontend/step-model.ts
 var sorted = (values) => [...new Set(values)].sort();
 var actionLabels = {
   turn_on: "Turn on",
   turn_off: "Turn off",
   "scene.turn_on": "Activate scene",
+  ...Object.fromEntries(coverActions),
 };
 function stepEntries(program, catalog, t = (value) => value) {
   return Object.entries(program.steps || {}).map(([id, step]) => ({
@@ -8399,7 +8653,13 @@ function stepEntries(program, catalog, t = (value) => value) {
   }));
 }
 var solarEvents = ["sunrise", "sunset", "dawn", "dusk", "noon", "midnight"];
-function timeSourceChoices(program, id, catalog = {}, t = (value) => value) {
+function timeSourceChoices(
+  program,
+  id,
+  catalog = {},
+  t = (value) => value,
+  randomId,
+) {
   const allowed = new Set(parentSteps(program, id).map((step) => step.id));
   return [
     ...stepEntries(
@@ -8413,6 +8673,13 @@ function timeSourceChoices(program, id, catalog = {}, t = (value) => value) {
         name: step.name,
         group: "Steps",
       })),
+    ...(randomId
+      ? parentRandomEvents(program, randomId).map((event2) => ({
+          value: `random:${event2.id}`,
+          name: `${t("End of")} ${event2.name || (catalog.entities ? entityName({ entities: catalog.entities }, event2.on.entities[0]) : event2.on.entities[0])}`,
+          group: "Random events",
+        }))
+      : []),
     ...(catalog.time_sources ||
       solarEvents.map((event2) => ({
         value: `sun:${event2}`,
@@ -8451,6 +8718,12 @@ function actionForm(source2) {
   let kind = "entities";
   if (action2 === "scene.turn_on") {
     kind = "scene";
+  } else if (
+    source2 &&
+    isCoverAction(source2) &&
+    source2.entities.every((entity) => entity.startsWith("cover."))
+  ) {
+    kind = "cover";
   } else if (action2?.includes(".")) {
     kind = "service";
   }
@@ -8460,6 +8733,8 @@ function actionForm(source2) {
     data: JSON.stringify(source2?.data || {}, null, 2),
     entities: [...(source2?.entities || [])],
     action: action2 === "turn_off" ? "turn_off" : "turn_on",
+    position: String(source2?.data?.position ?? ""),
+    tiltPosition: String(source2?.data?.tilt_position ?? ""),
   };
 }
 function hasStepChanges(editor) {
@@ -8505,7 +8780,27 @@ function actionErrors(form) {
   ) {
     errors.service = "Choose a service using domain.service.";
   }
-  if (form.kind !== "entities") {
+  if (form.kind === "cover") {
+    if (form.entities.some((entity) => !entity.startsWith("cover."))) {
+      errors.entities = "Choose cover entities.";
+    }
+    if (coverActions.every(([action2]) => action2 !== form.service)) {
+      errors.service = "Choose a cover action.";
+    }
+    const field = coverField(form.service);
+    if (field) {
+      const key2 = field === "position" ? "position" : "tiltPosition";
+      const value = Number(form[key2]);
+      if (
+        !form[key2].trim() ||
+        !Number.isSafeInteger(value) ||
+        value < 0 ||
+        value > 100
+      ) {
+        errors[key2] = "Choose a whole number from 0 to 100.";
+      }
+    }
+  } else if (form.kind === "scene" || form.kind === "service") {
     try {
       const data = JSON.parse(form.data);
       if (!data || Array.isArray(data) || typeof data !== "object") {
@@ -8517,7 +8812,7 @@ function actionErrors(form) {
   }
   return errors;
 }
-function timingErrors(program, time, id) {
+function timingErrors(program, time, id, randomId) {
   const errors = {};
   const clockPattern = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
   if (time.mode === "absolute") {
@@ -8540,6 +8835,16 @@ function timingErrors(program, time, id) {
         errors.anchor =
           "Choose another step without creating a circular relationship.";
       }
+    } else if (time.anchor.startsWith("random:")) {
+      if (
+        !randomId ||
+        parentRandomEvents(program, randomId).every(
+          (event2) => event2.id !== time.anchor.slice(7),
+        )
+      ) {
+        errors.anchor =
+          "Choose another random event without creating a circular relationship.";
+      }
     } else if (
       !solarEvents.map((event2) => `sun:${event2}`).includes(time.anchor) &&
       !/^entity:[a-z_][a-z0-9_]*\.[a-z0-9_]+(?::(?:start_time|end_time))?$/.test(
@@ -8554,6 +8859,18 @@ function timingErrors(program, time, id) {
   return errors;
 }
 function formTiming(time) {
+  if (time.mode === "duration") {
+    return {
+      duration: {
+        min: time.minDuration || "",
+        ...(time.maxDuration &&
+          durationSeconds(time.maxDuration) !==
+            durationSeconds(time.minDuration || "") && {
+            max: time.maxDuration,
+          }),
+      },
+    };
+  }
   if (time.mode === "absolute") {
     return {
       absolute_time: { start: time.start, ...(time.end && { end: time.end }) },
@@ -8567,6 +8884,9 @@ function formTiming(time) {
       end_offset: String(time.endOffset === "0" ? "0s" : time.endOffset),
     }),
   };
+  if (time.anchor.startsWith("random:")) {
+    return { relative_to: { random: time.anchor.slice(7), ...offsets } };
+  }
   if (time.anchor.startsWith("step:")) {
     return { relative_to: { step: time.anchor.slice(5), ...offsets } };
   }
@@ -8607,8 +8927,22 @@ function buildAction(form) {
   let action2 = form.action;
   if (form.kind === "scene") {
     action2 = "scene.turn_on";
-  } else if (form.kind === "service") {
+  } else if (form.kind === "service" || form.kind === "cover") {
     action2 = form.service;
+  }
+  if (form.kind === "cover") {
+    const field = coverField(action2);
+    return {
+      action: action2,
+      entities: sorted(form.entities),
+      ...(field && {
+        data: {
+          [field]: Number(
+            field === "position" ? form.position : form.tiltPosition,
+          ),
+        },
+      }),
+    };
   }
   return {
     action: action2,
@@ -9685,6 +10019,208 @@ function EditorField($$anchor, $$props) {
 }
 delegate(["change", "input"]);
 
+// custom_components/occupied/frontend/random-model.ts
+function countBounds(count) {
+  return typeof count === "object"
+    ? count
+    : { min: count ?? 3, max: count ?? 3 };
+}
+function countSummary(count) {
+  const { min, max } = countBounds(count);
+  return min === max ? String(min) : `${min}\u2013${max}`;
+}
+function randomEntries(program, catalog) {
+  return Object.entries(program.random || {}).map(([id, event2]) => ({
+    ...event2,
+    id,
+    path: ["random", id],
+    days: [...(event2.days || days)],
+    name:
+      event2.name ||
+      `${catalog ? entityName(catalog, event2.on.entities[0]) : event2.on.entities[0]}${event2.on.entities.length > 1 ? ` +${event2.on.entities.length - 1}` : ""}`,
+  }));
+}
+function randomEditor(program, entry) {
+  const source2 = entry ? program.random?.[entry.id] : void 0;
+  const on2 = actionForm(source2?.on);
+  const off = actionForm(source2?.off || { action: "turn_off", entities: [] });
+  const count = countBounds(source2?.count);
+  const form = {
+    name: source2?.name || "",
+    enabled: source2?.enabled !== false,
+    days: [...(source2?.days || days)],
+    start: timingForm(source2?.start),
+    end: timingForm(source2?.end || { absolute_time: { start: "23:00" } }),
+    minDuration: source2?.min_duration || "5m",
+    maxDuration: source2?.max_duration || "15m",
+    minCount: String(count.min),
+    maxCount: String(count.max),
+    on: on2,
+    off,
+    sameEntities:
+      ["entities", "cover"].includes(on2.kind) &&
+      on2.kind === off.kind &&
+      JSON.stringify([...on2.entities].sort()) ===
+        JSON.stringify([...off.entities].sort()),
+  };
+  return {
+    id: entry?.id || identifier(program, "random", "random"),
+    existing: !!entry,
+    form,
+    original: copy(form),
+    errors: {},
+    startOptions: {},
+    endOptions: {},
+  };
+}
+function hasRandomChanges(editor) {
+  return JSON.stringify(editor.form) !== JSON.stringify(editor.original);
+}
+function prefixedErrors(errors, prefix) {
+  return Object.fromEntries(
+    Object.entries(errors).map(([field, message]) => [
+      `${prefix}${field}`,
+      message,
+    ]),
+  );
+}
+function randomErrors(program, editor) {
+  const { form } = editor;
+  const errors = {
+    ...prefixedErrors(
+      timingErrors(program, form.start, void 0, editor.id),
+      "start.",
+    ),
+    ...prefixedErrors(windowEndErrors(program, form.end), "end."),
+    ...prefixedErrors(actionErrors(form.on), "on."),
+    ...prefixedErrors(
+      actionErrors(
+        form.sameEntities
+          ? { ...form.off, entities: form.on.entities }
+          : form.off,
+      ),
+      "off.",
+    ),
+  };
+  const minimum = durationSeconds(form.minDuration),
+    maximum = durationSeconds(form.maxDuration);
+  if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604800) {
+    errors.minDuration =
+      "Use a positive duration within seven days, for example 5m or 1h.";
+  }
+  if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604800) {
+    errors.maxDuration =
+      "Use a positive duration within seven days, for example 5m or 1h.";
+  } else if (maximum < minimum) {
+    errors.maxDuration =
+      "Maximum duration must be at least the minimum duration.";
+  }
+  const minCount = Number(form.minCount),
+    maxCount = Number(form.maxCount);
+  for (const field of ["minCount", "maxCount"]) {
+    const count = Number(form[field]);
+    if (
+      !form[field].trim() ||
+      !Number.isSafeInteger(count) ||
+      count < 0 ||
+      count > 1e3
+    ) {
+      errors[field] = "Choose a whole number from 0 to 1000.";
+    }
+  }
+  if (!errors.minCount && !errors.maxCount && maxCount < minCount) {
+    errors.maxCount = "Maximum events per window must be at least the minimum.";
+  }
+  if (form.days.length === 0) {
+    errors.days = "Choose at least one day.";
+  }
+  if (
+    maxCount > 0 &&
+    form.end.mode === "duration" &&
+    !errors["end.minDuration"] &&
+    !errors["end.maxDuration"] &&
+    minimum >
+      durationSeconds(form.end.maxDuration || form.end.minDuration || "")
+  ) {
+    errors.minDuration = "Minimum duration does not fit inside this window.";
+  }
+  if (
+    maxCount > 0 &&
+    form.start.mode === "absolute" &&
+    form.end.mode === "absolute" &&
+    !form.start.end &&
+    !form.end.end &&
+    !errors["start.start"] &&
+    !errors["end.start"]
+  ) {
+    const seconds = (clock) =>
+      clock
+        .split(":")
+        .reduce((total, part, i) => total + Number(part) * [3600, 60, 1][i], 0);
+    let span = seconds(form.end.start) - seconds(form.start.start);
+    if (span < 0) {
+      span += 86400;
+    }
+    if (span === 0) {
+      errors["end.start"] = "Window end must be after its start.";
+    } else if (minimum > span) {
+      errors.minDuration = "Minimum duration does not fit inside this window.";
+    }
+  }
+  return errors;
+}
+function windowEndErrors(program, time) {
+  if (time.mode !== "duration") {
+    return timingErrors(program, time);
+  }
+  const errors = {};
+  const minimum = durationSeconds(time.minDuration || "");
+  const maximum = durationSeconds(time.maxDuration || time.minDuration || "");
+  if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604800) {
+    errors.minDuration = "Choose a positive window duration within seven days.";
+  }
+  if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604800) {
+    errors.maxDuration = "Choose a positive window duration within seven days.";
+  } else if (maximum < minimum) {
+    errors.maxDuration =
+      "Maximum window duration must be at least the minimum.";
+  }
+  return errors;
+}
+function buildRandom(program, editor) {
+  const errors = randomErrors(program, editor);
+  if (Object.keys(errors).length > 0) {
+    throw new Error(Object.values(errors)[0]);
+  }
+  if (editor.existing && !program.random?.[editor.id]) {
+    throw new Error(
+      "This random event changed elsewhere. Cancel and reopen it before saving.",
+    );
+  }
+  const next2 = copy(program),
+    { form } = editor;
+  (next2.random ||= {})[editor.id] = {
+    ...(form.name.trim() && { name: form.name.trim() }),
+    ...(!form.enabled && { enabled: false }),
+    days: [...form.days],
+    start: formTiming(form.start),
+    end: formTiming(form.end),
+    min_duration: form.minDuration,
+    max_duration: form.maxDuration,
+    count:
+      Number(form.minCount) === Number(form.maxCount)
+        ? Number(form.minCount)
+        : { min: Number(form.minCount), max: Number(form.maxCount) },
+    on: buildAction(form.on),
+    off: buildAction(
+      form.sameEntities
+        ? { ...form.off, entities: form.on.entities }
+        : form.off,
+    ),
+  };
+  return next2;
+}
+
 // custom_components/occupied/frontend/SourcePicker.svelte
 var root6 = from_html(
   `<div class="field source-picker"><ha-generic-picker></ha-generic-picker> <!></div>`,
@@ -9810,13 +10346,35 @@ var root7 = from_html(
 var root_15 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_25 = from_html(`<!> <!>`, 1);
 var root_34 = from_html(`<p class="hint"> </p>`);
-var root_42 = from_html(`<!> <!> <!> <!>`, 1);
+var root_42 = from_html(`<!> <!> <!> <!> <!>`, 1);
 var root_52 = from_html(
-  `<div data-editor-section="time"><h3> </h3> <fieldset class="timing-options"><div class="timing-option-row"></div> <!></fieldset> <!> <p class="hint" data-timing-explanation="" aria-live="polite"> </p> <!></div>`,
+  `<p class="hint" data-timing-explanation="" aria-live="polite"> </p>`,
+);
+var root_62 = from_html(
+  `<div data-editor-section="time"><h3> </h3> <fieldset class="timing-options"><div class="timing-option-row"></div> <!></fieldset> <!> <!> <!></div>`,
 );
 function TimingEditor($$anchor, $$props) {
   push($$props, true);
-  let heading = prop($$props, "heading", 3, "Timing");
+  let heading = prop($$props, "heading", 3, "Timing"),
+    clockLabel = prop($$props, "clockLabel", 3, "Start time window"),
+    windowEndLabel = prop(
+      $$props,
+      "windowEndLabel",
+      3,
+      "End of window (optional)",
+    ),
+    addWindowEndLabel = prop(
+      $$props,
+      "addWindowEndLabel",
+      3,
+      "Add end of window",
+    ),
+    showExplanation = prop($$props, "showExplanation", 3, true),
+    explanationSubject = prop($$props, "explanationSubject", 3, "Runs"),
+    modes = prop($$props, "modes", 19, () => [
+      ["absolute", "Absolute time"],
+      ["relative", "Relative to"],
+    ]);
   let editor = user_derived(() => $$props.context.editor),
     form = user_derived(() => $$props.context.form),
     time = user_derived(() => $$props.context.time),
@@ -9831,6 +10389,7 @@ function TimingEditor($$anchor, $$props) {
       $$props.context.stepId,
       $$props.panel.catalog,
       get(t),
+      $$props.context.randomId,
     );
     if (
       get(time).anchor &&
@@ -9846,58 +10405,47 @@ function TimingEditor($$anchor, $$props) {
       ];
     return choices2;
   });
-  var div = root_52();
+  var div = root_62();
   var h3 = child(div);
   var text2 = only_child(h3, true);
   var fieldset = sibling(h3, 2);
   var div_1 = child(fieldset);
-  each(
-    div_1,
-    20,
-    () => [
-      ["absolute", "Absolute time"],
-      ["relative", "Relative to"],
-    ],
-    index,
-    ($$anchor2, $$item) => {
-      var $$array = user_derived(() => to_array($$item, 2));
-      let value = () => get($$array)[0];
-      let label = () => get($$array)[1];
-      var label_1 = root7();
-      var input = child(label_1);
-      remove_input_defaults(input);
-      var span = sibling(input);
-      var text_1 = only_child(span, true);
-      reset(label_1);
-      template_effect(
-        ($0) => {
-          set_attribute2(input, "name", `step-${get(fieldPrefix)}timing-mode`);
-          set_value(input, value());
-          set_attribute2(
-            input,
-            "data-builder-field",
-            `${get(fieldPrefix)}mode`,
-          );
-          set_checked(input, get(time).mode === value());
-          set_text(text_1, $0);
-        },
-        [() => get(t)(label())],
-      );
-      delegated("change", input, (event2) => {
-        if (!event2.currentTarget.checked) return;
-        get(time).mode = value();
-        if (value() === "relative" && !get(time).anchor)
-          get(time).anchor = "sun:sunrise";
-        get(changed)("mode");
-        $$props.panel.shadowRoot
-          .querySelector(
-            `[data-builder-field="${get(fieldPrefix)}mode"]:checked`,
-          )
-          ?.focus();
-      });
-      append($$anchor2, label_1);
-    },
-  );
+  each(div_1, 21, modes, index, ($$anchor2, $$item) => {
+    var $$array = user_derived(() => to_array(get($$item), 2));
+    let value = () => get($$array)[0];
+    let label = () => get($$array)[1];
+    var label_1 = root7();
+    var input = child(label_1);
+    remove_input_defaults(input);
+    var span = sibling(input);
+    var text_1 = only_child(span, true);
+    reset(label_1);
+    template_effect(
+      ($0) => {
+        set_attribute2(input, "name", `step-${get(fieldPrefix)}timing-mode`);
+        set_value(input, value());
+        set_attribute2(input, "data-builder-field", `${get(fieldPrefix)}mode`);
+        set_checked(input, get(time).mode === value());
+        set_text(text_1, $0);
+      },
+      [() => get(t)(label())],
+    );
+    delegated("change", input, (event2) => {
+      if (!event2.currentTarget.checked) return;
+      get(time).mode = value();
+      if (value() === "relative" && !get(time).anchor)
+        get(time).anchor = "sun:sunrise";
+      if (value() === "duration") {
+        get(time).minDuration ||= "1h";
+        get(time).maxDuration ||= get(time).minDuration;
+      }
+      get(changed)("mode");
+      $$props.panel.shadowRoot
+        .querySelector(`[data-builder-field="${get(fieldPrefix)}mode"]:checked`)
+        ?.focus();
+    });
+    append($$anchor2, label_1);
+  });
   reset(div_1);
   var node = sibling(div_1, 2);
   {
@@ -9926,7 +10474,9 @@ function TimingEditor($$anchor, $$props) {
           return $$props.context;
         },
         key: "start",
-        label: "Start time window",
+        get label() {
+          return clockLabel();
+        },
         get value() {
           return get(time).start;
         },
@@ -9944,7 +10494,9 @@ function TimingEditor($$anchor, $$props) {
               return $$props.context;
             },
             key: "end",
-            label: "End of window (optional)",
+            get label() {
+              return windowEndLabel();
+            },
             get value() {
               return get(time).end;
             },
@@ -9960,7 +10512,7 @@ function TimingEditor($$anchor, $$props) {
           var text_2 = only_child(button, true);
           template_effect(
             ($0) => set_text(text_2, $0),
-            [() => get(t)("Add end of window")],
+            [() => get(t)(addWindowEndLabel())],
           );
           delegated("click", button, () => {
             get(time).end = get(time).start;
@@ -9982,11 +10534,53 @@ function TimingEditor($$anchor, $$props) {
       }
       append($$anchor2, fragment);
     };
-    var alternate_2 = ($$anchor2) => {
-      var fragment_2 = root_42();
+    var consequent_2 = ($$anchor2) => {
+      var fragment_2 = root_25();
       var node_4 = first_child(fragment_2);
+      {
+        let $0 = user_derived(() => get(time).minDuration || "");
+        EditorField(node_4, {
+          get panel() {
+            return $$props.panel;
+          },
+          get context() {
+            return $$props.context;
+          },
+          key: "minDuration",
+          label: "Minimum window duration",
+          get value() {
+            return get($0);
+          },
+          update: (value) => (get(time).minDuration = value),
+          options: { placeholder: "1h" },
+        });
+      }
+      var node_5 = sibling(node_4, 2);
+      {
+        let $0 = user_derived(() => get(time).maxDuration || "");
+        EditorField(node_5, {
+          get panel() {
+            return $$props.panel;
+          },
+          get context() {
+            return $$props.context;
+          },
+          key: "maxDuration",
+          label: "Maximum window duration",
+          get value() {
+            return get($0);
+          },
+          update: (value) => (get(time).maxDuration = value),
+          options: { placeholder: "2h", optional: true },
+        });
+      }
+      append($$anchor2, fragment_2);
+    };
+    var consequent_6 = ($$anchor2) => {
+      var fragment_3 = root_42();
+      var node_6 = first_child(fragment_3);
       SourcePicker(
-        node_4,
+        node_6,
         spread_props(() => ({
           hass: $$props.panel._hass,
           choices: get(choices),
@@ -10004,6 +10598,12 @@ function TimingEditor($$anchor, $$props) {
               ).find((step) => step.id === value.slice(5));
               if (parent) get(form).days = [...parent.days];
             }
+            if (!get(editor).existing && value.startsWith("random:")) {
+              const parent = randomEntries($$props.panel.draft).find(
+                (entry) => entry.id === value.slice(7),
+              );
+              if (parent) get(form).days = [...parent.days];
+            }
             get(changed)("anchor");
             const picker = $$props.panel.shadowRoot.querySelector(
               `[data-builder-field="${get(fieldPrefix)}anchor"]`,
@@ -10014,9 +10614,9 @@ function TimingEditor($$anchor, $$props) {
           },
         })),
       );
-      var node_5 = sibling(node_4, 2);
+      var node_7 = sibling(node_6, 2);
       {
-        var consequent_2 = ($$anchor3) => {
+        var consequent_3 = ($$anchor3) => {
           var p = root_34();
           var text_3 = only_child(p, true);
           template_effect(
@@ -10024,19 +10624,40 @@ function TimingEditor($$anchor, $$props) {
             [
               () =>
                 get(t)(
-                  "Uses the time currently reported by Home Assistant. Time-only helpers repeat daily; dated sources run only on their reported date.",
+                  "This start follows the selected window's closing time.",
                 ),
             ],
           );
           append($$anchor3, p);
         };
-        var d = user_derived(() => get(time).anchor.startsWith("entity:"));
-        if_block(node_5, ($$render) => {
-          if (get(d)) $$render(consequent_2);
+        var d = user_derived(() => get(time).anchor.startsWith("random:"));
+        if_block(node_7, ($$render) => {
+          if (get(d)) $$render(consequent_3);
         });
       }
-      var node_6 = sibling(node_5, 2);
-      EditorField(node_6, {
+      var node_8 = sibling(node_7, 2);
+      {
+        var consequent_4 = ($$anchor3) => {
+          var p_1 = root_34();
+          var text_4 = only_child(p_1, true);
+          template_effect(
+            ($0) => set_text(text_4, $0),
+            [
+              () =>
+                get(t)(
+                  "Uses the time currently reported by Home Assistant. Time-only helpers repeat daily; dated sources run only on their reported date.",
+                ),
+            ],
+          );
+          append($$anchor3, p_1);
+        };
+        var d_1 = user_derived(() => get(time).anchor.startsWith("entity:"));
+        if_block(node_8, ($$render) => {
+          if (get(d_1)) $$render(consequent_4);
+        });
+      }
+      var node_9 = sibling(node_8, 2);
+      EditorField(node_9, {
         get panel() {
           return $$props.panel;
         },
@@ -10051,15 +10672,15 @@ function TimingEditor($$anchor, $$props) {
         update: (value) => (get(time).startOffset = value),
         options: { placeholder: "30m or 1h" },
       });
-      var node_7 = sibling(node_6, 2);
+      var node_10 = sibling(node_9, 2);
       {
-        var consequent_3 = ($$anchor3) => {
+        var consequent_5 = ($$anchor3) => {
           {
             const trailing = ($$anchor4) => {
               var button_1 = root_15();
-              var text_4 = only_child(button_1, true);
+              var text_5 = only_child(button_1, true);
               template_effect(
-                ($0) => set_text(text_4, $0),
+                ($0) => set_text(text_5, $0),
                 [() => get(t)("Remove end offset")],
               );
               delegated("click", button_1, () => {
@@ -10091,9 +10712,9 @@ function TimingEditor($$anchor, $$props) {
         };
         var alternate_1 = ($$anchor3) => {
           var button_2 = root_15();
-          var text_5 = only_child(button_2, true);
+          var text_6 = only_child(button_2, true);
           template_effect(
-            ($0) => set_text(text_5, $0),
+            ($0) => set_text(text_6, $0),
             [() => get(t)("Add end offset")],
           );
           delegated("click", button_2, () => {
@@ -10102,28 +10723,20 @@ function TimingEditor($$anchor, $$props) {
           });
           append($$anchor3, button_2);
         };
-        if_block(node_7, ($$render) => {
+        if_block(node_10, ($$render) => {
           if (
             get(time).endOffset ||
             get(editor).showEndOffset ||
             get(editor).errors.endOffset
           )
-            $$render(consequent_3);
+            $$render(consequent_5);
           else $$render(alternate_1, -1);
         });
       }
-      append($$anchor2, fragment_2);
+      append($$anchor2, fragment_3);
     };
-    if_block(node_1, ($$render) => {
-      if (get(time).mode === "absolute") $$render(consequent_1);
-      else $$render(alternate_2, -1);
-    });
-  }
-  var p_1 = sibling(node_1, 2);
-  var text_6 = only_child(p_1, true);
-  var node_8 = sibling(p_1, 2);
-  {
-    var consequent_4 = ($$anchor2) => {
+    var d_2 = user_derived(() => modes().some(([mode]) => mode === "relative"));
+    var alternate_2 = ($$anchor2) => {
       var p_2 = root_34();
       var text_7 = only_child(p_2, true);
       template_effect(
@@ -10131,19 +10744,84 @@ function TimingEditor($$anchor, $$props) {
         [
           () =>
             get(t)(
-              "This program is managed by a file. Add changes to your draft, then export them from Settings.",
+              "Choose Absolute time or Duration to replace this saved relative window end.",
             ),
         ],
       );
       append($$anchor2, p_2);
     };
-    if_block(node_8, ($$render) => {
-      if ($$props.panel.document?.source === "file") $$render(consequent_4);
+    if_block(node_1, ($$render) => {
+      if (get(time).mode === "absolute") $$render(consequent_1);
+      else if (get(time).mode === "duration") $$render(consequent_2, 1);
+      else if (get(d_2)) $$render(consequent_6, 2);
+      else $$render(alternate_2, -1);
+    });
+  }
+  var node_11 = sibling(node_1, 2);
+  {
+    var consequent_7 = ($$anchor2) => {
+      var p_3 = root_52();
+      var text_8 = only_child(p_3, true);
+      template_effect(
+        ($0) => set_text(text_8, $0),
+        [
+          () =>
+            timingExplanation(
+              get(time),
+              [
+                ...stepEntries(
+                  $$props.panel.draft,
+                  $$props.panel.catalog,
+                  $$props.panel.t,
+                ),
+                ...randomEntries(
+                  $$props.panel.draft,
+                  $$props.panel.catalog,
+                ).map((entry) => ({
+                  id: `random:${entry.id}`,
+                  name: entry.name,
+                })),
+              ],
+              get(t),
+              $$props.panel.catalog.time_sources,
+              {
+                locale: $$props.panel._hass.locale,
+                days: get(form).days,
+                subject: explanationSubject(),
+                includeHints: explanationSubject() === "Runs",
+              },
+            ),
+        ],
+      );
+      append($$anchor2, p_3);
+    };
+    if_block(node_11, ($$render) => {
+      if (showExplanation()) $$render(consequent_7);
+    });
+  }
+  var node_12 = sibling(node_11, 2);
+  {
+    var consequent_8 = ($$anchor2) => {
+      var p_4 = root_34();
+      var text_9 = only_child(p_4, true);
+      template_effect(
+        ($0) => set_text(text_9, $0),
+        [
+          () =>
+            get(t)(
+              "This program is managed by a file. Add changes to your draft, then export them from Settings.",
+            ),
+        ],
+      );
+      append($$anchor2, p_4);
+    };
+    if_block(node_12, ($$render) => {
+      if ($$props.panel.document?.source === "file") $$render(consequent_8);
     });
   }
   reset(div);
   template_effect(
-    ($0, $1) => {
+    ($0) => {
       set_attribute2(h3, "id", `step-${get(fieldPrefix)}timing-heading`);
       set_text(text2, $0);
       set_attribute2(
@@ -10151,23 +10829,8 @@ function TimingEditor($$anchor, $$props) {
         "aria-labelledby",
         `step-${get(fieldPrefix)}timing-heading`,
       );
-      set_text(text_6, $1);
     },
-    [
-      () => get(t)(heading()),
-      () =>
-        timingExplanation(
-          get(time),
-          stepEntries(
-            $$props.panel.draft,
-            $$props.panel.catalog,
-            $$props.panel.t,
-          ),
-          get(t),
-          $$props.panel.catalog.time_sources,
-          { locale: $$props.panel._hass.locale, days: get(form).days },
-        ),
-    ],
+    [() => get(t)(heading())],
   );
   append($$anchor, div);
   pop();
@@ -10235,7 +10898,9 @@ function EntitiesEditor($$anchor, $$props) {
                   domain:
                     get(form).kind === "scene"
                       ? ["scene"]
-                      : ["light", "switch"],
+                      : get(form).kind === "cover"
+                        ? ["cover"]
+                        : ["light", "switch"],
                 },
               }),
         },
@@ -10303,17 +10968,19 @@ function EntitiesEditor($$anchor, $$props) {
 }
 
 // custom_components/occupied/frontend/ActionEditor.svelte
-var root9 = from_html(
-  `<div data-editor-section="action"><h3> </h3> <!> <!> <!> <!></div>`,
+var root9 = from_html(`<!> <!> <p class="hint"> </p> <p class="hint"> </p>`, 1);
+var root_17 = from_html(
+  `<div data-editor-section="action"><h3> </h3> <!> <!> <!> <!> <!></div>`,
 );
 function ActionEditor($$anchor, $$props) {
+  push($$props, true);
   let heading = prop($$props, "heading", 3, "Action"),
     kindLabel = prop($$props, "kindLabel", 3, "Step type"),
     entityLabel = prop($$props, "entityLabel", 3, "Entities"),
     hideEntities = prop($$props, "hideEntities", 3, false);
   let form = user_derived(() => $$props.context.form),
     t = user_derived(() => $$props.context.t);
-  var div = root9();
+  var div = root_17();
   var h3 = child(div);
   var text2 = only_child(h3, true);
   var node = sibling(h3, 2);
@@ -10341,12 +11008,19 @@ function ActionEditor($$anchor, $$props) {
         if (get(form).kind !== kind) get(form).entities = [];
         get(form).kind = kind;
         if (kind === "entities") get(form).action = value;
+        if (
+          kind === "cover" &&
+          !coverActions.some(([action2]) => action2 === get(form).service)
+        ) {
+          get(form).service = "cover.open_cover";
+        }
       },
       options: {
         hideLabel: true,
         choices: [
           ["turn_on", "Turn on lights/switches"],
           ["turn_off", "Turn off lights/switches"],
+          ["cover", "Control covers"],
           ["service", "Entity service action"],
           ["scene", "Activate Home Assistant scene"],
         ],
@@ -10397,7 +11071,101 @@ function ActionEditor($$anchor, $$props) {
   }
   var node_3 = sibling(node_2, 2);
   {
-    var consequent_2 = ($$anchor2) => {
+    var consequent_4 = ($$anchor2) => {
+      var fragment_2 = root9();
+      var node_4 = first_child(fragment_2);
+      {
+        let $0 = user_derived(() => ({ choices: coverActions, render: true }));
+        EditorField(node_4, {
+          get panel() {
+            return $$props.panel;
+          },
+          get context() {
+            return $$props.context;
+          },
+          key: "service",
+          label: "Cover action",
+          get value() {
+            return get(form).service;
+          },
+          update: (value) => (get(form).service = value),
+          get options() {
+            return get($0);
+          },
+        });
+      }
+      var node_5 = sibling(node_4, 2);
+      {
+        var consequent_2 = ($$anchor3) => {
+          EditorField($$anchor3, {
+            get panel() {
+              return $$props.panel;
+            },
+            get context() {
+              return $$props.context;
+            },
+            key: "position",
+            label: "Position (%)",
+            get value() {
+              return get(form).position;
+            },
+            update: (value) => (get(form).position = value),
+            options: { type: "number", min: 0, max: 100, step: 1 },
+          });
+        };
+        var consequent_3 = ($$anchor3) => {
+          EditorField($$anchor3, {
+            get panel() {
+              return $$props.panel;
+            },
+            get context() {
+              return $$props.context;
+            },
+            key: "tiltPosition",
+            label: "Tilt position (%)",
+            get value() {
+              return get(form).tiltPosition;
+            },
+            update: (value) => (get(form).tiltPosition = value),
+            options: { type: "number", min: 0, max: 100, step: 1 },
+          });
+        };
+        if_block(node_5, ($$render) => {
+          if (get(form).service === "cover.set_cover_position")
+            $$render(consequent_2);
+          else if (get(form).service === "cover.set_cover_tilt_position")
+            $$render(consequent_3, 1);
+        });
+      }
+      var p = sibling(node_5, 2);
+      var text_1 = only_child(p, true);
+      var p_1 = sibling(p, 2);
+      var text_2 = only_child(p_1, true);
+      template_effect(
+        ($0, $1) => {
+          set_text(text_1, $0);
+          set_text(text_2, $1);
+        },
+        [
+          () =>
+            get(t)(
+              "0% is closed; 100% is open. Device support determines which cover actions are available.",
+            ),
+          () =>
+            get(t)(
+              "Covers run only at scheduled times. Enabling late skips past cover actions.",
+            ),
+        ],
+      );
+      append($$anchor2, fragment_2);
+    };
+    if_block(node_3, ($$render) => {
+      if (get(form).kind === "cover") $$render(consequent_4);
+    });
+  }
+  var node_6 = sibling(node_3, 2);
+  {
+    var consequent_5 = ($$anchor2) => {
       EditorField($$anchor2, {
         get panel() {
           return $$props.panel;
@@ -10414,13 +11182,15 @@ function ActionEditor($$anchor, $$props) {
         options: { multiline: true },
       });
     };
-    if_block(node_3, ($$render) => {
-      if (get(form).kind !== "entities") $$render(consequent_2);
+    if_block(node_6, ($$render) => {
+      if (get(form).kind === "scene" || get(form).kind === "service")
+        $$render(consequent_5);
     });
   }
   reset(div);
   template_effect(($0) => set_text(text2, $0), [() => get(t)(heading())]);
   append($$anchor, div);
+  pop();
 }
 
 // custom_components/occupied/frontend/StepEditor.svelte
@@ -10580,9 +11350,9 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/StepsView.svelte
 var root11 = from_html(
-  `<section class="step-empty"><button type="button" class="primary" data-create-step=""> </button></section>`,
+  `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-step=""> </button></section>`,
 );
-var root_17 = from_html(`<span class="step-status-badge"> </span>`);
+var root_18 = from_html(`<span class="step-status-badge"> </span>`);
 var root_26 = from_html(`<span class="step-warning-message"> </span>`);
 var root_35 = from_html(
   `<span class="step-row-warning"><ha-icon></ha-icon> <span></span></span>`,
@@ -10590,7 +11360,7 @@ var root_35 = from_html(
 );
 var root_43 = from_html(`<span class="step-row-time"> </span>`);
 var root_53 = from_html(`<div><!></div>`);
-var root_62 = from_html(
+var root_63 = from_html(
   `<div><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong> <!></span> <span class="hint"> </span></span> <!></button> <!></div>`,
 );
 var root_7 = from_html(
@@ -10622,15 +11392,28 @@ function StepsView($$anchor, $$props) {
   {
     var consequent = ($$anchor2) => {
       var section = root11();
-      var button = child(section);
-      var text2 = only_child(button, true);
+      var h2 = child(section);
+      var text2 = only_child(h2, true);
+      var p = sibling(h2, 2);
+      var text_1 = only_child(p, true);
+      var button = sibling(p, 2);
+      var text_2 = only_child(button, true);
       reset(section);
       template_effect(
-        ($0) => {
-          button.disabled = $$props.panel.busy;
+        ($0, $1, $2) => {
           set_text(text2, $0);
+          set_text(text_1, $1);
+          button.disabled = $$props.panel.busy;
+          set_text(text_2, $2);
         },
-        [() => get(t)("Create your first step")],
+        [
+          () => get(t)("Scheduled activity"),
+          () =>
+            get(t)(
+              "Run actions at specific times, around sunrise or sunset, or relative to other steps. Choose which devices to control and what they should do.",
+            ),
+          () => get(t)("Create your first step"),
+        ],
       );
       delegated("click", button, () => startStep($$props.panel));
       append($$anchor2, section);
@@ -10668,21 +11451,21 @@ function StepsView($$anchor, $$props) {
               (!$$props.panel.stepEditor &&
                 $$props.panel.selectedStep === entry().id),
           );
-          var div_2 = root_62();
+          var div_2 = root_63();
           let classes;
           var button_1 = child(div_2);
           let classes_1;
           var span = child(button_1);
           var span_1 = child(span);
           var strong = child(span_1);
-          var text_1 = only_child(strong, true);
+          var text_3 = only_child(strong, true);
           var node_1 = sibling(strong, 2);
           {
             var consequent_1 = ($$anchor4) => {
-              var span_2 = root_17();
-              var text_2 = only_child(span_2, true);
+              var span_2 = root_18();
+              var text_4 = only_child(span_2, true);
               template_effect(
-                ($0) => set_text(text_2, $0),
+                ($0) => set_text(text_4, $0),
                 [() => get(t)("Disabled")],
               );
               append($$anchor4, span_2);
@@ -10693,7 +11476,7 @@ function StepsView($$anchor, $$props) {
           }
           reset(span_1);
           var span_3 = sibling(span_1, 2);
-          var text_3 = only_child(span_3);
+          var text_5 = only_child(span_3);
           reset(span);
           var node_2 = sibling(span, 2);
           {
@@ -10710,8 +11493,8 @@ function StepsView($$anchor, $$props) {
                 index,
                 ($$anchor5, warning) => {
                   var span_6 = root_26();
-                  var text_4 = only_child(span_6, true);
-                  template_effect(() => set_text(text_4, get(warning).message));
+                  var text_6 = only_child(span_6, true);
+                  template_effect(() => set_text(text_6, get(warning).message));
                   append($$anchor5, span_6);
                 },
               );
@@ -10724,9 +11507,9 @@ function StepsView($$anchor, $$props) {
             };
             var consequent_3 = ($$anchor4) => {
               var span_7 = root_43();
-              var text_5 = only_child(span_7, true);
+              var text_7 = only_child(span_7, true);
               template_effect(
-                ($0) => set_text(text_5, $0),
+                ($0) => set_text(text_7, $0),
                 [
                   () =>
                     timingSummary(
@@ -10802,9 +11585,9 @@ function StepsView($$anchor, $$props) {
                 "aria-describedby",
                 get(warnings).length ? `step-warning-${entry().id}` : void 0,
               );
-              set_text(text_1, entry().name);
+              set_text(text_3, entry().name);
               set_text(
-                text_3,
+                text_5,
                 `${$2 ?? ""} \xB7
                 ${$3 ?? ""}`,
               );
@@ -10829,12 +11612,12 @@ function StepsView($$anchor, $$props) {
       reset(div_1);
       reset(div);
       var button_2 = sibling(div, 2);
-      var text_6 = only_child(button_2, true);
+      var text_8 = only_child(button_2, true);
       template_effect(
         ($0, $1) => {
           set_attribute2(div_1, "aria-label", $0);
           button_2.disabled = $$props.panel.busy;
-          set_text(text_6, $1);
+          set_text(text_8, $1);
         },
         [() => get(t)("Steps"), () => get(t)("Create step")],
       );
@@ -10853,7 +11636,7 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/SettingsView.svelte
 var root12 = from_html(`<span class="changes svelte-82irif"> </span>`);
-var root_18 = from_html(
+var root_19 = from_html(
   `<section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <div class="yaml-actions svelte-82irif"><button type="button" class="primary"> </button> <button type="button"> </button> <button type="button" class="download svelte-82irif"> </button></div></section>`,
   2,
 );
@@ -10886,7 +11669,7 @@ function SettingsView($$anchor, $$props) {
       };
     }
   });
-  var section = root_18();
+  var section = root_19();
   let classes;
   var h2 = child(section);
   var text2 = child(h2);
@@ -11068,6 +11851,7 @@ function previewStateHistory(plan, _program, names = {}, t = (text2) => text2) {
   const start = Date.parse(plan.start),
     end = Date.parse(plan.end);
   const entities = /* @__PURE__ */ new Map();
+  const covers = /* @__PURE__ */ new Map();
   const stateLabels = { on: "On", off: "Off" };
   const label = (state2) => t(stateLabels[state2] || "Unknown");
   for (const event2 of [...plan.events].sort(
@@ -11079,7 +11863,7 @@ function previewStateHistory(plan, _program, names = {}, t = (text2) => text2) {
     }
     const typed = /^(light|switch)\.turn_(on|off)$/.test(event2.action.action);
     for (const entity of event2.action.entities) {
-      if (!/^(light|switch)\./.test(entity)) {
+      if (!/^(light|switch|cover)\./.test(entity)) {
         continue;
       }
       let history2 = entities.get(entity);
@@ -11098,16 +11882,45 @@ function previewStateHistory(plan, _program, names = {}, t = (text2) => text2) {
         entities.set(entity, history2);
       }
       const intended = event2.action.action.endsWith("turn_on") ? "on" : "off";
-      const state2 = typed ? intended : "unknown";
+      let state2 =
+        typed && event2.action.action.startsWith(`${entity.split(".", 1)[0]}.`)
+          ? intended
+          : "unknown";
+      let localized = label(state2);
+      if (entity.startsWith("cover.")) {
+        const target = coverTarget(event2.action, covers.get(entity));
+        covers.set(entity, target);
+        const parts = [];
+        if (target.position !== void 0) {
+          let position = t("Position {position}%").replace("{position}", () =>
+            String(target.position),
+          );
+          if (target.position === 100) {
+            position = t("Open");
+          } else if (target.position === 0) {
+            position = t("Closed");
+          }
+          parts.push(position);
+        }
+        if (target.tilt_position !== void 0) {
+          parts.push(
+            t("Tilt {position}%").replace("{position}", () =>
+              String(target.tilt_position),
+            ),
+          );
+        }
+        state2 = parts.length > 0 ? JSON.stringify(target) : "unknown";
+        localized = parts.length > 0 ? parts.join(" \xB7 ") : label("unknown");
+      }
       const previous = history2.data.at(-1);
       const time = Math.max(start, at);
       if (previous.last_changed === time) {
         previous.state = state2;
-        previous.state_localize = label(state2);
+        previous.state_localize = localized;
       } else if (previous.state !== state2) {
         history2.data.push({
           state: state2,
-          state_localize: label(state2),
+          state_localize: localized,
           last_changed: time,
         });
       }
@@ -11145,12 +11958,12 @@ function stamp(value, zone, locale) {
 
 // custom_components/occupied/frontend/PreviewStateGraph.svelte
 var root13 = from_html(`<p class="hint"> </p>`);
-var root_19 = from_html(
+var root_110 = from_html(
   `<state-history-chart-timeline></state-history-chart-timeline>`,
   2,
 );
 var root_27 = from_html(`<p role="status"> </p>`);
-var root_36 = from_html(`<!> <!>`, 1);
+var root_36 = from_html(`<!> <!> <!>`, 1);
 var $$css2 = {
   hash: "svelte-1cnjgem",
   code: "state-history-chart-timeline.svelte-1cnjgem {display:block;width:100%;}state-history-chart-timeline[hidden].svelte-1cnjgem {display:none;}",
@@ -11212,7 +12025,7 @@ function PreviewStateGraph($$anchor, $$props) {
             $$props.t(
               $$props.plan.events.length === 0
                 ? "No steps are scheduled for this date."
-                : "No light or switch actions on this date. Other actions are listed in Event details.",
+                : "No light, switch, or cover actions on this date. Other actions are listed in Event details.",
             ),
         ],
       );
@@ -11232,14 +12045,37 @@ function PreviewStateGraph($$anchor, $$props) {
         [
           () =>
             $$props.t(
-              "The Home Assistant graph could not load. Planned actions are available in Event details.",
+              "Cover strips show planned position and tilt targets. Travel time and positions after stop actions are unknown.",
             ),
         ],
       );
       append($$anchor2, p_1);
     };
+    var d = user_derived(() =>
+      get(data).some((entity) => entity.entity_id.startsWith("cover.")),
+    );
+    if_block(node_1, ($$render) => {
+      if (get(d)) $$render(consequent_1);
+    });
+  }
+  var node_2 = sibling(node_1, 2);
+  {
     var consequent_2 = ($$anchor2) => {
-      var state_history_chart_timeline = root_19();
+      var p_2 = root13();
+      var text_2 = only_child(p_2, true);
+      template_effect(
+        ($0) => set_text(text_2, $0),
+        [
+          () =>
+            $$props.t(
+              "The Home Assistant graph could not load. Planned actions are available in Event details.",
+            ),
+        ],
+      );
+      append($$anchor2, p_2);
+    };
+    var consequent_3 = ($$anchor2) => {
+      var state_history_chart_timeline = root_110();
       template_effect(() =>
         set_custom_element_data(
           state_history_chart_timeline,
@@ -11274,179 +12110,35 @@ function PreviewStateGraph($$anchor, $$props) {
       );
       append($$anchor2, state_history_chart_timeline);
     };
-    var consequent_3 = ($$anchor2) => {
-      var p_2 = root_27();
-      var text_2 = only_child(p_2, true);
+    var consequent_4 = ($$anchor2) => {
+      var p_3 = root_27();
+      var text_3 = only_child(p_3, true);
       template_effect(
-        ($0) => set_text(text_2, $0),
+        ($0) => set_text(text_3, $0),
         [() => $$props.t("Loading graph\u2026")],
       );
-      append($$anchor2, p_2);
+      append($$anchor2, p_3);
     };
-    if_block(node_1, ($$render) => {
-      if (get(failed) && get(data).length > 0) $$render(consequent_1);
-      else if (get(ready)) $$render(consequent_2, 1);
-      else if (get(data).length > 0) $$render(consequent_3, 2);
+    if_block(node_2, ($$render) => {
+      if (get(failed) && get(data).length > 0) $$render(consequent_2);
+      else if (get(ready)) $$render(consequent_3, 1);
+      else if (get(data).length > 0) $$render(consequent_4, 2);
     });
   }
   append($$anchor, fragment);
   pop();
 }
 
-// custom_components/occupied/frontend/random-model.ts
-function randomEntries(program, catalog, t = (text2) => text2) {
-  return Object.entries(program.random || {}).map(([id, event2]) => ({
-    ...event2,
-    id,
-    path: ["random", id],
-    days: [...(event2.days || days)],
-    name:
-      event2.name ||
-      `${catalog ? entityName(catalog, event2.on.entities[0]) : event2.on.entities[0]} \xB7 ${t("Random event")}`,
-  }));
-}
-function randomEditor(program, entry) {
-  const source2 = entry ? program.random?.[entry.id] : void 0;
-  const on2 = actionForm(source2?.on);
-  const off = actionForm(source2?.off || { action: "turn_off", entities: [] });
-  const form = {
-    name: source2?.name || "",
-    enabled: source2?.enabled !== false,
-    days: [...(source2?.days || days)],
-    start: timingForm(source2?.start),
-    end: timingForm(source2?.end || { absolute_time: { start: "23:00" } }),
-    minDuration: source2?.min_duration || "5m",
-    maxDuration: source2?.max_duration || "15m",
-    count: String(source2?.count ?? 3),
-    on: on2,
-    off,
-    sameEntities:
-      on2.kind === "entities" &&
-      off.kind === "entities" &&
-      JSON.stringify([...on2.entities].sort()) ===
-        JSON.stringify([...off.entities].sort()),
-  };
-  return {
-    id: entry?.id || identifier(program, "random", "random"),
-    existing: !!entry,
-    form,
-    original: copy(form),
-    errors: {},
-    startOptions: {},
-    endOptions: {},
-  };
-}
-function hasRandomChanges(editor) {
-  return JSON.stringify(editor.form) !== JSON.stringify(editor.original);
-}
-function prefixedErrors(errors, prefix) {
-  return Object.fromEntries(
-    Object.entries(errors).map(([field, message]) => [
-      `${prefix}${field}`,
-      message,
-    ]),
-  );
-}
-function randomErrors(program, editor) {
-  const { form } = editor;
-  const errors = {
-    ...prefixedErrors(timingErrors(program, form.start), "start."),
-    ...prefixedErrors(timingErrors(program, form.end), "end."),
-    ...prefixedErrors(actionErrors(form.on), "on."),
-    ...prefixedErrors(
-      actionErrors(
-        form.sameEntities
-          ? { ...form.off, entities: form.on.entities }
-          : form.off,
-      ),
-      "off.",
-    ),
-  };
-  const minimum = durationSeconds(form.minDuration),
-    maximum = durationSeconds(form.maxDuration);
-  if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604800) {
-    errors.minDuration =
-      "Use a positive duration within seven days, for example 5m or 1h.";
-  }
-  if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604800) {
-    errors.maxDuration =
-      "Use a positive duration within seven days, for example 5m or 1h.";
-  } else if (maximum < minimum) {
-    errors.maxDuration =
-      "Maximum duration must be at least the minimum duration.";
-  }
-  const count = Number(form.count);
-  if (!Number.isSafeInteger(count) || count < 1 || count > 1e3) {
-    errors.count = "Choose a whole number from 1 to 1000.";
-  }
-  if (form.days.length === 0) {
-    errors.days = "Choose at least one day.";
-  }
-  if (
-    form.start.mode === "absolute" &&
-    form.end.mode === "absolute" &&
-    !form.start.end &&
-    !form.end.end &&
-    !errors["start.start"] &&
-    !errors["end.start"]
-  ) {
-    const seconds = (clock) =>
-      clock
-        .split(":")
-        .reduce((total, part, i) => total + Number(part) * [3600, 60, 1][i], 0);
-    let span = seconds(form.end.start) - seconds(form.start.start);
-    if (span < 0) {
-      span += 86400;
-    }
-    if (span === 0) {
-      errors["end.start"] = "Window end must be after its start.";
-    } else if (minimum > span) {
-      errors.minDuration = "Minimum duration does not fit inside this window.";
-    }
-  }
-  return errors;
-}
-function buildRandom(program, editor) {
-  const errors = randomErrors(program, editor);
-  if (Object.keys(errors).length > 0) {
-    throw new Error(Object.values(errors)[0]);
-  }
-  if (editor.existing && !program.random?.[editor.id]) {
-    throw new Error(
-      "This random event changed elsewhere. Cancel and reopen it before saving.",
-    );
-  }
-  const next2 = copy(program),
-    { form } = editor;
-  (next2.random ||= {})[editor.id] = {
-    ...(form.name.trim() && { name: form.name.trim() }),
-    ...(!form.enabled && { enabled: false }),
-    days: [...form.days],
-    start: formTiming(form.start),
-    end: formTiming(form.end),
-    min_duration: form.minDuration,
-    max_duration: form.maxDuration,
-    count: Number(form.count),
-    on: buildAction(form.on),
-    off: buildAction(
-      form.sameEntities
-        ? { ...form.off, entities: form.on.entities }
-        : form.off,
-    ),
-  };
-  return next2;
-}
-
 // custom_components/occupied/frontend/Timeline.svelte
 var root14 = from_html(`<h2> </h2>`);
-var root_110 = from_html(`<th scope="col"> </th>`);
+var root_111 = from_html(`<th scope="col"> </th>`);
 var root_28 = from_html(`<td> </td>`);
 var root_37 = from_html(`<tr></tr>`);
 var root_44 = from_html(
   `<details><summary> </summary> <p class="hint"> </p> <input type="search"/> <div><div class="table-wrap"><table><thead><tr></tr></thead><tbody></tbody></table></div> <div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div></div></details>`,
 );
 var root_54 = from_html(`<p> </p>`);
-var root_63 = from_html(`<!> <!> <!>`, 1);
+var root_64 = from_html(`<!> <!> <!>`, 1);
 var root_72 = from_html(`<p role="status"> </p>`);
 var root_8 = from_html(`<section><!> <!></section>`);
 function Timeline($$anchor, $$props) {
@@ -11517,7 +12209,7 @@ function Timeline($$anchor, $$props) {
   var node_2 = sibling(node, 2);
   {
     var consequent_3 = ($$anchor2) => {
-      var fragment_1 = root_63();
+      var fragment_1 = root_64();
       var node_3 = first_child(fragment_1);
       PreviewStateGraph(node_3, {
         get plan() {
@@ -11559,7 +12251,7 @@ function Timeline($$anchor, $$props) {
             () => ["Planned time", "Source", "Action", "Targets"],
             index,
             ($$anchor4, label) => {
-              var th = root_110();
+              var th = root_111();
               var text_4 = only_child(th, true);
               template_effect(($0) => set_text(text_4, $0), [() => t()(label)]);
               append($$anchor4, th);
@@ -11714,7 +12406,7 @@ delegate(["input", "click"]);
 
 // custom_components/occupied/frontend/PreviewView.svelte
 var root15 = from_html(`<span class="hint" role="status"> </span>`);
-var root_111 = from_html(
+var root_112 = from_html(
   `<div class="schedule-heading svelte-5w63kc"><h2 aria-live="polite" class="svelte-5w63kc"> </h2> <!> <div class="day-navigation svelte-5w63kc" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-5w63kc"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
   2,
 );
@@ -11726,7 +12418,7 @@ function PreviewView($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css3);
   const dayHeading = ($$anchor2) => {
-    var div = root_111();
+    var div = root_112();
     var h2 = child(div);
     var text2 = only_child(h2, true);
     var node = sibling(h2, 2);
@@ -11977,7 +12669,10 @@ function createRandomEditorContext(panel) {
     focusEditor(panel, key2);
   };
   const changed = (key2) => {
-    if (form.on.kind !== "entities" || form.off.kind !== "entities") {
+    if (
+      !["entities", "cover"].includes(form.on.kind) ||
+      form.on.kind !== form.off.kind
+    ) {
       form.sameEntities = false;
     }
     if (form.sameEntities) {
@@ -12025,6 +12720,7 @@ function createRandomEditorContext(panel) {
     time: new Proxy(form[edge], {}),
     t,
     fieldPrefix: `${edge}.`,
+    ...(edge === "start" && { randomId: editor.id }),
     changed: (key2) => changed(`${edge}.${key2}`),
     refresh: (key2) => refresh(key2 ? `${edge}.${key2}` : void 0),
   });
@@ -12073,6 +12769,13 @@ async function deleteRandom(panel) {
     return;
   }
   const candidate = copy(panel.draft);
+  if (randomReferences(candidate, editor.id).length > 0) {
+    panel.error = panel.t(
+      "Other random events depend on this window. Change their starts before deleting.",
+    );
+    panel.flush();
+    return;
+  }
   delete candidate.random?.[editor.id];
   if (panel.document?.source === "file") {
     panel.randomEditor = null;
@@ -12083,26 +12786,74 @@ async function deleteRandom(panel) {
 }
 
 // custom_components/occupied/frontend/DeleteRandomDialog.svelte
-var root17 = from_html(
-  `<dialog class="step-delete-dialog" aria-labelledby="random-delete-title"><h2 id="random-delete-title"> </h2> <p> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog>`,
+var root17 = from_html(`<li> </li>`);
+var root_113 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
+var root_29 = from_html(
+  `<dialog class="step-delete-dialog" aria-labelledby="random-delete-title"><h2 id="random-delete-title"> </h2> <p> </p> <!> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog>`,
 );
 function DeleteRandomDialog($$anchor, $$props) {
   push($$props, true);
   let dialog;
+  let dependents = user_derived(() =>
+    randomEntries($$props.panel.draft, $$props.panel.catalog).filter((entry) =>
+      randomReferences(
+        $$props.panel.draft,
+        $$props.panel.randomEditor?.id || "",
+      ).some((path) => path[1] === entry.id),
+    ),
+  );
   onMount(() => {
     dialog.showModal();
     dialog.querySelector("button")?.focus();
   });
-  var dialog_1 = root17();
+  var dialog_1 = root_29();
   var h2 = child(dialog_1);
   var text2 = only_child(h2, true);
   var p = sibling(h2, 2);
   var text_1 = only_child(p, true);
-  var div = sibling(p, 2);
+  var node = sibling(p, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var fragment = root_113();
+      var p_1 = first_child(fragment);
+      var text_2 = only_child(p_1);
+      var ul = sibling(p_1, 2);
+      each(
+        ul,
+        21,
+        () => get(dependents),
+        index,
+        ($$anchor3, entry) => {
+          var li = root17();
+          var text_3 = only_child(li, true);
+          template_effect(() => set_text(text_3, get(entry).name));
+          append($$anchor3, li);
+        },
+      );
+      reset(ul);
+      var p_2 = sibling(ul, 2);
+      var text_4 = only_child(p_2, true);
+      template_effect(
+        ($0, $1) => {
+          set_text(text_2, `${$0 ?? ""}:`);
+          set_text(text_4, $1);
+        },
+        [
+          () => $$props.panel.t("Used by"),
+          () => $$props.panel.t("Change those relationships before deleting."),
+        ],
+      );
+      append($$anchor2, fragment);
+    };
+    if_block(node, ($$render) => {
+      if (get(dependents).length) $$render(consequent);
+    });
+  }
+  var div = sibling(node, 2);
   var button = child(div);
-  var text_2 = only_child(button, true);
+  var text_5 = only_child(button, true);
   var button_1 = sibling(button, 2);
-  var text_3 = only_child(button_1, true);
+  var text_6 = only_child(button_1, true);
   reset(div);
   reset(dialog_1);
   bind_this(
@@ -12115,9 +12866,10 @@ function DeleteRandomDialog($$anchor, $$props) {
       set_text(text2, $0);
       set_text(text_1, $1);
       button.disabled = $$props.panel.busy;
-      set_text(text_2, $2);
-      button_1.disabled = $$props.panel.busy || $$props.panel.stale;
-      set_text(text_3, $3);
+      set_text(text_5, $2);
+      button_1.disabled =
+        $$props.panel.busy || $$props.panel.stale || !!get(dependents).length;
+      set_text(text_6, $3);
     },
     [
       () => $$props.panel.t("Delete random event?"),
@@ -12142,22 +12894,630 @@ function DeleteRandomDialog($$anchor, $$props) {
 }
 delegate(["click"]);
 
-// custom_components/occupied/frontend/RandomEventEditor.svelte
-var root18 = from_html(
-  `<label class="same-entities svelte-e4ijcz"><input type="checkbox"/> </label>`,
-);
-var root_112 = from_html(`<button type="button"> </button>`);
-var root_29 = from_html(
+// custom_components/occupied/frontend/AdvancedRandomSettings.svelte
+var root18 = from_html(`<button type="button"> </button>`);
+var root_114 = from_html(
   `<label class="step-weekday-option"><input type="checkbox"/><span> </span></label>`,
 );
-var root_38 = from_html(`<button type="button" class="danger"> </button>`);
-var root_45 = from_html(
-  `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <h3> </h3> <div class="random-frequency svelte-e4ijcz"><!> <!> <!></div> <p class="hint"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <details class="random-settings svelte-e4ijcz"><summary> </summary> <label class="svelte-e4ijcz"><input type="checkbox"/> </label> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!></details> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section> <!>`,
+var root_210 = from_html(
+  `<dialog class="step-advanced-dialog" aria-labelledby="random-advanced-title" aria-describedby="random-weekdays-description"><h2 id="random-advanced-title"> </h2> <p id="random-weekdays-description" class="hint"> </p> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!> <p class="hint"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
+);
+function AdvancedRandomSettings($$anchor, $$props) {
+  push($$props, true);
+  let form = user_derived(() => $$props.context.form),
+    t = user_derived(() => $$props.context.t),
+    changed = user_derived(() => $$props.context.changed);
+  let selectedDays = state(proxy(untrack(() => [...get(form).days])));
+  let dialog;
+  const presets = [
+    ["Every day", days],
+    ["Weekdays", days.slice(0, 5)],
+    ["Weekends", days.slice(5)],
+  ];
+  const weekdays = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+  let dayError = user_derived(() =>
+    get(selectedDays).length ? void 0 : get(t)("Choose at least one day."),
+  );
+  onMount(() => {
+    dialog.showModal();
+    dialog.querySelector("input")?.focus();
+  });
+  function apply2() {
+    if ($$props.panel.busy || get(dayError)) return;
+    get(form).days = [...get(selectedDays)];
+    get(changed)("days");
+    dialog.close();
+  }
+  var dialog_1 = root_210();
+  var h2 = child(dialog_1);
+  var text2 = only_child(h2, true);
+  var p = sibling(h2, 2);
+  var text_1 = only_child(p, true);
+  var fieldset = sibling(p, 2);
+  var legend = child(fieldset);
+  var text_2 = only_child(legend, true);
+  var div = sibling(legend, 2);
+  each(
+    div,
+    21,
+    () => presets,
+    index,
+    ($$anchor2, $$item) => {
+      var $$array = user_derived(() => to_array(get($$item), 2));
+      let label = () => get($$array)[0];
+      let selection = () => get($$array)[1];
+      var button = root18();
+      var text_3 = only_child(button, true);
+      template_effect(
+        ($0, $1) => {
+          set_attribute2(button, "aria-pressed", $0);
+          set_text(text_3, $1);
+        },
+        [
+          () =>
+            get(selectedDays).length === selection().length &&
+            selection().every((day) => get(selectedDays).includes(day)),
+          () => get(t)(label()),
+        ],
+      );
+      delegated("click", button, () =>
+        set2(selectedDays, [...selection()], true),
+      );
+      append($$anchor2, button);
+    },
+  );
+  reset(div);
+  var div_1 = sibling(div, 2);
+  each(
+    div_1,
+    21,
+    () => days,
+    index,
+    ($$anchor2, day, index2) => {
+      var label_1 = root_114();
+      var input = child(label_1);
+      remove_input_defaults(input);
+      var span = sibling(input);
+      var text_4 = only_child(span, true);
+      reset(label_1);
+      template_effect(
+        ($0, $1) => {
+          set_checked(input, $0);
+          set_text(text_4, $1);
+        },
+        [
+          () => get(selectedDays).includes(get(day)),
+          () => get(t)(weekdays[index2]),
+        ],
+      );
+      delegated("change", input, (event2) => {
+        set2(
+          selectedDays,
+          days.filter((candidate) =>
+            candidate === get(day)
+              ? event2.currentTarget.checked
+              : get(selectedDays).includes(candidate),
+          ),
+          true,
+        );
+      });
+      append($$anchor2, label_1);
+    },
+  );
+  reset(div_1);
+  reset(fieldset);
+  var node = sibling(fieldset, 2);
+  {
+    let $0 = user_derived(() => (get(dayError) ? { days: get(dayError) } : {}));
+    FieldError(node, {
+      key: "days",
+      get errors() {
+        return get($0);
+      },
+    });
+  }
+  var p_1 = sibling(node, 2);
+  var text_5 = only_child(p_1, true);
+  var div_2 = sibling(p_1, 2);
+  var button_1 = child(div_2);
+  var text_6 = only_child(button_1, true);
+  var button_2 = sibling(button_1, 2);
+  var text_7 = only_child(button_2, true);
+  reset(div_2);
+  reset(dialog_1);
+  bind_this(
+    dialog_1,
+    ($$value) => (dialog = $$value),
+    () => dialog,
+  );
+  template_effect(
+    ($0, $1, $2, $3, $4, $5) => {
+      set_text(text2, $0);
+      set_text(text_1, $1);
+      set_attribute2(
+        fieldset,
+        "aria-describedby",
+        get(dayError) ? "step-error-days" : void 0,
+      );
+      fieldset.disabled = $$props.panel.busy;
+      set_text(text_2, $2);
+      set_text(text_5, $3);
+      set_text(text_6, $4);
+      button_2.disabled = $$props.panel.busy || !!get(dayError);
+      set_text(text_7, $5);
+    },
+    [
+      () => get(t)("Advanced settings"),
+      () => get(t)("Choose which days this random event should run."),
+      () => get(t)("Run on"),
+      () => get(t)("Apply these settings, then save the random event."),
+      () => get(t)("Cancel"),
+      () => get(t)("Apply"),
+    ],
+  );
+  event("close", dialog_1, function (...$$args) {
+    $$props.onClose?.apply(this, $$args);
+  });
+  delegated("click", button_1, () => dialog.close());
+  delegated("click", button_2, apply2);
+  append($$anchor, dialog_1);
+  pop();
+}
+delegate(["click", "change"]);
+
+// custom_components/occupied/frontend/RandomActions.svelte
+var root19 = from_html(
+  `<div role="separator"></div> <button type="button" role="menuitem" tabindex="-1" class="danger"> </button>`,
   1,
+);
+var root_115 = from_html(
+  `<div class="step-editor-actions"><button type="button" class="icon-button" aria-haspopup="menu" data-random-actions=""><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"></path></svg></button> <div class="step-actions-menu" popover="auto" role="menu" tabindex="-1"><button type="button" role="menuitem" tabindex="-1"> </button> <!></div></div> <!> <!>`,
+  1,
+);
+function RandomActions($$anchor, $$props) {
+  push($$props, true);
+  let context = prop($$props, "context", 7),
+    advancedOpen = prop($$props, "advancedOpen", 15, false);
+  let menuOpen = state(false);
+  let deleteOpen = state(false);
+  let trigger;
+  let menu;
+  let menuId = user_derived(() => `random-actions-${context().editor.id}`);
+  function closeDialog() {
+    const focusTarget =
+      advancedOpen() && $$props.advancedTrigger
+        ? $$props.advancedTrigger
+        : trigger;
+    flushSync(() => {
+      set2(deleteOpen, false);
+      advancedOpen(false);
+    });
+    if (focusTarget.isConnected) focusTarget.focus();
+  }
+  function closeMenu(restoreFocus = true) {
+    menu.hidePopover();
+    set2(menuOpen, false);
+    if (restoreFocus) trigger.focus();
+  }
+  function positionMenu() {
+    if (!menu.matches(":popover-open")) return;
+    const anchor = trigger.getBoundingClientRect();
+    const bounds = menu.getBoundingClientRect();
+    const above = anchor.top - bounds.height - 8;
+    const top = above >= 16 ? above : anchor.bottom + 8;
+    menu.style.left = `${Math.max(16, Math.min(anchor.right - bounds.width, window.innerWidth - bounds.width - 16))}px`;
+    menu.style.top = `${Math.max(16, Math.min(top, window.innerHeight - bounds.height - 16))}px`;
+  }
+  function openMenu(last = false) {
+    menu.showPopover();
+    set2(menuOpen, true);
+    positionMenu();
+    const items = menu.querySelectorAll("button:not(:disabled)");
+    (last ? items[items.length - 1] : items[0])?.focus({ preventScroll: true });
+  }
+  function menuKeydown(event2) {
+    const items = [...menu.querySelectorAll("button:not(:disabled)")];
+    const index2 = items.indexOf($$props.panel.shadowRoot.activeElement);
+    if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event2.key)) {
+      event2.preventDefault();
+      const next2 =
+        event2.key === "Home"
+          ? 0
+          : event2.key === "End"
+            ? items.length - 1
+            : (index2 + (event2.key === "ArrowDown" ? 1 : -1) + items.length) %
+              items.length;
+      items[next2]?.focus();
+    } else if (event2.key === "Escape") {
+      event2.preventDefault();
+      closeMenu();
+    } else if (event2.key === "Tab") {
+      closeMenu();
+    }
+  }
+  var fragment = root_115();
+  event("resize", $window, positionMenu);
+  event("scroll", $window, positionMenu);
+  var div = first_child(fragment);
+  var button = child(div);
+  bind_this(
+    button,
+    ($$value) => (trigger = $$value),
+    () => trigger,
+  );
+  var div_1 = sibling(button, 2);
+  var button_1 = child(div_1);
+  var text2 = only_child(button_1, true);
+  var node = sibling(button_1, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var fragment_1 = root19();
+      var button_2 = sibling(first_child(fragment_1), 2);
+      var text_1 = only_child(button_2, true);
+      template_effect(
+        ($0) => {
+          button_2.disabled = $$props.panel.busy || $$props.panel.stale;
+          set_text(text_1, $0);
+        },
+        [() => $$props.panel.t("Delete random event")],
+      );
+      delegated("click", button_2, () => {
+        closeMenu(false);
+        flushSync(() => set2(deleteOpen, true));
+      });
+      append($$anchor2, fragment_1);
+    };
+    if_block(node, ($$render) => {
+      if (context().editor.existing) $$render(consequent);
+    });
+  }
+  reset(div_1);
+  bind_this(
+    div_1,
+    ($$value) => (menu = $$value),
+    () => menu,
+  );
+  reset(div);
+  var node_1 = sibling(div, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      DeleteRandomDialog($$anchor2, {
+        get panel() {
+          return $$props.panel;
+        },
+        onClose: closeDialog,
+      });
+    };
+    if_block(node_1, ($$render) => {
+      if (get(deleteOpen)) $$render(consequent_1);
+    });
+  }
+  var node_2 = sibling(node_1, 2);
+  {
+    var consequent_2 = ($$anchor2) => {
+      AdvancedRandomSettings($$anchor2, {
+        get panel() {
+          return $$props.panel;
+        },
+        get context() {
+          return context();
+        },
+        onClose: closeDialog,
+      });
+    };
+    if_block(node_2, ($$render) => {
+      if (advancedOpen()) $$render(consequent_2);
+    });
+  }
+  template_effect(
+    ($0, $1, $2, $3) => {
+      set_attribute2(button, "aria-label", $0);
+      set_attribute2(button, "title", $1);
+      set_attribute2(button, "aria-expanded", get(menuOpen));
+      set_attribute2(button, "aria-controls", get(menuId));
+      button.disabled = $$props.panel.busy;
+      set_attribute2(div_1, "id", get(menuId));
+      set_attribute2(div_1, "aria-label", $2);
+      button_1.disabled = $$props.panel.busy;
+      set_text(text2, $3);
+    },
+    [
+      () => $$props.panel.t("Random event actions"),
+      () => $$props.panel.t("Random event actions"),
+      () => $$props.panel.t("Random event actions"),
+      () => $$props.panel.t(context().form.enabled ? "Disable" : "Enable"),
+    ],
+  );
+  delegated("click", button, () => (get(menuOpen) ? closeMenu() : openMenu()));
+  delegated("keydown", button, (event2) => {
+    if (event2.key === "ArrowDown" || event2.key === "ArrowUp") {
+      event2.preventDefault();
+      openMenu(event2.key === "ArrowUp");
+    }
+  });
+  event("toggle", div_1, (event2) =>
+    set2(menuOpen, event2.newState === "open"),
+  );
+  delegated("keydown", div_1, menuKeydown);
+  delegated("click", button_1, () => {
+    closeMenu();
+    context().form.enabled = !context().form.enabled;
+    context().changed("enabled");
+  });
+  append($$anchor, fragment);
+  pop();
+}
+delegate(["click", "keydown"]);
+
+// custom_components/occupied/frontend/random-explanation.ts
+function randomExplanation(
+  form,
+  program,
+  catalog,
+  t = (text2) => text2,
+  locale,
+) {
+  const say = (text2, values = {}) => {
+    let message = t(text2);
+    for (const [key2, value] of Object.entries(values)) {
+      message = message.replaceAll(`{${key2}}`, () => String(value));
+    }
+    return message;
+  };
+  const entries = [
+    ...stepEntries(program, catalog, t),
+    ...randomEntries(program, catalog).map((entry) => ({
+      id: `random:${entry.id}`,
+      name: entry.name,
+    })),
+  ];
+  const start = timingExplanation(
+    form.start,
+    entries,
+    t,
+    catalog.time_sources,
+    {
+      includeHints: false,
+      subject: "Window starts",
+      days: form.days,
+      locale,
+    },
+  );
+  let end = timingExplanation(form.end, entries, t, catalog.time_sources, {
+    includeHints: false,
+    subject: "Window ends",
+    locale,
+  });
+  let windowSeconds;
+  const clockSeconds = (value) =>
+    /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)
+      ? value
+          .split(":")
+          .reduce(
+            (total, part, index2) =>
+              total + Number(part) * [3600, 60, 1][index2],
+            0,
+          )
+      : NaN;
+  if (
+    form.start.mode === "absolute" &&
+    form.end.mode === "absolute" &&
+    !form.start.end &&
+    !form.end.end
+  ) {
+    const difference =
+      clockSeconds(form.end.start) - clockSeconds(form.start.start);
+    if (Number.isFinite(difference)) {
+      windowSeconds = difference < 0 ? difference + 86400 : difference;
+      if (difference < 0) {
+        end += ` ${t("the next day")}`;
+      }
+    }
+  }
+  if (form.end.mode === "duration") {
+    const duration2 = durationSeconds(
+      form.end.maxDuration || form.end.minDuration || "",
+    );
+    if (Number.isFinite(duration2) && duration2 > 0) {
+      windowSeconds = duration2;
+    }
+  }
+  const minDuration = durationSeconds(form.minDuration);
+  const maxDuration = durationSeconds(form.maxDuration);
+  const cannotFit =
+    windowSeconds !== void 0 &&
+    Number.isFinite(minDuration) &&
+    minDuration > windowSeconds;
+  const sentences = [
+    ...(form.enabled ? [] : [t("This random event is disabled.")]),
+    `${start}.`,
+    `${end}.`,
+  ];
+  const minimum = Number(form.minCount);
+  const maximum = Number(form.maxCount);
+  const validCount = (value) =>
+    Number.isSafeInteger(value) && value >= 0 && value <= 1e3;
+  const validCounts =
+    !!form.minCount.trim() &&
+    !!form.maxCount.trim() &&
+    validCount(minimum) &&
+    validCount(maximum) &&
+    maximum >= minimum;
+  if (validCounts && maximum === 0) {
+    sentences.push(
+      t("No events run because the event count is zero."),
+      t("Dependent random events also skip this window."),
+    );
+    return sentences.join(" ");
+  }
+  if (cannotFit) {
+    sentences.push(
+      t(
+        "No events can run because the minimum duration is longer than the window.",
+      ),
+    );
+  } else if (!validCounts) {
+    sentences.push(
+      t("Choose valid event counts to describe how often events run."),
+    );
+  } else if (minimum === maximum) {
+    sentences.push(
+      minimum === 1
+        ? t("One event starts at a random time during each window.")
+        : say("{count} events start at random times during each window.", {
+            count: minimum,
+          }),
+    );
+  } else {
+    sentences.push(
+      say(
+        "Between {min} and {max} events start at random times during each window.",
+        {
+          min: minimum,
+          max: maximum,
+        },
+      ),
+    );
+  }
+  if (validCounts && minimum === 0) {
+    sentences.push(
+      t(
+        "A window may have no events; dependent random events skip that window.",
+      ),
+    );
+  }
+  const duration = (seconds) => durationLabel(seconds, t);
+  if (
+    !Number.isFinite(minDuration) ||
+    !Number.isFinite(maxDuration) ||
+    minDuration <= 0 ||
+    maxDuration < minDuration ||
+    maxDuration > 604800
+  ) {
+    sentences.push(
+      t("Choose valid durations to describe how long each event lasts."),
+    );
+  } else if (windowSeconds !== void 0 && minDuration > windowSeconds) {
+    sentences.push(t("Reduce the minimum duration or extend the window."));
+  } else {
+    const longest =
+      windowSeconds === void 0
+        ? maxDuration
+        : Math.min(maxDuration, windowSeconds);
+    sentences.push(
+      minDuration === longest
+        ? say("Each event lasts {duration}.", {
+            duration: duration(minDuration),
+          })
+        : say("Each event lasts between {min} and {max}.", {
+            min: duration(minDuration),
+            max: duration(longest),
+          }),
+    );
+  }
+  const action2 = (selected) => {
+    const names = [...new Set(selected.entities)].map((id) =>
+      entityName(catalog, id),
+    );
+    if (names.length === 0) {
+      return "";
+    }
+    const last = names.pop();
+    const entities =
+      names.length > 0 ? `${names.join(", ")} ${t("and")} ${last}` : last;
+    if (selected.kind === "scene") {
+      return say("activate {entities}", { entities });
+    }
+    if (selected.kind === "cover") {
+      const descriptions = {
+        "cover.open_cover": "open {entities}",
+        "cover.close_cover": "close {entities}",
+        "cover.stop_cover": "stop {entities}",
+        "cover.set_cover_position":
+          "set the position of {entities} to {position}%",
+        "cover.open_cover_tilt": "open the tilt of {entities}",
+        "cover.close_cover_tilt": "close the tilt of {entities}",
+        "cover.stop_cover_tilt": "stop the tilt of {entities}",
+        "cover.set_cover_tilt_position":
+          "set the tilt of {entities} to {position}%",
+      };
+      const description = descriptions[selected.service];
+      if (!description) {
+        return "";
+      }
+      const position =
+        selected.service === "cover.set_cover_position"
+          ? selected.position
+          : selected.tiltPosition;
+      if (
+        description.includes("{position}") &&
+        (!position.trim() ||
+          !Number.isSafeInteger(Number(position)) ||
+          Number(position) < 0 ||
+          Number(position) > 100)
+      ) {
+        return "";
+      }
+      return say(description, { entities, position });
+    }
+    if (selected.kind === "service") {
+      return selected.service.trim()
+        ? say("run {service} for {entities}", {
+            service: selected.service.trim(),
+            entities,
+          })
+        : "";
+    }
+    return say(
+      selected.action === "turn_off"
+        ? "turn off {entities}"
+        : "turn on {entities}",
+      { entities },
+    );
+  };
+  const on2 = action2(form.on);
+  const off = action2(
+    form.sameEntities ? { ...form.off, entities: form.on.entities } : form.off,
+  );
+  if (on2 && !cannotFit) {
+    sentences.push(say("When each event starts, {action}.", { action: on2 }));
+  }
+  if (off && !cannotFit) {
+    sentences.push(say("When each event ends, {action}.", { action: off }));
+  }
+  const conclusion =
+    validCounts && maximum === 1
+      ? "The event finishes before the window closes."
+      : "Events may overlap, but all finish before the window closes.";
+  sentences.push(
+    t(
+      cannotFit
+        ? "Duration limits take priority over the event count."
+        : conclusion,
+    ),
+  );
+  return sentences.join(" ");
+}
+
+// custom_components/occupied/frontend/RandomEventEditor.svelte
+var root20 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_116 = from_html(
+  `<label class="same-entities svelte-e4ijcz"><input type="checkbox"/> </label>`,
+);
+var root_211 = from_html(
+  `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-advanced=""> </button> <!> <h3> </h3> <div class="random-frequency svelte-e4ijcz"><div><!> <!></div> <div><!></div> <!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <p class="hint"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section>`,
 );
 var $$css4 = {
   hash: "svelte-e4ijcz",
-  code: ".random-frequency.svelte-e4ijcz {display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:16px;}.same-entities.svelte-e4ijcz {display:flex;align-items:center;gap:8px;margin-top:16px;}.random-settings.svelte-e4ijcz {margin-top:24px;}.random-settings.svelte-e4ijcz > label:where(.svelte-e4ijcz) {display:flex;align-items:center;gap:8px;margin-top:16px;}\n  @media (max-width: 600px) {.random-frequency.svelte-e4ijcz {grid-template-columns:1fr;gap:0;}\n  }",
+  code: ".random-advanced-button.svelte-e4ijcz {margin-top:16px;}.random-frequency.svelte-e4ijcz {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}.same-entities.svelte-e4ijcz {display:flex;align-items:center;gap:8px;margin-top:16px;}\n  @media (max-width: 600px) {.random-frequency.svelte-e4ijcz {grid-template-columns:1fr;gap:0;}\n  }",
 };
 function RandomEventEditor($$anchor, $$props) {
   push($$props, true);
@@ -12172,24 +13532,28 @@ function RandomEventEditor($$anchor, $$props) {
     changed = user_derived(() => get(context).changed),
     submit = user_derived(() => get(context).submit),
     cancel = user_derived(() => get(context).cancel);
-  let deleteOpen = state(false);
-  let deleteTrigger = state(void 0);
-  const weekdays = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-  ];
-  const presets = [
-    ["Every day", days],
-    ["Weekdays", days.slice(0, 5)],
-    ["Weekends", days.slice(5)],
-  ];
-  var fragment = root_45();
-  var section = first_child(fragment);
+  let advancedOpen = state(false);
+  let advancedButton;
+  let advancedTrigger = state(void 0);
+  let showMaxCount = state(
+    proxy(
+      untrack(() => Number(get(form).minCount) !== Number(get(form).maxCount)),
+    ),
+  );
+  let maxCountVisible = user_derived(
+    () =>
+      get(showMaxCount) ||
+      Number(get(form).minCount) !== Number(get(form).maxCount) ||
+      !!get(editor).errors.maxCount,
+  );
+  async function save2() {
+    await get(submit)();
+    if ($$props.panel.randomEditor?.errors.days) {
+      set2(advancedTrigger, advancedButton, true);
+      set2(advancedOpen, true);
+    }
+  }
+  var section = root_211();
   var div = child(section);
   var node = child(div);
   {
@@ -12230,6 +13594,10 @@ function RandomEventEditor($$anchor, $$props) {
         return get($0);
       },
       heading: "Window starts",
+      clockLabel: "Window start",
+      windowEndLabel: "Latest window start (optional)",
+      addWindowEndLabel: "Randomize window start",
+      explanationSubject: "Window starts",
     });
   }
   var node_2 = sibling(node_1, 2);
@@ -12243,30 +13611,131 @@ function RandomEventEditor($$anchor, $$props) {
         return get($0);
       },
       heading: "Window ends",
+      clockLabel: "Window end",
+      windowEndLabel: "Latest window end (optional)",
+      addWindowEndLabel: "Randomize window end",
+      explanationSubject: "Window ends",
+      modes: [
+        ["absolute", "Absolute time"],
+        ["duration", "Duration"],
+      ],
     });
   }
   reset(div_1);
-  var h3 = sibling(div_1, 2);
-  var text_1 = only_child(h3, true);
+  var button = sibling(div_1, 2);
+  let classes;
+  var text_1 = only_child(button, true);
+  bind_this(
+    button,
+    ($$value) => (advancedButton = $$value),
+    () => advancedButton,
+  );
+  var node_3 = sibling(button, 2);
+  {
+    let $0 = user_derived(() => ({ ...get(editor).errors }));
+    FieldError(node_3, {
+      key: "days",
+      get errors() {
+        return get($0);
+      },
+    });
+  }
+  var h3 = sibling(node_3, 2);
+  var text_2 = only_child(h3, true);
   var div_2 = sibling(h3, 2);
-  var node_3 = child(div_2);
-  EditorField(node_3, {
+  var div_3 = child(div_2);
+  var node_4 = child(div_3);
+  EditorField(node_4, {
     get panel() {
       return $$props.panel;
     },
     get context() {
       return get(context);
     },
-    key: "count",
-    label: "Times per window",
+    key: "minCount",
+    label: "Minimum events per window",
     get value() {
-      return get(form).count;
+      return get(form).minCount;
     },
-    update: (value) => (get(form).count = value),
-    options: { type: "number", min: 1, max: 1e3, step: 1 },
+    update: (value) => {
+      if (!get(maxCountVisible)) get(form).maxCount = value;
+      get(form).minCount = value;
+    },
+    options: { type: "number", min: 0, max: 1e3, step: 1 },
   });
-  var node_4 = sibling(node_3, 2);
-  EditorField(node_4, {
+  var node_5 = sibling(node_4, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var button_1 = root20();
+      var text_3 = only_child(button_1, true);
+      template_effect(
+        ($0) => {
+          button_1.disabled = $$props.panel.busy;
+          set_text(text_3, $0);
+        },
+        [() => get(t)("Add maximum events")],
+      );
+      delegated("click", button_1, () => {
+        set2(showMaxCount, true);
+        get(changed)("maxCount");
+        focusEditor($$props.panel, "maxCount");
+      });
+      append($$anchor2, button_1);
+    };
+    if_block(node_5, ($$render) => {
+      if (!get(maxCountVisible)) $$render(consequent);
+    });
+  }
+  reset(div_3);
+  var div_4 = sibling(div_3, 2);
+  var node_6 = child(div_4);
+  {
+    var consequent_1 = ($$anchor2) => {
+      {
+        const trailing = ($$anchor3) => {
+          var button_2 = root20();
+          var text_4 = only_child(button_2, true);
+          template_effect(
+            ($0) => {
+              button_2.disabled = $$props.panel.busy;
+              set_text(text_4, $0);
+            },
+            [() => get(t)("Remove maximum events")],
+          );
+          delegated("click", button_2, () => {
+            get(form).maxCount = get(form).minCount;
+            set2(showMaxCount, false);
+            get(changed)("maxCount");
+            focusEditor($$props.panel, "minCount");
+          });
+          append($$anchor3, button_2);
+        };
+        EditorField($$anchor2, {
+          get panel() {
+            return $$props.panel;
+          },
+          get context() {
+            return get(context);
+          },
+          key: "maxCount",
+          label: "Maximum events per window",
+          get value() {
+            return get(form).maxCount;
+          },
+          update: (value) => (get(form).maxCount = value),
+          options: { type: "number", min: 0, max: 1e3, step: 1 },
+          trailing,
+          $$slots: { trailing: true },
+        });
+      }
+    };
+    if_block(node_6, ($$render) => {
+      if (get(maxCountVisible)) $$render(consequent_1);
+    });
+  }
+  reset(div_4);
+  var node_7 = sibling(div_4, 2);
+  EditorField(node_7, {
     get panel() {
       return $$props.panel;
     },
@@ -12281,8 +13750,8 @@ function RandomEventEditor($$anchor, $$props) {
     update: (value) => (get(form).minDuration = value),
     options: { placeholder: "5m" },
   });
-  var node_5 = sibling(node_4, 2);
-  EditorField(node_5, {
+  var node_8 = sibling(node_7, 2);
+  EditorField(node_8, {
     get panel() {
       return $$props.panel;
     },
@@ -12299,35 +13768,37 @@ function RandomEventEditor($$anchor, $$props) {
   });
   reset(div_2);
   var p_1 = sibling(div_2, 2);
-  var text_2 = only_child(p_1, true);
-  var div_3 = sibling(p_1, 2);
-  var node_6 = child(div_3);
+  var text_5 = only_child(p_1, true);
+  var p_2 = sibling(p_1, 2);
+  var text_6 = only_child(p_2, true);
+  var div_5 = sibling(p_2, 2);
+  var node_9 = child(div_5);
   {
     let $0 = user_derived(() => get(context).action("on"));
-    ActionEditor(node_6, {
+    ActionEditor(node_9, {
       get panel() {
         return $$props.panel;
       },
       get context() {
         return get($0);
       },
-      heading: "At the start",
+      heading: "When event starts",
       kindLabel: "Start action",
       entityLabel: "Start entities",
     });
   }
-  var div_4 = sibling(node_6, 2);
-  var node_7 = child(div_4);
+  var div_6 = sibling(node_9, 2);
+  var node_10 = child(div_6);
   {
     let $0 = user_derived(() => get(context).action("off"));
-    ActionEditor(node_7, {
+    ActionEditor(node_10, {
       get panel() {
         return $$props.panel;
       },
       get context() {
         return get($0);
       },
-      heading: "At the end",
+      heading: "When event ends",
       kindLabel: "End action",
       entityLabel: "End entities",
       get hideEntities() {
@@ -12335,18 +13806,18 @@ function RandomEventEditor($$anchor, $$props) {
       },
     });
   }
-  var node_8 = sibling(node_7, 2);
+  var node_11 = sibling(node_10, 2);
   {
-    var consequent = ($$anchor2) => {
-      var label_1 = root18();
-      var input = child(label_1);
+    var consequent_2 = ($$anchor2) => {
+      var label = root_116();
+      var input = child(label);
       remove_input_defaults(input);
-      var text_3 = sibling(input, 1, true);
-      reset(label_1);
+      var text_7 = sibling(input, 1, true);
+      reset(label);
       template_effect(
         ($0) => {
           set_checked(input, get(form).sameEntities);
-          set_text(text_3, $0);
+          set_text(text_7, $0);
         },
         [() => get(t)("Use the same entities")],
       );
@@ -12354,181 +13825,90 @@ function RandomEventEditor($$anchor, $$props) {
         get(form).sameEntities = event2.currentTarget.checked;
         get(changed)("sameEntities");
       });
-      append($$anchor2, label_1);
+      append($$anchor2, label);
     };
-    if_block(node_8, ($$render) => {
-      if (get(form).on.kind === "entities" && get(form).off.kind === "entities")
-        $$render(consequent);
+    var d = user_derived(
+      () =>
+        ["entities", "cover"].includes(get(form).on.kind) &&
+        get(form).on.kind === get(form).off.kind,
+    );
+    if_block(node_11, ($$render) => {
+      if (get(d)) $$render(consequent_2);
     });
   }
-  reset(div_4);
-  reset(div_3);
-  var details = sibling(div_3, 2);
-  var summary = child(details);
-  var text_4 = only_child(summary, true);
-  var label_2 = sibling(summary, 2);
-  var input_1 = child(label_2);
-  remove_input_defaults(input_1);
-  var text_5 = sibling(input_1, 1, true);
-  reset(label_2);
-  var fieldset = sibling(label_2, 2);
-  var legend = child(fieldset);
-  var text_6 = only_child(legend, true);
-  var div_5 = sibling(legend, 2);
-  each(
-    div_5,
-    21,
-    () => presets,
-    index,
-    ($$anchor2, $$item) => {
-      var $$array = user_derived(() => to_array(get($$item), 2));
-      let label = () => get($$array)[0];
-      let selection = () => get($$array)[1];
-      var button = root_112();
-      var text_7 = only_child(button, true);
-      template_effect(
-        ($0, $1) => {
-          set_attribute2(button, "aria-pressed", $0);
-          set_text(text_7, $1);
-        },
-        [
-          () =>
-            get(form).days.length === selection().length &&
-            selection().every((day) => get(form).days.includes(day)),
-          () => get(t)(label()),
-        ],
-      );
-      delegated("click", button, () => {
-        get(form).days = [...selection()];
-        get(changed)("days");
-      });
-      append($$anchor2, button);
-    },
-  );
-  reset(div_5);
-  var div_6 = sibling(div_5, 2);
-  each(
-    div_6,
-    21,
-    () => days,
-    index,
-    ($$anchor2, day, index2) => {
-      var label_3 = root_29();
-      var input_2 = child(label_3);
-      remove_input_defaults(input_2);
-      var span = sibling(input_2);
-      var text_8 = only_child(span, true);
-      reset(label_3);
-      template_effect(
-        ($0, $1) => {
-          set_checked(input_2, $0);
-          set_text(text_8, $1);
-        },
-        [
-          () => get(form).days.includes(get(day)),
-          () => get(t)(weekdays[index2]),
-        ],
-      );
-      delegated("change", input_2, (event2) => {
-        get(form).days = days.filter((candidate) =>
-          candidate === get(day)
-            ? event2.currentTarget.checked
-            : get(form).days.includes(candidate),
-        );
-        get(changed)("days");
-      });
-      append($$anchor2, label_3);
-    },
-  );
   reset(div_6);
-  reset(fieldset);
-  var node_9 = sibling(fieldset, 2);
-  {
-    let $0 = user_derived(() => ({ ...get(editor).errors }));
-    FieldError(node_9, {
-      key: "days",
-      get errors() {
-        return get($0);
-      },
-    });
-  }
-  reset(details);
-  var div_7 = sibling(details, 2);
-  var button_1 = child(div_7);
-  var text_9 = only_child(button_1, true);
-  var node_10 = sibling(button_1, 2);
-  {
-    var consequent_1 = ($$anchor2) => {
-      var button_2 = root_38();
-      var text_10 = only_child(button_2, true);
-      bind_this(
-        button_2,
-        ($$value) => set2(deleteTrigger, $$value),
-        () => get(deleteTrigger),
-      );
-      template_effect(
-        ($0) => {
-          button_2.disabled = $$props.panel.busy || $$props.panel.stale;
-          set_text(text_10, $0);
-        },
-        [() => get(t)("Delete random event")],
-      );
-      delegated("click", button_2, () => set2(deleteOpen, true));
-      append($$anchor2, button_2);
-    };
-    if_block(node_10, ($$render) => {
-      if (get(editor).existing) $$render(consequent_1);
-    });
-  }
-  var button_3 = sibling(node_10, 2);
-  var text_11 = only_child(button_3, true);
+  reset(div_5);
+  var div_7 = sibling(div_5, 2);
+  var button_3 = child(div_7);
+  var text_8 = only_child(button_3, true);
+  var node_12 = sibling(button_3, 2);
+  RandomActions(node_12, {
+    get panel() {
+      return $$props.panel;
+    },
+    get context() {
+      return get(context);
+    },
+    get advancedOpen() {
+      return get(advancedOpen);
+    },
+    set advancedOpen($$value) {
+      set2(advancedOpen, $$value, true);
+    },
+    get advancedTrigger() {
+      return get(advancedTrigger);
+    },
+    set advancedTrigger($$value) {
+      set2(advancedTrigger, $$value, true);
+    },
+  });
+  var button_4 = sibling(node_12, 2);
+  var text_9 = only_child(button_4, true);
   reset(div_7);
   reset(section);
-  var node_11 = sibling(section, 2);
-  {
-    var consequent_2 = ($$anchor2) => {
-      DeleteRandomDialog($$anchor2, {
-        get panel() {
-          return $$props.panel;
-        },
-        onClose: () => {
-          set2(deleteOpen, false);
-          if (get(deleteTrigger)?.isConnected) get(deleteTrigger).focus();
-        },
-      });
-    };
-    if_block(node_11, ($$render) => {
-      if (get(deleteOpen)) $$render(consequent_2);
-    });
-  }
   template_effect(
-    ($0, $1, $2, $3, $4, $5, $6, $7) => {
+    ($0, $1, $2, $3, $4, $5, $6) => {
       set_text(text2, $0);
+      classes = set_class(
+        button,
+        1,
+        "random-advanced-button svelte-e4ijcz",
+        null,
+        classes,
+        { error: !!get(editor).errors.days },
+      );
+      set_attribute2(button, "aria-expanded", get(advancedOpen));
+      set_attribute2(
+        button,
+        "aria-describedby",
+        get(editor).errors.days ? "step-error-days" : void 0,
+      );
+      button.disabled = $$props.panel.busy;
       set_text(text_1, $1);
       set_text(text_2, $2);
-      details.open = !!get(editor).errors.days;
-      set_text(text_4, $3);
-      set_checked(input_1, get(form).enabled);
-      set_text(text_5, $4);
-      set_text(text_6, $5);
-      button_1.disabled = $$props.panel.busy;
+      set_text(text_5, $3);
+      set_text(text_6, $4);
+      button_3.disabled = $$props.panel.busy;
+      set_text(text_8, $5);
+      button_4.disabled = $$props.panel.busy || $$props.panel.stale;
       set_text(text_9, $6);
-      button_3.disabled = $$props.panel.busy || $$props.panel.stale;
-      set_text(text_11, $7);
     },
     [
       () =>
         get(t)(
           "Choose a window, a duration, and actions for the start and end of each occurrence.",
         ),
+      () => get(t)("Advanced settings"),
       () => get(t)("Frequency and duration"),
       () =>
-        get(t)(
-          "Use durations like 5m, 30s, or 1h. Occurrences may overlap; every end action stays inside the window.",
+        randomExplanation(
+          get(form),
+          $$props.panel.draft,
+          $$props.panel.catalog,
+          get(t),
+          $$props.panel._hass.locale,
         ),
-      () => get(t)("Advanced settings"),
-      () => get(t)("Enabled"),
-      () => get(t)("Run on"),
+      () => get(t)("Use durations like 5m, 30s, or 1h."),
       () => get(t)("Cancel"),
       () =>
         get(t)(
@@ -12538,31 +13918,29 @@ function RandomEventEditor($$anchor, $$props) {
         ),
     ],
   );
-  delegated("change", input_1, (event2) => {
-    get(form).enabled = event2.currentTarget.checked;
-    get(changed)("enabled");
-  });
-  delegated("click", button_1, function (...$$args) {
-    get(cancel)?.apply(this, $$args);
+  delegated("click", button, (event2) => {
+    set2(advancedTrigger, event2.currentTarget, true);
+    set2(advancedOpen, true);
   });
   delegated("click", button_3, function (...$$args) {
-    get(submit)?.apply(this, $$args);
+    get(cancel)?.apply(this, $$args);
   });
-  append($$anchor, fragment);
+  delegated("click", button_4, save2);
+  append($$anchor, section);
   pop();
 }
-delegate(["change", "click"]);
+delegate(["click", "change"]);
 
 // custom_components/occupied/frontend/RandomView.svelte
-var root19 = from_html(
+var root21 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-random=""> </button></section>`,
 );
-var root_113 = from_html(`<span class="step-status-badge"> </span>`);
-var root_210 = from_html(`<span class="step-row-time"> </span>`);
-var root_39 = from_html(
+var root_117 = from_html(`<span class="step-status-badge"> </span>`);
+var root_212 = from_html(`<span class="step-row-time"> </span>`);
+var root_38 = from_html(
   `<div style="--depth:0"><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button> <div><!></div></div>`,
 );
-var root_46 = from_html(
+var root_45 = from_html(
   `<p class="hint"> </p> <div class="step-list"></div> <button type="button" class="primary" data-create-random=""> </button>`,
   1,
 );
@@ -12572,16 +13950,17 @@ function RandomView($$anchor, $$props) {
     $$props.revision;
     return {
       t: $$props.panel.t,
-      entries: randomEntries(
-        $$props.panel.draft,
-        $$props.panel.catalog,
-        $$props.panel.t,
-      ),
-      steps: stepEntries(
-        $$props.panel.draft,
-        $$props.panel.catalog,
-        $$props.panel.t,
-      ),
+      entries: randomEntries($$props.panel.draft, $$props.panel.catalog),
+      steps: [
+        ...stepEntries(
+          $$props.panel.draft,
+          $$props.panel.catalog,
+          $$props.panel.t,
+        ),
+        ...randomEntries($$props.panel.draft, $$props.panel.catalog).map(
+          (entry) => ({ id: `random:${entry.id}`, name: entry.name }),
+        ),
+      ],
     };
   });
   let t = user_derived(() => get(data).t),
@@ -12591,7 +13970,7 @@ function RandomView($$anchor, $$props) {
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var section = root19();
+      var section = root21();
       var h2 = child(section);
       var text2 = only_child(h2, true);
       var p = sibling(h2, 2);
@@ -12619,7 +13998,7 @@ function RandomView($$anchor, $$props) {
       append($$anchor2, section);
     };
     var alternate = ($$anchor2) => {
-      var fragment_1 = root_46();
+      var fragment_1 = root_45();
       var p_1 = first_child(fragment_1);
       var text_3 = only_child(p_1, true);
       var div = sibling(p_1, 2);
@@ -12639,7 +14018,7 @@ function RandomView($$anchor, $$props) {
               ? $$props.panel.randomEditor?.form.enabled === false
               : get(entry).enabled === false,
           );
-          var div_1 = root_39();
+          var div_1 = root_38();
           let classes;
           var button_1 = child(div_1);
           let classes_1;
@@ -12650,7 +14029,7 @@ function RandomView($$anchor, $$props) {
           var node_1 = sibling(strong);
           {
             var consequent_1 = ($$anchor4) => {
-              var span_2 = root_113();
+              var span_2 = root_117();
               var text_5 = only_child(span_2, true);
               template_effect(
                 ($0) => set_text(text_5, $0),
@@ -12669,7 +14048,7 @@ function RandomView($$anchor, $$props) {
           var node_2 = sibling(span, 2);
           {
             var consequent_2 = ($$anchor4) => {
-              var span_4 = root_210();
+              var span_4 = root_212();
               var text_7 = only_child(span_4);
               template_effect(
                 ($0, $1) => set_text(text_7, `${$0 ?? ""} \u2192 ${$1 ?? ""}`),
@@ -12683,12 +14062,16 @@ function RandomView($$anchor, $$props) {
                       $$props.panel._hass.locale,
                     ),
                   () =>
-                    timingSummary(
-                      { timing: get(entry).end },
+                    timingExplanation(
+                      timingForm(get(entry).end),
                       get(steps),
                       get(t),
                       $$props.panel.catalog.time_sources,
-                      $$props.panel._hass.locale,
+                      {
+                        subject: "Window ends",
+                        includeHints: false,
+                        locale: $$props.panel._hass.locale,
+                      },
                     ),
                 ],
               );
@@ -12719,7 +14102,7 @@ function RandomView($$anchor, $$props) {
           reset(div_2);
           reset(div_1);
           template_effect(
-            ($0, $1, $2) => {
+            ($0, $1, $2, $3) => {
               classes = set_class(div_1, 1, "step-card", null, classes, {
                 "step-disabled": get(disabled),
               });
@@ -12739,8 +14122,8 @@ function RandomView($$anchor, $$props) {
               set_text(text_4, get(entry).name);
               set_text(
                 text_6,
-                `${get(entry).count ?? 3 ?? ""}
-              ${$1 ?? ""} \xB7 ${(get(entry).min_duration || "5m") ?? ""}\u2013${(get(entry).max_duration || "15m") ?? ""} \xB7 ${$2 ?? ""}`,
+                `${$1 ?? ""}
+              ${$2 ?? ""} \xB7 ${(get(entry).min_duration || "5m") ?? ""}\u2013${(get(entry).max_duration || "15m") ?? ""} \xB7 ${$3 ?? ""}`,
               );
               set_attribute2(div_2, "id", `random-editor-${get(entry).id}`);
             },
@@ -12749,6 +14132,7 @@ function RandomView($$anchor, $$props) {
                 get(disabled)
                   ? `${get(entry).name} \xB7 ${get(t)("Disabled")}`
                   : get(entry).name,
+              () => countSummary(get(entry).count),
               () => get(t)("times per window"),
               () =>
                 get(entry)
@@ -12797,16 +14181,16 @@ function RandomView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/App.svelte
-var root20 = from_html(`<button type="button"> </button>`);
-var root_114 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
-var root_211 = from_html(`<p> </p>`);
-var root_310 = from_html(`<p id="house"> </p>`);
-var root_47 = from_html(`<option> </option>`);
+var root22 = from_html(`<button type="button"> </button>`);
+var root_118 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
+var root_213 = from_html(`<p> </p>`);
+var root_39 = from_html(`<p id="house"> </p>`);
+var root_46 = from_html(`<option> </option>`);
 var root_55 = from_html(
   `<label for="instance-select"> </label> <select id="instance-select"></select>`,
   1,
 );
-var root_64 = from_html(`<p class="hint"> </p>`);
+var root_65 = from_html(`<p class="hint"> </p>`);
 var root_73 = from_html(`<p class="banner" role="status"> </p>`);
 var root_82 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_9 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
@@ -12820,11 +14204,11 @@ function App($$anchor, $$props) {
   const $updates = () => store_get($$props.updates, "$updates", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   const toolbar = ($$anchor2) => {
-    var div = root_114();
+    var div = root_118();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
-        var button = root20();
+        var button = root22();
         var text_1 = only_child(button, true);
         template_effect(
           ($0) => {
@@ -12863,7 +14247,7 @@ function App($$anchor, $$props) {
     var node_1 = first_child(fragment);
     {
       var consequent_1 = ($$anchor3) => {
-        var button_1 = root20();
+        var button_1 = root22();
         var text_2 = only_child(button_1, true);
         template_effect(() => {
           set_class(button_1, 1, clsx2(get(className)));
@@ -12873,7 +14257,7 @@ function App($$anchor, $$props) {
         append($$anchor3, button_1);
       };
       var alternate = ($$anchor3) => {
-        var p = root_211();
+        var p = root_213();
         var text_3 = only_child(p, true);
         template_effect(() => {
           set_class(p, 1, clsx2(get(className)));
@@ -12943,7 +14327,7 @@ function App($$anchor, $$props) {
   var node_2 = child(div_1);
   {
     var consequent_2 = ($$anchor2) => {
-      var p_1 = root_310();
+      var p_1 = root_39();
       var text_4 = only_child(p_1, true);
       template_effect(
         ($0) => set_text(text_4, $0),
@@ -12952,7 +14336,7 @@ function App($$anchor, $$props) {
       append($$anchor2, p_1);
     };
     var consequent_3 = ($$anchor2) => {
-      var p_2 = root_310();
+      var p_2 = root_39();
       var text_5 = only_child(p_2, true);
       template_effect(() => set_text(text_5, get(controllerName)));
       append($$anchor2, p_2);
@@ -12980,7 +14364,7 @@ function App($$anchor, $$props) {
         () => get(panel).instances,
         index,
         ($$anchor3, instance) => {
-          var option = root_47();
+          var option = root_46();
           var text_7 = only_child(option);
           var option_value = {};
           template_effect(
@@ -13031,7 +14415,7 @@ function App($$anchor, $$props) {
   var node_4 = sibling(node_3, 2);
   {
     var consequent_5 = ($$anchor2) => {
-      var p_3 = root_64();
+      var p_3 = root_65();
       var text_8 = only_child(p_3, true);
       template_effect(
         ($0) => set_text(text_8, $0),
@@ -13087,7 +14471,7 @@ function App($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let id = () => get($$array)[0];
       let label = () => get($$array)[1];
-      var button_2 = root20();
+      var button_2 = root22();
       var text_12 = only_child(button_2, true);
       template_effect(
         ($0) => {
@@ -13201,7 +14585,7 @@ function App($$anchor, $$props) {
               var node_11 = first_child(fragment_8);
               {
                 var consequent_8 = ($$anchor5) => {
-                  var button_5 = root20();
+                  var button_5 = root22();
                   var text_18 = only_child(button_5, true);
                   template_effect(
                     ($0) => set_text(text_18, $0),
@@ -14215,19 +15599,30 @@ function editorField(tail, form) {
 function randomEditorField(tail, form) {
   const head2 = tail[0];
   if (head2 === "start" || head2 === "end") {
+    if (tail[1] === "duration") {
+      return `${head2}.${tail[2] === "max" ? "maxDuration" : "minDuration"}`;
+    }
     if (tail.length === 1) {
-      return `${head2}.${form[head2].mode === "absolute" ? "start" : "anchor"}`;
+      let field = "anchor";
+      if (form[head2].mode === "absolute") {
+        field = "start";
+      } else if (form[head2].mode === "duration") {
+        field = "minDuration";
+      }
+      return `${head2}.${field}`;
     }
     return `${head2}.${editorField(["timing", ...tail.slice(1)], form.on)}`;
   }
   if (head2 === "on" || head2 === "off") {
     return `${head2}.${editorField(tail.slice(1), form[head2])}`;
   }
+  if (head2 === "count") {
+    return tail[1] === "max" ? "maxCount" : "minCount";
+  }
   return (
     {
       min_duration: "minDuration",
       max_duration: "maxDuration",
-      count: "count",
       days: "days",
     }[String(head2)] || "name"
   );

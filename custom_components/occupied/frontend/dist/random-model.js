@@ -8,7 +8,16 @@ import {
   formTiming,
 } from "./step-model.js";
 import { timingForm, entityName, durationSeconds } from "./util.js";
-export function randomEntries(program, catalog, t = (text) => text) {
+export function countBounds(count) {
+  return typeof count === "object"
+    ? count
+    : { min: count ?? 3, max: count ?? 3 };
+}
+export function countSummary(count) {
+  const { min, max } = countBounds(count);
+  return min === max ? String(min) : `${min}–${max}`;
+}
+export function randomEntries(program, catalog) {
   return Object.entries(program.random || {}).map(([id, event]) => ({
     ...event,
     id,
@@ -16,13 +25,14 @@ export function randomEntries(program, catalog, t = (text) => text) {
     days: [...(event.days || days)],
     name:
       event.name ||
-      `${catalog ? entityName(catalog, event.on.entities[0]) : event.on.entities[0]} · ${t("Random event")}`,
+      `${catalog ? entityName(catalog, event.on.entities[0]) : event.on.entities[0]}${event.on.entities.length > 1 ? ` +${event.on.entities.length - 1}` : ""}`,
   }));
 }
 export function randomEditor(program, entry) {
   const source = entry ? program.random?.[entry.id] : undefined;
   const on = actionForm(source?.on);
   const off = actionForm(source?.off || { action: "turn_off", entities: [] });
+  const count = countBounds(source?.count);
   const form = {
     name: source?.name || "",
     enabled: source?.enabled !== false,
@@ -31,12 +41,13 @@ export function randomEditor(program, entry) {
     end: timingForm(source?.end || { absolute_time: { start: "23:00" } }),
     minDuration: source?.min_duration || "5m",
     maxDuration: source?.max_duration || "15m",
-    count: String(source?.count ?? 3),
+    minCount: String(count.min),
+    maxCount: String(count.max),
     on,
     off,
     sameEntities:
-      on.kind === "entities" &&
-      off.kind === "entities" &&
+      ["entities", "cover"].includes(on.kind) &&
+      on.kind === off.kind &&
       JSON.stringify([...on.entities].sort()) ===
         JSON.stringify([...off.entities].sort()),
   };
@@ -64,8 +75,11 @@ export function prefixedErrors(errors, prefix) {
 export function randomErrors(program, editor) {
   const { form } = editor;
   const errors = {
-    ...prefixedErrors(timingErrors(program, form.start), "start."),
-    ...prefixedErrors(timingErrors(program, form.end), "end."),
+    ...prefixedErrors(
+      timingErrors(program, form.start, undefined, editor.id),
+      "start.",
+    ),
+    ...prefixedErrors(windowEndErrors(program, form.end), "end."),
     ...prefixedErrors(actionErrors(form.on), "on."),
     ...prefixedErrors(
       actionErrors(
@@ -89,14 +103,37 @@ export function randomErrors(program, editor) {
     errors.maxDuration =
       "Maximum duration must be at least the minimum duration.";
   }
-  const count = Number(form.count);
-  if (!Number.isSafeInteger(count) || count < 1 || count > 1000) {
-    errors.count = "Choose a whole number from 1 to 1000.";
+  const minCount = Number(form.minCount),
+    maxCount = Number(form.maxCount);
+  for (const field of ["minCount", "maxCount"]) {
+    const count = Number(form[field]);
+    if (
+      !form[field].trim() ||
+      !Number.isSafeInteger(count) ||
+      count < 0 ||
+      count > 1000
+    ) {
+      errors[field] = "Choose a whole number from 0 to 1000.";
+    }
+  }
+  if (!errors.minCount && !errors.maxCount && maxCount < minCount) {
+    errors.maxCount = "Maximum events per window must be at least the minimum.";
   }
   if (form.days.length === 0) {
     errors.days = "Choose at least one day.";
   }
   if (
+    maxCount > 0 &&
+    form.end.mode === "duration" &&
+    !errors["end.minDuration"] &&
+    !errors["end.maxDuration"] &&
+    minimum >
+      durationSeconds(form.end.maxDuration || form.end.minDuration || "")
+  ) {
+    errors.minDuration = "Minimum duration does not fit inside this window.";
+  }
+  if (
+    maxCount > 0 &&
     form.start.mode === "absolute" &&
     form.end.mode === "absolute" &&
     !form.start.end &&
@@ -120,6 +157,24 @@ export function randomErrors(program, editor) {
   }
   return errors;
 }
+export function windowEndErrors(program, time) {
+  if (time.mode !== "duration") {
+    return timingErrors(program, time);
+  }
+  const errors = {};
+  const minimum = durationSeconds(time.minDuration || "");
+  const maximum = durationSeconds(time.maxDuration || time.minDuration || "");
+  if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604_800) {
+    errors.minDuration = "Choose a positive window duration within seven days.";
+  }
+  if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604_800) {
+    errors.maxDuration = "Choose a positive window duration within seven days.";
+  } else if (maximum < minimum) {
+    errors.maxDuration =
+      "Maximum window duration must be at least the minimum.";
+  }
+  return errors;
+}
 export function buildRandom(program, editor) {
   const errors = randomErrors(program, editor);
   if (Object.keys(errors).length > 0) {
@@ -140,7 +195,10 @@ export function buildRandom(program, editor) {
     end: formTiming(form.end),
     min_duration: form.minDuration,
     max_duration: form.maxDuration,
-    count: Number(form.count),
+    count:
+      Number(form.minCount) === Number(form.maxCount)
+        ? Number(form.minCount)
+        : { min: Number(form.minCount), max: Number(form.maxCount) },
     on: buildAction(form.on),
     off: buildAction(
       form.sameEntities

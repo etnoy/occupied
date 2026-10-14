@@ -26,6 +26,8 @@ def observe(hass, entity):
                 "media_content_id",
                 "media_content_type",
                 "source",
+                "current_position",
+                "current_tilt_position",
             )
             if key in state.attributes
         },

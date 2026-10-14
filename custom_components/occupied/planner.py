@@ -16,11 +16,12 @@ from .validation import (
     ProgramError,
     behavior_hash,
     program_revision,
+    random_order,
     step_order,
     validate_program,
 )
 
-PLANNER_VERSION = 6
+PLANNER_VERSION = 8
 
 
 class RandomStreams:
@@ -157,7 +158,9 @@ def generate_plan(
             events.append(
                 PlanEvent(f"{simulation_date}:step:{key}:{index}", start, key, action, index)
             )
-    for key, event in sorted(program.random.items()):
+    random_ends = {}
+    for key in random_order(program):
+        event = program.random[key]
         path = ("random", key)
         if not event.enabled or WEEKDAYS[simulation_date.weekday()] not in event.days:
             issues.append(
@@ -169,13 +172,38 @@ def generate_plan(
                 )
             )
             continue
+        count = streams.rng("random", key, "count").randint(event.min_count, event.max_count)
+        if count == 0:
+            issues.append(
+                Issue(
+                    "random_skipped",
+                    f"{key} sampled zero occurrences; item skipped",
+                    path + ("count",),
+                    "info",
+                )
+            )
+            continue
         start = sample_timing(
-            day, event.start, times, path + ("start",), streams.rng("random", key, "start")
+            day,
+            event.start,
+            times,
+            path + ("start",),
+            streams.rng("random", key, "start"),
+            random_ends,
         )
-        end = sample_timing(
-            day, event.end, times, path + ("end",), streams.rng("random", key, "end")
-        )
-        if start is None or end is None:
+        if start is None:
+            continue
+        if duration := event.end.duration:
+            end = start + timedelta(
+                seconds=streams.rng("random", key, "end").uniform(
+                    duration.min, duration.latest_duration
+                )
+            )
+        else:
+            end = sample_timing(
+                day, event.end, times, path + ("end",), streams.rng("random", key, "end")
+            )
+        if end is None:
             continue
         source = event.end.relative_to
         recurring_end = event.end.absolute_time or (
@@ -210,7 +238,8 @@ def generate_plan(
                 )
             )
             continue
-        for occurrence in range(event.count):
+        random_ends[key] = end
+        for occurrence in range(count):
             duration = streams.rng("random", key, occurrence, "duration").uniform(
                 event.min_duration, min(event.max_duration, span)
             )
@@ -253,7 +282,7 @@ def generate_plan(
     )
 
 
-def sample_timing(day, timing, times, path, rng):
+def sample_timing(day, timing, times, path, rng, random_ends=None):
     source = timing.relative_to
     if source and source.step:
         if source.step not in times:
@@ -269,6 +298,22 @@ def sample_timing(day, timing, times, path, rng):
         bounds = (
             times[source.step] + timedelta(seconds=source.start_offset),
             times[source.step] + timedelta(seconds=source.latest_offset),
+        )
+    elif source and source.random:
+        anchor = (random_ends or {}).get(source.random)
+        if anchor is None:
+            day.issues.append(
+                Issue(
+                    "anchor_skipped",
+                    f"{source.random} did not occur; item skipped",
+                    path + ("relative_to",),
+                    "info",
+                )
+            )
+            return None
+        bounds = (
+            anchor + timedelta(seconds=source.start_offset),
+            anchor + timedelta(seconds=source.latest_offset),
         )
     elif source:
         bounds = (

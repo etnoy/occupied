@@ -3,6 +3,7 @@
 from datetime import date, datetime, timedelta
 from typing import Any
 
+from .covers import project_covers
 from .file_config import export_yaml, load_program
 from .lighting import preview_handover, project_lighting
 from .planner import preview_calendar_dates
@@ -46,6 +47,9 @@ def preview_draft(
             raise ValueError("Projection instant must be aware and within the preview dates")
         result["lighting"] = {
             entity: state.to_dict() for entity, state in project_lighting(program, plan, at).items()
+        }
+        result["covers"] = {
+            entity: state.to_dict() for entity, state in project_covers(program, plan, at).items()
         }
         result["handover"] = preview_handover(program, plan, at)
     return result

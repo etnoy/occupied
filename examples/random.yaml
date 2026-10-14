@@ -5,7 +5,7 @@ random:
     name: Living room lamps
     start: {relative_to: {sun: sunset, start_offset: -30m}}
     end: {absolute_time: {start: '23:00'}}
-    count: 4
+    count: {min: 2, max: 6}
     min_duration: 5m
     max_duration: 20m
     'on':

@@ -68,16 +68,38 @@ random:
     end: {absolute_time: {start: '23:00'}}
     min_duration: 5m
     max_duration: 15m
-    count: 3
+    count: {min: 2, max: 6}
     'on': {action: turn_on, entities: [light.living_room]}
     'off': {action: turn_off, entities: [light.living_room]}
 ```
 
-`start` and `end` each use the same timing model as steps. They can reference a step (`relative_to: {step: evening}`), a solar event, or a known HA time source, and can themselves have random bounds. Step boundaries follow that source date's sampled step times. Disabled, unscheduled, or unavailable boundaries skip the random event. An earlier recurring clock, solar, or time-only helper end rolls into the next local date; step and dated-source boundaries must already be chronological.
+`start` accepts absolute times, steps (`relative_to: {step: evening}`), solar events, HA time sources, or another random window (`relative_to: {random: living_room}`). A random reference follows that window's sampled **closing time**, with optional signed start/end offsets; it does not follow the last occurrence's end. Dependencies resolve in order for the same source date. Disabled, unscheduled, unavailable, infeasible, or zero-count parents skip their dependents, including further dependent windows in the chain. Random references are only allowed on a random window start. Missing references and cycles are rejected; renaming a random ID rewrites these typed references.
 
-`min_duration` and `max_duration` are positive h/m/s durations within seven days, defaulting to `5m` and `15m`. Maximum must be at least minimum. `count` is an integer from 1 to 1000, defaulting to 3. Optional `name`, `enabled`, and `days` follow the step defaults. `on` and `off` each require an action and entities, with optional service data, using the same action validation as steps. Either phase can activate a scene or call a native entity service.
+The window-end editor offers absolute time or duration. Use `end: {absolute_time: {start: '23:00'}}` for a clock end, with optional randomized clock bounds. Use `end: {duration: {min: 30m, max: 1h}}` to sample an elapsed window length from the actual sampled start. Durations are positive h/m/s values within seven days, with maximum at least minimum; an omitted or equal maximum gives a fixed length. This window length is separate from each occurrence's `min_duration`/`max_duration`. An earlier absolute end rolls into the next local date. Existing `relative_to` ends remain readable for compatibility, but are no longer offered by the editor.
 
-Each occurrence independently samples its duration and start time. Both actions stay inside the resolved window; maximum duration is limited by the available window, and a minimum that cannot fit makes the date infeasible. Equal durations are supported. Overlap is allowed, so an end action may run while another occurrence is active. Sampling streams are stable per ID and occurrence; titles, presentation order, and unrelated definitions do not move sampled times. Step ID renames update both boundary references. Random IDs can be renamed using the CLI/API `random` kind.
+A chained window can be configured as follows:
+
+```yaml
+random:
+  living_room:
+    start: {absolute_time: {start: '18:00'}}
+    end: {duration: {min: 1h, max: 2h}}
+    'on': {action: turn_on, entities: [light.living_room]}
+    'off': {action: turn_off, entities: [light.living_room]}
+  hallway:
+    start: {relative_to: {random: living_room, start_offset: 10m}}
+    end: {duration: {min: 30m, max: 1h}}
+    'on': {action: turn_on, entities: [light.hallway]}
+    'off': {action: turn_off, entities: [light.hallway]}
+```
+
+The hallway window opens ten minutes after the living-room window closes, regardless of when its individual occurrences finish.
+
+`min_duration` and `max_duration` are positive h/m/s durations within seven days, defaulting to `5m` and `15m`. Maximum must be at least minimum. `count` accepts a fixed integer or a range such as `{min: 2, max: 6}`. Fixed counts and both range bounds are whole numbers from 0 to 1000, with maximum at least minimum. The count is sampled uniformly from the inclusive range independently for each window. An omitted count defaults to 3; existing integer counts remain fixed. Equal range bounds normalize to a fixed integer. Planning budgets use the maximum count. Optional `name`, `enabled`, and `days` follow the step defaults. `on` and `off` each require an action and entities, with optional service data, using the same action validation as steps. Either phase can activate a scene or call a native entity service.
+
+Set `count: {min: 0, max: 1}` for an equal chance of zero or one occurrence per selected window, or use a larger maximum for zero or more occurrences. Every integer in the inclusive range is equally likely. `count: 0` (including `{min: 0, max: 0}`) always generates no actions. The count uses its own seeded sampling stream, so revisiting the same source date with the same seed produces the same choice; titles, definition order, and unrelated definitions do not change it or move occurrence times. A sampled zero records an informational skip before resolving the window, so unavailable timing sources or a window too short for an occurrence do not make that skipped date infeasible. No closing-time anchor is exposed, and dependent random windows skip that source date. Positive samples still require a feasible window.
+
+Each occurrence independently samples its duration and start time. **Duration bounds take precedence over `count`:** the planner never shortens an occurrence below `min_duration` or extends it above `max_duration` to satisfy a fixed count or count range. Both actions stay inside the resolved window, so the effective maximum is `min(max_duration, window_length)`. If a positive count is sampled and `min_duration` exceeds the resolved window length, no occurrences are generated for that definition and the date is infeasible, even if the count requires one or more events. Equal durations are supported. Overlap is allowed and does not reduce the sampled count when individual occurrences fit; an end action may run while another occurrence is active. For example, a 30-minute window with a count of 5 and durations of 20–25 minutes produces overlapping events within those duration bounds, while a 4-minute window with a 5-minute minimum produces a duration error instead of shortened events. Sampling streams are stable per ID and occurrence; titles, presentation order, and unrelated definitions do not move sampled times. Step ID renames update both boundary references. Random IDs can be renamed using the CLI/API `random` kind.
 
 ## Dates, context, and DST
 
@@ -91,7 +113,7 @@ Live compilation has bounded date and event budgets. Excessively long dependency
 
 `turn_on` and `turn_off` accept lights and switches. Mixed selections remain one configured step; the planner resolves per-domain service calls internally. Shorthand actions take no service data: use an entity service action or HA scene for light settings.
 
-A qualified `domain.service`, such as `light.turn_on`, `cover.set_cover_position`, or `script.turn_on`, accepts a native JSON-compatible `data` mapping. The GUI edits that mapping as JSON. Typed light/switch actions validate their domain and payload. Brightness zero is rejected; use turn off. Light data accepts brightness or brightness_pct, one color mode, and transition. Switch control does not accept light payloads.
+A qualified `domain.service`, such as `light.turn_on`, `cover.set_cover_position`, or `script.turn_on`, accepts a native JSON-compatible `data` mapping. The GUI edits generic mappings as JSON and offers dedicated cover controls for standard native commands. `cover.open_cover`, `cover.close_cover`, `cover.stop_cover`, and their `_tilt` variants take no data; `cover.set_cover_position` uses `data: {position: 60}`, and `cover.set_cover_tilt_position` uses `data: {tilt_position: 25}`. The cover editor accepts whole percentages from 0 (closed) to 100 (open). These controls use the existing service representation without new YAML fields. Typed light/switch actions validate their domain and payload. Brightness zero is rejected; use turn off. Light data accepts brightness or brightness_pct, one color mode, and transition. Switch control does not accept light payloads.
 
 `scene.turn_on` selects one HA scene and optionally accepts service data. Scene and generic service effects are opaque: Occupied does not infer changed lights, inverses, or cleanup. Native HA service schemas are checked during GUI validation/save without executing services. Put entity selection in `entities`; target selectors in `data` are rejected.
 
@@ -104,6 +126,8 @@ Controlled entities are derived from enabled steps and both actions of enabled r
 On without brightness keeps known desired brightness or delegates brightness to HA/the device. It never inserts a default percentage. Handover uses one internal ten-minute default and HA capabilities for native transitions or bounded fallback calls. Outside manual changes yield that entity until the next activation. Stopping leaves states and holds still-owned native fades at the observed level.
 
 Permission, pause, and dry run are HA controls. HA automations can drive permission using their own conditions. These runtime controls and activation policy choices are not YAML step fields. Historical generic actions are never replayed; service calls are journaled durably before dispatch.
+
+Standard cover commands provide independent position/tilt targets for preview. A stop clears its affected target because the actual stopped position is unknown. Cover activation is **future only**: past calls are skipped, even when preview has a known target. Covers never participate in light handover or catch-up movement. Outside changes to `current_position` or `current_tilt_position` yield the entity until the next activation. Controller stop leaves cover movement to the device and does not implicitly send a stop or restore call.
 
 ## Validation, export, and identity
 

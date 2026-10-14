@@ -25,6 +25,12 @@
 
 {#if !entries.length}
   <section class="step-empty">
+    <h2>{t("Scheduled activity")}</h2>
+    <p class="hint">
+      {t(
+        "Run actions at specific times, around sunrise or sunset, or relative to other steps. Choose which devices to control and what they should do.",
+      )}
+    </p>
     <button
       type="button"
       class="primary"

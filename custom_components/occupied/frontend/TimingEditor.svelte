@@ -6,6 +6,7 @@
 
   import { stepEntries, timeSourceChoices } from "./step-model.js";
   import { timingExplanation } from "./util.js";
+  import { randomEntries } from "./random-model.js";
   let {
     panel,
     context,
@@ -14,6 +15,11 @@
     windowEndLabel = "End of window (optional)",
     addWindowEndLabel = "Add end of window",
     showExplanation = true,
+    explanationSubject = "Runs",
+    modes = [
+      ["absolute", "Absolute time"],
+      ["relative", "Relative to"],
+    ],
   }: {
     panel: OccupiedPanel;
     context: TimingEditorContext;
@@ -22,6 +28,8 @@
     windowEndLabel?: string;
     addWindowEndLabel?: string;
     showExplanation?: boolean;
+    explanationSubject?: "Runs" | "Window starts" | "Window ends";
+    modes?: [string, string][];
   } = $props();
   let { editor, form, time, t, refresh, changed } = $derived(context);
   import SourcePicker from "./SourcePicker.svelte";
@@ -33,6 +41,7 @@
       context.stepId,
       panel.catalog,
       t,
+      context.randomId,
     );
     if (time.anchor && !choices.some((choice) => choice.value === time.anchor))
       choices = [
@@ -52,7 +61,7 @@
     aria-labelledby={`step-${fieldPrefix}timing-heading`}
   >
     <div class="timing-option-row">
-      {#each [["absolute", "Absolute time"], ["relative", "Relative to"]] as [value, label]}
+      {#each modes as [value, label]}
         <label class="timing-option"
           ><input
             type="radio"
@@ -65,6 +74,10 @@
               time.mode = value;
               if (value === "relative" && !time.anchor)
                 time.anchor = "sun:sunrise";
+              if (value === "duration") {
+                time.minDuration ||= "1h";
+                time.maxDuration ||= time.minDuration;
+              }
               changed("mode");
               panel.shadowRoot
                 .querySelector<HTMLElement>(
@@ -115,7 +128,26 @@
         {t(addWindowEndLabel)}
       </button>
     {/if}
-  {:else}
+  {:else if time.mode === "duration"}
+    <EditorField
+      {panel}
+      {context}
+      key="minDuration"
+      label="Minimum window duration"
+      value={time.minDuration || ""}
+      update={(value) => (time.minDuration = value)}
+      options={{ placeholder: "1h" }}
+    />
+    <EditorField
+      {panel}
+      {context}
+      key="maxDuration"
+      label="Maximum window duration"
+      value={time.maxDuration || ""}
+      update={(value) => (time.maxDuration = value)}
+      options={{ placeholder: "2h", optional: true }}
+    />
+  {:else if modes.some(([mode]) => mode === "relative")}
     <SourcePicker
       {...{
         hass: panel._hass,
@@ -134,6 +166,12 @@
             ).find((step) => step.id === value.slice(5));
             if (parent) form.days = [...parent.days];
           }
+          if (!editor.existing && value.startsWith("random:")) {
+            const parent = randomEntries(panel.draft).find(
+              (entry) => entry.id === value.slice(7),
+            );
+            if (parent) form.days = [...parent.days];
+          }
           changed("anchor");
           const picker = panel.shadowRoot.querySelector<HTMLElement>(
             `[data-builder-field="${fieldPrefix}anchor"]`,
@@ -144,6 +182,11 @@
         },
       }}
     />
+    {#if time.anchor.startsWith("random:")}
+      <p class="hint">
+        {t("This start follows the selected window's closing time.")}
+      </p>
+    {/if}
     {#if time.anchor.startsWith("entity:")}
       <p class="hint">
         {t(
@@ -194,6 +237,12 @@
         {t("Add end offset")}
       </button>
     {/if}
+  {:else}
+    <p class="hint">
+      {t(
+        "Choose Absolute time or Duration to replace this saved relative window end.",
+      )}
+    </p>
   {/if}
   {#if showExplanation}<p
       class="hint"
@@ -202,10 +251,21 @@
     >
       {timingExplanation(
         time,
-        stepEntries(panel.draft, panel.catalog, panel.t),
+        [
+          ...stepEntries(panel.draft, panel.catalog, panel.t),
+          ...randomEntries(panel.draft, panel.catalog).map((entry) => ({
+            id: `random:${entry.id}`,
+            name: entry.name,
+          })),
+        ],
         t,
         panel.catalog.time_sources,
-        { locale: panel._hass.locale, days: form.days },
+        {
+          locale: panel._hass.locale,
+          days: form.days,
+          subject: explanationSubject,
+          includeHints: explanationSubject === "Runs",
+        },
       )}
     </p>{/if}
   {#if panel.document?.source === "file"}

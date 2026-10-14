@@ -1,12 +1,14 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import type { OccupiedPanel } from "./occupied-panel.js";
-  import { days } from "./model.js";
   import { createRandomEditorContext } from "./random-editor-controller.js";
   import EditorField from "./EditorField.svelte";
   import TimingEditor from "./TimingEditor.svelte";
+  import RandomActions from "./RandomActions.svelte";
   import ActionEditor from "./ActionEditor.svelte";
   import FieldError from "./FieldError.svelte";
-  import DeleteRandomDialog from "./DeleteRandomDialog.svelte";
+  import { focusEditor } from "./step-editor-controller.js";
+  import { randomExplanation } from "./random-explanation.js";
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
   let context = $derived.by(() => {
@@ -14,22 +16,24 @@
     return createRandomEditorContext(panel);
   });
   let { editor, form, t, changed, submit, cancel } = $derived(context);
-  let deleteOpen = $state(false);
-  let deleteTrigger = $state<HTMLButtonElement>();
-  const weekdays = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-  ];
-  const presets: [string, string[]][] = [
-    ["Every day", days],
-    ["Weekdays", days.slice(0, 5)],
-    ["Weekends", days.slice(5)],
-  ];
+  let advancedOpen = $state(false);
+  let advancedButton: HTMLButtonElement;
+  let advancedTrigger = $state<HTMLButtonElement>();
+  let showMaxCount = $state(
+    untrack(() => Number(form.minCount) !== Number(form.maxCount)),
+  );
+  let maxCountVisible = $derived(
+    showMaxCount ||
+      Number(form.minCount) !== Number(form.maxCount) ||
+      !!editor.errors.maxCount,
+  );
+  async function save() {
+    await submit();
+    if (panel.randomEditor?.errors.days) {
+      advancedTrigger = advancedButton;
+      advancedOpen = true;
+    }
+  }
 </script>
 
 <section class="step-editor random-editor">
@@ -57,7 +61,7 @@
       clockLabel="Window start"
       windowEndLabel="Latest window start (optional)"
       addWindowEndLabel="Randomize window start"
-      showExplanation={false}
+      explanationSubject="Window starts"
     />
     <TimingEditor
       {panel}
@@ -66,20 +70,85 @@
       clockLabel="Window end"
       windowEndLabel="Latest window end (optional)"
       addWindowEndLabel="Randomize window end"
-      showExplanation={false}
+      explanationSubject="Window ends"
+      modes={[
+        ["absolute", "Absolute time"],
+        ["duration", "Duration"],
+      ]}
     />
   </div>
+  <button
+    bind:this={advancedButton}
+    type="button"
+    class="random-advanced-button"
+    class:error={!!editor.errors.days}
+    aria-haspopup="dialog"
+    aria-expanded={advancedOpen}
+    aria-describedby={editor.errors.days ? "step-error-days" : undefined}
+    data-builder-field="days"
+    data-random-advanced
+    disabled={panel.busy}
+    onclick={(event) => {
+      advancedTrigger = event.currentTarget;
+      advancedOpen = true;
+    }}>{t("Advanced settings")}</button
+  >
+  <FieldError key="days" errors={{ ...editor.errors }} />
   <h3>{t("Frequency and duration")}</h3>
   <div class="random-frequency">
-    <EditorField
-      {panel}
-      {context}
-      key="count"
-      label="Times per window"
-      value={form.count}
-      update={(value) => (form.count = value)}
-      options={{ type: "number", min: 1, max: 1000, step: 1 }}
-    />
+    <div>
+      <EditorField
+        {panel}
+        {context}
+        key="minCount"
+        label="Minimum events per window"
+        value={form.minCount}
+        update={(value) => {
+          if (!maxCountVisible) form.maxCount = value;
+          form.minCount = value;
+        }}
+        options={{ type: "number", min: 0, max: 1000, step: 1 }}
+      />
+      {#if !maxCountVisible}
+        <button
+          type="button"
+          class="text-button"
+          disabled={panel.busy}
+          onclick={() => {
+            showMaxCount = true;
+            changed("maxCount");
+            focusEditor(panel, "maxCount");
+          }}>{t("Add maximum events")}</button
+        >
+      {/if}
+    </div>
+    <div>
+      {#if maxCountVisible}
+        <EditorField
+          {panel}
+          {context}
+          key="maxCount"
+          label="Maximum events per window"
+          value={form.maxCount}
+          update={(value) => (form.maxCount = value)}
+          options={{ type: "number", min: 0, max: 1000, step: 1 }}
+        >
+          {#snippet trailing()}
+            <button
+              type="button"
+              class="text-button"
+              disabled={panel.busy}
+              onclick={() => {
+                form.maxCount = form.minCount;
+                showMaxCount = false;
+                changed("maxCount");
+                focusEditor(panel, "minCount");
+              }}>{t("Remove maximum events")}</button
+            >
+          {/snippet}
+        </EditorField>
+      {/if}
+    </div>
     <EditorField
       {panel}
       {context}
@@ -99,16 +168,17 @@
       options={{ placeholder: "15m" }}
     />
   </div>
+  <p class="hint" data-random-explanation aria-live="polite">
+    {randomExplanation(form, panel.draft, panel.catalog, t, panel._hass.locale)}
+  </p>
   <p class="hint">
-    {t(
-      "Use durations like 5m, 30s, or 1h. Occurrences may overlap; every end action stays inside the window.",
-    )}
+    {t("Use durations like 5m, 30s, or 1h.")}
   </p>
   <div class="editor-sections">
     <ActionEditor
       {panel}
       context={context.action("on")}
-      heading="At the start"
+      heading="When event starts"
       kindLabel="Start action"
       entityLabel="Start entities"
     />
@@ -116,86 +186,36 @@
       <ActionEditor
         {panel}
         context={context.action("off")}
-        heading="At the end"
+        heading="When event ends"
         kindLabel="End action"
         entityLabel="End entities"
         hideEntities={form.sameEntities}
       />
-      {#if form.on.kind === "entities" && form.off.kind === "entities"}
-        <label class="same-entities"
-          ><input
+      {#if ["entities", "cover"].includes(form.on.kind) && form.on.kind === form.off.kind}
+        <label class="same-entities">
+          <input
             type="checkbox"
             checked={form.sameEntities}
             onchange={(event) => {
               form.sameEntities = event.currentTarget.checked;
               changed("sameEntities");
             }}
-          />{t("Use the same entities")}</label
-        >
+          />{t("Use the same entities")}
+        </label>
       {/if}
     </div>
   </div>
-  <details class="random-settings" open={!!editor.errors.days}>
-    <summary>{t("Advanced settings")}</summary>
-    <label
-      ><input
-        type="checkbox"
-        checked={form.enabled}
-        onchange={(event) => {
-          form.enabled = event.currentTarget.checked;
-          changed("enabled");
-        }}
-      />{t("Enabled")}</label
-    >
-    <fieldset class="step-weekdays">
-      <legend>{t("Run on")}</legend>
-      <div class="step-weekday-presets">
-        {#each presets as [label, selection]}<button
-            type="button"
-            aria-pressed={form.days.length === selection.length &&
-              selection.every((day) => form.days.includes(day))}
-            onclick={() => {
-              form.days = [...selection];
-              changed("days");
-            }}>{t(label)}</button
-          >{/each}
-      </div>
-      <div class="step-weekday-options">
-        {#each days as day, index}<label class="step-weekday-option"
-            ><input
-              type="checkbox"
-              checked={form.days.includes(day)}
-              onchange={(event) => {
-                form.days = days.filter((candidate) =>
-                  candidate === day
-                    ? event.currentTarget.checked
-                    : form.days.includes(candidate),
-                );
-                changed("days");
-              }}
-            /><span>{t(weekdays[index])}</span></label
-          >{/each}
-      </div>
-    </fieldset>
-    <FieldError key="days" errors={{ ...editor.errors }} />
-  </details>
   <div class="builder-footer">
     <button type="button" disabled={panel.busy} onclick={cancel}
       >{t("Cancel")}</button
     >
-    {#if editor.existing}<button
-        bind:this={deleteTrigger}
-        type="button"
-        class="danger"
-        disabled={panel.busy || panel.stale}
-        onclick={() => (deleteOpen = true)}>{t("Delete random event")}</button
-      >{/if}
+    <RandomActions {panel} {context} bind:advancedOpen bind:advancedTrigger />
     <button
       type="button"
       class="primary"
       data-random-submit
       disabled={panel.busy || panel.stale}
-      onclick={submit}
+      onclick={save}
       >{t(
         panel.document?.source === "file"
           ? "Add to draft"
@@ -204,30 +224,17 @@
     >
   </div>
 </section>
-{#if deleteOpen}<DeleteRandomDialog
-    {panel}
-    onClose={() => {
-      deleteOpen = false;
-      if (deleteTrigger?.isConnected) deleteTrigger.focus();
-    }}
-  />{/if}
 
 <style>
+  .random-advanced-button {
+    margin-top: 16px;
+  }
   .random-frequency {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
   }
   .same-entities {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 16px;
-  }
-  .random-settings {
-    margin-top: 24px;
-  }
-  .random-settings > label {
     display: flex;
     align-items: center;
     gap: 8px;

@@ -88,3 +88,25 @@ export function parentSteps(program, child) {
     .filter(([id]) => !blocked.has(id))
     .map(([id, step]) => ({ ...step, id, name: step.name || id }));
 }
+export function parentRandomEvents(program, child) {
+  const blocked = new Set([child]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [id, event] of Object.entries(program.random || {})) {
+      const parent = event.start.relative_to?.random;
+      if (parent && blocked.has(parent) && !blocked.has(id)) {
+        blocked.add(id);
+        changed = true;
+      }
+    }
+  }
+  return Object.entries(program.random || {})
+    .filter(([id]) => !blocked.has(id))
+    .map(([id, event]) => ({ ...event, id }));
+}
+export function randomReferences(program, id) {
+  return Object.entries(program.random || {})
+    .filter(([, event]) => event.start.relative_to?.random === id)
+    .map(([key]) => ["random", key, "start", "relative_to", "random"]);
+}

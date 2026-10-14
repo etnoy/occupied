@@ -561,8 +561,10 @@ void test("random creation, editing, and deletion use the guarded save flow", as
     };
     openRandom(f.panel);
     const editor = f.panel.randomEditor!;
+    assert.equal(editor.form.sameEntities, true);
     editor.form.on.entities = ["light.a"];
     createRandomEditorContext(f.panel).changed("on.entities");
+    assert.deepEqual(editor.form.off.entities, ["light.a"]);
     await createRandomEditorContext(f.panel).submit();
     assert.equal(f.panel.tab, "random");
     assert.equal(f.panel.randomEditor, null);
@@ -572,8 +574,9 @@ void test("random creation, editing, and deletion use the guarded save flow", as
       "light.a",
     ]);
     openRandom(f.panel, randomEntries(f.panel.draft)[0]);
-    f.panel.randomEditor!.form.count = "5";
-    createRandomEditorContext(f.panel).changed("count");
+    f.panel.randomEditor!.form.minCount = "5";
+    f.panel.randomEditor!.form.maxCount = "5";
+    createRandomEditorContext(f.panel).changed("maxCount");
     await createRandomEditorContext(f.panel).submit();
     assert.equal(f.panel.saved.random![editor.id].count, 5);
     assert.equal(Object.keys(f.panel.saved.random!).length, 1);
@@ -622,6 +625,17 @@ void test("random forms preserve unsaved changes and backend field errors", asyn
       } as T);
     await createRandomEditorContext(f.panel).submit();
     assert.equal(editor.errors.maxDuration, "Invalid duration");
+    for (const [path, field] of [
+      [[], "minCount"],
+      [["min"], "minCount"],
+      [["max"], "maxCount"],
+    ] as const) {
+      f.panel.focusIssue({
+        message: "Invalid count",
+        model_path: ["random", editor.id, "count", ...path],
+      });
+      assert.equal(editor.errors[field], "Invalid count");
+    }
     assert.equal(f.panel.saved.random, undefined);
     assert.equal(f.panel.randomEditor, editor);
     f.panel.navigate("steps");

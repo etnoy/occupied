@@ -112,6 +112,109 @@ async def advance(hass, freezer, seconds):
     await hass.async_block_till_done()
 
 
+@pytest.fixture
+def cover_devices(hass, daily_entry):
+    calls = []
+    hass.states.async_set(
+        "cover.blind", "open", {"current_position": 20, "current_tilt_position": 10}
+    )
+    for key, clock, action, data in (
+        ("cover_position", "18:01", "set_cover_position", {"position": 60}),
+        ("cover_tilt", "18:02", "set_cover_tilt_position", {"tilt_position": 25}),
+        ("cover_stop", "18:05", "stop_cover", {}),
+    ):
+        daily_entry.data["program"]["steps"][key] = {
+            "timing": {"absolute_time": {"start": clock}},
+            "action": f"cover.{action}",
+            "entities": ["cover.blind"],
+            "data": data,
+        }
+
+    async def handle(call):
+        calls.append(call)
+        for entity in call.data["entity_id"]:
+            old = hass.states.get(entity)
+            attrs = dict(old.attributes)
+            for field in ("position", "tilt_position"):
+                if field in call.data:
+                    attrs[f"current_{field}"] = call.data[field]
+            hass.states.async_set(entity, old.state, attrs, context=call.context)
+
+    for service in ("set_cover_position", "set_cover_tilt_position", "stop_cover"):
+        hass.services.async_register(
+            "cover",
+            service,
+            handle,
+            schema=vol.Schema({vol.Required("entity_id"): cv.entity_ids}, extra=vol.ALLOW_EXTRA),
+        )
+    return calls
+
+
+async def test_cover_future_only_activation_never_reconciles_historical_targets(
+    hass, daily_entry, daily_devices, cover_devices, freezer
+):
+    engine = await load(hass, daily_entry, freezer, "2026-10-13T18:03:00+00:00")
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 0)
+    assert not cover_devices and "cover.blind" not in engine._handover
+    assert hass.states.get("cover.blind").attributes["current_position"] == 20
+    for source in ("cover_position", "cover_tilt"):
+        assert any(
+            source in key and value["status"] == "historical_skipped"
+            for key, value in engine._journal.items()
+        )
+    await advance(hass, freezer, 120)
+    assert [call.service for call in cover_devices] == ["stop_cover"]
+    await engine.async_set_enabled(False)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 0)
+    assert [call.service for call in cover_devices] == ["stop_cover"]
+
+
+@pytest.mark.parametrize("attribute", ["current_position", "current_tilt_position"])
+async def test_cover_attribute_only_outside_changes_yield_until_next_activation(
+    hass, daily_entry, daily_devices, cover_devices, freezer, attribute
+):
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 60)
+    assert "cover.blind" not in engine._yielded
+    observed = engine._observe("cover.blind")
+    assert observed["attributes"] == {"current_position": 60, "current_tilt_position": 10}
+    attrs = dict(hass.states.get("cover.blind").attributes)
+    hass.states.async_set("cover.blind", "open", attrs | {"battery": 50})
+    await hass.async_block_till_done()
+    assert "cover.blind" not in engine._yielded
+    hass.states.async_set("cover.blind", "open", attrs | {attribute: 40})
+    await hass.async_block_till_done()
+    assert "cover.blind" in engine._yielded
+    await advance(hass, freezer, 60)
+    assert [call.service for call in cover_devices] == ["set_cover_position"]
+    await engine.async_set_enabled(False)
+    await engine.async_set_enabled(True)
+    assert "cover.blind" not in engine._yielded
+    assert [call.service for call in cover_devices] == ["set_cover_position"]
+    await advance(hass, freezer, 180)
+    assert [call.service for call in cover_devices] == ["set_cover_position", "stop_cover"]
+
+
+async def test_cover_calls_preserve_native_fields_and_controller_stop_adds_no_movement(
+    hass, daily_entry, daily_devices, cover_devices, freezer
+):
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 60)
+    await advance(hass, freezer, 60)
+    assert [dict(call.data) for call in cover_devices] == [
+        {"entity_id": ["cover.blind"], "position": 60},
+        {"entity_id": ["cover.blind"], "tilt_position": 25},
+    ]
+    assert "cover.blind" not in engine._yielded
+    await engine.async_set_enabled(False)
+    await advance(hass, freezer, 180)
+    assert len(cover_devices) == 2
+
+
 async def test_activation_before_first_step_does_not_invent_initial_state(
     hass, daily_entry, daily_devices, freezer
 ):

@@ -104,6 +104,48 @@ def step_order(program):
     return tuple(result)
 
 
+def random_order(program):
+    children = {key: [] for key in program.random}
+    degrees = dict.fromkeys(program.random, 0)
+    for key, item in program.random.items():
+        source = item.start.relative_to
+        if source and source.random:
+            if source.random not in children:
+                raise ProgramError(
+                    [
+                        Issue(
+                            "dangling_random",
+                            f"Unknown random event {source.random}",
+                            ("random", key, "start", "relative_to", "random"),
+                        )
+                    ]
+                )
+            children[source.random].append(key)
+            degrees[key] += 1
+    ready = [key for key, degree in degrees.items() if not degree]
+    heapq.heapify(ready)
+    result = []
+    while ready:
+        key = heapq.heappop(ready)
+        result.append(key)
+        for child in sorted(children[key]):
+            degrees[child] -= 1
+            if not degrees[child]:
+                heapq.heappush(ready, child)
+    if len(result) != len(children):
+        key = next(key for key in sorted(degrees) if degrees[key])
+        raise ProgramError(
+            [
+                Issue(
+                    "reference_cycle",
+                    "Cyclic random event dependencies",
+                    ("random", key, "start", "relative_to", "random"),
+                )
+            ]
+        )
+    return tuple(result)
+
+
 def validate_light_data(data: Mapping, action: str = "turn_on") -> str | None:
     allowed = (
         {"transition"}
@@ -165,7 +207,25 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
             Issue("program_size", "A program supports at most 5000 steps and random events")
         )
     for path, timing in program_timings(program, enabled_only=False):
+        random_end = path[0] == "random" and path[-1] == "end"
+        random_start = path[0] == "random" and path[-1] == "start"
+        if timing.duration and not random_end:
+            issues.append(
+                Issue(
+                    "timing_mode",
+                    "Duration is only supported for a random window end",
+                    path + ("duration",),
+                )
+            )
         source = timing.relative_to
+        if source and source.random and not random_start:
+            issues.append(
+                Issue(
+                    "timing_source",
+                    "Random event references are only supported for a window start",
+                    path + ("relative_to", "random"),
+                )
+            )
         if source and source.step and source.step not in program.steps:
             issues.append(
                 Issue(
@@ -226,6 +286,7 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
     if issues:
         raise ProgramError(issues)
     step_order(program)
+    random_order(program)
     return program
 
 
@@ -267,4 +328,9 @@ def rename_identifier(program, kind, old, new):
             source = timing.get("relative_to")
             if source and source.get("step") == old:
                 source["step"] = new
+    else:
+        for event in data.get("random", {}).values():
+            source = event["start"].get("relative_to")
+            if source and source.get("random") == old:
+                source["random"] = new
     return validate_program(data)

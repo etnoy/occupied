@@ -314,6 +314,8 @@ class DailyEngine:
             "current_activity",
             "media_content_id",
             "source",
+            "current_position",
+            "current_tilt_position",
         }
         if (
             old is not None
@@ -536,6 +538,8 @@ class DailyEngine:
                 if key in self._journal:
                     continue
                 if event.at < now:
+                    # Covers use future-only activation, including position/tilt
+                    # targets. Light handover never reconciles past cover calls.
                     self._journal[key] = {
                         "status": "historical_skipped",
                         "date": now.date().isoformat(),

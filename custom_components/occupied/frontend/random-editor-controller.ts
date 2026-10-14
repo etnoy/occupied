@@ -7,7 +7,7 @@ import type {
   StepEditor,
   FieldErrors,
 } from "./types.js";
-import { copy } from "./model.js";
+import { copy, randomReferences } from "./model.js";
 import { randomEditor, randomErrors, buildRandom } from "./random-model.js";
 import { focusEditor } from "./step-editor-controller.js";
 
@@ -46,7 +46,10 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
     focusEditor(panel, key);
   };
   const changed = (key: string) => {
-    if (form.on.kind !== "entities" || form.off.kind !== "entities") {
+    if (
+      !["entities", "cover"].includes(form.on.kind) ||
+      form.on.kind !== form.off.kind
+    ) {
       form.sameEntities = false;
     }
     if (form.sameEntities) {
@@ -98,6 +101,7 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
     time: new Proxy(form[edge], {}),
     t,
     fieldPrefix: `${edge}.`,
+    ...(edge === "start" && { randomId: editor.id }),
     changed: (key) => changed(`${edge}.${key}`),
     refresh: (key) => refresh(key ? `${edge}.${key}` : undefined),
   });
@@ -147,6 +151,13 @@ export async function deleteRandom(panel: OccupiedPanel) {
     return;
   }
   const candidate = copy(panel.draft);
+  if (randomReferences(candidate, editor.id).length > 0) {
+    panel.error = panel.t(
+      "Other random events depend on this window. Change their starts before deleting.",
+    );
+    panel.flush();
+    return;
+  }
   delete candidate.random?.[editor.id];
   if (panel.document?.source === "file") {
     panel.randomEditor = null;
@@ -156,3 +167,5 @@ export async function deleteRandom(panel: OccupiedPanel) {
   // Keep the open editor until the guarded save succeeds, preserving edits on failure.
   await panel.save(candidate);
 }
+
+export type RandomEditorContext = ReturnType<typeof createRandomEditorContext>;

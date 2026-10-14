@@ -14,6 +14,7 @@ from pydantic import (
     JsonValue,
     PlainSerializer,
     StringConstraints,
+    TypeAdapter,
     field_validator,
     model_validator,
 )
@@ -105,22 +106,52 @@ class RelativeTo(Model):
                 {
                     "required": ["step"],
                     "properties": {"step": {"not": {"type": "null"}}},
-                    "not": {"anyOf": [{"required": ["sun"]}, {"required": ["entity"]}]},
+                    "not": {
+                        "anyOf": [
+                            {"required": ["sun"]},
+                            {"required": ["entity"]},
+                            {"required": ["random"]},
+                        ]
+                    },
                 },
                 {
                     "required": ["sun"],
                     "properties": {"sun": {"not": {"type": "null"}}},
-                    "not": {"anyOf": [{"required": ["step"]}, {"required": ["entity"]}]},
+                    "not": {
+                        "anyOf": [
+                            {"required": ["step"]},
+                            {"required": ["entity"]},
+                            {"required": ["random"]},
+                        ]
+                    },
                 },
                 {
                     "required": ["entity"],
                     "properties": {"entity": {"not": {"type": "null"}}},
-                    "not": {"anyOf": [{"required": ["step"]}, {"required": ["sun"]}]},
+                    "not": {
+                        "anyOf": [
+                            {"required": ["step"]},
+                            {"required": ["sun"]},
+                            {"required": ["random"]},
+                        ]
+                    },
+                },
+                {
+                    "required": ["random"],
+                    "properties": {"random": {"not": {"type": "null"}}},
+                    "not": {
+                        "anyOf": [
+                            {"required": ["step"]},
+                            {"required": ["sun"]},
+                            {"required": ["entity"]},
+                        ]
+                    },
                 },
             ]
         }
     )
     step: Identifier | None = None
+    random: Identifier | None = None
     sun: SolarEvent | None = None
     entity: EntityId | None = None
     attribute: Literal["start_time", "end_time"] | None = None
@@ -130,10 +161,11 @@ class RelativeTo(Model):
     @model_validator(mode="after")
     def valid_source(self):
         if (
-            len({"step", "sun", "entity"} & self.model_fields_set) != 1
-            or sum(value is not None for value in (self.step, self.sun, self.entity)) != 1
+            len({"step", "random", "sun", "entity"} & self.model_fields_set) != 1
+            or sum(value is not None for value in (self.step, self.random, self.sun, self.entity))
+            != 1
         ):
-            raise ValueError("Choose exactly one step, sun, or entity source")
+            raise ValueError("Choose exactly one step, random event, sun, or entity source")
         if self.attribute is not None and (
             not self.entity or not self.entity.startswith("calendar.")
         ):
@@ -154,6 +186,25 @@ class RelativeTo(Model):
         return self.start_offset if self.end_offset is None else self.end_offset
 
 
+class WindowDuration(Model):
+    min: PositiveDuration
+    max: PositiveDuration | None = None
+
+    @field_validator("max")
+    @classmethod
+    def ordered_durations(cls, value, info):
+        if value is not None and (minimum := info.data.get("min")) is not None:
+            if value < minimum:
+                raise ValueError("Maximum window duration must be at least the minimum")
+            if value == minimum:
+                return None
+        return value
+
+    @property
+    def latest_duration(self):
+        return self.min if self.max is None else self.max
+
+
 class Timing(Model):
     model_config = ConfigDict(
         json_schema_extra={
@@ -161,25 +212,37 @@ class Timing(Model):
                 {
                     "required": ["absolute_time"],
                     "properties": {"absolute_time": {"not": {"type": "null"}}},
-                    "not": {"anyOf": [{"required": ["relative_to"]}]},
+                    "not": {"anyOf": [{"required": ["relative_to"]}, {"required": ["duration"]}]},
                 },
                 {
                     "required": ["relative_to"],
                     "properties": {"relative_to": {"not": {"type": "null"}}},
-                    "not": {"anyOf": [{"required": ["absolute_time"]}]},
+                    "not": {"anyOf": [{"required": ["absolute_time"]}, {"required": ["duration"]}]},
+                },
+                {
+                    "required": ["duration"],
+                    "properties": {"duration": {"not": {"type": "null"}}},
+                    "not": {
+                        "anyOf": [{"required": ["absolute_time"]}, {"required": ["relative_to"]}]
+                    },
                 },
             ]
         }
     )
     absolute_time: AbsoluteTime | None = None
     relative_to: RelativeTo | None = None
+    duration: WindowDuration | None = None
 
     @model_validator(mode="after")
     def one_mode(self):
-        if len({"absolute_time", "relative_to"} & self.model_fields_set) != 1 or (
-            self.absolute_time is None
-        ) == (self.relative_to is None):
-            raise ValueError("Choose absolute_time or relative_to")
+        if (
+            len({"absolute_time", "relative_to", "duration"} & self.model_fields_set) != 1
+            or sum(
+                value is not None for value in (self.absolute_time, self.relative_to, self.duration)
+            )
+            != 1
+        ):
+            raise ValueError("Choose absolute_time, relative_to, or duration")
         return self
 
 
@@ -222,14 +285,48 @@ class Step(Schedule, Action):
     timing: Timing
 
 
+EventCount = Annotated[int, Field(strict=True, ge=0, le=1000)]
+EVENT_COUNT_ADAPTER = TypeAdapter(EventCount)
+
+
+class CountRange(Model):
+    min: EventCount
+    max: EventCount
+
+    @field_validator("max")
+    @classmethod
+    def ordered_counts(cls, value, info):
+        if value < info.data.get("min", 0):
+            raise ValueError("Maximum times per window must be at least the minimum")
+        return value
+
+
 class RandomEvent(Schedule):
     start: Timing
     end: Timing
     min_duration: PositiveDuration = "5m"
     max_duration: PositiveDuration = "15m"
-    count: Annotated[int, Field(strict=True, ge=1, le=1000)] = 3
+    count: EventCount | CountRange = 3
     on: Action
     off: Action
+
+    @field_validator("count", mode="before")
+    @classmethod
+    def validate_count(cls, value):
+        # Validate the selected shape first so errors point to editable fields,
+        # rather than exposing the internal union branch names.
+        if isinstance(value, (dict, CountRange)):
+            bounds = CountRange.model_validate(value)
+            return bounds.min if bounds.min == bounds.max else bounds
+        return EVENT_COUNT_ADAPTER.validate_python(value)
+
+    @property
+    def min_count(self):
+        return self.count.min if isinstance(self.count, CountRange) else self.count
+
+    @property
+    def max_count(self):
+        return self.count.max if isinstance(self.count, CountRange) else self.count
 
     @field_validator("max_duration")
     @classmethod
@@ -298,7 +395,7 @@ def program_timings(program: Program, *, enabled_only=True):
 
 def max_plan_events(program: Program) -> int:
     return sum(len(step.entities) for step in program.steps.values() if step.enabled) + sum(
-        event.count * (len(event.on.entities) + len(event.off.entities))
+        event.max_count * (len(event.on.entities) + len(event.off.entities))
         for event in program.random.values()
         if event.enabled
     )

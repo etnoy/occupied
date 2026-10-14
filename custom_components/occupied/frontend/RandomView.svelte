@@ -1,9 +1,14 @@
 <script lang="ts">
   import type { OccupiedPanel } from "./occupied-panel.js";
-  import { randomEntries } from "./random-model.js";
+  import { randomEntries, countSummary } from "./random-model.js";
   import { openRandom } from "./random-editor-controller.js";
   import { stepEntries } from "./step-model.js";
-  import { entityName, timingSummary } from "./util.js";
+  import {
+    entityName,
+    timingSummary,
+    timingExplanation,
+    timingForm,
+  } from "./util.js";
   import RandomEventEditor from "./RandomEventEditor.svelte";
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
@@ -11,8 +16,14 @@
     revision;
     return {
       t: panel.t,
-      entries: randomEntries(panel.draft, panel.catalog, panel.t),
-      steps: stepEntries(panel.draft, panel.catalog, panel.t),
+      entries: randomEntries(panel.draft, panel.catalog),
+      steps: [
+        ...stepEntries(panel.draft, panel.catalog, panel.t),
+        ...randomEntries(panel.draft, panel.catalog).map((entry) => ({
+          id: `random:${entry.id}`,
+          name: entry.name,
+        })),
+      ],
     };
   });
   let { t, entries, steps } = $derived(data);
@@ -74,7 +85,7 @@
                 >{/if}</span
             >
             <span class="hint"
-              >{entry.count ?? 3}
+              >{countSummary(entry.count)}
               {t("times per window")} · {entry.min_duration ||
                 "5m"}–{entry.max_duration || "15m"} · {entry.on.entities
                 .map((id) => entityName(panel.catalog, id))
@@ -88,12 +99,16 @@
                 t,
                 panel.catalog.time_sources,
                 panel._hass.locale,
-              )} → {timingSummary(
-                { timing: entry.end },
+              )} → {timingExplanation(
+                timingForm(entry.end),
                 steps,
                 t,
                 panel.catalog.time_sources,
-                panel._hass.locale,
+                {
+                  subject: "Window ends",
+                  includeHints: false,
+                  locale: panel._hass.locale,
+                },
               )}</span
             >{/if}
         </button>

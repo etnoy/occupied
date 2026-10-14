@@ -7,9 +7,15 @@ import {
   randomErrors,
   buildRandom,
   hasRandomChanges,
+  countSummary,
 } from "@occupied/random-model.js";
 import { references, removeStep } from "@occupied/model.js";
-import { dependentNames, timeSourceChoices } from "@occupied/step-model.js";
+import { randomReferences } from "@occupied/model.js";
+import {
+  dependentNames,
+  stepEntries,
+  timeSourceChoices,
+} from "@occupied/step-model.js";
 
 function program(): Program {
   return {
@@ -44,7 +50,29 @@ void test("a first random event uses the selected start entities at both ends", 
   assert.equal(event.name, undefined);
   assert.equal(p.random, undefined);
   assert.equal(hasRandomChanges(editor), true);
-  assert.equal(randomEntries(next)[0].name, "light.a · Random event");
+  assert.equal(randomEntries(next)[0].name, "light.a +1");
+});
+
+void test("untitled random events and steps omit category names and preserve custom titles", () => {
+  const p = program();
+  delete p.steps!.evening.name;
+  const editor = randomEditor(p);
+  editor.form.on.entities = ["light.a"];
+  const next = buildRandom(p, editor);
+  const catalog = {
+    entities: [{ entity_id: "light.a", name: "Living room lamp" }],
+  };
+  assert.equal(randomEntries(next, catalog)[0].name, "Living room lamp");
+  assert.equal(
+    stepEntries(next, catalog)[0].name,
+    "Living room lamp · Turn on",
+  );
+  assert.equal(next.random![editor.id].name, undefined);
+  assert.equal(next.steps!.evening.name, undefined);
+  next.random![editor.id].name = "Evening activity";
+  next.steps!.evening.name = "Evening lights";
+  assert.equal(randomEntries(next, catalog)[0].name, "Evening activity");
+  assert.equal(stepEntries(next, catalog)[0].name, "Evening lights");
 });
 
 void test("every random field roundtrips including timed step boundaries and distinct scenes", () => {
@@ -85,6 +113,178 @@ void test("every random field roundtrips including timed step boundaries and dis
   assert.equal(buildRandom(p, editor).random!.living.name, undefined);
 });
 
+void test("random count ranges save, reopen, and display both inclusive bounds", () => {
+  const p = program(),
+    editor = randomEditor(p);
+  editor.form.on.entities = ["light.a"];
+  editor.form.minCount = "2";
+  editor.form.maxCount = "6";
+  assert.deepEqual(randomErrors(p, editor), {});
+  const next = buildRandom(p, editor),
+    event = next.random![editor.id],
+    reopened = randomEditor(next, randomEntries(next)[0]);
+  assert.deepEqual(event.count, { min: 2, max: 6 });
+  assert.equal(reopened.form.minCount, "2");
+  assert.equal(reopened.form.maxCount, "6");
+  assert.deepEqual(buildRandom(next, reopened), next);
+  assert.equal(countSummary(event.count), "2–6");
+  assert.equal(countSummary(5), "5");
+  assert.equal(countSummary(undefined), "3");
+  reopened.form.maxCount = "02";
+  assert.equal(buildRandom(next, reopened).random![editor.id].count, 2);
+});
+
+void test("legacy fixed counts initialize both fields without changing the count", () => {
+  const p = program(),
+    editor = randomEditor(p);
+  editor.form.on.entities = ["light.a"];
+  editor.form.minCount = editor.form.maxCount = "6";
+  const next = buildRandom(p, editor),
+    reopened = randomEditor(next, randomEntries(next)[0]);
+  assert.equal(reopened.form.minCount, "6");
+  assert.equal(reopened.form.maxCount, "6");
+  assert.equal(buildRandom(next, reopened).random![editor.id].count, 6);
+});
+
+void test("zero minimum and fixed zero counts save, reopen, and display", () => {
+  for (const maximum of [0, 1, 6]) {
+    const p = program(),
+      editor = randomEditor(p);
+    editor.form.on.entities = ["light.a"];
+    editor.form.minCount = "0";
+    editor.form.maxCount = String(maximum);
+    assert.deepEqual(randomErrors(p, editor), {});
+    const next = buildRandom(p, editor);
+    const count = next.random![editor.id].count;
+    assert.deepEqual(count, maximum === 0 ? 0 : { min: 0, max: maximum });
+    assert.equal(countSummary(count), maximum === 0 ? "0" : `0–${maximum}`);
+    const reopened = randomEditor(next, randomEntries(next)[0]);
+    assert.equal(reopened.form.minCount, "0");
+    assert.equal(reopened.form.maxCount, String(maximum));
+    assert.deepEqual(buildRandom(next, reopened), next);
+  }
+});
+
+void test("fixed zero counts need no feasible window while positive maxima still do", () => {
+  const p = program(),
+    editor = randomEditor(p);
+  editor.form.on.entities = ["light.a"];
+  editor.form.minCount = editor.form.maxCount = "0";
+  editor.form.minDuration = editor.form.maxDuration = "6h";
+  assert.deepEqual(randomErrors(p, editor), {});
+  editor.form.end.start = editor.form.start.start;
+  assert.deepEqual(randomErrors(p, editor), {});
+  editor.form.end.mode = "duration";
+  editor.form.end.minDuration = "1m";
+  assert.deepEqual(randomErrors(p, editor), {});
+  editor.form.maxCount = "1";
+  assert.ok(randomErrors(p, editor).minDuration);
+  editor.form.maxCount = "0";
+  editor.form.minDuration = "0s";
+  assert.ok(randomErrors(p, editor).minDuration);
+});
+
+void test("window duration ends save fixed and ranged durations and validate their bounds", () => {
+  const p = program();
+  const editor = randomEditor(p);
+  editor.form.on.entities = ["light.a"];
+  Object.assign(editor.form.end, {
+    mode: "duration",
+    minDuration: "1h",
+    maxDuration: "2h",
+  });
+  assert.deepEqual(randomErrors(p, editor), {});
+  const next = buildRandom(p, editor);
+  assert.deepEqual(next.random![editor.id].end, {
+    duration: { min: "1h", max: "2h" },
+  });
+  const reopened = randomEditor(next, randomEntries(next)[0]);
+  assert.equal(reopened.form.end.mode, "duration");
+  assert.equal(reopened.form.end.minDuration, "1h");
+  assert.equal(reopened.form.end.maxDuration, "2h");
+  assert.deepEqual(buildRandom(next, reopened), next);
+  editor.form.end.maxDuration = "60m";
+  assert.deepEqual(buildRandom(p, editor).random![editor.id].end, {
+    duration: { min: "1h" },
+  });
+  editor.form.end.maxDuration = "30m";
+  assert.ok(randomErrors(p, editor)["end.maxDuration"]);
+  editor.form.end.minDuration = "0s";
+  assert.ok(randomErrors(p, editor)["end.minDuration"]);
+  editor.form.end.minDuration = "1m";
+  editor.form.end.maxDuration = "2m";
+  assert.ok(randomErrors(p, editor).minDuration);
+});
+
+void test("window-start sources include other random windows and exclude self and descendants", () => {
+  const p = program();
+  const parent = randomEditor(p);
+  parent.form.on.entities = ["light.a"];
+  const first = buildRandom(p, parent);
+  const child = randomEditor(first);
+  child.form.on.entities = ["light.a"];
+  Object.assign(child.form.start, {
+    mode: "relative",
+    anchor: `random:${parent.id}`,
+    startOffset: "10m",
+  });
+  Object.assign(child.form.end, {
+    mode: "duration",
+    minDuration: "1h",
+    maxDuration: "1h",
+  });
+  assert.deepEqual(randomErrors(first, child), {});
+  const next = buildRandom(first, child);
+  assert.deepEqual(next.random![child.id].start, {
+    relative_to: { random: parent.id, start_offset: "10m" },
+  });
+  assert.deepEqual(randomReferences(next, parent.id), [
+    ["random", child.id, "start", "relative_to", "random"],
+  ]);
+  assert.ok(
+    timeSourceChoices(next, undefined, {}, (text) => text, "new_random").some(
+      (choice) => choice.value === `random:${parent.id}`,
+    ),
+  );
+  assert.ok(
+    timeSourceChoices(next, undefined, {}, (text) => text, parent.id).every(
+      (choice) => !choice.value.startsWith("random:"),
+    ),
+  );
+  assert.ok(
+    timeSourceChoices(next).every(
+      (choice) => !choice.value.startsWith("random:"),
+    ),
+  );
+  Object.assign(parent.form.start, {
+    mode: "relative",
+    anchor: `random:${child.id}`,
+  });
+  assert.ok(randomErrors(next, parent)["start.anchor"]);
+});
+
+void test("count bounds reject invalid integers and reversed ranges before saving", () => {
+  const p = program(),
+    editor = randomEditor(p);
+  editor.form.on.entities = ["light.a"];
+  for (const field of ["minCount", "maxCount"] as const) {
+    for (const value of ["", " ", "-1", "1.5", "1001", "invalid"]) {
+      editor.form.minCount = "2";
+      editor.form.maxCount = "6";
+      editor.form[field] = value;
+      assert.ok(randomErrors(p, editor)[field], `${field}: ${value}`);
+      assert.throws(() => buildRandom(p, editor));
+    }
+  }
+  editor.form.minCount = "6";
+  editor.form.maxCount = "2";
+  assert.ok(randomErrors(p, editor).maxCount);
+  assert.throws(() => buildRandom(p, editor));
+  editor.form.minCount = "0";
+  editor.form.maxCount = "1000";
+  assert.deepEqual(randomErrors(p, editor), {});
+});
+
 void test("random sources include all steps even when a random ID matches a step ID", () => {
   const p = program(),
     editor = randomEditor(p);
@@ -108,11 +308,11 @@ void test("duration, count, and both actions report separate field errors", () =
   const editor = randomEditor(program());
   editor.form.minDuration = "15m";
   editor.form.maxDuration = "5m";
-  editor.form.count = "1.5";
+  editor.form.minCount = "1.5";
   editor.form.sameEntities = false;
   const errors = randomErrors(program(), editor);
   assert.ok(errors.maxDuration);
-  assert.ok(errors.count);
+  assert.ok(errors.minCount);
   assert.ok(errors["on.entities"]);
   assert.ok(errors["off.entities"]);
   editor.form.minDuration = "-1m";

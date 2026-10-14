@@ -48,7 +48,11 @@
             : {
                 filter: {
                   domain:
-                    form.kind === "scene" ? ["scene"] : ["light", "switch"],
+                    form.kind === "scene"
+                      ? ["scene"]
+                      : form.kind === "cover"
+                        ? ["cover"]
+                        : ["light", "switch"],
                 },
               }),
         },

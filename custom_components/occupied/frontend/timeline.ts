@@ -1,5 +1,6 @@
 import type { Program, Translate, Plan } from "./types.js";
 import type { HomeAssistantLocale } from "./time-format.js";
+import { coverTarget, type CoverPosition } from "./cover.js";
 import {
   calendarMidnight,
   shiftScheduleDate,
@@ -40,6 +41,7 @@ export function previewStateHistory(
   const start = Date.parse(plan.start),
     end = Date.parse(plan.end);
   const entities = new Map<string, PreviewHistoryEntity>();
+  const covers = new Map<string, CoverPosition>();
   const stateLabels: Record<string, string> = { on: "On", off: "Off" };
   const label = (state: string) => t(stateLabels[state] || "Unknown");
   for (const event of [...plan.events].sort(
@@ -51,7 +53,7 @@ export function previewStateHistory(
     }
     const typed = /^(light|switch)\.turn_(on|off)$/.test(event.action.action);
     for (const entity of event.action.entities) {
-      if (!/^(light|switch)\./.test(entity)) {
+      if (!/^(light|switch|cover)\./.test(entity)) {
         continue;
       }
       let history = entities.get(entity);
@@ -70,16 +72,45 @@ export function previewStateHistory(
         entities.set(entity, history);
       }
       const intended = event.action.action.endsWith("turn_on") ? "on" : "off";
-      const state = typed ? intended : "unknown";
+      let state =
+        typed && event.action.action.startsWith(`${entity.split(".", 1)[0]}.`)
+          ? intended
+          : "unknown";
+      let localized = label(state);
+      if (entity.startsWith("cover.")) {
+        const target = coverTarget(event.action, covers.get(entity));
+        covers.set(entity, target);
+        const parts: string[] = [];
+        if (target.position !== undefined) {
+          let position = t("Position {position}%").replace("{position}", () =>
+            String(target.position),
+          );
+          if (target.position === 100) {
+            position = t("Open");
+          } else if (target.position === 0) {
+            position = t("Closed");
+          }
+          parts.push(position);
+        }
+        if (target.tilt_position !== undefined) {
+          parts.push(
+            t("Tilt {position}%").replace("{position}", () =>
+              String(target.tilt_position),
+            ),
+          );
+        }
+        state = parts.length > 0 ? JSON.stringify(target) : "unknown";
+        localized = parts.length > 0 ? parts.join(" · ") : label("unknown");
+      }
       const previous = history.data.at(-1)!;
       const time = Math.max(start, at);
       if (previous.last_changed === time) {
         previous.state = state;
-        previous.state_localize = label(state);
+        previous.state_localize = localized;
       } else if (previous.state !== state) {
         history.data.push({
           state,
-          state_localize: label(state),
+          state_localize: localized,
           last_changed: time,
         });
       }

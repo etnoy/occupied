@@ -10,8 +10,10 @@ export type JsonValue =
   | { [key: string]: JsonValue };
 export interface Timing {
   absolute_time?: { start: string; end?: string };
+  duration?: { min: string; max?: string };
   relative_to?: {
     step?: string;
+    random?: string;
     sun?: string;
     entity?: string;
     attribute?: "start_time" | "end_time";
@@ -37,7 +39,7 @@ export interface RandomEvent extends Schedule {
   end: Timing;
   min_duration?: string;
   max_duration?: string;
-  count?: number;
+  count?: number | { min: number; max: number };
   on: Action;
   off: Action;
 }
@@ -60,6 +62,8 @@ export interface TimingForm {
   anchor: string;
   startOffset: string | number;
   endOffset: string | number;
+  minDuration?: string;
+  maxDuration?: string;
 }
 export interface ActionForm {
   kind: string;
@@ -67,6 +71,8 @@ export interface ActionForm {
   data: string;
   entities: string[];
   action: string;
+  position: string;
+  tiltPosition: string;
 }
 export interface StepForm extends ActionForm {
   name: string;
@@ -100,7 +106,8 @@ export interface RandomForm {
   end: TimingForm;
   minDuration: string;
   maxDuration: string;
-  count: string;
+  minCount: string;
+  maxCount: string;
   on: ActionForm;
   off: ActionForm;
   sameEntities: boolean;
@@ -132,6 +139,7 @@ export interface TimingEditorContext extends EditorContext {
   form: Pick<StepForm, "days">;
   time: TimingForm;
   stepId?: string;
+  randomId?: string;
   refresh: (key?: string) => void;
 }
 export interface TimeSource {

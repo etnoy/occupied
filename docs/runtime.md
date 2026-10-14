@@ -20,6 +20,14 @@ Generic service and scene effects are opaque. Occupied does not infer their devi
 
 Outside manual changes yield an entity until the next activation. Permission loss, pause, unload, and configuration failure invalidate queued work immediately. Stop leaves device states; still-owned native fades are held at their observed level without interfering with another actor's transition.
 
+## Cover targets and activation
+
+Standard native cover open/close/stop and position/tilt commands supply typed preview targets. Position and tilt remain independent: open/close target 100%/0%, and stop invalidates only the affected target. Each local calendar date starts Unknown. Preview does not model travel time or predict the physical position after a stop.
+
+The cover activation policy is **future only**. Past cover calls are marked skipped, including position/tilt targets, and enabling or resuming management never moves covers to a historical target. Covers do not enter the light fade/handover path or receive automatic retries. Future authored commands dispatch normally. Controller stop cancels future work but does not send `cover.stop_cover`, `cover.stop_cover_tilt`, or restoration calls.
+
+Outside state, `current_position`, or `current_tilt_position` changes yield the cover until the next activation, including attribute-only changes while its state remains `open`. Updates with Occupied's service context remain attributable to Occupied; unrelated telemetry attributes do not cause yielding.
+
 ## Dry run, updates, and isolation
 
 Dry run uses a virtual state map and records would-dispatch outcomes without calling native services. Live observed state remains unchanged. Each controller has its own seed, journal, permission, queues, source, and subscriptions. Shared explicitly controlled entities appear as overlap warnings.

@@ -4,7 +4,7 @@ import math
 from datetime import timedelta
 
 from .models import max_plan_events
-from .validation import Issue, ProgramError, step_order
+from .validation import Issue, ProgramError, random_order, step_order
 
 DAY = 86400
 MAX_DATE_DISTANCE = 14
@@ -26,18 +26,36 @@ def runtime_dates(program, today):
         active.add(key)
         before = max(before, math.ceil(max(0, high) / DAY) + 1)
         after = max(after, math.ceil(max(0, -low) / DAY) + 1)
-    for event in program.random.values():
+    random_bounds = {}
+    active_random = set()
+    for key in random_order(program):
+        event = program.random[key]
         timings = (event.start, event.end)
-        if not event.enabled or any(
-            timing.relative_to and timing.relative_to.step and timing.relative_to.step not in active
-            for timing in timings
+        if (
+            not event.enabled
+            or event.max_count == 0
+            or any(
+                timing.relative_to
+                and timing.relative_to.step
+                and timing.relative_to.step not in active
+                for timing in timings
+            )
         ):
             continue
-        low, high = timing_bounds(event.start, bounds)
-        end_low, end_high = timing_bounds(event.end, bounds)
+        source = event.start.relative_to
+        if source and source.random and source.random not in active_random:
+            continue
+        low, high = timing_bounds(event.start, bounds, random_bounds)
+        if duration := event.end.duration:
+            end_low = low + duration.min
+            end_high = high + duration.latest_duration
+        else:
+            end_low, end_high = timing_bounds(event.end, bounds)
         # A recurring end may roll to the next local date for an overnight window.
-        if not (event.end.relative_to and event.end.relative_to.step):
+        if not event.end.duration and not (event.end.relative_to and event.end.relative_to.step):
             end_high += DAY
+        random_bounds[key] = end_low, end_high
+        active_random.add(key)
         before = max(before, math.ceil(max(0, high, end_high) / DAY) + 1)
         after = max(after, math.ceil(max(0, -low, -end_low) / DAY) + 1)
     count = max_plan_events(program)
@@ -58,9 +76,15 @@ def runtime_dates(program, today):
     return [today + timedelta(days=offset) for offset in range(-before, after + 1)]
 
 
-def timing_bounds(timing, bounds):
+def timing_bounds(timing, bounds, random_bounds=None):
     if source := timing.relative_to:
-        low, high = bounds[source.step] if source.step else (0, DAY)
+        low, high = (
+            bounds[source.step]
+            if source.step
+            else (random_bounds or {})[source.random]
+            if source.random
+            else (0, DAY)
+        )
         return low + source.start_offset, high + source.latest_offset
     clock = timing.absolute_time
     return 0, 2 * DAY if clock.end and clock.end < clock.start else DAY

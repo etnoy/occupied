@@ -950,20 +950,31 @@ function editorField(tail: Path, form: Pick<StepForm, "kind">): string {
 function randomEditorField(tail: Path, form: RandomForm): string {
   const head = tail[0];
   if (head === "start" || head === "end") {
+    if (tail[1] === "duration") {
+      return `${head}.${tail[2] === "max" ? "maxDuration" : "minDuration"}`;
+    }
     if (tail.length === 1) {
-      return `${head}.${form[head].mode === "absolute" ? "start" : "anchor"}`;
+      let field = "anchor";
+      if (form[head].mode === "absolute") {
+        field = "start";
+      } else if (form[head].mode === "duration") {
+        field = "minDuration";
+      }
+      return `${head}.${field}`;
     }
     return `${head}.${editorField(["timing", ...tail.slice(1)], form.on)}`;
   }
   if (head === "on" || head === "off") {
     return `${head}.${editorField(tail.slice(1), form[head])}`;
   }
+  if (head === "count") {
+    return tail[1] === "max" ? "maxCount" : "minCount";
+  }
   return (
     (
       {
         min_duration: "minDuration",
         max_duration: "maxDuration",
-        count: "count",
         days: "days",
       } as Record<string, string>
     )[String(head)] || "name"

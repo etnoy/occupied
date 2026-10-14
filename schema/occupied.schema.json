@@ -60,6 +60,29 @@
       "title": "Action",
       "type": "object"
     },
+    "CountRange": {
+      "additionalProperties": false,
+      "properties": {
+        "min": {
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Min",
+          "type": "integer"
+        },
+        "max": {
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Max",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "min",
+        "max"
+      ],
+      "title": "CountRange",
+      "type": "object"
+    },
     "Day": {
       "enum": [
         "mon",
@@ -129,11 +152,18 @@
           "type": "string"
         },
         "count": {
+          "anyOf": [
+            {
+              "maximum": 1000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "$ref": "#/$defs/CountRange"
+            }
+          ],
           "default": 3,
-          "maximum": 1000,
-          "minimum": 1,
-          "title": "Count",
-          "type": "integer"
+          "title": "Count"
         },
         "on": {
           "$ref": "#/$defs/Action"
@@ -166,6 +196,11 @@
                 "required": [
                   "entity"
                 ]
+              },
+              {
+                "required": [
+                  "random"
+                ]
               }
             ]
           },
@@ -191,6 +226,11 @@
               {
                 "required": [
                   "entity"
+                ]
+              },
+              {
+                "required": [
+                  "random"
                 ]
               }
             ]
@@ -218,6 +258,11 @@
                 "required": [
                   "sun"
                 ]
+              },
+              {
+                "required": [
+                  "random"
+                ]
               }
             ]
           },
@@ -230,6 +275,37 @@
           },
           "required": [
             "entity"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "step"
+                ]
+              },
+              {
+                "required": [
+                  "sun"
+                ]
+              },
+              {
+                "required": [
+                  "entity"
+                ]
+              }
+            ]
+          },
+          "properties": {
+            "random": {
+              "not": {
+                "type": "null"
+              }
+            }
+          },
+          "required": [
+            "random"
           ]
         }
       ],
@@ -246,6 +322,19 @@
           ],
           "default": null,
           "title": "Step"
+        },
+        "random": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Random"
         },
         "sun": {
           "anyOf": [
@@ -397,6 +486,11 @@
                 "required": [
                   "relative_to"
                 ]
+              },
+              {
+                "required": [
+                  "duration"
+                ]
               }
             ]
           },
@@ -418,6 +512,11 @@
                 "required": [
                   "absolute_time"
                 ]
+              },
+              {
+                "required": [
+                  "duration"
+                ]
               }
             ]
           },
@@ -430,6 +529,32 @@
           },
           "required": [
             "relative_to"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "absolute_time"
+                ]
+              },
+              {
+                "required": [
+                  "relative_to"
+                ]
+              }
+            ]
+          },
+          "properties": {
+            "duration": {
+              "not": {
+                "type": "null"
+              }
+            }
+          },
+          "required": [
+            "duration"
           ]
         }
       ],
@@ -455,9 +580,48 @@
             }
           ],
           "default": null
+        },
+        "duration": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WindowDuration"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "title": "Timing",
+      "type": "object"
+    },
+    "WindowDuration": {
+      "additionalProperties": false,
+      "properties": {
+        "min": {
+          "gt": 0,
+          "title": "Min",
+          "type": "string"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "gt": 0,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max"
+        }
+      },
+      "required": [
+        "min"
+      ],
+      "title": "WindowDuration",
       "type": "object"
     }
   },

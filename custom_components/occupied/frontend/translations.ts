@@ -17,11 +17,17 @@ const sv: Record<string, string> = {
   "matching sources": "matchande tidskällor",
   "No matching steps or time sources.": "Inga matchande steg eller tidskällor.",
   Steps: "Steg",
+  "Scheduled activity": "Schemalagd aktivitet",
+  "Run actions at specific times, around sunrise or sunset, or relative to other steps. Choose which devices to control and what they should do.":
+    "Kör åtgärder vid bestämda tider, kring soluppgång eller solnedgång, eller i förhållande till andra steg. Välj vilka enheter som ska styras och vad de ska göra.",
   Random: "Slumpmässigt",
   "Random activity": "Slumpmässig aktivitet",
   "Random event": "Slumpmässig händelse",
   "Random events": "Slumpmässiga händelser",
   "Random event name": "Händelsens namn",
+  "Random event actions": "Åtgärder för slumpmässig händelse",
+  "Apply these settings, then save the random event.":
+    "Tillämpa inställningarna och spara sedan den slumpmässiga händelsen.",
   "Create your first random event": "Skapa din första slumpmässiga händelse",
   "Create random event": "Skapa slumpmässig händelse",
   "Save random event": "Spara slumpmässig händelse",
@@ -37,6 +43,35 @@ const sv: Record<string, string> = {
     "Välj ett tidsfönster, en varaktighet och åtgärder för början och slutet av varje tillfälle.",
   "Window starts": "Tidsfönstret börjar",
   "Window ends": "Tidsfönstret slutar",
+  Duration: "Varaktighet",
+  "End of": "Slutet på",
+  "the end of": "slutet på",
+  "Minimum window duration": "Minsta varaktighet för tidsfönstret",
+  "Maximum window duration": "Högsta varaktighet för tidsfönstret",
+  "Choose a positive window duration within seven days.":
+    "Välj en positiv varaktighet för tidsfönstret inom sju dagar.",
+  "Maximum window duration must be at least the minimum.":
+    "Högsta varaktighet för tidsfönstret måste vara minst den lägsta.",
+  "Choose valid window durations.":
+    "Välj giltiga varaktigheter för tidsfönstret.",
+  "Window closes {duration} after it starts":
+    "Tidsfönstret stängs {duration} efter att det börjar",
+  "Window closes between {min} and {max} after it starts":
+    "Tidsfönstret stängs mellan {min} och {max} efter att det börjar",
+  "Choose another random event without creating a circular relationship.":
+    "Välj en annan slumpmässig händelse utan att skapa ett cirkulärt beroende.",
+  "This start follows the selected window's closing time.":
+    "Starten följer det valda tidsfönstrets sluttid.",
+  "Choose Absolute time or Duration to replace this saved relative window end.":
+    "Välj Absolut tid eller Varaktighet för att ersätta det sparade tidsfönstrets relativa slut.",
+  "Other random events depend on this window. Change their starts before deleting.":
+    "Andra slumpmässiga händelser beror på det här tidsfönstret. Ändra deras start innan du tar bort det.",
+  "No events can run because the minimum duration is longer than the window.":
+    "Inga händelser kan köras eftersom minsta varaktighet är längre än tidsfönstret.",
+  "Reduce the minimum duration or extend the window.":
+    "Minska den kortaste varaktigheten eller förläng tidsfönstret.",
+  "Duration limits take priority over the event count.":
+    "Varaktighetsgränserna har företräde framför antalet händelser.",
   "Window start": "Tidsfönstrets start",
   "Window end": "Tidsfönstrets slut",
   "Latest window start (optional)": "Senaste start för tidsfönstret (valfritt)",
@@ -44,12 +79,65 @@ const sv: Record<string, string> = {
   "Randomize window start": "Slumpmässig start för tidsfönstret",
   "Randomize window end": "Slumpmässigt slut för tidsfönstret",
   "Frequency and duration": "Frekvens och varaktighet",
-  "Times per window": "Antal gånger per tidsfönster",
+  "Minimum events per window": "Minsta antal händelser per tidsfönster",
+  "Maximum events per window": "Högsta antal händelser per tidsfönster",
+  "Add maximum events": "Lägg till högsta antal händelser",
+  "Remove maximum events": "Ta bort högsta antal händelser",
+  "Maximum events per window must be at least the minimum.":
+    "Högsta antal händelser per tidsfönster måste vara minst det lägsta antalet.",
+  "This random event is disabled.":
+    "Den här slumpmässiga händelsen är inaktiverad.",
+  "Choose valid event counts to describe how often events run.":
+    "Välj giltiga antal händelser för att beskriva hur ofta de körs.",
+  "Choose a whole number from 0 to 1000.": "Välj ett heltal från 0 till 1000.",
+  "No events run because the event count is zero.":
+    "Inga händelser körs eftersom antalet händelser är noll.",
+  "Dependent random events also skip this window.":
+    "Beroende slumpmässiga händelser hoppar också över det här tidsfönstret.",
+  "A window may have no events; dependent random events skip that window.":
+    "Ett tidsfönster kan sakna händelser; beroende slumpmässiga händelser hoppar över det tidsfönstret.",
+  "Between {min} and {max} events start at random times during each window.":
+    "Mellan {min} och {max} händelser börjar vid slumpmässiga tider inom varje tidsfönster.",
+  "One event starts at a random time during each window.":
+    "En händelse börjar vid en slumpmässig tid inom varje tidsfönster.",
+  "{count} events start at random times during each window.":
+    "{count} händelser börjar vid slumpmässiga tider inom varje tidsfönster.",
+  "Choose valid durations to describe how long each event lasts.":
+    "Välj giltiga varaktigheter för att beskriva hur länge varje händelse varar.",
+  "Choose durations that fit inside the window.":
+    "Välj varaktigheter som ryms inom tidsfönstret.",
+  "Each event lasts {duration}.": "Varje händelse varar {duration}.",
+  "Each event lasts between {min} and {max}.":
+    "Varje händelse varar mellan {min} och {max}.",
+  "activate {entities}": "aktivera {entities}",
+  "run {service} for {entities}": "kör {service} för {entities}",
+  "turn on {entities}": "slå på {entities}",
+  "turn off {entities}": "slå av {entities}",
+  "open {entities}": "öppna {entities}",
+  "close {entities}": "stäng {entities}",
+  "stop {entities}": "stoppa {entities}",
+  "set the position of {entities} to {position}%":
+    "ställ in positionen för {entities} till {position}%",
+  "open the tilt of {entities}": "öppna lamellerna för {entities}",
+  "close the tilt of {entities}": "stäng lamellerna för {entities}",
+  "stop the tilt of {entities}": "stoppa lamellerna för {entities}",
+  "set the tilt of {entities} to {position}%":
+    "ställ in lamellerna för {entities} till {position}%",
+  "When each event starts, {action}.": "När varje händelse börjar, {action}.",
+  "When each event ends, {action}.": "När varje händelse slutar, {action}.",
+  "The event finishes before the window closes.":
+    "Händelsen avslutas innan tidsfönstret stängs.",
+  "Events may overlap, but all finish before the window closes.":
+    "Händelser kan överlappa, men alla avslutas innan tidsfönstret stängs.",
   "times per window": "gånger per tidsfönster",
   "Minimum duration": "Minsta varaktighet",
   "Maximum duration": "Längsta varaktighet",
-  "Use durations like 5m, 30s, or 1h. Occurrences may overlap; every end action stays inside the window.":
-    "Ange varaktigheter som 5m, 30s eller 1h. Tillfällen kan överlappa; varje slutåtgärd sker inom tidsfönstret.",
+  "Use durations like 5m, 30s, or 1h.":
+    "Ange varaktigheter som 5m, 30s eller 1h.",
+  "When event starts": "När händelsen börjar",
+  "When event ends": "När händelsen slutar",
+  "Choose which days this random event should run.":
+    "Välj vilka dagar den slumpmässiga händelsen ska köras.",
   "At the start": "Vid början",
   "At the end": "Vid slutet",
   "Start action": "Startåtgärd",
@@ -82,6 +170,25 @@ const sv: Record<string, string> = {
   "Entity service action": "Tjänsteanrop för entiteter",
   "Turn on lights/switches": "Slå på lampor/brytare",
   "Turn off lights/switches": "Slå av lampor/brytare",
+  "Control covers": "Styr gardiner och persienner",
+  "Cover action": "Åtgärd för gardin eller persienn",
+  "Open cover": "Öppna gardin eller persienn",
+  "Close cover": "Stäng gardin eller persienn",
+  "Stop cover": "Stoppa gardin eller persienn",
+  "Set cover position": "Ställ in position",
+  "Open tilt": "Öppna lameller",
+  "Close tilt": "Stäng lameller",
+  "Stop tilt": "Stoppa lameller",
+  "Set tilt position": "Ställ in lamellernas position",
+  "Position (%)": "Position (%)",
+  "Tilt position (%)": "Lamellernas position (%)",
+  "Choose cover entities.": "Välj gardin- eller persiennentiteter.",
+  "Choose a cover action.": "Välj en åtgärd för gardin eller persienn.",
+  "Choose a whole number from 0 to 100.": "Välj ett heltal från 0 till 100.",
+  "0% is closed; 100% is open. Device support determines which cover actions are available.":
+    "0% är stängt; 100% är öppet. Enhetens stöd avgör vilka åtgärder som är tillgängliga.",
+  "Covers run only at scheduled times. Enabling late skips past cover actions.":
+    "Gardiner och persienner styrs bara vid schemalagda tider. Vid sen aktivering hoppas tidigare åtgärder över.",
   Settings: "Inställningar",
   "Create step": "Skapa steg",
   "Create your first step": "Skapa ditt första steg",
@@ -128,6 +235,14 @@ const sv: Record<string, string> = {
   "Loading graph…": "Laddar diagram…",
   On: "På",
   Unknown: "Okänt",
+  Open: "Öppet",
+  Closed: "Stängt",
+  "Position {position}%": "Position {position}%",
+  "Tilt {position}%": "Lameller {position}%",
+  "Cover strips show planned position and tilt targets. Travel time and positions after stop actions are unknown.":
+    "Gardiner och persienner visar planerade mål för position och lameller. Förflyttningstid och position efter stopp är okända.",
+  "No light, switch, or cover actions on this date. Other actions are listed in Event details.":
+    "Inga åtgärder för lampor, brytare, gardiner eller persienner detta datum. Övriga åtgärder visas i Händelsedetaljer.",
   "No light or switch actions on this date. Other actions are listed in Event details.":
     "Inga åtgärder för lampor eller brytare detta datum. Övriga åtgärder visas i Händelsedetaljer.",
   "The Home Assistant graph could not load. Planned actions are available in Event details.":
@@ -168,6 +283,8 @@ const sv: Record<string, string> = {
   "Add end offset": "Lägg till slutförskjutning",
   "Remove end offset": "Ta bort slutförskjutning",
   "Choose a step or event": "Välj ett steg eller en händelse",
+  "Enter valid offsets to see the window boundary":
+    "Ange giltiga förskjutningar för att se tidsfönstrets gräns",
   "Turn on": "Slå på",
   "Turn off": "Slå av",
   "Every day": "Varje dag",

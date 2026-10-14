@@ -1,11 +1,25 @@
 // Generated from step-model.ts by pnpm run build. Do not edit.
-import { offsetErrors, timingForm, entityName } from "./util.js";
-import { copy, days, identifier, parentSteps, references } from "./model.js";
+import {
+  durationSeconds,
+  offsetErrors,
+  timingForm,
+  entityName,
+} from "./util.js";
+import {
+  copy,
+  days,
+  identifier,
+  parentSteps,
+  parentRandomEvents,
+  references,
+} from "./model.js";
+import { coverActions, coverField, isCoverAction } from "./cover.js";
 const sorted = (values) => [...new Set(values)].sort();
 const actionLabels = {
   turn_on: "Turn on",
   turn_off: "Turn off",
   "scene.turn_on": "Activate scene",
+  ...Object.fromEntries(coverActions),
 };
 export function stepEntries(program, catalog, t = (value) => value) {
   return Object.entries(program.steps || {}).map(([id, step]) => ({
@@ -31,6 +45,7 @@ export function timeSourceChoices(
   id,
   catalog = {},
   t = (value) => value,
+  randomId,
 ) {
   const allowed = new Set(parentSteps(program, id).map((step) => step.id));
   return [
@@ -45,6 +60,13 @@ export function timeSourceChoices(
         name: step.name,
         group: "Steps",
       })),
+    ...(randomId
+      ? parentRandomEvents(program, randomId).map((event) => ({
+          value: `random:${event.id}`,
+          name: `${t("End of")} ${event.name || (catalog.entities ? entityName({ entities: catalog.entities }, event.on.entities[0]) : event.on.entities[0])}`,
+          group: "Random events",
+        }))
+      : []),
     ...(catalog.time_sources ||
       solarEvents.map((event) => ({
         value: `sun:${event}`,
@@ -83,6 +105,12 @@ export function actionForm(source) {
   let kind = "entities";
   if (action === "scene.turn_on") {
     kind = "scene";
+  } else if (
+    source &&
+    isCoverAction(source) &&
+    source.entities.every((entity) => entity.startsWith("cover."))
+  ) {
+    kind = "cover";
   } else if (action?.includes(".")) {
     kind = "service";
   }
@@ -92,6 +120,8 @@ export function actionForm(source) {
     data: JSON.stringify(source?.data || {}, null, 2),
     entities: [...(source?.entities || [])],
     action: action === "turn_off" ? "turn_off" : "turn_on",
+    position: String(source?.data?.position ?? ""),
+    tiltPosition: String(source?.data?.tilt_position ?? ""),
   };
 }
 export function hasStepChanges(editor) {
@@ -137,7 +167,27 @@ export function actionErrors(form) {
   ) {
     errors.service = "Choose a service using domain.service.";
   }
-  if (form.kind !== "entities") {
+  if (form.kind === "cover") {
+    if (form.entities.some((entity) => !entity.startsWith("cover."))) {
+      errors.entities = "Choose cover entities.";
+    }
+    if (coverActions.every(([action]) => action !== form.service)) {
+      errors.service = "Choose a cover action.";
+    }
+    const field = coverField(form.service);
+    if (field) {
+      const key = field === "position" ? "position" : "tiltPosition";
+      const value = Number(form[key]);
+      if (
+        !form[key].trim() ||
+        !Number.isSafeInteger(value) ||
+        value < 0 ||
+        value > 100
+      ) {
+        errors[key] = "Choose a whole number from 0 to 100.";
+      }
+    }
+  } else if (form.kind === "scene" || form.kind === "service") {
     try {
       const data = JSON.parse(form.data);
       if (!data || Array.isArray(data) || typeof data !== "object") {
@@ -149,7 +199,7 @@ export function actionErrors(form) {
   }
   return errors;
 }
-export function timingErrors(program, time, id) {
+export function timingErrors(program, time, id, randomId) {
   const errors = {};
   const clockPattern = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
   if (time.mode === "absolute") {
@@ -172,6 +222,16 @@ export function timingErrors(program, time, id) {
         errors.anchor =
           "Choose another step without creating a circular relationship.";
       }
+    } else if (time.anchor.startsWith("random:")) {
+      if (
+        !randomId ||
+        parentRandomEvents(program, randomId).every(
+          (event) => event.id !== time.anchor.slice(7),
+        )
+      ) {
+        errors.anchor =
+          "Choose another random event without creating a circular relationship.";
+      }
     } else if (
       !solarEvents.map((event) => `sun:${event}`).includes(time.anchor) &&
       !/^entity:[a-z_][a-z0-9_]*\.[a-z0-9_]+(?::(?:start_time|end_time))?$/.test(
@@ -186,6 +246,18 @@ export function timingErrors(program, time, id) {
   return errors;
 }
 export function formTiming(time) {
+  if (time.mode === "duration") {
+    return {
+      duration: {
+        min: time.minDuration || "",
+        ...(time.maxDuration &&
+          durationSeconds(time.maxDuration) !==
+            durationSeconds(time.minDuration || "") && {
+            max: time.maxDuration,
+          }),
+      },
+    };
+  }
   if (time.mode === "absolute") {
     return {
       absolute_time: { start: time.start, ...(time.end && { end: time.end }) },
@@ -199,6 +271,9 @@ export function formTiming(time) {
       end_offset: String(time.endOffset === "0" ? "0s" : time.endOffset),
     }),
   };
+  if (time.anchor.startsWith("random:")) {
+    return { relative_to: { random: time.anchor.slice(7), ...offsets } };
+  }
   if (time.anchor.startsWith("step:")) {
     return { relative_to: { step: time.anchor.slice(5), ...offsets } };
   }
@@ -239,8 +314,22 @@ export function buildAction(form) {
   let action = form.action;
   if (form.kind === "scene") {
     action = "scene.turn_on";
-  } else if (form.kind === "service") {
+  } else if (form.kind === "service" || form.kind === "cover") {
     action = form.service;
+  }
+  if (form.kind === "cover") {
+    const field = coverField(action);
+    return {
+      action,
+      entities: sorted(form.entities),
+      ...(field && {
+        data: {
+          [field]: Number(
+            field === "position" ? form.position : form.tiltPosition,
+          ),
+        },
+      }),
+    };
   }
   return {
     action,

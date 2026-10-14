@@ -86,25 +86,59 @@ export function durationSeconds(value: string): number {
   return !value || value === "0" ? NaN : minutes(value) * 60;
 }
 
+export function durationLabel(
+  value: number,
+  t: Translate = (text) => text,
+): string {
+  let remaining = Math.round(Math.abs(value) * 1e6) / 1e6;
+  const hours = Math.floor(remaining / 3600);
+  remaining -= hours * 3600;
+  const mins = Math.floor(remaining / 60);
+  const seconds = Math.round((remaining - mins * 60) * 1e6) / 1e6;
+  return (
+    [
+      [hours, "hour", "hours"],
+      [mins, "minute", "minutes"],
+      [seconds, "second", "seconds"],
+    ] as [number, string, string][]
+  )
+    .filter(([amount]) => amount > 0)
+    .map(
+      ([amount, singular, plural]) =>
+        `${amount} ${t(amount === 1 ? singular : plural)}`,
+    )
+    .join(" ");
+}
+
 export function timingForm(timing: Timing = {}): TimingForm {
   const clock = timing.absolute_time,
     source = timing.relative_to;
   let anchor = "";
   if (source?.step) {
     anchor = `step:${source.step}`;
+  } else if (source?.random) {
+    anchor = `random:${source.random}`;
   } else if (source?.sun) {
     anchor = `sun:${source.sun}`;
   } else if (source?.entity) {
     const attribute = source.attribute ? `:${source.attribute}` : "";
     anchor = `entity:${source.entity}${attribute}`;
   }
+  let mode = source ? "relative" : "absolute";
+  if (timing.duration) {
+    mode = "duration";
+  }
   return {
-    mode: source ? "relative" : "absolute",
+    mode,
     start: clock?.start || "18:00",
     end: clock?.end || "",
     anchor,
     startOffset: source?.start_offset || "0s",
     endOffset: source?.end_offset || "",
+    ...(timing.duration && {
+      minDuration: timing.duration.min,
+      maxDuration: timing.duration.max || timing.duration.min,
+    }),
   };
 }
 
@@ -197,15 +231,17 @@ export function timingExplanation(
   sources: Pick<TimeSource, "value" | "name">[] = [],
   {
     includeHints = true,
+    subject = "Runs",
     locale,
     days: selectedDays,
   }: {
     includeHints?: boolean;
+    subject?: "Runs" | "Window starts" | "Window ends";
     locale?: HomeAssistantLocale;
     days?: string[];
   } = {},
 ) {
-  const runs = `${t("Runs")}${scheduleDaySuffix(selectedDays, t)}`;
+  const runs = `${t(subject)}${scheduleDaySuffix(selectedDays, t)}`;
   const time: TimingForm = {
     start: "",
     end: "",
@@ -214,6 +250,27 @@ export function timingExplanation(
     endOffset: "",
     ...input,
   };
+  if (time.mode === "duration") {
+    const minimum = durationSeconds(time.minDuration || "");
+    const maximum = durationSeconds(time.maxDuration || time.minDuration || "");
+    if (
+      !Number.isFinite(minimum) ||
+      !Number.isFinite(maximum) ||
+      minimum <= 0 ||
+      maximum < minimum ||
+      maximum > 604_800
+    ) {
+      return t("Choose valid window durations.");
+    }
+    return t(
+      minimum === maximum
+        ? "Window closes {duration} after it starts"
+        : "Window closes between {min} and {max} after it starts",
+    )
+      .replace("{duration}", () => durationLabel(minimum, t))
+      .replace("{min}", () => durationLabel(minimum, t))
+      .replace("{max}", () => durationLabel(maximum, t));
+  }
   if (time.mode === "absolute") {
     const valid = (value: string) =>
       /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value);
@@ -240,14 +297,20 @@ export function timingExplanation(
     return `${runs} ${t("at a random time between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}`;
   }
   if (Object.keys(offsetErrors(time)).length > 0) {
-    return t("Enter valid offsets to see when this step runs");
+    return t(
+      subject === "Runs"
+        ? "Enter valid offsets to see when this step runs"
+        : "Enter valid offsets to see the window boundary",
+    );
   }
   if (!time.anchor) {
     return t("Choose a step or event");
   }
   const step = time.anchor.startsWith("step:");
   let name: string;
-  if (step) {
+  if (time.anchor.startsWith("random:")) {
+    name = `${t("the end of")} ${entries.find((entry) => entry.id === time.anchor)?.name || time.anchor.slice(7)}`;
+  } else if (step) {
     name =
       entries.find((entry) => entry.id === time.anchor.slice(5))?.name ||
       time.anchor.slice(5);
@@ -266,26 +329,7 @@ export function timingExplanation(
   }
   const low = minutes(time.startOffset),
     high = time.endOffset ? minutes(time.endOffset) : low;
-  const duration = (offset: number) => {
-    let remaining = Math.round(Math.abs(offset) * 60 * 1e6) / 1e6;
-    const hours = Math.floor(remaining / 3600);
-    remaining -= hours * 3600;
-    const mins = Math.floor(remaining / 60);
-    const seconds = Math.round((remaining - mins * 60) * 1e6) / 1e6;
-    return (
-      [
-        [hours, "hour", "hours"],
-        [mins, "minute", "minutes"],
-        [seconds, "second", "seconds"],
-      ] as [number, string, string][]
-    )
-      .filter(([amount]) => amount)
-      .map(
-        ([amount, singular, plural]) =>
-          `${amount} ${t(amount === 1 ? singular : plural)}`,
-      )
-      .join(" ");
-  };
+  const duration = (offset: number) => durationLabel(Math.abs(offset) * 60, t);
   const offsetLabel = (offset: number) =>
     `${duration(offset)} ${t(offset < 0 ? "before" : "after")}`;
   if (low === high) {

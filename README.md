@@ -10,7 +10,7 @@ A native Home Assistant occupancy simulator with shared GUI/YAML steps and rando
 
 Create a controller through **Settings → Devices & services → Add integration → Occupied**, then select **Configure**. Permission starts disabled. The editor creates steps with absolute start windows or relative timing, and one light/switch, scene, or native entity service action. Titles are optional. All weekdays and enabled state are implicit defaults.
 
-Use the separate **Random** tab for repeated activity: choose a start/end window, a number of occurrences, a duration range, and actions for each occurrence's start and end. The same time and entity pickers support clock times, existing steps, solar events, and Home Assistant time sources. End actions reuse the selected entities by default. Random events appear alongside steps in Preview and in YAML exports.
+Use the separate **Random** tab for repeated activity: choose a start/end window, a number of occurrences with an optional maximum, a duration range, and actions for each occurrence's start and end. The count is fixed unless a maximum is added; ranges choose a count between the inclusive bounds for each window. A zero minimum allows windows with no activity (`count: {min: 0, max: 1}` gives an equal chance of zero or one occurrence); a fixed zero always skips. Zero-occurrence windows also skip dependent random windows, with the choice preserved by seeded sampling. Duration bounds take precedence over the count: events may overlap, but are never shortened below the minimum, and a window that cannot fit one minimum-length event is infeasible when a positive count is sampled. Window starts can follow clock times, steps, solar events, Home Assistant time sources, or another random window’s closing time. Window ends use absolute time or a fixed/ranged duration from the sampled start. End actions reuse the selected entities by default. Random events appear alongside steps in Preview and in YAML exports.
 
 ```yaml
 schema_version: 1
@@ -33,6 +33,8 @@ HA supplies timezone/location, and its controls or automations determine managem
 GUI storage, YAML snapshots, and authoritative managed files share the same schema. Invalid managed-file updates retain the last valid program. Multiple controllers have independent plans, queues, permissions, and sources.
 
 See [installation](docs/installation.md), [editor](docs/editor.md), [schema](docs/schema.md), [runtime](docs/runtime.md), and [managed configuration](docs/managed-configuration.md). Example programs are in [examples](examples/house.yaml).
+
+See [Occupied and Presence Simulation](docs/presence-simulation-comparison.md) for when to choose authored schemes or history replay, how to use both, and possible additions to Occupied.
 
 The standalone `occupied-config` CLI validates, exports, previews, and renames typed step IDs without importing Home Assistant or executing device services:
 

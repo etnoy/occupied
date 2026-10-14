@@ -1,5 +1,5 @@
 // Generated from random-editor-controller.ts by pnpm run build. Do not edit.
-import { copy } from "./model.js";
+import { copy, randomReferences } from "./model.js";
 import { randomEditor, randomErrors, buildRandom } from "./random-model.js";
 import { focusEditor } from "./step-editor-controller.js";
 export function openRandom(panel, entry) {
@@ -36,7 +36,10 @@ export function createRandomEditorContext(panel) {
     focusEditor(panel, key);
   };
   const changed = (key) => {
-    if (form.on.kind !== "entities" || form.off.kind !== "entities") {
+    if (
+      !["entities", "cover"].includes(form.on.kind) ||
+      form.on.kind !== form.off.kind
+    ) {
       form.sameEntities = false;
     }
     if (form.sameEntities) {
@@ -85,6 +88,7 @@ export function createRandomEditorContext(panel) {
     time: new Proxy(form[edge], {}),
     t,
     fieldPrefix: `${edge}.`,
+    ...(edge === "start" && { randomId: editor.id }),
     changed: (key) => changed(`${edge}.${key}`),
     refresh: (key) => refresh(key ? `${edge}.${key}` : undefined),
   });
@@ -133,6 +137,13 @@ export async function deleteRandom(panel) {
     return;
   }
   const candidate = copy(panel.draft);
+  if (randomReferences(candidate, editor.id).length > 0) {
+    panel.error = panel.t(
+      "Other random events depend on this window. Change their starts before deleting.",
+    );
+    panel.flush();
+    return;
+  }
   delete candidate.random?.[editor.id];
   if (panel.document?.source === "file") {
     panel.randomEditor = null;

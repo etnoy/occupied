@@ -78,8 +78,9 @@ async def test_shared_step_entities_need_no_baseline(
     assert not devices
 
 
+@pytest.mark.parametrize("count", [0, 3, {"min": 0, "max": 1}, {"min": 2, "max": 6}])
 async def test_random_actions_validate_save_preview_and_export(
-    hass, editor_entry, devices, program_dict, hass_ws_client
+    hass, editor_entry, devices, program_dict, hass_ws_client, count
 ):
     program_dict["random"] = {
         "lamp": {
@@ -87,7 +88,7 @@ async def test_random_actions_validate_save_preview_and_export(
             "end": {"relative_to": {"step": "leave"}},
             "min_duration": "1m",
             "max_duration": "5m",
-            "count": 3,
+            "count": count,
             "on": {
                 "action": "light.turn_on",
                 "entities": ["light.a"],
@@ -109,6 +110,7 @@ async def test_random_actions_validate_save_preview_and_export(
         )
     )["result"]
     assert result["valid"] and "lamp" in result["program"]["random"]
+    assert result["program"]["random"]["lamp"].get("count", 3) == count
     preview = (
         await request(
             client,
@@ -122,16 +124,13 @@ async def test_random_actions_validate_save_preview_and_export(
         )
     )["result"]
     assert preview["valid"]
-    assert (
-        len(
-            [
-                event
-                for event in preview["plans"][0]["events"]
-                if event["kind"].startswith("random_")
-            ]
-        )
-        == 6
+    occurrences = len(
+        [event for event in preview["plans"][0]["events"] if event["kind"] == "random_start"]
     )
+    if isinstance(count, int):
+        assert occurrences == count
+    else:
+        assert count["min"] <= occurrences <= count["max"]
     exported = (
         await request(client, "occupied/export", editor_entry, 3, program=result["program"])
     )["result"]
@@ -156,6 +155,50 @@ async def test_random_actions_validate_save_preview_and_export(
     )["result"]
     assert not invalid["valid"]
     assert invalid["issues"][0]["model_path"] == ["random", "lamp", "on", "data"]
+    assert not devices
+
+
+async def test_window_duration_inputs_and_random_dependencies_validate_and_save(
+    hass, editor_entry, devices, program_dict, hass_ws_client
+):
+    program_dict["random"] = {
+        "first": {
+            "start": {"absolute_time": {"start": "18:00"}},
+            "end": {"duration": {"min": "1m", "max": "2h"}},
+            "min_duration": "30s",
+            "max_duration": "45s",
+            "on": {"action": "turn_on", "entities": ["light.a"]},
+            "off": {"action": "turn_off", "entities": ["light.a"]},
+        },
+        "second": {
+            "start": {"relative_to": {"random": "first", "start_offset": "1m"}},
+            "end": {"duration": {"min": "5m", "max": "10m"}},
+            "min_duration": "30s",
+            "max_duration": "45s",
+            "on": {"action": "turn_on", "entities": ["light.b"]},
+            "off": {"action": "turn_off", "entities": ["light.b"]},
+        },
+    }
+    assert await hass.config_entries.async_setup(editor_entry.entry_id)
+    client = await hass_ws_client(hass)
+    validation = (
+        await request(client, "occupied/editor_validate", editor_entry, program=program_dict)
+    )["result"]
+    assert validation["valid"] and not validation["issues"]
+    doc = program_document(editor_entry.runtime_data)
+    saved = (
+        await request(
+            client,
+            "occupied/save",
+            editor_entry,
+            2,
+            program=program_dict,
+            expected_revision=doc["revision"],
+        )
+    )["result"]
+    assert saved["valid"]
+    assert saved["program"]["random"]["first"]["end"] == {"duration": {"min": "1m", "max": "2h"}}
+    assert saved["program"]["random"]["second"]["start"]["relative_to"]["random"] == "first"
     assert not devices
 
 

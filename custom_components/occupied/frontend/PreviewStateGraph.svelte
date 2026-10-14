@@ -63,7 +63,14 @@
     {t(
       plan.events.length === 0
         ? "No steps are scheduled for this date."
-        : "No light or switch actions on this date. Other actions are listed in Event details.",
+        : "No light, switch, or cover actions on this date. Other actions are listed in Event details.",
+    )}
+  </p>
+{/if}
+{#if data.some((entity) => entity.entity_id.startsWith("cover."))}
+  <p class="hint">
+    {t(
+      "Cover strips show planned position and tilt targets. Travel time and positions after stop actions are unknown.",
     )}
   </p>
 {/if}
