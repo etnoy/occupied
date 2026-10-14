@@ -1,0 +1,49 @@
+custom_components/occupied/frontend/ActionEditor.svelte
+  s_0b00afadde6385::t_eabdce1786b7fe 62-88
+custom_components/occupied/frontend/LivePreviewControls.svelte
+  s_0b00afadde6385::t_6bb02764d10457 145-149
+custom_components/occupied/frontend/action-kind.ts
+  s_0b00afadde6385::t_7e70e3aebc3b8a 69-71
+custom_components/occupied/frontend/custom-action.ts
+  s_0b00afadde6385::t_f2a4b7cf927d10 68,96
+custom_components/occupied/frontend/step-model.ts
+  s_0b00afadde6385::t_f106e44a94a875 144,152,162,172,412-413
+custom_components/occupied/frontend/types.ts
+  s_0b00afadde6385::t_e007d551a8b290 24-27,29,75,244-251
+custom_components/occupied/lighting.py
+  s_0b00afadde6385::t_de00205fc583c5 35-36
+custom_components/occupied/live_preview.py
+  s_0b00afadde6385::t_e6d7d9c518e1ae 344-356
+custom_components/occupied/models.py
+  s_0b00afadde6385::t_aae400c64a9f40 265-269,282,300,317,323-324,339-342
+custom_components/occupied/runtime_planning.py
+  s_0b00afadde6385::t_9ca422ba7967d0 27,59-63
+custom_components/occupied/storage.py
+  s_0b00afadde6385::t_948cf3020972ac 66-72
+docs/custom-yaml.md
+  s_0b00afadde6385::t_6afd190eb126e6 100-131
+docs/runtime.md
+  s_0b00afadde6385::t_58476b1c8ab29c 48-53
+schema/occupied.schema.json
+  s_0b00afadde6385::t_5e7620bdb38933 62-66,120-122,490-508,540-544,598-600
+tests/frontend/src/custom-actions.test.ts
+  s_0b00afadde6385::t_2051e58a96f9a1 195-229
+tests/test_live_preview.py
+  s_0b00afadde6385::t_1308a420ef8c7f 550-589
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "752458e5446b217314dd655bd263df2fb656a5b6",
+  "prompts": {},
+  "sessions": {
+    "s_0b00afadde6385": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13a49-fa67-73c3-b6d7-37db38dd91d6",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
