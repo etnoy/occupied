@@ -1,0 +1,157 @@
+.github/workflows/check.yml
+  s_caec903a09e39e::t_ce21e1228c9abe 58-63
+README.md
+  s_caec903a09e39e::t_58c0b2609c9eb4 72,95,97-99
+custom_components/occupied/frontend/ActionEditor.svelte
+  s_caec903a09e39e::t_6d67b8a0827163 27,58-59,78,80
+custom_components/occupied/frontend/AdvancedRandomSettings.svelte
+  s_caec903a09e39e::t_cb18ed05929dd2 24,26,30,37,39,54,56,65-67,100,110,116,118
+custom_components/occupied/frontend/AdvancedStepSettings.svelte
+  s_caec903a09e39e::t_f3cc9f831395c7 24,26,29,34,36,51,57,73-75,104,116,123,125
+custom_components/occupied/frontend/App.svelte
+  s_caec903a09e39e::t_7ba913c9e38da0 15,23,27-28,32,42,50,61,125,141,157,181,206-208,228-229
+custom_components/occupied/frontend/DeleteRandomDialog.svelte
+  s_caec903a09e39e::t_1ae76bca5ce5e8 7,10,12,20,40-42,53,56-58
+custom_components/occupied/frontend/DeleteStepDialog.svelte
+  s_caec903a09e39e::t_cd311da544c919 10,20,23,25,34-36,49,75-77
+custom_components/occupied/frontend/EditorField.svelte
+  s_caec903a09e39e::t_a9f915e8bdd261 22,42,60-62,68-73,113
+custom_components/occupied/frontend/EntitiesEditor.svelte
+  s_caec903a09e39e::t_ca90529ac80f74 8,18,21-30,44-46,48-53,61-63
+custom_components/occupied/frontend/LivePreviewControls.svelte
+  s_caec903a09e39e::t_e89f80ab4fb861 3,5,7,92,95-96,107-109,111-112,114-115,132,137-138,143,153-154,156-157,171,175,179,183,197,202,206
+custom_components/occupied/frontend/PreviewStateGraph.svelte
+  s_caec903a09e39e::t_451726b45875b0 23,27,40,43,49-60,68,117
+custom_components/occupied/frontend/PreviewView.svelte
+  s_caec903a09e39e::t_79293bd7502552 9,12,14,16,19,23,26-27,29,31,33,50,55,141,145,151
+custom_components/occupied/frontend/RandomActions.svelte
+  s_caec903a09e39e::t_7c787ca3b162a9 19,24,34-36,42-44,48-50,63-66,78-85,112-113,115-117
+custom_components/occupied/frontend/RandomEventEditor.svelte
+  s_caec903a09e39e::t_592b26e5121e5b 12,15,17-18,22,29,35,113-115,240,246,253
+custom_components/occupied/frontend/RandomView.svelte
+  s_caec903a09e39e::t_affbad64de5c11 14,17,19-20,36,63-64,86-87,98-99,120-121
+custom_components/occupied/frontend/SettingsView.svelte
+  s_caec903a09e39e::t_a32984143b7fbf 9,11-12,15,18,22,28-30,34,45-47,63-65,77-80,82,124,128,136,142,152
+custom_components/occupied/frontend/SourcePicker.svelte
+  s_caec903a09e39e::t_3e1f9ede432a25 30,46,49,56,59,61-63,66-68
+custom_components/occupied/frontend/StaggerSettings.svelte
+  s_caec903a09e39e::t_65d848320cd96d 4,16,49-50,52-53,62,70
+custom_components/occupied/frontend/StepActions.svelte
+  s_caec903a09e39e::t_c2ca0559c665e6 19,25,33-35,41-43,47-49,62-65,77-84,115-116,118-120,148-150,166-168
+custom_components/occupied/frontend/StepEditor.svelte
+  s_caec903a09e39e::t_49d362243a9472 12,15,17-18,52-53
+custom_components/occupied/frontend/StepsView.svelte
+  s_caec903a09e39e::t_b1256f25c8448a 10,13,15,17,30,57-58,72,79,102
+custom_components/occupied/frontend/Timeline.svelte
+  s_caec903a09e39e::t_85b46db918b4fc 7,13,39,50,58,61,97,114,120-121,139-141,144-148,150,152-158,164-168,178-180,210,226
+custom_components/occupied/frontend/TimingEditor.svelte
+  s_caec903a09e39e::t_627fe2255715e8 6,11,36,40,48-51,56-57,71,80-82,84,86,94,123-125,179-181,187-189,193,263-264,283-284
+custom_components/occupied/frontend/UnsavedStepDialog.svelte
+  s_caec903a09e39e::t_0ace4cfa5a5f23 6,8
+custom_components/occupied/frontend/action-kind.ts
+  s_caec903a09e39e::t_3de9f0ed89844a 23,26,37,58,85
+custom_components/occupied/frontend/assets.d.ts
+  s_caec903a09e39e::t_cd55c9f7c810fc 1-5
+custom_components/occupied/frontend/cover.ts
+  s_caec903a09e39e::t_41c7c3a13990f2 21,27,76
+custom_components/occupied/frontend/custom-action.ts
+  s_caec903a09e39e::t_7329e998aba2d7 1,3,14,20-30,38,42,71,78,117,153
+custom_components/occupied/frontend/dist/custom-action.js
+  s_caec903a09e39e::t_dc079d6b2fe3ab 2,16-21
+custom_components/occupied/frontend/dist/live-preview.js
+  s_caec903a09e39e::t_2f4abdd76a7d85 7-19
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_caec903a09e39e::t_01bb4c0f4c2b05 509-511,4867-4870,4872,6686,6689-6690,6703-6704,6708-6710,6712,8024-8029,8221-8227,8234,8259-8271,8945-8947,8975-8977,9140-9142,9164,9193,9195,9205,9210-9211,9215,9219,9345-9347,9352-9354,9357-9359,9371-9372,9379-9386,9421-9423,9447-9449,9569-9570,9572-9573,9641-9643,9648,9650-9653,9724,9848-9968,9985,10169-10171,10173-10183,10213,10223-10224,10233,10241-10291,10348-10350,10444-10446,10452-10454,10458,10703-10711,10752-10754,10806-10808,10810-10815,11047,11049,11212,11382,11452-11456,11501,11503,11507,11583,11596-11598,11640,11664,11671,11675-11677,11773-11775,11781-11784,11786,11981-12006,12075,12081-12091,12117,12220-12232,12299-12304,12307-12310,12356,12385,12410-12411,12418,12420,12422-12423,12430-12432,12447,12453,12459,12464-12465,12473,12478,12484,12488,12493,12499,12505,12508,12522,12550,12556,12559,12561-12568,12570-12582,12585-12586,12589,12591,12593,12605-12606,12613,12615,12618,12620,12625-12626,12628,12643-12647,12657,12659,12661,12664,12678,12680,12686,12708,12714,12716-12717,12719,12721-12722,12727,12729,12737-12738,12740,12789,13048,13061-13064,13102,13107,13114,13126,13129-13130,13307,13313,13316,13319,13681,13727,13746-13748,13795,13802-13804,13830,13859,13861,13875-13876,13880,13884,14045-14047,14052-14054,14057-14059,14071-14072,14079-14086,14190-14191,14193-14194,14473,14479,14614-14616,14905,14971-14975,15128,15231,15244,15319,15392,15423,15469,15471,15475,15674-15697,15699-15705,15707-16050,16068-16076,16127,16139-16142,16162,16176,16178-16193,16270-16271,16278,16282-16287,16292,16419,16765,16767,16770,16772-16773,16775-16776,16778-16779,16781-16782,16785,16788
+custom_components/occupied/frontend/dist/preview-controller.js
+  s_caec903a09e39e::t_57b876f8eb5406 1-35,38-46,48-60,62-94,96-106,108-118,120,122-124,126-144,147-154,156-162,164-188,190-201,203-228,230-234,236-258,260-276,278-279,281
+custom_components/occupied/frontend/dist/random-model.js
+  s_caec903a09e39e::t_ee486cca0eece5 2,11,27
+custom_components/occupied/frontend/dist/step-model.js
+  s_caec903a09e39e::t_2b23e98d0fbe8e 17-21,30-36,43,75-87
+custom_components/occupied/frontend/dist/subscription.js
+  s_caec903a09e39e::t_ada9fb0f1132ad 1-51
+custom_components/occupied/frontend/dist/timeline.js
+  s_caec903a09e39e::t_c58a2142d597b3 146-171
+custom_components/occupied/frontend/dom.ts
+  s_caec903a09e39e::t_8c233357fbae0b 13,22,32
+custom_components/occupied/frontend/ha-controls.ts
+  s_caec903a09e39e::t_d903805c68fada 47,71
+custom_components/occupied/frontend/live-preview.ts
+  s_caec903a09e39e::t_d080828167f328 9-26,55,72,89
+custom_components/occupied/frontend/model.ts
+  s_caec903a09e39e::t_99320499644664 2,4,6,14,19,60,63,75,78,88,109,128
+custom_components/occupied/frontend/occupied-panel.ts
+  s_caec903a09e39e::t_4f9da4924f0a37 24,29-30,72,75,94,113-126,158,163,172,198-201,203,222,225,240,242-258,260,267,274,281,290,343,345-346,348,354,358-363,366,369,397,418,430,438,499,502,506,512,534,539,545,550,555,562,574,579,587,613,624,633,640,649,660,665,673,701,711,726,729,746,764,776,786,798,808,841,863,872,885-886,888,891-892,895-896,899-900,903-904,907-908,912,916,918,926,952,958,1010,1013,1030,1033,1042
+custom_components/occupied/frontend/preview-controller.ts
+  s_caec903a09e39e::t_62284e77f039b0 1-299
+custom_components/occupied/frontend/random-editor-controller.ts
+  s_caec903a09e39e::t_54935043be1e68 26,90,96,99,132,152,170,192,199
+custom_components/occupied/frontend/random-explanation.ts
+  s_caec903a09e39e::t_c39cad39b0b81f 30,116,230,241,270
+custom_components/occupied/frontend/random-model.ts
+  s_caec903a09e39e::t_2ef2ec8e4494cf 10,19,29,42,72,186,209,247
+custom_components/occupied/frontend/stagger.ts
+  s_caec903a09e39e::t_7f4be35c23d02e 7,33,51
+custom_components/occupied/frontend/step-editor-controller.ts
+  s_caec903a09e39e::t_b6f7727e1f485f 71,92,112
+custom_components/occupied/frontend/step-issues.ts
+  s_caec903a09e39e::t_6d7da32612a086 11
+custom_components/occupied/frontend/step-model.ts
+  s_caec903a09e39e::t_15a01acd7ab40d 30-34,36,44-57,68,71,80,89,103-116,147,157,174,217,221,231,234,247,307,310,360,398,407,410,430,433,439,450,463,479,482
+custom_components/occupied/frontend/steps.ts
+  s_caec903a09e39e::t_1e808da7764168 13,54,59,68,79,110
+custom_components/occupied/frontend/styles.css
+  s_caec903a09e39e::t_e8aa526eedccf6 1-252,254,256,258,260-261,264-266,268-269,272-811,813-816,818-827,829,831,833,835-836,838,840,842,848-850,852-856,858-860,862,864,866,868,871-872,875-876,878-880,882
+custom_components/occupied/frontend/subscription.ts
+  s_caec903a09e39e::t_e2f04477a4202c 1-59
+custom_components/occupied/frontend/time-format.ts
+  s_caec903a09e39e::t_d4a888aa408061 8,41,53,75,95,120
+custom_components/occupied/frontend/timeline.ts
+  s_caec903a09e39e::t_4d6aa09c850c07 1,9,19,37,125,128,146,165-198,237
+custom_components/occupied/frontend/translations.ts
+  s_caec903a09e39e::t_56864e3eef8ed9 416
+custom_components/occupied/frontend/types.ts
+  s_caec903a09e39e::t_dbaf19da365d01 3,5,13,27,32,40,46,50,60,67,74,85,99,106,108,120,127,142,153,160,164,176,183,216,225,234,245,260,264,272,295,309,316,323,355,363,384,403,409,418,425,440,443,450
+custom_components/occupied/frontend/util.ts
+  s_caec903a09e39e::t_a00b035d6c7844 21,40,84,101,135,172,213,227,273,306,350,362
+eslint.config.mjs
+  s_caec903a09e39e::t_c6e24c9192a6dc 2,4,10,18-19,25-27,35-36,43,47-79,145-157,161
+mise.toml
+  s_caec903a09e39e::t_aa7df2c8ad1b49 14,22,25
+package.json
+  s_caec903a09e39e::t_b27f62c58fb5b3 9,12-15,19,25
+pnpm-lock.yaml
+  s_caec903a09e39e::t_95208b939cc1da 18-20,36-38,302-307,461-465,525-534,541-544,553-556,574-577,654-657,721-723,728-731,760-764,811-842,920-928,983-985,998-1001,1170-1179,1346-1347,1408-1425,1450-1454,1464-1465,1505-1510,1571-1572,1620-1621,1627-1628,1655-1656,1694-1719,1780-1791,1860-1861,1870-1871
+scripts/build-frontend.ts
+  s_caec903a09e39e::t_d91d7a328d8fad 83-84,96
+scripts/eslint-svelte-style.mjs
+  s_caec903a09e39e::t_08bfff80618b46 1-97
+tests/frontend/src/instances.test.ts
+  s_caec903a09e39e::t_86464eb51eca28 55,86,177,193,204,320,733,789,918
+tests/frontend/src/lint.test.ts
+  s_caec903a09e39e::t_980f00988512ce 1-39
+tests/frontend/src/live-preview.test.ts
+  s_caec903a09e39e::t_9bcb789a0849cd 8,40-56
+tests/frontend/src/subscription.test.ts
+  s_caec903a09e39e::t_0e7cf5c52466c7 1-99
+tests/frontend/src/timeline.test.ts
+  s_caec903a09e39e::t_981a9c785bac67 8,12,47-83
+tsconfig.json
+  s_caec903a09e39e::t_4896eb66761973 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "999b9461c83df6fffcd213d303c567b70cfc4555",
+  "prompts": {},
+  "sessions": {
+    "s_caec903a09e39e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13a90-864e-7210-8b36-2488eb11750f",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
