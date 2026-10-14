@@ -174,10 +174,8 @@ def test_invalid_options_rejected(stagger):
 @pytest.mark.parametrize(
     "action,entities",
     [
-        ("turn_off", TARGETS),
         ("scene.turn_on", ["scene.evening"]),
         ("cover.open_cover", ["cover.a"]),
-        ("set_state", {"light.a": {"state": "off"}}),
         ("set_state", {"light.a": {"state": "on"}, "cover.a": {"state": "open"}}),
     ],
 )
@@ -263,3 +261,49 @@ def test_stagger_identifier_is_not_mistaken_for_action_options():
     first = program(stagger=disabled)
     second = program(stagger={**disabled, "entities": ["light.b"]})
     assert behavior_hash(first) != behavior_hash(second)
+
+
+@pytest.mark.parametrize("action", ["turn_off", "light.turn_off", "switch.turn_off"])
+def test_off_actions_have_the_same_uniform_ticks_and_shuffle(action):
+    targets = ["switch.a", "switch.b"] if action.startswith("switch.") else ["light.a", "light.b"]
+    source = program(
+        {"action": action, "entities": targets, "stagger": {"enabled": True, "period": "90s"}}
+    )
+    result = plan(source)
+    assert [e.at - result.step_times["evening"] for e in result.events] == [
+        timedelta(seconds=45),
+        timedelta(seconds=90),
+    ]
+    assert all(e.action.action.endswith("turn_off") for e in result.events)
+    assert {e.action.targets[0] for e in result.events} == set(targets)
+    assert plan_from_data(result.to_dict()) == result
+
+
+def test_mixed_state_mapping_staggers_the_declared_states():
+    source = program(
+        {
+            "action": "set_state",
+            "stagger": {"enabled": True},
+            "entities": {
+                "light.a": {"state": "on", "brightness": 50},
+                "light.b": {"state": "off", "transition": 3},
+            },
+        }
+    )
+    result = plan(source)
+    b = next(e for e in result.events if e.action.targets == ("light.b",))
+    assert b.action.action == "light.turn_off" and b.action.data == {"transition": 3}
+    assert project_lighting(source, result, b.at)["light.b"].state == "off"
+
+
+def test_newer_on_intent_supersedes_pending_off_ticks():
+    source = program(
+        {"action": "turn_off", "entities": TARGETS, "stagger": {"enabled": True}},
+        on={
+            "timing": {"absolute_time": {"start": "18:00:45"}},
+            "action": "turn_on",
+            "entities": TARGETS,
+        },
+    )
+    ticks = [e for e in plan(source).events if e.tick]
+    assert [e.superseded for e in ticks] == [False, True, True, True]

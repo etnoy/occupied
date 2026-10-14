@@ -3,6 +3,13 @@
   import type { OccupiedPanel } from "./occupied-panel.js";
   import type { RandomEditorContext } from "./random-editor-controller.js";
   import { days } from "./model.js";
+  import StaggerSettings from "./StaggerSettings.svelte";
+  import {
+    applyStagger,
+    supportsStagger,
+    staggerSettings,
+    staggerPeriodError,
+  } from "./stagger.js";
   import FieldError from "./FieldError.svelte";
 
   let {
@@ -16,6 +23,14 @@
   } = $props();
   let { form, t, changed } = $derived(context);
   let selectedDays = $state(untrack(() => [...form.days]));
+  let startStagger = $state(untrack(() => staggerSettings(form.on)));
+  let endStagger = $state(untrack(() => staggerSettings(form.off)));
+  let canStartStagger = $derived(supportsStagger(form.on));
+  let canEndStagger = $derived(supportsStagger(form.off));
+  let staggerError = $derived(
+    (canStartStagger && staggerPeriodError(startStagger)) ||
+      (canEndStagger && staggerPeriodError(endStagger)),
+  );
   let dialog: HTMLDialogElement;
   const presets: [string, string[]][] = [
     ["Every day", days],
@@ -41,9 +56,17 @@
   });
 
   function apply() {
-    if (panel.busy || dayError) return;
+    if (panel.busy || dayError || staggerError) return;
     form.days = [...selectedDays];
     changed("days");
+    if (canStartStagger) {
+      applyStagger(form.on, startStagger);
+      changed("on.stagger");
+    }
+    if (canEndStagger) {
+      applyStagger(form.off, endStagger);
+      changed("off.stagger");
+    }
     dialog.close();
   }
 </script>
@@ -94,13 +117,31 @@
     </div>
   </fieldset>
   <FieldError key="days" errors={dayError ? { days: dayError } : {}} />
+  {#if canStartStagger}
+    <h3>{t("Start action")}</h3>
+    <StaggerSettings
+      bind:settings={startStagger}
+      {t}
+      id="random-start-stagger"
+      disabled={panel.busy}
+    />
+  {/if}
+  {#if canEndStagger}
+    <h3>{t("End action")}</h3>
+    <StaggerSettings
+      bind:settings={endStagger}
+      {t}
+      id="random-end-stagger"
+      disabled={panel.busy}
+    />
+  {/if}
   <p class="hint">{t("Apply these settings, then save the random event.")}</p>
   <div class="step-delete-actions">
     <button type="button" onclick={() => dialog.close()}>{t("Cancel")}</button>
     <button
       type="button"
       class="primary"
-      disabled={panel.busy || !!dayError}
+      disabled={panel.busy || !!dayError || !!staggerError}
       onclick={apply}
     >
       {t("Apply")}

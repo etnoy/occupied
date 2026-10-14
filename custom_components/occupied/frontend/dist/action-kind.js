@@ -61,7 +61,7 @@ export function changeActionKind(form, value, confirmReplace) {
     form.entities = [];
   }
   form.kind = kind;
-  if (!(kind === "entities" && value === "turn_on")) {
+  if (!(kind === "entities" && ["turn_on", "turn_off"].includes(value))) {
     delete form.stagger;
   }
   if (kind === "entities") {

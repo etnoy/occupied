@@ -1,12 +1,16 @@
 // Generated from translations.ts by pnpm run build. Do not edit.
 // English is the complete fallback; HA's selected language supplies localized UI chrome.
 const sv = {
-  "Turn on one entity at a time": "Tänd en enhet i taget",
-  "One entity turns on at each evenly spaced tick over {period}. The order changes for each transition. Change the period in Custom YAML.":
-    "En enhet tänds vid varje jämnt fördelat steg under {period}. Ordningen ändras för varje övergång. Ändra perioden i Egen YAML.",
+  "Staggered action": "Förskjuten åtgärd",
+  "Factorio style: act on one entity at each evenly spaced tick, in a random order.":
+    "Factorio-stil: styr en enhet i taget med jämna tidsintervall, i slumpmässig ordning.",
+  "Time window": "Tidsfönster",
+  "Default: 2m. Use a duration from 1s to 30m.":
+    "Standard: 2m. Ange en tid från 1s till 30m.",
+  "Use a time window from 1s to 30m, for example 2m.":
+    "Ange ett tidsfönster från 1s till 30m, till exempel 2m.",
   "Tick {tick} of {count}": "Steg {tick} av {count}",
   Superseded: "Ersatt",
-  "Turn-on transition": "Tändningsövergång",
   Period: "Period",
   "Tick interval": "Stegintervall",
   "Custom YAML": "Egen YAML",

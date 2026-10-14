@@ -15,6 +15,7 @@ import {
 } from "./model.js";
 import { coverActions, coverField, isCoverAction } from "./cover.js";
 import { actionTargets, actionYaml } from "./custom-action.js";
+import { staggerPeriodError } from "./stagger.js";
 const sorted = (values) => [...new Set(values)].sort();
 const actionLabels = {
   turn_on: "Turn on",
@@ -175,6 +176,12 @@ export function editorErrors(program, editor) {
 }
 export function actionErrors(form) {
   const errors = {};
+  if (form.stagger) {
+    const error = staggerPeriodError(form.stagger);
+    if (error) {
+      errors.stagger = error;
+    }
+  }
   if (form.kind === "custom") {
     if (!form.customYaml?.trim()) {
       errors.customYaml = "Enter an action mapping or a list of actions.";
@@ -381,7 +388,14 @@ export function buildAction(form) {
   return {
     action,
     entities: sorted(form.entities),
-    ...(["turn_on", "light.turn_on", "switch.turn_on"].includes(action) &&
+    ...([
+      "turn_on",
+      "turn_off",
+      "light.turn_on",
+      "light.turn_off",
+      "switch.turn_on",
+      "switch.turn_off",
+    ].includes(action) &&
       form.stagger && { stagger: copy(form.stagger) }),
     ...(form.kind !== "entities" && { data: JSON.parse(form.data) }),
   };

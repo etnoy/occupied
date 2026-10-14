@@ -1220,12 +1220,16 @@ var styles = `
 
 // custom_components/occupied/frontend/translations.ts
 var sv = {
-  "Turn on one entity at a time": "T\xE4nd en enhet i taget",
-  "One entity turns on at each evenly spaced tick over {period}. The order changes for each transition. Change the period in Custom YAML.":
-    "En enhet t\xE4nds vid varje j\xE4mnt f\xF6rdelat steg under {period}. Ordningen \xE4ndras f\xF6r varje \xF6verg\xE5ng. \xC4ndra perioden i Egen YAML.",
+  "Staggered action": "F\xF6rskjuten \xE5tg\xE4rd",
+  "Factorio style: act on one entity at each evenly spaced tick, in a random order.":
+    "Factorio-stil: styr en enhet i taget med j\xE4mna tidsintervall, i slumpm\xE4ssig ordning.",
+  "Time window": "Tidsf\xF6nster",
+  "Default: 2m. Use a duration from 1s to 30m.":
+    "Standard: 2m. Ange en tid fr\xE5n 1s till 30m.",
+  "Use a time window from 1s to 30m, for example 2m.":
+    "Ange ett tidsf\xF6nster fr\xE5n 1s till 30m, till exempel 2m.",
   "Tick {tick} of {count}": "Steg {tick} av {count}",
   Superseded: "Ersatt",
-  "Turn-on transition": "T\xE4ndnings\xF6verg\xE5ng",
   Period: "Period",
   "Tick interval": "Stegintervall",
   "Custom YAML": "Egen YAML",
@@ -3040,11 +3044,11 @@ var Batch = class _Batch {
         this.#unlink();
         infinite_loop_guard();
       }
-      for (const root24 of this.#resolve()) {
+      for (const root25 of this.#resolve()) {
         try {
-          this.#traverse(root24, effects, render_effects);
+          this.#traverse(root25, effects, render_effects);
         } catch (e) {
-          reset_all(root24);
+          reset_all(root25);
           if (!this.#is_deferred()) this.discard();
           throw e;
         }
@@ -3123,9 +3127,9 @@ var Batch = class _Batch {
    * @param {Effect[]} effects
    * @param {Effect[]} render_effects
    */
-  #traverse(root24, effects, render_effects) {
-    root24.f ^= CLEAN;
-    var effect2 = root24.first;
+  #traverse(root25, effects, render_effects) {
+    root25.f ^= CLEAN;
+    var effect2 = root25.first;
     while (effect2 !== null) {
       var flags2 = effect2.f;
       var is_branch = (flags2 & (BRANCH_EFFECT | ROOT_EFFECT)) !== 0;
@@ -3389,8 +3393,8 @@ var Batch = class _Batch {
         }
         if (batch.#scheduled.length > 0 && !batch.#decrement_queued) {
           batch.apply();
-          for (var root24 of batch.#resolve()) {
-            batch.#traverse(root24, [], []);
+          for (var root25 of batch.#resolve()) {
+            batch.#traverse(root25, [], []);
           }
         }
         batch.deactivate();
@@ -5009,7 +5013,7 @@ function is_dirty(reaction) {
 function schedule_possible_effect_self_invalidation(
   signal,
   effect2,
-  root24 = true,
+  root25 = true,
 ) {
   var reactions = signal.reactions;
   if (reactions === null) return;
@@ -5030,7 +5034,7 @@ function schedule_possible_effect_self_invalidation(
         false,
       );
     } else if (effect2 === reaction) {
-      if (root24) {
+      if (root25) {
         set_signal_status(reaction, DIRTY);
       } else if ((reaction.f & CLEAN) !== 0) {
         set_signal_status(reaction, MAYBE_DIRTY);
@@ -7281,14 +7285,14 @@ function snippet(node, get_snippet, ...args) {
 function append_styles(anchor, css) {
   effect(() => {
     anchor = active_effect?.parent?.nodes?.start ?? anchor;
-    var root24 = anchor.getRootNode();
+    var root25 = anchor.getRootNode();
     var target =
       /** @type {ShadowRoot} */
-      root24.host
+      root25.host
         ? /** @type {ShadowRoot} */
-          root24
+          root25
         : /** @type {Document} */
-          (root24.head ?? /** @type {Document} */ root24.ownerDocument.head);
+          (root25.head ?? /** @type {Document} */ root25.ownerDocument.head);
     if (!target.querySelector("#" + css.hash)) {
       const style = create_element("style");
       style.id = css.hash;
@@ -8843,6 +8847,71 @@ var customExample = actionYaml({
   entities: { "light.example": { state: "on", brightness: 128 } },
 });
 
+// custom_components/occupied/frontend/stagger.ts
+function staggerPeriodError(settings) {
+  const seconds = durationSeconds(settings.period ?? "2m");
+  return Number.isFinite(seconds) && seconds >= 1 && seconds <= 1800
+    ? void 0
+    : "Use a time window from 1s to 30m, for example 2m.";
+}
+function customStaggerAction(form) {
+  if (
+    form.customAccepted !== form.customYaml ||
+    form.customActions?.length !== 1
+  ) {
+    return;
+  }
+  const action2 = form.customActions[0];
+  if (
+    actionTargets(action2).some((entity) => !/^(light|switch)\./.test(entity))
+  ) {
+    return;
+  }
+  if (action2.action === "set_state" && !Array.isArray(action2.entities)) {
+    return Object.values(action2.entities || {}).every((settings) =>
+      ["on", "off"].includes(String(settings.state)),
+    )
+      ? action2
+      : void 0;
+  }
+  return /^(?:(?:light|switch)\.)?turn_(on|off)$/.test(action2.action || "")
+    ? action2
+    : void 0;
+}
+function supportsStagger(form) {
+  return (
+    form.kind === "entities" ||
+    (form.kind === "service" &&
+      /^(light|switch)\.turn_(on|off)$/.test(form.service)) ||
+    (form.kind === "custom" && !!customStaggerAction(form))
+  );
+}
+function staggerSettings(form) {
+  const current =
+    form.kind === "custom" ? customStaggerAction(form)?.stagger : form.stagger;
+  return {
+    enabled: current?.enabled ?? false,
+    period: current?.period ?? "2m",
+  };
+}
+function applyStagger(form, settings) {
+  const source2 = form.kind === "custom" ? customStaggerAction(form) : form;
+  if (!source2) {
+    return;
+  }
+  if (
+    (source2.stagger?.enabled ?? false) === (settings.enabled ?? false) &&
+    (source2.stagger?.period ?? "2m") === (settings.period ?? "2m")
+  ) {
+    return;
+  }
+  source2.stagger = { ...settings };
+  if (form.kind === "custom") {
+    form.customYaml = actionYaml(source2);
+    form.customAccepted = form.customYaml;
+  }
+}
+
 // custom_components/occupied/frontend/step-model.ts
 var sorted = (values) => [...new Set(values)].sort();
 var actionLabels = {
@@ -8997,6 +9066,12 @@ function editorErrors(program, editor) {
 }
 function actionErrors(form) {
   const errors = {};
+  if (form.stagger) {
+    const error = staggerPeriodError(form.stagger);
+    if (error) {
+      errors.stagger = error;
+    }
+  }
   if (form.kind === "custom") {
     if (!form.customYaml?.trim()) {
       errors.customYaml = "Enter an action mapping or a list of actions.";
@@ -9203,7 +9278,14 @@ function buildAction(form) {
   return {
     action: action2,
     entities: sorted(form.entities),
-    ...(["turn_on", "light.turn_on", "switch.turn_on"].includes(action2) &&
+    ...([
+      "turn_on",
+      "turn_off",
+      "light.turn_on",
+      "light.turn_off",
+      "switch.turn_on",
+      "switch.turn_off",
+    ].includes(action2) &&
       form.stagger && { stagger: copy(form.stagger) }),
     ...(form.kind !== "entities" && { data: JSON.parse(form.data) }),
   };
@@ -9591,16 +9673,108 @@ function DeleteStepDialog($$anchor, $$props) {
 }
 delegate(["click"]);
 
-// custom_components/occupied/frontend/AdvancedStepSettings.svelte
-var root2 = from_html(`<button type="button"> </button>`);
+// custom_components/occupied/frontend/StaggerSettings.svelte
+var root2 = from_html(`<p class="error" role="alert"> </p>`);
 var root_12 = from_html(
+  `<fieldset class="stagger-settings svelte-l2t2tt"><label class="stagger-option svelte-l2t2tt"><input type="checkbox" class="svelte-l2t2tt"/> <span> </span></label> <p class="hint"> </p> <label> </label> <input type="text" placeholder="2m"/> <p class="hint"> </p> <!></fieldset>`,
+);
+var $$css = {
+  hash: "svelte-l2t2tt",
+  code: ".stagger-settings.svelte-l2t2tt {border:0;padding:0;margin-top:24px;}.stagger-option.svelte-l2t2tt {display:flex;align-items:center;gap:8px;cursor:pointer;min-height:42px;}.stagger-option.svelte-l2t2tt input:where(.svelte-l2t2tt) {flex:0 0 auto;accent-color:var(--primary-color, #167b94);}",
+};
+function StaggerSettings($$anchor, $$props) {
+  push($$props, true);
+  append_styles($$anchor, $$css);
+  let settings = prop($$props, "settings", 15),
+    disabled = prop($$props, "disabled", 3, false);
+  let error = user_derived(() => staggerPeriodError(settings()));
+  var fieldset = root_12();
+  var label = child(fieldset);
+  var input = child(label);
+  remove_input_defaults(input);
+  var span = sibling(input, 2);
+  var text2 = only_child(span, true);
+  reset(label);
+  var p = sibling(label, 2);
+  var text_1 = only_child(p, true);
+  var label_1 = sibling(p, 2);
+  var text_2 = only_child(label_1, true);
+  var input_1 = sibling(label_1, 2);
+  remove_input_defaults(input_1);
+  var p_1 = sibling(input_1, 2);
+  var text_3 = only_child(p_1, true);
+  var node = sibling(p_1, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var p_2 = root2();
+      var text_4 = only_child(p_2, true);
+      template_effect(
+        ($0) => {
+          set_attribute2(p_2, "id", `${$$props.id}-error`);
+          set_text(text_4, $0);
+        },
+        [() => $$props.t(get(error))],
+      );
+      append($$anchor2, p_2);
+    };
+    if_block(node, ($$render) => {
+      if (get(error)) $$render(consequent);
+    });
+  }
+  reset(fieldset);
+  template_effect(
+    ($0, $1, $2, $3) => {
+      fieldset.disabled = disabled();
+      set_checked(input, settings().enabled === true);
+      set_attribute2(input, "aria-describedby", `${$$props.id}-description`);
+      set_text(text2, $0);
+      set_attribute2(p, "id", `${$$props.id}-description`);
+      set_text(text_1, $1);
+      set_attribute2(label_1, "for", `${$$props.id}-period`);
+      set_text(text_2, $2);
+      set_attribute2(input_1, "id", `${$$props.id}-period`);
+      set_value(input_1, settings().period ?? "2m");
+      input_1.disabled = disabled() || !settings().enabled;
+      set_attribute2(input_1, "aria-invalid", !!get(error));
+      set_attribute2(
+        input_1,
+        "aria-describedby",
+        `${$$props.id}-period-help${get(error) ? ` ${$$props.id}-error` : ""}`,
+      );
+      set_attribute2(p_1, "id", `${$$props.id}-period-help`);
+      set_text(text_3, $3);
+    },
+    [
+      () => $$props.t("Staggered action"),
+      () =>
+        $$props.t(
+          "Factorio style: act on one entity at each evenly spaced tick, in a random order.",
+        ),
+      () => $$props.t("Time window"),
+      () => $$props.t("Default: 2m. Use a duration from 1s to 30m."),
+    ],
+  );
+  delegated("change", input, (event2) =>
+    settings((settings().enabled = event2.currentTarget.checked), true),
+  );
+  delegated("input", input_1, (event2) =>
+    settings((settings().period = event2.currentTarget.value), true),
+  );
+  append($$anchor, fieldset);
+  pop();
+}
+delegate(["change", "input"]);
+
+// custom_components/occupied/frontend/AdvancedStepSettings.svelte
+var root3 = from_html(`<button type="button"> </button>`);
+var root_13 = from_html(
   `<label class="step-weekday-option"><input type="checkbox"/> <span> </span></label>`,
 );
 var root_22 = from_html(
   `<p id="step-weekdays-error" class="error" role="alert"> </p>`,
 );
 var root_32 = from_html(
-  `<dialog class="step-advanced-dialog" aria-labelledby="step-advanced-title" aria-describedby="step-weekdays-description"><h2 id="step-advanced-title"> </h2> <p id="step-weekdays-description" class="hint"> </p> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!> <p class="hint"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
+  `<dialog class="step-advanced-dialog" aria-labelledby="step-advanced-title" aria-describedby="step-weekdays-description"><h2 id="step-advanced-title"> </h2> <p id="step-weekdays-description" class="hint"> </p> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!> <!> <p class="hint"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
 );
 function AdvancedStepSettings($$anchor, $$props) {
   push($$props, true);
@@ -9609,6 +9783,11 @@ function AdvancedStepSettings($$anchor, $$props) {
     t = user_derived(() => $$props.context.t),
     changed = user_derived(() => $$props.context.changed);
   let selectedDays = state(proxy([]));
+  let selectedStagger = state(proxy(untrack(() => staggerSettings(get(form)))));
+  let canStagger = user_derived(() => supportsStagger(get(form)));
+  let staggerError = user_derived(() =>
+    get(canStagger) ? staggerPeriodError(get(selectedStagger)) : void 0,
+  );
   let dialog;
   const presets = [
     ["Every day", days],
@@ -9643,9 +9822,13 @@ function AdvancedStepSettings($$anchor, $$props) {
     dialog.querySelector("input")?.focus();
   });
   function apply2() {
-    if (get(dayError) || $$props.panel.busy) return;
+    if (get(dayError) || get(staggerError) || $$props.panel.busy) return;
     get(form).days = [...get(selectedDays)];
     get(changed)("days");
+    if (get(canStagger)) {
+      applyStagger(get(form), get(selectedStagger));
+      get(changed)("stagger");
+    }
     dialog.close();
   }
   var dialog_1 = root_32();
@@ -9666,7 +9849,7 @@ function AdvancedStepSettings($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let label = () => get($$array)[0];
       let selection = () => get($$array)[1];
-      var button = root2();
+      var button = root3();
       var text_3 = only_child(button, true);
       template_effect(
         ($0, $1) => {
@@ -9694,7 +9877,7 @@ function AdvancedStepSettings($$anchor, $$props) {
     () => days,
     index,
     ($$anchor2, day, index2) => {
-      var label_1 = root_12();
+      var label_1 = root_13();
       var input = child(label_1);
       remove_input_defaults(input);
       var span = sibling(input, 2);
@@ -9742,7 +9925,30 @@ function AdvancedStepSettings($$anchor, $$props) {
       if (get(dayError)) $$render(consequent);
     });
   }
-  var p_2 = sibling(node, 2);
+  var node_1 = sibling(node, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      StaggerSettings($$anchor2, {
+        get t() {
+          return get(t);
+        },
+        id: "step-stagger",
+        get disabled() {
+          return $$props.panel.busy;
+        },
+        get settings() {
+          return get(selectedStagger);
+        },
+        set settings($$value) {
+          set2(selectedStagger, $$value, true);
+        },
+      });
+    };
+    if_block(node_1, ($$render) => {
+      if (get(canStagger)) $$render(consequent_1);
+    });
+  }
+  var p_2 = sibling(node_1, 2);
   var text_6 = only_child(p_2, true);
   var div_2 = sibling(p_2, 2);
   var button_1 = child(div_2);
@@ -9769,7 +9975,8 @@ function AdvancedStepSettings($$anchor, $$props) {
       set_text(text_2, $2);
       set_text(text_6, $3);
       set_text(text_7, $4);
-      button_2.disabled = $$props.panel.busy || !!get(dayError);
+      button_2.disabled =
+        $$props.panel.busy || !!get(dayError) || !!get(staggerError);
       set_text(text_8, $5);
     },
     [
@@ -9792,10 +9999,10 @@ function AdvancedStepSettings($$anchor, $$props) {
 delegate(["click", "change"]);
 
 // custom_components/occupied/frontend/StepActions.svelte
-var root3 = from_html(
+var root4 = from_html(
   `<button type="button" role="menuitem" tabindex="-1"> </button>`,
 );
-var root_13 = from_html(
+var root_14 = from_html(
   `<div role="separator"></div> <button type="button" role="menuitem" tabindex="-1" class="danger"> </button>`,
   1,
 );
@@ -9877,7 +10084,7 @@ function StepActions($$anchor, $$props) {
   var node = child(div_1);
   {
     var consequent = ($$anchor2) => {
-      var button_1 = root3();
+      var button_1 = root4();
       var text2 = only_child(button_1, true);
       template_effect(
         ($0) => {
@@ -9901,7 +10108,7 @@ function StepActions($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var button_2 = root3();
+      var button_2 = root4();
       var text_1 = only_child(button_2, true);
       template_effect(
         ($0) => {
@@ -9923,7 +10130,7 @@ function StepActions($$anchor, $$props) {
   var node_2 = sibling(node_1, 2);
   {
     var consequent_2 = ($$anchor2) => {
-      var button_3 = root3();
+      var button_3 = root4();
       var text_2 = only_child(button_3, true);
       template_effect(
         ($0) => {
@@ -9945,7 +10152,7 @@ function StepActions($$anchor, $$props) {
   var node_3 = sibling(node_2, 2);
   {
     var consequent_3 = ($$anchor2) => {
-      var fragment_1 = root_13();
+      var fragment_1 = root_14();
       var button_4 = sibling(first_child(fragment_1), 2);
       var text_3 = only_child(button_4, true);
       template_effect(
@@ -10047,7 +10254,7 @@ function StepActions($$anchor, $$props) {
 delegate(["click", "keydown"]);
 
 // custom_components/occupied/frontend/FieldError.svelte
-var root4 = from_html(`<p class="error" role="alert"> </p>`);
+var root5 = from_html(`<p class="error" role="alert"> </p>`);
 function FieldError($$anchor, $$props) {
   push($$props, true);
   let fieldPrefix = prop($$props, "fieldPrefix", 3, "");
@@ -10055,7 +10262,7 @@ function FieldError($$anchor, $$props) {
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var p = root4();
+      var p = root5();
       var text2 = only_child(p, true);
       template_effect(() => {
         set_attribute2(p, "id", `step-error-${fieldPrefix()}${$$props.key}`);
@@ -10077,8 +10284,8 @@ function FieldError($$anchor, $$props) {
 }
 
 // custom_components/occupied/frontend/EditorField.svelte
-var root5 = from_html(`<div><label> </label> <!></div>`);
-var root_14 = from_html(`<ha-selector></ha-selector>`, 2);
+var root6 = from_html(`<div><label> </label> <!></div>`);
+var root_15 = from_html(`<ha-selector></ha-selector>`, 2);
 var root_24 = from_html(`<option> </option>`);
 var root_33 = from_html(`<select></select>`);
 var root_4 = from_html(`<textarea></textarea>`);
@@ -10116,7 +10323,7 @@ function EditorField($$anchor, $$props) {
   var node = child(div);
   {
     var consequent = ($$anchor2) => {
-      var div_1 = root5();
+      var div_1 = root6();
       var label_1 = child(div_1);
       var text2 = only_child(label_1, true);
       var node_1 = sibling(label_1, 2);
@@ -10139,7 +10346,7 @@ function EditorField($$anchor, $$props) {
   var node_2 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var ha_selector = root_14();
+      var ha_selector = root_15();
       template_effect(() =>
         set_custom_element_data(ha_selector, "id", get(id)),
       );
@@ -10508,7 +10715,7 @@ function buildRandom(program, editor) {
 }
 
 // custom_components/occupied/frontend/SourcePicker.svelte
-var root6 = from_html(
+var root7 = from_html(
   `<div class="field source-picker"><ha-generic-picker></ha-generic-picker> <!></div>`,
   2,
 );
@@ -10551,7 +10758,7 @@ function SourcePicker($$anchor, $$props) {
     control.value = next2 || void 0;
     $$props.onChange(next2);
   }
-  var div = root6();
+  var div = root7();
   var ha_generic_picker = child(div);
   template_effect(() =>
     set_custom_element_data(
@@ -10626,10 +10833,10 @@ function SourcePicker($$anchor, $$props) {
 }
 
 // custom_components/occupied/frontend/TimingEditor.svelte
-var root7 = from_html(
+var root8 = from_html(
   `<label class="timing-option"><input type="radio"/><span> </span></label>`,
 );
-var root_15 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_16 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_25 = from_html(`<!> <!>`, 1);
 var root_34 = from_html(`<p class="hint"> </p>`);
 var root_42 = from_html(`<!> <!> <!> <!> <!>`, 1);
@@ -10700,7 +10907,7 @@ function TimingEditor($$anchor, $$props) {
     var $$array = user_derived(() => to_array(get($$item), 2));
     let value = () => get($$array)[0];
     let label = () => get($$array)[1];
-    var label_1 = root7();
+    var label_1 = root8();
     var input = child(label_1);
     remove_input_defaults(input);
     var span = sibling(input);
@@ -10794,7 +11001,7 @@ function TimingEditor($$anchor, $$props) {
           });
         };
         var alternate = ($$anchor3) => {
-          var button = root_15();
+          var button = root_16();
           var text_2 = only_child(button, true);
           template_effect(
             ($0) => set_text(text_2, $0),
@@ -10963,7 +11170,7 @@ function TimingEditor($$anchor, $$props) {
         var consequent_5 = ($$anchor3) => {
           {
             const trailing = ($$anchor4) => {
-              var button_1 = root_15();
+              var button_1 = root_16();
               var text_5 = only_child(button_1, true);
               template_effect(
                 ($0) => set_text(text_5, $0),
@@ -10997,7 +11204,7 @@ function TimingEditor($$anchor, $$props) {
           }
         };
         var alternate_1 = ($$anchor3) => {
-          var button_2 = root_15();
+          var button_2 = root_16();
           var text_6 = only_child(button_2, true);
           template_effect(
             ($0) => set_text(text_6, $0),
@@ -11124,8 +11331,8 @@ function TimingEditor($$anchor, $$props) {
 delegate(["change", "click"]);
 
 // custom_components/occupied/frontend/EntitiesEditor.svelte
-var root8 = from_html(`<p class="hint"> </p>`);
-var root_16 = from_html(
+var root9 = from_html(`<p class="hint"> </p>`);
+var root_17 = from_html(
   `<div data-editor-section="entities"><h4> </h4> <ha-selector></ha-selector> <!> <!></div>`,
   2,
 );
@@ -11137,7 +11344,7 @@ function EntitiesEditor($$anchor, $$props) {
     t = user_derived(() => $$props.context.t),
     changed = user_derived(() => $$props.context.changed);
   let fieldPrefix = user_derived(() => $$props.context.fieldPrefix || "");
-  var div = root_16();
+  var div = root_17();
   var h4 = child(div);
   var text2 = only_child(h4, true);
   var ha_selector = sibling(h4, 2);
@@ -11215,7 +11422,7 @@ function EntitiesEditor($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent = ($$anchor2) => {
-      var p = root8();
+      var p = root9();
       var text_1 = only_child(p, true);
       template_effect(
         ($0) => set_text(text_1, $0),
@@ -11308,7 +11515,7 @@ function changeActionKind(form, value, confirmReplace) {
     form.entities = [];
   }
   form.kind = kind;
-  if (!(kind === "entities" && value === "turn_on")) {
+  if (!(kind === "entities" && ["turn_on", "turn_off"].includes(value))) {
     delete form.stagger;
   }
   if (kind === "entities") {
@@ -11324,35 +11531,31 @@ function changeActionKind(form, value, confirmReplace) {
 }
 
 // custom_components/occupied/frontend/ActionEditor.svelte
-var root9 = from_html(
-  `<label class="stagger-option"><input type="checkbox"/> <span> </span></label> <p class="hint"> </p> <!>`,
-  1,
-);
-var root_17 = from_html(
+var root10 = from_html(
   `<ha-code-editor></ha-code-editor> <!> <p class="hint"> </p>`,
   3,
 );
-var root_26 = from_html(
+var root_18 = from_html(
   `<!> <!> <p class="hint"> </p> <p class="hint"> </p>`,
   1,
 );
-var root_35 = from_html(
-  `<div data-editor-section="action"><h3> </h3> <!> <!> <!> <!> <!> <!> <!></div>`,
+var root_26 = from_html(
+  `<div data-editor-section="action"><h3> </h3> <!> <!> <!> <!> <!> <!></div>`,
 );
-var $$css = {
+var $$css2 = {
   hash: "svelte-9e2py0",
   code: "ha-code-editor.svelte-9e2py0 {display:block;width:100%;margin:8px 0;--code-mirror-height: 280px;--code-mirror-max-height: 60vh;}",
 };
 function ActionEditor($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css);
+  append_styles($$anchor, $$css2);
   let heading = prop($$props, "heading", 3, "Action"),
     kindLabel = prop($$props, "kindLabel", 3, "Step type"),
     entityLabel = prop($$props, "entityLabel", 3, "Entities"),
     hideEntities = prop($$props, "hideEntities", 3, false);
   let form = user_derived(() => $$props.context.form),
     t = user_derived(() => $$props.context.t);
-  var div = root_35();
+  var div = root_26();
   var h3 = child(div);
   var text2 = only_child(h3, true);
   var node = sibling(h3, 2);
@@ -11416,63 +11619,8 @@ function ActionEditor($$anchor, $$props) {
   var node_2 = sibling(node_1, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment_1 = root9();
-      var label = first_child(fragment_1);
-      var input = child(label);
-      remove_input_defaults(input);
-      var span = sibling(input, 2);
-      var text_1 = only_child(span, true);
-      reset(label);
-      var p = sibling(label, 2);
-      var text_2 = only_child(p, true);
-      var node_3 = sibling(p, 2);
-      {
-        let $0 = user_derived(() => $$props.context.fieldPrefix || "");
-        let $1 = user_derived(() => ({ ...$$props.context.editor.errors }));
-        FieldError(node_3, {
-          key: "stagger",
-          get fieldPrefix() {
-            return get($0);
-          },
-          get errors() {
-            return get($1);
-          },
-        });
-      }
-      template_effect(
-        ($0, $1) => {
-          set_checked(input, get(form).stagger?.enabled === true);
-          input.disabled = $$props.panel.busy;
-          set_text(text_1, $0);
-          set_text(text_2, $1);
-        },
-        [
-          () => get(t)("Turn on one entity at a time"),
-          () =>
-            get(t)(
-              "One entity turns on at each evenly spaced tick over {period}. The order changes for each transition. Change the period in Custom YAML.",
-            ).replace("{period}", get(form).stagger?.period || "2m"),
-        ],
-      );
-      delegated("change", input, (event2) => {
-        get(form).stagger = {
-          ...get(form).stagger,
-          enabled: event2.currentTarget.checked,
-        };
-        $$props.context.changed("stagger");
-      });
-      append($$anchor2, fragment_1);
-    };
-    if_block(node_2, ($$render) => {
-      if (get(form).kind === "entities" && get(form).action === "turn_on")
-        $$render(consequent_1);
-    });
-  }
-  var node_4 = sibling(node_2, 2);
-  {
-    var consequent_2 = ($$anchor2) => {
-      var fragment_2 = root_17();
-      var ha_code_editor = first_child(fragment_2);
+      var fragment_1 = root10();
+      var ha_code_editor = first_child(fragment_1);
       set_custom_element_data(ha_code_editor, "role", "group");
       template_effect(
         ($0) => set_custom_element_data(ha_code_editor, "aria-label", $0),
@@ -11505,11 +11653,11 @@ function ActionEditor($$anchor, $$props) {
           linewrap: true,
         }),
       );
-      var node_5 = sibling(ha_code_editor, 2);
+      var node_3 = sibling(ha_code_editor, 2);
       {
         let $0 = user_derived(() => $$props.context.fieldPrefix || "");
         let $1 = user_derived(() => ({ ...$$props.context.editor.errors }));
-        FieldError(node_5, {
+        FieldError(node_3, {
           key: "customYaml",
           get fieldPrefix() {
             return get($0);
@@ -11519,12 +11667,12 @@ function ActionEditor($$anchor, $$props) {
           },
         });
       }
-      var p_1 = sibling(node_5, 2);
-      var text_3 = only_child(p_1, true);
+      var p = sibling(node_3, 2);
+      var text_1 = only_child(p, true);
       template_effect(
         ($0) => {
           ha_code_editor.dir = ha_code_editor.dir;
-          set_text(text_3, $0);
+          set_text(text_1, $0);
         },
         [
           () =>
@@ -11542,15 +11690,15 @@ function ActionEditor($$anchor, $$props) {
         get(form).customYaml = event2.detail.value;
         $$props.context.changed("customYaml");
       });
-      append($$anchor2, fragment_2);
+      append($$anchor2, fragment_1);
     };
-    if_block(node_4, ($$render) => {
-      if (get(form).kind === "custom") $$render(consequent_2);
+    if_block(node_2, ($$render) => {
+      if (get(form).kind === "custom") $$render(consequent_1);
     });
   }
-  var node_6 = sibling(node_4, 2);
+  var node_4 = sibling(node_2, 2);
   {
-    var consequent_3 = ($$anchor2) => {
+    var consequent_2 = ($$anchor2) => {
       EditorField($$anchor2, {
         get panel() {
           return $$props.panel;
@@ -11566,18 +11714,18 @@ function ActionEditor($$anchor, $$props) {
         update: (value) => (get(form).service = value),
       });
     };
-    if_block(node_6, ($$render) => {
-      if (get(form).kind === "service") $$render(consequent_3);
+    if_block(node_4, ($$render) => {
+      if (get(form).kind === "service") $$render(consequent_2);
     });
   }
-  var node_7 = sibling(node_6, 2);
+  var node_5 = sibling(node_4, 2);
   {
-    var consequent_6 = ($$anchor2) => {
-      var fragment_4 = root_26();
-      var node_8 = first_child(fragment_4);
+    var consequent_5 = ($$anchor2) => {
+      var fragment_3 = root_18();
+      var node_6 = first_child(fragment_3);
       {
         let $0 = user_derived(() => ({ choices: coverActions, render: true }));
-        EditorField(node_8, {
+        EditorField(node_6, {
           get panel() {
             return $$props.panel;
           },
@@ -11595,9 +11743,9 @@ function ActionEditor($$anchor, $$props) {
           },
         });
       }
-      var node_9 = sibling(node_8, 2);
+      var node_7 = sibling(node_6, 2);
       {
-        var consequent_4 = ($$anchor3) => {
+        var consequent_3 = ($$anchor3) => {
           EditorField($$anchor3, {
             get panel() {
               return $$props.panel;
@@ -11614,7 +11762,7 @@ function ActionEditor($$anchor, $$props) {
             options: { type: "number", min: 0, max: 100, step: 1 },
           });
         };
-        var consequent_5 = ($$anchor3) => {
+        var consequent_4 = ($$anchor3) => {
           EditorField($$anchor3, {
             get panel() {
               return $$props.panel;
@@ -11631,21 +11779,21 @@ function ActionEditor($$anchor, $$props) {
             options: { type: "number", min: 0, max: 100, step: 1 },
           });
         };
-        if_block(node_9, ($$render) => {
+        if_block(node_7, ($$render) => {
           if (get(form).service === "cover.set_cover_position")
-            $$render(consequent_4);
+            $$render(consequent_3);
           else if (get(form).service === "cover.set_cover_tilt_position")
-            $$render(consequent_5, 1);
+            $$render(consequent_4, 1);
         });
       }
-      var p_2 = sibling(node_9, 2);
-      var text_4 = only_child(p_2, true);
-      var p_3 = sibling(p_2, 2);
-      var text_5 = only_child(p_3, true);
+      var p_1 = sibling(node_7, 2);
+      var text_2 = only_child(p_1, true);
+      var p_2 = sibling(p_1, 2);
+      var text_3 = only_child(p_2, true);
       template_effect(
         ($0, $1) => {
-          set_text(text_4, $0);
-          set_text(text_5, $1);
+          set_text(text_2, $0);
+          set_text(text_3, $1);
         },
         [
           () =>
@@ -11658,15 +11806,15 @@ function ActionEditor($$anchor, $$props) {
             ),
         ],
       );
-      append($$anchor2, fragment_4);
+      append($$anchor2, fragment_3);
     };
-    if_block(node_7, ($$render) => {
-      if (get(form).kind === "cover") $$render(consequent_6);
+    if_block(node_5, ($$render) => {
+      if (get(form).kind === "cover") $$render(consequent_5);
     });
   }
-  var node_10 = sibling(node_7, 2);
+  var node_8 = sibling(node_5, 2);
   {
-    var consequent_7 = ($$anchor2) => {
+    var consequent_6 = ($$anchor2) => {
       EditorField($$anchor2, {
         get panel() {
           return $$props.panel;
@@ -11683,9 +11831,9 @@ function ActionEditor($$anchor, $$props) {
         options: { multiline: true },
       });
     };
-    if_block(node_10, ($$render) => {
+    if_block(node_8, ($$render) => {
       if (get(form).kind === "scene" || get(form).kind === "service")
-        $$render(consequent_7);
+        $$render(consequent_6);
     });
   }
   reset(div);
@@ -11693,10 +11841,9 @@ function ActionEditor($$anchor, $$props) {
   append($$anchor, div);
   pop();
 }
-delegate(["change"]);
 
 // custom_components/occupied/frontend/StepEditor.svelte
-var root10 = from_html(
+var root11 = from_html(
   `<section class="step-editor"><div class="step-name-editor"><!></div> <div class="editor-sections"><!> <!></div> <!> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-step-submit=""> </button></div></section>`,
 );
 function StepEditor($$anchor, $$props) {
@@ -11711,7 +11858,7 @@ function StepEditor($$anchor, $$props) {
     editing = user_derived(() => get(context).editing),
     submit = user_derived(() => get(context).submit),
     cancel = user_derived(() => get(context).cancel);
-  var section = root10();
+  var section = root11();
   var div = child(section);
   var node = child(div);
   {
@@ -11851,12 +11998,12 @@ function StepEditor($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/StepsView.svelte
-var root11 = from_html(
+var root12 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-step=""> </button></section>`,
 );
-var root_18 = from_html(`<span class="step-status-badge"> </span>`);
+var root_19 = from_html(`<span class="step-status-badge"> </span>`);
 var root_27 = from_html(`<span class="step-warning-message"> </span>`);
-var root_36 = from_html(
+var root_35 = from_html(
   `<span class="step-row-warning"><ha-icon></ha-icon> <span></span></span>`,
   2,
 );
@@ -11893,7 +12040,7 @@ function StepsView($$anchor, $$props) {
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var section = root11();
+      var section = root12();
       var h2 = child(section);
       var text2 = only_child(h2, true);
       var p = sibling(h2, 2);
@@ -11964,7 +12111,7 @@ function StepsView($$anchor, $$props) {
           var node_1 = sibling(strong, 2);
           {
             var consequent_1 = ($$anchor4) => {
-              var span_2 = root_18();
+              var span_2 = root_19();
               var text_4 = only_child(span_2, true);
               template_effect(
                 ($0) => set_text(text_4, $0),
@@ -11983,7 +12130,7 @@ function StepsView($$anchor, $$props) {
           var node_2 = sibling(span, 2);
           {
             var consequent_2 = ($$anchor4) => {
-              var span_4 = root_36();
+              var span_4 = root_35();
               var ha_icon = child(span_4);
               set_custom_element_data(ha_icon, "icon", "mdi:alert-outline");
               set_custom_element_data(ha_icon, "aria-hidden", "true");
@@ -12137,18 +12284,18 @@ function StepsView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/SettingsView.svelte
-var root12 = from_html(`<span class="changes svelte-82irif"> </span>`);
-var root_19 = from_html(
+var root13 = from_html(`<span class="changes svelte-82irif"> </span>`);
+var root_110 = from_html(
   `<section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <div class="yaml-actions svelte-82irif"><button type="button" class="primary"> </button> <button type="button"> </button> <button type="button" class="download svelte-82irif"> </button></div></section>`,
   2,
 );
-var $$css2 = {
+var $$css3 = {
   hash: "svelte-82irif",
   code: ".yaml-actions.svelte-82irif {display:flex;align-items:center;flex-wrap:wrap;gap:8px;}.yaml-actions.svelte-82irif .download:where(.svelte-82irif) {margin-left:auto;}ha-code-editor.svelte-82irif {display:block;width:100%;margin:8px 0;--code-mirror-height: 420px;--code-mirror-max-height: 60vh;}section.yaml-panel.svelte-82irif {border-color:var(--divider-color, #d5dce3);border-left-color:var(--divider-color, #d5dce3);background:var(--card-background-color, #fff);}section.yaml-panel.has-changes.svelte-82irif {border-color:var(--warning-color, #e69500);border-left-color:var(--warning-color, #e69500);background:color-mix(\n      in srgb,\n      var(--warning-color, #e69500) 18%,\n      var(--card-background-color, #fff)\n    );}.changes.svelte-82irif {color:var(--warning-color, #e69500);font-size:0.75em;font-weight:500;}",
 };
 function SettingsView($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css2);
+  append_styles($$anchor, $$css3);
   let panel = prop($$props, "panel", 7);
   let data = user_derived(() => {
     $$props.revision;
@@ -12171,14 +12318,14 @@ function SettingsView($$anchor, $$props) {
       };
     }
   });
-  var section = root_19();
+  var section = root_110();
   let classes;
   var h2 = child(section);
   var text2 = child(h2);
   var node = sibling(text2);
   {
     var consequent = ($$anchor2) => {
-      var span = root12();
+      var span = root13();
       var text_1 = only_child(span);
       template_effect(
         ($0) => set_text(text_1, `(${$0 ?? ""})`),
@@ -12492,20 +12639,20 @@ function staggerTransitions(plan) {
 }
 
 // custom_components/occupied/frontend/PreviewStateGraph.svelte
-var root13 = from_html(`<p class="hint"> </p>`);
-var root_110 = from_html(
+var root14 = from_html(`<p class="hint"> </p>`);
+var root_111 = from_html(
   `<state-history-chart-timeline></state-history-chart-timeline>`,
   2,
 );
 var root_28 = from_html(`<p role="status"> </p>`);
-var root_37 = from_html(`<!> <!> <!>`, 1);
-var $$css3 = {
+var root_36 = from_html(`<!> <!> <!>`, 1);
+var $$css4 = {
   hash: "svelte-1cnjgem",
   code: "state-history-chart-timeline.svelte-1cnjgem {display:block;width:100%;}state-history-chart-timeline[hidden].svelte-1cnjgem {display:none;}",
 };
 function PreviewStateGraph($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css3);
+  append_styles($$anchor, $$css4);
   let names = prop($$props, "names", 19, () => ({}));
   let ready = state(false);
   let failed = state(false);
@@ -12547,11 +12694,11 @@ function PreviewStateGraph($$anchor, $$props) {
       media.removeEventListener("change", updateNarrow);
     };
   });
-  var fragment = root_37();
+  var fragment = root_36();
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var p = root13();
+      var p = root14();
       var text2 = only_child(p, true);
       template_effect(
         ($0) => set_text(text2, $0),
@@ -12573,7 +12720,7 @@ function PreviewStateGraph($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var p_1 = root13();
+      var p_1 = root14();
       var text_1 = only_child(p_1, true);
       template_effect(
         ($0) => set_text(text_1, $0),
@@ -12596,7 +12743,7 @@ function PreviewStateGraph($$anchor, $$props) {
   var node_2 = sibling(node_1, 2);
   {
     var consequent_2 = ($$anchor2) => {
-      var p_2 = root13();
+      var p_2 = root14();
       var text_2 = only_child(p_2, true);
       template_effect(
         ($0) => set_text(text_2, $0),
@@ -12610,7 +12757,7 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, p_2);
     };
     var consequent_3 = ($$anchor2) => {
-      var state_history_chart_timeline = root_110();
+      var state_history_chart_timeline = root_111();
       template_effect(() =>
         set_custom_element_data(
           state_history_chart_timeline,
@@ -12730,12 +12877,12 @@ function lastGroupResult(session) {
 }
 
 // custom_components/occupied/frontend/Timeline.svelte
-var root14 = from_html(`<h2> </h2>`);
-var root_111 = from_html(`<li> <!></li>`);
+var root15 = from_html(`<h2> </h2>`);
+var root_112 = from_html(`<li> <!></li>`);
 var root_29 = from_html(
   `<details><summary> </summary> <p class="hint"> </p> <ol></ol></details>`,
 );
-var root_38 = from_html(`<th scope="col"> </th>`);
+var root_37 = from_html(`<th scope="col"> </th>`);
 var root_44 = from_html(`<td> </td>`);
 var root_54 = from_html(`<span> </span> <div> </div>`, 1);
 var root_64 = from_html(`<td><!></td>`);
@@ -12747,13 +12894,13 @@ var root_9 = from_html(`<p> </p>`);
 var root_10 = from_html(`<!> <!> <!>`, 1);
 var root_11 = from_html(`<p role="status"> </p>`);
 var root_122 = from_html(`<section><!> <!></section>`);
-var $$css4 = {
+var $$css5 = {
   hash: "svelte-16g6nis",
   code: "tr.current.svelte-16g6nis {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-16g6nis {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}",
 };
 function Timeline($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css4);
+  append_styles($$anchor, $$css5);
   let t = prop($$props, "t", 3, (text2) => text2),
     entityNames = prop($$props, "entityNames", 19, () => ({})),
     loading = prop($$props, "loading", 3, false),
@@ -12802,7 +12949,7 @@ function Timeline($$anchor, $$props) {
       append($$anchor2, fragment);
     };
     var consequent_1 = ($$anchor2) => {
-      var h2 = root14();
+      var h2 = root15();
       var text_1 = only_child(h2, true);
       template_effect(
         ($0) => set_text(text_1, $0),
@@ -12870,7 +13017,7 @@ function Timeline($$anchor, $$props) {
                 () => get(transition2).events,
                 index,
                 ($$anchor5, tick2) => {
-                  var li = root_111();
+                  var li = root_112();
                   var text_6 = child(li);
                   var node_6 = sibling(text_6);
                   {
@@ -12927,7 +13074,7 @@ function Timeline($$anchor, $$props) {
                 },
                 [
                   () => eventLabel(get(transition2).events[0]),
-                  () => t()("Turn-on transition"),
+                  () => t()("Staggered action"),
                   () => t()("entities"),
                   () =>
                     stamp(
@@ -12962,7 +13109,7 @@ function Timeline($$anchor, $$props) {
             () => ["Planned time", "Source", "Action", "Targets", "Settings"],
             index,
             ($$anchor4, label) => {
-              var th = root_38();
+              var th = root_37();
               var text_8 = only_child(th, true);
               template_effect(($0) => set_text(text_8, $0), [() => t()(label)]);
               append($$anchor4, th);
@@ -12971,7 +13118,7 @@ function Timeline($$anchor, $$props) {
           var node_8 = sibling(node_7);
           {
             var consequent_3 = ($$anchor4) => {
-              var th_1 = root_38();
+              var th_1 = root_37();
               var text_9 = only_child(th_1, true);
               template_effect(
                 ($0) => set_text(text_9, $0),
@@ -13209,18 +13356,18 @@ function Timeline($$anchor, $$props) {
 delegate(["input", "click"]);
 
 // custom_components/occupied/frontend/LivePreviewControls.svelte
-var root15 = from_html(
+var root16 = from_html(
   `<button type="button" class="primary svelte-100n2ef"> </button> <button type="button" class="svelte-100n2ef"> </button>`,
   1,
 );
-var root_112 = from_html(
+var root_113 = from_html(
   `<button type="button" class="svelte-100n2ef"> </button>`,
 );
 var root_210 = from_html(
   `<button type="button" class="primary svelte-100n2ef"> </button> <!> <button type="button" class="svelte-100n2ef"> </button>`,
   1,
 );
-var root_39 = from_html(`<div class="live-actions svelte-100n2ef"><!></div>`);
+var root_38 = from_html(`<div class="live-actions svelte-100n2ef"><!></div>`);
 var root_45 = from_html(`<p class="svelte-100n2ef"> </p>`);
 var root_55 = from_html(`<p class="error svelte-100n2ef"> </p>`);
 var root_65 = from_html(`<p class="hint svelte-100n2ef"> </p>`);
@@ -13234,23 +13381,23 @@ var root_92 = from_html(
   1,
 );
 var root_102 = from_html(`<p role="status" class="hint svelte-100n2ef"> </p>`);
-var root_113 = from_html(
+var root_114 = from_html(
   `<!> <section class="live-card svelte-100n2ef"><h2 class="svelte-100n2ef"> </h2> <p class="svelte-100n2ef"><strong> </strong></p> <p class="hint svelte-100n2ef"> </p> <!> <!></section> <!>`,
   1,
 );
-var $$css5 = {
+var $$css6 = {
   hash: "svelte-100n2ef",
   code: ".live-card.svelte-100n2ef {border:1px solid var(--divider-color, #ddd);border-radius:12px;padding:16px;margin-bottom:16px;}h2.svelte-100n2ef {margin:0;}p.svelte-100n2ef {margin:8px 0;}.call.svelte-100n2ef {overflow-wrap:anywhere;}.live-actions.svelte-100n2ef {position:sticky;top:64px;z-index:2;display:flex;flex-wrap:wrap;gap:8px;padding:12px;margin-bottom:16px;background:var(--card-background-color, white);border:1px solid var(--divider-color, #ddd);border-radius:12px;}.live-actions.svelte-100n2ef button:where(.svelte-100n2ef) {min-height:48px;margin:0;}.primary.svelte-100n2ef {flex:1;}\n  @media (max-width: 600px) {.live-actions.svelte-100n2ef {top:calc(56px + env(safe-area-inset-top, 0px));padding-bottom:max(12px, env(safe-area-inset-bottom, 0px));}\n  }",
 };
 function LivePreviewControls($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css5);
+  append_styles($$anchor, $$css6);
   const actionControls = ($$anchor2) => {
-    var div = root_39();
+    var div = root_38();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
-        var fragment = root15();
+        var fragment = root16();
         var button = first_child(fragment);
         var text2 = only_child(button, true);
         var button_1 = sibling(button, 2);
@@ -13285,7 +13432,7 @@ function LivePreviewControls($$anchor, $$props) {
         var node_1 = sibling(button_2, 2);
         {
           var consequent_1 = ($$anchor4) => {
-            var button_3 = root_112();
+            var button_3 = root_113();
             var text_3 = only_child(button_3, true);
             template_effect(
               ($0) => {
@@ -13365,7 +13512,7 @@ function LivePreviewControls($$anchor, $$props) {
       (outcome) => outcome.group_id === get(session)?.last_group_id,
     ),
   );
-  var fragment_2 = root_113();
+  var fragment_2 = root_114();
   var node_2 = first_child(fragment_2);
   {
     var consequent_2 = ($$anchor2) => {
@@ -13668,27 +13815,27 @@ function LivePreviewControls($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/PreviewView.svelte
-var root16 = from_html(`<span class="hint" role="status"> </span>`);
-var root_114 = from_html(
+var root17 = from_html(`<span class="hint" role="status"> </span>`);
+var root_115 = from_html(
   `<div class="schedule-heading svelte-5w63kc"><h2 aria-live="polite" class="svelte-5w63kc"> </h2> <!> <div class="day-navigation svelte-5w63kc" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-5w63kc"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
   2,
 );
 var root_211 = from_html(`<!> <!>`, 1);
-var $$css6 = {
+var $$css7 = {
   hash: "svelte-5w63kc",
   code: ".schedule-heading.svelte-5w63kc {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-bottom:20px;}h2.svelte-5w63kc {margin:0;}.day-navigation.svelte-5w63kc {display:flex;align-items:center;gap:4px;}.day-navigation.svelte-5w63kc button:where(.svelte-5w63kc) {margin:0;}",
 };
 function PreviewView($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css6);
+  append_styles($$anchor, $$css7);
   const dayHeading = ($$anchor2) => {
-    var div = root_114();
+    var div = root_115();
     var h2 = child(div);
     var text2 = only_child(h2, true);
     var node = sibling(h2, 2);
     {
       var consequent = ($$anchor3) => {
-        var span = root16();
+        var span = root17();
         var text_1 = only_child(span, true);
         template_effect(
           ($0) => set_text(text_1, $0),
@@ -13879,7 +14026,7 @@ function PreviewView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/UnsavedStepDialog.svelte
-var root17 = from_html(
+var root18 = from_html(
   `<div class="step-exit-overlay"><dialog open="" class="step-exit-dialog" role="alertdialog" aria-modal="true" aria-labelledby="step-exit-title" aria-describedby="step-exit-description"><h2 id="step-exit-title"> </h2> <p id="step-exit-description"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog></div>`,
 );
 function UnsavedStepDialog($$anchor, $$props) {
@@ -13887,7 +14034,7 @@ function UnsavedStepDialog($$anchor, $$props) {
   let t = user_derived(() => $$props.panel.t);
   let keepEditing;
   onMount(() => keepEditing.focus());
-  var div = root17();
+  var div = root18();
   var dialog = child(div);
   var h2 = child(dialog);
   var text2 = only_child(h2, true);
@@ -14109,8 +14256,8 @@ async function deleteRandom(panel) {
 }
 
 // custom_components/occupied/frontend/DeleteRandomDialog.svelte
-var root18 = from_html(`<li> </li>`);
-var root_115 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
+var root19 = from_html(`<li> </li>`);
+var root_116 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
 var root_212 = from_html(
   `<dialog class="step-delete-dialog" aria-labelledby="random-delete-title"><h2 id="random-delete-title"> </h2> <p> </p> <!> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog>`,
 );
@@ -14137,7 +14284,7 @@ function DeleteRandomDialog($$anchor, $$props) {
   var node = sibling(p, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment = root_115();
+      var fragment = root_116();
       var p_1 = first_child(fragment);
       var text_2 = only_child(p_1);
       var ul = sibling(p_1, 2);
@@ -14147,7 +14294,7 @@ function DeleteRandomDialog($$anchor, $$props) {
         () => get(dependents),
         index,
         ($$anchor3, entry) => {
-          var li = root18();
+          var li = root19();
           var text_3 = only_child(li, true);
           template_effect(() => set_text(text_3, get(entry).name));
           append($$anchor3, li);
@@ -14218,12 +14365,13 @@ function DeleteRandomDialog($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/AdvancedRandomSettings.svelte
-var root19 = from_html(`<button type="button"> </button>`);
-var root_116 = from_html(
+var root20 = from_html(`<button type="button"> </button>`);
+var root_117 = from_html(
   `<label class="step-weekday-option"><input type="checkbox"/><span> </span></label>`,
 );
-var root_213 = from_html(
-  `<dialog class="step-advanced-dialog" aria-labelledby="random-advanced-title" aria-describedby="random-weekdays-description"><h2 id="random-advanced-title"> </h2> <p id="random-weekdays-description" class="hint"> </p> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!> <p class="hint"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
+var root_213 = from_html(`<h3> </h3> <!>`, 1);
+var root_39 = from_html(
+  `<dialog class="step-advanced-dialog" aria-labelledby="random-advanced-title" aria-describedby="random-weekdays-description"><h2 id="random-advanced-title"> </h2> <p id="random-weekdays-description" class="hint"> </p> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!> <!> <!> <p class="hint"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
 );
 function AdvancedRandomSettings($$anchor, $$props) {
   push($$props, true);
@@ -14231,6 +14379,15 @@ function AdvancedRandomSettings($$anchor, $$props) {
     t = user_derived(() => $$props.context.t),
     changed = user_derived(() => $$props.context.changed);
   let selectedDays = state(proxy(untrack(() => [...get(form).days])));
+  let startStagger = state(proxy(untrack(() => staggerSettings(get(form).on))));
+  let endStagger = state(proxy(untrack(() => staggerSettings(get(form).off))));
+  let canStartStagger = user_derived(() => supportsStagger(get(form).on));
+  let canEndStagger = user_derived(() => supportsStagger(get(form).off));
+  let staggerError = user_derived(
+    () =>
+      (get(canStartStagger) && staggerPeriodError(get(startStagger))) ||
+      (get(canEndStagger) && staggerPeriodError(get(endStagger))),
+  );
   let dialog;
   const presets = [
     ["Every day", days],
@@ -14254,12 +14411,20 @@ function AdvancedRandomSettings($$anchor, $$props) {
     dialog.querySelector("input")?.focus();
   });
   function apply2() {
-    if ($$props.panel.busy || get(dayError)) return;
+    if ($$props.panel.busy || get(dayError) || get(staggerError)) return;
     get(form).days = [...get(selectedDays)];
     get(changed)("days");
+    if (get(canStartStagger)) {
+      applyStagger(get(form).on, get(startStagger));
+      get(changed)("on.stagger");
+    }
+    if (get(canEndStagger)) {
+      applyStagger(get(form).off, get(endStagger));
+      get(changed)("off.stagger");
+    }
     dialog.close();
   }
-  var dialog_1 = root_213();
+  var dialog_1 = root_39();
   var h2 = child(dialog_1);
   var text2 = only_child(h2, true);
   var p = sibling(h2, 2);
@@ -14277,7 +14442,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let label = () => get($$array)[0];
       let selection = () => get($$array)[1];
-      var button = root19();
+      var button = root20();
       var text_3 = only_child(button, true);
       template_effect(
         ($0, $1) => {
@@ -14305,7 +14470,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
     () => days,
     index,
     ($$anchor2, day, index2) => {
-      var label_1 = root_116();
+      var label_1 = root_117();
       var input = child(label_1);
       remove_input_defaults(input);
       var span = sibling(input);
@@ -14347,13 +14512,77 @@ function AdvancedRandomSettings($$anchor, $$props) {
       },
     });
   }
-  var p_1 = sibling(node, 2);
-  var text_5 = only_child(p_1, true);
+  var node_1 = sibling(node, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var fragment = root_213();
+      var h3 = first_child(fragment);
+      var text_5 = only_child(h3, true);
+      var node_2 = sibling(h3, 2);
+      StaggerSettings(node_2, {
+        get t() {
+          return get(t);
+        },
+        id: "random-start-stagger",
+        get disabled() {
+          return $$props.panel.busy;
+        },
+        get settings() {
+          return get(startStagger);
+        },
+        set settings($$value) {
+          set2(startStagger, $$value, true);
+        },
+      });
+      template_effect(
+        ($0) => set_text(text_5, $0),
+        [() => get(t)("Start action")],
+      );
+      append($$anchor2, fragment);
+    };
+    if_block(node_1, ($$render) => {
+      if (get(canStartStagger)) $$render(consequent);
+    });
+  }
+  var node_3 = sibling(node_1, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      var fragment_1 = root_213();
+      var h3_1 = first_child(fragment_1);
+      var text_6 = only_child(h3_1, true);
+      var node_4 = sibling(h3_1, 2);
+      StaggerSettings(node_4, {
+        get t() {
+          return get(t);
+        },
+        id: "random-end-stagger",
+        get disabled() {
+          return $$props.panel.busy;
+        },
+        get settings() {
+          return get(endStagger);
+        },
+        set settings($$value) {
+          set2(endStagger, $$value, true);
+        },
+      });
+      template_effect(
+        ($0) => set_text(text_6, $0),
+        [() => get(t)("End action")],
+      );
+      append($$anchor2, fragment_1);
+    };
+    if_block(node_3, ($$render) => {
+      if (get(canEndStagger)) $$render(consequent_1);
+    });
+  }
+  var p_1 = sibling(node_3, 2);
+  var text_7 = only_child(p_1, true);
   var div_2 = sibling(p_1, 2);
   var button_1 = child(div_2);
-  var text_6 = only_child(button_1, true);
+  var text_8 = only_child(button_1, true);
   var button_2 = sibling(button_1, 2);
-  var text_7 = only_child(button_2, true);
+  var text_9 = only_child(button_2, true);
   reset(div_2);
   reset(dialog_1);
   bind_this(
@@ -14372,10 +14601,11 @@ function AdvancedRandomSettings($$anchor, $$props) {
       );
       fieldset.disabled = $$props.panel.busy;
       set_text(text_2, $2);
-      set_text(text_5, $3);
-      set_text(text_6, $4);
-      button_2.disabled = $$props.panel.busy || !!get(dayError);
-      set_text(text_7, $5);
+      set_text(text_7, $3);
+      set_text(text_8, $4);
+      button_2.disabled =
+        $$props.panel.busy || !!get(dayError) || !!get(staggerError);
+      set_text(text_9, $5);
     },
     [
       () => get(t)("Advanced settings"),
@@ -14397,11 +14627,11 @@ function AdvancedRandomSettings($$anchor, $$props) {
 delegate(["click", "change"]);
 
 // custom_components/occupied/frontend/RandomActions.svelte
-var root20 = from_html(
+var root21 = from_html(
   `<div role="separator"></div> <button type="button" role="menuitem" tabindex="-1" class="danger"> </button>`,
   1,
 );
-var root_117 = from_html(
+var root_118 = from_html(
   `<div class="step-editor-actions"><button type="button" class="icon-button" aria-haspopup="menu" data-random-actions=""><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"></path></svg></button> <div class="step-actions-menu" popover="auto" role="menu" tabindex="-1"><button type="button" role="menuitem" tabindex="-1"> </button> <!></div></div> <!> <!>`,
   1,
 );
@@ -14466,7 +14696,7 @@ function RandomActions($$anchor, $$props) {
       closeMenu();
     }
   }
-  var fragment = root_117();
+  var fragment = root_118();
   event("resize", $window, positionMenu);
   event("scroll", $window, positionMenu);
   var div = first_child(fragment);
@@ -14482,7 +14712,7 @@ function RandomActions($$anchor, $$props) {
   var node = sibling(button_1, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root20();
+      var fragment_1 = root21();
       var button_2 = sibling(first_child(fragment_1), 2);
       var text_1 = only_child(button_2, true);
       template_effect(
@@ -14834,20 +15064,20 @@ function randomExplanation(
 }
 
 // custom_components/occupied/frontend/RandomEventEditor.svelte
-var root21 = from_html(`<button type="button" class="text-button"> </button>`);
-var root_118 = from_html(
+var root22 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_119 = from_html(
   `<label class="same-entities svelte-e4ijcz"><input type="checkbox"/> </label>`,
 );
 var root_214 = from_html(
   `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-advanced=""> </button> <!> <h3> </h3> <div class="random-frequency svelte-e4ijcz"><div><!> <!></div> <div><!></div> <!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <p class="hint"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section>`,
 );
-var $$css7 = {
+var $$css8 = {
   hash: "svelte-e4ijcz",
   code: ".random-advanced-button.svelte-e4ijcz {margin-top:16px;}.random-frequency.svelte-e4ijcz {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}.same-entities.svelte-e4ijcz {display:flex;align-items:center;gap:8px;margin-top:16px;}\n  @media (max-width: 600px) {.random-frequency.svelte-e4ijcz {grid-template-columns:1fr;gap:0;}\n  }",
 };
 function RandomEventEditor($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css7);
+  append_styles($$anchor, $$css8);
   let context = user_derived(() => {
     $$props.revision;
     return createRandomEditorContext($$props.panel);
@@ -14992,7 +15222,7 @@ function RandomEventEditor($$anchor, $$props) {
   var node_5 = sibling(node_4, 2);
   {
     var consequent = ($$anchor2) => {
-      var button_1 = root21();
+      var button_1 = root22();
       var text_3 = only_child(button_1, true);
       template_effect(
         ($0) => {
@@ -15019,7 +15249,7 @@ function RandomEventEditor($$anchor, $$props) {
     var consequent_1 = ($$anchor2) => {
       {
         const trailing = ($$anchor3) => {
-          var button_2 = root21();
+          var button_2 = root22();
           var text_4 = only_child(button_2, true);
           template_effect(
             ($0) => {
@@ -15135,7 +15365,7 @@ function RandomEventEditor($$anchor, $$props) {
   var node_11 = sibling(node_10, 2);
   {
     var consequent_2 = ($$anchor2) => {
-      var label = root_118();
+      var label = root_119();
       var input = child(label);
       remove_input_defaults(input);
       var text_7 = sibling(input, 1, true);
@@ -15258,10 +15488,10 @@ function RandomEventEditor($$anchor, $$props) {
 delegate(["click", "change"]);
 
 // custom_components/occupied/frontend/RandomView.svelte
-var root22 = from_html(
+var root23 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-random=""> </button></section>`,
 );
-var root_119 = from_html(`<span class="step-status-badge"> </span>`);
+var root_120 = from_html(`<span class="step-status-badge"> </span>`);
 var root_215 = from_html(`<span class="step-row-time"> </span>`);
 var root_310 = from_html(
   `<div style="--depth:0"><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button> <div><!></div></div>`,
@@ -15296,7 +15526,7 @@ function RandomView($$anchor, $$props) {
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var section = root22();
+      var section = root23();
       var h2 = child(section);
       var text2 = only_child(h2, true);
       var p = sibling(h2, 2);
@@ -15355,7 +15585,7 @@ function RandomView($$anchor, $$props) {
           var node_1 = sibling(strong);
           {
             var consequent_1 = ($$anchor4) => {
-              var span_2 = root_119();
+              var span_2 = root_120();
               var text_5 = only_child(span_2, true);
               template_effect(
                 ($0) => set_text(text_5, $0),
@@ -15505,8 +15735,8 @@ function RandomView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/App.svelte
-var root23 = from_html(`<button type="button"> </button>`);
-var root_120 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
+var root24 = from_html(`<button type="button"> </button>`);
+var root_121 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
 var root_216 = from_html(`<p> </p>`);
 var root_311 = from_html(`<p id="house"> </p>`);
 var root_47 = from_html(`<option> </option>`);
@@ -15528,11 +15758,11 @@ function App($$anchor, $$props) {
   const $updates = () => store_get($$props.updates, "$updates", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   const toolbar = ($$anchor2) => {
-    var div = root_120();
+    var div = root_121();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
-        var button = root23();
+        var button = root24();
         var text_1 = only_child(button, true);
         template_effect(
           ($0) => {
@@ -15571,7 +15801,7 @@ function App($$anchor, $$props) {
     var node_1 = first_child(fragment);
     {
       var consequent_1 = ($$anchor3) => {
-        var button_1 = root23();
+        var button_1 = root24();
         var text_2 = only_child(button_1, true);
         template_effect(() => {
           set_class(button_1, 1, clsx2(get(className)));
@@ -15795,7 +16025,7 @@ function App($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let id = () => get($$array)[0];
       let label = () => get($$array)[1];
-      var button_2 = root23();
+      var button_2 = root24();
       var text_12 = only_child(button_2, true);
       template_effect(
         ($0) => {
@@ -15909,7 +16139,7 @@ function App($$anchor, $$props) {
               var node_11 = first_child(fragment_8);
               {
                 var consequent_8 = ($$anchor5) => {
-                  var button_5 = root23();
+                  var button_5 = root24();
                   var text_18 = only_child(button_5, true);
                   template_effect(
                     ($0) => set_text(text_18, $0),

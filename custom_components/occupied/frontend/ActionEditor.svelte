@@ -59,33 +59,6 @@
       {context}
       label={entityLabel}
     />{/if}
-  {#if form.kind === "entities" && form.action === "turn_on"}
-    <label class="stagger-option">
-      <input
-        type="checkbox"
-        checked={form.stagger?.enabled === true}
-        disabled={panel.busy}
-        onchange={(event) => {
-          form.stagger = {
-            ...form.stagger,
-            enabled: event.currentTarget.checked,
-          };
-          context.changed("stagger");
-        }}
-      />
-      <span>{t("Turn on one entity at a time")}</span>
-    </label>
-    <p class="hint">
-      {t(
-        "One entity turns on at each evenly spaced tick over {period}. The order changes for each transition. Change the period in Custom YAML.",
-      ).replace("{period}", form.stagger?.period || "2m")}
-    </p>
-    <FieldError
-      key="stagger"
-      fieldPrefix={context.fieldPrefix || ""}
-      errors={{ ...context.editor.errors }}
-    />
-  {/if}
   {#if form.kind === "custom"}
     <ha-code-editor
       role="group"

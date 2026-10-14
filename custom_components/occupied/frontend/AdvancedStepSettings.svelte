@@ -1,8 +1,15 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import type { OccupiedPanel } from "./occupied-panel.js";
   import type { StepEditorContext } from "./step-editor-controller.js";
   import { days } from "./model.js";
+  import StaggerSettings from "./StaggerSettings.svelte";
+  import {
+    applyStagger,
+    supportsStagger,
+    staggerSettings,
+    staggerPeriodError,
+  } from "./stagger.js";
   import { editorErrors } from "./step-model.js";
 
   let {
@@ -16,6 +23,11 @@
   } = $props();
   let { editor, form, t, changed } = $derived(context);
   let selectedDays = $state<string[]>([]);
+  let selectedStagger = $state(untrack(() => staggerSettings(form)));
+  let canStagger = $derived(supportsStagger(form));
+  let staggerError = $derived(
+    canStagger ? staggerPeriodError(selectedStagger) : undefined,
+  );
   let dialog: HTMLDialogElement;
   const presets: [string, string[]][] = [
     ["Every day", days],
@@ -51,9 +63,13 @@
   });
 
   function apply() {
-    if (dayError || panel.busy) return;
+    if (dayError || staggerError || panel.busy) return;
     form.days = [...selectedDays];
     changed("days");
+    if (canStagger) {
+      applyStagger(form, selectedStagger);
+      changed("stagger");
+    }
     dialog.close();
   }
 </script>
@@ -110,13 +126,21 @@
   {#if dayError}
     <p id="step-weekdays-error" class="error" role="alert">{t(dayError)}</p>
   {/if}
+  {#if canStagger}
+    <StaggerSettings
+      bind:settings={selectedStagger}
+      {t}
+      id="step-stagger"
+      disabled={panel.busy}
+    />
+  {/if}
   <p class="hint">{t("Apply these settings, then save the step.")}</p>
   <div class="step-delete-actions">
     <button type="button" onclick={() => dialog.close()}>{t("Cancel")}</button>
     <button
       type="button"
       class="primary"
-      disabled={panel.busy || !!dayError}
+      disabled={panel.busy || !!dayError || !!staggerError}
       onclick={apply}
     >
       {t("Apply")}

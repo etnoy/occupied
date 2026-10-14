@@ -19,3 +19,15 @@ steps:
             brightness: 50
           switch.table_lamp:
             state: "on"
+  bedtime:
+    timing:
+      absolute_time:
+        start: "23:00"
+    action: turn_off
+    stagger:
+      enabled: true
+      period: 2m
+    entities:
+      - light.sofa
+      - light.window
+      - switch.table_lamp

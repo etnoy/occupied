@@ -259,7 +259,7 @@ def plan_actions(block, start, prefix, source_id, streams, *, sequence=None, kin
 
 
 def supersede_ticks(events):
-    """A newer direct intent cancels older on ticks, including across source dates."""
+    """A newer direct intent cancels older ticks, including across source dates."""
     events = tuple(events)
     intents = {}
     for event in events:

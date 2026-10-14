@@ -7,6 +7,12 @@ import {
   stepEditor,
   stepEntries,
 } from "@occupied/step-model.js";
+import {
+  applyStagger,
+  staggerSettings,
+  staggerPeriodError,
+  supportsStagger,
+} from "@occupied/stagger.js";
 import { changeActionKind } from "@occupied/action-kind.js";
 import {
   actionTargets,
@@ -214,6 +220,11 @@ void test("stagger checkbox state and custom period survive lossless editor conv
   const reopened = actionForm(buildAction(form));
   assert.deepEqual(reopened.stagger, { enabled: false, period: "90s" });
   changeActionKind(form, "turn_off", () => false);
+  assert.deepEqual(buildAction(form).stagger, {
+    enabled: false,
+    period: "90s",
+  });
+  changeActionKind(form, "scene", () => false);
   assert.equal(buildAction(form).stagger, undefined);
 });
 
@@ -226,4 +237,42 @@ void test("singular custom mapping preserves stagger options on title/timing edi
   const form = actionForm(source);
   assert.deepEqual(buildAction(form), { actions: [source] });
   assert.ok(form.customYaml?.includes('period: "3m"'));
+});
+
+void test("advanced stagger options use a buffered 2m default and retain off actions", () => {
+  const form = actionForm({ action: "turn_off", entities: ["light.a"] });
+  assert.ok(supportsStagger(form));
+  const settings = staggerSettings(form);
+  assert.deepEqual(settings, { enabled: false, period: "2m" });
+  settings.enabled = true;
+  settings.period = "90s";
+  assert.equal(form.stagger, undefined);
+  applyStagger(form, settings);
+  assert.deepEqual(buildAction(form).stagger, settings);
+  settings.period = "3m";
+  assert.equal(buildAction(form).stagger?.period, "90s");
+  for (const period of ["", "0s", "-1m", "31m", "120", "0.5s"]) {
+    assert.ok(staggerPeriodError({ period }));
+  }
+  assert.equal(staggerPeriodError({ period: "2m" }), undefined);
+});
+
+void test("advanced settings can update a single custom action without losing light settings", () => {
+  const source: Action = {
+    action: "set_state",
+    entities: { "light.a": { state: "off", transition: 3 } },
+  };
+  const form = actionForm(source);
+  assert.ok(supportsStagger(form));
+  const text = form.customYaml;
+  applyStagger(form, staggerSettings(form));
+  assert.equal(form.customYaml, text);
+  applyStagger(form, { enabled: true, period: "3m" });
+  assert.deepEqual(buildAction(form).actions?.[0], {
+    ...source,
+    stagger: { enabled: true, period: "3m" },
+  });
+  assert.ok(form.customYaml?.includes('period: "3m"'));
+  form.customYaml += "\n# Unsaved edits";
+  assert.equal(supportsStagger(form), false);
 });

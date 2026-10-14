@@ -234,17 +234,28 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
             )
     for path, step in program_actions(program, enabled_only=False):
         if step.stagger.enabled and not (
-            step.action in {"turn_on", "light.turn_on", "switch.turn_on", "set_state"}
+            step.action
+            in {
+                "turn_on",
+                "turn_off",
+                "light.turn_on",
+                "light.turn_off",
+                "switch.turn_on",
+                "switch.turn_off",
+                "set_state",
+            }
             and all(entity.startswith(("light.", "switch.")) for entity in step.entities)
             and (
                 step.action != "set_state"
-                or all(settings.get("state") == "on" for settings in step.entities.values())
+                or all(
+                    settings.get("state") in {"on", "off"} for settings in step.entities.values()
+                )
             )
         ):
             issues.append(
                 Issue(
                     "stagger_targets",
-                    "Staggering requires explicit light/switch on targets",
+                    "Staggering requires explicit light/switch on or off targets",
                     path + ("stagger",),
                 )
             )

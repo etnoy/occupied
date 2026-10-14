@@ -697,3 +697,33 @@ async def test_custom_stagger_waits_for_an_earlier_deferred_action(
     await advance(hass, freezer, 1)
     assert [c.service for c in daily_devices] == ["toggle", "turn_on", "turn_on", "turn_on"]
     assert daily_devices[-1].domain == "scene"
+
+
+@pytest.mark.parametrize("custom", [False, True])
+async def test_staggered_off_dispatches_one_entity_per_tick(
+    hass, daily_entry, daily_devices, freezer, custom
+):
+    hass.states.async_set("light.second", "off", {"supported_color_modes": ["brightness"]})
+    daily_entry.data["program"]["steps"]["on"]["entities"] = ["light.proof", "light.second"]
+    off = daily_entry.data["program"]["steps"]["off"]
+    action = {
+        "action": "turn_off",
+        "entities": ["light.proof", "light.second"],
+        "stagger": {"enabled": True},
+    }
+    if custom:
+        off.pop("action")
+        off.pop("entities")
+        off["actions"] = [action]
+    else:
+        off.update(action)
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 60)
+    assert len(daily_devices) == 2
+    await advance(hass, freezer, 299)
+    assert not any(c.service == "turn_off" for c in daily_devices)
+    await advance(hass, freezer, 1)
+    assert sum(c.service == "turn_off" for c in daily_devices) == 1
+    await advance(hass, freezer, 60)
+    assert sum(c.service == "turn_off" for c in daily_devices) == 2

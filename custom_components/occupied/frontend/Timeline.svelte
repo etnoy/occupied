@@ -92,7 +92,7 @@
         {#each staggerTransitions(plan) as transition}
           <details>
             <summary>
-              {eventLabel(transition.events[0])} · {t("Turn-on transition")} · {transition.count}
+              {eventLabel(transition.events[0])} · {t("Staggered action")} · {transition.count}
               {t("entities")}
             </summary>
             <p class="hint">
