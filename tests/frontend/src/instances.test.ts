@@ -5,6 +5,8 @@ import type {
   InstanceDocument,
   ProgramDocument,
   PreviewResult,
+  LivePreviewResponse,
+  LivePreviewSession,
 } from "@occupied/types.js";
 import { stepEditor, stepEntries } from "@occupied/step-model.js";
 import { startStep } from "@occupied/steps.js";
@@ -29,18 +31,23 @@ async function fixture() {
       "confirm",
       "dispatchEvent",
       "CSS",
+      "document",
+      "removeEventListener",
     ].map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]),
   );
   let url = new URL("http://localhost/occupied?config_entry=main"),
     accepted = false,
     confirmations = 0;
   Object.defineProperties(globalThis, {
+    document: { configurable: true, value: { removeEventListener() {} } },
+    removeEventListener: { configurable: true, value() {} },
     CSS: { configurable: true, value: { escape: (value: string) => value } },
     HTMLElement: {
       configurable: true,
       value: class {
         isConnected = true;
         shadowRoot = {
+          replaceChildren() {},
           querySelectorAll: () => [],
           querySelector: () => null,
           getElementById: () => null,
@@ -60,6 +67,7 @@ async function fixture() {
     window: {
       configurable: true,
       value: {
+        removeEventListener() {},
         get location() {
           return url;
         },
@@ -117,6 +125,10 @@ async function fixture() {
   );
   const subscriptions = new Map<string, (value: unknown) => void>();
   const disposed: string[] = [];
+  const connectionListeners = new Map<string, () => void>();
+  let liveOverride:
+    | ((message: Record<string, unknown>) => Promise<LivePreviewResponse>)
+    | undefined;
   let programOverride:
       | ((entry: string) => Promise<ProgramDocument>)
       | undefined,
@@ -146,6 +158,7 @@ async function fixture() {
         "occupied/program": documents[entry],
         "occupied/catalog": { entities: [], services: {} },
         "occupied/preview": preview,
+        "occupied/live_preview/status": { session: null, can_advance: false },
       };
       if (message.type === "occupied/program" && programOverride) {
         return (await programOverride(entry)) as T;
@@ -153,9 +166,21 @@ async function fixture() {
       if (message.type === "occupied/preview" && previewOverride) {
         return (await previewOverride()) as T;
       }
+      if (
+        String(message.type).startsWith("occupied/live_preview/") &&
+        liveOverride
+      ) {
+        return (await liveOverride(message)) as T;
+      }
       return responses[String(message.type)] as T;
     },
     connection: {
+      addEventListener: (event, callback) => {
+        connectionListeners.set(event, callback);
+      },
+      removeEventListener: (event) => {
+        connectionListeners.delete(event);
+      },
       subscribeMessage: <T>(
         callback: (snapshot: T) => void,
         message: Record<string, unknown>,
@@ -180,6 +205,10 @@ async function fixture() {
     subscriptions,
     messages,
     preview,
+    connectionListeners,
+    setLiveOverride(value: typeof liveOverride) {
+      liveOverride = value;
+    },
     get confirmations() {
       return confirmations;
     },
@@ -207,6 +236,205 @@ async function fixture() {
     },
   };
 }
+
+function liveSession(): LivePreviewSession {
+  return {
+    id: "live",
+    user_id: "owner",
+    state: "ready",
+    date: "2026-10-05",
+    source_revision: "old-revision",
+    plan_fingerprint: "frozen-fingerprint",
+    cursor: 0,
+    total: 2,
+    simulated_time: null,
+    in_flight: null,
+    last_group_id: null,
+    next_group: {
+      id: "first",
+      time: "2026-10-05T08:00:00Z",
+      title: "First",
+      kind: "step",
+      calls: [],
+    },
+    detail: "Ready to start",
+    paused: true,
+    earlier_revision: false,
+    storage_failed: false,
+    outcomes: {},
+  };
+}
+
+void test("reconnect retrieves the frozen day before enabling Next and leaves the draft intact", async () => {
+  const f = await fixture();
+  try {
+    f.panel.change(["name"], "Unsaved editor draft");
+    const frozen = { ...f.preview.plans[0], simulation_date: "2026-10-05" };
+    let resolve!: (result: LivePreviewResponse) => void;
+    f.setLiveOverride(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        }),
+    );
+    f.connectionListeners.get("disconnected")!();
+    f.connectionListeners.get("ready")!();
+    assert.equal(f.panel.liveReady, false);
+    await f.panel.nextLiveEvent();
+    assert.equal(
+      f.messages.filter((m) => m.type === "occupied/live_preview/next").length,
+      0,
+    );
+    resolve({
+      session: liveSession(),
+      can_advance: true,
+      plan: frozen,
+      program: { schema_version: 1, name: "Frozen draft" },
+    });
+    await settle();
+    assert.equal(f.panel.liveReady, true);
+    assert.equal(f.panel.livePlan, frozen);
+    assert.equal(f.panel.previewDate, "2026-10-05");
+    assert.equal(f.panel.draft.name, "Unsaved editor draft");
+    f.panel.tab = "preview";
+    await f.panel.movePreviewDay(1);
+    assert.equal(f.panel.previewDate, "2026-10-05");
+  } finally {
+    f.restore();
+  }
+});
+
+void test("Next never advances optimistically or resends after a lost response", async () => {
+  const f = await fixture();
+  try {
+    const session = liveSession();
+    f.setLiveOverride((message) => {
+      if (message.type === "occupied/live_preview/next") {
+        return Promise.reject(new Error("Connection lost after dispatch"));
+      }
+      return Promise.resolve({
+        session: { ...session, cursor: 1, last_group_id: "first" },
+        can_advance: true,
+        plan: f.preview.plans[0],
+        program: f.panel.draft,
+      });
+    });
+    f.panel.liveSession = session;
+    f.panel.liveReady = f.panel.liveCanAdvance = true;
+    const advance = f.panel.nextLiveEvent();
+    assert.equal(f.panel.liveSession.cursor, 0);
+    await f.panel.nextLiveEvent();
+    await advance;
+    assert.equal(f.panel.liveSession.cursor, 1);
+    assert.equal(
+      f.messages.filter((m) => m.type === "occupied/live_preview/next").length,
+      1,
+    );
+    assert.equal(f.panel.liveReady, true);
+  } finally {
+    f.restore();
+  }
+});
+
+void test("Stop remains available during Next and late responses cannot resume a stopped session", async () => {
+  const f = await fixture();
+  try {
+    const session = liveSession();
+    let resolve!: (value: LivePreviewResponse) => void;
+    f.setLiveOverride((message) =>
+      message.type === "occupied/live_preview/next"
+        ? new Promise((done) => {
+            resolve = done;
+          })
+        : Promise.resolve({
+            session: { ...session, state: "stopped" },
+            can_advance: true,
+          }),
+    );
+    f.panel.liveSession = session;
+    f.panel.liveReady = f.panel.liveCanAdvance = true;
+    const advance = f.panel.nextLiveEvent();
+    assert.equal(f.panel.liveBusy, true);
+    await f.panel.stopLivePreview();
+    assert.equal(f.panel.liveSession.state, "stopped");
+    resolve({ session, can_advance: true });
+    await advance;
+    assert.equal(f.panel.liveSession.state, "stopped");
+    assert.equal(f.panel.schedulingPaused, true);
+  } finally {
+    f.restore();
+  }
+});
+
+void test("late live status from another controller cannot replace the current session", async () => {
+  const f = await fixture();
+  try {
+    let resolve!: (value: LivePreviewResponse) => void;
+    f.setLiveOverride((message) =>
+      message.config_entry_id === "main"
+        ? new Promise((done) => {
+            resolve = done;
+          })
+        : Promise.resolve({ session: null, can_advance: false }),
+    );
+    const recovery = f.panel.recoverLivePreview();
+    f.panel.selectInstance("guest");
+    await settle();
+    resolve({
+      session: liveSession(),
+      can_advance: true,
+      plan: f.preview.plans[0],
+      program: { schema_version: 1, name: "Wrong controller" },
+    });
+    await recovery;
+    assert.equal(f.panel.selectedEntry, "guest");
+    assert.equal(f.panel.liveSession, null);
+    assert.equal(f.panel.livePlan, undefined);
+  } finally {
+    f.restore();
+  }
+});
+
+void test("disconnecting during an advance cannot leave recovered controls permanently busy", async () => {
+  const f = await fixture();
+  try {
+    const session = liveSession();
+    let resolve!: (result: LivePreviewResponse) => void;
+    f.setLiveOverride((message) =>
+      message.type === "occupied/live_preview/next"
+        ? new Promise((done) => {
+            resolve = done;
+          })
+        : Promise.resolve({
+            session: { ...session, cursor: 1 },
+            can_advance: true,
+            plan: f.preview.plans[0],
+            program: f.panel.draft,
+          }),
+    );
+    f.panel.liveSession = session;
+    f.panel.liveReady = f.panel.liveCanAdvance = true;
+    const advancing = f.panel.nextLiveEvent();
+    f.panel.disconnectedCallback();
+    assert.equal(f.panel.liveBusy, false);
+    assert.equal(f.panel.liveReady, false);
+    f.panel.panel = {};
+    await settle();
+    assert.equal(f.panel.liveSession?.cursor, 1);
+    assert.equal(f.panel.liveReady, true);
+    resolve({ session: { ...session, cursor: 1 }, can_advance: true });
+    await advancing;
+    assert.equal(f.panel.liveBusy, false);
+    assert.equal(
+      f.messages.filter(
+        (message) => message.type === "occupied/live_preview/next",
+      ).length,
+      1,
+    );
+  } finally {
+    f.restore();
+  }
+});
 
 void test("opening preview automatically loads the current date and regenerates after edits", async () => {
   const f = await fixture();

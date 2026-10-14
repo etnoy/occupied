@@ -27,7 +27,14 @@ from homeassistant.helpers.event import (
 )
 from homeassistant.util import dt as dt_util
 
-from .actions import light_capabilities, light_matches, light_observation, observe, service_payload
+from .actions import (
+    dispatch_service,
+    light_capabilities,
+    light_matches,
+    light_observation,
+    observe,
+    service_payload,
+)
 from .activation import ActivationGate
 from .const import DOMAIN, SIGNAL_PREFIX
 from .handover import calls_for_target
@@ -49,7 +56,6 @@ from .validation import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-SERVICE_TIMEOUT = 10
 DISPATCH_BATCH = 64
 MAX_JOURNAL = 50000
 
@@ -96,6 +102,9 @@ class DailyEngine:
         )
         self._store = DurableStore(hass, 1, f"{DOMAIN}.{entry_id}.runtime", atomic_writes=True)
         self._lock = asyncio.Lock()
+        from .live_preview import LivePreviewManager
+
+        self.live_preview = LivePreviewManager(self)
         self._cancel_timer: Callable | None = None
         self._unsubs = []
         self._state_unsub = None
@@ -154,6 +163,7 @@ class DailyEngine:
         self.enabled = permission.get("enabled", False)
         self.paused = permission.get("paused", False)
         self.dry_run = permission.get("dry_run", False)
+        await self.live_preview.async_prepare()
         saved = await self._store.async_load() or {}
         self._seed = saved.get("seed", self._seed)
         self.session = saved.get("session", 0)
@@ -278,8 +288,10 @@ class DailyEngine:
 
     def _effective_gate(self):
         if not self.configuration_ready:
+            self.live_preview.invalidate("Managed configuration unresolved", interrupted=True)
             return False, "Managed configuration unresolved; correct the file and reload"
         if self._storage_failed:
+            self.live_preview.invalidate("Controller persistence failed", interrupted=True)
             return False, "Runtime persistence failed; reload or enable to retry"
         if self.closed or not self.started or not self.enabled or self.paused:
             return False, (
@@ -377,6 +389,7 @@ class DailyEngine:
             await self._store.async_save(deepcopy(snapshot))
         except HomeAssistantError as err:
             self._storage_failed = True
+            self.live_preview.invalidate("Controller persistence failed", interrupted=True)
             self._invalidate()
             self.status, self.reason = "inactive", "Runtime persistence failed"
             self.last_error = str(err)
@@ -390,21 +403,26 @@ class DailyEngine:
         )
 
     async def async_set_enabled(self, enabled):
+        if not enabled:
+            self.live_preview.invalidate("Occupied stopped")
         self._storage_failed = False
         self.enabled = enabled
         if not enabled:
             self._invalidate()
         async with self._lock:
+            await self.live_preview.finish_stop_locked()
             await self._save_permission()
             await self._reevaluate_locked()
 
     async def async_set_paused(self, paused):
         if not paused:
+            self.live_preview.invalidate("Scheduling resumed")
             self._storage_failed = False
         self.paused = paused
         if paused:
             self._invalidate()
         async with self._lock:
+            await self.live_preview.finish_stop_locked()
             await self._save_permission()
             await self._reevaluate_locked()
 
@@ -797,10 +815,7 @@ class DailyEngine:
             await self._persist()
             return True
         try:
-            async with asyncio.timeout(SERVICE_TIMEOUT):
-                await self.hass.services.async_call(
-                    domain, service, data, blocking=True, context=context
-                )
+            await dispatch_service(self.hass, action, context, data=data)
         except Exception as err:
             self.last_error = (
                 f"{action.action} for {', '.join(action.targets)}: {type(err).__name__}: {err}"
@@ -1009,6 +1024,7 @@ class DailyEngine:
             else {"mode": "gui", "status": "ready"},
             "enabled": self.enabled,
             "paused": self.paused,
+            "live_preview": self.live_preview.snapshot(),
             "dry_run": self.dry_run,
             "active": self.active,
             "status": self.status,
@@ -1035,6 +1051,7 @@ class DailyEngine:
         if self.closed:
             return
         was_active = self.active
+        self.live_preview.invalidate("Integration unloaded", interrupted=True)
         self.closed = True
         self._invalidate()
         if self._state_unsub:
@@ -1044,6 +1061,7 @@ class DailyEngine:
             unsubscribe()
         self._unsubs.clear()
         async with self._lock:
+            await self.live_preview.finish_stop_locked()
             if cleanup:
                 await self._stop_owned()
             # Shutdown preserves active-session continuity and lifecycle snapshots.

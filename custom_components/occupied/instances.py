@@ -38,10 +38,13 @@ def instance_documents(hass):
                 "enabled": engine.enabled if loaded else False,
                 "paused": engine.paused if loaded else False,
                 "active": engine.active if loaded else False,
+                "live_preview": engine.live_preview.snapshot() if loaded else None,
                 "overlaps": [],
             }
         )
         targets[entry.entry_id] = controlled_entities(engine) if loaded else set()
+        if loaded and engine.live_preview.running:
+            targets[entry.entry_id] |= engine.live_preview.targets
     for document in documents:
         for other in documents:
             if other is document:

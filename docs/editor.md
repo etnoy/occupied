@@ -48,8 +48,22 @@ All-week selections, normal enabled state, zero offsets, empty data, and equal e
 
 Cover strips show independently authored position and tilt targets. Open and close establish 100% and 0% targets. Stop makes its affected axis Unknown, while preserving the other axis's known target. Travel time and intermediate positions are not inferred. An opaque call on an explicit cover target makes both axes Unknown.
 
-Preview reads known HA time-source snapshots but never invokes device services or changes runtime permission/queues. Time-only helpers repeat daily; dated helper/sensor/calendar values use their reported occurrence. Future calendar events are not guessed. Solar events are calculated for the selected date and configured HA location.
+Loading Preview reads known HA time-source snapshots without invoking device services or changing runtime permission/queues. Time-only helpers repeat daily; dated helper/sensor/calendar values use their reported occurrence. Future calendar events are not guessed. Solar events are calculated for the selected date and configured HA location.
+
+### Manual live preview
+
+Choose a date, inspect the schedule, then choose **Start live preview**. **Controls real devices** identifies explicit permission to run the draft's actions, including when ordinary management is disabled or dry run is selected. Unsaved drafts and managed-file drafts can be tested without changing the saved program or file. Start pauses this controller's normal scheduling and cleans up its owned transitions; it prepares the session without running its first event.
+
+Walk around with your phone and press **Next event** when ready. Each press runs one authored step or one random occurrence's start/end phase immediately, with no wait for its scheduled time. A step with several targets takes one press, executing its resolved calls in order. Unrelated events at the same time take separate presses. The session card shows the simulated time, progress, next action/targets, and last result. Event details show individual results; the device graph continues to show planned states. Native transitions, script delays, and device travel still follow the called service. A completed service handler does not prove that a cover finished moving.
+
+**Stop** remains available during an event. It prevents remaining calls after any already delivered call finishes, leaving devices as they are. **Day complete** and Stop both leave normal scheduling paused. Choose **Run again** to prepare another session, or explicitly choose **Resume scheduling** to return to ordinary current-time behavior with the controller's management permission and dry-run setting. Resume never continues from the preview cursor. **Refresh Preview** retrieves the current draft's plan when its planning context has changed.
+
+The date is locked during an active session. Closing Preview or locking the phone executes nothing and leaves the backend session running. Returning retrieves its frozen schedule independently of the editor draft; reconnecting retrieves status before enabling Next and never automatically resends an action. The account that started the session owns advances; other admins can inspect or stop it. Program edits and HA time-source changes do not change a running session. HA restart or unload ends it as interrupted, retains the pause, and never replays uncertain calls.
+
+Another running Occupied controller/session with declared overlapping targets prevents Start or Next. Pause the reported controller before continuing. Scenes and scripts can affect devices beyond their declared targets, and unrelated HA automations still run.
 
 ## Backend operations
 
 Admin WebSocket operations require `config_entry_id`: `occupied/program`, `catalog`, `editor_validate`, `save`, `preview`, `export`, `rename_id`, `timeline`, `subscribe`, `source`, and `reload`. Draft operations accept canonical JSON or YAML. Save/apply use expected revisions. Discovery and subscriptions expose controller-specific status and warnings for shared controlled entities. See [schema](schema.md) and [runtime](runtime.md).
+
+Manual device control uses admin commands `occupied/live_preview/start`, `next`, `status`, and `stop`. Start submits program/date/seed, `expected_plan_fingerprint` from the one-day Preview response, and a unique `request_id`. Next submits `session_id`, `expected_group_id`, and its unique `request_id`. Status and Start include the frozen program and day; subscriptions and advances include compact session status and recent call outcomes. A changed fingerprint reports **Schedule changed; refresh Preview**. Repeated request IDs cannot dispatch twice or create another session.

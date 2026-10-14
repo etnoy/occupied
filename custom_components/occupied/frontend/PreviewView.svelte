@@ -2,6 +2,7 @@
   import type { OccupiedPanel } from "./occupied-panel.js";
 
   import Timeline from "./Timeline.svelte";
+  import LivePreviewControls from "./LivePreviewControls.svelte";
   import { properties } from "./dom.js";
   import { formatPreviewDate } from "./time-format.js";
   import { calendarDayPlan } from "./timeline.js";
@@ -27,10 +28,12 @@
   });
   let { t } = $derived(data);
   let plan = $derived(
-    calendarDayPlan(
-      panel.preview?.plans || [],
-      panel.preview?.plans.at(-1)?.simulation_date || panel.previewDate,
-    ),
+    panel.liveVisible && panel.livePlan
+      ? panel.livePlan
+      : calendarDayPlan(
+          panel.preview?.plans || [],
+          panel.preview?.plans.at(-1)?.simulation_date || panel.previewDate,
+        ),
   );
   let date = $derived(
     plan?.simulation_date ||
@@ -69,14 +72,17 @@
         use:properties={{
           path: previousIcon,
           label: t("Previous day"),
-          disabled: panel.busy,
+          disabled: panel.busy || panel.liveRunning || panel.liveBusy,
         }}
         onclick={() => panel.movePreviewDay(-1)}
       ></ha-icon-button>
       <button
         type="button"
         class="text-button"
-        disabled={panel.busy || date === panel.document.simulation_date}
+        disabled={panel.busy ||
+          panel.liveRunning ||
+          panel.liveBusy ||
+          date === panel.document.simulation_date}
         onclick={() => panel.selectPreviewDate(panel.document.simulation_date)}
         >{t("Today")}</button
       >
@@ -87,7 +93,7 @@
         use:properties={{
           path: nextIcon,
           label: t("Next day"),
-          disabled: panel.busy,
+          disabled: panel.busy || panel.liveRunning || panel.liveBusy,
         }}
         onclick={() => panel.movePreviewDay(1)}
       ></ha-icon-button>
@@ -95,10 +101,16 @@
   </div>
 {/snippet}
 
+<LivePreviewControls {panel} />
 <Timeline
   {plan}
-  schedulePlans={panel.preview?.plans}
-  program={panel.previewProgram}
+  schedulePlans={panel.liveVisible && panel.livePlan
+    ? [panel.livePlan]
+    : panel.preview?.plans}
+  program={panel.liveVisible && panel.liveProgram
+    ? panel.liveProgram
+    : panel.previewProgram}
+  liveSession={panel.liveVisible ? panel.liveSession : null}
   {t}
   locale={panel._hass.locale}
   hass={panel._hass}

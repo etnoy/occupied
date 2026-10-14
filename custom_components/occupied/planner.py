@@ -75,12 +75,20 @@ class PlanEvent:
     kind: str = "step"
 
     @property
+    def group_id(self):
+        """One authored occurrence/phase, independent of resolved service batches."""
+        return self.id.rsplit(":", 1)[0]
+
+    @property
     def order_key(self):
         return self.at, 20, 1, self.source_id, self.sequence, self.id
 
     def to_dict(self, zone=None):
         return {
             "id": self.id,
+            "group_id": self.group_id,
+            "source_date": self.id.split(":", 1)[0],
+            "action_index": int(self.id.rsplit(":", 1)[1]),
             "time": self.at.isoformat(),
             "local_time": self.at.astimezone(zone).isoformat() if zone else self.at.isoformat(),
             "source_id": self.source_id,
@@ -109,7 +117,7 @@ class DailyPlan:
         return not any(i.severity == "error" for i in self.issues)
 
     def to_dict(self):
-        return {
+        result = {
             "simulation_date": self.simulation_date.isoformat(),
             "seed": self.seed,
             "behavior_hash": self.behavior_hash,
@@ -123,6 +131,20 @@ class DailyPlan:
             "events": [e.to_dict(ZoneInfo(self.timezone)) for e in self.events],
             "issues": [i.to_dict() for i in self.issues],
         }
+        result["plan_fingerprint"] = hashlib.sha256(
+            json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        return result
+
+
+def occurrence_groups(plan):
+    """Keep planner member order; equal-time unrelated occurrences stay separate."""
+    groups = {}
+    for event in plan.events:
+        groups.setdefault(event.group_id, []).append(event)
+    return tuple(
+        tuple(events) for events in sorted(groups.values(), key=lambda events: events[0].order_key)
+    )
 
 
 def generate_plan(

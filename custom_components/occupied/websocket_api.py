@@ -29,6 +29,10 @@ def async_register_websocket(hass: HomeAssistant) -> None:
         websocket_subscribe,
         websocket_source,
         websocket_reload,
+        websocket_live_start,
+        websocket_live_next,
+        websocket_live_status,
+        websocket_live_stop,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -261,6 +265,100 @@ async def _apply_program(hass, connection, msg, *, editor_save=False):
 
 
 _ENTRY_SCHEMA = {vol.Required("config_entry_id"): str}
+
+_REQUEST_ID = vol.All(str, vol.Length(min=1, max=128))
+
+
+async def _live_operation(hass, connection, msg, operation):
+    from . import resolve_engine
+    from .live_preview import LivePreviewError
+    from .validation import ProgramError
+
+    try:
+        manager = resolve_engine(hass, msg["config_entry_id"]).live_preview
+        user_id = connection.user.id
+        if operation == "start":
+            result = await manager.async_start(
+                msg["program"],
+                msg["date"],
+                msg["seed"],
+                msg["expected_plan_fingerprint"],
+                msg["request_id"],
+                user_id,
+            )
+        elif operation == "next":
+            result = await manager.async_next(
+                msg["session_id"],
+                msg["expected_group_id"],
+                msg["request_id"],
+                user_id,
+            )
+        elif operation == "stop":
+            await manager.async_stop(msg["session_id"])
+            result = manager.response(user_id)
+        else:
+            result = manager.response(user_id, frozen=True)
+        connection.send_result(msg["id"], result)
+    except LivePreviewError as err:
+        connection.send_error(msg["id"], err.code, str(err))
+    except (HomeAssistantError, ProgramError, ValueError) as err:
+        connection.send_error(msg["id"], "live_preview_failed", str(err))
+
+
+@websocket_api.websocket_command(
+    {
+        **_DRAFT_SCHEMA,
+        vol.Required("type"): "occupied/live_preview/start",
+        vol.Required("date"): str,
+        vol.Required("seed"): vol.Any(str, int),
+        vol.Required("expected_plan_fingerprint"): str,
+        vol.Required("request_id"): _REQUEST_ID,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_live_start(hass, connection, msg):
+    await _live_operation(hass, connection, msg, "start")
+
+
+@websocket_api.websocket_command(
+    {
+        **_ENTRY_SCHEMA,
+        vol.Required("type"): "occupied/live_preview/next",
+        vol.Required("session_id"): str,
+        vol.Required("expected_group_id"): str,
+        vol.Required("request_id"): _REQUEST_ID,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_live_next(hass, connection, msg):
+    await _live_operation(hass, connection, msg, "next")
+
+
+@websocket_api.websocket_command(
+    {
+        **_ENTRY_SCHEMA,
+        vol.Required("type"): "occupied/live_preview/status",
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_live_status(hass, connection, msg):
+    await _live_operation(hass, connection, msg, "status")
+
+
+@websocket_api.websocket_command(
+    {
+        **_ENTRY_SCHEMA,
+        vol.Required("type"): "occupied/live_preview/stop",
+        vol.Required("session_id"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_live_stop(hass, connection, msg):
+    await _live_operation(hass, connection, msg, "stop")
 
 
 @websocket_api.websocket_command(

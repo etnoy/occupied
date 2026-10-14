@@ -16,6 +16,9 @@ import type {
   InstanceDocument,
   RandomEditorState,
   RandomForm,
+  LivePreviewSession,
+  LivePreviewResponse,
+  Plan,
 } from "./types.js";
 import { errorMessage } from "./util.js";
 import { copy, set } from "./model.js";
@@ -28,6 +31,7 @@ import { loadHaControls } from "./ha-controls.js";
 import { hasStepChanges } from "./step-model.js";
 import { hasRandomChanges } from "./random-model.js";
 import { shiftScheduleDate } from "./time-format.js";
+import { liveRunning, mergeLiveSession } from "./live-preview.js";
 
 type PanelConfig = { config?: { config_entry_id?: string } };
 
@@ -72,6 +76,20 @@ export class OccupiedPanel extends HTMLElement {
   preview?: PreviewResult;
   previewProgram!: Program;
   previewDate = "";
+  liveSession: LivePreviewSession | null = null;
+  livePlan?: Plan;
+  liveProgram?: Program;
+  liveVisible = false;
+  liveReady = false;
+  liveBusy = false;
+  liveStopping = false;
+  liveCanAdvance = false;
+  schedulingPaused = false;
+  private _liveRecoveryEpoch = 0;
+
+  get liveRunning() {
+    return liveRunning(this.liveSession);
+  }
   yaml = "";
   yamlSaved = "";
 
@@ -92,6 +110,7 @@ export class OccupiedPanel extends HTMLElement {
   private _subscriptionEpoch = 0;
   private _unsubscribe: (() => void) | null = null;
   private _subscribing = false;
+  private _liveConnection?: HomeAssistant["connection"];
   private updates = writable(0);
   private updateRevision = 0;
   private component?: ReturnType<typeof mount>;
@@ -163,6 +182,7 @@ export class OccupiedPanel extends HTMLElement {
     window.addEventListener("beforeunload", this._beforeUnload);
     globalThis.addEventListener("location-changed", this._locationChanged);
     globalThis.addEventListener("popstate", this._locationChanged);
+    document.addEventListener("visibilitychange", this._liveVisibilityChanged);
   }
   disconnectedCallback() {
     if (this.component) {
@@ -171,6 +191,7 @@ export class OccupiedPanel extends HTMLElement {
     }
     this.shadowRoot.replaceChildren();
     this.epoch++;
+    this.busy = this.liveBusy = this.liveStopping = false;
     this._loadedEntry = null;
     this._loading = false;
     this._disposeSubscription();
@@ -179,6 +200,10 @@ export class OccupiedPanel extends HTMLElement {
     window.removeEventListener("beforeunload", this._beforeUnload);
     globalThis.removeEventListener("location-changed", this._locationChanged);
     globalThis.removeEventListener("popstate", this._locationChanged);
+    document.removeEventListener(
+      "visibilitychange",
+      this._liveVisibilityChanged,
+    );
   }
   private _locationChanged = () => void this._load();
   private _beforeUnload = (event: BeforeUnloadEvent) => {
@@ -296,6 +321,15 @@ export class OccupiedPanel extends HTMLElement {
       preview: undefined,
       previewProgram: undefined,
       previewDate: "",
+      liveSession: null,
+      livePlan: undefined,
+      liveProgram: undefined,
+      liveVisible: false,
+      liveReady: false,
+      liveBusy: false,
+      liveStopping: false,
+      liveCanAdvance: false,
+      schedulingPaused: false,
       yaml: "",
       yamlSaved: "",
     });
@@ -313,6 +347,14 @@ export class OccupiedPanel extends HTMLElement {
     });
   }
   private _disposeSubscription() {
+    this._liveConnection?.removeEventListener?.("ready", this._liveConnected);
+    this._liveConnection?.removeEventListener?.(
+      "disconnected",
+      this._liveDisconnected,
+    );
+    this._liveConnection = undefined;
+    this.liveReady = false;
+    this._liveRecoveryEpoch++;
     this._subscriptionEpoch++;
     this._unsubscribe?.();
     this._unsubscribe = null;
@@ -329,6 +371,12 @@ export class OccupiedPanel extends HTMLElement {
       return;
     }
     this._subscribing = true;
+    this._liveConnection = this._hass.connection;
+    this._hass.connection.addEventListener?.("ready", this._liveConnected);
+    this._hass.connection.addEventListener?.(
+      "disconnected",
+      this._liveDisconnected,
+    );
     const epoch = this._subscriptionEpoch;
     try {
       const unsubscribe =
@@ -344,6 +392,7 @@ export class OccupiedPanel extends HTMLElement {
         unsubscribe();
       } else {
         this._unsubscribe = unsubscribe;
+        await this.recoverLivePreview();
       }
     } catch (error) {
       if (epoch === this._subscriptionEpoch) {
@@ -356,6 +405,22 @@ export class OccupiedPanel extends HTMLElement {
     }
   }
   private _onSnapshot(snapshot: RuntimeSnapshot) {
+    if (snapshot.loaded === false) {
+      this.liveReady = false;
+      this._liveRecoveryEpoch++;
+    }
+    this.schedulingPaused = snapshot.paused ?? this.schedulingPaused;
+    if (snapshot.live_preview !== undefined) {
+      const changedSession = this.liveSession?.id !== snapshot.live_preview?.id;
+      this.liveSession = mergeLiveSession(
+        this.liveSession,
+        snapshot.live_preview,
+      );
+      if (changedSession) {
+        this.liveReady = false;
+        void this.recoverLivePreview();
+      }
+    }
     if (snapshot.configuration_source && this.document) {
       this.document.configuration_source = snapshot.configuration_source;
       this.document.source = snapshot.configuration_source.mode;
@@ -495,6 +560,9 @@ export class OccupiedPanel extends HTMLElement {
       this.discardEdits(false);
     }
     this.tab = tab;
+    if (tab === "preview") {
+      void this.recoverLivePreview();
+    }
     this.renderView();
   }
   requestStepExit(action: () => void) {
@@ -827,14 +895,27 @@ export class OccupiedPanel extends HTMLElement {
     );
   }
   selectPreviewDate(date: string) {
-    if (this.busy || this.tab !== "preview" || date === this.previewDate) {
+    if (
+      this.busy ||
+      this.liveBusy ||
+      this.liveRunning ||
+      this.tab !== "preview" ||
+      date === this.previewDate
+    ) {
       return;
     }
     this.previewDate = date;
+    this.liveVisible = false;
     return this.loadPreview();
   }
   private loadPreview() {
-    if (this.busy || !this.draft || !this.document) {
+    if (
+      this.busy ||
+      !this.draft ||
+      !this.document ||
+      this.liveRunning ||
+      (this.liveVisible && this.livePlan)
+    ) {
       return;
     }
     const version = this.version,
@@ -859,6 +940,196 @@ export class OccupiedPanel extends HTMLElement {
       this.previewProgram = draft;
       this.showIssues(result);
     });
+  }
+
+  private _liveDisconnected = () => {
+    this.liveReady = false;
+    this._liveRecoveryEpoch++;
+    this.flush();
+  };
+  private _liveConnected = () => void this.recoverLivePreview();
+  private _liveVisibilityChanged = () => {
+    if (document.visibilityState === "visible") {
+      void this.recoverLivePreview();
+    } else {
+      this._liveDisconnected();
+    }
+  };
+
+  private adoptLive(result: LivePreviewResponse) {
+    this.liveSession = mergeLiveSession(this.liveSession, result.session);
+    if (this.liveSession && result.call_outcomes) {
+      this.liveSession.outcomes = {
+        ...this.liveSession.outcomes,
+        ...result.call_outcomes,
+      };
+    }
+    this.liveCanAdvance = result.can_advance;
+    this.schedulingPaused = this.liveSession?.paused ?? this.schedulingPaused;
+    if (result.plan && result.program) {
+      this.livePlan = result.plan;
+      this.liveProgram = result.program;
+      this.liveVisible =
+        !!result.session && (this.liveRunning || result.session.paused);
+      if (this.liveVisible) {
+        this.previewDate = result.session!.date;
+      }
+    }
+    this.flush();
+  }
+
+  async recoverLivePreview() {
+    if (!this._loadedEntry || !this.isConnected) {
+      return;
+    }
+    const epoch = this.epoch,
+      recovery = ++this._liveRecoveryEpoch;
+    this.liveReady = false;
+    this.flush();
+    try {
+      const result = await this.ws("live_preview/status");
+      if (epoch !== this.epoch || recovery !== this._liveRecoveryEpoch) {
+        return;
+      }
+      this.adoptLive(result);
+      this.liveReady = true;
+    } catch (error) {
+      if (epoch === this.epoch && recovery === this._liveRecoveryEpoch) {
+        this.fail(error);
+      }
+    } finally {
+      if (epoch === this.epoch && recovery === this._liveRecoveryEpoch) {
+        this.flush();
+      }
+    }
+  }
+
+  async startLivePreview() {
+    if (this.liveBusy || this.liveRunning || !this.liveReady || this.busy) {
+      return;
+    }
+    const frozen = this.liveVisible && this.liveSession;
+    const program = frozen ? this.liveProgram : this.previewProgram;
+    const fingerprint = frozen
+      ? this.liveSession?.plan_fingerprint
+      : this.preview?.plan_fingerprint;
+    if (!program || !fingerprint) {
+      return;
+    }
+    const epoch = this.epoch;
+    this.liveBusy = true;
+    this.error = "";
+    this.flush();
+    try {
+      const result = await this.ws("live_preview/start", {
+        program: copy(program),
+        date: this.previewDate,
+        seed: "preview-1",
+        expected_plan_fingerprint: fingerprint,
+        request_id: crypto.randomUUID(),
+      });
+      if (epoch === this.epoch) {
+        this.adoptLive(result);
+      }
+    } catch (error) {
+      if (epoch === this.epoch) {
+        this.fail(error);
+        await this.recoverLivePreview();
+      }
+    } finally {
+      if (epoch === this.epoch) {
+        this.liveBusy = false;
+        this.flush();
+      }
+    }
+  }
+
+  async nextLiveEvent() {
+    const session = this.liveSession;
+    if (
+      !session?.next_group ||
+      session.state !== "ready" ||
+      !this.liveReady ||
+      !this.liveCanAdvance ||
+      this.liveBusy ||
+      this.liveStopping
+    ) {
+      return;
+    }
+    const epoch = this.epoch;
+    this.liveBusy = true;
+    this.error = "";
+    this.flush();
+    try {
+      const result = await this.ws("live_preview/next", {
+        session_id: session.id,
+        expected_group_id: session.next_group.id,
+        request_id: crypto.randomUUID(),
+      });
+      if (epoch === this.epoch && this.liveSession?.id === session.id) {
+        this.adoptLive(result);
+      }
+    } catch (error) {
+      if (epoch === this.epoch) {
+        this.fail(error);
+        await this.recoverLivePreview();
+      }
+    } finally {
+      if (epoch === this.epoch) {
+        this.liveBusy = false;
+        this.flush();
+      }
+    }
+  }
+
+  async stopLivePreview() {
+    const session = this.liveSession;
+    if (!session || !this.liveRunning || this.liveStopping) {
+      return;
+    }
+    const epoch = this.epoch;
+    this.liveStopping = true;
+    this.flush();
+    try {
+      const result = await this.ws("live_preview/stop", {
+        session_id: session.id,
+      });
+      if (epoch === this.epoch && this.liveSession?.id === session.id) {
+        this.adoptLive(result);
+      }
+    } catch (error) {
+      if (epoch === this.epoch) {
+        this.fail(error);
+        await this.recoverLivePreview();
+      }
+    } finally {
+      if (epoch === this.epoch) {
+        this.liveStopping = false;
+        this.flush();
+      }
+    }
+  }
+
+  resumeScheduling() {
+    return this.run(async (epoch) => {
+      await this._hass.callWS({
+        type: "call_service",
+        domain: "occupied",
+        service: "resume",
+        service_data: { config_entry_id: this._loadedEntry },
+      });
+      if (epoch === this.epoch) {
+        await this.recoverLivePreview();
+      }
+    });
+  }
+
+  refreshPreviewSchedule() {
+    if (this.liveRunning || this.liveBusy) {
+      return;
+    }
+    this.liveVisible = false;
+    return this.loadPreview();
   }
   saveYaml() {
     if (this.document?.source === "file" || this.stale) {

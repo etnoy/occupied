@@ -1,9 +1,26 @@
 """Capability-aware HA service preparation and conservative observations."""
 
+import asyncio
+
 from homeassistant.components.light import LightEntityFeature
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 
 from .lighting import LightState
+
+SERVICE_TIMEOUT = 10
+
+
+async def dispatch_service(hass, action, context, *, data=None):
+    """Await native handlers with a bound; callers own authorization and journaling."""
+    domain, service = action.action.split(".")
+    async with asyncio.timeout(SERVICE_TIMEOUT):
+        await hass.services.async_call(
+            domain,
+            service,
+            service_payload(hass, action) if data is None else data,
+            blocking=True,
+            context=context,
+        )
 
 
 def observe(hass, entity):

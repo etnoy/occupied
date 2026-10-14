@@ -8,6 +8,8 @@
   import { stepEntries } from "./step-model.js";
   import { randomEntries } from "./random-model.js";
   import type { PlannedEvent } from "./types.js";
+  import type { LivePreviewSession } from "./types.js";
+  import { eventLiveResult } from "./live-preview.js";
   let {
     plan,
     schedulePlans,
@@ -19,6 +21,7 @@
     heading,
     loading = false,
     showLoading = loading,
+    liveSession = null,
   }: {
     plan?: Plan;
     schedulePlans?: Plan[];
@@ -30,6 +33,7 @@
     heading?: Snippet;
     loading?: boolean;
     showLoading?: boolean;
+    liveSession?: LivePreviewSession | null;
   } = $props();
   let labels = $derived(
     new Map([
@@ -102,14 +106,32 @@
                   {#each ["Planned time", "Source", "Action", "Targets"] as label}
                     <th scope="col">{t(label)}</th>
                   {/each}
+                  {#if liveSession}<th scope="col">{t("Result")}</th>{/if}
                 </tr></thead
               >
               <tbody>
                 {#each filtered.slice(currentPage * 50, currentPage * 50 + 50) as event}
-                  <tr>
+                  {@const live = eventLiveResult(event, liveSession)}
+                  <tr
+                    class:current={live?.current}
+                    class:completed={live?.outcome?.status === "dispatched"}
+                    aria-current={live?.current ? "step" : undefined}
+                  >
                     {#each [stamp(event.time, plan.timezone, locale), `${eventLabel(event)} · ${t(event.kind === "random_start" ? "Random start" : event.kind === "random_end" ? "Random end" : event.kind)}`, event.action.action, event.action.entities.join(", ")] as value}
                       <td>{value}</td>
                     {/each}
+                    {#if liveSession}
+                      <td>
+                        {#if live?.outcome}
+                          <span
+                            class={live.outcome.status === "dispatched"
+                              ? "hint"
+                              : "error"}>{t(live.outcome.status)}</span
+                          >
+                          <div>{live.outcome.detail}</div>
+                        {:else if live?.current}{t("Next event")}{/if}
+                      </td>
+                    {/if}
                   </tr>
                 {/each}
               </tbody>
@@ -146,3 +168,18 @@
     <p role="status">{t("Loading schedule…")}</p>
   {/if}
 </section>
+
+<style>
+  tr.current {
+    background: var(--secondary-background-color, #eef4ff);
+    outline: 2px solid var(--primary-color, #03a9f4);
+    outline-offset: -2px;
+  }
+  tr.completed {
+    background: color-mix(
+      in srgb,
+      var(--success-color, #4caf50) 12%,
+      transparent
+    );
+  }
+</style>

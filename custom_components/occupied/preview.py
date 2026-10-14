@@ -1,14 +1,39 @@
 """Canonical backend draft operations shared with the offline CLI/model."""
 
+import hashlib
+import json
 from datetime import date, datetime, timedelta
 from typing import Any
 
 from .covers import project_covers
 from .file_config import export_yaml, load_program
 from .lighting import preview_handover, project_lighting
+from .models import program_timings
 from .planner import preview_calendar_dates
 from .time_utils import PlanningContext
-from .validation import behavior_hash, program_data, rename_identifier, validation_warnings
+from .validation import (
+    behavior_hash,
+    program_data,
+    program_revision,
+    rename_identifier,
+    validation_warnings,
+)
+
+
+def planning_identity(program, context):
+    """Only sources used by this draft participate in planning freshness checks."""
+    entities = {
+        source.entity
+        for _, timing in program_timings(program)
+        if (source := timing.relative_to) and source.entity
+    }
+    return [
+        context.timezone,
+        context.latitude,
+        context.longitude,
+        context.elevation,
+        {entity: context.time_sources.get(entity) for entity in sorted(entities)},
+    ]
 
 
 def validate_draft(source) -> dict[str, Any]:
@@ -39,6 +64,19 @@ def preview_draft(
         "behavior_hash": behavior_hash(program),
         "plans": [plan.to_dict() for plan in plans],
     }
+    result["plan_fingerprint"] = hashlib.sha256(
+        json.dumps(
+            {
+                "version": 1,
+                "revision": program_revision(program),
+                "seed": str(seed),
+                "context": planning_identity(program, context),
+                "plans": [plan["plan_fingerprint"] for plan in result["plans"]],
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
     if at is not None:
         plan = next(
             (plan for plan in plans if at.tzinfo is not None and plan.start <= at <= plan.end), None

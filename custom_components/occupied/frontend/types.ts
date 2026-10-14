@@ -217,16 +217,24 @@ export interface InstanceDocument {
   enabled: boolean;
   paused: boolean;
   active: boolean;
+  live_preview?: LivePreviewSession | null;
   overlaps: { config_entry_id: string; name: string; entities: string[] }[];
 }
 export type ApiResult<T> =
   | ({ valid: true; issues?: Issue[] } & T)
   | { valid: false; issues: Issue[] };
 export interface RuntimeSnapshot {
+  loaded?: boolean;
   source_revision?: string;
   configuration_source?: ConfigurationSource;
+  paused?: boolean;
+  live_preview?: LivePreviewSession | null;
 }
 export interface PlannedEvent {
+  id?: string;
+  group_id?: string;
+  source_date?: string;
+  action_index?: number;
   time: string;
   source_id: string;
   kind: string;
@@ -241,6 +249,8 @@ export interface Plan {
   timezone: string;
   behavior_hash: string;
   source_revision?: string;
+  plan_fingerprint?: string;
+  feasible?: boolean;
   start: string;
   end: string;
   steps: Record<string, string>;
@@ -251,6 +261,51 @@ export interface PreviewResult {
   valid: boolean;
   issues?: Issue[];
   plans: Plan[];
+  plan_fingerprint?: string;
+}
+export interface LiveCallOutcome {
+  group_id: string;
+  status: string;
+  detail: string;
+  action?: PlannedEvent["action"];
+}
+export interface LivePreviewSession {
+  id: string;
+  user_id: string;
+  state:
+    | "ready"
+    | "executing"
+    | "stopping"
+    | "completed"
+    | "stopped"
+    | "interrupted";
+  date: string;
+  source_revision: string;
+  plan_fingerprint: string;
+  cursor: number;
+  total: number;
+  simulated_time: string | null;
+  in_flight: string | null;
+  last_group_id: string | null;
+  next_group: {
+    id: string;
+    time: string;
+    title: string;
+    kind: string;
+    calls: PlannedEvent[];
+  } | null;
+  detail: string;
+  paused: boolean;
+  earlier_revision: boolean;
+  storage_failed: boolean;
+  outcomes: Record<string, LiveCallOutcome>;
+}
+export interface LivePreviewResponse {
+  session: LivePreviewSession | null;
+  can_advance: boolean;
+  program?: Program;
+  plan?: Plan;
+  call_outcomes?: Record<string, LiveCallOutcome>;
 }
 export interface WebSocketResponses {
   instances: InstanceDocument[];
@@ -266,6 +321,10 @@ export interface WebSocketResponses {
     behavior_hash: string;
   }>;
   preview: PreviewResult;
+  "live_preview/start": LivePreviewResponse;
+  "live_preview/next": LivePreviewResponse;
+  "live_preview/status": LivePreviewResponse;
+  "live_preview/stop": LivePreviewResponse;
 }
 export interface HomeAssistant {
   language?: string;
@@ -277,6 +336,8 @@ export interface HomeAssistant {
   };
   callWS<T>(message: Record<string, unknown>): Promise<T>;
   connection: {
+    addEventListener?(event: string, callback: () => void): void;
+    removeEventListener?(event: string, callback: () => void): void;
     subscribeMessage<T>(
       callback: (snapshot: T) => void,
       message: Record<string, unknown>,

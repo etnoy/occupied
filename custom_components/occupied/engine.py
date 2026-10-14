@@ -25,7 +25,6 @@ from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
     async_track_state_change_event,
 )
-from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .activation import ActivationGate
@@ -44,6 +43,7 @@ from .const import (
     DOMAIN,
     SIGNAL_PREFIX,
 )
+from .storage import DurableStore
 
 _LOGGER = logging.getLogger(__name__)
 STEP_SECONDS = 30
@@ -90,13 +90,16 @@ class OccupiedEngine:
         self.remote_deadline: datetime | None = None
         self.last_error: str | None = None
         self.outcomes: deque[dict[str, Any]] = deque(maxlen=20)
-        self._store = Store(hass, 1, f"{DOMAIN}.{entry_id}.permission")
+        self._store = DurableStore(hass, 1, f"{DOMAIN}.{entry_id}.permission", atomic_writes=True)
         self._queue: list[ScheduledEvent] = []
         self._sequence = 0
         self._cancel_timer: Callable[[], None] | None = None
         self._unsubs: list[Callable[[], None]] = []
         self._contexts: deque[str] = deque(maxlen=100)
         self._lock = asyncio.Lock()
+        from .live_preview import LivePreviewManager
+
+        self.live_preview = LivePreviewManager(self)
 
     @property
     def next_event(self) -> datetime | None:
@@ -108,6 +111,7 @@ class OccupiedEngine:
         saved = await self._store.async_load() or {}
         self.enabled = saved.get("enabled", False)
         self.paused = saved.get("paused", False)
+        await self.live_preview.async_prepare()
 
     async def async_start(self) -> None:
         """Subscribe independently of any browser or panel connection."""
@@ -193,18 +197,24 @@ class OccupiedEngine:
             self._cancel_timer = None
 
     async def async_set_enabled(self, enabled: bool) -> None:
+        if not enabled:
+            self.live_preview.invalidate("Occupied stopped")
         self.enabled = enabled
         if not enabled:
             self._invalidate()
         async with self._lock:
+            await self.live_preview.finish_stop_locked()
             await self._store.async_save({"enabled": self.enabled, "paused": self.paused})
             await self._reevaluate_locked()
 
     async def async_set_paused(self, paused: bool) -> None:
+        if not paused:
+            self.live_preview.invalidate("Scheduling resumed")
         self.paused = paused
         if paused:
             self._invalidate()
         async with self._lock:
+            await self.live_preview.finish_stop_locked()
             await self._store.async_save({"enabled": self.enabled, "paused": self.paused})
             await self._reevaluate_locked()
 
@@ -422,6 +432,7 @@ class OccupiedEngine:
             "name": self.config["name"],
             "enabled": self.enabled,
             "paused": self.paused,
+            "live_preview": self.live_preview.snapshot(),
             "active": self.active,
             "status": self.status,
             "reason": self.reason,
@@ -442,12 +453,14 @@ class OccupiedEngine:
         }
 
     async def async_close(self, *, cleanup: bool = True) -> None:
+        self.live_preview.invalidate("Integration unloaded", interrupted=True)
         self.closed = True
         self._invalidate()
         for unsub in self._unsubs:
             unsub()
         self._unsubs.clear()
         async with self._lock:
+            await self.live_preview.finish_stop_locked()
             if cleanup:
                 await self._end_remote()
             self.status, self.reason = "inactive", "Integration unloaded"

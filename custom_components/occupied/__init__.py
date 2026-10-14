@@ -211,7 +211,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) ->
     from .const import DOMAIN
     from .storage import DurableStore
 
-    for suffix in ("program", "permission", "runtime"):
+    for suffix in ("program", "permission", "runtime", "live_preview"):
         await DurableStore(hass, 1, f"{DOMAIN}.{entry.entry_id}.{suffix}").async_remove()
     ir.async_delete_issue(hass, DOMAIN, f"managed_file_{entry.entry_id}")
     ir.async_delete_issue(hass, DOMAIN, f"source_conflict_{entry.entry_id}")
