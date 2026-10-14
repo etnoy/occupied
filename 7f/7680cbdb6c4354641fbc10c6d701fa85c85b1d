@@ -1,0 +1,79 @@
+custom_components/occupied/frontend/AdvancedRandomSettings.svelte
+  s_d723dda070fa14::t_0fd9b50d2376f8 6-12,26-33,59,62-69,120-137,144
+custom_components/occupied/frontend/AdvancedStepSettings.svelte
+  s_d723dda070fa14::t_eca531c45ec286 2,6-12,26-30,66,69-72,129-136,143
+custom_components/occupied/frontend/StaggerSettings.svelte
+  s_d723dda070fa14::t_0c4c02400f0ec8 1-69
+custom_components/occupied/frontend/Timeline.svelte
+  s_8062a4a927598e::t_940479b2a73c29 95
+custom_components/occupied/frontend/action-kind.ts
+  s_8062a4a927598e::t_bdd284691dd2af 69
+custom_components/occupied/planner.py
+  s_8062a4a927598e::t_44c3698bd2bc0f 262
+custom_components/occupied/validation.py
+  s_d723dda070fa14::t_34150c32e44f7c 237-246,250-252,258
+README.md
+  s_0b00afadde6385::t_7ddfefab7e8a91 13
+custom_components/occupied/frontend/dist/action-kind.js
+  s_0b00afadde6385::t_f064d2fe1a8fc8 64
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_0b00afadde6385::t_14c67725b40aab 1223-1230,3047,3049,3051,3130-3132,3396-3397,5016,5037,7288,7291,7293,7295,8850-8914,9069-9074,9281-9288,9676-9677,9679-9770,9777,9786-9790,9825,9828-9831,9852,9880,9928-9951,9978-9979,10002,10005,10087,10111,10133,10155,10257,10265,10287-10288,10326,10349,10718,10761,10836,10839,10910,11004,11173,11207,11334-11335,11347,11425,11518,11534,11538,11542-11543,11545,11551,11558,11622-11623,11656,11660,11670-11671,11675,11693,11695-11696,11699,11701,11717-11718,11721,11723-11725,11728,11746,11748,11765,11782,11784,11786,11789-11792,11795-11796,11809,11811-11812,11815,11817,11834,11836,11846,11861,12001,12004,12006,12043,12114,12133,12287-12288,12292,12298,12321,12328,12642-12643,12648-12649,12655,12697,12701,12723,12746,12760,12880-12881,12885,12897,12903,12952,13020,13077,13112,13121,13359,13363,13370,13384,13388,13394,13396,13400,13435,13515,13818-13819,13824,13830,13832,13838,14029,14037,14259-14260,14287,14297,14368-14369,14372-14374,14382-14390,14414,14417-14424,14427,14445,14473,14515-14580,14583,14585,14604-14608,14630,14634,14699,14715,15067-15068,15074,15080,15225,15252,15368,15491,15494,15529,15588,15738-15739,15761,15765,15804,16028,16142
+custom_components/occupied/frontend/dist/stagger.js
+  s_0b00afadde6385::t_259808702b47e1 1-66
+custom_components/occupied/frontend/dist/step-model.js
+  s_0b00afadde6385::t_a3bfbfba32dbfa 18,179-184,391-398
+custom_components/occupied/frontend/dist/translations.js
+  s_0b00afadde6385::t_7204e4959a0642 4-11
+custom_components/occupied/frontend/stagger.ts
+  s_0b00afadde6385::t_81c6b6a5815261 1-71
+custom_components/occupied/frontend/step-model.ts
+  s_0b00afadde6385::t_1fe41ca9c66995 31,201-206,419-426
+custom_components/occupied/frontend/translations.ts
+  s_0b00afadde6385::t_81338d209d5292 3-10
+docs/custom-yaml.md
+  s_0b00afadde6385::t_0e1b08e80dc9c3 101,103,121,123,127,132-146
+docs/runtime.md
+  s_0b00afadde6385::t_ed882d0ea9e304 51
+docs/schema.md
+  s_0b00afadde6385::t_5972765224e4fb 142,151
+examples/stagger.yaml
+  s_0b00afadde6385::t_16016d25ea98a7 22-33
+tests/frontend/src/custom-actions.test.ts
+  s_0b00afadde6385::t_8c2c7eb3e952ef 10-15,223-227,241-278
+tests/test_daily_runtime.py
+  s_0b00afadde6385::t_c24ebe95425f5f 700-729
+tests/test_stagger.py
+  s_0b00afadde6385::t_70362f388d9908 264-309
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "7f7680cbdb6c4354641fbc10c6d701fa85c85b1d",
+  "prompts": {},
+  "sessions": {
+    "s_0b00afadde6385": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13a49-fa67-73c3-b6d7-37db38dd91d6",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_8062a4a927598e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec58ebcd0ffepyp79Mos1cXExz",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_d723dda070fa14": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec592dfa4ffe34NMCoTLPEI7FW",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
