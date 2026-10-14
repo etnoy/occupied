@@ -341,7 +341,19 @@ class LivePreviewManager:
                 except LivePreviewError as err:
                     self.invalidate(str(err), interrupted=True)
                     break
-                problem = self._call_problem(event.action)
+                previous_failed = event.custom and any(
+                    member.id in self.session["outcomes"]
+                    and self.session["outcomes"][member.id]["status"]
+                    in {"failed", "uncertain", "service_missing", "blocked", "cancelled"}
+                    for member in self.plan.occurrences[event.occurrence_id]
+                )
+                problem = (
+                    ("blocked", "Earlier call failed; remaining block was not dispatched")
+                    if previous_failed
+                    else ("superseded", "A newer authored intent cancelled this tick")
+                    if event.superseded
+                    else self._call_problem(event.action)
+                )
                 outcome = {
                     "group_id": event.group_id,
                     "status": problem[0] if problem else "pending",

@@ -138,3 +138,14 @@ Export omits all-week selections, enabled true, zero offsets, equal ends, empty 
 The behavior hash includes effective step behavior and excludes titles and presentation order. Explicit equivalent defaults have the same hash. Source revision separately includes metadata and presentation order. Metadata-only saves retain sampled times and active handover deadlines. Random streams are keyed by source date and stable step ID, so unrelated steps do not shift existing choices.
 
 `occupied-config rename-id FILE step OLD NEW` and `occupied/rename_id` atomically rename a key and its typed step references. Opaque data is not rewritten. Renaming an ID selects a new random stream; changing a title does not. See [editor](editor.md), [runtime](runtime.md), and [managed configuration](managed-configuration.md).
+
+### Staggered turn-on actions
+
+A singular eligible action may contain a `stagger` mapping beside `action`, `entities`, and `data`:
+
+```yaml
+stagger:
+  enabled: true
+  period: 2m
+```
+ `enabled` is a strict boolean, defaults to false, and `period` defaults to `2m`; durations range from `1s` through `30m`. An `actions` wrapper cannot carry `stagger`; individual members may. The feature supports explicit light/switch on targets, including all-on `set_state` mappings. Four targets over two minutes receive ticks at +30/+60/+90/+120 seconds in one freshly shuffled order. See [Custom YAML](custom-yaml.md#turn-on-one-entity-at-a-time) for list ordering, random-window rules, and examples. Older releases without staggering support reject the new field.

@@ -233,6 +233,21 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
                 )
             )
     for path, step in program_actions(program, enabled_only=False):
+        if step.stagger.enabled and not (
+            step.action in {"turn_on", "light.turn_on", "switch.turn_on", "set_state"}
+            and all(entity.startswith(("light.", "switch.")) for entity in step.entities)
+            and (
+                step.action != "set_state"
+                or all(settings.get("state") == "on" for settings in step.entities.values())
+            )
+        ):
+            issues.append(
+                Issue(
+                    "stagger_targets",
+                    "Staggering requires explicit light/switch on targets",
+                    path + ("stagger",),
+                )
+            )
         action = step.action
         if {"entity_id", "device_id", "area_id"} & step.data.keys():
             issues.append(
@@ -329,6 +344,15 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
                 )
         elif action == "event.fire":
             issues.append(Issue("action", "Choose an entity service action", path + ("action",)))
+    for key, event in program.random.items():
+        if event.on.stagger_span >= event.min_duration:
+            issues.append(
+                Issue(
+                    "stagger_duration",
+                    "Start stagger periods must be shorter than min_duration",
+                    ("random", key, "on"),
+                )
+            )
     if issues:
         raise ProgramError(issues)
     step_order(program)
@@ -338,6 +362,18 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
 
 def behavior_hash(program):
     data = program.model_dump(mode="json", exclude_none=True)
+
+    def normalize_action(action):
+        if not action["stagger"]["enabled"]:
+            action.pop("stagger")
+        for child in action.get("actions", []):
+            normalize_action(child)
+
+    for step in data["steps"].values():
+        normalize_action(step)
+    for event in data["random"].values():
+        normalize_action(event["on"])
+        normalize_action(event["off"])
     data.pop("name")
     for step in data["steps"].values():
         step.pop("name", None)

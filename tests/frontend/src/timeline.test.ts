@@ -4,6 +4,7 @@ import {
   calendarDayPlan,
   calendarStateHistory,
   previewStateHistory,
+  staggerTransitions,
 } from "@occupied/timeline.js";
 import type { Plan, PlannedEvent } from "@occupied/types.js";
 import { calendarMidnight, shiftScheduleDate } from "@occupied/time-format.js";
@@ -114,5 +115,49 @@ void test("calendar day bounds follow the plan timezone and 23/25 hour DST days"
   assert.equal(
     calendarMidnight("2026-10-13", "Europe/Stockholm"),
     "2026-10-12T22:00:00.000Z",
+  );
+});
+
+void test("stagger spans retain their full period across calendar slices and skip superseded projection", () => {
+  const ticks: PlannedEvent[] = [
+    {
+      ...event(18, "light.turn_on"),
+      time: "2026-10-13T18:00:30Z",
+      tick: 1,
+      tick_count: 4,
+      period_seconds: 120,
+      authored_at: time(18),
+      occurrence_id: "evening",
+      configured_index: 0,
+    },
+    {
+      ...event(18, "light.turn_on"),
+      time: "2026-10-13T18:01:00Z",
+      tick: 2,
+      tick_count: 4,
+      period_seconds: 120,
+      authored_at: time(18),
+      occurrence_id: "evening",
+      configured_index: 0,
+      superseded: true,
+    },
+  ];
+  const groups = staggerTransitions(plan(ticks.slice(1)));
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].start, time(18));
+  assert.equal(groups[0].end, "2026-10-13T18:02:00.000Z");
+  assert.equal(groups[0].interval, 30);
+  assert.equal(groups[0].count, 4);
+  const histories = previewStateHistory(
+    plan([
+      ticks[0],
+      { ...event(18, "light.turn_off"), time: "2026-10-13T18:00:45Z" },
+      ticks[1],
+    ]),
+    {},
+  );
+  assert.deepEqual(
+    histories[0].data.map((state) => state.state),
+    ["unknown", "on", "off"],
   );
 });

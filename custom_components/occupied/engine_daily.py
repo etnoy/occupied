@@ -40,7 +40,7 @@ from .const import DOMAIN, SIGNAL_PREFIX
 from .handover import calls_for_target
 from .lighting import LightState, project_lighting
 from .models import Handover, controlled_entities, projectable_lights
-from .planner import DailyPlan, PlanEvent, ResolvedAction, preview_dates
+from .planner import DailyPlan, PlanEvent, ResolvedAction, preview_dates, supersede_ticks
 from .runtime_planning import MAX_EVENTS, runtime_dates
 from .storage import DurableStore, instant, plan_from_data, program_store
 from .time_sources import planning_context, source_entities
@@ -524,8 +524,7 @@ class DailyEngine:
         current = self._plan_at(at)
         events = [
             event
-            for plan in self._plans.values()
-            for event in plan.events
+            for event in supersede_ticks(e for plan in self._plans.values() for e in plan.events)
             if current.start <= event.at < current.end
         ]
         return replace(current, events=tuple(sorted(events, key=lambda e: e.order_key)))
@@ -551,10 +550,26 @@ class DailyEngine:
         self._queue.clear()
         current = self._plan_at(now)
         queued_groups = set()
+        resolved = {
+            e.id: e
+            for e in supersede_ticks(e for plan in self._plans.values() for e in plan.events)
+        }
+        self._plans = {
+            day: replace(plan, events=tuple(resolved[e.id] for e in plan.events))
+            for day, plan in self._plans.items()
+        }
         for plan in self._plans.values():
             for event in plan.events:
                 key = self._key(plan, event)
                 if key in self._journal:
+                    continue
+                if event.superseded:
+                    self._finish(
+                        key,
+                        "superseded",
+                        event.action,
+                        "A newer authored intent cancelled this tick",
+                    )
                     continue
                 if event.at < now:
                     # Covers use future-only activation, including position/tilt
@@ -878,6 +893,24 @@ class DailyEngine:
 
     async def _execute_custom_group(self, plan, event, generation):
         group = plan.groups[event.group_id]
+        # A handover may have deferred an earlier execution group. Keep authored
+        # list order even while unrelated work and later ticks remain queued.
+        unfinished = {
+            self._key(plan, member)
+            for member in plan.occurrences[event.occurrence_id]
+            if member.at < event.at and self._key(plan, member) not in self._journal
+        }
+        if unfinished:
+            queued = [member.at for member in self._queue if member.key in unfinished]
+            if queued:
+                self._push(
+                    max(max(queued), dt_util.utcnow()) + timedelta(microseconds=1),
+                    "plan",
+                    self._key(plan, event),
+                    (plan, event),
+                    event.order_key[1:],
+                )
+                return
         conflicts = {
             entity
             for member in group
@@ -889,7 +922,21 @@ class DailyEngine:
             at = max(instant(self._handover[e]["deadline"]) for e in conflicts)
             self._push(at, "plan", self._key(plan, event), (plan, event), event.order_key[1:])
             return
-        stopped = None
+        failure_statuses = {
+            "failed",
+            "uncertain",
+            "pending",
+            "blocked",
+            "cancelled_before_dispatch",
+        }
+        stopped = (
+            "Earlier call failed or was interrupted; block is not replayed"
+            if any(
+                self._journal.get(self._key(plan, member), {}).get("status") in failure_statuses
+                for member in plan.occurrences[event.occurrence_id]
+            )
+            else None
+        )
         for member in group:
             key = self._key(plan, member)
             previous = self._journal.get(key, {}).get("status")
@@ -910,6 +957,9 @@ class DailyEngine:
                 stopped = "Permission changed or controller stopped"
                 self._finish(key, "blocked", member.action, stopped)
                 continue
+            if member.superseded:
+                self._finish(key, "superseded", member.action)
+                continue
             if set(member.action.targets) & self._yielded:
                 self._finish(key, "yielded", member.action)
                 continue
@@ -924,9 +974,19 @@ class DailyEngine:
                 stopped = (
                     "Earlier call failed or was interrupted; remaining calls were not dispatched"
                 )
+        if stopped:
+            for member in plan.occurrences[event.occurrence_id]:
+                key = self._key(plan, member)
+                if key not in self._journal:
+                    self._finish(key, "blocked", member.action, stopped)
         await self._persist()
 
     async def _execute_plan(self, plan, event: PlanEvent, key, generation):
+        if key in self._journal:
+            return
+        if event.superseded:
+            self._finish(key, "superseded", event.action)
+            return
         if event.custom:
             await self._execute_custom_group(plan, event, generation)
             return

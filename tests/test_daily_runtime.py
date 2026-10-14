@@ -554,3 +554,146 @@ async def test_custom_block_order_and_stop_on_failure(
     assert ("failed" in statuses) == fail
     await advance(hass, freezer, 2)
     assert len(attempted) == 1  # Opaque custom blocks are never retried wholesale.
+
+
+def register_stagger_switch(hass, calls):
+    # HA's switch platform setup replaces the fixture's service; restore the virtual device.
+    async def handle(call):
+        calls.append(call)
+        for entity in call.data["entity_id"]:
+            hass.states.async_set(entity, "on", context=call.context)
+
+    hass.services.async_register(
+        "switch",
+        "turn_on",
+        handle,
+        schema=vol.Schema({vol.Required("entity_id"): cv.entity_ids}, extra=vol.ALLOW_EXTRA),
+    )
+
+
+@pytest.mark.parametrize("custom", [False, True])
+async def test_stagger_timer_dispatches_one_target_and_interleaves_other_work(
+    hass, daily_entry, daily_devices, freezer, custom
+):
+    targets = ["light.proof", "light.second", "light.third", "switch.window"]
+    for entity in targets[1:]:
+        hass.states.async_set(entity, "off", {"supported_color_modes": ["brightness"]})
+    action = {"action": "turn_on", "entities": targets, "stagger": {"enabled": True}}
+    step = daily_entry.data["program"]["steps"]["on"]
+    if custom:
+        step.pop("action")
+        step.pop("entities")
+        step["actions"] = [action, {"action": "scene.turn_on", "entities": ["scene.evening"]}]
+        hass.states.async_set("scene.evening", "off")
+    else:
+        step.update(action)
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 89)
+    assert not daily_devices
+    await advance(hass, freezer, 1)
+    assert len(daily_devices) == 1
+    assert len(daily_devices[0].data["entity_id"]) == 1
+    first_target = daily_devices[0].data["entity_id"][0]
+    await advance(hass, freezer, 30)
+    assert len([c for c in daily_devices if c.domain in {"light", "switch"}]) == 2
+    assert len([c for c in daily_devices if c.domain == "script"]) == 1
+    await advance(hass, freezer, 30)
+    assert len([c for c in daily_devices if c.domain in {"light", "switch"}]) == 3
+    await advance(hass, freezer, 30)
+    activations = [c for c in daily_devices if c.domain in {"light", "switch"}]
+    assert len(activations) == 4
+    assert {c.data["entity_id"][0] for c in activations} == set(targets)
+    assert len([c for c in daily_devices if c.domain == "scene"]) == int(custom)
+    assert daily_devices[0].data["entity_id"][0] == first_target
+    await advance(hass, freezer, 30)
+    assert len([c for c in daily_devices if c.domain in {"light", "switch"}]) == 4
+
+
+async def test_stopping_stagger_cancels_remaining_ticks(hass, daily_entry, daily_devices, freezer):
+    hass.states.async_set("switch.window", "off")
+    daily_entry.data["program"]["steps"]["on"].update(
+        entities=["light.proof", "switch.window"], stagger={"enabled": True}
+    )
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 120)
+    assert len([c for c in daily_devices if c.domain != "script"]) == 1
+    await engine.async_set_enabled(False)
+    await advance(hass, freezer, 120)
+    assert len([c for c in daily_devices if c.domain != "script"]) == 1
+
+
+async def test_custom_stagger_failure_blocks_future_ticks_and_following_actions(
+    hass, daily_entry, daily_devices, freezer
+):
+    from homeassistant.exceptions import HomeAssistantError
+
+    for entity in ("light.second", "scene.evening"):
+        hass.states.async_set(entity, "off", {"supported_color_modes": ["brightness"]})
+    daily_entry.data["program"]["steps"]["on"] = {
+        "timing": {"absolute_time": {"start": "18:01"}},
+        "actions": [
+            {
+                "action": "turn_on",
+                "entities": ["light.proof", "light.second"],
+                "stagger": {"enabled": True},
+            },
+            {"action": "scene.turn_on", "entities": ["scene.evening"]},
+        ],
+    }
+    failed = []
+
+    async def fail(call):
+        failed.append(call)
+        raise HomeAssistantError("Device failure")
+
+    hass.services.async_register("light", "turn_on", fail)
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 120)
+    assert len(failed) == 1
+    await advance(hass, freezer, 60)
+    assert len(failed) == 1
+    assert not any(c.domain == "scene" for c in daily_devices)
+    assert sum(e["status"] == "blocked" for e in engine._journal.values()) >= 2
+
+
+async def test_custom_stagger_waits_for_an_earlier_deferred_action(
+    hass, daily_entry, daily_devices, freezer
+):
+    for entity in ("light.second", "scene.evening"):
+        hass.states.async_set(entity, "off", {"supported_color_modes": ["brightness"]})
+    daily_entry.data["program"]["steps"]["on"] = {
+        "timing": {"absolute_time": {"start": "18:01"}},
+        "actions": [
+            {"action": "light.toggle", "entities": ["light.proof"]},
+            {
+                "action": "turn_on",
+                "entities": ["light.proof", "light.second"],
+                "stagger": {"enabled": True},
+            },
+            {"action": "scene.turn_on", "entities": ["scene.evening"]},
+        ],
+    }
+    daily_entry.data["program"]["steps"].pop("script")
+    engine = await load(hass, daily_entry, freezer)
+
+    async def toggle(call):
+        daily_devices.append(call)
+
+    hass.services.async_register("light", "toggle", toggle)
+    await engine.async_set_enabled(True)
+    engine._handover["light.proof"] = {"deadline": "2026-10-13T18:04:00+00:00"}
+    await advance(hass, freezer, 180)
+    assert not daily_devices
+    engine._handover.clear()
+    await advance(hass, freezer, 61)
+    assert daily_devices[0].service == "toggle"
+    # A continuation deferred behind its predecessor remains queued, not spun at the same time.
+    await advance(hass, freezer, 1)
+    assert [c.service for c in daily_devices] == ["toggle", "turn_on", "turn_on", "turn_on"]
+    assert daily_devices[-1].domain == "scene"

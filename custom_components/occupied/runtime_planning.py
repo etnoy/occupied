@@ -24,7 +24,7 @@ def runtime_dates(program, today):
         if not step.enabled or (source and source.step and source.step not in active):
             continue
         active.add(key)
-        before = max(before, math.ceil(max(0, high) / DAY) + 1)
+        before = max(before, math.ceil(max(0, high + step.stagger_span) / DAY) + 1)
         after = max(after, math.ceil(max(0, -low) / DAY) + 1)
     random_bounds = {}
     active_random = set()
@@ -56,7 +56,11 @@ def runtime_dates(program, today):
             end_high += DAY
         random_bounds[key] = end_low, end_high
         active_random.add(key)
-        before = max(before, math.ceil(max(0, high, end_high) / DAY) + 1)
+        before = max(
+            before,
+            math.ceil(max(0, high + event.on.stagger_span, end_high + event.off.stagger_span) / DAY)
+            + 1,
+        )
         after = max(after, math.ceil(max(0, -low, -end_low) / DAY) + 1)
     count = max_plan_events(program)
     if (

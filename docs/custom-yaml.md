@@ -97,3 +97,35 @@ steps:
 ```
 
 For random events, either `on` or `off` may contain an `actions` list instead of a singular action. End actions declare their own targets; the GUI's reuse-targets shortcut remains available for compatible simple controls. Export preserves behavior and action order, but not original comments, anchors, or formatting. Schema version remains 1; installations without Custom YAML support reject the new action/mapping/list shapes.
+
+## Turn on one entity at a time
+
+Enable **Turn on one entity at a time** beneath the entity selector for a simple turn-on action. It is unchecked by default. The default period is two minutes; use Custom YAML to change it:
+
+```yaml
+action: set_state
+stagger:
+  enabled: true
+  period: 90s
+entities:
+  light.sofa_lamp:
+    state: "on"
+    brightness: 128
+  light.reading_lamp:
+    state: "on"
+    brightness: 200
+  switch.window_lights:
+    state: "on"
+```
+
+The targets are shuffled once per transition. For `N` entities and period `W`, each tick is `W / N` apart and turns on exactly one entity. The first tick is after one interval and the last is at the period's end: four entities over `2m` turn on at +30, +60, +90, and +120 seconds. A single entity turns on at the endpoint. Each new transition receives its own permutation; an already sampled plan keeps its order through preview and restart.
+
+`stagger` belongs beside `action` and `entities`, including inside individual actions in a list. It is also supported on direct `turn_on`, `light.turn_on`, and `switch.turn_on` actions. Eligible targets are explicit lights/switches being turned on. Off actions, scenes, covers, other services, and mixed state mappings cannot enable it. Periods use explicit units from `1s` through `30m`. `enabled` defaults to false, and `period` to `2m`. A disabled custom period is retained for re-enabling.
+
+An individual light's `transition` setting remains its brightness-fade duration after its tick. Staggering never passes its options to HA services.
+
+In an ordered list, the following action starts after the stagger period ends. Combined periods in one block cannot exceed 30 minutes. A custom-block failure stops future ticks and later actions; unavailable/disabled/manually yielded targets consume their tick without changing the remaining times. Unrelated events run between ticks. A newer direct intent for an entity cancels its pending older on ticks, so a delayed on call cannot undo a newer off command.
+
+Timing and related-step anchors still refer to the original scheduled start, not the final tick. Add the period to a related-step offset to run after completion. Overnight ticks appear on their actual calendar date. Random start-block periods must total less than `min_duration`; any end-block period reserves space inside the enclosing window. Infeasible windows produce validation/planning errors rather than shorten the period.
+
+Preview shows each tick's time and target. Manual live preview's **Next event** advances one scheduled tick immediately, without waiting in real time; ordinary calls at the same boundary follow it in list order. Normal scheduling and dry run consume the planned tick times. Existing activation handover retains its independent rules and may subsume typed light calls while converging.

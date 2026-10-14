@@ -547,3 +547,43 @@ async def test_custom_live_block_stops_after_failed_call(live_engine, live_progr
     assert [o["status"] for o in outcomes] == ["dispatched", "failed", "cancelled"]
     assert [call.domain for call in live_calls] == ["light"]
     assert live_calls[0].data["brightness"] == 24
+
+
+async def test_live_stagger_advances_one_tick_per_press(live_engine, live_program, live_calls):
+    live_program["steps"]["morning"]["stagger"] = {"enabled": True, "period": "90s"}
+    await start(live_engine, live_program)
+    assert live_engine.live_preview.session["total"] == 5
+    for i in range(3):
+        result = await next_event(live_engine, f"tick-{i}")
+        assert len(live_calls) == i + 1
+        assert result["session"]["simulated_time"].endswith(
+            f"08:0{(i + 1) // 2}:{30 if (i + 1) % 2 else 0:02}+00:00"
+        )
+    assert {c.data["entity_id"] for c in live_calls} == {"light.a", "light.b", "switch.a"}
+
+
+async def test_live_custom_stagger_failure_remains_blocked_across_advances(
+    live_engine, live_program, live_calls, hass
+):
+    live_program["steps"]["morning"] = {
+        "timing": {"absolute_time": {"start": "08:00"}},
+        "actions": [
+            {"action": "turn_on", "entities": ["light.a", "light.b"], "stagger": {"enabled": True}},
+            {"action": "scene.turn_on", "entities": ["scene.evening"]},
+        ],
+    }
+    failed = []
+
+    async def fail(call):
+        failed.append(call)
+        raise HomeAssistantError("Failure")
+
+    hass.services.async_register("light", "turn_on", fail)
+    await start(live_engine, live_program)
+    await next_event(live_engine, "first")
+    await next_event(live_engine, "second")
+    assert len(failed) == 1 and not live_calls
+    assert all(
+        o["status"] == "blocked"
+        for o in live_engine.live_preview.requests["second"]["outcomes"].values()
+    )

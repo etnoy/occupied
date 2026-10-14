@@ -119,6 +119,7 @@ export function actionForm(source) {
   }
   return {
     kind,
+    ...(source?.stagger && { stagger: copy(source.stagger) }),
     ...(kind === "custom" &&
       source && {
         customActions: source.actions || [
@@ -126,6 +127,7 @@ export function actionForm(source) {
             action: source.action,
             entities: source.entities,
             ...(source.data && { data: source.data }),
+            ...(source.stagger && { stagger: source.stagger }),
           },
         ],
         customAccepted: actionYaml(
@@ -135,6 +137,7 @@ export function actionForm(source) {
                 action: source.action,
                 entities: source.entities,
                 ...(source.data && { data: source.data }),
+                ...(source.stagger && { stagger: source.stagger }),
               },
         ),
         customYaml: actionYaml(
@@ -144,6 +147,7 @@ export function actionForm(source) {
                 action: source.action,
                 entities: source.entities,
                 ...(source.data && { data: source.data }),
+                ...(source.stagger && { stagger: source.stagger }),
               },
         ),
       }),
@@ -377,6 +381,8 @@ export function buildAction(form) {
   return {
     action,
     entities: sorted(form.entities),
+    ...(["turn_on", "light.turn_on", "switch.turn_on"].includes(action) &&
+      form.stagger && { stagger: copy(form.stagger) }),
     ...(form.kind !== "entities" && { data: JSON.parse(form.data) }),
   };
 }

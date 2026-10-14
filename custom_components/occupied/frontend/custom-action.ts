@@ -65,6 +65,7 @@ export function actionYaml(value: unknown, level = 0): string {
 export function mappedControl(form: ActionForm): Action {
   return {
     action: "set_state",
+    ...(form.stagger && { stagger: { ...form.stagger } }),
     entities: Object.fromEntries(
       form.entities.map((entity) => [
         entity,
@@ -92,6 +93,7 @@ export function simpleMapping(source: Action): Action | undefined {
   ) {
     return {
       action: states.has("off") ? "turn_off" : "turn_on",
+      ...(source.stagger && { stagger: { ...source.stagger } }),
       entities: entries.map(([entity]) => entity),
     };
   }

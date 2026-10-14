@@ -1,0 +1,21 @@
+schema_version: 1
+name: Factorio-style staggered evening lights
+steps:
+  evening:
+    timing:
+      relative_to:
+        sun: sunset
+    actions:
+      - action: set_state
+        stagger:
+          enabled: true
+          period: 2m
+        entities:
+          light.sofa:
+            state: "on"
+            brightness: 128
+          light.window:
+            state: "on"
+            brightness: 50
+          switch.table_lamp:
+            state: "on"

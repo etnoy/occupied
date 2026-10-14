@@ -4,7 +4,7 @@
   import PreviewStateGraph from "./PreviewStateGraph.svelte";
   import type { HomeAssistantLocale } from "./time-format.js";
   import { formatScheduleDate } from "./time-format.js";
-  import { stamp } from "./timeline.js";
+  import { stamp, staggerTransitions } from "./timeline.js";
   import { stepEntries } from "./step-model.js";
   import { randomEntries } from "./random-model.js";
   import type { PlannedEvent } from "./types.js";
@@ -89,6 +89,35 @@
             "Plan revision",
           )}: {plan.source_revision?.slice(0, 12) || "—"}
         </p>
+        {#each staggerTransitions(plan) as transition}
+          <details>
+            <summary>
+              {eventLabel(transition.events[0])} · {t("Turn-on transition")} · {transition.count}
+              {t("entities")}
+            </summary>
+            <p class="hint">
+              {stamp(transition.start, plan.timezone, locale)}–{stamp(
+                transition.end,
+                plan.timezone,
+                locale,
+              )}
+              · {t("Period")}: {transition.period}s · {t("Tick interval")}: {Number(
+                transition.interval.toFixed(3),
+              )}s
+            </p>
+            <ol>
+              {#each transition.events as tick}
+                <li value={tick.tick}>
+                  {stamp(tick.time, plan.timezone, locale)} · {tick.action.entities
+                    .map((entity) => entityNames[entity] || entity)
+                    .join(", ")}
+                  {#if tick.superseded}
+                    · {t("Superseded")}{/if}
+                </li>
+              {/each}
+            </ol>
+          </details>
+        {/each}
         <input
           type="search"
           placeholder={t("Filter events")}
@@ -117,7 +146,7 @@
                     class:completed={live?.outcome?.status === "dispatched"}
                     aria-current={live?.current ? "step" : undefined}
                   >
-                    {#each [stamp(event.time, plan.timezone, locale), `${eventLabel(event)} · ${t(event.kind === "random_start" ? "Random start" : event.kind === "random_end" ? "Random end" : event.kind)}`, event.action.action, event.action.entities.join(", "), Object.keys(event.action.data || {}).length ? JSON.stringify(event.action.data) : "—"] as value}
+                    {#each [stamp(event.time, plan.timezone, locale), `${eventLabel(event)} · ${t(event.kind === "random_start" ? "Random start" : event.kind === "random_end" ? "Random end" : event.kind)}`, `${event.action.action}${event.tick ? ` · ${t("Tick {tick} of {count}").replace("{tick}", String(event.tick)).replace("{count}", String(event.tick_count))} · ${event.period_seconds}s` : ""}${event.superseded ? ` · ${t("Superseded")}` : ""}`, event.action.entities.join(", "), Object.keys(event.action.data || {}).length ? JSON.stringify(event.action.data) : "—"] as value}
                       <td>{value}</td>
                     {/each}
                     {#if liveSession}

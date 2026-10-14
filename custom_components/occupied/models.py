@@ -262,6 +262,11 @@ class Schedule(Model):
         return tuple(day for day in WEEKDAYS if day in value)
 
 
+class Stagger(Model):
+    enabled: Annotated[bool, Field(strict=True)] = False
+    period: Annotated[SignedDuration, Field(ge=1, le=1800)] = "2m"
+
+
 class Action(Model):
     model_config = ConfigDict(
         json_schema_extra={
@@ -274,6 +279,7 @@ class Action(Model):
                             {"required": ["action"]},
                             {"required": ["entities"]},
                             {"required": ["data"]},
+                            {"required": ["stagger"]},
                         ]
                     },
                 },
@@ -291,6 +297,7 @@ class Action(Model):
     ) = None
     entities: tuple[EntityId, ...] | dict[EntityId, dict[str, JsonValue]] = ()
     data: dict[str, JsonValue] = Field(default_factory=dict)
+    stagger: Stagger = Field(default_factory=Stagger)
     actions: Annotated[tuple[Action, ...], Field(min_length=1, max_length=100)] | None = None
 
     @field_validator("data", "entities")
@@ -307,12 +314,14 @@ class Action(Model):
     @model_validator(mode="after")
     def action_shape(self):
         if self.actions is not None:
-            if {"action", "entities", "data"} & self.model_fields_set:
+            if {"action", "entities", "data", "stagger"} & self.model_fields_set:
                 raise ValueError("Use actions or action/entities/data, never both")
             if sum(len(item.entities) for item in self.actions) > 1000:
                 raise ValueError("Custom blocks support at most 1000 resolved calls")
             if any(item.actions is not None for item in self.actions):
                 raise ValueError("Nested action lists are not supported")
+            if self.stagger_span > 1800:
+                raise ValueError("Combined stagger periods must be no greater than 30m")
         else:
             if isinstance(self.entities, dict) and len(self.entities) > 1000:
                 raise ValueError("State mappings support at most 1000 entities")
@@ -326,6 +335,10 @@ class Action(Model):
 
     def configured_actions(self):
         return self.actions if self.actions is not None else (self,)
+
+    @property
+    def stagger_span(self):
+        return sum(a.stagger.period for a in self.configured_actions() if a.stagger.enabled)
 
     @property
     def target_ids(self):

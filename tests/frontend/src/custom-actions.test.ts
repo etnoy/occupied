@@ -192,3 +192,38 @@ void test("migration quotes service-data keys that YAML could interpret as boole
     variables: { on: "enabled", off: "disabled", null: "value", yes: "answer" },
   });
 });
+
+void test("stagger checkbox state and custom period survive lossless editor conversions", () => {
+  const source: Action = {
+    action: "turn_on",
+    entities: ["light.a", "switch.b"],
+    stagger: { enabled: true, period: "90s" },
+  };
+  const form = actionForm(source);
+  assert.deepEqual(buildAction(form), source);
+  changeActionKind(form, "custom", () => false);
+  assert.deepEqual(form.customActions?.[0].stagger, source.stagger);
+  assert.ok(form.customYaml?.includes('period: "90s"'));
+  changeActionKind(form, "turn_on", () => false);
+  assert.deepEqual(buildAction(form), source);
+  form.stagger!.enabled = false;
+  assert.deepEqual(buildAction(form).stagger, {
+    enabled: false,
+    period: "90s",
+  });
+  const reopened = actionForm(buildAction(form));
+  assert.deepEqual(reopened.stagger, { enabled: false, period: "90s" });
+  changeActionKind(form, "turn_off", () => false);
+  assert.equal(buildAction(form).stagger, undefined);
+});
+
+void test("singular custom mapping preserves stagger options on title/timing edits", () => {
+  const source: Action = {
+    action: "set_state",
+    entities: { "light.a": { state: "on", brightness: 128 } },
+    stagger: { enabled: true, period: "3m" },
+  };
+  const form = actionForm(source);
+  assert.deepEqual(buildAction(form), { actions: [source] });
+  assert.ok(form.customYaml?.includes('period: "3m"'));
+});

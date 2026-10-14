@@ -66,6 +66,9 @@ export function changeActionKind(
     form.entities = [];
   }
   form.kind = kind;
+  if (!(kind === "entities" && value === "turn_on")) {
+    delete form.stagger;
+  }
   if (kind === "entities") {
     form.action = value;
   }

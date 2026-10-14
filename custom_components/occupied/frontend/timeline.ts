@@ -47,6 +47,9 @@ export function previewStateHistory(
   for (const event of [...plan.events].sort(
     (a, b) => Date.parse(a.time) - Date.parse(b.time),
   )) {
+    if (event.superseded) {
+      continue;
+    }
     const at = Date.parse(event.time);
     if (at >= end) {
       continue;
@@ -151,4 +154,45 @@ export function stamp(
   } catch {
     return value;
   }
+}
+
+export function staggerTransitions(plan: Plan) {
+  const groups = new Map<
+    string,
+    {
+      start: string;
+      end: string;
+      period: number;
+      interval: number;
+      count: number;
+      events: Plan["events"];
+    }
+  >();
+  for (const event of plan.events) {
+    if (
+      !event.tick ||
+      !event.authored_at ||
+      !event.period_seconds ||
+      !event.tick_count
+    ) {
+      continue;
+    }
+    const id = `${event.occurrence_id}:${event.configured_index}`;
+    let group = groups.get(id);
+    if (!group) {
+      group = {
+        start: event.authored_at,
+        end: new Date(
+          Date.parse(event.authored_at) + event.period_seconds * 1000,
+        ).toISOString(),
+        period: event.period_seconds,
+        interval: event.period_seconds / event.tick_count,
+        count: event.tick_count,
+        events: [],
+      };
+      groups.set(id, group);
+    }
+    group.events.push(event);
+  }
+  return [...groups].map(([id, group]) => ({ id, ...group }));
 }

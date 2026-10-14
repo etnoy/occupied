@@ -32,6 +32,8 @@ def project_lighting(program, plan, instant, *, yielded=frozenset()):
     for event in plan.events:
         if event.at > instant:
             break
+        if event.superseded:
+            continue
         action = event.action
         if action.action not in {"light.turn_on", "light.turn_off"}:
             # Opaque calls can invalidate an earlier known intent on their explicit targets.

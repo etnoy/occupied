@@ -142,6 +142,11 @@
       {#each session.next_group.calls as call}
         <p class="call">
           {call.action.action} · {call.action.entities.join(", ")}
+          {#if call.tick}
+            · {t("Tick {tick} of {count}")
+              .replace("{tick}", String(call.tick))
+              .replace("{count}", String(call.tick_count))}
+          {/if}
         </p>
       {/each}
     {/if}

@@ -63,6 +63,13 @@ def plan_from_data(data):
             i.get("sequence", index),
             i["kind"],
             i.get("custom", False),
+            i.get("scheduled", False),
+            instant(i["authored_at"]) if i.get("authored_at") else None,
+            i.get("configured_index", 0),
+            i.get("tick", 0),
+            i.get("tick_count", 0),
+            i.get("period_seconds", 0),
+            i.get("superseded", False),
         )
         for index, i in enumerate(data["events"])
     )

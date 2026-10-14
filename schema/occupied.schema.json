@@ -59,6 +59,11 @@
                 "required": [
                   "data"
                 ]
+              },
+              {
+                "required": [
+                  "stagger"
+                ]
               }
             ]
           },
@@ -111,6 +116,9 @@
           },
           "title": "Data",
           "type": "object"
+        },
+        "stagger": {
+          "$ref": "#/$defs/Stagger"
         },
         "actions": {
           "anyOf": [
@@ -479,6 +487,25 @@
       "title": "RelativeTo",
       "type": "object"
     },
+    "Stagger": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "period": {
+          "default": "2m",
+          "ge": 1,
+          "le": 1800,
+          "title": "Period",
+          "type": "string"
+        }
+      },
+      "title": "Stagger",
+      "type": "object"
+    },
     "Step": {
       "additionalProperties": false,
       "oneOf": [
@@ -509,6 +536,11 @@
               {
                 "required": [
                   "data"
+                ]
+              },
+              {
+                "required": [
+                  "stagger"
                 ]
               }
             ]
@@ -562,6 +594,9 @@
           },
           "title": "Data",
           "type": "object"
+        },
+        "stagger": {
+          "$ref": "#/$defs/Stagger"
         },
         "actions": {
           "anyOf": [

@@ -1220,6 +1220,14 @@ var styles = `
 
 // custom_components/occupied/frontend/translations.ts
 var sv = {
+  "Turn on one entity at a time": "T\xE4nd en enhet i taget",
+  "One entity turns on at each evenly spaced tick over {period}. The order changes for each transition. Change the period in Custom YAML.":
+    "En enhet t\xE4nds vid varje j\xE4mnt f\xF6rdelat steg under {period}. Ordningen \xE4ndras f\xF6r varje \xF6verg\xE5ng. \xC4ndra perioden i Egen YAML.",
+  "Tick {tick} of {count}": "Steg {tick} av {count}",
+  Superseded: "Ersatt",
+  "Turn-on transition": "T\xE4ndnings\xF6verg\xE5ng",
+  Period: "Period",
+  "Tick interval": "Stegintervall",
   "Custom YAML": "Egen YAML",
   "Action YAML": "\xC5tg\xE4rds-YAML",
   actions: "\xE5tg\xE4rder",
@@ -8766,6 +8774,7 @@ ${actionYaml(item, level + 1)}`;
 function mappedControl(form) {
   return {
     action: "set_state",
+    ...(form.stagger && { stagger: { ...form.stagger } }),
     entities: Object.fromEntries(
       form.entities.map((entity) => [
         entity,
@@ -8792,6 +8801,7 @@ function simpleMapping(source2) {
   ) {
     return {
       action: states.has("off") ? "turn_off" : "turn_on",
+      ...(source2.stagger && { stagger: { ...source2.stagger } }),
       entities: entries.map(([entity]) => entity),
     };
   }
@@ -8931,6 +8941,7 @@ function actionForm(source2) {
   }
   return {
     kind,
+    ...(source2?.stagger && { stagger: copy(source2.stagger) }),
     ...(kind === "custom" &&
       source2 && {
         customActions: source2.actions || [
@@ -8938,6 +8949,7 @@ function actionForm(source2) {
             action: source2.action,
             entities: source2.entities,
             ...(source2.data && { data: source2.data }),
+            ...(source2.stagger && { stagger: source2.stagger }),
           },
         ],
         customAccepted: actionYaml(
@@ -8947,6 +8959,7 @@ function actionForm(source2) {
                 action: source2.action,
                 entities: source2.entities,
                 ...(source2.data && { data: source2.data }),
+                ...(source2.stagger && { stagger: source2.stagger }),
               },
         ),
         customYaml: actionYaml(
@@ -8956,6 +8969,7 @@ function actionForm(source2) {
                 action: source2.action,
                 entities: source2.entities,
                 ...(source2.data && { data: source2.data }),
+                ...(source2.stagger && { stagger: source2.stagger }),
               },
         ),
       }),
@@ -9189,6 +9203,8 @@ function buildAction(form) {
   return {
     action: action2,
     entities: sorted(form.entities),
+    ...(["turn_on", "light.turn_on", "switch.turn_on"].includes(action2) &&
+      form.stagger && { stagger: copy(form.stagger) }),
     ...(form.kind !== "entities" && { data: JSON.parse(form.data) }),
   };
 }
@@ -11292,6 +11308,9 @@ function changeActionKind(form, value, confirmReplace) {
     form.entities = [];
   }
   form.kind = kind;
+  if (!(kind === "entities" && value === "turn_on")) {
+    delete form.stagger;
+  }
   if (kind === "entities") {
     form.action = value;
   }
@@ -11306,15 +11325,19 @@ function changeActionKind(form, value, confirmReplace) {
 
 // custom_components/occupied/frontend/ActionEditor.svelte
 var root9 = from_html(
+  `<label class="stagger-option"><input type="checkbox"/> <span> </span></label> <p class="hint"> </p> <!>`,
+  1,
+);
+var root_17 = from_html(
   `<ha-code-editor></ha-code-editor> <!> <p class="hint"> </p>`,
   3,
 );
-var root_17 = from_html(
+var root_26 = from_html(
   `<!> <!> <p class="hint"> </p> <p class="hint"> </p>`,
   1,
 );
-var root_26 = from_html(
-  `<div data-editor-section="action"><h3> </h3> <!> <!> <!> <!> <!> <!></div>`,
+var root_35 = from_html(
+  `<div data-editor-section="action"><h3> </h3> <!> <!> <!> <!> <!> <!> <!></div>`,
 );
 var $$css = {
   hash: "svelte-9e2py0",
@@ -11329,7 +11352,7 @@ function ActionEditor($$anchor, $$props) {
     hideEntities = prop($$props, "hideEntities", 3, false);
   let form = user_derived(() => $$props.context.form),
     t = user_derived(() => $$props.context.t);
-  var div = root_26();
+  var div = root_35();
   var h3 = child(div);
   var text2 = only_child(h3, true);
   var node = sibling(h3, 2);
@@ -11394,7 +11417,62 @@ function ActionEditor($$anchor, $$props) {
   {
     var consequent_1 = ($$anchor2) => {
       var fragment_1 = root9();
-      var ha_code_editor = first_child(fragment_1);
+      var label = first_child(fragment_1);
+      var input = child(label);
+      remove_input_defaults(input);
+      var span = sibling(input, 2);
+      var text_1 = only_child(span, true);
+      reset(label);
+      var p = sibling(label, 2);
+      var text_2 = only_child(p, true);
+      var node_3 = sibling(p, 2);
+      {
+        let $0 = user_derived(() => $$props.context.fieldPrefix || "");
+        let $1 = user_derived(() => ({ ...$$props.context.editor.errors }));
+        FieldError(node_3, {
+          key: "stagger",
+          get fieldPrefix() {
+            return get($0);
+          },
+          get errors() {
+            return get($1);
+          },
+        });
+      }
+      template_effect(
+        ($0, $1) => {
+          set_checked(input, get(form).stagger?.enabled === true);
+          input.disabled = $$props.panel.busy;
+          set_text(text_1, $0);
+          set_text(text_2, $1);
+        },
+        [
+          () => get(t)("Turn on one entity at a time"),
+          () =>
+            get(t)(
+              "One entity turns on at each evenly spaced tick over {period}. The order changes for each transition. Change the period in Custom YAML.",
+            ).replace("{period}", get(form).stagger?.period || "2m"),
+        ],
+      );
+      delegated("change", input, (event2) => {
+        get(form).stagger = {
+          ...get(form).stagger,
+          enabled: event2.currentTarget.checked,
+        };
+        $$props.context.changed("stagger");
+      });
+      append($$anchor2, fragment_1);
+    };
+    if_block(node_2, ($$render) => {
+      if (get(form).kind === "entities" && get(form).action === "turn_on")
+        $$render(consequent_1);
+    });
+  }
+  var node_4 = sibling(node_2, 2);
+  {
+    var consequent_2 = ($$anchor2) => {
+      var fragment_2 = root_17();
+      var ha_code_editor = first_child(fragment_2);
       set_custom_element_data(ha_code_editor, "role", "group");
       template_effect(
         ($0) => set_custom_element_data(ha_code_editor, "aria-label", $0),
@@ -11427,11 +11505,11 @@ function ActionEditor($$anchor, $$props) {
           linewrap: true,
         }),
       );
-      var node_3 = sibling(ha_code_editor, 2);
+      var node_5 = sibling(ha_code_editor, 2);
       {
         let $0 = user_derived(() => $$props.context.fieldPrefix || "");
         let $1 = user_derived(() => ({ ...$$props.context.editor.errors }));
-        FieldError(node_3, {
+        FieldError(node_5, {
           key: "customYaml",
           get fieldPrefix() {
             return get($0);
@@ -11441,12 +11519,12 @@ function ActionEditor($$anchor, $$props) {
           },
         });
       }
-      var p = sibling(node_3, 2);
-      var text_1 = only_child(p, true);
+      var p_1 = sibling(node_5, 2);
+      var text_3 = only_child(p_1, true);
       template_effect(
         ($0) => {
           ha_code_editor.dir = ha_code_editor.dir;
-          set_text(text_1, $0);
+          set_text(text_3, $0);
         },
         [
           () =>
@@ -11464,15 +11542,15 @@ function ActionEditor($$anchor, $$props) {
         get(form).customYaml = event2.detail.value;
         $$props.context.changed("customYaml");
       });
-      append($$anchor2, fragment_1);
+      append($$anchor2, fragment_2);
     };
-    if_block(node_2, ($$render) => {
-      if (get(form).kind === "custom") $$render(consequent_1);
+    if_block(node_4, ($$render) => {
+      if (get(form).kind === "custom") $$render(consequent_2);
     });
   }
-  var node_4 = sibling(node_2, 2);
+  var node_6 = sibling(node_4, 2);
   {
-    var consequent_2 = ($$anchor2) => {
+    var consequent_3 = ($$anchor2) => {
       EditorField($$anchor2, {
         get panel() {
           return $$props.panel;
@@ -11488,18 +11566,18 @@ function ActionEditor($$anchor, $$props) {
         update: (value) => (get(form).service = value),
       });
     };
-    if_block(node_4, ($$render) => {
-      if (get(form).kind === "service") $$render(consequent_2);
+    if_block(node_6, ($$render) => {
+      if (get(form).kind === "service") $$render(consequent_3);
     });
   }
-  var node_5 = sibling(node_4, 2);
+  var node_7 = sibling(node_6, 2);
   {
-    var consequent_5 = ($$anchor2) => {
-      var fragment_3 = root_17();
-      var node_6 = first_child(fragment_3);
+    var consequent_6 = ($$anchor2) => {
+      var fragment_4 = root_26();
+      var node_8 = first_child(fragment_4);
       {
         let $0 = user_derived(() => ({ choices: coverActions, render: true }));
-        EditorField(node_6, {
+        EditorField(node_8, {
           get panel() {
             return $$props.panel;
           },
@@ -11517,9 +11595,9 @@ function ActionEditor($$anchor, $$props) {
           },
         });
       }
-      var node_7 = sibling(node_6, 2);
+      var node_9 = sibling(node_8, 2);
       {
-        var consequent_3 = ($$anchor3) => {
+        var consequent_4 = ($$anchor3) => {
           EditorField($$anchor3, {
             get panel() {
               return $$props.panel;
@@ -11536,7 +11614,7 @@ function ActionEditor($$anchor, $$props) {
             options: { type: "number", min: 0, max: 100, step: 1 },
           });
         };
-        var consequent_4 = ($$anchor3) => {
+        var consequent_5 = ($$anchor3) => {
           EditorField($$anchor3, {
             get panel() {
               return $$props.panel;
@@ -11553,21 +11631,21 @@ function ActionEditor($$anchor, $$props) {
             options: { type: "number", min: 0, max: 100, step: 1 },
           });
         };
-        if_block(node_7, ($$render) => {
+        if_block(node_9, ($$render) => {
           if (get(form).service === "cover.set_cover_position")
-            $$render(consequent_3);
+            $$render(consequent_4);
           else if (get(form).service === "cover.set_cover_tilt_position")
-            $$render(consequent_4, 1);
+            $$render(consequent_5, 1);
         });
       }
-      var p_1 = sibling(node_7, 2);
-      var text_2 = only_child(p_1, true);
-      var p_2 = sibling(p_1, 2);
-      var text_3 = only_child(p_2, true);
+      var p_2 = sibling(node_9, 2);
+      var text_4 = only_child(p_2, true);
+      var p_3 = sibling(p_2, 2);
+      var text_5 = only_child(p_3, true);
       template_effect(
         ($0, $1) => {
-          set_text(text_2, $0);
-          set_text(text_3, $1);
+          set_text(text_4, $0);
+          set_text(text_5, $1);
         },
         [
           () =>
@@ -11580,15 +11658,15 @@ function ActionEditor($$anchor, $$props) {
             ),
         ],
       );
-      append($$anchor2, fragment_3);
+      append($$anchor2, fragment_4);
     };
-    if_block(node_5, ($$render) => {
-      if (get(form).kind === "cover") $$render(consequent_5);
+    if_block(node_7, ($$render) => {
+      if (get(form).kind === "cover") $$render(consequent_6);
     });
   }
-  var node_8 = sibling(node_5, 2);
+  var node_10 = sibling(node_7, 2);
   {
-    var consequent_6 = ($$anchor2) => {
+    var consequent_7 = ($$anchor2) => {
       EditorField($$anchor2, {
         get panel() {
           return $$props.panel;
@@ -11605,9 +11683,9 @@ function ActionEditor($$anchor, $$props) {
         options: { multiline: true },
       });
     };
-    if_block(node_8, ($$render) => {
+    if_block(node_10, ($$render) => {
       if (get(form).kind === "scene" || get(form).kind === "service")
-        $$render(consequent_6);
+        $$render(consequent_7);
     });
   }
   reset(div);
@@ -11615,6 +11693,7 @@ function ActionEditor($$anchor, $$props) {
   append($$anchor, div);
   pop();
 }
+delegate(["change"]);
 
 // custom_components/occupied/frontend/StepEditor.svelte
 var root10 = from_html(
@@ -11777,7 +11856,7 @@ var root11 = from_html(
 );
 var root_18 = from_html(`<span class="step-status-badge"> </span>`);
 var root_27 = from_html(`<span class="step-warning-message"> </span>`);
-var root_35 = from_html(
+var root_36 = from_html(
   `<span class="step-row-warning"><ha-icon></ha-icon> <span></span></span>`,
   2,
 );
@@ -11904,7 +11983,7 @@ function StepsView($$anchor, $$props) {
           var node_2 = sibling(span, 2);
           {
             var consequent_2 = ($$anchor4) => {
-              var span_4 = root_35();
+              var span_4 = root_36();
               var ha_icon = child(span_4);
               set_custom_element_data(ha_icon, "icon", "mdi:alert-outline");
               set_custom_element_data(ha_icon, "aria-hidden", "true");
@@ -12280,6 +12359,9 @@ function previewStateHistory(plan, _program, names = {}, t = (text2) => text2) {
   for (const event2 of [...plan.events].sort(
     (a, b) => Date.parse(a.time) - Date.parse(b.time),
   )) {
+    if (event2.superseded) {
+      continue;
+    }
     const at = Date.parse(event2.time);
     if (at >= end) {
       continue;
@@ -12378,6 +12460,36 @@ function stamp(value, zone, locale) {
     return value;
   }
 }
+function staggerTransitions(plan) {
+  const groups = /* @__PURE__ */ new Map();
+  for (const event2 of plan.events) {
+    if (
+      !event2.tick ||
+      !event2.authored_at ||
+      !event2.period_seconds ||
+      !event2.tick_count
+    ) {
+      continue;
+    }
+    const id = `${event2.occurrence_id}:${event2.configured_index}`;
+    let group = groups.get(id);
+    if (!group) {
+      group = {
+        start: event2.authored_at,
+        end: new Date(
+          Date.parse(event2.authored_at) + event2.period_seconds * 1e3,
+        ).toISOString(),
+        period: event2.period_seconds,
+        interval: event2.period_seconds / event2.tick_count,
+        count: event2.tick_count,
+        events: [],
+      };
+      groups.set(id, group);
+    }
+    group.events.push(event2);
+  }
+  return [...groups].map(([id, group]) => ({ id, ...group }));
+}
 
 // custom_components/occupied/frontend/PreviewStateGraph.svelte
 var root13 = from_html(`<p class="hint"> </p>`);
@@ -12386,7 +12498,7 @@ var root_110 = from_html(
   2,
 );
 var root_28 = from_html(`<p role="status"> </p>`);
-var root_36 = from_html(`<!> <!> <!>`, 1);
+var root_37 = from_html(`<!> <!> <!>`, 1);
 var $$css3 = {
   hash: "svelte-1cnjgem",
   code: "state-history-chart-timeline.svelte-1cnjgem {display:block;width:100%;}state-history-chart-timeline[hidden].svelte-1cnjgem {display:none;}",
@@ -12435,7 +12547,7 @@ function PreviewStateGraph($$anchor, $$props) {
       media.removeEventListener("change", updateNarrow);
     };
   });
-  var fragment = root_36();
+  var fragment = root_37();
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
@@ -12619,18 +12731,22 @@ function lastGroupResult(session) {
 
 // custom_components/occupied/frontend/Timeline.svelte
 var root14 = from_html(`<h2> </h2>`);
-var root_111 = from_html(`<th scope="col"> </th>`);
-var root_29 = from_html(`<td> </td>`);
-var root_37 = from_html(`<span> </span> <div> </div>`, 1);
-var root_44 = from_html(`<td><!></td>`);
-var root_54 = from_html(`<tr><!><!></tr>`);
-var root_64 = from_html(
-  `<details><summary> </summary> <p class="hint"> </p> <input type="search"/> <div><div class="table-wrap"><table><thead><tr><!><!></tr></thead><tbody></tbody></table></div> <div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div></div></details>`,
+var root_111 = from_html(`<li> <!></li>`);
+var root_29 = from_html(
+  `<details><summary> </summary> <p class="hint"> </p> <ol></ol></details>`,
 );
-var root_72 = from_html(`<p> </p>`);
-var root_8 = from_html(`<!> <!> <!>`, 1);
-var root_9 = from_html(`<p role="status"> </p>`);
-var root_10 = from_html(`<section><!> <!></section>`);
+var root_38 = from_html(`<th scope="col"> </th>`);
+var root_44 = from_html(`<td> </td>`);
+var root_54 = from_html(`<span> </span> <div> </div>`, 1);
+var root_64 = from_html(`<td><!></td>`);
+var root_72 = from_html(`<tr><!><!></tr>`);
+var root_8 = from_html(
+  `<details><summary> </summary> <p class="hint"> </p> <!> <input type="search"/> <div><div class="table-wrap"><table><thead><tr><!><!></tr></thead><tbody></tbody></table></div> <div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div></div></details>`,
+);
+var root_9 = from_html(`<p> </p>`);
+var root_10 = from_html(`<!> <!> <!>`, 1);
+var root_11 = from_html(`<p role="status"> </p>`);
+var root_122 = from_html(`<section><!> <!></section>`);
 var $$css4 = {
   hash: "svelte-16g6nis",
   code: "tr.current.svelte-16g6nis {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-16g6nis {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}",
@@ -12676,7 +12792,7 @@ function Timeline($$anchor, $$props) {
   let currentPage = user_derived(() =>
     Math.max(0, Math.min(get(page), Math.ceil(get(filtered).length / 50) - 1)),
   );
-  var section = root_10();
+  var section = root_122();
   var node = child(section);
   {
     var consequent = ($$anchor2) => {
@@ -12704,8 +12820,8 @@ function Timeline($$anchor, $$props) {
   }
   var node_2 = sibling(node, 2);
   {
-    var consequent_7 = ($$anchor2) => {
-      var fragment_1 = root_8();
+    var consequent_8 = ($$anchor2) => {
+      var fragment_1 = root_10();
       var node_3 = first_child(fragment_1);
       PreviewStateGraph(node_3, {
         get plan() {
@@ -12729,44 +12845,142 @@ function Timeline($$anchor, $$props) {
       });
       var node_4 = sibling(node_3, 2);
       {
-        var consequent_6 = ($$anchor3) => {
-          var details = root_64();
+        var consequent_7 = ($$anchor3) => {
+          var details = root_8();
           var summary = child(details);
           var text_2 = only_child(summary);
           var p = sibling(summary, 2);
           var text_3 = only_child(p);
-          var input = sibling(p, 2);
+          var node_5 = sibling(p, 2);
+          each(
+            node_5,
+            17,
+            () => staggerTransitions($$props.plan),
+            index,
+            ($$anchor4, transition2) => {
+              var details_1 = root_29();
+              var summary_1 = child(details_1);
+              var text_4 = only_child(summary_1);
+              var p_1 = sibling(summary_1, 2);
+              var text_5 = only_child(p_1);
+              var ol = sibling(p_1, 2);
+              each(
+                ol,
+                21,
+                () => get(transition2).events,
+                index,
+                ($$anchor5, tick2) => {
+                  var li = root_111();
+                  var text_6 = child(li);
+                  var node_6 = sibling(text_6);
+                  {
+                    var consequent_2 = ($$anchor6) => {
+                      var text_7 = text();
+                      template_effect(
+                        ($0) => set_text(text_7, `\xB7 ${$0 ?? ""}`),
+                        [() => t()("Superseded")],
+                      );
+                      append($$anchor6, text_7);
+                    };
+                    if_block(node_6, ($$render) => {
+                      if (get(tick2).superseded) $$render(consequent_2);
+                    });
+                  }
+                  reset(li);
+                  template_effect(
+                    ($0, $1) => {
+                      set_value(li, get(tick2).tick);
+                      set_text(text_6, `${$0 ?? ""} \xB7 ${$1 ?? ""} `);
+                    },
+                    [
+                      () =>
+                        stamp(
+                          get(tick2).time,
+                          $$props.plan.timezone,
+                          $$props.locale,
+                        ),
+                      () =>
+                        get(tick2)
+                          .action.entities.map(
+                            (entity) => entityNames()[entity] || entity,
+                          )
+                          .join(", "),
+                    ],
+                  );
+                  append($$anchor5, li);
+                },
+              );
+              reset(ol);
+              reset(details_1);
+              template_effect(
+                ($0, $1, $2, $3, $4, $5, $6, $7) => {
+                  set_text(
+                    text_4,
+                    `${$0 ?? ""} \xB7 ${$1 ?? ""} \xB7 ${get(transition2).count ?? ""}
+              ${$2 ?? ""}`,
+                  );
+                  set_text(
+                    text_5,
+                    `${$3 ?? ""}\u2013${$4 ?? ""}
+              \xB7 ${$5 ?? ""}: ${get(transition2).period ?? ""}s \xB7 ${$6 ?? ""}: ${$7 ?? ""}s`,
+                  );
+                },
+                [
+                  () => eventLabel(get(transition2).events[0]),
+                  () => t()("Turn-on transition"),
+                  () => t()("entities"),
+                  () =>
+                    stamp(
+                      get(transition2).start,
+                      $$props.plan.timezone,
+                      $$props.locale,
+                    ),
+                  () =>
+                    stamp(
+                      get(transition2).end,
+                      $$props.plan.timezone,
+                      $$props.locale,
+                    ),
+                  () => t()("Period"),
+                  () => t()("Tick interval"),
+                  () => Number(get(transition2).interval.toFixed(3)),
+                ],
+              );
+              append($$anchor4, details_1);
+            },
+          );
+          var input = sibling(node_5, 2);
           var div = sibling(input, 2);
           var div_1 = child(div);
           var table = child(div_1);
           var thead = child(table);
           var tr = child(thead);
-          var node_5 = child(tr);
+          var node_7 = child(tr);
           each(
-            node_5,
+            node_7,
             16,
             () => ["Planned time", "Source", "Action", "Targets", "Settings"],
             index,
             ($$anchor4, label) => {
-              var th = root_111();
-              var text_4 = only_child(th, true);
-              template_effect(($0) => set_text(text_4, $0), [() => t()(label)]);
+              var th = root_38();
+              var text_8 = only_child(th, true);
+              template_effect(($0) => set_text(text_8, $0), [() => t()(label)]);
               append($$anchor4, th);
             },
           );
-          var node_6 = sibling(node_5);
+          var node_8 = sibling(node_7);
           {
-            var consequent_2 = ($$anchor4) => {
-              var th_1 = root_111();
-              var text_5 = only_child(th_1, true);
+            var consequent_3 = ($$anchor4) => {
+              var th_1 = root_38();
+              var text_9 = only_child(th_1, true);
               template_effect(
-                ($0) => set_text(text_5, $0),
+                ($0) => set_text(text_9, $0),
                 [() => t()("Result")],
               );
               append($$anchor4, th_1);
             };
-            if_block(node_6, ($$render) => {
-              if (liveSession()) $$render(consequent_2);
+            if_block(node_8, ($$render) => {
+              if (liveSession()) $$render(consequent_3);
             });
           }
           reset(tr);
@@ -12785,11 +12999,11 @@ function Timeline($$anchor, $$props) {
               const live = user_derived(() =>
                 eventLiveResult(get(event2), liveSession()),
               );
-              var tr_1 = root_54();
+              var tr_1 = root_72();
               let classes;
-              var node_7 = child(tr_1);
+              var node_9 = child(tr_1);
               each(
-                node_7,
+                node_9,
                 17,
                 () => [
                   stamp(
@@ -12798,7 +13012,16 @@ function Timeline($$anchor, $$props) {
                     $$props.locale,
                   ),
                   `${eventLabel(get(event2))} \xB7 ${t()(get(event2).kind === "random_start" ? "Random start" : get(event2).kind === "random_end" ? "Random end" : get(event2).kind)}`,
-                  get(event2).action.action,
+                  `${get(event2).action.action}${
+                    get(event2).tick
+                      ? ` \xB7 ${t()("Tick {tick} of {count}")
+                          .replace("{tick}", String(get(event2).tick))
+                          .replace(
+                            "{count}",
+                            String(get(event2).tick_count),
+                          )} \xB7 ${get(event2).period_seconds}s`
+                      : ""
+                  }${get(event2).superseded ? ` \xB7 ${t()("Superseded")}` : ""}`,
                   get(event2).action.entities.join(", "),
                   Object.keys(get(event2).action.data || {}).length
                     ? JSON.stringify(get(event2).action.data)
@@ -12806,24 +13029,24 @@ function Timeline($$anchor, $$props) {
                 ],
                 index,
                 ($$anchor5, value) => {
-                  var td = root_29();
-                  var text_6 = only_child(td, true);
-                  template_effect(() => set_text(text_6, get(value)));
+                  var td = root_44();
+                  var text_10 = only_child(td, true);
+                  template_effect(() => set_text(text_10, get(value)));
                   append($$anchor5, td);
                 },
               );
-              var node_8 = sibling(node_7);
+              var node_10 = sibling(node_9);
               {
-                var consequent_5 = ($$anchor5) => {
-                  var td_1 = root_44();
-                  var node_9 = child(td_1);
+                var consequent_6 = ($$anchor5) => {
+                  var td_1 = root_64();
+                  var node_11 = child(td_1);
                   {
-                    var consequent_3 = ($$anchor6) => {
-                      var fragment_2 = root_37();
-                      var span = first_child(fragment_2);
-                      var text_7 = only_child(span, true);
+                    var consequent_4 = ($$anchor6) => {
+                      var fragment_3 = root_54();
+                      var span = first_child(fragment_3);
+                      var text_11 = only_child(span, true);
                       var div_2 = sibling(span, 2);
-                      var text_8 = only_child(div_2, true);
+                      var text_12 = only_child(div_2, true);
                       template_effect(
                         ($0) => {
                           set_class(
@@ -12835,31 +13058,31 @@ function Timeline($$anchor, $$props) {
                                 : "error",
                             ),
                           );
-                          set_text(text_7, $0);
-                          set_text(text_8, get(live).outcome.detail);
+                          set_text(text_11, $0);
+                          set_text(text_12, get(live).outcome.detail);
                         },
                         [() => t()(get(live).outcome.status)],
                       );
-                      append($$anchor6, fragment_2);
+                      append($$anchor6, fragment_3);
                     };
-                    var consequent_4 = ($$anchor6) => {
-                      var text_9 = text();
+                    var consequent_5 = ($$anchor6) => {
+                      var text_13 = text();
                       template_effect(
-                        ($0) => set_text(text_9, $0),
+                        ($0) => set_text(text_13, $0),
                         [() => t()("Next event")],
                       );
-                      append($$anchor6, text_9);
+                      append($$anchor6, text_13);
                     };
-                    if_block(node_9, ($$render) => {
-                      if (get(live)?.outcome) $$render(consequent_3);
-                      else if (get(live)?.current) $$render(consequent_4, 1);
+                    if_block(node_11, ($$render) => {
+                      if (get(live)?.outcome) $$render(consequent_4);
+                      else if (get(live)?.current) $$render(consequent_5, 1);
                     });
                   }
                   reset(td_1);
                   append($$anchor5, td_1);
                 };
-                if_block(node_8, ($$render) => {
-                  if (liveSession()) $$render(consequent_5);
+                if_block(node_10, ($$render) => {
+                  if (liveSession()) $$render(consequent_6);
                 });
               }
               reset(tr_1);
@@ -12882,11 +13105,11 @@ function Timeline($$anchor, $$props) {
           reset(div_1);
           var div_3 = sibling(div_1, 2);
           var button = child(div_3);
-          var text_10 = only_child(button, true);
+          var text_14 = only_child(button, true);
           var span_1 = sibling(button, 2);
-          var text_11 = only_child(span_1);
+          var text_15 = only_child(span_1);
           var button_1 = sibling(span_1, 2);
-          var text_12 = only_child(button_1, true);
+          var text_16 = only_child(button_1, true);
           reset(div_3);
           reset(div);
           reset(details);
@@ -12903,15 +13126,15 @@ function Timeline($$anchor, $$props) {
               set_attribute2(input, "placeholder", $5);
               set_attribute2(input, "aria-label", $6);
               button.disabled = get(currentPage) === 0;
-              set_text(text_10, $7);
+              set_text(text_14, $7);
               set_text(
-                text_11,
+                text_15,
                 `${get(filtered).length ?? ""}
               ${$8 ?? ""} \xB7 ${get(currentPage) + 1}/${$9 ?? ""}`,
               );
               button_1.disabled =
                 (get(currentPage) + 1) * 50 >= get(filtered).length;
-              set_text(text_12, $10);
+              set_text(text_16, $10);
             },
             [
               () => t()("Event details"),
@@ -12936,46 +13159,46 @@ function Timeline($$anchor, $$props) {
           append($$anchor3, details);
         };
         if_block(node_4, ($$render) => {
-          if ($$props.plan.events.length > 0) $$render(consequent_6);
+          if ($$props.plan.events.length > 0) $$render(consequent_7);
         });
       }
-      var node_10 = sibling(node_4, 2);
+      var node_12 = sibling(node_4, 2);
       each(
-        node_10,
+        node_12,
         17,
         () => $$props.plan.issues.filter((issue) => issue.severity !== "info"),
         index,
         ($$anchor3, issue) => {
-          var p_1 = root_72();
-          var text_13 = only_child(p_1);
+          var p_2 = root_9();
+          var text_17 = only_child(p_2);
           template_effect(() => {
             set_class(
-              p_1,
+              p_2,
               1,
               clsx2(get(issue).severity === "warning" ? "hint" : "error"),
             );
             set_text(
-              text_13,
+              text_17,
               `${get(issue).code ?? ""}: ${get(issue).message ?? ""}`,
             );
           });
-          append($$anchor3, p_1);
+          append($$anchor3, p_2);
         },
       );
       append($$anchor2, fragment_1);
     };
-    var consequent_8 = ($$anchor2) => {
-      var p_2 = root_9();
-      var text_14 = only_child(p_2, true);
+    var consequent_9 = ($$anchor2) => {
+      var p_3 = root_11();
+      var text_18 = only_child(p_3, true);
       template_effect(
-        ($0) => set_text(text_14, $0),
+        ($0) => set_text(text_18, $0),
         [() => t()("Loading schedule\u2026")],
       );
-      append($$anchor2, p_2);
+      append($$anchor2, p_3);
     };
     if_block(node_2, ($$render) => {
-      if ($$props.plan) $$render(consequent_7);
-      else if (showLoading()) $$render(consequent_8, 1);
+      if ($$props.plan) $$render(consequent_8);
+      else if (showLoading()) $$render(consequent_9, 1);
     });
   }
   reset(section);
@@ -12997,11 +13220,11 @@ var root_210 = from_html(
   `<button type="button" class="primary svelte-100n2ef"> </button> <!> <button type="button" class="svelte-100n2ef"> </button>`,
   1,
 );
-var root_38 = from_html(`<div class="live-actions svelte-100n2ef"><!></div>`);
+var root_39 = from_html(`<div class="live-actions svelte-100n2ef"><!></div>`);
 var root_45 = from_html(`<p class="svelte-100n2ef"> </p>`);
 var root_55 = from_html(`<p class="error svelte-100n2ef"> </p>`);
 var root_65 = from_html(`<p class="hint svelte-100n2ef"> </p>`);
-var root_73 = from_html(`<p class="call svelte-100n2ef"> </p>`);
+var root_73 = from_html(`<p class="call svelte-100n2ef"> <!></p>`);
 var root_82 = from_html(
   `<p class="svelte-100n2ef"><strong> </strong></p> <!>`,
   1,
@@ -13011,7 +13234,7 @@ var root_92 = from_html(
   1,
 );
 var root_102 = from_html(`<p role="status" class="hint svelte-100n2ef"> </p>`);
-var root_11 = from_html(
+var root_113 = from_html(
   `<!> <section class="live-card svelte-100n2ef"><h2 class="svelte-100n2ef"> </h2> <p class="svelte-100n2ef"><strong> </strong></p> <p class="hint svelte-100n2ef"> </p> <!> <!></section> <!>`,
   1,
 );
@@ -13023,7 +13246,7 @@ function LivePreviewControls($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css5);
   const actionControls = ($$anchor2) => {
-    var div = root_38();
+    var div = root_39();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
@@ -13142,7 +13365,7 @@ function LivePreviewControls($$anchor, $$props) {
       (outcome) => outcome.group_id === get(session)?.last_group_id,
     ),
   );
-  var fragment_2 = root_11();
+  var fragment_2 = root_113();
   var node_2 = first_child(fragment_2);
   {
     var consequent_2 = ($$anchor2) => {
@@ -13163,7 +13386,7 @@ function LivePreviewControls($$anchor, $$props) {
   var text_7 = only_child(p_1, true);
   var node_3 = sibling(p_1, 2);
   {
-    var consequent_9 = ($$anchor2) => {
+    var consequent_10 = ($$anchor2) => {
       var fragment_4 = root_92();
       var div_1 = first_child(fragment_4);
       var strong_1 = child(div_1);
@@ -13265,7 +13488,7 @@ function LivePreviewControls($$anchor, $$props) {
       }
       var node_9 = sibling(node_8, 2);
       {
-        var consequent_8 = ($$anchor3) => {
+        var consequent_9 = ($$anchor3) => {
           var fragment_5 = root_82();
           var p_8 = first_child(fragment_5);
           var strong_2 = child(p_8);
@@ -13279,12 +13502,32 @@ function LivePreviewControls($$anchor, $$props) {
             index,
             ($$anchor4, call) => {
               var p_9 = root_73();
-              var text_16 = only_child(p_9);
+              var text_16 = child(p_9);
+              var node_11 = sibling(text_16);
+              {
+                var consequent_8 = ($$anchor5) => {
+                  var text_17 = text();
+                  template_effect(
+                    ($0) => set_text(text_17, `\xB7 ${$0 ?? ""}`),
+                    [
+                      () =>
+                        get(t)("Tick {tick} of {count}")
+                          .replace("{tick}", String(get(call).tick))
+                          .replace("{count}", String(get(call).tick_count)),
+                    ],
+                  );
+                  append($$anchor5, text_17);
+                };
+                if_block(node_11, ($$render) => {
+                  if (get(call).tick) $$render(consequent_8);
+                });
+              }
+              reset(p_9);
               template_effect(
                 ($0) =>
                   set_text(
                     text_16,
-                    `${get(call).action.action ?? ""} \xB7 ${$0 ?? ""}`,
+                    `${get(call).action.action ?? ""} \xB7 ${$0 ?? ""} `,
                   ),
                 [() => get(call).action.entities.join(", ")],
               );
@@ -13302,12 +13545,12 @@ function LivePreviewControls($$anchor, $$props) {
           append($$anchor3, fragment_5);
         };
         if_block(node_9, ($$render) => {
-          if (get(session).next_group && get(running)) $$render(consequent_8);
+          if (get(session).next_group && get(running)) $$render(consequent_9);
         });
       }
-      var node_11 = sibling(node_9, 2);
+      var node_12 = sibling(node_9, 2);
       each(
-        node_11,
+        node_12,
         17,
         () =>
           get(currentOutcomes).filter(
@@ -13316,10 +13559,10 @@ function LivePreviewControls($$anchor, $$props) {
         index,
         ($$anchor3, outcome) => {
           var p_10 = root_55();
-          var text_17 = only_child(p_10);
+          var text_18 = only_child(p_10);
           template_effect(() =>
             set_text(
-              text_17,
+              text_18,
               `${(get(outcome).action?.action || "") ?? ""}: ${get(outcome).detail ?? ""}`,
             ),
           );
@@ -13358,9 +13601,9 @@ function LivePreviewControls($$anchor, $$props) {
     };
     var alternate_1 = ($$anchor2) => {
       var p_11 = root_65();
-      var text_18 = only_child(p_11, true);
+      var text_19 = only_child(p_11, true);
       template_effect(
-        ($0) => set_text(text_18, $0),
+        ($0) => set_text(text_19, $0),
         [
           () =>
             get(t)(
@@ -13371,33 +13614,33 @@ function LivePreviewControls($$anchor, $$props) {
       append($$anchor2, p_11);
     };
     if_block(node_3, ($$render) => {
-      if (get(session)) $$render(consequent_9);
+      if (get(session)) $$render(consequent_10);
       else $$render(alternate_1, -1);
     });
   }
-  var node_12 = sibling(node_3, 2);
+  var node_13 = sibling(node_3, 2);
   {
-    var consequent_10 = ($$anchor2) => {
+    var consequent_11 = ($$anchor2) => {
       var p_12 = root_102();
-      var text_19 = only_child(p_12, true);
+      var text_20 = only_child(p_12, true);
       template_effect(
-        ($0) => set_text(text_19, $0),
+        ($0) => set_text(text_20, $0),
         [() => get(t)("Recovering live preview\u2026")],
       );
       append($$anchor2, p_12);
     };
-    if_block(node_12, ($$render) => {
-      if (!$$props.panel.liveReady) $$render(consequent_10);
+    if_block(node_13, ($$render) => {
+      if (!$$props.panel.liveReady) $$render(consequent_11);
     });
   }
   reset(section);
-  var node_13 = sibling(section, 2);
+  var node_14 = sibling(section, 2);
   {
-    var consequent_11 = ($$anchor2) => {
+    var consequent_12 = ($$anchor2) => {
       actionControls($$anchor2);
     };
-    if_block(node_13, ($$render) => {
-      if (!get(session)) $$render(consequent_11);
+    if_block(node_14, ($$render) => {
+      if (!get(session)) $$render(consequent_12);
     });
   }
   template_effect(
@@ -13426,7 +13669,7 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/PreviewView.svelte
 var root16 = from_html(`<span class="hint" role="status"> </span>`);
-var root_113 = from_html(
+var root_114 = from_html(
   `<div class="schedule-heading svelte-5w63kc"><h2 aria-live="polite" class="svelte-5w63kc"> </h2> <!> <div class="day-navigation svelte-5w63kc" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-5w63kc"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
   2,
 );
@@ -13439,7 +13682,7 @@ function PreviewView($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css6);
   const dayHeading = ($$anchor2) => {
-    var div = root_113();
+    var div = root_114();
     var h2 = child(div);
     var text2 = only_child(h2, true);
     var node = sibling(h2, 2);
@@ -13867,7 +14110,7 @@ async function deleteRandom(panel) {
 
 // custom_components/occupied/frontend/DeleteRandomDialog.svelte
 var root18 = from_html(`<li> </li>`);
-var root_114 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
+var root_115 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
 var root_212 = from_html(
   `<dialog class="step-delete-dialog" aria-labelledby="random-delete-title"><h2 id="random-delete-title"> </h2> <p> </p> <!> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog>`,
 );
@@ -13894,7 +14137,7 @@ function DeleteRandomDialog($$anchor, $$props) {
   var node = sibling(p, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment = root_114();
+      var fragment = root_115();
       var p_1 = first_child(fragment);
       var text_2 = only_child(p_1);
       var ul = sibling(p_1, 2);
@@ -13976,7 +14219,7 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/AdvancedRandomSettings.svelte
 var root19 = from_html(`<button type="button"> </button>`);
-var root_115 = from_html(
+var root_116 = from_html(
   `<label class="step-weekday-option"><input type="checkbox"/><span> </span></label>`,
 );
 var root_213 = from_html(
@@ -14062,7 +14305,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
     () => days,
     index,
     ($$anchor2, day, index2) => {
-      var label_1 = root_115();
+      var label_1 = root_116();
       var input = child(label_1);
       remove_input_defaults(input);
       var span = sibling(input);
@@ -14158,7 +14401,7 @@ var root20 = from_html(
   `<div role="separator"></div> <button type="button" role="menuitem" tabindex="-1" class="danger"> </button>`,
   1,
 );
-var root_116 = from_html(
+var root_117 = from_html(
   `<div class="step-editor-actions"><button type="button" class="icon-button" aria-haspopup="menu" data-random-actions=""><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"></path></svg></button> <div class="step-actions-menu" popover="auto" role="menu" tabindex="-1"><button type="button" role="menuitem" tabindex="-1"> </button> <!></div></div> <!> <!>`,
   1,
 );
@@ -14223,7 +14466,7 @@ function RandomActions($$anchor, $$props) {
       closeMenu();
     }
   }
-  var fragment = root_116();
+  var fragment = root_117();
   event("resize", $window, positionMenu);
   event("scroll", $window, positionMenu);
   var div = first_child(fragment);
@@ -14592,7 +14835,7 @@ function randomExplanation(
 
 // custom_components/occupied/frontend/RandomEventEditor.svelte
 var root21 = from_html(`<button type="button" class="text-button"> </button>`);
-var root_117 = from_html(
+var root_118 = from_html(
   `<label class="same-entities svelte-e4ijcz"><input type="checkbox"/> </label>`,
 );
 var root_214 = from_html(
@@ -14892,7 +15135,7 @@ function RandomEventEditor($$anchor, $$props) {
   var node_11 = sibling(node_10, 2);
   {
     var consequent_2 = ($$anchor2) => {
-      var label = root_117();
+      var label = root_118();
       var input = child(label);
       remove_input_defaults(input);
       var text_7 = sibling(input, 1, true);
@@ -15018,9 +15261,9 @@ delegate(["click", "change"]);
 var root22 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-random=""> </button></section>`,
 );
-var root_118 = from_html(`<span class="step-status-badge"> </span>`);
+var root_119 = from_html(`<span class="step-status-badge"> </span>`);
 var root_215 = from_html(`<span class="step-row-time"> </span>`);
-var root_39 = from_html(
+var root_310 = from_html(
   `<div style="--depth:0"><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button> <div><!></div></div>`,
 );
 var root_46 = from_html(
@@ -15101,7 +15344,7 @@ function RandomView($$anchor, $$props) {
               ? $$props.panel.randomEditor?.form.enabled === false
               : get(entry).enabled === false,
           );
-          var div_1 = root_39();
+          var div_1 = root_310();
           let classes;
           var button_1 = child(div_1);
           let classes_1;
@@ -15112,7 +15355,7 @@ function RandomView($$anchor, $$props) {
           var node_1 = sibling(strong);
           {
             var consequent_1 = ($$anchor4) => {
-              var span_2 = root_118();
+              var span_2 = root_119();
               var text_5 = only_child(span_2, true);
               template_effect(
                 ($0) => set_text(text_5, $0),
@@ -15263,9 +15506,9 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/App.svelte
 var root23 = from_html(`<button type="button"> </button>`);
-var root_119 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
+var root_120 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
 var root_216 = from_html(`<p> </p>`);
-var root_310 = from_html(`<p id="house"> </p>`);
+var root_311 = from_html(`<p id="house"> </p>`);
 var root_47 = from_html(`<option> </option>`);
 var root_56 = from_html(
   `<label for="instance-select"> </label> <select id="instance-select"></select>`,
@@ -15285,7 +15528,7 @@ function App($$anchor, $$props) {
   const $updates = () => store_get($$props.updates, "$updates", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   const toolbar = ($$anchor2) => {
-    var div = root_119();
+    var div = root_120();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
@@ -15408,7 +15651,7 @@ function App($$anchor, $$props) {
   var node_2 = child(div_1);
   {
     var consequent_2 = ($$anchor2) => {
-      var p_1 = root_310();
+      var p_1 = root_311();
       var text_4 = only_child(p_1, true);
       template_effect(
         ($0) => set_text(text_4, $0),
@@ -15417,7 +15660,7 @@ function App($$anchor, $$props) {
       append($$anchor2, p_1);
     };
     var consequent_3 = ($$anchor2) => {
-      var p_2 = root_310();
+      var p_2 = root_311();
       var text_5 = only_child(p_2, true);
       template_effect(() => set_text(text_5, get(controllerName)));
       append($$anchor2, p_2);

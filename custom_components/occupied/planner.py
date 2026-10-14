@@ -3,6 +3,7 @@
 import hashlib
 import json
 import random
+from bisect import bisect_right
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
@@ -22,7 +23,7 @@ from .validation import (
     validate_program,
 )
 
-PLANNER_VERSION = 9
+PLANNER_VERSION = 10
 
 
 class RandomStreams:
@@ -98,10 +99,24 @@ class PlanEvent:
     sequence: int = 0
     kind: str = "step"
     custom: bool = False
+    scheduled: bool = False
+    authored_at: datetime | None = None
+    configured_index: int = 0
+    tick: int = 0
+    tick_count: int = 0
+    period: float = 0
+    superseded: bool = False
 
     @property
     def group_id(self):
-        """One authored occurrence/phase, independent of resolved service batches."""
+        """One execution instant; staggered occurrences have one group per tick."""
+        return (
+            f"{self.occurrence_id}@{self.at.isoformat()}" if self.scheduled else self.occurrence_id
+        )
+
+    @property
+    def occurrence_id(self):
+        """The parent authored occurrence/phase, independent of ticks and service batches."""
         return self.id.rsplit(":", 1)[0]
 
     @property
@@ -129,6 +144,20 @@ class PlanEvent:
             "sequence": self.sequence,
             "custom": self.custom,
             "action": self.action.to_dict(),
+            **(
+                {
+                    "scheduled": True,
+                    "occurrence_id": self.occurrence_id,
+                    "authored_at": self.authored_at.isoformat(),
+                    "configured_index": self.configured_index,
+                    "tick": self.tick,
+                    "tick_count": self.tick_count,
+                    "period_seconds": self.period,
+                    "superseded": self.superseded,
+                }
+                if self.scheduled
+                else {}
+            ),
         }
 
 
@@ -151,6 +180,13 @@ class DailyPlan:
         groups = {}
         for event in self.events:
             groups.setdefault(event.group_id, []).append(event)
+        return {key: tuple(events) for key, events in groups.items()}
+
+    @cached_property
+    def occurrences(self):
+        groups = {}
+        for event in self.events:
+            groups.setdefault(event.occurrence_id, []).append(event)
         return {key: tuple(events) for key, events in groups.items()}
 
     @property
@@ -183,6 +219,79 @@ def occurrence_groups(plan):
     return tuple(sorted(plan.groups.values(), key=lambda events: events[0].order_key))
 
 
+def plan_actions(block, start, prefix, source_id, streams, *, sequence=None, kind="step"):
+    """One shuffle per authored action, followed by fixed, equally spaced ticks."""
+    events, offset, index = [], 0, 0
+    scheduled = block.stagger_span > 0
+    custom = block.actions is not None or block.action == "set_state"
+    for configured_index, configured in enumerate(block.configured_actions()):
+        authored = start + timedelta(seconds=offset)
+        resolved = list(enumerate(resolve_actions(configured), start=index))
+        index += len(resolved)
+        if configured.stagger.enabled:
+            # Canonical IDs survive permutation changes; only execution order is shuffled.
+            streams.rng("stagger", prefix, configured_index).shuffle(resolved)
+        count = len(resolved)
+        for position, (member_index, action) in enumerate(resolved):
+            tick = position + 1 if configured.stagger.enabled else 0
+            period = configured.stagger.period if tick else 0
+            at = authored + timedelta(seconds=period * tick / count if tick else 0)
+            events.append(
+                PlanEvent(
+                    f"{prefix}:{member_index}",
+                    at,
+                    source_id,
+                    action,
+                    member_index if sequence is None else sequence,
+                    kind,
+                    custom,
+                    scheduled,
+                    authored if scheduled else None,
+                    configured_index if scheduled else 0,
+                    tick,
+                    count if tick else 0,
+                    period,
+                )
+            )
+        if configured.stagger.enabled:
+            offset += configured.stagger.period
+    return events
+
+
+def supersede_ticks(events):
+    """A newer direct intent cancels older on ticks, including across source dates."""
+    events = tuple(events)
+    intents = {}
+    for event in events:
+        if event.action.action not in {
+            "light.turn_on",
+            "light.turn_off",
+            "switch.turn_on",
+            "switch.turn_off",
+        }:
+            continue
+        at = event.authored_at or event.at
+        for entity in event.action.targets:
+            intents.setdefault(entity, {}).setdefault(at, set()).add(event.occurrence_id)
+    times_by_entity = {entity: sorted(times) for entity, times in intents.items()}
+    result = []
+    for event in events:
+        superseded = event.superseded
+        if event.tick:
+            entity = event.action.targets[0]
+            times = times_by_entity[entity]
+            index = bisect_right(times, event.authored_at)
+            if index < len(times):
+                newer = times[index]
+                # The next action at this block's final tick still runs AFTER that
+                # tick. External intents at the boundary cancel the older tick.
+                superseded |= newer < event.at or (
+                    newer == event.at and intents[entity][newer] != {event.occurrence_id}
+                )
+        result.append(replace(event, superseded=superseded) if superseded else event)
+    return tuple(sorted(result, key=lambda event: event.order_key))
+
+
 def generate_plan(
     program: Program, simulation_date: date, seed, *, context=None, source_revision=None
 ):
@@ -212,17 +321,7 @@ def generate_plan(
         if start is None:
             continue
         times[key] = start
-        for index, action in enumerate(resolve_actions(step)):
-            events.append(
-                PlanEvent(
-                    f"{simulation_date}:step:{key}:{index}",
-                    start,
-                    key,
-                    action,
-                    index,
-                    custom=step.actions is not None or step.action == "set_state",
-                )
-            )
+        events.extend(plan_actions(step, start, f"{simulation_date}:step:{key}", key, streams))
     random_ends = {}
     for key in random_order(program):
         event = program.random[key]
@@ -294,7 +393,8 @@ def generate_plan(
                 Issue("random_window", "Window end must be after its start", path + ("end",))
             )
             continue
-        if event.min_duration > span:
+        end_span = event.off.stagger_span
+        if event.min_duration + end_span > span:
             issues.append(
                 Issue(
                     "random_window",
@@ -306,27 +406,28 @@ def generate_plan(
         random_ends[key] = end
         for occurrence in range(count):
             duration = streams.rng("random", key, occurrence, "duration").uniform(
-                event.min_duration, min(event.max_duration, span)
+                event.min_duration, min(event.max_duration, span - end_span)
             )
             at = start + timedelta(
-                seconds=streams.rng("random", key, occurrence, "time").uniform(0, span - duration)
+                seconds=streams.rng("random", key, occurrence, "time").uniform(
+                    0, span - duration - end_span
+                )
             )
             for phase, when, configured in (
                 ("start", at, event.on),
                 ("end", at + timedelta(seconds=duration), event.off),
             ):
-                for index, action in enumerate(resolve_actions(configured)):
-                    events.append(
-                        PlanEvent(
-                            f"{simulation_date}:random:{key}:{occurrence}:{phase}:{index}",
-                            when,
-                            key,
-                            action,
-                            occurrence * 2 + (phase == "end"),
-                            f"random_{phase}",
-                            configured.actions is not None or configured.action == "set_state",
-                        )
+                events.extend(
+                    plan_actions(
+                        configured,
+                        when,
+                        f"{simulation_date}:random:{key}:{occurrence}:{phase}",
+                        key,
+                        streams,
+                        sequence=occurrence * 2 + (phase == "end"),
+                        kind=f"random_{phase}",
                     )
+                )
     identity = {
         "program": behavior_hash(program),
         "timezone": day.zone.key,
@@ -342,7 +443,7 @@ def generate_plan(
         day.zone.key,
         day.start,
         day.end,
-        tuple(sorted(events, key=lambda e: e.order_key)),
+        supersede_ticks(events),
         times,
         tuple(issues),
     )
@@ -431,12 +532,7 @@ def preview_calendar_dates(program, dates, seed, *, context=None):
             (plan.simulation_date, plan)
             for plan in preview_dates(program, sources[index : index + 31], seed, context=context)
         )
-    events = tuple(
-        sorted(
-            (event for plan in plans.values() for event in plan.events),
-            key=lambda event: event.order_key,
-        )
-    )
+    events = supersede_ticks(event for plan in plans.values() for event in plan.events)
     return tuple(
         replace(
             plans[day],

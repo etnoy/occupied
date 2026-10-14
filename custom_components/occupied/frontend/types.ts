@@ -21,7 +21,12 @@ export interface Timing {
     end_offset?: string;
   };
 }
+export interface Stagger {
+  enabled?: boolean;
+  period?: string;
+}
 export interface Action {
+  stagger?: Stagger;
   action?: string;
   entities?: string[] | Record<string, Record<string, JsonValue>>;
   actions?: Action[];
@@ -67,6 +72,7 @@ export interface TimingForm {
   maxDuration?: string;
 }
 export interface ActionForm {
+  stagger?: Stagger;
   customYaml?: string;
   customActions?: Action[];
   customAccepted?: string;
@@ -235,6 +241,14 @@ export interface RuntimeSnapshot {
   live_preview?: LivePreviewSession | null;
 }
 export interface PlannedEvent {
+  scheduled?: boolean;
+  occurrence_id?: string;
+  authored_at?: string;
+  configured_index?: number;
+  tick?: number;
+  tick_count?: number;
+  period_seconds?: number;
+  superseded?: boolean;
   id?: string;
   group_id?: string;
   source_date?: string;

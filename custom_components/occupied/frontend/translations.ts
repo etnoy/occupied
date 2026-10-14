@@ -1,5 +1,14 @@
 // English is the complete fallback; HA's selected language supplies localized UI chrome.
 const sv: Record<string, string> = {
+  "Turn on one entity at a time": "Tänd en enhet i taget",
+  "One entity turns on at each evenly spaced tick over {period}. The order changes for each transition. Change the period in Custom YAML.":
+    "En enhet tänds vid varje jämnt fördelat steg under {period}. Ordningen ändras för varje övergång. Ändra perioden i Egen YAML.",
+  "Tick {tick} of {count}": "Steg {tick} av {count}",
+  Superseded: "Ersatt",
+  "Turn-on transition": "Tändningsövergång",
+  Period: "Period",
+  "Tick interval": "Stegintervall",
+
   "Custom YAML": "Egen YAML",
   "Action YAML": "Åtgärds-YAML",
   actions: "åtgärder",
