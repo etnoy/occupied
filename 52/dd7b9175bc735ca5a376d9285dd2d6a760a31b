@@ -1,0 +1,211 @@
+MANIFEST.in
+  s_4301998ea99424::t_e1e25a0a75a88a 10-11
+README.md
+  s_4301998ea99424::t_f07733608ba293 95,97,99
+custom_components/occupied/__init__.py
+  s_d5e9913b029080::t_69cad0856b7596 1,5-7
+custom_components/occupied/frontend/README.md
+  s_4301998ea99424::t_675a36c1d7c44f 1-39
+custom_components/occupied/frontend/dist/lib/actions/dom.js
+  s_4301998ea99424::t_2ca81b2c0f37e8 1
+custom_components/occupied/frontend/dist/lib/controllers/preview-controller.js
+  s_4301998ea99424::t_3774a3533636c5 1-4
+custom_components/occupied/frontend/dist/lib/controllers/random-editor-controller.js
+  s_4301998ea99424::t_a68a2a46c39a3a 1-8
+custom_components/occupied/frontend/dist/lib/controllers/step-editor-controller.js
+  s_4301998ea99424::t_7916515fed5c89 1-4
+custom_components/occupied/frontend/dist/lib/controllers/steps.js
+  s_4301998ea99424::t_8a53f75ad69fa2 1-2
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_4301998ea99424::t_12741e117ca095 1
+custom_components/occupied/frontend/dist/lib/models/model.js
+  s_4301998ea99424::t_cf5ce3b2c20626 1
+custom_components/occupied/frontend/dist/lib/models/random-model.js
+  s_4301998ea99424::t_30a607f3c146f2 1-2,11
+custom_components/occupied/frontend/dist/lib/models/step-model.js
+  s_4301998ea99424::t_e0474b298cf3ff 1-2,8,17,22-23
+custom_components/occupied/frontend/dist/lib/services/ha-controls.js
+  s_4301998ea99424::t_6328075b4bf423 1
+custom_components/occupied/frontend/dist/lib/services/subscription.js
+  s_4301998ea99424::t_4ace67d557703b 1
+custom_components/occupied/frontend/dist/lib/types.js
+  s_4301998ea99424::t_6665f186b93ed6 1
+custom_components/occupied/frontend/dist/lib/utils/action-kind.js
+  s_4301998ea99424::t_ec546f16a2cd29 1-2
+custom_components/occupied/frontend/dist/lib/utils/cover.js
+  s_4301998ea99424::t_7c275851426d78 1
+custom_components/occupied/frontend/dist/lib/utils/custom-action.js
+  s_4301998ea99424::t_9432ae96cc10e2 1
+custom_components/occupied/frontend/dist/lib/utils/live-preview.js
+  s_4301998ea99424::t_590e0c9b568fc3 1
+custom_components/occupied/frontend/dist/lib/utils/random-explanation.js
+  s_4301998ea99424::t_e1621f94e4a3c5 1-2,9-10
+custom_components/occupied/frontend/dist/lib/utils/stagger.js
+  s_4301998ea99424::t_fcecfde4f43e18 1
+custom_components/occupied/frontend/dist/lib/utils/step-issues.js
+  s_4301998ea99424::t_d17825466fbb42 1
+custom_components/occupied/frontend/dist/lib/utils/time-format.js
+  s_4301998ea99424::t_f0422c4022396e 1
+custom_components/occupied/frontend/dist/lib/utils/timeline.js
+  s_4301998ea99424::t_786534447f0118 1-2
+custom_components/occupied/frontend/dist/lib/utils/util.js
+  s_4301998ea99424::t_4459b963a509ce 1-2,4
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_4301998ea99424::t_a7271daf4e83c6 1-2,883,989,1091,1386-1387,8395,8457,8593,8658,9078,9091,9207,9293,9322,9450,9453,9456-9457,9539,9773,10040,10073,10310,10433,10627,11130,11261,11327,11340-11341,11440,11632,11790,12076-12077,12079,12083-12084,12143,12163,12224,12273,12465,12474-12475,12594,12631,12709,12729-12730,13056,13174,13176,13180,13183,13186-13190,13192,13196,13199,13201,13205-13206,13604,13607,13612-13613,13815,13869,14043,14151,14417,14609,14833,14836,14839,14842-14843,15203,15259,15501,16036,16314,16365,16489
+custom_components/occupied/frontend/src/App.svelte
+  s_4301998ea99424::t_eda1390beb8852 2,4-7,9-15
+custom_components/occupied/frontend/src/lib/components/preview/LivePreviewControls.svelte
+  s_4301998ea99424::t_65b8d7c553a881 2-7
+custom_components/occupied/frontend/src/lib/components/preview/PreviewStateGraph.svelte
+  s_4301998ea99424::t_4a66cee8a12fb9 3-9
+custom_components/occupied/frontend/src/lib/components/preview/PreviewView.svelte
+  s_4301998ea99424::t_c0acdedc146649 2,6-8
+custom_components/occupied/frontend/src/lib/components/preview/Timeline.svelte
+  s_4301998ea99424::t_d853090f09c032 2,4,6-17
+custom_components/occupied/frontend/src/lib/components/random/AdvancedRandomSettings.svelte
+  s_4301998ea99424::t_7f170c9edff73f 3-6,12-13
+custom_components/occupied/frontend/src/lib/components/random/DeleteRandomDialog.svelte
+  s_4301998ea99424::t_6d9ecebe6f5f13 3-6
+custom_components/occupied/frontend/src/lib/components/random/RandomActions.svelte
+  s_4301998ea99424::t_4d06fb20a6cbe1 3-4
+custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
+  s_4301998ea99424::t_f09ce7170f481d 3-6,8-11
+custom_components/occupied/frontend/src/lib/components/random/RandomView.svelte
+  s_4301998ea99424::t_4e7d1fbdaa1f7e 2-6,12
+custom_components/occupied/frontend/src/lib/components/settings/SettingsView.svelte
+  s_4301998ea99424::t_c824eaa1359bac 2,4-5
+custom_components/occupied/frontend/src/lib/components/shared/ActionEditor.svelte
+  s_4301998ea99424::t_2b80046b98aecd 2-5,9-10
+custom_components/occupied/frontend/src/lib/components/shared/EditorField.svelte
+  s_4301998ea99424::t_ba5aad00124a39 3-7
+custom_components/occupied/frontend/src/lib/components/shared/EntitiesEditor.svelte
+  s_4301998ea99424::t_ddd9d534257ec5 2-3,5-7
+custom_components/occupied/frontend/src/lib/components/shared/FieldError.svelte
+  s_4301998ea99424::t_937a76d11bc8af 2
+custom_components/occupied/frontend/src/lib/components/shared/SourcePicker.svelte
+  s_4301998ea99424::t_a4b7bcd3d33f11 8-10
+custom_components/occupied/frontend/src/lib/components/shared/StaggerSettings.svelte
+  s_4301998ea99424::t_b84a233dcb976f 2-3
+custom_components/occupied/frontend/src/lib/components/shared/TimingEditor.svelte
+  s_4301998ea99424::t_d16872847259dd 2-3,8-10
+custom_components/occupied/frontend/src/lib/components/shared/UnsavedStepDialog.svelte
+  s_4301998ea99424::t_a12180d2268eb9 2
+custom_components/occupied/frontend/src/lib/components/steps/AdvancedStepSettings.svelte
+  s_4301998ea99424::t_8a0f12fa732db6 3-6,12-13
+custom_components/occupied/frontend/src/lib/components/steps/DeleteStepDialog.svelte
+  s_4301998ea99424::t_623c68f2d5f765 2-5,7
+custom_components/occupied/frontend/src/lib/components/steps/StepActions.svelte
+  s_4301998ea99424::t_a1550c667cf50e 3-6
+custom_components/occupied/frontend/src/lib/components/steps/StepEditor.svelte
+  s_4301998ea99424::t_9744eb9563aac1 2,4,6-7,9-11
+custom_components/occupied/frontend/src/lib/components/steps/StepsView.svelte
+  s_4301998ea99424::t_dfd7592a16534b 2-3,5-13
+custom_components/occupied/frontend/src/lib/controllers/preview-controller.ts
+  s_4301998ea99424::t_37fb1b7e81ba00 1-5
+custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts
+  s_4301998ea99424::t_ac360323c40766 1-2,10-16
+custom_components/occupied/frontend/src/lib/controllers/step-editor-controller.ts
+  s_4301998ea99424::t_0261fe65e08a6d 1-4
+custom_components/occupied/frontend/src/lib/controllers/steps.ts
+  s_4301998ea99424::t_98cf02dc80a177 1-3
+custom_components/occupied/frontend/src/lib/models/model.ts
+  s_4301998ea99424::t_54c02cc254722f 1
+custom_components/occupied/frontend/src/lib/models/random-model.ts
+  s_4301998ea99424::t_cc0a6a448858a8 9-10,19
+custom_components/occupied/frontend/src/lib/models/step-model.ts
+  s_4301998ea99424::t_7b6d3919411811 1,15,21,30,35-36
+custom_components/occupied/frontend/src/lib/services/subscription.ts
+  s_4301998ea99424::t_6f876fc3c59ed2 1
+custom_components/occupied/frontend/src/lib/types.ts
+  s_4301998ea99424::t_f56e3011d7f781 446
+custom_components/occupied/frontend/src/lib/utils/action-kind.ts
+  s_4301998ea99424::t_92c5b3f60ab5e6 1-2
+custom_components/occupied/frontend/src/lib/utils/cover.ts
+  s_4301998ea99424::t_dbb3a87801bba5 1
+custom_components/occupied/frontend/src/lib/utils/custom-action.ts
+  s_4301998ea99424::t_10fc249ff222e9 1-2
+custom_components/occupied/frontend/src/lib/utils/live-preview.ts
+  s_4301998ea99424::t_a06b8e8c87539b 1
+custom_components/occupied/frontend/src/lib/utils/random-explanation.ts
+  s_4301998ea99424::t_9b98d437a7b170 1,8,16-17
+custom_components/occupied/frontend/src/lib/utils/stagger.ts
+  s_4301998ea99424::t_b6bbe7493d522b 1
+custom_components/occupied/frontend/src/lib/utils/step-issues.ts
+  s_4301998ea99424::t_10e42e12d2f9c9 1
+custom_components/occupied/frontend/src/lib/utils/timeline.ts
+  s_4301998ea99424::t_77f8a2476534f0 1-2
+custom_components/occupied/frontend/src/lib/utils/util.ts
+  s_4301998ea99424::t_70febf9e36ce40 1,10,13
+docs/yaml-redesign-plan.md
+  s_4301998ea99424::t_4410971b529404 123-126,128-129
+eslint.config.mjs
+  s_4301998ea99424::t_ae471dac61bcd3 14-15,18,157,161
+package.json
+  s_4301998ea99424::t_f2d6d78f4fdd10 9,13,15
+pyproject.toml
+  s_4301998ea99424::t_17ee283662a941 27
+scripts/build-frontend.ts
+  s_4301998ea99424::t_91c43c4530ebdb 4,38,47-52,60-68,70,73-74,125,139
+scripts/check_artifacts.py
+  s_4301998ea99424::t_fcc7126a252c9d 17,38-41,44
+scripts/check_release.py
+  s_4301998ea99424::t_eb98938f7ebed3 32-36
+tests/frontend/src/covers.test.ts
+  s_4301998ea99424::t_505297357459fc 10-11,17,21-28
+tests/frontend/src/custom-actions.test.ts
+  s_4301998ea99424::t_92478907238f15 9,15-16,21,26-27
+tests/frontend/src/instances.test.ts
+  s_4301998ea99424::t_89134a53d306ac 10-14,19
+tests/frontend/src/lint.test.ts
+  s_4301998ea99424::t_5b7bc95904127c 10
+tests/frontend/src/live-preview.test.ts
+  s_4301998ea99424::t_4fa3be6b042f3c 1,10-11
+tests/frontend/src/model.test.ts
+  s_4301998ea99424::t_f58aa4e5e0e88f 1,4,11,20-25
+tests/frontend/src/random-explanation.test.ts
+  s_4301998ea99424::t_84ba5358b875da 3-9
+tests/frontend/src/random.test.ts
+  s_4301998ea99424::t_59d1fd9068129a 1,4,12-14,19
+tests/frontend/src/step-issues.test.ts
+  s_4301998ea99424::t_e0d7b04baf0931 3-4
+tests/frontend/src/subscription.test.ts
+  s_4301998ea99424::t_8fe605cc6596d7 3-4
+tests/frontend/src/timeline.test.ts
+  s_4301998ea99424::t_78d52ac8d16f9c 1,10-15
+tests/frontend/src/translations.test.ts
+  s_4301998ea99424::t_ef579bbcbc06fc 8,13-15
+tests/test_editor_api.py
+  s_4301998ea99424::t_4298000f9c1bbf 479
+tests/test_imports.py
+  s_4301998ea99424::t_0dbb173215b7f8 1-59
+tests/test_panel.py
+  s_4301998ea99424::t_7f6956fa9011ee 60-64
+tests/test_program_fixtures.py
+  s_4301998ea99424::t_6e077302826c74 25
+tsconfig.json
+  s_4301998ea99424::t_9094081baeea8d 21,25-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "52dd7b9175bc735ca5a376d9285dd2d6a760a31b",
+  "prompts": {},
+  "sessions": {
+    "s_4301998ea99424": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13bd5-7056-7671-9d88-d77410b6b17a",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_d5e9913b029080": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13bd4-7588-7be3-8467-99a11f0946ce",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
