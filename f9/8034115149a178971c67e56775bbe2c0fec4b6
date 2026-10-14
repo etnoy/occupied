@@ -1,0 +1,107 @@
+README.md
+  s_b3dbf8f8d7ae60::t_7c6728db1663fc 13,37-38
+custom_components/occupied/actions.py
+  s_050efe4e147e34::t_bafb238750a188 29-30
+custom_components/occupied/covers.py
+  s_050efe4e147e34::t_6c8c6af35687f6 1-91
+custom_components/occupied/engine_daily.py
+  s_050efe4e147e34::t_09238509c3512b 317-318,541-542
+custom_components/occupied/frontend/AdvancedRandomSettings.svelte
+  s_ac1210bd39979d::t_8ca5b3d5bf441e 1-109
+custom_components/occupied/frontend/DeleteRandomDialog.svelte
+  s_ac1210bd39979d::t_f4e338bc6e3e1e 5-6,10-16,33-39,47
+custom_components/occupied/frontend/RandomActions.svelte
+  s_ac1210bd39979d::t_8f294014767a0c 1-162
+custom_components/occupied/frontend/RandomEventEditor.svelte
+  s_b3dbf8f8d7ae60::t_54131ab69b46c8 2,7,10-11,19-36,64,73-77,80-96,99-151,171-173,175,181,189,194-196,203-204,212,218,229-231,234
+custom_components/occupied/frontend/RandomView.svelte
+  s_ac1210bd39979d::t_bf4f97d7d55dbc 3,6-11,19-26,88,102-103,107-111
+custom_components/occupied/frontend/StepsView.svelte
+  s_0a854c80cb4d2e::t_2676d94da34ca1 28-33
+custom_components/occupied/frontend/TimingEditor.svelte
+  s_ac1210bd39979d::t_74aab401e5dd24 9,18-22,31-32,44,64,77-80,131-150,169-174,185-189,240-245,254-260,263-268
+custom_components/occupied/frontend/model.ts
+  s_ac1210bd39979d::t_c1daee56a6e8e7 103-126
+custom_components/occupied/frontend/occupied-panel.ts
+  s_ac1210bd39979d::t_d4fb76254b482f 953-955,957-963,970-972
+custom_components/occupied/frontend/random-model.ts
+  s_b3dbf8f8d7ae60::t_e3b5a19f44a998 6,20-30,42,53,62-63,67-68,105-109,133-147,153-163,188-209,233-236
+custom_components/occupied/frontend/types.ts
+  s_050efe4e147e34::t_d57fa3d342db40 13,16,42,65-66,74-75,109-110,142
+custom_components/occupied/frontend/util.ts
+  s_ac1210bd39979d::t_91e6cd19525624 89-112,119-120,127-130,132,138-141,234,239,244,253-273,300-304,311-313,332
+custom_components/occupied/models.py
+  s_b3dbf8f8d7ae60::t_2e7d737a5f6c5d 17,109-115,120-126,131-148,154,164-166,168,189-207,215,220-227,234,238-245,288-303,309,313-330,398
+custom_components/occupied/planner.py
+  s_b3dbf8f8d7ae60::t_ce95f6b46ba9cc 19,24,161-163,175-185,187-192,194-206,241-242,285,302-317
+custom_components/occupied/preview.py
+  s_050efe4e147e34::t_8a3dc06c32ec28 6,51-53
+custom_components/occupied/runtime_planning.py
+  s_b3dbf8f8d7ae60::t_3cd7794a5c02ba 7,29-32,34-42,45-53,55,57-58,79,81-87
+custom_components/occupied/validation.py
+  s_ac1210bd39979d::t_943fd64a444393 107-148,210-219,221-228,289,331-335
+examples/random.yaml
+  s_778e0f565bb545::t_b2fd1b1b9d9538 8
+schema/occupied.schema.json
+  s_b3dbf8f8d7ae60::t_521034a8d2ccca 63-85,155-164,166,199-203,230-234,261-265,279-309,326-338,489-493,515-519,533-558,583-593,598-625
+tests/frontend/src/instances.test.ts
+  s_ac1210bd39979d::t_9b3e31732394eb 564,567,577-579,628-638
+tests/frontend/src/random-explanation.test.ts
+  s_b3dbf8f8d7ae60::t_e9de992286b5ff 1-217
+tests/frontend/src/random.test.ts
+  s_b3dbf8f8d7ae60::t_c19be5f1f26c4f 10,13-18,53-75,116-287,311,315
+tests/test_covers.py
+  s_050efe4e147e34::t_84f21befadecd4 1-127
+tests/test_editor_api.py
+  s_b3dbf8f8d7ae60::t_997515b9812f5e 81,83,91,113,127-128,130-133,161-204
+tests/test_random.py
+  s_b3dbf8f8d7ae60::t_9ad9f96457032a 10-15,56-179,218-422,451-501,506
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f98034115149a178971c67e56775bbe2c0fec4b6",
+  "prompts": {},
+  "sessions": {
+    "s_050efe4e147e34": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1399a-ec62-74a3-b087-fc1c62dd8653",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_0a854c80cb4d2e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a138eb-54b6-7342-9d46-de3b9141d743",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_778e0f565bb545": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a138e8-0848-7f83-9ff9-3ccc40438f63",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_ac1210bd39979d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a138e6-ad80-7932-8129-de4975382b46",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_b3dbf8f8d7ae60": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1399b-5882-7321-81c1-3157acda3304",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
