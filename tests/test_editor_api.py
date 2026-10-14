@@ -584,3 +584,58 @@ async def test_shipped_editor_add_and_edit_validate_save_and_reopen(
             assert reopened["program"]["steps"][step_id] == step
     assert len(reopened["program"]["steps"]) == len(document["program"]["steps"]) + (not editing)
     assert not devices
+
+
+async def test_custom_yaml_parse_save_and_export_preserve_actions(
+    hass, editor_entry, devices, program_dict, hass_ws_client
+):
+    assert await hass.config_entries.async_setup(editor_entry.entry_id)
+    client = await hass_ws_client(hass)
+    text = """
+- action: set_state
+  entities:
+    light.a:
+      state: "on"
+      brightness: 24
+- action: cover.set_cover_position
+  entities: [cover.blind]
+  data: {position: 40}
+"""
+    parsed = (await request(client, "occupied/action_yaml", editor_entry, yaml=text))["result"]
+    assert parsed["valid"]
+    program_dict["steps"]["custom"] = {
+        "timing": {"absolute_time": {"start": "20:00"}},
+        **parsed,
+    }
+    program_dict["steps"]["custom"].pop("valid")
+    document = (await request(client, "occupied/program", editor_entry, identifier=2))["result"]
+    saved = (
+        await request(
+            client,
+            "occupied/save",
+            editor_entry,
+            identifier=3,
+            program=program_dict,
+            expected_revision=document["revision"],
+        )
+    )["result"]
+    assert saved["valid"]
+    assert saved["program"]["steps"]["custom"]["actions"] == parsed["actions"]
+    exported = (
+        await request(
+            client, "occupied/export", editor_entry, identifier=4, program=saved["program"]
+        )
+    )["result"]
+    roundtrip = load_program(exported["yaml"])
+    assert program_data(roundtrip)["steps"]["custom"]["actions"] == parsed["actions"]
+    invalid = (
+        await request(
+            client,
+            "occupied/action_yaml",
+            editor_entry,
+            identifier=5,
+            yaml='action: set_state\nentities:\n  light.a: {state: "on", brightness_pct: 30}',
+        )
+    )["result"]
+    assert not invalid["valid"] and invalid["issues"][0]["line"] == 3
+    assert not devices

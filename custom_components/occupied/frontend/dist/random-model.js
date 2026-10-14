@@ -1,4 +1,5 @@
 // Generated from random-model.ts by pnpm run build. Do not edit.
+import { actionTargets } from "./custom-action.js";
 import { copy, days, identifier } from "./model.js";
 import {
   actionForm,
@@ -25,7 +26,7 @@ export function randomEntries(program, catalog) {
     days: [...(event.days || days)],
     name:
       event.name ||
-      `${catalog ? entityName(catalog, event.on.entities[0]) : event.on.entities[0]}${event.on.entities.length > 1 ? ` +${event.on.entities.length - 1}` : ""}`,
+      `${catalog ? entityName(catalog, actionTargets(event.on)[0]) : actionTargets(event.on)[0]}${actionTargets(event.on).length > 1 ? ` +${actionTargets(event.on).length - 1}` : ""}`,
   }));
 }
 export function randomEditor(program, entry) {

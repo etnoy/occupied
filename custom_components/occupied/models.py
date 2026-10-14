@@ -263,13 +263,37 @@ class Schedule(Model):
 
 
 class Action(Model):
-    action: Annotated[
-        str, StringConstraints(pattern=r"^(?:turn_on|turn_off|[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*)$")
-    ]
-    entities: Annotated[tuple[EntityId, ...], Field(min_length=1)]
+    model_config = ConfigDict(
+        json_schema_extra={
+            "oneOf": [
+                {"required": ["action", "entities"], "not": {"required": ["actions"]}},
+                {
+                    "required": ["actions"],
+                    "not": {
+                        "anyOf": [
+                            {"required": ["action"]},
+                            {"required": ["entities"]},
+                            {"required": ["data"]},
+                        ]
+                    },
+                },
+            ],
+        }
+    )
+    action: (
+        Annotated[
+            str,
+            StringConstraints(
+                pattern=r"^(?:set_state|turn_on|turn_off|[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*)$"
+            ),
+        ]
+        | None
+    ) = None
+    entities: tuple[EntityId, ...] | dict[EntityId, dict[str, JsonValue]] = ()
     data: dict[str, JsonValue] = Field(default_factory=dict)
+    actions: Annotated[tuple[Action, ...], Field(min_length=1, max_length=100)] | None = None
 
-    @field_validator("data")
+    @field_validator("data", "entities")
     @classmethod
     def finite_json(cls, value):
         json.dumps(value, allow_nan=False)
@@ -278,7 +302,38 @@ class Action(Model):
     @field_validator("entities")
     @classmethod
     def unique_entities(cls, value):
-        return tuple(sorted(set(value)))
+        return dict(sorted(value.items())) if isinstance(value, dict) else tuple(sorted(set(value)))
+
+    @model_validator(mode="after")
+    def action_shape(self):
+        if self.actions is not None:
+            if {"action", "entities", "data"} & self.model_fields_set:
+                raise ValueError("Use actions or action/entities/data, never both")
+            if sum(len(item.entities) for item in self.actions) > 1000:
+                raise ValueError("Custom blocks support at most 1000 resolved calls")
+            if any(item.actions is not None for item in self.actions):
+                raise ValueError("Nested action lists are not supported")
+        else:
+            if isinstance(self.entities, dict) and len(self.entities) > 1000:
+                raise ValueError("State mappings support at most 1000 entities")
+            if self.action is None or not self.entities:
+                raise ValueError("An action requires an action name and nonempty entities")
+            if (self.action == "set_state") != isinstance(self.entities, dict):
+                raise ValueError(
+                    "set_state requires an entity mapping; other actions require a list"
+                )
+        return self
+
+    def configured_actions(self):
+        return self.actions if self.actions is not None else (self,)
+
+    @property
+    def target_ids(self):
+        return tuple(
+            dict.fromkeys(
+                entity for action in self.configured_actions() for entity in action.entities
+            )
+        )
 
 
 class Step(Schedule, Action):
@@ -366,7 +421,7 @@ def projectable_lights(program: Program) -> frozenset[str]:
     return frozenset(
         entity
         for _, action in program_actions(program)
-        if action.action in {"turn_on", "turn_off", "light.turn_on", "light.turn_off"}
+        if action.action in {"set_state", "turn_on", "turn_off", "light.turn_on", "light.turn_off"}
         for entity in action.entities
         if entity.startswith("light.")
     )
@@ -376,11 +431,15 @@ def program_actions(program: Program, *, enabled_only=True):
     """Visit every configured action with its editor path."""
     for key, step in program.steps.items():
         if step.enabled or not enabled_only:
-            yield ("steps", key), step
+            for index, action in enumerate(step.configured_actions()):
+                yield (("steps", key, "actions", index) if step.actions else ("steps", key)), action
     for key, event in program.random.items():
         if event.enabled or not enabled_only:
-            yield ("random", key, "on"), event.on
-            yield ("random", key, "off"), event.off
+            for phase in ("on", "off"):
+                block = getattr(event, phase)
+                for index, action in enumerate(block.configured_actions()):
+                    path = ("random", key, phase)
+                    yield (path + ("actions", index) if block.actions else path), action
 
 
 def program_timings(program: Program, *, enabled_only=True):
@@ -394,8 +453,16 @@ def program_timings(program: Program, *, enabled_only=True):
 
 
 def max_plan_events(program: Program) -> int:
-    return sum(len(step.entities) for step in program.steps.values() if step.enabled) + sum(
-        event.max_count * (len(event.on.entities) + len(event.off.entities))
+    return sum(
+        sum(len(a.entities) for a in step.configured_actions())
+        for step in program.steps.values()
+        if step.enabled
+    ) + sum(
+        event.max_count
+        * (
+            sum(len(a.entities) for a in event.on.configured_actions())
+            + sum(len(a.entities) for a in event.off.configured_actions())
+        )
         for event in program.random.values()
         if event.enabled
     )

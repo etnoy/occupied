@@ -27,6 +27,7 @@ import {
   references,
 } from "./model.js";
 import { coverActions, coverField, isCoverAction } from "./cover.js";
+import { actionTargets, actionYaml } from "./custom-action.js";
 const sorted = (values: string[]) => [...new Set(values)].sort();
 const actionLabels: Record<string, string> = {
   turn_on: "Turn on",
@@ -46,7 +47,7 @@ export function stepEntries(
     days: [...(step.days || days)],
     name:
       step.name ||
-      `${catalog ? entityName(catalog, step.entities[0]) : step.entities[0]}${step.entities.length > 1 ? ` +${step.entities.length - 1}` : ""} · ${t(actionLabels[step.action] || step.action)}`,
+      `${catalog ? entityName(catalog, actionTargets(step)[0]) : actionTargets(step)[0]}${actionTargets(step).length > 1 ? ` +${actionTargets(step).length - 1}` : ""} · ${t(step.actions || step.action === "set_state" ? "Custom YAML" : actionLabels[step.action || ""] || step.action || "")}`,
   }));
 }
 export const solarEvents = [
@@ -80,7 +81,7 @@ export function timeSourceChoices(
     ...(randomId
       ? parentRandomEvents(program, randomId).map((event) => ({
           value: `random:${event.id}`,
-          name: `${t("End of")} ${event.name || (catalog.entities ? entityName({ entities: catalog.entities }, event.on.entities[0]) : event.on.entities[0])}`,
+          name: `${t("End of")} ${event.name || (catalog.entities ? entityName({ entities: catalog.entities }, actionTargets(event.on)[0]) : actionTargets(event.on)[0])}`,
           group: "Random events",
         }))
       : []),
@@ -125,12 +126,14 @@ export function stepEditor(
 export function actionForm(source?: Action): ActionForm {
   const action = source?.action;
   let kind = "entities";
-  if (action === "scene.turn_on") {
+  if (source?.actions || action === "set_state") {
+    kind = "custom";
+  } else if (action === "scene.turn_on") {
     kind = "scene";
   } else if (
     source &&
     isCoverAction(source) &&
-    source.entities.every((entity) => entity.startsWith("cover."))
+    actionTargets(source).every((entity) => entity.startsWith("cover."))
   ) {
     kind = "cover";
   } else if (action?.includes(".")) {
@@ -138,9 +141,37 @@ export function actionForm(source?: Action): ActionForm {
   }
   return {
     kind,
+    ...(kind === "custom" &&
+      source && {
+        customActions: source.actions || [
+          {
+            action: source.action,
+            entities: source.entities,
+            ...(source.data && { data: source.data }),
+          },
+        ],
+        customAccepted: actionYaml(
+          source.actions?.length === 1
+            ? source.actions[0]
+            : source.actions || {
+                action: source.action,
+                entities: source.entities,
+                ...(source.data && { data: source.data }),
+              },
+        ),
+        customYaml: actionYaml(
+          source.actions?.length === 1
+            ? source.actions[0]
+            : source.actions || {
+                action: source.action,
+                entities: source.entities,
+                ...(source.data && { data: source.data }),
+              },
+        ),
+      }),
     service: source?.action || "homeassistant.turn_on",
     data: JSON.stringify(source?.data || {}, null, 2),
-    entities: [...(source?.entities || [])],
+    entities: actionTargets(source),
     action: action === "turn_off" ? "turn_off" : "turn_on",
     position: String(source?.data?.position ?? ""),
     tiltPosition: String(source?.data?.tilt_position ?? ""),
@@ -162,6 +193,12 @@ export function editorErrors(program: Program, editor: StepEditor) {
 }
 export function actionErrors(form: ActionForm): FieldErrors {
   const errors: FieldErrors = {};
+  if (form.kind === "custom") {
+    if (!form.customYaml?.trim()) {
+      errors.customYaml = "Enter an action mapping or a list of actions.";
+    }
+    return errors;
+  }
   if (form.entities.length === 0) {
     errors.entities =
       form.kind === "scene"
@@ -339,6 +376,12 @@ export function buildStep(program: Program, editor: StepEditor) {
   return next;
 }
 export function buildAction(form: ActionForm): Action {
+  if (form.kind === "custom") {
+    if (!form.customActions || form.customAccepted !== form.customYaml) {
+      throw new Error("Validate Custom YAML before adding it to the draft.");
+    }
+    return { actions: copy(form.customActions) };
+  }
   let action = form.action;
   if (form.kind === "scene") {
     action = "scene.turn_on";

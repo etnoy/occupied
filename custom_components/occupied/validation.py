@@ -242,7 +242,53 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
                     path + ("data",),
                 )
             )
-        if action in {"turn_on", "turn_off"}:
+        if action == "set_state":
+            if step.data:
+                issues.append(
+                    Issue(
+                        "control_data", "Put settings under each entity, not data", path + ("data",)
+                    )
+                )
+            for entity, settings in step.entities.items():
+                domain = entity.split(".")[0]
+                entry_path = path + ("entities", entity)
+                state = settings.get("state")
+                data = {key: value for key, value in settings.items() if key != "state"}
+                problem = None
+                if domain in {"light", "switch"}:
+                    if not isinstance(state, str) or state not in {"on", "off"}:
+                        problem = 'Specify state as the quoted string "on" or "off"'
+                    elif domain == "switch":
+                        if data:
+                            problem = "Switch entries accept state only"
+                    elif "brightness_pct" in data:
+                        problem = "Use brightness (an integer from 1 to 255), not brightness_pct"
+                    elif "brightness" in data and type(data["brightness"]) is not int:
+                        problem = "brightness must be an integer from 1 to 255"
+                    elif "rgb_color" in data and (
+                        not isinstance(data["rgb_color"], list)
+                        or any(type(v) is not int for v in data["rgb_color"])
+                    ):
+                        problem = "rgb_color requires three integers from 0 to 255"
+                    else:
+                        problem = validate_light_data(data, "turn_" + state)
+                elif domain == "cover":
+                    if set(settings) - {"state", "position"}:
+                        problem = "Cover entries accept state or position only"
+                    elif ("state" in settings) == ("position" in settings):
+                        problem = "Specify either cover state or position, not both"
+                    elif "state" in settings and state not in ("open", "closed"):
+                        problem = 'Cover state must be "open" or "closed"'
+                    elif "position" in settings and (
+                        type(settings["position"]) is not int
+                        or not 0 <= settings["position"] <= 100
+                    ):
+                        problem = "Cover position must be an integer from 0 to 100"
+                else:
+                    problem = "State mappings support lights, switches, and covers only"
+                if problem:
+                    issues.append(Issue("entity_state", problem, entry_path))
+        elif action in {"turn_on", "turn_off"}:
             if any(not e.startswith(("light.", "switch.")) for e in step.entities):
                 issues.append(
                     Issue(

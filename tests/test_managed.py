@@ -17,7 +17,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry, async_
 
 from custom_components.occupied.diagnostics import diagnostics_data
 from custom_components.occupied.file_config import MAX_FILE_BYTES, read_managed
-from custom_components.occupied.validation import ProgramError, program_revision
+from custom_components.occupied.validation import ProgramError, program_data, program_revision
 
 
 @pytest.fixture(autouse=True)
@@ -409,3 +409,36 @@ async def test_rest_reload_response_and_admin_authorization(
         json={"config_entry_id": file_entry.entry_id},
     )
     assert response.status == 401
+
+
+async def test_custom_actions_survive_authority_switches_and_restart(
+    hass, file_entry, managed_file, program_dict
+):
+    program_dict["steps"]["wake"].pop("action")
+    program_dict["steps"]["wake"].pop("entities")
+    program_dict["steps"]["wake"].pop("data", None)
+    program_dict["steps"]["wake"]["actions"] = [
+        {
+            "action": "set_state",
+            "entities": {
+                "light.a": {"state": "on", "brightness": 24},
+                "cover.blind": {"position": 40},
+            },
+        },
+        {"action": "scene.turn_on", "entities": ["scene.evening"]},
+    ]
+    managed_file.write_text(yaml.safe_dump(program_dict))
+    engine = await load(hass, file_entry)
+    expected = program_data(engine.program)
+    plans = dict(engine._plans)
+    generation = engine.generation
+    await engine.source_manager.async_select("gui", None, program_revision(engine.program))
+    assert program_data(engine.program) == expected
+    assert engine._plans == plans and engine.generation == generation
+    assert await hass.config_entries.async_reload(file_entry.entry_id)
+    engine = file_entry.runtime_data
+    assert program_data(engine.program) == expected
+    await engine.source_manager.async_select(
+        "file", "occupied/house.yaml", program_revision(engine.program)
+    )
+    assert program_data(engine.program) == expected

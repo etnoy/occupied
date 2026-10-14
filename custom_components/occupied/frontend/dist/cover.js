@@ -19,7 +19,7 @@ export function coverField(action) {
   return;
 }
 export function isCoverAction(action) {
-  const field = coverField(action.action);
+  const field = coverField(action.action || "");
   return (
     coverActions.some(([service]) => service === action.action) &&
     Object.keys(action.data || {}).every((key) => key === field) &&
@@ -41,14 +41,14 @@ export function coverTarget(action, previous = {}) {
   }
   const next = { ...previous };
   const tilt =
-    action.action.endsWith("_tilt") ||
+    action.action?.endsWith("_tilt") ||
     action.action === "cover.set_cover_tilt_position";
   const field = tilt ? "tilt_position" : "position";
-  if (action.action.includes(".stop_")) {
+  if (action.action?.includes(".stop_")) {
     delete next[field];
-  } else if (action.action.includes(".open_")) {
+  } else if (action.action?.includes(".open_")) {
     next[field] = 100;
-  } else if (action.action.includes(".close_")) {
+  } else if (action.action?.includes(".close_")) {
     next[field] = 0;
   } else {
     const value = action.data?.[field];

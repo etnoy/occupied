@@ -383,6 +383,8 @@ class LivePreviewManager:
                         outcome.update(status="failed", detail=f"{type(err).__name__}: {err}")
                 if not await self._persist():
                     break
+                if event.custom and outcome["status"] in {"failed", "uncertain", "service_missing"}:
+                    break
             # Include undispatched members so partial completion cannot look like success.
             for event in group:
                 self.session["outcomes"].setdefault(

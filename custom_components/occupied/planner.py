@@ -6,6 +6,7 @@ import random
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
+from functools import cached_property
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -21,7 +22,7 @@ from .validation import (
     validate_program,
 )
 
-PLANNER_VERSION = 8
+PLANNER_VERSION = 9
 
 
 class RandomStreams:
@@ -46,6 +47,29 @@ class ResolvedAction:
 
 
 def resolve_actions(step: Action) -> tuple[ResolvedAction, ...]:
+    if step.actions is not None:
+        return tuple(
+            action for configured in step.actions for action in resolve_actions(configured)
+        )
+    if step.action == "set_state":
+        result = []
+        for entity, settings in step.entities.items():
+            domain = entity.split(".")[0]
+            data = {key: value for key, value in settings.items() if key != "state"}
+            if domain == "cover":
+                name = (
+                    "cover.set_cover_position"
+                    if "position" in data
+                    else (
+                        "cover.open_cover" if settings["state"] == "open" else "cover.close_cover"
+                    )
+                )
+            else:
+                name = f"{domain}.turn_{settings['state']}"
+            result.append(
+                ResolvedAction(name, (entity,), data, (entity,), domain in {"light", "switch"})
+            )
+        return tuple(result)
     names = (
         [step.action]
         if "." in step.action
@@ -73,6 +97,7 @@ class PlanEvent:
     action: ResolvedAction
     sequence: int = 0
     kind: str = "step"
+    custom: bool = False
 
     @property
     def group_id(self):
@@ -81,7 +106,15 @@ class PlanEvent:
 
     @property
     def order_key(self):
-        return self.at, 20, 1, self.source_id, self.sequence, self.id
+        return (
+            self.at,
+            20,
+            1,
+            self.source_id,
+            self.sequence,
+            int(self.id.rsplit(":", 1)[1]),
+            self.id,
+        )
 
     def to_dict(self, zone=None):
         return {
@@ -94,6 +127,7 @@ class PlanEvent:
             "source_id": self.source_id,
             "kind": self.kind,
             "sequence": self.sequence,
+            "custom": self.custom,
             "action": self.action.to_dict(),
         }
 
@@ -111,6 +145,13 @@ class DailyPlan:
     step_times: dict[str, datetime]
     issues: tuple[Issue, ...] = ()
     planner_version: int = PLANNER_VERSION
+
+    @cached_property
+    def groups(self):
+        groups = {}
+        for event in self.events:
+            groups.setdefault(event.group_id, []).append(event)
+        return {key: tuple(events) for key, events in groups.items()}
 
     @property
     def feasible(self):
@@ -139,12 +180,7 @@ class DailyPlan:
 
 def occurrence_groups(plan):
     """Keep planner member order; equal-time unrelated occurrences stay separate."""
-    groups = {}
-    for event in plan.events:
-        groups.setdefault(event.group_id, []).append(event)
-    return tuple(
-        tuple(events) for events in sorted(groups.values(), key=lambda events: events[0].order_key)
-    )
+    return tuple(sorted(plan.groups.values(), key=lambda events: events[0].order_key))
 
 
 def generate_plan(
@@ -178,7 +214,14 @@ def generate_plan(
         times[key] = start
         for index, action in enumerate(resolve_actions(step)):
             events.append(
-                PlanEvent(f"{simulation_date}:step:{key}:{index}", start, key, action, index)
+                PlanEvent(
+                    f"{simulation_date}:step:{key}:{index}",
+                    start,
+                    key,
+                    action,
+                    index,
+                    custom=step.actions is not None or step.action == "set_state",
+                )
             )
     random_ends = {}
     for key in random_order(program):
@@ -281,6 +324,7 @@ def generate_plan(
                             action,
                             occurrence * 2 + (phase == "end"),
                             f"random_{phase}",
+                            configured.actions is not None or configured.action == "set_state",
                         )
                     )
     identity = {

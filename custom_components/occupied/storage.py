@@ -62,6 +62,7 @@ def plan_from_data(data):
             action_from_data(i["action"]),
             i.get("sequence", index),
             i["kind"],
+            i.get("custom", False),
         )
         for index, i in enumerate(data["events"])
     )

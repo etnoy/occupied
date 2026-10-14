@@ -1,9 +1,13 @@
 <script lang="ts">
   import type { OccupiedPanel } from "./occupied-panel.js";
   import type { ActionEditorContext } from "./types.js";
+  import { properties } from "./dom.js";
+  import { isValueChangedEvent } from "./util.js";
+  import FieldError from "./FieldError.svelte";
   import EditorField from "./EditorField.svelte";
   import EntitiesEditor from "./EntitiesEditor.svelte";
   import { coverActions } from "./cover.js";
+  import { changeActionKind } from "./action-kind.js";
 
   let {
     panel,
@@ -32,17 +36,10 @@
     label={kindLabel}
     value={form.kind === "entities" ? form.action : form.kind}
     update={(value) => {
-      const kind =
-        value === "turn_on" || value === "turn_off" ? "entities" : value;
-      if (form.kind !== kind) form.entities = [];
-      form.kind = kind;
-      if (kind === "entities") form.action = value;
-      if (
-        kind === "cover" &&
-        !coverActions.some(([action]) => action === form.service)
-      ) {
-        form.service = "cover.open_cover";
-      }
+      const errors = changeActionKind(form, value, (message) =>
+        globalThis.confirm(t(message)),
+      );
+      Object.assign(context.editor.errors, errors);
     }}
     options={{
       hideLabel: true,
@@ -52,15 +49,51 @@
         ["cover", "Control covers"],
         ["service", "Entity service action"],
         ["scene", "Activate Home Assistant scene"],
+        ["custom", "Custom YAML"],
       ],
       render: true,
     }}
   ></EditorField>
-  {#if !hideEntities}<EntitiesEditor
+  {#if !hideEntities && form.kind !== "custom"}<EntitiesEditor
       {panel}
       {context}
       label={entityLabel}
     />{/if}
+  {#if form.kind === "custom"}
+    <ha-code-editor
+      role="group"
+      aria-label={t("Action YAML")}
+      aria-describedby={context.editor.errors.customYaml
+        ? `step-error-${context.fieldPrefix || ""}customYaml`
+        : undefined}
+      data-builder-field={`${context.fieldPrefix || ""}customYaml`}
+      dir="ltr"
+      use:properties={{
+        mode: "yaml",
+        value: form.customYaml || "",
+        linewrap: true,
+      }}
+      onvalue-changed={(event: Event) => {
+        if (
+          !isValueChangedEvent(event) ||
+          typeof event.detail.value !== "string"
+        )
+          return;
+        form.customYaml = event.detail.value;
+        context.changed("customYaml");
+      }}
+    ></ha-code-editor>
+    <FieldError
+      key="customYaml"
+      fieldPrefix={context.fieldPrefix || ""}
+      errors={{ ...context.editor.errors }}
+    />
+    <p class="hint">
+      {t(
+        "Enter one action or an ordered list of actions. Use brightness from 1 to 255. Timing stays in the controls above. A failed call stops the remaining actions.",
+      )}
+    </p>
+  {/if}
   {#if form.kind === "service"}
     <EditorField
       {panel}
@@ -125,3 +158,13 @@
     ></EditorField>
   {/if}
 </div>
+
+<style>
+  ha-code-editor {
+    display: block;
+    width: 100%;
+    margin: 8px 0;
+    --code-mirror-height: 280px;
+    --code-mirror-max-height: 60vh;
+  }
+</style>

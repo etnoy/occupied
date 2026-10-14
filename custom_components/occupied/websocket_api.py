@@ -24,6 +24,7 @@ def async_register_websocket(hass: HomeAssistant) -> None:
         websocket_program,
         websocket_catalog,
         websocket_editor_validate,
+        websocket_action_yaml,
         websocket_save,
         websocket_timeline,
         websocket_subscribe,
@@ -558,3 +559,29 @@ async def websocket_diagnostics(hass, connection, msg):
     connection.send_result(
         msg["id"], diagnostics_data(engine, include_sensitive=msg["include_sensitive"])
     )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "occupied/action_yaml",
+        vol.Required("config_entry_id"): str,
+        vol.Required("yaml"): str,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_action_yaml(hass, connection, msg):
+    from . import resolve_engine
+    from .custom_actions import parse_action_yaml
+    from .validation import ProgramError
+
+    try:
+        resolve_engine(hass, msg["config_entry_id"])
+        result = await hass.async_add_executor_job(parse_action_yaml, msg["yaml"])
+        connection.send_result(msg["id"], {"valid": True, **result})
+    except ProgramError as err:
+        connection.send_result(
+            msg["id"], {"valid": False, "issues": [i.to_dict() for i in err.issues]}
+        )
+    except HomeAssistantError as err:
+        connection.send_error(msg["id"], "not_loaded", str(err))

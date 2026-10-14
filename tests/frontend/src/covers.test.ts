@@ -168,7 +168,11 @@ const event = (hour: number, action: Action, kind = "step"): PlannedEvent => ({
   time: time(hour),
   source_id: "blinds",
   kind,
-  action,
+  action: {
+    action: action.action!,
+    entities: action.entities as string[],
+    data: action.data,
+  },
 });
 const plan = (events: PlannedEvent[]): Plan => ({
   simulation_date: "2026-10-13",

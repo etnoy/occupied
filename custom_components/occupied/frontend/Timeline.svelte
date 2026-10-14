@@ -103,7 +103,7 @@
             <table>
               <thead
                 ><tr>
-                  {#each ["Planned time", "Source", "Action", "Targets"] as label}
+                  {#each ["Planned time", "Source", "Action", "Targets", "Settings"] as label}
                     <th scope="col">{t(label)}</th>
                   {/each}
                   {#if liveSession}<th scope="col">{t("Result")}</th>{/if}
@@ -117,7 +117,7 @@
                     class:completed={live?.outcome?.status === "dispatched"}
                     aria-current={live?.current ? "step" : undefined}
                   >
-                    {#each [stamp(event.time, plan.timezone, locale), `${eventLabel(event)} · ${t(event.kind === "random_start" ? "Random start" : event.kind === "random_end" ? "Random end" : event.kind)}`, event.action.action, event.action.entities.join(", ")] as value}
+                    {#each [stamp(event.time, plan.timezone, locale), `${eventLabel(event)} · ${t(event.kind === "random_start" ? "Random start" : event.kind === "random_end" ? "Random end" : event.kind)}`, event.action.action, event.action.entities.join(", "), Object.keys(event.action.data || {}).length ? JSON.stringify(event.action.data) : "—"] as value}
                       <td>{value}</td>
                     {/each}
                     {#if liveSession}

@@ -517,3 +517,33 @@ async def test_explicit_resume_after_interruption_survives_restart(
     assert recovered.live_preview.session["state"] == "interrupted"
     assert not live_calls
     await recovered.async_close()
+
+
+async def test_custom_live_block_stops_after_failed_call(live_engine, live_program, live_calls):
+    hass = live_engine.hass
+    hass.states.async_set("script.broken", "off")
+
+    async def fail(_call):
+        raise RuntimeError("Custom action failed")
+
+    hass.services.async_register("script", "turn_on", fail)
+    live_program["steps"] = {
+        "custom": {
+            "timing": {"absolute_time": {"start": "18:00"}},
+            "actions": [
+                {"action": "set_state", "entities": {"light.a": {"state": "on", "brightness": 24}}},
+                {"action": "script.turn_on", "entities": ["script.broken"]},
+                {
+                    "action": "cover.set_cover_position",
+                    "entities": ["cover.blind"],
+                    "data": {"position": 40},
+                },
+            ],
+        },
+    }
+    await start(live_engine, live_program)
+    result = await next_event(live_engine)
+    outcomes = list(result["session"]["outcomes"].values())
+    assert [o["status"] for o in outcomes] == ["dispatched", "failed", "cancelled"]
+    assert [call.domain for call in live_calls] == ["light"]
+    assert live_calls[0].data["brightness"] == 24

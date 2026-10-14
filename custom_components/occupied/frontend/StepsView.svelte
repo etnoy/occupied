@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { actionTargets } from "./custom-action.js";
   import type { OccupiedPanel } from "./occupied-panel.js";
 
   import { startStep, openStep, actionSummary, stepTree } from "./steps.js";
@@ -87,7 +88,7 @@
               </span>
               <span class="hint"
                 >{actionSummary(entry, t)} ·
-                {entry.entities
+                {actionTargets(entry)
                   .map((id) => entityName(panel.catalog, id))
                   .join(", ")}</span
               >

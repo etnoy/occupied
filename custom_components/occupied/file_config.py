@@ -56,7 +56,9 @@ def read_managed(config_dir: str, relative: str) -> tuple[str, str]:
         ) from err
 
 
-def load_yaml(source: str) -> Program:
+def load_yaml(source: str, *, validator=validate_program):
+    if len(source.encode("utf-8")) > MAX_FILE_BYTES:
+        raise ProgramError([Issue("file_size", "Configuration must be at most 1 MiB")])
     loader = yaml.SafeLoader(source)
     locations: dict[ModelPath, tuple[int, int]] = {}
 
@@ -123,11 +125,11 @@ def load_yaml(source: str) -> Program:
             raise ProgramError([Issue("yaml_empty", "The Occupied program is empty", line=1)])
         inspect(node, ())
         data = loader.construct_document(node)
-        if not isinstance(data, dict):
+        if validator is validate_program and not isinstance(data, dict):
             raise ProgramError(
                 [Issue("yaml_root", "An Occupied program must be a mapping", line=1)]
             )
-        return validate_program(data)
+        return validator(data)
     except RecursionError as err:
         raise ProgramError([Issue("yaml_depth", "Configuration nesting is too deep")]) from err
     except yaml.YAMLError as err:

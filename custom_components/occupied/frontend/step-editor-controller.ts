@@ -1,3 +1,4 @@
+import { prepareCustomAction } from "./custom-action.js";
 import type { OccupiedPanel } from "./occupied-panel.js";
 import { required, offsetErrors } from "./util.js";
 import { stepEntries, editorErrors, buildStep } from "./step-model.js";
@@ -62,11 +63,34 @@ export function createStepEditorContext(panel: OccupiedPanel) {
       return refresh();
     }
     try {
+      try {
+        await prepareCustomAction(panel, form);
+      } catch (error) {
+        editor.errors.customYaml =
+          error instanceof Error ? error.message : String(error);
+        return refresh("customYaml");
+      }
       const candidate = buildStep(panel.draft, editor);
       editor.candidatePath = required(
         stepEntries(candidate).find((entry) => entry.id === editor.id),
       ).path;
       if (panel.document?.source === "file") {
+        if (form.kind === "custom") {
+          const version = panel.version;
+          const validation = await panel.ws("editor_validate", {
+            program: candidate,
+          });
+          if (panel.version !== version || panel.activeEditor !== editor) {
+            return;
+          }
+          if (!validation.valid) {
+            panel.showIssues(validation);
+            if (validation.issues.length > 0) {
+              panel.focusIssue(validation.issues[0]);
+            }
+            return;
+          }
+        }
         panel.change([], candidate);
         panel.selectedStep = editor.id;
         panel.stepEditor = null;

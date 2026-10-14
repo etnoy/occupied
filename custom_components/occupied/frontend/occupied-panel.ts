@@ -715,7 +715,7 @@ export class OccupiedPanel extends HTMLElement {
       }
     }
   }
-  private showIssues(result: { valid?: boolean; issues?: Issue[] }) {
+  showIssues(result: { valid?: boolean; issues?: Issue[] }) {
     this.issues = result.issues || [];
     this.flush();
     if (result.valid === false && this.issues.length === 0) {
@@ -1195,6 +1195,12 @@ function isRevisionConflict(error: unknown) {
 Map a backend issue path inside a step to the step editor field.
 */
 function editorField(tail: Path, form: Pick<StepForm, "kind">): string {
+  if (
+    form.kind === "custom" &&
+    ["actions", "action", "entities", "data"].includes(String(tail[0]))
+  ) {
+    return "customYaml";
+  }
   const has = (key: string) => tail.includes(key),
     head = tail[0];
   if (["name", "days", "entities", "data"].includes(String(head))) {

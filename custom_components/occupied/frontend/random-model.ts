@@ -7,6 +7,7 @@ import type {
   FieldErrors,
   Catalog,
 } from "./types.js";
+import { actionTargets } from "./custom-action.js";
 import { copy, days, identifier } from "./model.js";
 import {
   actionForm,
@@ -39,7 +40,7 @@ export function randomEntries(
     days: [...(event.days || days)],
     name:
       event.name ||
-      `${catalog ? entityName(catalog, event.on.entities[0]) : event.on.entities[0]}${event.on.entities.length > 1 ? ` +${event.on.entities.length - 1}` : ""}`,
+      `${catalog ? entityName(catalog, actionTargets(event.on)[0]) : actionTargets(event.on)[0]}${actionTargets(event.on).length > 1 ? ` +${actionTargets(event.on).length - 1}` : ""}`,
   }));
 }
 

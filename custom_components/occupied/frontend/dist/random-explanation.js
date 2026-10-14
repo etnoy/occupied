@@ -172,6 +172,9 @@ export function randomExplanation(
     );
   }
   const action = (selected) => {
+    if (selected.kind === "custom") {
+      return t("run the Custom YAML actions in order");
+    }
     const names = [...new Set(selected.entities)].map((id) =>
       entityName(catalog, id),
     );

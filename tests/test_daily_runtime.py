@@ -510,3 +510,47 @@ async def test_stale_revision_does_not_replace_program(
             validate_program(runtime_program), expected_revision="stale"
         )
     assert program_revision(engine.program) == revision
+
+
+@pytest.mark.parametrize("fail", [False, True])
+async def test_custom_block_order_and_stop_on_failure(
+    hass, runtime_program, daily_entry, daily_devices, freezer, fail
+):
+    runtime_program["steps"] = {
+        "custom": {
+            "timing": {"absolute_time": {"start": "18:01"}},
+            "actions": [
+                {
+                    "action": "set_state",
+                    "entities": {"light.proof": {"state": "on", "brightness": 20}},
+                },
+                {"action": "script.turn_on", "entities": ["script.test"]},
+                {"action": "light.turn_off", "entities": ["light.proof"]},
+            ],
+        },
+    }
+    # Entry construction copied the original program; deploy the changed candidate.
+    hass.config_entries.async_update_entry(
+        daily_entry, data={**daily_entry.data, "program": runtime_program}
+    )
+    attempted = []
+
+    async def script(call):
+        attempted.append(call)
+        if fail:
+            raise RuntimeError("custom failure")
+
+    hass.services.async_register("script", "turn_on", script)
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 60)
+    assert len(attempted) == 1
+    assert [call.service for call in daily_devices] == (
+        ["turn_on"] if fail else ["turn_on", "turn_off"]
+    )
+    assert daily_devices[0].data["brightness"] == 20
+    statuses = {v["status"] for v in engine._journal.values()}
+    assert ("blocked" in statuses) == fail
+    assert ("failed" in statuses) == fail
+    await advance(hass, freezer, 2)
+    assert len(attempted) == 1  # Opaque custom blocks are never retried wholesale.

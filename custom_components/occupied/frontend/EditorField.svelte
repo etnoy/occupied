@@ -60,6 +60,8 @@
     }
     update(String(control.value ?? ""));
     changed(key);
+    // Restore the displayed choice when a guarded conversion was canceled.
+    if (control instanceof HTMLSelectElement) control.value = String(value);
     if (options.render) focusEditor(panel, field);
   }
 </script>

@@ -1,5 +1,13 @@
 // English is the complete fallback; HA's selected language supplies localized UI chrome.
 const sv: Record<string, string> = {
+  "Custom YAML": "Egen YAML",
+  "Action YAML": "Åtgärds-YAML",
+  actions: "åtgärder",
+  "Enter one action or an ordered list of actions. Use brightness from 1 to 255. Timing stays in the controls above. A failed call stops the remaining actions.":
+    "Ange en åtgärd eller en ordnad lista med åtgärder. Använd brightness från 1 till 255. Tider anges i kontrollerna ovan. Ett misslyckat anrop stoppar återstående åtgärder.",
+  "Replace this Custom YAML block with the selected action? Its individual settings or other actions will be removed.":
+    "Ersätt detta YAML-block med den valda åtgärden? Individuella inställningar eller andra åtgärder tas bort.",
+  "run the Custom YAML actions in order": "kör YAML-åtgärderna i ordning",
   "Live preview": "Liveförhandsvisning",
   "Controls real devices": "Styr riktiga enheter",
   "Scheduling stays paused until you choose Resume scheduling.":

@@ -30,20 +30,80 @@
     },
     "Action": {
       "additionalProperties": false,
+      "oneOf": [
+        {
+          "not": {
+            "required": [
+              "actions"
+            ]
+          },
+          "required": [
+            "action",
+            "entities"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "action"
+                ]
+              },
+              {
+                "required": [
+                  "entities"
+                ]
+              },
+              {
+                "required": [
+                  "data"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "actions"
+          ]
+        }
+      ],
       "properties": {
         "action": {
-          "pattern": "^(?:turn_on|turn_off|[a-z_][a-z0-9_]*\\.[a-z_][a-z0-9_]*)$",
-          "title": "Action",
-          "type": "string"
+          "anyOf": [
+            {
+              "pattern": "^(?:set_state|turn_on|turn_off|[a-z_][a-z0-9_]*\\.[a-z_][a-z0-9_]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action"
         },
         "entities": {
-          "items": {
-            "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
-            "type": "string"
-          },
-          "minItems": 1,
-          "title": "Entities",
-          "type": "array"
+          "anyOf": [
+            {
+              "items": {
+                "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "patternProperties": {
+                "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$": {
+                  "additionalProperties": {
+                    "$ref": "#/$defs/JsonValue"
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            }
+          ],
+          "default": [],
+          "title": "Entities"
         },
         "data": {
           "additionalProperties": {
@@ -51,12 +111,25 @@
           },
           "title": "Data",
           "type": "object"
+        },
+        "actions": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Action"
+              },
+              "maxItems": 100,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actions"
         }
       },
-      "required": [
-        "action",
-        "entities"
-      ],
       "title": "Action",
       "type": "object"
     },
@@ -408,20 +481,80 @@
     },
     "Step": {
       "additionalProperties": false,
+      "oneOf": [
+        {
+          "not": {
+            "required": [
+              "actions"
+            ]
+          },
+          "required": [
+            "action",
+            "entities"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "action"
+                ]
+              },
+              {
+                "required": [
+                  "entities"
+                ]
+              },
+              {
+                "required": [
+                  "data"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "actions"
+          ]
+        }
+      ],
       "properties": {
         "action": {
-          "pattern": "^(?:turn_on|turn_off|[a-z_][a-z0-9_]*\\.[a-z_][a-z0-9_]*)$",
-          "title": "Action",
-          "type": "string"
+          "anyOf": [
+            {
+              "pattern": "^(?:set_state|turn_on|turn_off|[a-z_][a-z0-9_]*\\.[a-z_][a-z0-9_]*)$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action"
         },
         "entities": {
-          "items": {
-            "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
-            "type": "string"
-          },
-          "minItems": 1,
-          "title": "Entities",
-          "type": "array"
+          "anyOf": [
+            {
+              "items": {
+                "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "patternProperties": {
+                "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$": {
+                  "additionalProperties": {
+                    "$ref": "#/$defs/JsonValue"
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            }
+          ],
+          "default": [],
+          "title": "Entities"
         },
         "data": {
           "additionalProperties": {
@@ -429,6 +562,23 @@
           },
           "title": "Data",
           "type": "object"
+        },
+        "actions": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Action"
+              },
+              "maxItems": 100,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actions"
         },
         "name": {
           "anyOf": [
@@ -469,8 +619,6 @@
         }
       },
       "required": [
-        "action",
-        "entities",
         "timing"
       ],
       "title": "Step",

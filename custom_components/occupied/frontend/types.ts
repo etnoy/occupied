@@ -22,8 +22,9 @@ export interface Timing {
   };
 }
 export interface Action {
-  action: string;
-  entities: string[];
+  action?: string;
+  entities?: string[] | Record<string, Record<string, JsonValue>>;
+  actions?: Action[];
   data?: Record<string, JsonValue>;
 }
 export interface Schedule {
@@ -66,6 +67,9 @@ export interface TimingForm {
   maxDuration?: string;
 }
 export interface ActionForm {
+  customYaml?: string;
+  customActions?: Action[];
+  customAccepted?: string;
   kind: string;
   service: string;
   data: string;
@@ -311,6 +315,7 @@ export interface WebSocketResponses {
   instances: InstanceDocument[];
   program: ProgramDocument;
   catalog: Catalog;
+  action_yaml: ApiResult<{ actions: Action[] }>;
   editor_validate: ApiResult<{ program: Program; behavior_hash: string }>;
   save: ApiResult<ProgramDocument>;
   validate: ApiResult<{ program: Program; behavior_hash: string }>;

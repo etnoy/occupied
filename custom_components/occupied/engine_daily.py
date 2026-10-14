@@ -550,6 +550,7 @@ class DailyEngine:
         now = dt_util.utcnow()
         self._queue.clear()
         current = self._plan_at(now)
+        queued_groups = set()
         for plan in self._plans.values():
             for event in plan.events:
                 key = self._key(plan, event)
@@ -563,6 +564,11 @@ class DailyEngine:
                         "date": now.date().isoformat(),
                     }
                 elif event.at < current.end:
+                    if event.custom:
+                        group = (plan.behavior_hash, event.group_id)
+                        if group in queued_groups:
+                            continue
+                        queued_groups.add(group)
                     self._push(event.at, "plan", key, (plan, event), event.order_key[1:])
         self._push(current.end, "boundary", f"boundary:{current.end}", order=(0, 0, "", 0))
 
@@ -870,7 +876,60 @@ class DailyEngine:
             }
         self._record(key, outcome, detail or (action.action if action else ""))
 
+    async def _execute_custom_group(self, plan, event, generation):
+        group = plan.groups[event.group_id]
+        conflicts = {
+            entity
+            for member in group
+            if member.action.action not in {"light.turn_on", "light.turn_off"}
+            for entity in member.action.targets
+            if entity in self._handover
+        }
+        if conflicts:
+            at = max(instant(self._handover[e]["deadline"]) for e in conflicts)
+            self._push(at, "plan", self._key(plan, event), (plan, event), event.order_key[1:])
+            return
+        stopped = None
+        for member in group:
+            key = self._key(plan, member)
+            previous = self._journal.get(key, {}).get("status")
+            if previous:
+                if previous in {
+                    "failed",
+                    "uncertain",
+                    "pending",
+                    "blocked",
+                    "cancelled_before_dispatch",
+                }:
+                    stopped = "Earlier call failed or was interrupted; block is not replayed"
+                continue
+            if stopped:
+                self._finish(key, "blocked", member.action, stopped)
+                continue
+            if generation != self.generation or not self._effective_gate()[0]:
+                stopped = "Permission changed or controller stopped"
+                self._finish(key, "blocked", member.action, stopped)
+                continue
+            if set(member.action.targets) & self._yielded:
+                self._finish(key, "yielded", member.action)
+                continue
+            if member.action.action in {"light.turn_on", "light.turn_off"} and any(
+                entity in self._handover for entity in member.action.targets
+            ):
+                self._finish(key, "subsumed_handover", member.action)
+                continue
+            success = await self._call(member.action, key, generation, allow_retry=False)
+            status = self._journal.get(key, {}).get("status")
+            if not success and status not in {"entity_disabled", "unavailable", "yielded"}:
+                stopped = (
+                    "Earlier call failed or was interrupted; remaining calls were not dispatched"
+                )
+        await self._persist()
+
     async def _execute_plan(self, plan, event: PlanEvent, key, generation):
+        if event.custom:
+            await self._execute_custom_group(plan, event, generation)
+            return
         action = event.action
         if set(action.targets) & self._yielded:
             self._finish(key, "yielded")

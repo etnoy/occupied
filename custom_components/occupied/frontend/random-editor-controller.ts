@@ -1,3 +1,4 @@
+import { prepareCustomAction } from "./custom-action.js";
 import type { OccupiedPanel } from "./occupied-panel.js";
 import type {
   RandomEntry,
@@ -118,9 +119,34 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
       return refresh(Object.keys(editor.errors)[0]);
     }
     try {
+      for (const phase of ["on", "off"] as const) {
+        try {
+          await prepareCustomAction(panel, form[phase]);
+        } catch (error) {
+          editor.errors[`${phase}.customYaml`] =
+            error instanceof Error ? error.message : String(error);
+          return refresh(`${phase}.customYaml`);
+        }
+      }
       const candidate = buildRandom(panel.draft, editor);
       editor.candidatePath = ["random", editor.id];
       if (panel.document?.source === "file") {
+        if (form.on.kind === "custom" || form.off.kind === "custom") {
+          const version = panel.version;
+          const validation = await panel.ws("editor_validate", {
+            program: candidate,
+          });
+          if (panel.version !== version || panel.activeEditor !== editor) {
+            return;
+          }
+          if (!validation.valid) {
+            panel.showIssues(validation);
+            if (validation.issues.length > 0) {
+              panel.focusIssue(validation.issues[0]);
+            }
+            return;
+          }
+        }
         panel.randomEditor = null;
         panel.change([], candidate, true);
       } else {

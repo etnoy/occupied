@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { actionTargets } from "./custom-action.js";
   import type { OccupiedPanel } from "./occupied-panel.js";
   import { randomEntries, countSummary } from "./random-model.js";
   import { openRandom } from "./random-editor-controller.js";
@@ -87,7 +88,7 @@
             <span class="hint"
               >{countSummary(entry.count)}
               {t("times per window")} · {entry.min_duration ||
-                "5m"}–{entry.max_duration || "15m"} · {entry.on.entities
+                "5m"}–{entry.max_duration || "15m"} · {actionTargets(entry.on)
                 .map((id) => entityName(panel.catalog, id))
                 .join(", ")}</span
             >

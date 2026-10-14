@@ -63,6 +63,9 @@ function showEntry(panel: OccupiedPanel, entry: StepEntry) {
   showStep(panel, entry);
 }
 export function actionSummary(entry: StepEntry, t: Translate) {
+  if (entry.actions || entry.action === "set_state") {
+    return `${t("Custom YAML")} · ${entry.actions?.length || 1} ${t("actions")}`;
+  }
   if (entry.action === "scene.turn_on") {
     return t("Activate scene");
   }

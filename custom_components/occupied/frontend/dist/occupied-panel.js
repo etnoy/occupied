@@ -1220,6 +1220,15 @@ var styles = `
 
 // custom_components/occupied/frontend/translations.ts
 var sv = {
+  "Custom YAML": "Egen YAML",
+  "Action YAML": "\xC5tg\xE4rds-YAML",
+  actions: "\xE5tg\xE4rder",
+  "Enter one action or an ordered list of actions. Use brightness from 1 to 255. Timing stays in the controls above. A failed call stops the remaining actions.":
+    "Ange en \xE5tg\xE4rd eller en ordnad lista med \xE5tg\xE4rder. Anv\xE4nd brightness fr\xE5n 1 till 255. Tider anges i kontrollerna ovan. Ett misslyckat anrop stoppar \xE5terst\xE5ende \xE5tg\xE4rder.",
+  "Replace this Custom YAML block with the selected action? Its individual settings or other actions will be removed.":
+    "Ers\xE4tt detta YAML-block med den valda \xE5tg\xE4rden? Individuella inst\xE4llningar eller andra \xE5tg\xE4rder tas bort.",
+  "run the Custom YAML actions in order":
+    "k\xF6r YAML-\xE5tg\xE4rderna i ordning",
   "Live preview": "Livef\xF6rhandsvisning",
   "Controls real devices": "Styr riktiga enheter",
   "Scheduling stays paused until you choose Resume scheduling.":
@@ -8653,7 +8662,7 @@ function coverField(action2) {
   return;
 }
 function isCoverAction(action2) {
-  const field = coverField(action2.action);
+  const field = coverField(action2.action || "");
   return (
     coverActions.some(([service]) => service === action2.action) &&
     Object.keys(action2.data || {}).every((key2) => key2 === field) &&
@@ -8674,14 +8683,14 @@ function coverTarget(action2, previous = {}) {
   }
   const next2 = { ...previous };
   const tilt =
-    action2.action.endsWith("_tilt") ||
+    action2.action?.endsWith("_tilt") ||
     action2.action === "cover.set_cover_tilt_position";
   const field = tilt ? "tilt_position" : "position";
-  if (action2.action.includes(".stop_")) {
+  if (action2.action?.includes(".stop_")) {
     delete next2[field];
-  } else if (action2.action.includes(".open_")) {
+  } else if (action2.action?.includes(".open_")) {
     next2[field] = 100;
-  } else if (action2.action.includes(".close_")) {
+  } else if (action2.action?.includes(".close_")) {
     next2[field] = 0;
   } else {
     const value = action2.data?.[field];
@@ -8693,6 +8702,136 @@ function coverTarget(action2, previous = {}) {
   }
   return next2;
 }
+
+// custom_components/occupied/frontend/custom-action.ts
+function actionTargets(source2) {
+  if (!source2) {
+    return [];
+  }
+  if (source2.actions) {
+    return [
+      ...new Set(source2.actions.flatMap((action2) => actionTargets(action2))),
+    ];
+  }
+  return Array.isArray(source2.entities)
+    ? source2.entities
+    : Object.keys(source2.entities || {});
+}
+function actionYaml(value, level = 0) {
+  const pad = "  ".repeat(level);
+  if (Array.isArray(value)) {
+    if (value.every((item) => typeof item !== "object" || item === null)) {
+      return JSON.stringify(value);
+    }
+    return value
+      .map((item) => {
+        const lines = actionYaml(item, level + 1).split("\n");
+        return `${pad}- ${lines[0].trimStart()}${lines.length > 1 ? "\n" + lines.slice(1).join("\n") : ""}`;
+      })
+      .join("\n");
+  }
+  if (value !== null && typeof value === "object") {
+    return Object.entries(value)
+      .map(([key2, item]) => {
+        const scalar =
+          item === null ||
+          typeof item !== "object" ||
+          (!Array.isArray(item) && Object.keys(item).length === 0) ||
+          (Array.isArray(item) &&
+            item.every((entry) => typeof entry !== "object" || entry === null));
+        const name =
+          /^[a-z_][a-z0-9_.]*$/.test(key2) &&
+          ![
+            "on",
+            "off",
+            "yes",
+            "no",
+            "y",
+            "n",
+            "true",
+            "false",
+            "null",
+          ].includes(key2)
+            ? key2
+            : JSON.stringify(key2);
+        return scalar
+          ? `${pad}${name}: ${JSON.stringify(item)}`
+          : `${pad}${name}:
+${actionYaml(item, level + 1)}`;
+      })
+      .join("\n");
+  }
+  return JSON.stringify(value);
+}
+function mappedControl(form) {
+  return {
+    action: "set_state",
+    entities: Object.fromEntries(
+      form.entities.map((entity) => [
+        entity,
+        { state: form.action === "turn_off" ? "off" : "on" },
+      ]),
+    ),
+  };
+}
+function simpleMapping(source2) {
+  if (source2.action !== "set_state" || Array.isArray(source2.entities)) {
+    return source2;
+  }
+  const entries = Object.entries(source2.entities || {});
+  const states = new Set(entries.map(([, settings]) => settings.state));
+  if (
+    entries.length > 0 &&
+    states.size === 1 &&
+    entries.every(
+      ([entity, settings]) =>
+        /^(light|switch)\./.test(entity) &&
+        Object.keys(settings).length === 1 &&
+        ["on", "off"].includes(String(settings.state)),
+    )
+  ) {
+    return {
+      action: states.has("off") ? "turn_off" : "turn_on",
+      entities: entries.map(([entity]) => entity),
+    };
+  }
+  return;
+}
+async function prepareCustomAction(panel, form) {
+  if (form.kind !== "custom") {
+    return true;
+  }
+  const text2 = form.customYaml || "";
+  const version = panel.version;
+  const editor = panel.activeEditor;
+  const result = await panel.ws("action_yaml", { yaml: text2 });
+  if (
+    form.customYaml !== text2 ||
+    panel.version !== version ||
+    panel.activeEditor !== editor
+  ) {
+    throw new Error(
+      "Your changes are kept. Submit again to include the latest edits.",
+    );
+  }
+  if (!result.valid) {
+    throw new Error(
+      result.issues
+        .map(
+          (issue) =>
+            `${issue.line ? `Line ${issue.line}: ` : ""}${issue.path || ""}: ${issue.message}`,
+        )
+        .join("\n"),
+    );
+  }
+  form.customActions = result.actions;
+  form.customAccepted = text2;
+  return true;
+}
+var customExample = actionYaml({
+  action: "set_state",
+  entities: { "light.example": { state: "on", brightness: 128 } },
+});
 
 // custom_components/occupied/frontend/step-model.ts
 var sorted = (values) => [...new Set(values)].sort();
@@ -8710,7 +8849,7 @@ function stepEntries(program, catalog, t = (value) => value) {
     days: [...(step.days || days)],
     name:
       step.name ||
-      `${catalog ? entityName(catalog, step.entities[0]) : step.entities[0]}${step.entities.length > 1 ? ` +${step.entities.length - 1}` : ""} \xB7 ${t(actionLabels[step.action] || step.action)}`,
+      `${catalog ? entityName(catalog, actionTargets(step)[0]) : actionTargets(step)[0]}${actionTargets(step).length > 1 ? ` +${actionTargets(step).length - 1}` : ""} \xB7 ${t(step.actions || step.action === "set_state" ? "Custom YAML" : actionLabels[step.action || ""] || step.action || "")}`,
   }));
 }
 var solarEvents = ["sunrise", "sunset", "dawn", "dusk", "noon", "midnight"];
@@ -8737,7 +8876,7 @@ function timeSourceChoices(
     ...(randomId
       ? parentRandomEvents(program, randomId).map((event2) => ({
           value: `random:${event2.id}`,
-          name: `${t("End of")} ${event2.name || (catalog.entities ? entityName({ entities: catalog.entities }, event2.on.entities[0]) : event2.on.entities[0])}`,
+          name: `${t("End of")} ${event2.name || (catalog.entities ? entityName({ entities: catalog.entities }, actionTargets(event2.on)[0]) : actionTargets(event2.on)[0])}`,
           group: "Random events",
         }))
       : []),
@@ -8777,12 +8916,14 @@ function stepEditor(program, entry, parent) {
 function actionForm(source2) {
   const action2 = source2?.action;
   let kind = "entities";
-  if (action2 === "scene.turn_on") {
+  if (source2?.actions || action2 === "set_state") {
+    kind = "custom";
+  } else if (action2 === "scene.turn_on") {
     kind = "scene";
   } else if (
     source2 &&
     isCoverAction(source2) &&
-    source2.entities.every((entity) => entity.startsWith("cover."))
+    actionTargets(source2).every((entity) => entity.startsWith("cover."))
   ) {
     kind = "cover";
   } else if (action2?.includes(".")) {
@@ -8790,9 +8931,37 @@ function actionForm(source2) {
   }
   return {
     kind,
+    ...(kind === "custom" &&
+      source2 && {
+        customActions: source2.actions || [
+          {
+            action: source2.action,
+            entities: source2.entities,
+            ...(source2.data && { data: source2.data }),
+          },
+        ],
+        customAccepted: actionYaml(
+          source2.actions?.length === 1
+            ? source2.actions[0]
+            : source2.actions || {
+                action: source2.action,
+                entities: source2.entities,
+                ...(source2.data && { data: source2.data }),
+              },
+        ),
+        customYaml: actionYaml(
+          source2.actions?.length === 1
+            ? source2.actions[0]
+            : source2.actions || {
+                action: source2.action,
+                entities: source2.entities,
+                ...(source2.data && { data: source2.data }),
+              },
+        ),
+      }),
     service: source2?.action || "homeassistant.turn_on",
     data: JSON.stringify(source2?.data || {}, null, 2),
-    entities: [...(source2?.entities || [])],
+    entities: actionTargets(source2),
     action: action2 === "turn_off" ? "turn_off" : "turn_on",
     position: String(source2?.data?.position ?? ""),
     tiltPosition: String(source2?.data?.tilt_position ?? ""),
@@ -8814,6 +8983,12 @@ function editorErrors(program, editor) {
 }
 function actionErrors(form) {
   const errors = {};
+  if (form.kind === "custom") {
+    if (!form.customYaml?.trim()) {
+      errors.customYaml = "Enter an action mapping or a list of actions.";
+    }
+    return errors;
+  }
   if (form.entities.length === 0) {
     errors.entities =
       form.kind === "scene"
@@ -8985,6 +9160,12 @@ function buildStep(program, editor) {
   return next2;
 }
 function buildAction(form) {
+  if (form.kind === "custom") {
+    if (!form.customActions || form.customAccepted !== form.customYaml) {
+      throw new Error("Validate Custom YAML before adding it to the draft.");
+    }
+    return { actions: copy(form.customActions) };
+  }
   let action2 = form.action;
   if (form.kind === "scene") {
     action2 = "scene.turn_on";
@@ -9092,11 +9273,34 @@ function createStepEditorContext(panel) {
       return refresh();
     }
     try {
+      try {
+        await prepareCustomAction(panel, form);
+      } catch (error) {
+        editor.errors.customYaml =
+          error instanceof Error ? error.message : String(error);
+        return refresh("customYaml");
+      }
       const candidate = buildStep(panel.draft, editor);
       editor.candidatePath = required(
         stepEntries(candidate).find((entry) => entry.id === editor.id),
       ).path;
       if (panel.document?.source === "file") {
+        if (form.kind === "custom") {
+          const version = panel.version;
+          const validation = await panel.ws("editor_validate", {
+            program: candidate,
+          });
+          if (panel.version !== version || panel.activeEditor !== editor) {
+            return;
+          }
+          if (!validation.valid) {
+            panel.showIssues(validation);
+            if (validation.issues.length > 0) {
+              panel.focusIssue(validation.issues[0]);
+            }
+            return;
+          }
+        }
         panel.change([], candidate);
         panel.selectedStep = editor.id;
         panel.stepEditor = null;
@@ -9175,6 +9379,9 @@ function showEntry(panel, entry) {
   showStep(panel, entry);
 }
 function actionSummary(entry, t) {
+  if (entry.actions || entry.action === "set_state") {
+    return `${t("Custom YAML")} \xB7 ${entry.actions?.length || 1} ${t("actions")}`;
+  }
   if (entry.action === "scene.turn_on") {
     return t("Activate scene");
   }
@@ -9885,6 +10092,8 @@ function EditorField($$anchor, $$props) {
     }
     $$props.update(String(control.value ?? ""));
     get(changed)($$props.key);
+    if (control instanceof HTMLSelectElement)
+      control.value = String($$props.value);
     if (options().render) focusEditor($$props.panel, get(field));
   }
   var div = root_6();
@@ -10098,7 +10307,7 @@ function randomEntries(program, catalog) {
     days: [...(event2.days || days)],
     name:
       event2.name ||
-      `${catalog ? entityName(catalog, event2.on.entities[0]) : event2.on.entities[0]}${event2.on.entities.length > 1 ? ` +${event2.on.entities.length - 1}` : ""}`,
+      `${catalog ? entityName(catalog, actionTargets(event2.on)[0]) : actionTargets(event2.on)[0]}${actionTargets(event2.on).length > 1 ? ` +${actionTargets(event2.on).length - 1}` : ""}`,
   }));
 }
 function randomEditor(program, entry) {
@@ -11028,20 +11237,99 @@ function EntitiesEditor($$anchor, $$props) {
   pop();
 }
 
+// custom_components/occupied/frontend/action-kind.ts
+function changeActionKind(form, value, confirmReplace) {
+  const kind = value === "turn_on" || value === "turn_off" ? "entities" : value;
+  if (kind === "custom" && form.kind !== "custom") {
+    const errors = actionErrors(form);
+    if (Object.keys(errors).length > 0) {
+      if (form.entities.length === 0 && form.kind === "entities") {
+        form.customYaml ||= customExample;
+        form.kind = "custom";
+        return {};
+      }
+      return errors;
+    }
+    if (!form.customYaml) {
+      const source2 =
+        form.kind === "entities" ? mappedControl(form) : buildAction(form);
+      form.customYaml = actionYaml(source2);
+      form.customAccepted = form.customYaml;
+      form.customActions = [source2];
+    }
+    form.kind = "custom";
+    return {};
+  }
+  if (form.kind === "custom" && kind !== "custom") {
+    const accepted =
+      form.customAccepted === form.customYaml &&
+      form.customActions?.length === 1
+        ? simpleMapping(form.customActions[0])
+        : void 0;
+    const next2 = accepted ? actionForm(accepted) : void 0;
+    const compatible =
+      next2 &&
+      next2.kind === kind &&
+      (kind !== "entities" || next2.action === value);
+    if (compatible) {
+      const buffer = {
+        customYaml: form.customYaml,
+        customAccepted: form.customAccepted,
+        customActions: form.customActions,
+      };
+      Object.assign(form, next2, buffer);
+      return {};
+    }
+    if (
+      !confirmReplace(
+        "Replace this Custom YAML block with the selected action? Its individual settings or other actions will be removed.",
+      )
+    ) {
+      return {};
+    }
+  }
+  if (form.kind !== kind) {
+    form.entities = [];
+  }
+  form.kind = kind;
+  if (kind === "entities") {
+    form.action = value;
+  }
+  if (
+    kind === "cover" &&
+    coverActions.every(([action2]) => action2 !== form.service)
+  ) {
+    form.service = "cover.open_cover";
+  }
+  return {};
+}
+
 // custom_components/occupied/frontend/ActionEditor.svelte
-var root9 = from_html(`<!> <!> <p class="hint"> </p> <p class="hint"> </p>`, 1);
-var root_17 = from_html(
-  `<div data-editor-section="action"><h3> </h3> <!> <!> <!> <!> <!></div>`,
+var root9 = from_html(
+  `<ha-code-editor></ha-code-editor> <!> <p class="hint"> </p>`,
+  3,
 );
+var root_17 = from_html(
+  `<!> <!> <p class="hint"> </p> <p class="hint"> </p>`,
+  1,
+);
+var root_26 = from_html(
+  `<div data-editor-section="action"><h3> </h3> <!> <!> <!> <!> <!> <!></div>`,
+);
+var $$css = {
+  hash: "svelte-9e2py0",
+  code: "ha-code-editor.svelte-9e2py0 {display:block;width:100%;margin:8px 0;--code-mirror-height: 280px;--code-mirror-max-height: 60vh;}",
+};
 function ActionEditor($$anchor, $$props) {
   push($$props, true);
+  append_styles($$anchor, $$css);
   let heading = prop($$props, "heading", 3, "Action"),
     kindLabel = prop($$props, "kindLabel", 3, "Step type"),
     entityLabel = prop($$props, "entityLabel", 3, "Entities"),
     hideEntities = prop($$props, "hideEntities", 3, false);
   let form = user_derived(() => $$props.context.form),
     t = user_derived(() => $$props.context.t);
-  var div = root_17();
+  var div = root_26();
   var h3 = child(div);
   var text2 = only_child(h3, true);
   var node = sibling(h3, 2);
@@ -11064,17 +11352,10 @@ function ActionEditor($$anchor, $$props) {
         return get($0);
       },
       update: (value) => {
-        const kind =
-          value === "turn_on" || value === "turn_off" ? "entities" : value;
-        if (get(form).kind !== kind) get(form).entities = [];
-        get(form).kind = kind;
-        if (kind === "entities") get(form).action = value;
-        if (
-          kind === "cover" &&
-          !coverActions.some(([action2]) => action2 === get(form).service)
-        ) {
-          get(form).service = "cover.open_cover";
-        }
+        const errors = changeActionKind(get(form), value, (message) =>
+          globalThis.confirm(get(t)(message)),
+        );
+        Object.assign($$props.context.editor.errors, errors);
       },
       options: {
         hideLabel: true,
@@ -11084,6 +11365,7 @@ function ActionEditor($$anchor, $$props) {
           ["cover", "Control covers"],
           ["service", "Entity service action"],
           ["scene", "Activate Home Assistant scene"],
+          ["custom", "Custom YAML"],
         ],
         render: true,
       },
@@ -11105,12 +11387,92 @@ function ActionEditor($$anchor, $$props) {
       });
     };
     if_block(node_1, ($$render) => {
-      if (!hideEntities()) $$render(consequent);
+      if (!hideEntities() && get(form).kind !== "custom") $$render(consequent);
     });
   }
   var node_2 = sibling(node_1, 2);
   {
     var consequent_1 = ($$anchor2) => {
+      var fragment_1 = root9();
+      var ha_code_editor = first_child(fragment_1);
+      set_custom_element_data(ha_code_editor, "role", "group");
+      template_effect(
+        ($0) => set_custom_element_data(ha_code_editor, "aria-label", $0),
+        [() => get(t)("Action YAML")],
+      );
+      template_effect(() =>
+        set_custom_element_data(
+          ha_code_editor,
+          "aria-describedby",
+          $$props.context.editor.errors.customYaml
+            ? `step-error-${$$props.context.fieldPrefix || ""}customYaml`
+            : void 0,
+        ),
+      );
+      template_effect(() =>
+        set_custom_element_data(
+          ha_code_editor,
+          "data-builder-field",
+          `${$$props.context.fieldPrefix || ""}customYaml`,
+        ),
+      );
+      set_custom_element_data(ha_code_editor, "dir", "ltr");
+      set_class(ha_code_editor, 1, "svelte-9e2py0");
+      action(
+        ha_code_editor,
+        ($$node, $$action_arg) => properties?.($$node, $$action_arg),
+        () => ({
+          mode: "yaml",
+          value: get(form).customYaml || "",
+          linewrap: true,
+        }),
+      );
+      var node_3 = sibling(ha_code_editor, 2);
+      {
+        let $0 = user_derived(() => $$props.context.fieldPrefix || "");
+        let $1 = user_derived(() => ({ ...$$props.context.editor.errors }));
+        FieldError(node_3, {
+          key: "customYaml",
+          get fieldPrefix() {
+            return get($0);
+          },
+          get errors() {
+            return get($1);
+          },
+        });
+      }
+      var p = sibling(node_3, 2);
+      var text_1 = only_child(p, true);
+      template_effect(
+        ($0) => {
+          ha_code_editor.dir = ha_code_editor.dir;
+          set_text(text_1, $0);
+        },
+        [
+          () =>
+            get(t)(
+              "Enter one action or an ordered list of actions. Use brightness from 1 to 255. Timing stays in the controls above. A failed call stops the remaining actions.",
+            ),
+        ],
+      );
+      event("value-changed", ha_code_editor, (event2) => {
+        if (
+          !isValueChangedEvent(event2) ||
+          typeof event2.detail.value !== "string"
+        )
+          return;
+        get(form).customYaml = event2.detail.value;
+        $$props.context.changed("customYaml");
+      });
+      append($$anchor2, fragment_1);
+    };
+    if_block(node_2, ($$render) => {
+      if (get(form).kind === "custom") $$render(consequent_1);
+    });
+  }
+  var node_4 = sibling(node_2, 2);
+  {
+    var consequent_2 = ($$anchor2) => {
       EditorField($$anchor2, {
         get panel() {
           return $$props.panel;
@@ -11126,18 +11488,18 @@ function ActionEditor($$anchor, $$props) {
         update: (value) => (get(form).service = value),
       });
     };
-    if_block(node_2, ($$render) => {
-      if (get(form).kind === "service") $$render(consequent_1);
+    if_block(node_4, ($$render) => {
+      if (get(form).kind === "service") $$render(consequent_2);
     });
   }
-  var node_3 = sibling(node_2, 2);
+  var node_5 = sibling(node_4, 2);
   {
-    var consequent_4 = ($$anchor2) => {
-      var fragment_2 = root9();
-      var node_4 = first_child(fragment_2);
+    var consequent_5 = ($$anchor2) => {
+      var fragment_3 = root_17();
+      var node_6 = first_child(fragment_3);
       {
         let $0 = user_derived(() => ({ choices: coverActions, render: true }));
-        EditorField(node_4, {
+        EditorField(node_6, {
           get panel() {
             return $$props.panel;
           },
@@ -11155,9 +11517,9 @@ function ActionEditor($$anchor, $$props) {
           },
         });
       }
-      var node_5 = sibling(node_4, 2);
+      var node_7 = sibling(node_6, 2);
       {
-        var consequent_2 = ($$anchor3) => {
+        var consequent_3 = ($$anchor3) => {
           EditorField($$anchor3, {
             get panel() {
               return $$props.panel;
@@ -11174,7 +11536,7 @@ function ActionEditor($$anchor, $$props) {
             options: { type: "number", min: 0, max: 100, step: 1 },
           });
         };
-        var consequent_3 = ($$anchor3) => {
+        var consequent_4 = ($$anchor3) => {
           EditorField($$anchor3, {
             get panel() {
               return $$props.panel;
@@ -11191,21 +11553,21 @@ function ActionEditor($$anchor, $$props) {
             options: { type: "number", min: 0, max: 100, step: 1 },
           });
         };
-        if_block(node_5, ($$render) => {
+        if_block(node_7, ($$render) => {
           if (get(form).service === "cover.set_cover_position")
-            $$render(consequent_2);
+            $$render(consequent_3);
           else if (get(form).service === "cover.set_cover_tilt_position")
-            $$render(consequent_3, 1);
+            $$render(consequent_4, 1);
         });
       }
-      var p = sibling(node_5, 2);
-      var text_1 = only_child(p, true);
-      var p_1 = sibling(p, 2);
+      var p_1 = sibling(node_7, 2);
       var text_2 = only_child(p_1, true);
+      var p_2 = sibling(p_1, 2);
+      var text_3 = only_child(p_2, true);
       template_effect(
         ($0, $1) => {
-          set_text(text_1, $0);
-          set_text(text_2, $1);
+          set_text(text_2, $0);
+          set_text(text_3, $1);
         },
         [
           () =>
@@ -11218,15 +11580,15 @@ function ActionEditor($$anchor, $$props) {
             ),
         ],
       );
-      append($$anchor2, fragment_2);
+      append($$anchor2, fragment_3);
     };
-    if_block(node_3, ($$render) => {
-      if (get(form).kind === "cover") $$render(consequent_4);
+    if_block(node_5, ($$render) => {
+      if (get(form).kind === "cover") $$render(consequent_5);
     });
   }
-  var node_6 = sibling(node_3, 2);
+  var node_8 = sibling(node_5, 2);
   {
-    var consequent_5 = ($$anchor2) => {
+    var consequent_6 = ($$anchor2) => {
       EditorField($$anchor2, {
         get panel() {
           return $$props.panel;
@@ -11243,9 +11605,9 @@ function ActionEditor($$anchor, $$props) {
         options: { multiline: true },
       });
     };
-    if_block(node_6, ($$render) => {
+    if_block(node_8, ($$render) => {
       if (get(form).kind === "scene" || get(form).kind === "service")
-        $$render(consequent_5);
+        $$render(consequent_6);
     });
   }
   reset(div);
@@ -11414,7 +11776,7 @@ var root11 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-step=""> </button></section>`,
 );
 var root_18 = from_html(`<span class="step-status-badge"> </span>`);
-var root_26 = from_html(`<span class="step-warning-message"> </span>`);
+var root_27 = from_html(`<span class="step-warning-message"> </span>`);
 var root_35 = from_html(
   `<span class="step-row-warning"><ha-icon></ha-icon> <span></span></span>`,
   2,
@@ -11553,7 +11915,7 @@ function StepsView($$anchor, $$props) {
                 () => get(warnings),
                 index,
                 ($$anchor5, warning) => {
-                  var span_6 = root_26();
+                  var span_6 = root_27();
                   var text_6 = only_child(span_6, true);
                   template_effect(() => set_text(text_6, get(warning).message));
                   append($$anchor5, span_6);
@@ -11661,8 +12023,8 @@ function StepsView($$anchor, $$props) {
                   : entry().name,
               () => actionSummary(entry(), get(t)),
               () =>
-                entry()
-                  .entities.map((id) => entityName($$props.panel.catalog, id))
+                actionTargets(entry())
+                  .map((id) => entityName($$props.panel.catalog, id))
                   .join(", "),
             ],
           );
@@ -11701,13 +12063,13 @@ var root_19 = from_html(
   `<section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <div class="yaml-actions svelte-82irif"><button type="button" class="primary"> </button> <button type="button"> </button> <button type="button" class="download svelte-82irif"> </button></div></section>`,
   2,
 );
-var $$css = {
+var $$css2 = {
   hash: "svelte-82irif",
   code: ".yaml-actions.svelte-82irif {display:flex;align-items:center;flex-wrap:wrap;gap:8px;}.yaml-actions.svelte-82irif .download:where(.svelte-82irif) {margin-left:auto;}ha-code-editor.svelte-82irif {display:block;width:100%;margin:8px 0;--code-mirror-height: 420px;--code-mirror-max-height: 60vh;}section.yaml-panel.svelte-82irif {border-color:var(--divider-color, #d5dce3);border-left-color:var(--divider-color, #d5dce3);background:var(--card-background-color, #fff);}section.yaml-panel.has-changes.svelte-82irif {border-color:var(--warning-color, #e69500);border-left-color:var(--warning-color, #e69500);background:color-mix(\n      in srgb,\n      var(--warning-color, #e69500) 18%,\n      var(--card-background-color, #fff)\n    );}.changes.svelte-82irif {color:var(--warning-color, #e69500);font-size:0.75em;font-weight:500;}",
 };
 function SettingsView($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css);
+  append_styles($$anchor, $$css2);
   let panel = prop($$props, "panel", 7);
   let data = user_derived(() => {
     $$props.revision;
@@ -12023,15 +12385,15 @@ var root_110 = from_html(
   `<state-history-chart-timeline></state-history-chart-timeline>`,
   2,
 );
-var root_27 = from_html(`<p role="status"> </p>`);
+var root_28 = from_html(`<p role="status"> </p>`);
 var root_36 = from_html(`<!> <!> <!>`, 1);
-var $$css2 = {
+var $$css3 = {
   hash: "svelte-1cnjgem",
   code: "state-history-chart-timeline.svelte-1cnjgem {display:block;width:100%;}state-history-chart-timeline[hidden].svelte-1cnjgem {display:none;}",
 };
 function PreviewStateGraph($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css2);
+  append_styles($$anchor, $$css3);
   let names = prop($$props, "names", 19, () => ({}));
   let ready = state(false);
   let failed = state(false);
@@ -12172,7 +12534,7 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, state_history_chart_timeline);
     };
     var consequent_4 = ($$anchor2) => {
-      var p_3 = root_27();
+      var p_3 = root_28();
       var text_3 = only_child(p_3, true);
       template_effect(
         ($0) => set_text(text_3, $0),
@@ -12258,7 +12620,7 @@ function lastGroupResult(session) {
 // custom_components/occupied/frontend/Timeline.svelte
 var root14 = from_html(`<h2> </h2>`);
 var root_111 = from_html(`<th scope="col"> </th>`);
-var root_28 = from_html(`<td> </td>`);
+var root_29 = from_html(`<td> </td>`);
 var root_37 = from_html(`<span> </span> <div> </div>`, 1);
 var root_44 = from_html(`<td><!></td>`);
 var root_54 = from_html(`<tr><!><!></tr>`);
@@ -12269,13 +12631,13 @@ var root_72 = from_html(`<p> </p>`);
 var root_8 = from_html(`<!> <!> <!>`, 1);
 var root_9 = from_html(`<p role="status"> </p>`);
 var root_10 = from_html(`<section><!> <!></section>`);
-var $$css3 = {
+var $$css4 = {
   hash: "svelte-16g6nis",
   code: "tr.current.svelte-16g6nis {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-16g6nis {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}",
 };
 function Timeline($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css3);
+  append_styles($$anchor, $$css4);
   let t = prop($$props, "t", 3, (text2) => text2),
     entityNames = prop($$props, "entityNames", 19, () => ({})),
     loading = prop($$props, "loading", 3, false),
@@ -12383,7 +12745,7 @@ function Timeline($$anchor, $$props) {
           each(
             node_5,
             16,
-            () => ["Planned time", "Source", "Action", "Targets"],
+            () => ["Planned time", "Source", "Action", "Targets", "Settings"],
             index,
             ($$anchor4, label) => {
               var th = root_111();
@@ -12438,10 +12800,13 @@ function Timeline($$anchor, $$props) {
                   `${eventLabel(get(event2))} \xB7 ${t()(get(event2).kind === "random_start" ? "Random start" : get(event2).kind === "random_end" ? "Random end" : get(event2).kind)}`,
                   get(event2).action.action,
                   get(event2).action.entities.join(", "),
+                  Object.keys(get(event2).action.data || {}).length
+                    ? JSON.stringify(get(event2).action.data)
+                    : "\u2014",
                 ],
                 index,
                 ($$anchor5, value) => {
-                  var td = root_28();
+                  var td = root_29();
                   var text_6 = only_child(td, true);
                   template_effect(() => set_text(text_6, get(value)));
                   append($$anchor5, td);
@@ -12628,7 +12993,7 @@ var root15 = from_html(
 var root_112 = from_html(
   `<button type="button" class="svelte-100n2ef"> </button>`,
 );
-var root_29 = from_html(
+var root_210 = from_html(
   `<button type="button" class="primary svelte-100n2ef"> </button> <!> <button type="button" class="svelte-100n2ef"> </button>`,
   1,
 );
@@ -12650,13 +13015,13 @@ var root_11 = from_html(
   `<!> <section class="live-card svelte-100n2ef"><h2 class="svelte-100n2ef"> </h2> <p class="svelte-100n2ef"><strong> </strong></p> <p class="hint svelte-100n2ef"> </p> <!> <!></section> <!>`,
   1,
 );
-var $$css4 = {
+var $$css5 = {
   hash: "svelte-100n2ef",
   code: ".live-card.svelte-100n2ef {border:1px solid var(--divider-color, #ddd);border-radius:12px;padding:16px;margin-bottom:16px;}h2.svelte-100n2ef {margin:0;}p.svelte-100n2ef {margin:8px 0;}.call.svelte-100n2ef {overflow-wrap:anywhere;}.live-actions.svelte-100n2ef {position:sticky;top:64px;z-index:2;display:flex;flex-wrap:wrap;gap:8px;padding:12px;margin-bottom:16px;background:var(--card-background-color, white);border:1px solid var(--divider-color, #ddd);border-radius:12px;}.live-actions.svelte-100n2ef button:where(.svelte-100n2ef) {min-height:48px;margin:0;}.primary.svelte-100n2ef {flex:1;}\n  @media (max-width: 600px) {.live-actions.svelte-100n2ef {top:calc(56px + env(safe-area-inset-top, 0px));padding-bottom:max(12px, env(safe-area-inset-bottom, 0px));}\n  }",
 };
 function LivePreviewControls($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css4);
+  append_styles($$anchor, $$css5);
   const actionControls = ($$anchor2) => {
     var div = root_38();
     var node = child(div);
@@ -12691,7 +13056,7 @@ function LivePreviewControls($$anchor, $$props) {
         append($$anchor3, fragment);
       };
       var alternate = ($$anchor3) => {
-        var fragment_1 = root_29();
+        var fragment_1 = root_210();
         var button_2 = first_child(fragment_1);
         var text_2 = only_child(button_2, true);
         var node_1 = sibling(button_2, 2);
@@ -13065,14 +13430,14 @@ var root_113 = from_html(
   `<div class="schedule-heading svelte-5w63kc"><h2 aria-live="polite" class="svelte-5w63kc"> </h2> <!> <div class="day-navigation svelte-5w63kc" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-5w63kc"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
   2,
 );
-var root_210 = from_html(`<!> <!>`, 1);
-var $$css5 = {
+var root_211 = from_html(`<!> <!>`, 1);
+var $$css6 = {
   hash: "svelte-5w63kc",
   code: ".schedule-heading.svelte-5w63kc {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-bottom:20px;}h2.svelte-5w63kc {margin:0;}.day-navigation.svelte-5w63kc {display:flex;align-items:center;gap:4px;}.day-navigation.svelte-5w63kc button:where(.svelte-5w63kc) {margin:0;}",
 };
 function PreviewView($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css5);
+  append_styles($$anchor, $$css6);
   const dayHeading = ($$anchor2) => {
     var div = root_113();
     var h2 = child(div);
@@ -13207,7 +13572,7 @@ function PreviewView($$anchor, $$props) {
       ]),
     ),
   );
-  var fragment = root_210();
+  var fragment = root_211();
   var node_1 = first_child(fragment);
   LivePreviewControls(node_1, {
     get panel() {
@@ -13427,9 +13792,34 @@ function createRandomEditorContext(panel) {
       return refresh(Object.keys(editor.errors)[0]);
     }
     try {
+      for (const phase of ["on", "off"]) {
+        try {
+          await prepareCustomAction(panel, form[phase]);
+        } catch (error) {
+          editor.errors[`${phase}.customYaml`] =
+            error instanceof Error ? error.message : String(error);
+          return refresh(`${phase}.customYaml`);
+        }
+      }
       const candidate = buildRandom(panel.draft, editor);
       editor.candidatePath = ["random", editor.id];
       if (panel.document?.source === "file") {
+        if (form.on.kind === "custom" || form.off.kind === "custom") {
+          const version = panel.version;
+          const validation = await panel.ws("editor_validate", {
+            program: candidate,
+          });
+          if (panel.version !== version || panel.activeEditor !== editor) {
+            return;
+          }
+          if (!validation.valid) {
+            panel.showIssues(validation);
+            if (validation.issues.length > 0) {
+              panel.focusIssue(validation.issues[0]);
+            }
+            return;
+          }
+        }
         panel.randomEditor = null;
         panel.change([], candidate, true);
       } else {
@@ -13478,7 +13868,7 @@ async function deleteRandom(panel) {
 // custom_components/occupied/frontend/DeleteRandomDialog.svelte
 var root18 = from_html(`<li> </li>`);
 var root_114 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
-var root_211 = from_html(
+var root_212 = from_html(
   `<dialog class="step-delete-dialog" aria-labelledby="random-delete-title"><h2 id="random-delete-title"> </h2> <p> </p> <!> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog>`,
 );
 function DeleteRandomDialog($$anchor, $$props) {
@@ -13496,7 +13886,7 @@ function DeleteRandomDialog($$anchor, $$props) {
     dialog.showModal();
     dialog.querySelector("button")?.focus();
   });
-  var dialog_1 = root_211();
+  var dialog_1 = root_212();
   var h2 = child(dialog_1);
   var text2 = only_child(h2, true);
   var p = sibling(h2, 2);
@@ -13589,7 +13979,7 @@ var root19 = from_html(`<button type="button"> </button>`);
 var root_115 = from_html(
   `<label class="step-weekday-option"><input type="checkbox"/><span> </span></label>`,
 );
-var root_212 = from_html(
+var root_213 = from_html(
   `<dialog class="step-advanced-dialog" aria-labelledby="random-advanced-title" aria-describedby="random-weekdays-description"><h2 id="random-advanced-title"> </h2> <p id="random-weekdays-description" class="hint"> </p> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!> <p class="hint"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
 );
 function AdvancedRandomSettings($$anchor, $$props) {
@@ -13626,7 +14016,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
     get(changed)("days");
     dialog.close();
   }
-  var dialog_1 = root_212();
+  var dialog_1 = root_213();
   var h2 = child(dialog_1);
   var text2 = only_child(h2, true);
   var p = sibling(h2, 2);
@@ -14114,6 +14504,9 @@ function randomExplanation(
     );
   }
   const action2 = (selected) => {
+    if (selected.kind === "custom") {
+      return t("run the Custom YAML actions in order");
+    }
     const names = [...new Set(selected.entities)].map((id) =>
       entityName(catalog, id),
     );
@@ -14202,16 +14595,16 @@ var root21 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_117 = from_html(
   `<label class="same-entities svelte-e4ijcz"><input type="checkbox"/> </label>`,
 );
-var root_213 = from_html(
+var root_214 = from_html(
   `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-advanced=""> </button> <!> <h3> </h3> <div class="random-frequency svelte-e4ijcz"><div><!> <!></div> <div><!></div> <!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <p class="hint"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section>`,
 );
-var $$css6 = {
+var $$css7 = {
   hash: "svelte-e4ijcz",
   code: ".random-advanced-button.svelte-e4ijcz {margin-top:16px;}.random-frequency.svelte-e4ijcz {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}.same-entities.svelte-e4ijcz {display:flex;align-items:center;gap:8px;margin-top:16px;}\n  @media (max-width: 600px) {.random-frequency.svelte-e4ijcz {grid-template-columns:1fr;gap:0;}\n  }",
 };
 function RandomEventEditor($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css6);
+  append_styles($$anchor, $$css7);
   let context = user_derived(() => {
     $$props.revision;
     return createRandomEditorContext($$props.panel);
@@ -14243,7 +14636,7 @@ function RandomEventEditor($$anchor, $$props) {
       set2(advancedOpen, true);
     }
   }
-  var section = root_213();
+  var section = root_214();
   var div = child(section);
   var node = child(div);
   {
@@ -14626,7 +15019,7 @@ var root22 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-random=""> </button></section>`,
 );
 var root_118 = from_html(`<span class="step-status-badge"> </span>`);
-var root_214 = from_html(`<span class="step-row-time"> </span>`);
+var root_215 = from_html(`<span class="step-row-time"> </span>`);
 var root_39 = from_html(
   `<div style="--depth:0"><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button> <div><!></div></div>`,
 );
@@ -14738,7 +15131,7 @@ function RandomView($$anchor, $$props) {
           var node_2 = sibling(span, 2);
           {
             var consequent_2 = ($$anchor4) => {
-              var span_4 = root_214();
+              var span_4 = root_215();
               var text_7 = only_child(span_4);
               template_effect(
                 ($0, $1) => set_text(text_7, `${$0 ?? ""} \u2192 ${$1 ?? ""}`),
@@ -14825,10 +15218,8 @@ function RandomView($$anchor, $$props) {
               () => countSummary(get(entry).count),
               () => get(t)("times per window"),
               () =>
-                get(entry)
-                  .on.entities.map((id) =>
-                    entityName($$props.panel.catalog, id),
-                  )
+                actionTargets(get(entry).on)
+                  .map((id) => entityName($$props.panel.catalog, id))
                   .join(", "),
             ],
           );
@@ -14873,7 +15264,7 @@ delegate(["click"]);
 // custom_components/occupied/frontend/App.svelte
 var root23 = from_html(`<button type="button"> </button>`);
 var root_119 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
-var root_215 = from_html(`<p> </p>`);
+var root_216 = from_html(`<p> </p>`);
 var root_310 = from_html(`<p id="house"> </p>`);
 var root_47 = from_html(`<option> </option>`);
 var root_56 = from_html(
@@ -14947,7 +15338,7 @@ function App($$anchor, $$props) {
         append($$anchor3, button_1);
       };
       var alternate = ($$anchor3) => {
-        var p = root_215();
+        var p = root_216();
         var text_3 = only_child(p, true);
         template_effect(() => {
           set_class(p, 1, clsx2(get(className)));
@@ -16523,6 +16914,12 @@ function isRevisionConflict(error) {
   );
 }
 function editorField(tail, form) {
+  if (
+    form.kind === "custom" &&
+    ["actions", "action", "entities", "data"].includes(String(tail[0]))
+  ) {
+    return "customYaml";
+  }
   const has = (key2) => tail.includes(key2),
     head2 = tail[0];
   if (["name", "days", "entities", "data"].includes(String(head2))) {
