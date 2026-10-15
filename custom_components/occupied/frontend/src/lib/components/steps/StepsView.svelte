@@ -10,7 +10,7 @@
   } from "../../controllers/steps.js";
   import { stepEntries } from "../../models/step-model.js";
   import { warningStepId } from "../../utils/step-issues.js";
-  import { entityName, timingSummary } from "../../utils/util.js";
+  import { entitySummary, timingSummary } from "../../utils/util.js";
   import StepEditor from "./StepEditor.svelte";
 
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
@@ -93,9 +93,7 @@
               </span>
               <span class="hint"
                 >{actionSummary(entry, t)} ·
-                {actionTargets(entry)
-                  .map((id) => entityName(panel.catalog, id))
-                  .join(", ")}</span
+                {entitySummary(panel.catalog, actionTargets(entry), t)}</span
               >
             </span>
             {#if warnings.length}

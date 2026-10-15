@@ -32,7 +32,7 @@ steps:
     entities: [light.living_room]
 ```
 
-Optional **Run condition** settings let each controller run only when an entity matches one of its allowed states. Enable **Enforce expected state on start** to apply known light, switch, and cover targets after a configurable delay (default `30s`). When the condition ends, Occupied stops without sending entity commands. See [run conditions](docs/runtime.md#run-condition-and-delayed-state-enforcement) and the [alarm example](examples/alarm.yaml).
+Optional **Run condition** settings let each controller run only when an entity matches one of its allowed states. Turn on the **Enforce expected state on start** switch on the controller’s Home Assistant device to apply known light, switch, and cover targets after a configurable delay (default `30s`). The delay remains in Settings. When the condition ends, Occupied stops without sending entity commands. See [run conditions](docs/runtime.md#run-condition-and-delayed-state-enforcement) and the [alarm example](examples/alarm.yaml).
 
 HA supplies timezone/location, and its controls or automations determine management permission and pause. There are no routine containers or managed-light lists. Initial planned state stays Unknown until an explicit action establishes intent. Gentle handover reconciles known light state; manual control yields an entity until the next activation. Generic services and scenes remain opaque.
 

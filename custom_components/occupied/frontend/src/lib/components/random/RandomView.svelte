@@ -5,7 +5,7 @@
   import { openRandom } from "../../controllers/random-editor-controller.js";
   import { stepEntries } from "../../models/step-model.js";
   import {
-    entityName,
+    entitySummary,
     timingSummary,
     timingExplanation,
     timingForm,
@@ -86,9 +86,11 @@
             <span class="hint"
               >{countSummary(entry.count)}
               {t("times_per_window")} · {entry.min_duration ||
-                "5m"}–{entry.max_duration || "15m"} · {actionTargets(entry.on)
-                .map((id) => entityName(panel.catalog, id))
-                .join(", ")}</span
+                "5m"}–{entry.max_duration || "15m"} · {entitySummary(
+                panel.catalog,
+                actionTargets(entry.on),
+                t,
+              )}</span
             >
           </span>
           {#if !editing}

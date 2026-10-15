@@ -16,9 +16,8 @@ var en = {
   run_condition_states: "Allowed states (match any)",
   run_condition_hint:
     "When the condition ends, Occupied stops without changing any entities. Management permission and pause still apply.",
-  run_condition_enforce: "Enforce expected state on start",
   run_condition_enforce_hint:
-    "Set known light, switch, and cover targets after the delay. This can move covers. Unknown states and scene/service effects are skipped.",
+    'Use the "Enforce expected state on start" switch on this controller\u2019s Home Assistant device to apply known light, switch, and cover targets after the delay. This can move covers. Unknown states and scene/service effects are skipped.',
   run_condition_delay: "Delay before enforcing state",
   run_condition_delay_hint:
     "Default: 30s. Use 0s to 1h. Scheduled device changes wait for this delay, then use the state expected at that time.",
@@ -44,6 +43,7 @@ var en = {
   custom_yaml: "Custom YAML",
   action_yaml: "Action YAML",
   actions: "actions",
+  entity_and_more: "{entity} and {count} more",
   custom_yaml_hint:
     "Enter one action or an ordered list of actions. Use brightness from 1 to 255. Timing stays in the controls above. A failed call stops the remaining actions.",
   custom_yaml_replace_confirm:
@@ -519,9 +519,8 @@ var sv = {
   run_condition_states: "Till\xE5tna tillst\xE5nd (matcha n\xE5got)",
   run_condition_hint:
     "N\xE4r villkoret upph\xF6r stannar Occupied utan att \xE4ndra n\xE5gra entiteter. Hanteringstillst\xE5nd och paus g\xE4ller fortfarande.",
-  run_condition_enforce: "Till\xE4mpa f\xF6rv\xE4ntat tillst\xE5nd vid start",
   run_condition_enforce_hint:
-    "St\xE4ll in k\xE4nda m\xE5l f\xF6r lampor, str\xF6mbrytare och jalusier efter f\xF6rdr\xF6jningen. Detta kan flytta jalusier. Ok\xE4nda tillst\xE5nd och effekter av scener/tj\xE4nster hoppas \xF6ver.",
+    "Anv\xE4nd reglaget \u201DEnforce expected state on start\u201D p\xE5 styrenhetens enhet i Home Assistant f\xF6r att till\xE4mpa k\xE4nda m\xE5l f\xF6r lampor, str\xF6mbrytare och jalusier efter f\xF6rdr\xF6jningen. Detta kan flytta jalusier. Ok\xE4nda tillst\xE5nd och effekter av scener/tj\xE4nster hoppas \xF6ver.",
   run_condition_delay: "F\xF6rdr\xF6jning f\xF6re till\xE4mpning",
   run_condition_delay_hint:
     "Standard: 30s. Ange 0s till 1h. Schemalagda enhets\xE4ndringar v\xE4ntar p\xE5 f\xF6rdr\xF6jningen och anv\xE4nder sedan det tillst\xE5nd som f\xF6rv\xE4ntas d\xE5.",
@@ -551,6 +550,7 @@ var sv = {
   custom_yaml: "Egen YAML",
   action_yaml: "\xC5tg\xE4rds-YAML",
   actions: "\xE5tg\xE4rder",
+  entity_and_more: "{entity} och {count} till",
   custom_yaml_hint:
     "Ange en \xE5tg\xE4rd eller en ordnad lista med \xE5tg\xE4rder. Anv\xE4nd brightness fr\xE5n 1 till 255. Tider anges i kontrollerna ovan. Ett misslyckat anrop stoppar \xE5terst\xE5ende \xE5tg\xE4rder.",
   custom_yaml_replace_confirm:
@@ -1210,6 +1210,15 @@ function download(name, text2, type = "application/json") {
 function entityName(catalog, id) {
   return catalog.entities.find((entity) => entity.entity_id === id)?.name || id;
 }
+function entitySummary(catalog, entities, t = translator()) {
+  if (entities.length < 5) {
+    return entities.map((id) => entityName(catalog, id)).join(", ");
+  }
+  const first = entityName(catalog, entities[0]);
+  return t("entity_and_more")
+    .replace("{entity}", () => first)
+    .replace("{count}", () => String(entities.length - 1));
+}
 function minutes(value) {
   if (value === "0") {
     return 0;
@@ -1526,7 +1535,7 @@ function runConditionForm(config) {
     enabled: !!config,
     entityId: config?.entity_id || "",
     states: config ? [config.state].flat() : [],
-    enforceState: config?.enforce_state_on_start ?? false,
+    legacyEnforceState: config?.enforce_state_on_start,
     startDelay: config?.start_delay ?? "30s",
   };
 }
@@ -1559,7 +1568,9 @@ function runConditionValue(form) {
   return {
     entity_id: form.entityId,
     state: [...new Set(form.states)],
-    enforce_state_on_start: form.enforceState,
+    ...(form.legacyEnforceState !== void 0 && {
+      enforce_state_on_start: form.legacyEnforceState,
+    }),
     start_delay: form.startDelay,
   };
 }
@@ -12520,9 +12531,11 @@ function StepsView($$anchor, $$props) {
                   : entry().name,
               () => actionSummary(entry(), get(t)),
               () =>
-                actionTargets(entry())
-                  .map((id) => entityName($$props.panel.catalog, id))
-                  .join(", "),
+                entitySummary(
+                  $$props.panel.catalog,
+                  actionTargets(entry()),
+                  get(t),
+                ),
             ],
           );
           delegated("click", button_1, () => openStep($$props.panel, entry()));
@@ -12556,7 +12569,7 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/settings/RunConditionSettings.svelte
 var root14 = from_html(
-  `<fieldset class="svelte-111t7iy"><legend> </legend> <label for="run-condition-entity" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label for="run-condition-states" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <p class="hint"> </p> <label for="run-condition-delay" class="svelte-111t7iy"> </label> <input id="run-condition-delay" type="text"/> <!> <p class="hint"> </p></fieldset>`,
+  `<fieldset class="svelte-111t7iy"><legend> </legend> <label for="run-condition-entity" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label for="run-condition-states" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <p class="hint"> </p> <label for="run-condition-delay" class="svelte-111t7iy"> </label> <input id="run-condition-delay" type="text"/> <!> <p class="hint"> </p></fieldset>`,
   2,
 );
 var root_110 = from_html(`<p class="hint"> </p>`);
@@ -12716,18 +12729,13 @@ function RunConditionSettings($$anchor, $$props) {
             key: "states",
             fieldPrefix: "run-condition-",
           });
-          var label_3 = sibling(node_3, 2);
-          var input_1 = child(label_3);
+          var p_1 = sibling(node_3, 2);
+          var text_6 = only_child(p_1, true);
+          var label_3 = sibling(p_1, 2);
+          var text_7 = only_child(label_3, true);
+          var input_1 = sibling(label_3, 2);
           remove_input_defaults(input_1);
-          var text_6 = sibling(input_1);
-          reset(label_3);
-          var p_1 = sibling(label_3, 2);
-          var text_7 = only_child(p_1, true);
-          var label_4 = sibling(p_1, 2);
-          var text_8 = only_child(label_4, true);
-          var input_2 = sibling(label_4, 2);
-          remove_input_defaults(input_2);
-          var node_4 = sibling(input_2, 2);
+          var node_4 = sibling(input_1, 2);
           FieldError(node_4, {
             get t() {
               return get(t);
@@ -12739,28 +12747,24 @@ function RunConditionSettings($$anchor, $$props) {
             fieldPrefix: "run-condition-",
           });
           var p_2 = sibling(node_4, 2);
-          var text_9 = only_child(p_2, true);
+          var text_8 = only_child(p_2, true);
           reset(fieldset);
           template_effect(
-            ($0, $1, $2, $3, $4, $5, $6) => {
+            ($0, $1, $2, $3, $4, $5) => {
               fieldset.disabled = $$props.panel.busy || $$props.panel.yamlDirty;
               set_text(text_3, $0);
               set_text(text_4, $1);
               set_text(text_5, $2);
-              set_checked(input_1, get(form).enforceState);
-              set_text(text_6, ` ${$3 ?? ""}`);
+              set_text(text_6, $3);
               set_text(text_7, $4);
+              set_value(input_1, get(form).startDelay);
+              set_attribute2(input_1, "aria-invalid", !!get(errors).startDelay);
               set_text(text_8, $5);
-              set_value(input_2, get(form).startDelay);
-              input_2.disabled = !get(form).enforceState;
-              set_attribute2(input_2, "aria-invalid", !!get(errors).startDelay);
-              set_text(text_9, $6);
             },
             [
               () => get(t)("run_condition"),
               () => get(t)("run_condition_entity"),
               () => get(t)("run_condition_states"),
-              () => get(t)("run_condition_enforce"),
               () => get(t)("run_condition_enforce_hint"),
               () => get(t)("run_condition_delay"),
               () => get(t)("run_condition_delay_hint"),
@@ -12788,11 +12792,7 @@ function RunConditionSettings($$anchor, $$props) {
             get(form).states = event2.detail.value;
             $$props.panel.updateRunCondition();
           });
-          delegated("change", input_1, (event2) => {
-            get(form).enforceState = event2.currentTarget.checked;
-            $$props.panel.updateRunCondition();
-          });
-          delegated("input", input_2, (event2) => {
+          delegated("input", input_1, (event2) => {
             get(form).startDelay = event2.currentTarget.value;
             $$props.panel.updateRunCondition();
           });
@@ -12806,9 +12806,9 @@ function RunConditionSettings($$anchor, $$props) {
       {
         var consequent_1 = ($$anchor3) => {
           var p_3 = root_110();
-          var text_10 = only_child(p_3, true);
+          var text_9 = only_child(p_3, true);
           template_effect(
-            ($0) => set_text(text_10, $0),
+            ($0) => set_text(text_9, $0),
             [() => get(t)("run_condition_yaml_hint")],
           );
           append($$anchor3, p_3);
@@ -12819,23 +12819,23 @@ function RunConditionSettings($$anchor, $$props) {
       }
       var div = sibling(node_5, 2);
       var button = child(div);
-      var text_11 = only_child(button, true);
+      var text_10 = only_child(button, true);
       var button_1 = sibling(button, 2);
-      var text_12 = only_child(button_1, true);
+      var text_11 = only_child(button_1, true);
       reset(div);
       var node_6 = sibling(div, 2);
       {
         var consequent_3 = ($$anchor3) => {
           var fragment_1 = root_36();
           var p_4 = first_child(fragment_1);
-          var text_13 = only_child(p_4, true);
+          var text_12 = only_child(p_4, true);
           var node_7 = sibling(p_4, 2);
           {
             var consequent_2 = ($$anchor4) => {
               var p_5 = root_28();
-              var text_14 = only_child(p_5, true);
+              var text_13 = only_child(p_5, true);
               template_effect(
-                ($0) => set_text(text_14, $0),
+                ($0) => set_text(text_13, $0),
                 [
                   () =>
                     get(t)("run_condition_countdown").replace("{seconds}", () =>
@@ -12849,7 +12849,7 @@ function RunConditionSettings($$anchor, $$props) {
               if (get(deadline)) $$render(consequent_2);
             });
           }
-          template_effect(() => set_text(text_13, get(snapshot2).reason));
+          template_effect(() => set_text(text_12, get(snapshot2).reason));
           append($$anchor3, fragment_1);
         };
         if_block(node_6, ($$render) => {
@@ -12861,7 +12861,7 @@ function RunConditionSettings($$anchor, $$props) {
         var consequent_5 = ($$anchor3) => {
           var details = root_73();
           var summary = child(details);
-          var text_15 = only_child(summary);
+          var text_14 = only_child(summary);
           var node_9 = sibling(summary, 2);
           {
             var consequent_4 = ($$anchor4) => {
@@ -12876,9 +12876,9 @@ function RunConditionSettings($$anchor, $$props) {
                   let kind = () => get($$array)[0];
                   let count = () => get($$array)[1];
                   var span = root_44();
-                  var text_16 = only_child(span);
+                  var text_15 = only_child(span);
                   template_effect(
-                    ($0) => set_text(text_16, `${$0 ?? ""}: ${count() ?? ""}`),
+                    ($0) => set_text(text_15, `${$0 ?? ""}: ${count() ?? ""}`),
                     [() => get(t)(`run_condition_count_${kind()}`)],
                   );
                   append($$anchor5, span);
@@ -12902,11 +12902,11 @@ function RunConditionSettings($$anchor, $$props) {
               let entity = () => get($$array_1)[0];
               let result = () => get($$array_1)[1];
               var li = root_64();
-              var text_17 = only_child(li);
+              var text_16 = only_child(li);
               template_effect(
                 ($0) =>
                   set_text(
-                    text_17,
+                    text_16,
                     `${entity() ?? ""}: ${$0 ?? ""}${result().reason ? ` \xB7 ${result().reason}` : ""}`,
                   ),
                 [() => get(t)(result().status)],
@@ -12917,7 +12917,7 @@ function RunConditionSettings($$anchor, $$props) {
           reset(ul);
           reset(details);
           template_effect(
-            ($0, $1) => set_text(text_15, `${$0 ?? ""} \xB7 ${$1 ?? ""}`),
+            ($0, $1) => set_text(text_14, `${$0 ?? ""} \xB7 ${$1 ?? ""}`),
             [
               () => get(t)("run_condition_results"),
               () => get(t)(get(snapshot2).reconciliation.phase),
@@ -12947,10 +12947,10 @@ function RunConditionSettings($$anchor, $$props) {
             $$props.panel.stale ||
             $$props.panel.yamlDirty ||
             !$$props.panel.hasRunConditionChanges;
-          set_text(text_11, $3);
+          set_text(text_10, $3);
           button_1.disabled =
             $$props.panel.busy || !$$props.panel.hasRunConditionChanges;
-          set_text(text_12, $4);
+          set_text(text_11, $4);
         },
         [
           () => get(t)("run_condition"),
@@ -16451,9 +16451,11 @@ function RandomView($$anchor, $$props) {
               () => countSummary(get(entry).count),
               () => get(t)("times_per_window"),
               () =>
-                actionTargets(get(entry).on)
-                  .map((id) => entityName($$props.panel.catalog, id))
-                  .join(", "),
+                entitySummary(
+                  $$props.panel.catalog,
+                  actionTargets(get(entry).on),
+                  get(t),
+                ),
             ],
           );
           delegated("click", button_1, () =>

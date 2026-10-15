@@ -5,7 +5,7 @@ export function runConditionForm(config) {
     enabled: !!config,
     entityId: config?.entity_id || "",
     states: config ? [config.state].flat() : [],
-    enforceState: config?.enforce_state_on_start ?? false,
+    legacyEnforceState: config?.enforce_state_on_start,
     startDelay: config?.start_delay ?? "30s",
   };
 }
@@ -38,7 +38,9 @@ export function runConditionValue(form) {
   return {
     entity_id: form.entityId,
     state: [...new Set(form.states)],
-    enforce_state_on_start: form.enforceState,
+    ...(form.legacyEnforceState !== undefined && {
+      enforce_state_on_start: form.legacyEnforceState,
+    }),
     start_delay: form.startDelay,
   };
 }

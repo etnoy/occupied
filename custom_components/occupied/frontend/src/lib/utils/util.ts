@@ -60,6 +60,21 @@ export function entityName(catalog: Pick<Catalog, "entities">, id: string) {
   return catalog.entities.find((entity) => entity.entity_id === id)?.name || id;
 }
 
+export function entitySummary(
+  catalog: Pick<Catalog, "entities">,
+  entities: string[],
+  t: Translate = translator(),
+): string {
+  if (entities.length < 5) {
+    return entities.map((id) => entityName(catalog, id)).join(", ");
+  }
+  const first = entityName(catalog, entities[0]);
+
+  return t("entity_and_more")
+    .replace("{entity}", () => first)
+    .replace("{count}", () => String(entities.length - 1));
+}
+
 function minutes(value: string | number | undefined) {
   if (value === "0") {
     return 0;

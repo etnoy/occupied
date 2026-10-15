@@ -36,6 +36,15 @@ export function download(name, text, type = "application/json") {
 export function entityName(catalog, id) {
   return catalog.entities.find((entity) => entity.entity_id === id)?.name || id;
 }
+export function entitySummary(catalog, entities, t = translator()) {
+  if (entities.length < 5) {
+    return entities.map((id) => entityName(catalog, id)).join(", ");
+  }
+  const first = entityName(catalog, entities[0]);
+  return t("entity_and_more")
+    .replace("{entity}", () => first)
+    .replace("{count}", () => String(entities.length - 1));
+}
 function minutes(value) {
   if (value === "0") {
     return 0;

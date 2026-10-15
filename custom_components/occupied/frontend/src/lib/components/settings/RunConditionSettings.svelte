@@ -131,24 +131,12 @@
           }}
         ></ha-selector>
         <FieldError {t} {errors} key="states" fieldPrefix="run-condition-" />
-        <label>
-          <input
-            type="checkbox"
-            checked={form.enforceState}
-            onchange={(event) => {
-              form!.enforceState = event.currentTarget.checked;
-              panel.updateRunCondition();
-            }}
-          />
-          {t("run_condition_enforce")}
-        </label>
         <p class="hint">{t("run_condition_enforce_hint")}</p>
         <label for="run-condition-delay">{t("run_condition_delay")}</label>
         <input
           id="run-condition-delay"
           type="text"
           value={form.startDelay}
-          disabled={!form.enforceState}
           aria-invalid={!!errors.startDelay}
           oninput={(event) => {
             form!.startDelay = event.currentTarget.value;

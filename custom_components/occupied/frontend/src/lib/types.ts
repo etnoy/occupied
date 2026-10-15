@@ -287,6 +287,7 @@ export type ApiResult<T> =
   | { valid: false; issues: Issue[] };
 
 export interface RuntimeSnapshot {
+  enforce_state_on_start?: boolean;
   reason?: string;
   run_condition?:
     | (RunCondition & {

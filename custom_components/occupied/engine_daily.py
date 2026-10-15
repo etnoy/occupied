@@ -15,6 +15,8 @@ from homeassistant.const import (
     EVENT_CORE_CONFIG_UPDATE,
     EVENT_HOMEASSISTANT_STARTED,
     EVENT_HOMEASSISTANT_STOP,
+    STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
 )
 from homeassistant.core import Context, callback
 from homeassistant.exceptions import HomeAssistantError
@@ -80,6 +82,9 @@ class DailyEngine:
         self.config = {"name": program.name}
         self.signal = f"{SIGNAL_PREFIX}_{entry_id}"
         self.gate = ActivationGate.for_run_condition(hass, program.run_condition)
+        self.enforce_state_on_start = bool(
+            program.run_condition and program.run_condition.enforce_state_on_start
+        )
         self.activation_deadline = None
         self.reconciliation = {"phase": "idle", "results": {}}
         self.enabled = self.paused = self.active = self.started = self.closed = False
@@ -146,10 +151,15 @@ class DailyEngine:
         permission = await self._permission.async_load() or {}
         self.enabled = permission.get("enabled", False)
         self.paused = permission.get("paused", False)
+        self.enforce_state_on_start = permission.get(
+            "enforce_state_on_start", self.enforce_state_on_start
+        )
         if "dry_run" in permission:
             # Removing simulation must never turn an enabled rehearsal into a live run.
             if permission["dry_run"]:
                 self.enabled = False
+        if "dry_run" in permission or "enforce_state_on_start" not in permission:
+            # Seed the entity from legacy program settings once, including untouched entries.
             await self._save_permission()
         await self.live_preview.async_prepare()
         saved = await self._store.async_load() or {}
@@ -200,7 +210,13 @@ class DailyEngine:
                     key, "uncertain", "Dispatch interrupted; historical call is not replayed"
                 )
         for entity, expected in list(self._owned.items()):
-            if self._observe(entity) != expected:
+            observed = self._observe(entity)
+            if observed is None:
+                # Devices can still be loading; missing state is not manual control.
+                self._owned.pop(entity)
+                self._handover.pop(entity, None)
+                self._native_fades.discard(entity)
+            elif observed != expected:
                 state = self.hass.states.get(entity)
                 if (
                     entity in self._handover
@@ -314,7 +330,11 @@ class DailyEngine:
 
     def _run_condition_data(self):
         config = self.program.run_condition
-        return config.model_dump(mode="json") if config else None
+        return (
+            config.model_dump(mode="json") | {"enforce_state_on_start": self.enforce_state_on_start}
+            if config
+            else None
+        )
 
     @callback
     def _forget_owned(self):
@@ -341,11 +361,23 @@ class DailyEngine:
                 self.hass.async_create_task(self._async_time_sources_changed())
             if entity not in controlled_entities(self.program):
                 return
+        old, new = event.data.get("old_state"), event.data.get("new_state")
+        if any(
+            state is None or state.state in {STATE_UNKNOWN, STATE_UNAVAILABLE}
+            for state in (old, new)
+        ):
+            # Availability changes do not establish an outside actor's intent.
+            # Drop ownership without holding a transition or suppressing future steps.
+            self._owned.pop(entity, None)
+            self._handover.pop(entity, None)
+            self._native_fades.discard(entity)
+            if self.active:
+                self.hass.async_create_task(self._async_observation_changed(entity))
+            return
         if event.context.id in self._contexts or event.context.parent_id in self._contexts:
             if entity in self._owned and (value := self._observe(entity)):
                 self._owned[entity] = value
             return
-        old, new = event.data.get("old_state"), event.data.get("new_state")
         watched = {
             "brightness",
             "color_temp_kelvin",
@@ -437,7 +469,29 @@ class DailyEngine:
         return True
 
     async def _save_permission(self):
-        await self._permission.async_save({"enabled": self.enabled, "paused": self.paused})
+        await self._permission.async_save(
+            {
+                "enabled": self.enabled,
+                "paused": self.paused,
+                "enforce_state_on_start": self.enforce_state_on_start,
+            }
+        )
+
+    async def async_set_enforce_state_on_start(self, enabled):
+        if self.closed:
+            raise HomeAssistantError("Occupied is unloaded; reload before changing controls")
+        if self.enforce_state_on_start == enabled:
+            return
+        self.enforce_state_on_start = enabled
+        if self.program.run_condition:
+            self._invalidate()
+        async with self._lock:
+            await self._save_permission()
+            if self.program.run_condition:
+                self._restoring = False
+                await self._reevaluate_locked()
+            else:
+                self._notify()
 
     async def async_set_enabled(self, enabled):
         if not enabled:
@@ -494,7 +548,7 @@ class DailyEngine:
                     await self._reevaluate_locked()
                     return
                 config = self.program.run_condition
-                if config and config.enforce_state_on_start and not self._restoring:
+                if config and self.enforce_state_on_start and not self._restoring:
                     self.activation_deadline = dt_util.utcnow() + timedelta(
                         seconds=config.start_delay
                     )
@@ -1210,7 +1264,15 @@ class DailyEngine:
             was_ready = self.configuration_ready
             self.configuration_ready = True
             same_schedule = behavior_hash(program) == behavior_hash(self.program)
-            same_policy = program.run_condition == self.program.run_condition
+            same_policy = (
+                program.run_condition.model_dump(exclude={"enforce_state_on_start"})
+                if program.run_condition
+                else None
+            ) == (
+                self.program.run_condition.model_dump(exclude={"enforce_state_on_start"})
+                if self.program.run_condition
+                else None
+            )
             if same_schedule and same_policy:
                 self.program = program
                 self.config["name"] = program.name
@@ -1292,6 +1354,7 @@ class DailyEngine:
             if self.source_manager
             else {"mode": "gui", "status": "ready"},
             "enabled": self.enabled,
+            "enforce_state_on_start": self.enforce_state_on_start,
             "paused": self.paused,
             "live_preview": self.live_preview.snapshot(),
             "active": self.active,
