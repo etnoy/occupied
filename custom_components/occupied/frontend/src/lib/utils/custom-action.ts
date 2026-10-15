@@ -31,8 +31,8 @@ export function actionTargetSummary(
 export function actionYaml(value: unknown, level = 0): string {
   const pad = "  ".repeat(level);
   if (Array.isArray(value)) {
-    if (value.every((item) => typeof item !== "object" || item === null)) {
-      return JSON.stringify(value);
+    if (value.length === 0) {
+      return "[]";
     }
 
     return value
@@ -50,8 +50,7 @@ export function actionYaml(value: unknown, level = 0): string {
           item === null ||
           typeof item !== "object" ||
           (!Array.isArray(item) && Object.keys(item).length === 0) ||
-          (Array.isArray(item) &&
-            item.every((entry) => typeof entry !== "object" || entry === null));
+          (Array.isArray(item) && item.length === 0);
         const name =
           /^[a-z_][a-z0-9_.]*$/.test(key) &&
           ![

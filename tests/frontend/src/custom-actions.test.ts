@@ -27,6 +27,75 @@ import {
 import type { Action, Program } from "@occupied/lib/types.js";
 import type { OccupiedPanel } from "@occupied/occupied-panel.js";
 
+void test("imported custom actions show one entity per line and save unchanged", () => {
+  const actions = [
+    {
+      action: "turn_on",
+      entities: ["light.takbelysning_korridor", "light.takbelysning_sovrum"],
+    },
+    {
+      action: "turn_off",
+      entities: [
+        "light.takbelysning_korridor",
+        "light.takbelysning_williams_rum",
+        "light.takbelysning_wincents_rum",
+      ],
+    },
+  ];
+  const program: Program = {
+    steps: {
+      bedtime: {
+        timing: { absolute_time: { start: "21:30" } },
+        actions,
+      },
+    },
+  };
+  const editor = stepEditor(program, stepEntries(program)[0]);
+  assert.equal(
+    editor.form.customYaml,
+    [
+      '- action: "turn_on"',
+      "  entities:",
+      '    - "light.takbelysning_korridor"',
+      '    - "light.takbelysning_sovrum"',
+      '- action: "turn_off"',
+      "  entities:",
+      '    - "light.takbelysning_korridor"',
+      '    - "light.takbelysning_williams_rum"',
+      '    - "light.takbelysning_wincents_rum"',
+    ].join("\n"),
+  );
+  assert.equal(editor.form.customAccepted, editor.form.customYaml);
+  assert.deepEqual(buildStep(program, editor).steps?.bedtime.actions, actions);
+});
+
+void test("custom YAML formats nested scalar lists and preserves empty collections", () => {
+  assert.equal(
+    actionYaml({
+      action: "script.turn_on",
+      entities: ["script.test"],
+      data: {
+        variables: { values: ["on", 42, false, null], empty: [], map: {} },
+      },
+    }),
+    [
+      'action: "script.turn_on"',
+      "entities:",
+      '  - "script.test"',
+      "data:",
+      "  variables:",
+      "    values:",
+      '      - "on"',
+      "      - 42",
+      "      - false",
+      "      - null",
+      "    empty: []",
+      "    map: {}",
+    ].join("\n"),
+  );
+  assert.equal(actionYaml([]), "[]");
+});
+
 void test("on/off migration uses current unsaved targets and prepares scene-style YAML", () => {
   const form = actionForm({ action: "turn_on", entities: ["light.old"] });
   form.entities = ["light.sofa", "switch.window"];
