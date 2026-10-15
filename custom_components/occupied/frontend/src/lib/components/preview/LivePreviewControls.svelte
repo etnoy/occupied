@@ -175,9 +175,6 @@
   }
 
   .live-actions {
-    position: sticky;
-    top: 64px;
-    z-index: 2;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -199,7 +196,6 @@
 
   @media (max-width: 600px) {
     .live-actions {
-      top: calc(56px + env(safe-area-inset-top, 0px));
       padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
     }
   }
