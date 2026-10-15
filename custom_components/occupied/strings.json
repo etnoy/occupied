@@ -87,6 +87,11 @@
     }
   },
   "entity": {
+    "button": {
+      "enforce_state_now": {
+        "name": "Enforce expected state now"
+      }
+    },
     "switch": {
       "enabled": {
         "name": "Enable"

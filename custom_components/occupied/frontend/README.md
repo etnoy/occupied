@@ -32,6 +32,14 @@ Models and utilities remain independent of Svelte rendering. Frontend sources us
 relative imports; tests use `@occupied/*`, which resolves to `src/*` for type
 checking and to the corresponding committed `dist/*` modules when compiled.
 
+Step and random activity lists default to chronological start-time order. Relative
+sources include their offsets; solar sources use Home Assistant's current sun
+times, with approximate daily times as a fallback. Unresolved sources appear last.
+Drag the left handle (or use its arrow keys) to set a manual order, and use Reset
+to chronological to restore automatic sorting. Manual orders are browser-local,
+stored separately for each controller and activity list; they do not alter the
+program or its execution order.
+
 Run the frontend commands from the repository root. `pnpm run build` discovers
 TypeScript modules recursively and mirrors their paths under `dist/`, bundling
 the Svelte UI and CSS into `dist/occupied-panel.js`. Commit generated assets with

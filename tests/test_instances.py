@@ -121,6 +121,19 @@ async def test_files_reload_fail_and_recover_independently(hass, households, tmp
     assert ("occupied", f"managed_file_{main.entry_id}") not in ir.async_get(hass).issues
 
 
+async def test_manual_enforcement_is_independent_between_controllers(hass, households, devices):
+    await hass.config.async_set_time_zone("UTC")
+    for program in households.values():
+        program["steps"]["evening"]["timing"] = {"absolute_time": {"start": "17:00"}}
+    main, guest = await setup_pair(hass, households, ("gui", "gui"))
+    await main.runtime_data.async_set_enabled(True)
+    await guest.runtime_data.async_set_enabled(True)
+    before = deepcopy(guest.runtime_data.snapshot())
+    await main.runtime_data.async_enforce_state_now()
+    assert [call.data["entity_id"] for call in devices] == ["light.main"]
+    assert guest.runtime_data.snapshot() == before
+
+
 async def test_saving_one_gui_program_preserves_the_other_revision(
     hass, households, hass_ws_client
 ):

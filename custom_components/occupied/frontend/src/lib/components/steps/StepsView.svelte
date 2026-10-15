@@ -6,12 +6,13 @@
     startStep,
     openStep,
     actionSummary,
-    stepTree,
   } from "../../controllers/steps.js";
   import { stepEntries } from "../../models/step-model.js";
   import { warningStepId } from "../../utils/step-issues.js";
   import { entitySummary, timingSummary } from "../../utils/util.js";
   import StepEditor from "./StepEditor.svelte";
+  import ActivityList from "../shared/ActivityList.svelte";
+  import { chronologicalEntries } from "../../utils/activity-order.js";
 
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
@@ -23,13 +24,14 @@
     return {
       t: panel.t,
       entries,
+      ordered: chronologicalEntries(entries, panel.draft, "steps", panel._hass),
       issues: panel.visibleIssues().map((issue) => ({
         issue,
         stepId: warningStepId(issue, entries),
       })),
     };
   });
-  let { t, entries, issues } = $derived(data);
+  let { t, entries, ordered, issues } = $derived(data);
 </script>
 
 {#if entries.length === 0}
@@ -50,8 +52,14 @@
   </section>
 {:else}
   <div class="step-layout">
-    <div class="step-list" aria-label={t("steps")}>
-      {#each stepTree(entries) as { entry, depth } (entry.id)}
+    <ActivityList
+      entries={ordered}
+      storageKey={`occupied:activity-order:${panel.selectedEntry}:steps`}
+      label={t("steps")}
+      disabled={panel.busy}
+      {t}
+    >
+      {#snippet children(entry)}
         {@const warnings = issues
           .filter(({ stepId }) => stepId === entry.id)
           .map(({ issue }) => issue)}
@@ -66,7 +74,7 @@
           class:step-disabled={stepDisabled}
           class:step-warning={warnings.length > 0}
           data-step-id={entry.id}
-          style={`--depth:${Math.min(depth, 3)}`}
+          style="--depth:0"
         >
           <button
             type="button"
@@ -125,8 +133,8 @@
             </div>
           {/if}
         </div>
-      {/each}
-    </div>
+      {/snippet}
+    </ActivityList>
   </div>
   <button
     type="button"

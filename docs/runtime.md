@@ -8,7 +8,7 @@ When permission becomes active, Occupied samples bounded neighboring source date
 
 Future actions are queued in UTC. Historical generic service calls are marked skipped and never replayed. Each dispatch is durably journaled before the native service call; persistence failure blocks dispatch and deactivates management. Interrupted pending calls become uncertain and are not automatically replayed. Native typed on/off failures have a bounded retry, superseded by newer intents. Missing services/unavailable devices are reported without stalling other steps.
 
-Successful service calls also appear in Home Assistant's **Activity** log under the Occupied controller device and affected entity. Entries identify the action and target, including brightness, transition duration, or cover position when applicable. Scheduled actions, startup handover/state enforcement, and manual live preview use the same logging. These entries confirm that the service handler completed; they do not confirm physical device movement. Failed, skipped, and uncertain calls are not logged as successful actions. Activity history follows Home Assistant's Recorder retention and filters.
+Successful service calls also appear in Home Assistant's **Activity** log under the Occupied controller device and affected entity. Entries identify the action and target, including brightness, transition duration, or cover position when applicable. Scheduled actions, startup handover/state enforcement, the enforcement button, and manual live preview use the same logging. These entries confirm that the service handler completed; they do not confirm physical device movement. Failed, skipped, and uncertain calls are not logged as successful actions. Activity history follows Home Assistant's Recorder retention and filters.
 
 Completed occurrence identities remain stable when a time helper or timestamp/calendar source changes. Source updates reschedule future work without replaying completed steps for the same source date. Restart retains valid sampled plans, seed, journal, handover, ownership, and yielded state. Obsolete cache shapes are rejected and rebuilt without changing version numbers.
 
@@ -30,6 +30,14 @@ A restart cannot establish continuous eligibility across downtime for an unfinis
 
 Read-only Preview stays available regardless of eligibility. Real-device live preview requires the saved controller condition and any draft condition to match, including before every call; condition loss interrupts it without cleanup commands. Its explicit Next-event workflow does not automatically reconcile states or apply the ordinary scheduling startup delay.
 
+## Enforce expected state now
+
+The controller’s Home Assistant device also exposes an **Enforce expected state now** button. Press it to repair state drift immediately, using the current sampled schedule. It works with or without a run condition, independently of the startup-enforcement switch, and skips any remaining startup delay. Permission must be enabled, scheduling unpaused, and any configured run condition must match. The button does not enable or resume management.
+
+This explicit action reclaims previously yielded entities and applies known light, switch, and cover targets. Unknown, unavailable, disabled, already matching, and opaque targets are skipped using the same reconciliation results and Activity entries as startup enforcement. Manual changes during reconciliation still yield those entities, and permission or condition loss cancels remaining calls. No historical scene, script, or generic service action is replayed.
+
+The button cancels pending handover and retries, holds any still-owned native light fades before applying current targets, and resumes future scheduling. It preserves the startup switch, configured delay, seed, sampled times, and completed scheduled-event journal. Each press can repair fresh drift, including repeated presses within one activation. It does not continuously enforce device state.
+
 ## Known light state and handover
 
 Enabled step actions determine controlled entities. Only direct typed light control can establish a projected light intent. Each date begins Unknown until its first explicit action; activation leaves unknown light state alone. Add a visible midnight step if an initial state is wanted.
@@ -38,7 +46,7 @@ Handover reconciles known light intents toward their projected endpoint using th
 
 Generic service and scene effects are opaque. Occupied does not infer their device changes or inverse actions. Related steps can schedule later actions, but they do not promise lifecycle cleanup or exclusive resource ownership.
 
-Outside manual changes yield an entity until the next activation. Permission loss, pause, unload, configuration failure, and run-condition loss invalidate queued work immediately. Explicit stop leaves device states; still-owned native fades are held at their observed level without interfering with another actor's transition. Run-condition loss sends no such hold command and leaves device transitions alone.
+Outside manual changes yield an entity until the next activation or an explicit **Enforce expected state now** press. Permission loss, pause, unload, configuration failure, and run-condition loss invalidate queued work immediately. Explicit stop leaves device states; still-owned native fades are held at their observed level without interfering with another actor's transition. Run-condition loss sends no such hold command and leaves device transitions alone.
 
 Missing, unknown, or unavailable state and subsequent recovery do not count as manual control. Availability loss drops ownership and any active handover without sending device commands. Future scheduled actions can run after recovery; missed actions are not replayed. This also applies when a previously owned device is unresolved during restart. A genuine manual override remains yielded across availability changes until the next activation.
 
@@ -46,7 +54,7 @@ Missing, unknown, or unavailable state and subsequent recovery do not count as m
 
 Standard native cover open/close/stop and position/tilt commands supply typed preview targets. Position and tilt remain independent: open/close target 100%/0%, and stop invalidates only the affected target. Runtime projection starts Unknown on each local calendar date. The preview chart uses the preceding local day’s actions to display continuity across midnight. Preview does not model travel time or predict the physical position after a stop.
 
-The default cover activation policy is **future only**. Explicit startup state enforcement is the opt-in exception described above. Past cover calls are marked skipped, including position/tilt targets, and ordinary enabling or resuming management never moves covers to a historical target. Covers do not enter the light fade/handover path or receive automatic retries. Future authored commands dispatch normally. Controller stop cancels future work but does not send `cover.stop_cover`, `cover.stop_cover_tilt`, or restoration calls.
+The default cover activation policy is **future only**. Explicit startup state enforcement and the enforcement button are the opt-in exceptions described above. Past cover calls are marked skipped, including position/tilt targets, and ordinary enabling or resuming management never moves covers to a historical target. Covers do not enter the light fade/handover path or receive automatic retries. Future authored commands dispatch normally. Controller stop cancels future work but does not send `cover.stop_cover`, `cover.stop_cover_tilt`, or restoration calls.
 
 Outside state, `current_position`, or `current_tilt_position` changes yield the cover until the next activation, including attribute-only changes while its state remains `open`. Updates with Occupied's service context remain attributable to Occupied; unrelated telemetry attributes do not cause yielding.
 

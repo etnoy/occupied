@@ -34,7 +34,9 @@ steps:
 
 Optional **Run condition** settings let each controller run only when an entity matches one of its allowed states. Turn on the **Enforce expected state on start** switch on the controller’s Home Assistant device to apply known light, switch, and cover targets after a configurable delay (default `30s`). The delay remains in Settings. When the condition ends, Occupied stops without sending entity commands. See [run conditions](docs/runtime.md#run-condition-and-delayed-state-enforcement) and the [alarm example](examples/alarm.yaml).
 
-HA supplies timezone/location, and its controls or automations determine management permission and pause. There are no routine containers or managed-light lists. Initial planned state stays Unknown until an explicit action establishes intent. Gentle handover reconciles known light state; manual control yields an entity until the next activation. Generic services and scenes remain opaque.
+Press **Enforce expected state now** on the controller’s Home Assistant device to repair state drift immediately. It reapplies known light, switch, and cover targets, including previously yielded entities, while respecting permission, pause, and the run condition. It works independently of the startup-enforcement switch and skips the startup delay.
+
+HA supplies timezone/location, and its controls or automations determine management permission and pause. There are no routine containers or managed-light lists. Initial planned state stays Unknown until an explicit action establishes intent. Gentle handover reconciles known light state; manual control yields an entity until the next activation or an explicit enforcement button press. Generic services and scenes remain opaque.
 
 GUI storage, YAML snapshots, and authoritative managed files share the same schema. Invalid managed-file updates retain the last valid program. Multiple controllers have independent plans, queues, permissions, and sources.
 

@@ -427,6 +427,10 @@ export interface WebSocketResponses {
 }
 
 export interface HomeAssistant {
+  states?: Record<
+    string,
+    { state: string; attributes: Record<string, unknown> }
+  >;
   language?: string;
   config?: { time_zone?: string; [key: string]: unknown };
   locale?: {

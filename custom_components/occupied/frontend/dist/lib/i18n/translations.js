@@ -1,6 +1,15 @@
 // Generated from custom_components/occupied/frontend/src/lib/i18n/translations.ts by pnpm run build. Do not edit.
 // Keep UI wording here; call sites use stable, descriptive shorthand keys.
 export const en = {
+  chronological_order: "Chronological",
+  manual_order: "Manual order",
+  reset_chronological_order: "Reset to chronological",
+  chronological_order_hint:
+    "Ordered by start time. Solar times are estimated when unavailable; unresolved times appear last.",
+  reorder_activity: "Reorder {name}",
+  reorder_activity_hint:
+    "Drag to reorder, or use the arrow keys to move up and down.",
+  activity_moved: "{name} moved to position {position} of {total}.",
   run_condition_count_checked: "Checked",
   run_condition_count_applied: "Applied",
   run_condition_count_already_matching: "Already matching",
@@ -505,6 +514,15 @@ export const en = {
 };
 // Missing translations fall back to English.
 export const sv = {
+  chronological_order: "Kronologisk ordning",
+  manual_order: "Manuell ordning",
+  reset_chronological_order: "Återställ kronologisk ordning",
+  chronological_order_hint:
+    "Sorterat efter starttid. Soltider uppskattas när de saknas; okända tider visas sist.",
+  reorder_activity: "Ändra ordning för {name}",
+  reorder_activity_hint:
+    "Dra för att ändra ordning, eller använd piltangenterna för att flytta upp och ned.",
+  activity_moved: "{name} flyttades till plats {position} av {total}.",
   run_condition_count_checked: "Kontrollerade",
   run_condition_count_applied: "Tillämpade",
   run_condition_count_already_matching: "Matchar redan",

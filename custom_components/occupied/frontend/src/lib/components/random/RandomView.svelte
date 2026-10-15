@@ -11,6 +11,8 @@
     timingForm,
   } from "../../utils/util.js";
   import RandomEventEditor from "./RandomEventEditor.svelte";
+  import ActivityList from "../shared/ActivityList.svelte";
+  import { chronologicalEntries } from "../../utils/activity-order.js";
 
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
@@ -20,7 +22,12 @@
 
     return {
       t: panel.t,
-      entries: randomEntries(panel.draft, panel.catalog),
+      entries: chronologicalEntries(
+        randomEntries(panel.draft, panel.catalog),
+        panel.draft,
+        "random",
+        panel._hass,
+      ),
       steps: [
         ...stepEntries(panel.draft, panel.catalog, panel.t),
         ...randomEntries(panel.draft, panel.catalog).map((entry) => ({
@@ -52,8 +59,14 @@
   <p class="hint">
     {t("random_activity_hint")}
   </p>
-  <div class="step-list" aria-label={t("random_events")}>
-    {#each entries as entry (entry.id)}
+  <ActivityList
+    {entries}
+    storageKey={`occupied:activity-order:${panel.selectedEntry}:random`}
+    label={t("random_events")}
+    disabled={panel.busy}
+    {t}
+  >
+    {#snippet children(entry)}
       {@const editing =
         panel.randomEditor?.existing && panel.randomEditor.id === entry.id}
       {@const disabled =
@@ -119,8 +132,8 @@
             <RandomEventEditor {panel} {revision} />{/if}
         </div>
       </div>
-    {/each}
-  </div>
+    {/snippet}
+  </ActivityList>
   <button
     type="button"
     class="primary"

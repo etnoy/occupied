@@ -521,6 +521,48 @@ class DailyEngine:
         async with self._lock:
             await self._reevaluate_locked()
 
+    async def async_enforce_state_now(self):
+        """Repair drift immediately, reclaiming yielded targets for this activation."""
+        async with self._lock:
+            passed, reason = self._effective_gate()
+            if not passed:
+                raise HomeAssistantError(f"Cannot enforce expected states: {reason}")
+            generation = self.generation
+            try:
+                await self._ensure_plans()
+            except (ProgramError, ValueError) as err:
+                raise HomeAssistantError(f"Cannot enforce expected states: {err}") from err
+            passed, reason = self._effective_gate()
+            if not passed:
+                raise HomeAssistantError(f"Cannot enforce expected states: {reason}")
+            if generation != self.generation:
+                raise HomeAssistantError("Cannot enforce expected states: controller changed")
+
+            # Replace delayed activation, handover, and retries with current-time intent.
+            self._invalidate()
+            self.active = True
+            self._restoring = False
+            self._yielded.clear()
+            generation = self.generation
+            self.reconciliation = {"phase": "applying", "results": {}}
+            try:
+                await self._cancel_native_fades(generation=generation)
+                self._forget_owned()
+                if generation == self.generation and self._effective_gate()[0]:
+                    at = dt_util.utcnow()
+                    self._queue_plans(skip_through=at)
+                    await self._enforce_expected_state(
+                        at, generation, key_prefix=f"enforce:manual:{secrets.token_hex(16)}"
+                    )
+            finally:
+                if generation != self.generation or not self._effective_gate()[0]:
+                    await self._reevaluate_locked()
+                else:
+                    self._update_active_status()
+                    await self._persist()
+                    self._arm_timer()
+                    self._notify()
+
     async def _reevaluate_locked(self):
         passed, reason = self._effective_gate()
         if not passed:
@@ -815,7 +857,8 @@ class DailyEngine:
         axis, target = next(iter(cover_target(action).to_dict().items()))
         return observed["attributes"].get(f"current_{axis}") == target
 
-    async def _enforce_expected_state(self, at, generation):
+    async def _enforce_expected_state(self, at, generation, *, key_prefix=None):
+        call_prefix = key_prefix or f"enforce:live:{self.session}"
         self.reconciliation["phase"] = "applying"
         self.status, self.reason = "transitioning", "Enforcing expected states"
         self._notify()
@@ -850,7 +893,7 @@ class DailyEngine:
                 if self._target_matches(entity, action):
                     outcomes.append("already_matching")
                     continue
-                key = f"enforce:live:{self.session}:{entity}:{index}"
+                key = f"{call_prefix}:{entity}:{index}"
                 await self._call(
                     action,
                     key,
@@ -882,7 +925,11 @@ class DailyEngine:
             )
             results[entity] = {"status": status, "calls": outcomes}
         self.reconciliation["phase"] = "complete"
-        self._record(f"enforce:{self.session}", "reconciled", f"Checked {len(results)} entities")
+        self._record(
+            key_prefix or f"enforce:{self.session}",
+            "reconciled",
+            f"Checked {len(results)} entities",
+        )
 
     async def _async_dispatch(self, generation):
         async with self._lock:
@@ -1208,7 +1255,7 @@ class DailyEngine:
             return
         await self._call(action, key, generation)
 
-    async def _cancel_native_fades(self, entities=None):
+    async def _cancel_native_fades(self, entities=None, *, generation=None):
         for entity in set(self._native_fades):
             if entities is not None and entity not in entities:
                 continue
@@ -1226,8 +1273,8 @@ class DailyEngine:
             await self._call(
                 action,
                 f"cancel_fade:{self.session}:{entity}:{secrets.token_hex(4)}",
-                None,
-                cleanup=True,
+                generation,
+                cleanup=generation is None,
             )
 
     async def _stop_owned(self):

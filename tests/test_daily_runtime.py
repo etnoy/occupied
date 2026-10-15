@@ -1135,6 +1135,300 @@ async def set_alarm(hass, state, context=None):
     await hass.async_block_till_done()
 
 
+async def press_enforce_now(hass, entry):
+    from homeassistant.helpers import entity_registry as er
+
+    registry = er.async_get(hass)
+    entity_id = registry.async_get_entity_id(
+        "button", "occupied", f"{entry.entry_id}_enforce_state_now"
+    )
+    assert entity_id
+    await hass.services.async_call("button", "press", {"entity_id": entity_id}, blocking=True)
+    await hass.async_block_till_done()
+    return entity_id
+
+
+@pytest.mark.parametrize("startup_enforcement", [False, True])
+async def test_enforce_now_button_repairs_yielded_targets_immediately_and_preserves_schedule(
+    hass, daily_entry, daily_devices, cover_devices, condition_program, freezer, startup_enforcement
+):
+    from homeassistant.helpers import entity_registry as er
+
+    from custom_components.occupied.const import EVENT_ACTION
+
+    condition_program["run_condition"]["enforce_state_on_start"] = startup_enforcement
+    condition_program["steps"]["on"]["action"] = "light.turn_on"
+    condition_program["steps"]["on"]["data"] = {"brightness_pct": 75}
+    activity = []
+    hass.bus.async_listen(EVENT_ACTION, activity.append)
+    engine = await load(hass, daily_entry, freezer, "2026-10-13T18:03:00+00:00")
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    plans, session, seed = dict(engine._plans), engine.session, engine._seed
+    source_revision = program_revision(engine.program)
+    journal = dict(engine._journal)
+    attrs = dict(hass.states.get("light.proof").attributes)
+    hass.states.async_set("light.proof", "on", attrs)
+    hass.states.async_set("light.proof", "off", attrs)
+    hass.states.async_set("switch.proof", "on")
+    hass.states.async_set("switch.proof", "off")
+    hass.states.async_set(
+        "cover.blind", "open", {"current_position": 30, "current_tilt_position": 5}
+    )
+    await hass.async_block_till_done()
+    assert {"light.proof", "switch.proof", "cover.blind"} <= engine._yielded
+    assert not daily_devices and not cover_devices
+
+    entity_id = await press_enforce_now(hass, daily_entry)
+    registry = er.async_get(hass)
+    switch_id = registry.async_get_entity_id(
+        "switch", "occupied", f"{daily_entry.entry_id}_enabled"
+    )
+    assert registry.async_get(entity_id).device_id == registry.async_get(switch_id).device_id
+    assert (
+        hass.states.get(entity_id)
+        .attributes["friendly_name"]
+        .endswith("Enforce expected state now")
+    )
+    assert hass.states.get("light.proof").state == "on"
+    assert hass.states.get("light.proof").attributes["brightness"] == round(75 * 255 / 100)
+    assert hass.states.get("switch.proof").state == "on"
+    assert [c.service for c in cover_devices] == ["set_cover_position", "set_cover_tilt_position"]
+    assert len(daily_devices) == 2 and len(activity) == 4
+    assert not any(c.domain in {"scene", "script"} for c in daily_devices)
+    assert engine.reconciliation["phase"] == "complete" and not engine._yielded
+    assert engine.activation_deadline is None and engine.active
+    assert engine.enforce_state_on_start is startup_enforcement
+    assert engine.program.run_condition.start_delay == 30
+    assert (engine.session, engine._seed) == (session, seed)
+    assert engine._plans == plans and program_revision(engine.program) == source_revision
+    assert all(engine._journal[key] == value for key, value in journal.items())
+    await advance(hass, freezer, 30)
+    assert len(daily_devices) == 2 and len(cover_devices) == 2
+    await advance(hass, freezer, 90)
+    assert cover_devices[-1].service == "stop_cover"
+
+
+async def test_enforce_now_can_fix_fresh_drift_repeatedly_in_one_activation(
+    hass, daily_entry, daily_devices, condition_program, freezer
+):
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    await advance(hass, freezer, 30)
+    assert len(daily_devices) == 2
+    session = engine.session
+    for count in (3, 4):
+        hass.states.async_set("light.proof", "off")
+        await hass.async_block_till_done()
+        assert "light.proof" in engine._yielded
+        await press_enforce_now(hass, daily_entry)
+        assert hass.states.get("light.proof").state == "on"
+        assert len(daily_devices) == count
+        assert engine.session == session
+    await press_enforce_now(hass, daily_entry)
+    assert len(daily_devices) == 4
+    keys = [key for key in engine._journal if key.startswith("enforce:manual:")]
+    assert len(keys) == 2 and len({key.split(":")[2] for key in keys}) == 2
+
+
+async def test_enforce_now_without_condition_replaces_native_handover(
+    hass, daily_entry, daily_devices, freezer
+):
+    daily_entry.data["program"]["steps"]["off"]["timing"] = {"absolute_time": {"start": "19:00"}}
+    daily_entry.data["program"]["steps"]["on"]["action"] = "light.turn_on"
+    daily_entry.data["program"]["steps"]["on"]["data"] = {"brightness_pct": 75}
+    engine = await load(hass, daily_entry, freezer, "2026-10-13T18:03:00+00:00")
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 0)
+    assert engine._native_fades and engine._handover
+    await press_enforce_now(hass, daily_entry)
+    assert not engine._handover and not engine._native_fades
+    assert engine.reconciliation["phase"] == "complete" and engine.status == "active"
+    assert not engine.enforce_state_on_start
+    assert daily_devices[-1].data["transition"] == 0
+    count = len(daily_devices)
+    await advance(hass, freezer, 600)
+    assert len(daily_devices) == count
+
+
+@pytest.mark.parametrize(
+    ("blocked", "reason"),
+    [
+        ("disabled", "Permission is disabled"),
+        ("paused", "Management is paused"),
+        ("condition", "current state disarmed"),
+        ("unavailable", "unresolved"),
+        ("configuration", "Managed configuration unresolved"),
+        ("storage", "persistence failed"),
+        ("startup", "Waiting for Home Assistant startup"),
+        ("closed", "Integration unloaded"),
+    ],
+)
+async def test_enforce_now_rejects_ineligible_controller_without_reclaiming_entities(
+    hass, daily_entry, daily_devices, condition_program, freezer, blocked, reason
+):
+    from homeassistant.exceptions import HomeAssistantError
+
+    engine = await load(hass, daily_entry, freezer)
+    if blocked != "disabled":
+        await engine.async_set_enabled(True)
+    if blocked != "condition":
+        await set_alarm(hass, "unavailable" if blocked == "unavailable" else "armed_away")
+    if blocked == "paused":
+        await engine.async_set_paused(True)
+    elif blocked == "configuration":
+        engine.configuration_ready = False
+    elif blocked == "storage":
+        engine._storage_failed = True
+    elif blocked == "startup":
+        engine.started = False
+    elif blocked == "closed":
+        await engine.async_close()
+    engine._yielded.add("light.proof")
+    with pytest.raises(HomeAssistantError, match=reason):
+        await engine.async_enforce_state_now()
+    assert "light.proof" in engine._yielded and not daily_devices
+
+
+@pytest.mark.parametrize("interruption", ["condition", "permission", "pause"])
+async def test_enforce_now_interruption_during_dispatch_cancels_remaining_calls(
+    hass, daily_entry, daily_devices, condition_program, freezer, interruption
+):
+    import asyncio
+
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    started, release = asyncio.Event(), asyncio.Event()
+
+    async def handle(call):
+        daily_devices.append(call)
+        started.set()
+        await release.wait()
+
+    hass.services.async_register("light", "turn_on", handle)
+    press = hass.async_create_task(engine.async_enforce_state_now())
+    await started.wait()
+    if interruption == "condition":
+        hass.states.async_set("alarm_control_panel.8124_aaa_zone_1_alarm", "disarmed")
+        await asyncio.sleep(0)
+        control = None
+    else:
+        control = hass.async_create_task(
+            engine.async_set_enabled(False)
+            if interruption == "permission"
+            else engine.async_set_paused(True)
+        )
+        await asyncio.sleep(0)
+    release.set()
+    await press
+    if control:
+        await control
+    await hass.async_block_till_done()
+    assert len(daily_devices) == 1
+    assert not engine.active and not engine._queue
+    assert engine.reconciliation["phase"] == "cancelled"
+
+
+@pytest.mark.parametrize("target", ["unknown", "unavailable", "disabled", "opaque", "no_intent"])
+async def test_enforce_now_skips_targets_that_cannot_supply_known_available_intent(
+    hass, daily_entry, daily_devices, condition_program, freezer, target
+):
+    from homeassistant.helpers import entity_registry as er
+
+    if target == "disabled":
+        state = hass.states.get("light.proof")
+        hass.states.async_remove("light.proof")
+        registered = er.async_get(hass).async_get_or_create(
+            "light",
+            "test",
+            "disabled-light",
+            suggested_object_id="proof",
+            disabled_by=er.RegistryEntryDisabler.USER,
+        )
+        assert registered.entity_id == "light.proof"
+        hass.states.async_set("light.proof", state.state, state.attributes)
+    if target == "opaque":
+        condition_program["steps"]["opaque"] = {
+            "timing": {"absolute_time": {"start": "17:30"}},
+            "action": "script.turn_on",
+            "entities": ["light.proof"],
+        }
+    elif target == "no_intent":
+        condition_program["steps"]["on"]["timing"] = {"absolute_time": {"start": "19:00"}}
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    hass.states.async_set("switch.proof", "on")
+    if target in {"unknown", "unavailable"}:
+        hass.states.async_set("light.proof", target)
+    await press_enforce_now(hass, daily_entry)
+    assert not daily_devices
+    result = engine.reconciliation["results"]["light.proof"]
+    assert result["status"] == ("entity_disabled" if target == "disabled" else "skipped")
+
+
+async def test_enforce_now_respects_new_manual_changes_during_reconciliation(
+    hass, daily_entry, daily_devices, condition_program, freezer
+):
+    import asyncio
+
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+
+    async def handle(call):
+        daily_devices.append(call)
+        hass.states.async_set("switch.proof", "on")
+        hass.states.async_set("switch.proof", "off")
+        await asyncio.sleep(0)
+
+    hass.services.async_register("light", "turn_on", handle)
+    await press_enforce_now(hass, daily_entry)
+    assert len(daily_devices) == 1 and "switch.proof" in engine._yielded
+    assert engine.reconciliation["results"]["switch.proof"]["reason"] == (
+        "Manual control yielded entity"
+    )
+
+
+@pytest.mark.parametrize("failure", ["condition", "storage", "planning"])
+async def test_enforce_now_rechecks_eligibility_after_planning_before_reclaiming(
+    hass, daily_entry, daily_devices, condition_program, freezer, monkeypatch, failure
+):
+    import asyncio
+    from unittest.mock import AsyncMock
+
+    from homeassistant.exceptions import HomeAssistantError
+
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    engine._yielded.add("light.proof")
+    if failure == "condition":
+
+        async def plan():
+            hass.states.async_set("alarm_control_panel.8124_aaa_zone_1_alarm", "disarmed")
+            await asyncio.sleep(0)
+
+        monkeypatch.setattr(engine, "_ensure_plans", plan)
+    elif failure == "storage":
+        monkeypatch.setattr(
+            engine._store, "async_save", AsyncMock(side_effect=HomeAssistantError("Disk full"))
+        )
+    else:
+        monkeypatch.setattr(
+            engine, "_ensure_plans", AsyncMock(side_effect=ValueError("Infeasible plan"))
+        )
+    with pytest.raises(HomeAssistantError, match="Cannot enforce expected states"):
+        await engine.async_enforce_state_now()
+    assert not daily_devices and "light.proof" in engine._yielded
+
+
 @pytest.mark.parametrize("legacy", [False, True])
 async def test_enforcement_switch_migrates_once_and_survives_reload(
     hass, daily_entry, condition_program, freezer, hass_storage, legacy

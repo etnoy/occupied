@@ -4,7 +4,7 @@ from homeassistant.const import Platform
 
 DOMAIN = "occupied"
 EVENT_ACTION = "occupied_action"
-PLATFORMS = (Platform.SWITCH, Platform.SENSOR)
+PLATFORMS = (Platform.SWITCH, Platform.SENSOR, Platform.BUTTON)
 SUPPORTED_HA_VERSION = "2026.9.4"
 SIGNAL_PREFIX = "occupied_updated"
 CONF_LIGHT = "light_entity"

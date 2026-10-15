@@ -76,34 +76,3 @@ export function actionSummary(entry: StepEntry, t: Translate) {
 
   return entry.action;
 }
-
-export function stepTree(entries: StepEntry[]) {
-  const seen = new Set<string>(),
-    ordered: { entry: StepEntry; depth: number }[] = [];
-  const append = (entry: StepEntry, depth: number) => {
-    if (seen.has(entry.id)) {
-      return;
-    }
-    seen.add(entry.id);
-    ordered.push({ entry, depth });
-    for (const child of entries) {
-      if (child.timing.relative_to?.step === entry.id) {
-        append(child, depth + 1);
-      }
-    }
-  };
-  const isRoot = (step: StepEntry) =>
-    !step.timing.relative_to?.step ||
-    entries.every((parent) => parent.id !== step.timing.relative_to?.step);
-  for (const step of entries) {
-    if (isRoot(step)) {
-      append(step, 0);
-    }
-  }
-
-  for (const step of entries) {
-    append(step, 0);
-  }
-
-  return ordered;
-}
