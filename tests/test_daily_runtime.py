@@ -119,6 +119,30 @@ async def advance(hass, freezer, seconds):
     await hass.async_block_till_done()
 
 
+@pytest.mark.parametrize("state", ["on", "off"])
+async def test_activation_with_null_light_attributes(
+    hass, daily_entry, daily_devices, freezer, state
+):
+    hass.states.async_set(
+        "light.proof",
+        state,
+        {
+            "brightness": None,
+            "color_temp_kelvin": None,
+            "hs_color": None,
+            "rgb_color": None,
+            "supported_color_modes": ["color_temp", "rgb"],
+            "supported_features": LightEntityFeature.TRANSITION,
+        },
+    )
+    engine = await load(hass, daily_entry, freezer, "2026-10-13T18:03:00+00:00")
+    await engine.async_set_enabled(True)
+    assert engine.active
+    await advance(hass, freezer, 600)
+    assert hass.states.get("light.proof").state == "off"
+    assert any(call.service == "turn_off" for call in daily_devices)
+
+
 @pytest.fixture
 def cover_devices(hass, daily_entry):
     calls = []

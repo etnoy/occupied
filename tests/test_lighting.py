@@ -2,12 +2,29 @@
 
 from datetime import UTC, date, datetime
 
+import pytest
+
+from custom_components.occupied.actions import light_observation
 from custom_components.occupied.handover import calls_for_target
 from custom_components.occupied.lighting import LightState, preview_handover, project_lighting
 from custom_components.occupied.models import Handover
 from custom_components.occupied.planner import generate_plan
 from custom_components.occupied.time_utils import PlanningContext
 from custom_components.occupied.validation import validate_program
+
+
+@pytest.mark.parametrize("state", ["on", "off"])
+@pytest.mark.parametrize("brightness", [None, 128])
+async def test_light_observation_accepts_null_ha_attributes(hass, state, brightness):
+    hass.states.async_set(
+        "light.a",
+        state,
+        {"brightness": brightness, "color_temp_kelvin": None, "hs_color": None, "rgb_color": None},
+    )
+    expected_brightness = (
+        0 if state == "off" else brightness * 100 / 255 if brightness is not None else None
+    )
+    assert light_observation(hass, "light.a") == LightState(state, expected_brightness)
 
 
 def test_unknown_before_first_action_and_no_brightness_default(program_dict):

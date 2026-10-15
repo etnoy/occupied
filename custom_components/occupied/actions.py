@@ -58,16 +58,18 @@ def light_observation(hass, entity):
     if value is None or value["state"] not in {STATE_ON, STATE_OFF}:
         return None
     attrs = value["attributes"]
+    # HA includes null attributes when a light is off or its active color mode
+    # does not supply them. Preserve unknown values rather than converting None.
     return LightState(
         value["state"],
         attrs["brightness"] * 100 / 255
-        if value["state"] == STATE_ON and "brightness" in attrs
+        if value["state"] == STATE_ON and attrs.get("brightness") is not None
         else 0
         if value["state"] == STATE_OFF
         else None,
         attrs.get("color_temp_kelvin"),
-        tuple(attrs["hs_color"]) if "hs_color" in attrs else None,
-        tuple(attrs["rgb_color"]) if "rgb_color" in attrs else None,
+        tuple(attrs["hs_color"]) if attrs.get("hs_color") is not None else None,
+        tuple(attrs["rgb_color"]) if attrs.get("rgb_color") is not None else None,
     )
 
 
