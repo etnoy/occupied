@@ -1,0 +1,31 @@
+custom_components/occupied/frontend/src/lib/components/random/RandomView.svelte
+  s_9dd7f6f72970bd::t_c41362f26b6fa5 8,89-93
+custom_components/occupied/frontend/src/lib/components/steps/StepsView.svelte
+  s_9dd7f6f72970bd::t_72aecfc89a581f 13,96
+custom_components/occupied/frontend/src/lib/utils/util.ts
+  s_75960e5a515447::t_01088abe0f6ffa 63-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a01d721a6ef768f73bc3112fe05b4103abd9e630",
+  "prompts": {},
+  "sessions": {
+    "s_75960e5a515447": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a141bd-3464-71e3-af67-a8659b81d4f2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_9dd7f6f72970bd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a141bb-409a-7ab0-b521-e4eefd1b0b5c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
