@@ -174,6 +174,8 @@ class DailyPlan:
     step_times: dict[str, datetime]
     issues: tuple[Issue, ...] = ()
     planner_version: int = PLANNER_VERSION
+    # Preview-only context: never dispatched or included in executable groups.
+    history_events: tuple[PlanEvent, ...] = ()
 
     @cached_property
     def groups(self):
@@ -208,6 +210,10 @@ class DailyPlan:
             "events": [e.to_dict(ZoneInfo(self.timezone)) for e in self.events],
             "issues": [i.to_dict() for i in self.issues],
         }
+        if self.history_events:
+            result["history_events"] = [
+                e.to_dict(ZoneInfo(self.timezone)) for e in self.history_events
+            ]
         result["plan_fingerprint"] = hashlib.sha256(
             json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
@@ -522,7 +528,14 @@ def preview_calendar_dates(program, dates, seed, *, context=None):
     dates = tuple(dates)
     if not 1 <= len(dates) <= 31:
         raise ProgramError([Issue("preview_dates", "Preview between one and 31 dates")])
-    sources = sorted({source for day in dates for source in runtime_dates(program, day)})
+    sources = sorted(
+        {
+            source
+            for day in dates
+            for adjacent in (day - timedelta(days=1), day)
+            for source in runtime_dates(program, adjacent)
+        }
+    )
     maximum = max_plan_events(program)
     if len(sources) * maximum > MAX_CACHED_EVENTS:
         raise ProgramError([Issue("preview_budget", "Preview exceeds its bounded event budget")])
@@ -538,6 +551,11 @@ def preview_calendar_dates(program, dates, seed, *, context=None):
             plans[day],
             events=tuple(
                 event for event in events if plans[day].start <= event.at < plans[day].end
+            ),
+            history_events=tuple(
+                event
+                for event in events
+                if plans[day - timedelta(days=1)].start <= event.at < plans[day].start
             ),
         )
         for day in dates

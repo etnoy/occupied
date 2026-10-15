@@ -133,25 +133,50 @@ void test("simultaneous events retain planner order", () => {
     ["off", "off"],
   );
 });
-void test("overnight events appear on the calendar day without yesterday's baseline", () => {
-  const previous = {
+void test("overnight chart state continues from yesterday until the after-midnight action", () => {
+  const current = {
     ...plan([
-      { ...event(23, "light.turn_on"), time: "2026-10-12T23:00:00Z" },
       { ...event(0, "light.turn_off"), time: "2026-10-13T00:20:00Z" },
+      event(18, "light.turn_on"),
     ]),
-    simulation_date: "2026-10-12",
-    start: "2026-10-12T00:00:00Z",
-    end: time(0),
+    history_events: [
+      { ...event(23, "light.turn_on"), time: "2026-10-12T23:30:00Z" },
+    ],
   };
-  const current = plan([event(18, "light.turn_on")]);
-  const originals = structuredClone([previous, current]);
-  const day = calendarDayPlan([previous, current], "2026-10-13")!;
-  const histories = calendarStateHistory([previous, current], day, {});
+  const original = structuredClone(current);
+  const day = calendarDayPlan([current], "2026-10-13")!;
+  const histories = calendarStateHistory([current], day, {});
   assert.deepEqual(
-    histories[0].data.map((s) => s.state),
-    ["off", "on"],
+    histories[0].data.map((s) => [s.state, s.last_changed]),
+    [
+      ["on", Date.parse(time(0))],
+      ["off", Date.parse("2026-10-13T00:20:00Z")],
+      ["on", Date.parse(time(18))],
+    ],
   );
-  assert.deepEqual([previous, current], originals);
+  assert.equal(day.events.length, 2);
+  assert.deepEqual(current, original);
+});
+void test("prior state remains visible on days without actions and ignores superseded ticks", () => {
+  const current = {
+    ...plan([]),
+    history_events: [
+      {
+        ...event(18, "switch.turn_on", "switch.outlet"),
+        time: "2026-10-12T18:00:00Z",
+      },
+      {
+        ...event(23, "switch.turn_off", "switch.outlet"),
+        time: "2026-10-12T23:00:00Z",
+        superseded: true,
+      },
+    ],
+  };
+  const histories = calendarStateHistory([current], current, {});
+  assert.deepEqual(
+    histories[0].data.map((s) => [s.state, s.last_changed]),
+    [["on", Date.parse(time(0))]],
+  );
 });
 void test("calendar day bounds follow the plan timezone and 23/25 hour DST days", () => {
   for (const [date, next, hours] of [

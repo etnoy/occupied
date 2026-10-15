@@ -329,6 +329,7 @@ var en = {
   start_time_window: "Start time window",
   at: "at",
   at_a_random_time_between: "at a random time between",
+  at_a_random_time_during_the: "at a random time during the",
   and: "and",
   the_next_day: "the next day",
   runs: "Runs",
@@ -839,6 +840,7 @@ var sv = {
   start_time_window: "Tidsintervallets start",
   at: "kl.",
   at_a_random_time_between: "vid en slumpm\xE4ssig tid mellan",
+  at_a_random_time_during_the: "vid en slumpm\xE4ssig tid inom",
   and: "och",
   the_next_day: "n\xE4sta dag",
   runs: "K\xF6rs",
@@ -1431,12 +1433,8 @@ function timingExplanation(
         : `${runs} ${offsetLabel(low)} ${name}`;
     return `${fixedTime}${includeHints && !time.endOffset ? `. ${t("time_offset_randomness_hint")}` : ""}`;
   }
-  const anchorStart = step ? `${t("the_start_of")} ${name}` : name;
-  if (low === 0) {
-    return `${runs} ${t("at_a_random_time_between")} ${anchorStart} ${t("and")} ${offsetLabel(high)} ${name}`;
-  }
-  if (high === 0) {
-    return `${runs} ${t("at_a_random_time_between")} ${offsetLabel(low)} ${name} ${t("and")} ${anchorStart}`;
+  if (low === 0 || high === 0) {
+    return `${runs} ${t("at_a_random_time_during_the")} ${offsetLabel(low === 0 ? high : low)} ${name}`;
   }
   const firstBound =
     Math.sign(low) === Math.sign(high) ? duration(low) : offsetLabel(low);
@@ -12880,7 +12878,7 @@ function previewStateHistory(plan, _program, names = {}, t = translator()) {
     off: "off_label",
   };
   const label = (state2) => t(stateLabels[state2] || "unknown");
-  for (const event2 of [...plan.events].sort(
+  for (const event2 of [...(plan.history_events || []), ...plan.events].sort(
     (a, b) => Date.parse(a.time) - Date.parse(b.time),
   )) {
     if (event2.superseded) {

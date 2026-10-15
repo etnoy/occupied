@@ -248,12 +248,12 @@ void test("timing explanation describes signed offsets and window bounds directl
     [
       "0s",
       "1h",
-      "Runs at a random time between the start of Kitchen lights and 1 hour after Kitchen lights",
+      "Runs at a random time during the 1 hour after Kitchen lights",
     ],
     [
       "-20m",
       "0s",
-      "Runs at a random time between 20 minutes before Kitchen lights and the start of Kitchen lights",
+      "Runs at a random time during the 20 minutes before Kitchen lights",
     ],
     ["1h", "60m", "Runs 1 hour after Kitchen lights"],
     ["1h30m10s", "", "Runs 1 hour 30 minutes 10 seconds after Kitchen lights"],
@@ -306,6 +306,28 @@ void test("timing explanation describes signed offsets and window bounds directl
     }),
     "Runs 1 hour after sensor.alarm. Add an end offset to introduce randomness",
   );
+});
+
+void test("solar timing ranges mention the anchor once at a zero-offset boundary", () => {
+  for (const [startOffset, endOffset, direction] of [
+    ["-30m", "0s", "before"],
+    ["0s", "30m", "after"],
+  ]) {
+    const timing = {
+      mode: "relative",
+      anchor: "sun:dusk",
+      startOffset,
+      endOffset,
+    };
+    assert.equal(
+      timingExplanation(timing),
+      `Runs at a random time during the 30 minutes ${direction} dusk`,
+    );
+    assert.equal(
+      timingExplanation(timing, [], translator("sv")),
+      `Körs vid en slumpmässig tid inom 30 minuter ${direction === "before" ? "före" : "efter"} skymning`,
+    );
+  }
 });
 
 void test("absolute timing explanation follows fixed, random and overnight windows", () => {

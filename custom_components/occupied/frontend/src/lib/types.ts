@@ -328,6 +328,7 @@ export interface Plan {
   end: string;
   steps: Record<string, string>;
   events: PlannedEvent[];
+  history_events?: PlannedEvent[];
   issues: Issue[];
 }
 

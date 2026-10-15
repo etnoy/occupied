@@ -51,7 +51,7 @@ export function previewStateHistory(
     off: "off_label",
   };
   const label = (state: string) => t(stateLabels[state] || "unknown");
-  for (const event of [...plan.events].sort(
+  for (const event of [...(plan.history_events || []), ...plan.events].sort(
     (a, b) => Date.parse(a.time) - Date.parse(b.time),
   )) {
     if (event.superseded) {
@@ -131,8 +131,8 @@ export function previewStateHistory(
   return [...entities.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-// Calendar dates now coincide with the displayed local day. Include overnight
-// events from surrounding source dates without carrying yesterday's state forward.
+// Calendar slices retain prior planned actions as chart context only. They do
+// not become executable events or appear in the selected day's event details.
 export function calendarStateHistory(
   plans: Plan[],
   day: Plan,

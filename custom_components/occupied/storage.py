@@ -50,11 +50,8 @@ def action_from_data(data):
     )
 
 
-def plan_from_data(data):
-    if data["planner_version"] != PLANNER_VERSION:
-        raise ValueError("Unsupported saved planner version")
-    # The shape check rejects obsolete caches without changing version numbers.
-    events = tuple(
+def events_from_data(items):
+    return tuple(
         PlanEvent(
             i["id"],
             instant(i["time"]),
@@ -71,8 +68,15 @@ def plan_from_data(data):
             i.get("period_seconds", 0),
             i.get("superseded", False),
         )
-        for index, i in enumerate(data["events"])
+        for index, i in enumerate(items)
     )
+
+
+def plan_from_data(data):
+    if data["planner_version"] != PLANNER_VERSION:
+        raise ValueError("Unsupported saved planner version")
+    # The shape check rejects obsolete caches without changing version numbers.
+    events = events_from_data(data["events"])
     start, end = instant(data["start"]), instant(data["end"])
     if (
         start >= end
@@ -101,4 +105,5 @@ def plan_from_data(data):
             )
             for i in data["issues"]
         ),
+        history_events=events_from_data(data.get("history_events", [])),
     )

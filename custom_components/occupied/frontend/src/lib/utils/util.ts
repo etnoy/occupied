@@ -349,12 +349,8 @@ export function timingExplanation(
 
     return `${fixedTime}${includeHints && !time.endOffset ? `. ${t("time_offset_randomness_hint")}` : ""}`;
   }
-  const anchorStart = step ? `${t("the_start_of")} ${name}` : name;
-  if (low === 0) {
-    return `${runs} ${t("at_a_random_time_between")} ${anchorStart} ${t("and")} ${offsetLabel(high)} ${name}`;
-  }
-  if (high === 0) {
-    return `${runs} ${t("at_a_random_time_between")} ${offsetLabel(low)} ${name} ${t("and")} ${anchorStart}`;
+  if (low === 0 || high === 0) {
+    return `${runs} ${t("at_a_random_time_during_the")} ${offsetLabel(low === 0 ? high : low)} ${name}`;
   }
   const firstBound =
     Math.sign(low) === Math.sign(high) ? duration(low) : offsetLabel(low);

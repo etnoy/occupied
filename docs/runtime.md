@@ -40,7 +40,7 @@ Outside manual changes yield an entity until the next activation. Permission los
 
 ## Cover targets and activation
 
-Standard native cover open/close/stop and position/tilt commands supply typed preview targets. Position and tilt remain independent: open/close target 100%/0%, and stop invalidates only the affected target. Each local calendar date starts Unknown. Preview does not model travel time or predict the physical position after a stop.
+Standard native cover open/close/stop and position/tilt commands supply typed preview targets. Position and tilt remain independent: open/close target 100%/0%, and stop invalidates only the affected target. Runtime projection starts Unknown on each local calendar date. The preview chart uses the preceding local day’s actions to display continuity across midnight. Preview does not model travel time or predict the physical position after a stop.
 
 The default cover activation policy is **future only**. Explicit startup state enforcement is the opt-in exception described above. Past cover calls are marked skipped, including position/tilt targets, and ordinary enabling or resuming management never moves covers to a historical target. Covers do not enter the light fade/handover path or receive automatic retries. Future authored commands dispatch normally. Controller stop cancels future work but does not send `cover.stop_cover`, `cover.stop_cover_tilt`, or restoration calls.
 

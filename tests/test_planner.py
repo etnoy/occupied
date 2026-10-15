@@ -210,3 +210,41 @@ def test_calendar_preview_includes_distant_signed_source_dates(program_dict):
         validate_program(program_dict), [date(2026, 10, 14)], 0, context=CTX
     )[0]
     assert {e.source_id for e in current.events} == {"leave"}
+
+
+@pytest.mark.parametrize("day", [date(2026, 10, 14), date(2026, 3, 29), date(2026, 10, 25)])
+def test_calendar_preview_preserves_overnight_chart_context_without_executing_it(day):
+    from custom_components.occupied.planner import preview_calendar_dates
+    from custom_components.occupied.storage import plan_from_data
+
+    program = validate_program(
+        {
+            "schema_version": 1,
+            "name": "Overnight preview",
+            "steps": {
+                "evening": {
+                    "timing": {"absolute_time": {"start": "18:00"}},
+                    "action": "turn_on",
+                    "entities": ["light.a"],
+                },
+                "bedtime": {
+                    "timing": {"absolute_time": {"start": "23:30", "end": "00:20"}},
+                    "action": "turn_off",
+                    "entities": ["light.a"],
+                },
+            },
+        }
+    )
+    context = PlanningContext("Europe/Stockholm")
+    single = preview_calendar_dates(program, [day], "preview-1", context=context)[0]
+    together = preview_calendar_dates(
+        program, [day - timedelta(days=1), day], "preview-1", context=context
+    )[-1]
+    assert single.to_dict() == together.to_dict()
+    assert single.history_events
+    assert all(single.start <= e.at < single.end for e in single.events)
+    assert all(e.at < single.start for e in single.history_events)
+    assert any(e.source_id == "evening" for e in single.history_events)
+    restored = plan_from_data(single.to_dict())
+    assert restored.to_dict() == single.to_dict()
+    assert all(e.at >= single.start for group in restored.groups.values() for e in group)

@@ -54,7 +54,7 @@ All-week selections, normal enabled state, zero offsets, empty data, and equal e
 
 ## Preview
 
-**Preview** automatically loads the selected local calendar date. Use date arrows or Today. Sampling remains stable when returning to a date. Neighboring source-date plans supply overnight events on their actual calendar date. Device strips show planned states, with Unknown before the first known action. These are plans rather than current HA state or recorder history. Opaque scenes/services do not invent resulting device state. Event details show native service names and targets.
+**Preview** automatically loads the selected local calendar date. Use date arrows or Today. Sampling remains stable when returning to a date. Neighboring source-date plans supply overnight events on their actual calendar date. Device strips carry the preceding local day’s planned state across midnight, so overnight windows continue into the next day. Prior actions provide chart context only and are excluded from the selected day’s event details and live execution. These are plans rather than current HA state or recorder history. Opaque scenes/services do not invent resulting device state. Event details show native service names and targets.
 
 Cover strips show independently authored position and tilt targets. Open and close establish 100% and 0% targets. Stop makes its affected axis Unknown, while preserving the other axis's known target. Travel time and intermediate positions are not inferred. An opaque call on an explicit cover target makes both axes Unknown.
 
