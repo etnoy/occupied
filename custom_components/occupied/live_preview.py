@@ -12,6 +12,7 @@ from homeassistant.helpers import entity_registry as er
 
 from .actions import dispatch_service, observe
 from .activation import ActivationGate
+from .activity import async_log_action
 from .const import DOMAIN
 from .file_config import load_program
 from .instances import controlled_entities
@@ -423,7 +424,14 @@ class LivePreviewManager:
                     break
                 if not problem:
                     try:
-                        await dispatch_service(self.hass, event.action, context)
+                        data = await dispatch_service(self.hass, event.action, context)
+                        async_log_action(
+                            self.engine,
+                            event.action.action,
+                            event.action.targets,
+                            data,
+                            context,
+                        )
                         outcome.update(status="dispatched", detail="Service handler completed")
                     except TimeoutError:
                         outcome.update(status="uncertain", detail="Service timed out; not retried")

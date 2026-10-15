@@ -15,6 +15,13 @@ from custom_components.occupied.validation import program_revision, validate_pro
 
 
 @pytest.fixture
+def mock_recorder_before_hass(request):
+    """Prepare recorder's database before the shared autouse HA fixture runs."""
+    if "recorder_mock" in request.fixturenames:
+        request.getfixturevalue("recorder_db_url")
+
+
+@pytest.fixture
 def runtime_program():
     return {
         "schema_version": 1,
@@ -429,6 +436,80 @@ async def test_permission_and_pause_cancel_future_dispatch(
     await engine.async_set_paused(False)
     await advance(hass, freezer, 0)
     assert not any(c.domain == "script" for c in daily_devices)
+
+
+async def test_device_activity_includes_successful_actions_and_survives_reload(
+    recorder_mock, hass, daily_entry, daily_devices, freezer, runtime_program
+):
+    from homeassistant.components.logbook.helpers import (
+        async_determine_event_types,
+        event_forwarder_filtered,
+    )
+    from homeassistant.components.logbook.processor import EventProcessor
+    from homeassistant.helpers import device_registry as dr
+    from homeassistant.setup import async_setup_component
+    from pytest_homeassistant_custom_component.components.recorder.common import (
+        async_wait_recording_done,
+    )
+
+    from custom_components.occupied.const import EVENT_ACTION
+
+    assert await async_setup_component(hass, "logbook", {})
+    runtime_program["steps"]["on"]["action"] = "light.turn_on"
+    runtime_program["steps"]["on"]["data"] = {"brightness_pct": 42, "transition": 5}
+    old = hass.states.get("light.proof")
+    hass.states.async_set("light.proof", old.state, dict(old.attributes, friendly_name="Desk lamp"))
+    events = []
+    hass.bus.async_listen(EVENT_ACTION, events.append)
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 60)
+    assert len(events) == 1
+    event = events[0]
+    assert event.data["message"] == (
+        "Turned on Desk lamp (light.proof) at 42% brightness (transition: 5s)"
+    )
+    assert event.context.id == daily_devices[0].context.id
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        ("occupied", daily_entry.entry_id), daily_entry.entry_id
+    )
+    assert event.data["device_id"] == device.id
+    event_types = async_determine_event_types(hass, None, [device.id])
+    assert EVENT_ACTION in event_types
+    forwarded = []
+    event_forwarder_filtered(forwarded.append, None, None, [device.id])(event)
+    assert forwarded == [event]
+    processor = EventProcessor(hass, event_types, device_ids=[device.id])
+    await async_wait_recording_done(hass)
+    history = await hass.async_add_executor_job(
+        processor.get_events,
+        dt_util.utcnow() - timedelta(minutes=1),
+        dt_util.utcnow() + timedelta(seconds=1),
+    )
+    assert any(
+        item.get("message") == event.data["message"]
+        and item.get("entity_id") == "light.proof"
+        and item.get("domain") == "occupied"
+        for item in history
+    ), history
+
+    assert await hass.config_entries.async_reload(daily_entry.entry_id)
+    await hass.async_block_till_done()
+    assert len(events) == 1
+    await advance(hass, freezer, 60)
+    assert events[-1].data["message"] == "Turned on script.test"
+    assert len(events) == len(daily_devices)
+    assert [event.context.id for event in events] == [call.context.id for call in daily_devices]
+    before_failure = len(events)
+
+    async def fail(_call):
+        from homeassistant.exceptions import HomeAssistantError
+
+        raise HomeAssistantError("Device unavailable")
+
+    hass.services.async_register("light", "turn_off", fail)
+    await advance(hass, freezer, 180)
+    assert len(events) == before_failure
 
 
 async def test_storage_failure_blocks_calls(

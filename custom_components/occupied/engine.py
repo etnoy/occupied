@@ -28,6 +28,7 @@ from homeassistant.helpers.event import (
 from homeassistant.util import dt as dt_util
 
 from .activation import ActivationGate
+from .activity import async_log_action
 from .const import (
     CONF_ACTIVATION_ENTITY,
     CONF_ACTIVITY,
@@ -387,6 +388,7 @@ class OccupiedEngine:
             self._record(kind, "failed", self.last_error)
             _LOGGER.warning("Occupied dispatch failed: %s", self.last_error)
             return False
+        async_log_action(self, f"{domain}.{service}", (data["entity_id"],), data, context)
         self._record(kind, "dispatched", f"{domain}.{service}")
         return True
 

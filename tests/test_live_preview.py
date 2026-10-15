@@ -120,6 +120,34 @@ async def test_start_idle_status_and_group_order_are_isolated(
     assert len(live_calls) == 5 and engine.live_preview.session["cursor"] == 0
 
 
+async def test_live_preview_activity_describes_each_target_and_keeps_user_context(
+    live_engine, live_program, live_calls
+):
+    from custom_components.occupied.const import EVENT_ACTION
+
+    events = []
+    live_engine.hass.bus.async_listen(EVENT_ACTION, events.append)
+    await start(live_engine, live_program)
+    assert not events
+    await next_event(live_engine)
+    await live_engine.hass.async_block_till_done()
+    assert [event.data["entity_id"] for event in events] == ["light.a", "light.b", "switch.a"]
+    assert all(event.context.user_id == "owner" for event in events)
+    assert [event.context.id for event in events] == [call.context.id for call in live_calls]
+    await next_event(live_engine, "cover")
+    scene_group = live_engine.live_preview.session["next_group"]["id"]
+    await next_event(live_engine, "scene")
+    await live_engine.hass.async_block_till_done()
+    assert events[3].data["message"] == "Set position of cover.blind to 25%"
+    assert events[4].data["message"] == "Activated scene.evening"
+    before = len(events)
+    await live_engine.live_preview.async_next(
+        live_engine.live_preview.session["id"], scene_group, "scene", "owner"
+    )
+    await live_engine.hass.async_block_till_done()
+    assert len(events) == before
+
+
 async def test_duplicate_and_concurrent_advances_do_not_consume_next(
     live_engine, live_program, live_calls
 ):

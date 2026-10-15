@@ -13,14 +13,16 @@ SERVICE_TIMEOUT = 10
 async def dispatch_service(hass, action, context, *, data=None):
     """Await native handlers with a bound; callers own authorization and journaling."""
     domain, service = action.action.split(".")
+    data = service_payload(hass, action) if data is None else data
     async with asyncio.timeout(SERVICE_TIMEOUT):
         await hass.services.async_call(
             domain,
             service,
-            service_payload(hass, action) if data is None else data,
+            data,
             blocking=True,
             context=context,
         )
+    return data
 
 
 def observe(hass, entity):

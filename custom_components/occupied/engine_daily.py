@@ -35,6 +35,7 @@ from .actions import (
     service_payload,
 )
 from .activation import ActivationGate
+from .activity import async_log_action
 from .const import DOMAIN, SIGNAL_PREFIX
 from .covers import cover_target
 from .handover import calls_for_target
@@ -997,6 +998,7 @@ class DailyEngine:
             ):
                 self._push(dt_util.utcnow() + timedelta(seconds=1), "retry", key, action, attempt=1)
             return False
+        async_log_action(self, action.action, action.targets, data, context)
         for entity in action.targets:
             if (
                 entity.startswith(("light.", "switch."))

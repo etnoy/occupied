@@ -28,6 +28,10 @@ async def load(hass, entry, *, running=True):
 async def test_already_armed_at_startup_drives_services_without_browser(
     hass, entry, devices, saved_permission, freezer
 ):
+    from custom_components.occupied.const import EVENT_ACTION
+
+    events = []
+    hass.bus.async_listen(EVENT_ACTION, events.append)
     engine = await load(hass, entry, running=False)
     assert not engine.active
     assert not devices
@@ -64,6 +68,9 @@ async def test_already_armed_at_startup_drives_services_without_browser(
     assert engine.status == "complete"
     assert engine.next_event is None
     assert all(call.context.id for call in devices)
+    assert len(events) == len(devices)
+    assert [event.context.id for event in events] == [call.context.id for call in devices]
+    assert any("Started activity Watch TV on remote.harmony" in e.data["message"] for e in events)
 
 
 @pytest.mark.parametrize("allowed", ["armed", "armed_away"])

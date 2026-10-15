@@ -8,6 +8,8 @@ When permission becomes active, Occupied samples bounded neighboring source date
 
 Future actions are queued in UTC. Historical generic service calls are marked skipped and never replayed. Each dispatch is durably journaled before the native service call; persistence failure blocks dispatch and deactivates management. Interrupted pending calls become uncertain and are not automatically replayed. Native typed on/off failures have a bounded retry, superseded by newer intents. Missing services/unavailable devices are reported without stalling other steps.
 
+Successful service calls also appear in Home Assistant's **Activity** log under the Occupied controller device and affected entity. Entries identify the action and target, including brightness, transition duration, or cover position when applicable. Scheduled actions, startup handover/state enforcement, and manual live preview use the same logging. These entries confirm that the service handler completed; they do not confirm physical device movement. Failed, skipped, and uncertain calls are not logged as successful actions. Activity history follows Home Assistant's Recorder retention and filters.
+
 Completed occurrence identities remain stable when a time helper or timestamp/calendar source changes. Source updates reschedule future work without replaying completed steps for the same source date. Restart retains valid sampled plans, seed, journal, handover, ownership, and yielded state. Obsolete cache shapes are rejected and rebuilt without changing version numbers.
 
 ## Run condition and delayed state enforcement
