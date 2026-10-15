@@ -1,4 +1,3 @@
-// The editable GUI draft is the canonical YAML/JSON model.
 export type Path = (string | number)[];
 
 export type Translate = (key: string) => string;
@@ -438,7 +437,6 @@ export interface HaGenericPicker extends HTMLElement {
   required: boolean;
 }
 
-// Primary navigation tabs plus the secondary pages reached from them.
 export type Tab = "steps" | "random" | "settings" | "preview";
 
 declare global {
@@ -449,8 +447,6 @@ declare global {
   }
 
   interface HTMLElementEventMap {
-    // HA's fireEvent uses a plain Event with detail attached. CustomEvent
-    // implements the same contract, but cannot be required at runtime.
     "value-changed": Event & { detail: { value: unknown } };
   }
 }

@@ -12,8 +12,6 @@ export function get<T = unknown>(object: unknown, path: Path): T {
     ];
   }
 
-  // Dynamic JSON paths are the boundary of the advanced editor. Callers supply
-  // the expected field type; the backend validates edited values before saving.
   return value as T;
 }
 

@@ -28,7 +28,6 @@ export function actionTargetSummary(
   return `${first}${remaining}`;
 }
 
-// Emit readable YAML; strict parsing and semantic validation belong to the backend.
 export function actionYaml(value: unknown, level = 0): string {
   const pad = "  ".repeat(level);
   if (Array.isArray(value)) {

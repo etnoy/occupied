@@ -26,17 +26,18 @@ export function createStepEditorContext(panel: OccupiedPanel) {
     time = form.timing,
     t = panel.t,
     editing = editor.existing;
+
   const refresh = (key?: string) => {
     panel.flush();
     focusEditor(panel, key);
   };
+
   const changed = (key: string) => {
     editor.changed = true;
     panel.version++;
     panel.validatedVersion = -1;
     delete editor.errors[key];
     if (key === "days") {
-      // Weekday edits can resolve an error on the relative time source.
       const { anchor } = editorErrors(panel.draft, editor);
       if (anchor) {
         editor.errors.anchor = anchor;
@@ -44,6 +45,7 @@ export function createStepEditorContext(panel: OccupiedPanel) {
         delete editor.errors.anchor;
       }
     }
+
     if (["startOffset", "endOffset"].includes(key)) {
       const errors = offsetErrors(time);
       for (const offset of ["startOffset", "endOffset"]) {
@@ -54,9 +56,10 @@ export function createStepEditorContext(panel: OccupiedPanel) {
         }
       }
     }
-    // Svelte updates the existing inputs and HA selectors; typing retains focus.
+
     panel.flush();
   };
+
   const submit = async () => {
     editor.errors = editorErrors(panel.draft, editor);
     if (Object.keys(editor.errors).length > 0) {
@@ -71,6 +74,7 @@ export function createStepEditorContext(panel: OccupiedPanel) {
 
         return refresh("customYaml");
       }
+
       const candidate = buildStep(panel.draft, editor);
       editor.candidatePath = required(
         stepEntries(candidate).find((entry) => entry.id === editor.id),
@@ -81,9 +85,11 @@ export function createStepEditorContext(panel: OccupiedPanel) {
           const validation = await panel.ws("editor_validate", {
             program: candidate,
           });
+
           if (panel.version !== version || panel.activeEditor !== editor) {
             return;
           }
+
           if (!validation.valid) {
             panel.showIssues(validation);
             if (validation.issues.length > 0) {
@@ -93,6 +99,7 @@ export function createStepEditorContext(panel: OccupiedPanel) {
             return;
           }
         }
+
         panel.change([], candidate);
         panel.selectedStep = editor.id;
         panel.stepEditor = null;
@@ -104,6 +111,7 @@ export function createStepEditorContext(panel: OccupiedPanel) {
       panel.fail(error);
     }
   };
+
   const cancel = () => {
     panel.requestStepExit(() => {
       panel.shadowRoot.getElementById(`step-card-${editor.id}`)?.focus();

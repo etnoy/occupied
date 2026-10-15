@@ -4,7 +4,6 @@ import { copy } from "../models/model.js";
 import { shiftScheduleDate } from "../utils/time-format.js";
 import { mergeLiveSession } from "../utils/live-preview.js";
 
-// Preview requests update the shared panel state. The panel owns element lifecycle.
 export class PreviewController {
   private recoveryEpoch = 0;
   private connection?: HomeAssistant["connection"];

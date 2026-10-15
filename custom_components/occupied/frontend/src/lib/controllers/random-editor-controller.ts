@@ -47,10 +47,12 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
   const editor = panel.randomEditor!,
     form = editor.form,
     t = panel.t;
+
   const refresh = (key?: string) => {
     panel.flush();
     focusEditor(panel, key);
   };
+
   const changed = (key: string) => {
     if (
       !["entities", "cover"].includes(form.on.kind) ||
@@ -58,12 +60,13 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
     ) {
       form.sameEntities = false;
     }
+
     if (form.sameEntities) {
       form.off.entities = [...form.on.entities];
     }
     panel.version++;
     panel.validatedVersion = -1;
-    // Keep submitted errors current while allowing untouched fields to stay quiet.
+
     const errors = randomErrors(panel.draft, editor);
     for (const field of Object.keys(editor.errors)) {
       if (errors[field]) {
@@ -75,6 +78,7 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
     delete editor.errors[key];
     panel.flush();
   };
+
   const scopedEditor = (
     prefix: string,
     options?: Pick<StepEditor, "showEndTime" | "showEndOffset">,
@@ -104,6 +108,7 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
         return Reflect.set(target, key, value);
       },
     });
+
   const timing = (edge: "start" | "end"): TimingEditorContext => ({
     editor: scopedEditor(`${edge}.`, editor[`${edge}Options`]),
     form: new Proxy(form, {}),
@@ -114,6 +119,7 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
     changed: (key) => changed(`${edge}.${key}`),
     refresh: (key) => refresh(key ? `${edge}.${key}` : undefined),
   });
+
   const action = (phase: "on" | "off"): ActionEditorContext => ({
     editor: scopedEditor(`${phase}.`),
     form: new Proxy(form[phase], {}),
@@ -121,6 +127,7 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
     fieldPrefix: `${phase}.`,
     changed: (key) => changed(`${phase}.${key}`),
   });
+
   const submit = async () => {
     editor.errors = randomErrors(panel.draft, editor);
     if (Object.keys(editor.errors).length > 0) {
@@ -166,10 +173,12 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
       panel.fail(error);
     }
   };
+
   const cancel = () =>
     panel.requestStepExit(() =>
       panel.shadowRoot.getElementById(`random-card-${editor.id}`)?.focus(),
     );
+
   const context: EditorContext = { editor: new Proxy(editor, {}), t, changed };
 
   return {
@@ -187,6 +196,7 @@ export async function deleteRandom(panel: OccupiedPanel) {
   if (!editor || panel.busy) {
     return;
   }
+
   const candidate = copy(panel.draft);
   if (randomReferences(candidate, editor.id).length > 0) {
     panel.error = panel.t("random_dependents_error");
@@ -194,6 +204,7 @@ export async function deleteRandom(panel: OccupiedPanel) {
 
     return;
   }
+
   delete candidate.random?.[editor.id];
   if (panel.document?.source === "file") {
     panel.randomEditor = null;
@@ -201,7 +212,7 @@ export async function deleteRandom(panel: OccupiedPanel) {
 
     return;
   }
-  // Keep the open editor until the guarded save succeeds, preserving edits on failure.
+
   await panel.save(candidate);
 }
 

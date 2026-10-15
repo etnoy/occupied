@@ -38,7 +38,6 @@ type PanelConfig = { config?: { config_entry_id?: string } };
 export class OccupiedPanel extends HTMLElement {
   declare shadowRoot: ShadowRoot;
 
-  // Program state
   draft!: Program;
   saved!: Program;
   document!: ProgramDocument;
@@ -46,12 +45,15 @@ export class OccupiedPanel extends HTMLElement {
   revision = "";
   stale = false;
   dirty = false;
+
   // Draft edits bump version; validatedVersion records the last valid one.
   version = 0;
   validatedVersion = -1;
+
   issues: Issue[] = [];
   error = "";
   busy = false;
+
   // Incremented on reload/disconnect so late responses are discarded.
   epoch = 0;
 
@@ -127,7 +129,6 @@ export class OccupiedPanel extends HTMLElement {
 
   constructor() {
     super();
-    // HA may assign properties before connecting the panel.
     this.attachShadow({ mode: "open" });
   }
 
@@ -138,7 +139,7 @@ export class OccupiedPanel extends HTMLElement {
     const changed = this._hass?.connection !== value?.connection;
     this._hass = value;
     this.t = translator(value?.language);
-    // Stable views capture hass when built; keep their HA elements current.
+
     for (const selector of this.shadowRoot.querySelectorAll<
       HaSelector | HaGenericPicker
     >("ha-selector,ha-generic-picker")) {
@@ -232,8 +233,6 @@ export class OccupiedPanel extends HTMLElement {
     event.preventDefault();
     event.returnValue = "";
   };
-
-  // --- Backend connection -------------------------------------------------
 
   private _disposeInstances() {
     this._instancesEpoch++;
@@ -715,8 +714,6 @@ export class OccupiedPanel extends HTMLElement {
       ?.focus();
   }
 
-  // --- Backend actions ----------------------------------------------------
-
   validate() {
     const version = this.version,
       draft = copy(this.draft);
@@ -782,8 +779,6 @@ export class OccupiedPanel extends HTMLElement {
           this.selectedStep = editor.id;
         }
         editor.existing = true;
-        // Future patches compare against what was actually saved. This also
-        // preserves a user reverting a field while its previous value saves.
         if (this.randomEditor) {
           this.randomEditor.original = submittedForm as RandomForm;
         } else {
@@ -836,7 +831,6 @@ export class OccupiedPanel extends HTMLElement {
     });
   }
 
-  // Preview orchestration lives separately from editor and connection state.
   movePreviewDay(days: number) {
     return this.previewController.movePreviewDay(days);
   }
@@ -877,8 +871,6 @@ export class OccupiedPanel extends HTMLElement {
       version = this.version,
       expected = this.revision;
 
-    // The save API validates YAML, the program schema and installed services
-    // before persisting anything, using the same revision guard as step saves.
     return this.run(async (epoch) => {
       const result = await this.ws("save", {
         program: yaml,
