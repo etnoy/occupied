@@ -1,0 +1,67 @@
+README.md
+  s_cd9715f6c9e041::t_4e10f399727067 37-39
+custom_components/occupied/button.py
+  s_7de5a9612e87ef::t_c7c786bc2846b9 1-28
+custom_components/occupied/const.py
+  s_7de5a9612e87ef::t_864c206c3ae94c 7
+custom_components/occupied/engine_daily.py
+  s_cd9715f6c9e041::t_1b19edd70750c7 524-565,860-861,896,928-932,1258,1276-1277
+custom_components/occupied/frontend/README.md
+  s_7de5a9612e87ef::t_7538e23e3523af 35-42
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_cd9715f6c9e041::t_e83f7827c8ce8d 4-12,517-525
+custom_components/occupied/frontend/dist/lib/utils/activity-order.js
+  s_cd9715f6c9e041::t_2b9bb1f4d4ede4 1-180
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_cd9715f6c9e041::t_ac3de6bf4a476e 4-12,516-524,1345,1350,1356,1369,1621,5237-5246,5839-5852,8500-8505,9789,9805-9806,9815,9820,9829-9831,12169-12641,12646-12648,12655,12658,12673-12678,12686,12719-12721,12744,12746,12752,12755,12758,12763,12771,12774,12785,12802,12816,12822,12825-12826,12838,12842,12844,12846,12848,12852,12854-12855,12859,12864,12882-12883,12901-12926,12931,12933,12935,12955-12957,13188,13209,13215,13367,13402,13730,13735-13736,13743,13814,13818-13819,13871,13924,13965,14063-14064,14067,14191,14203,14293,14302,14538,14541,14545,14559,14571,14603,14609,14689,14965,14969,14978,15111,15418-15419,15437,15445,15526,15529-15530,15586,15614,15630-15632,15644,15653-15655,15681,15713,15797,15869,16018,16035,16210,16213,16254,16515,16638-16640,16644,16653-16658,16706-16708,16712,16718,16720,16722,16728,16731,16734,16739,16747,16750,16753-16754,16758,16766,16780,16785-16786,16798,16803,16805-16806,16809-16810,16814,16819,16822,16825-16826,16828,16833-16835,16840,16846,16848-16874,16877,16880,16902-16904,16924,16977,17047,17056
+custom_components/occupied/frontend/src/app.css
+  s_7de5a9612e87ef::t_a5775a3333bdd8 386-468
+custom_components/occupied/frontend/src/lib/components/random/RandomView.svelte
+  s_7de5a9612e87ef::t_3eec2275049789 14-15,25-30,62-69,135-136
+custom_components/occupied/frontend/src/lib/components/shared/ActivityList.svelte
+  s_7de5a9612e87ef::t_da805aff2396b4 1-255
+custom_components/occupied/frontend/src/lib/components/steps/StepsView.svelte
+  s_7de5a9612e87ef::t_b1c8d06ee52523 14-15,27,34,55-62,77,136-137
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_7de5a9612e87ef::t_88ac663c9c8021 3-11,519-527
+custom_components/occupied/frontend/src/lib/types.ts
+  s_7de5a9612e87ef::t_d6784817f4470a 430-433
+custom_components/occupied/frontend/src/lib/utils/activity-order.ts
+  s_7de5a9612e87ef::t_a51736f6dc730f 1-211
+custom_components/occupied/strings.json
+  s_7de5a9612e87ef::t_82062837242014 90-94
+custom_components/occupied/translations/en.json
+  s_7de5a9612e87ef::t_88f62bfcd7498b 90-94
+docs/runtime.md
+  s_cd9715f6c9e041::t_1dbcded58b1ed7 11,33-40,49,57
+tests/frontend/src/activity-order.test.ts
+  s_7de5a9612e87ef::t_0b4f9fd479820d 1-239
+tests/test_daily_runtime.py
+  s_cd9715f6c9e041::t_1f267aeae1ca1b 1138-1431
+tests/test_instances.py
+  s_cd9715f6c9e041::t_86274ad3463347 124-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2160c87f78449e10e5810e036eabd58e4d3a171c",
+  "prompts": {},
+  "sessions": {
+    "s_7de5a9612e87ef": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a141c4-dbbf-7131-aebe-c46851482fb9",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_cd9715f6c9e041": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a141c1-7bdd-70c2-99e3-61205438795b",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
