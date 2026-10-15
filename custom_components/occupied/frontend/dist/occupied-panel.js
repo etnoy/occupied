@@ -9235,6 +9235,9 @@ function createStepEditorContext(panel) {
     time = form.timing,
     t = panel.t,
     editing = editor.existing;
+  const epoch = panel.epoch;
+  const isCurrent = () =>
+    panel.epoch === epoch && panel.activeEditor === editor;
   const refresh = (key2) => {
     panel.flush();
     focusEditor(panel, key2);
@@ -9265,6 +9268,9 @@ function createStepEditorContext(panel) {
     panel.flush();
   };
   const submit = async () => {
+    if (!isCurrent()) {
+      return;
+    }
     editor.errors = editorErrors(panel.draft, editor);
     if (Object.keys(editor.errors).length > 0) {
       return refresh();
@@ -9273,9 +9279,15 @@ function createStepEditorContext(panel) {
       try {
         await prepareCustomAction(panel, form);
       } catch (error) {
+        if (!isCurrent()) {
+          return;
+        }
         editor.errors.customYaml =
           error instanceof Error ? error.message : String(error);
         return refresh("customYaml");
+      }
+      if (!isCurrent()) {
+        return;
       }
       const candidate = buildStep(panel.draft, editor);
       editor.candidatePath = required(
@@ -9287,7 +9299,7 @@ function createStepEditorContext(panel) {
           const validation = await panel.ws("editor_validate", {
             program: candidate,
           });
-          if (panel.version !== version || panel.activeEditor !== editor) {
+          if (panel.version !== version || !isCurrent()) {
             return;
           }
           if (!validation.valid) {
@@ -9306,7 +9318,9 @@ function createStepEditorContext(panel) {
         await panel.save(candidate);
       }
     } catch (error) {
-      panel.fail(error);
+      if (isCurrent()) {
+        panel.fail(error);
+      }
     }
   };
   const cancel = () => {
@@ -12883,13 +12897,14 @@ function previewStateHistory(plan, _program, names = {}, t = translator()) {
       }
       let history2 = entities.get(entity);
       if (!history2) {
+        const initialState = entity.startsWith("cover.") ? "unknown" : "off";
         history2 = {
           entity_id: entity,
           name: names[entity] || entity,
           data: [
             {
-              state: "unknown",
-              state_localize: label("unknown"),
+              state: initialState,
+              state_localize: label(initialState),
               last_changed: start,
             },
           ],
@@ -14461,6 +14476,9 @@ function createRandomEditorContext(panel) {
   const editor = panel.randomEditor,
     form = editor.form,
     t = panel.t;
+  const epoch = panel.epoch;
+  const isCurrent = () =>
+    panel.epoch === epoch && panel.activeEditor === editor;
   const refresh = (key2) => {
     panel.flush();
     focusEditor(panel, key2);
@@ -14529,6 +14547,9 @@ function createRandomEditorContext(panel) {
     changed: (key2) => changed(`${phase}.${key2}`),
   });
   const submit = async () => {
+    if (!isCurrent()) {
+      return;
+    }
     editor.errors = randomErrors(panel.draft, editor);
     if (Object.keys(editor.errors).length > 0) {
       return refresh(Object.keys(editor.errors)[0]);
@@ -14537,7 +14558,13 @@ function createRandomEditorContext(panel) {
       for (const phase of ["on", "off"]) {
         try {
           await prepareCustomAction(panel, form[phase]);
+          if (!isCurrent()) {
+            return;
+          }
         } catch (error) {
+          if (!isCurrent()) {
+            return;
+          }
           editor.errors[`${phase}.customYaml`] =
             error instanceof Error ? error.message : String(error);
           return refresh(`${phase}.customYaml`);
@@ -14551,7 +14578,7 @@ function createRandomEditorContext(panel) {
           const validation = await panel.ws("editor_validate", {
             program: candidate,
           });
-          if (panel.version !== version || panel.activeEditor !== editor) {
+          if (panel.version !== version || !isCurrent()) {
             return;
           }
           if (!validation.valid) {
@@ -14568,7 +14595,9 @@ function createRandomEditorContext(panel) {
         await panel.save(candidate);
       }
     } catch (error) {
-      panel.fail(error);
+      if (isCurrent()) {
+        panel.fail(error);
+      }
     }
   };
   const cancel = () =>

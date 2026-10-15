@@ -1014,3 +1014,141 @@ void test("YAML save conflicts preserve code and managed files cannot be saved",
     f.restore();
   }
 });
+
+for (const kind of ["step", "random"] as const) {
+  void test(`pending ${kind} submission cannot edit another controller`, async () => {
+    const f = await fixture();
+    try {
+      let submit: () => Promise<void>;
+      if (kind === "step") {
+        startStep(f.panel);
+        f.panel.stepEditor!.form.entities = ["light.main"];
+        submit = createStepEditorContext(f.panel).submit;
+      } else {
+        openRandom(f.panel);
+        f.panel.randomEditor!.form.on.entities = ["light.main"];
+        createRandomEditorContext(f.panel).changed("on.entities");
+        submit = createRandomEditorContext(f.panel).submit;
+      }
+      const pending = submit();
+      f.accept();
+      f.panel.selectInstance("guest");
+      await pending;
+      await settle();
+      assert.equal(f.panel.selectedEntry, "guest");
+      assert.deepEqual(f.panel.draft, f.documents.guest.program);
+      assert.equal(f.panel.error, "");
+      assert.equal(f.panel.dirty, false);
+      assert.equal(
+        f.messages.some((message) =>
+          ["occupied/save", "occupied/editor_validate"].includes(
+            String(message.type),
+          ),
+        ),
+        false,
+      );
+      // A callback retained by the old view must also stay inert.
+      await submit();
+      assert.deepEqual(f.panel.draft, f.documents.guest.program);
+    } finally {
+      f.restore();
+    }
+  });
+}
+
+void test("steps, random events, and preview requests use only the selected controller", async () => {
+  const f = await fixture();
+  try {
+    for (const entry of ["main", "guest"]) {
+      f.documents[entry].program.steps = {
+        shared_id: {
+          name: `${entry} step`,
+          action: "turn_on",
+          entities: [`light.${entry}`],
+          timing: { absolute_time: { start: "18:00" } },
+        },
+      };
+      f.documents[entry].program.random = {
+        shared_id: {
+          name: `${entry} random`,
+          start: { absolute_time: { start: "18:00" } },
+          end: { absolute_time: { start: "23:00" } },
+          on: { action: "turn_on", entities: [`light.${entry}`] },
+          off: { action: "turn_off", entities: [`light.${entry}`] },
+        },
+      };
+    }
+    await f.panel.reloadSaved();
+    for (const entry of ["main", "guest", "main"]) {
+      f.panel.selectInstance(entry);
+      await settle();
+      assert.deepEqual(
+        stepEntries(f.panel.draft).map((step) => step.name),
+        [`${entry} step`],
+      );
+      assert.deepEqual(
+        randomEntries(f.panel.draft).map((event) => event.name),
+        [`${entry} random`],
+      );
+      assert.equal(f.panel.preview, undefined);
+      assert.equal(f.panel.liveSession, null);
+      f.panel.navigate("preview");
+      await settle();
+      const request = f.messages.findLast(
+        (message) => message.type === "occupied/preview",
+      )!;
+      assert.equal(request.config_entry_id, entry);
+      assert.deepEqual(request.program, f.documents[entry].program);
+      assert.deepEqual(f.panel.previewProgram, f.documents[entry].program);
+    }
+  } finally {
+    f.restore();
+  }
+});
+
+for (const kind of ["step", "random"] as const) {
+  void test(`late custom YAML errors from a ${kind} editor stay with its controller`, async () => {
+    const f = await fixture();
+    try {
+      if (kind === "step") {
+        startStep(f.panel);
+      } else {
+        openRandom(f.panel);
+      }
+      const form =
+        kind === "step"
+          ? f.panel.stepEditor!.form
+          : f.panel.randomEditor!.form.on;
+      form.entities = ["light.main"];
+      form.kind = "custom";
+      form.customYaml = "action: turn_on\nentities: [light.main]";
+      let resolve!: (value: unknown) => void;
+      const callWS = f.panel._hass.callWS;
+      f.panel._hass.callWS = <T>(
+        message: Record<string, unknown>,
+      ): Promise<T> =>
+        message.type === "occupied/action_yaml"
+          ? new Promise((done) => {
+              resolve = done as (value: unknown) => void;
+            })
+          : callWS<T>(message);
+      const pending =
+        kind === "step"
+          ? createStepEditorContext(f.panel).submit()
+          : createRandomEditorContext(f.panel).submit();
+      assert.ok(resolve);
+      f.accept();
+      f.panel.selectInstance("guest");
+      await settle();
+      resolve({ valid: false, issues: [{ message: "Old controller error" }] });
+      await pending;
+      assert.equal(f.panel.error, "");
+      assert.deepEqual(f.panel.issues, []);
+      assert.deepEqual(f.panel.draft, f.documents.guest.program);
+      assert.equal(f.panel.stepEditor, null);
+      assert.equal(f.panel.randomEditor, null);
+    } finally {
+      f.restore();
+    }
+  });
+}

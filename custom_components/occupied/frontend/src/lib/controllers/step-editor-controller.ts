@@ -27,6 +27,10 @@ export function createStepEditorContext(panel: OccupiedPanel) {
     t = panel.t,
     editing = editor.existing;
 
+  const epoch = panel.epoch;
+  const isCurrent = () =>
+    panel.epoch === epoch && panel.activeEditor === editor;
+
   const refresh = (key?: string) => {
     panel.flush();
     focusEditor(panel, key);
@@ -61,6 +65,9 @@ export function createStepEditorContext(panel: OccupiedPanel) {
   };
 
   const submit = async () => {
+    if (!isCurrent()) {
+      return;
+    }
     editor.errors = editorErrors(panel.draft, editor);
     if (Object.keys(editor.errors).length > 0) {
       return refresh();
@@ -69,10 +76,17 @@ export function createStepEditorContext(panel: OccupiedPanel) {
       try {
         await prepareCustomAction(panel, form);
       } catch (error) {
+        if (!isCurrent()) {
+          return;
+        }
         editor.errors.customYaml =
           error instanceof Error ? error.message : String(error);
 
         return refresh("customYaml");
+      }
+
+      if (!isCurrent()) {
+        return;
       }
 
       const candidate = buildStep(panel.draft, editor);
@@ -86,7 +100,7 @@ export function createStepEditorContext(panel: OccupiedPanel) {
             program: candidate,
           });
 
-          if (panel.version !== version || panel.activeEditor !== editor) {
+          if (panel.version !== version || !isCurrent()) {
             return;
           }
 
@@ -108,7 +122,9 @@ export function createStepEditorContext(panel: OccupiedPanel) {
         await panel.save(candidate);
       }
     } catch (error) {
-      panel.fail(error);
+      if (isCurrent()) {
+        panel.fail(error);
+      }
     }
   };
 

@@ -85,9 +85,13 @@ void test("event details preserve random labels, stagger ticks, superseded state
   assert.equal(simple.action, "light.turn_off");
   assert.equal(simple.settings, "—");
 });
-void test("unknown starting state is preserved until the first typed action", () => {
+void test("lights and switches start off until the first typed action", () => {
   const histories = previewStateHistory(
-    plan([event(18, "light.turn_on"), event(19, "light.turn_off")]),
+    plan([
+      event(18, "light.turn_on"),
+      event(19, "light.turn_off"),
+      event(18, "switch.turn_on", "switch.outlet"),
+    ]),
     {},
     { "light.bedroom": "Bedroom" },
   );
@@ -95,11 +99,14 @@ void test("unknown starting state is preserved until the first typed action", ()
   assert.deepEqual(
     histories[0].data.map((s) => [s.state, s.last_changed]),
     [
-      ["unknown", Date.parse(time(0))],
+      ["off", Date.parse(time(0))],
       ["on", Date.parse(time(18))],
       ["off", Date.parse(time(19))],
     ],
   );
+  assert.equal(histories[0].data[0].state_localize, "Off");
+  assert.equal(histories[1].data[0].state, "off");
+  assert.equal(histories[1].data[0].state_localize, "Off");
 });
 void test("opaque explicit target becomes unknown, and scene effects stay opaque", () => {
   const histories = previewStateHistory(
@@ -112,7 +119,7 @@ void test("opaque explicit target becomes unknown, and scene effects stay opaque
   );
   assert.deepEqual(
     histories[0].data.map((s) => s.state),
-    ["unknown", "on", "unknown"],
+    ["off", "on", "unknown"],
   );
   assert.equal(histories.length, 1);
 });
@@ -123,7 +130,7 @@ void test("simultaneous events retain planner order", () => {
   );
   assert.deepEqual(
     histories[0].data.map((s) => s.state),
-    ["unknown", "off"],
+    ["off", "off"],
   );
 });
 void test("overnight events appear on the calendar day without yesterday's baseline", () => {
@@ -142,7 +149,7 @@ void test("overnight events appear on the calendar day without yesterday's basel
   const histories = calendarStateHistory([previous, current], day, {});
   assert.deepEqual(
     histories[0].data.map((s) => s.state),
-    ["unknown", "off", "on"],
+    ["off", "on"],
   );
   assert.deepEqual([previous, current], originals);
 });
@@ -201,6 +208,6 @@ void test("stagger spans retain their full period across calendar slices and ski
   );
   assert.deepEqual(
     histories[0].data.map((state) => state.state),
-    ["unknown", "on", "off"],
+    ["off", "on", "off"],
   );
 });

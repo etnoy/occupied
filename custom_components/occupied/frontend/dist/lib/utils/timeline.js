@@ -58,13 +58,14 @@ export function previewStateHistory(
       }
       let history = entities.get(entity);
       if (!history) {
+        const initialState = entity.startsWith("cover.") ? "unknown" : "off";
         history = {
           entity_id: entity,
           name: names[entity] || entity,
           data: [
             {
-              state: "unknown",
-              state_localize: label("unknown"),
+              state: initialState,
+              state_localize: label(initialState),
               last_changed: start,
             },
           ],

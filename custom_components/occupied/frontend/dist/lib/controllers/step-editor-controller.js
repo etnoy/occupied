@@ -22,6 +22,9 @@ export function createStepEditorContext(panel) {
     time = form.timing,
     t = panel.t,
     editing = editor.existing;
+  const epoch = panel.epoch;
+  const isCurrent = () =>
+    panel.epoch === epoch && panel.activeEditor === editor;
   const refresh = (key) => {
     panel.flush();
     focusEditor(panel, key);
@@ -52,6 +55,9 @@ export function createStepEditorContext(panel) {
     panel.flush();
   };
   const submit = async () => {
+    if (!isCurrent()) {
+      return;
+    }
     editor.errors = editorErrors(panel.draft, editor);
     if (Object.keys(editor.errors).length > 0) {
       return refresh();
@@ -60,9 +66,15 @@ export function createStepEditorContext(panel) {
       try {
         await prepareCustomAction(panel, form);
       } catch (error) {
+        if (!isCurrent()) {
+          return;
+        }
         editor.errors.customYaml =
           error instanceof Error ? error.message : String(error);
         return refresh("customYaml");
+      }
+      if (!isCurrent()) {
+        return;
       }
       const candidate = buildStep(panel.draft, editor);
       editor.candidatePath = required(
@@ -74,7 +86,7 @@ export function createStepEditorContext(panel) {
           const validation = await panel.ws("editor_validate", {
             program: candidate,
           });
-          if (panel.version !== version || panel.activeEditor !== editor) {
+          if (panel.version !== version || !isCurrent()) {
             return;
           }
           if (!validation.valid) {
@@ -93,7 +105,9 @@ export function createStepEditorContext(panel) {
         await panel.save(candidate);
       }
     } catch (error) {
-      panel.fail(error);
+      if (isCurrent()) {
+        panel.fail(error);
+      }
     }
   };
   const cancel = () => {

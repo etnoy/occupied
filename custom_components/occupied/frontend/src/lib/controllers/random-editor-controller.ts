@@ -48,6 +48,10 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
     form = editor.form,
     t = panel.t;
 
+  const epoch = panel.epoch;
+  const isCurrent = () =>
+    panel.epoch === epoch && panel.activeEditor === editor;
+
   const refresh = (key?: string) => {
     panel.flush();
     focusEditor(panel, key);
@@ -129,6 +133,9 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
   });
 
   const submit = async () => {
+    if (!isCurrent()) {
+      return;
+    }
     editor.errors = randomErrors(panel.draft, editor);
     if (Object.keys(editor.errors).length > 0) {
       return refresh(Object.keys(editor.errors)[0]);
@@ -137,7 +144,13 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
       for (const phase of ["on", "off"] as const) {
         try {
           await prepareCustomAction(panel, form[phase]);
+          if (!isCurrent()) {
+            return;
+          }
         } catch (error) {
+          if (!isCurrent()) {
+            return;
+          }
           editor.errors[`${phase}.customYaml`] =
             error instanceof Error ? error.message : String(error);
 
@@ -152,7 +165,7 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
           const validation = await panel.ws("editor_validate", {
             program: candidate,
           });
-          if (panel.version !== version || panel.activeEditor !== editor) {
+          if (panel.version !== version || !isCurrent()) {
             return;
           }
           if (!validation.valid) {
@@ -170,7 +183,9 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
         await panel.save(candidate);
       }
     } catch (error) {
-      panel.fail(error);
+      if (isCurrent()) {
+        panel.fail(error);
+      }
     }
   };
 
