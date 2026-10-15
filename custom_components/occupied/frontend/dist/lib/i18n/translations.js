@@ -31,6 +31,7 @@ export const en = {
   run_condition_countdown: "Enforcing expected states in {seconds} seconds.",
   run_condition_results: "State enforcement results",
   staggered_action: "Staggered action",
+  stagger_timing_summary: "Targets staggered over {duration} in random order",
   stagger_hint:
     "Factorio style: act on one entity at each evenly spaced tick, in a random order.",
   time_window: "Time window",
@@ -287,6 +288,17 @@ export const en = {
   saturday: "Saturday",
   sunday: "Sunday",
   days_required_error: "Choose at least one day.",
+  no_later_than: "No later than",
+  only_run_before: "Only run before",
+  boundary_source: "Boundary source",
+  boundary_clock: "Boundary time",
+  latest_at_summary: "No later than {boundary}",
+  only_before_summary:
+    "Only runs strictly before {boundary}; equality skips the occurrence",
+  timing_limits_sampling_hint:
+    "Sample once, then apply the limit and condition. Samples beyond the limit land on the limit; excluded samples are skipped without resampling",
+  timing_limits_source_date_hint:
+    "Boundaries use the schedule's source date and Home Assistant location. An unavailable solar event skips the step and its dependents",
   enabled: "Enabled",
   disabled: "Disabled",
   save_step: "Save step",
@@ -524,6 +536,8 @@ export const sv = {
     "Tillämpar förväntade tillstånd om {seconds} sekunder.",
   run_condition_results: "Resultat för tillämpade tillstånd",
   staggered_action: "Förskjuten åtgärd",
+  stagger_timing_summary:
+    "Enheterna ändras successivt under {duration} i slumpmässig ordning",
   stagger_hint:
     "Factorio-stil: styr en enhet i taget med jämna tidsintervall, i slumpmässig ordning.",
   time_window: "Tidsfönster",
@@ -789,6 +803,17 @@ export const sv = {
   saturday: "Lördag",
   sunday: "Söndag",
   days_required_error: "Välj minst en dag.",
+  no_later_than: "Senast",
+  only_run_before: "Kör endast före",
+  boundary_source: "Gränsens källa",
+  boundary_clock: "Gränstid",
+  latest_at_summary: "Senast {boundary}",
+  only_before_summary:
+    "Kör endast strikt före {boundary}; vid samma tid hoppas tillfället över",
+  timing_limits_sampling_hint:
+    "Slumpa en gång och tillämpa sedan gränsen och villkoret. Tider efter gränsen flyttas till gränsen; uteslutna tillfällen hoppas över utan ny slumpning",
+  timing_limits_source_date_hint:
+    "Gränser använder schemats ursprungsdatum och Home Assistants plats. En otillgänglig solhändelse hoppar över steget och dess beroenden",
   enabled: "Aktiverat",
   disabled: "Inaktiverat",
   save_step: "Spara steg",

@@ -336,6 +336,26 @@ export function timingErrors(
   randomId?: string,
 ): FieldErrors {
   const errors: FieldErrors = {};
+  for (const key of ["latestAt", "onlyBefore"] as const) {
+    const boundary = time[key];
+    if (!boundary) {
+      continue;
+    }
+    const boundaryErrors = timingErrors(program, {
+      ...boundary,
+      end: "",
+      endOffset: "",
+    });
+    if (
+      boundary.mode === "relative" &&
+      solarEvents.every((event) => boundary.anchor !== `sun:${event}`)
+    ) {
+      boundaryErrors.anchor = "time_source_required_error";
+    }
+    for (const [field, error] of Object.entries(boundaryErrors)) {
+      errors[`${key}.${field}`] = error;
+    }
+  }
   const clockPattern = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
   if (time.mode === "absolute") {
     if (!clockPattern.test(time.start)) {
@@ -381,6 +401,29 @@ export function timingErrors(
 }
 
 export function formTiming(time: TimingForm): Timing {
+  const timing = baseFormTiming(time);
+  for (const [key, field] of [
+    ["latestAt", "latest_at"],
+    ["onlyBefore", "only_before"],
+  ] as const) {
+    const boundary = time[key];
+    if (boundary) {
+      timing[field] =
+        boundary.mode === "absolute"
+          ? { absolute_time: { start: boundary.start } }
+          : {
+              relative_to: {
+                sun: boundary.anchor.slice(4),
+                start_offset: String(boundary.startOffset || "0s"),
+              },
+            };
+    }
+  }
+
+  return timing;
+}
+
+function baseFormTiming(time: TimingForm): Timing {
   if (time.mode === "duration") {
     return {
       duration: {

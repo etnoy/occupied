@@ -109,6 +109,8 @@ export function timingForm(timing = {}) {
       minDuration: timing.duration.min,
       maxDuration: timing.duration.max || timing.duration.min,
     }),
+    ...(timing.latest_at && { latestAt: timingForm(timing.latest_at) }),
+    ...(timing.only_before && { onlyBefore: timingForm(timing.only_before) }),
   };
 }
 export function offsetErrors(time) {
@@ -181,13 +183,63 @@ export function timingSummary(
   if (!entry.timing) {
     return `${t("repeated_activity_window")}${scheduleDaySuffix(entry.days, t)}`;
   }
-  return timingExplanation(timingForm(entry.timing), entries, t, sources, {
-    includeHints: false,
-    locale,
-    days: entry.days,
-  });
+  const timing = timingExplanation(
+    timingForm(entry.timing),
+    entries,
+    t,
+    sources,
+    {
+      includeHints: false,
+      locale,
+      days: entry.days,
+    },
+  );
+  const staggerSeconds = (entry.actions ?? [entry]).reduce(
+    (total, action) =>
+      total +
+      (action.stagger?.enabled
+        ? durationSeconds(action.stagger.period ?? "2m")
+        : 0),
+    0,
+  );
+  return staggerSeconds > 0
+    ? `${timing}. ${t("stagger_timing_summary").replace("{duration}", () => durationLabel(staggerSeconds, t))}`
+    : timing;
 }
 export function timingExplanation(
+  input,
+  entries = [],
+  t = translator(),
+  sources = [],
+  options = {},
+) {
+  const modified = input.latestAt || input.onlyBefore;
+  let explanation = baseTimingExplanation(input, entries, t, sources, {
+    ...options,
+    ...(modified && { includeHints: false }),
+  });
+  for (const key of ["latestAt", "onlyBefore"]) {
+    const boundary = input[key];
+    if (!boundary) {
+      continue;
+    }
+    let label = formatClock(boundary.start, options.locale);
+    if (boundary.mode === "relative") {
+      label =
+        durationSeconds(String(boundary.startOffset)) === 0
+          ? t(boundary.anchor.slice(4))
+          : baseTimingExplanation(boundary, [], t, [], {
+              includeHints: false,
+            }).slice(t("runs").length + 1);
+    }
+    explanation += `. ${t(key === "latestAt" ? "latest_at_summary" : "only_before_summary").replace("{boundary}", () => label)}`;
+  }
+  if (modified && options.includeHints !== false) {
+    explanation += `. ${t("timing_limits_sampling_hint")}`;
+  }
+  return explanation;
+}
+function baseTimingExplanation(
   input,
   entries = [],
   t = translator(),

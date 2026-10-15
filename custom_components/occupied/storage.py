@@ -102,8 +102,10 @@ def plan_from_data(data):
                 i["severity"],
                 i.get("line"),
                 i.get("column"),
+                i.get("details"),
             )
             for i in data["issues"]
         ),
         history_events=events_from_data(data.get("history_events", [])),
+        future_events=events_from_data(data.get("future_events", [])),
     )

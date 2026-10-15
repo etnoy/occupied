@@ -242,9 +242,13 @@ def test_calendar_preview_preserves_overnight_chart_context_without_executing_it
     )[-1]
     assert single.to_dict() == together.to_dict()
     assert single.history_events
+    assert single.future_events
+    assert all(single.end <= e.at for e in single.future_events)
     assert all(single.start <= e.at < single.end for e in single.events)
     assert all(e.at < single.start for e in single.history_events)
     assert any(e.source_id == "evening" for e in single.history_events)
     restored = plan_from_data(single.to_dict())
     assert restored.to_dict() == single.to_dict()
-    assert all(e.at >= single.start for group in restored.groups.values() for e in group)
+    assert all(
+        single.start <= e.at < single.end for group in restored.groups.values() for e in group
+    )

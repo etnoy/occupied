@@ -1,0 +1,41 @@
+# Review these steps inside the existing lighting controller before enabling management.
+schema_version: 1
+name: Daily lighting
+steps:
+  sunset_bedroom_lights:
+    name: Sunset bedroom lights
+    timing:
+      relative_to: {sun: sunset, start_offset: -90m}
+      latest_at:
+        absolute_time: {start: '18:00'}
+    action: turn_on
+    entities:
+      - switch.lamputtag_sovrum
+      - switch.lamputtag_agnes_rum
+      - switch.lamputtag_williams_rum
+      - switch.sovrumsfonster
+      - switch.agnes_fonster
+      - switch.williams_fonster
+      - switch.wincents_fonster
+  early_morning_lights:
+    name: Early morning lights
+    timing:
+      absolute_time: {start: '05:30'}
+      only_before:
+        relative_to: {sun: sunrise, start_offset: 90m}
+    action: set_state
+    entities:
+      switch.vardagsrumsfonster_1: {state: 'on'}
+      switch.vardagsrumsfonster_2: {state: 'on'}
+      switch.vardagsrumsfonster_3: {state: 'on'}
+      switch.vardagsrumsfonster_4: {state: 'on'}
+      switch.koksfonster_1: {state: 'on'}
+      switch.koksfonster_3: {state: 'on'}
+      switch.slinga_gillestugan: {state: 'on'}
+      switch.arbetslampa: {state: 'on'}
+      switch.vitrinskap: {state: 'on'}
+      light.fonsterspottar_vardagsrum: {state: 'on', brightness: 255}
+      light.fonsterspottar_kok: {state: 'on', brightness: 255}
+      switch.lamputtag_vardagsrum: {state: 'on'}
+      switch.altantrappa: {state: 'on'}
+      switch.adventsljusstake: {state: 'on'}

@@ -236,3 +236,34 @@ void test("stagger spans retain their full period across calendar slices and ski
     ["off", "on", "off"],
   );
 });
+
+void test("overnight tooltip context uses the first actual state change without extending chart data", () => {
+  const current = {
+    ...plan([event(18, "light.turn_on")]),
+    future_events: [
+      {
+        ...event(0, "light.turn_off"),
+        time: "2026-10-14T00:05:00Z",
+        superseded: true,
+      },
+      { ...event(0, "light.turn_on"), time: "2026-10-14T00:10:00Z" },
+      { ...event(0, "light.turn_off"), time: "2026-10-14T00:20:00Z" },
+      {
+        ...event(1, "light.turn_on", "light.tomorrow_only"),
+        time: "2026-10-14T01:00:00Z",
+      },
+    ],
+  };
+  const history = calendarStateHistory([current], current, {});
+  assert.equal(history.length, 1);
+  assert.deepEqual(
+    history[0].data.map((s) => s.last_changed),
+    [Date.parse(time(0)), Date.parse(time(18))],
+  );
+  assert.equal(
+    history[0].data.at(-1)?.end_time,
+    Date.parse("2026-10-14T00:20:00Z"),
+  );
+  assert.equal(current.end, "2026-10-14T00:00:00Z");
+  assert.equal(current.events.length, 1);
+});

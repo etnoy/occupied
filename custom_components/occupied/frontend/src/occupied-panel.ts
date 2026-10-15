@@ -1039,6 +1039,21 @@ function editorField(tail: Path, form: Pick<StepForm, "kind">): string {
     return form.kind === "service" ? "service" : "kind";
   }
   if (head === "timing") {
+    for (const [field, key] of [
+      ["latest_at", "latestAt"],
+      ["only_before", "onlyBefore"],
+    ]) {
+      if (has(field)) {
+        let boundaryField = "anchor";
+        if (has("absolute_time")) {
+          boundaryField = "start";
+        } else if (has("start_offset")) {
+          boundaryField = "startOffset";
+        }
+
+        return `${key}.${boundaryField}`;
+      }
+    }
     if (has("absolute_time")) {
       return has("end") ? "end" : "start";
     }

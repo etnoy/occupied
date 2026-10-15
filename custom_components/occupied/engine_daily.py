@@ -165,7 +165,7 @@ class DailyEngine:
         if not saved.get("dry_run", False):
             self.reconciliation = saved.get("reconciliation", self.reconciliation)
         self._journal = {
-            key: value
+            self._restore_journal_key(key): value
             for key, value in saved.get("journal", {}).items()
             if not key.startswith(("dry:", "enforce:dry:"))
             and value.get("status") != "would_dispatch"
@@ -550,6 +550,7 @@ class DailyEngine:
             key: value
             for key, value in self._journal.items()
             if value.get("date", today.isoformat()) >= cutoff
+            or (key.startswith("live:step:") and key.split(":", 3)[2] >= cutoff)
         }
         if len(self._journal) > MAX_JOURNAL:
             raise ValueError("Execution journal exceeds the bounded runtime limit")
@@ -579,7 +580,22 @@ class DailyEngine:
             self._plans[day] = plans[0]
 
     def _key(self, plan, event):
+        if event.kind == "step":
+            return f"live:step:{event.id}"
         return f"live:{plan.behavior_hash}:{event.id}"
+
+    @staticmethod
+    def _restore_journal_key(key):
+        """Retain completed source-date steps when replacing obsolete saved plans."""
+        parts = key.split(":", 3)
+        if (
+            len(parts) == 4
+            and parts[0] == "live"
+            and len(parts[1]) == 64
+            and parts[3].startswith("step:")
+        ):
+            return f"live:step:{parts[2]}:{parts[3]}"
+        return key
 
     def _push(self, at, kind, key, payload=None, order=(20, 1, "", 0), attempt=0):
         heapq.heappush(self._queue, RuntimeEvent(at, order + (key,), key, kind, payload, attempt))

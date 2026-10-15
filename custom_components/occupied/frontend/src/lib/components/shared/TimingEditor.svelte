@@ -4,6 +4,7 @@
   import EditorField from "./EditorField.svelte";
   import FieldError from "./FieldError.svelte";
   import SourcePicker from "./SourcePicker.svelte";
+  import TimingBoundaryEditor from "./TimingBoundaryEditor.svelte";
 
   import { stepEntries, timeSourceChoices } from "../../models/step-model.js";
   import { timingExplanation } from "../../utils/util.js";
@@ -259,6 +260,44 @@
     <p class="hint">
       {t("random_relative_end_hint")}
     </p>
+  {/if}
+  {#if context.stepId !== undefined}
+    {#each [["latestAt", "no_later_than"], ["onlyBefore", "only_run_before"]] as [modifier, label] (modifier)}
+      {@const key = modifier as "latestAt" | "onlyBefore"}
+      <fieldset class="timing-options">
+        <legend>{t(label)}</legend>
+        <label class="timing-option">
+          <input
+            type="checkbox"
+            data-builder-field={key}
+            checked={Boolean(time[key])}
+            onchange={(event) => {
+              time[key] = event.currentTarget.checked
+                ? {
+                    mode: "absolute",
+                    start: "18:00",
+                    anchor: "sun:sunrise",
+                    startOffset: "0s",
+                  }
+                : undefined;
+              for (const field of Object.keys(editor.errors)) {
+                if (field.startsWith(`${key}.`)) {
+                  delete editor.errors[field];
+                }
+              }
+              changed(key);
+            }}
+          />
+          <span>{t("enabled")}</span>
+        </label>
+        {#if time[key]}
+          <TimingBoundaryEditor {panel} {context} modifier={key} />
+        {/if}
+      </fieldset>
+    {/each}
+    {#if time.latestAt || time.onlyBefore}
+      <p class="hint">{t("timing_limits_source_date_hint")}</p>
+    {/if}
   {/if}
   {#if showExplanation}
     <p class="hint" data-timing-explanation aria-live="polite">

@@ -11,7 +11,7 @@ from functools import cached_property
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from .models import WEEKDAYS, Action, Program, max_plan_events
+from .models import WEEKDAYS, Action, Program, format_duration, max_plan_events
 from .time_utils import PlanningContext, SimulationDay
 from .validation import (
     Issue,
@@ -23,7 +23,7 @@ from .validation import (
     validate_program,
 )
 
-PLANNER_VERSION = 10
+PLANNER_VERSION = 11
 
 
 class RandomStreams:
@@ -176,6 +176,7 @@ class DailyPlan:
     planner_version: int = PLANNER_VERSION
     # Preview-only context: never dispatched or included in executable groups.
     history_events: tuple[PlanEvent, ...] = ()
+    future_events: tuple[PlanEvent, ...] = ()
 
     @cached_property
     def groups(self):
@@ -213,6 +214,10 @@ class DailyPlan:
         if self.history_events:
             result["history_events"] = [
                 e.to_dict(ZoneInfo(self.timezone)) for e in self.history_events
+            ]
+        if self.future_events:
+            result["future_events"] = [
+                e.to_dict(ZoneInfo(self.timezone)) for e in self.future_events
             ]
         result["plan_fingerprint"] = hashlib.sha256(
             json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
@@ -324,6 +329,9 @@ def generate_plan(
             )
             continue
         start = sample_timing(day, step.timing, times, path, streams.rng("step", key, "start"))
+        if start is None:
+            continue
+        start = apply_step_limits(day, step.timing, start, path)
         if start is None:
             continue
         times[key] = start
@@ -455,6 +463,57 @@ def generate_plan(
     )
 
 
+def apply_step_limits(day, timing, candidate, path):
+    """Clamp one sample, then filter it, before publishing any anchor or action."""
+    resolved = {}
+    for key in ("latest_at", "only_before"):
+        boundary = getattr(timing, key)
+        if boundary is None:
+            continue
+        boundary_path = path + (key,)
+        if boundary.absolute_time:
+            instant = day.clock(
+                boundary.absolute_time.start, boundary_path + ("absolute_time", "start")
+            )
+        else:
+            bounds = day.sun_bounds(boundary.relative_to, boundary_path + ("relative_to",))
+            if bounds is None:
+                return None
+            instant = bounds[0]
+        resolved[key] = instant
+    adjusted = min(candidate, resolved.get("latest_at", candidate))
+    details = {"candidate": candidate.isoformat(), "adjusted": adjusted.isoformat()}
+    if "only_before" in resolved and adjusted >= resolved["only_before"]:
+        boundary = resolved["only_before"]
+        source = timing.only_before.relative_to
+        label = f"{source.sun} {format_duration(source.start_offset)}; " if source else ""
+        day.issues.append(
+            Issue(
+                "only_before_skipped",
+                f"{path[1]} skipped: {adjusted.astimezone(day.zone).isoformat()} "
+                f"is not strictly before {boundary.astimezone(day.zone).isoformat()} "
+                f"({label}source date {day.date})",
+                path + ("only_before",),
+                "info",
+                details=details | {"boundary": boundary.isoformat()},
+            )
+        )
+        return None
+    if adjusted != candidate:
+        day.issues.append(
+            Issue(
+                "latest_at_applied",
+                f"{path[1]} runs at {adjusted.astimezone(day.zone).isoformat()} "
+                "because of the limit; "
+                f"sampled {candidate.astimezone(day.zone).isoformat()} (source date {day.date})",
+                path + ("latest_at",),
+                "info",
+                details=details | {"boundary": resolved["latest_at"].isoformat()},
+            )
+        )
+    return adjusted
+
+
 def sample_timing(day, timing, times, path, rng, random_ends=None):
     source = timing.relative_to
     if source and source.step:
@@ -532,7 +591,7 @@ def preview_calendar_dates(program, dates, seed, *, context=None):
         {
             source
             for day in dates
-            for adjacent in (day - timedelta(days=1), day)
+            for adjacent in (day - timedelta(days=1), day, day + timedelta(days=1))
             for source in runtime_dates(program, adjacent)
         }
     )
@@ -549,6 +608,19 @@ def preview_calendar_dates(program, dates, seed, *, context=None):
     return tuple(
         replace(
             plans[day],
+            issues=tuple(
+                issue
+                for source, plan in plans.items()
+                for issue in plan.issues
+                if source == day
+                or (
+                    issue.details
+                    and "adjusted" in issue.details
+                    and plans[day].start
+                    <= datetime.fromisoformat(issue.details["adjusted"])
+                    < plans[day].end
+                )
+            ),
             events=tuple(
                 event for event in events if plans[day].start <= event.at < plans[day].end
             ),
@@ -556,6 +628,11 @@ def preview_calendar_dates(program, dates, seed, *, context=None):
                 event
                 for event in events
                 if plans[day - timedelta(days=1)].start <= event.at < plans[day].start
+            ),
+            future_events=tuple(
+                event
+                for event in events
+                if plans[day].end <= event.at < plans[day + timedelta(days=1)].end
             ),
         )
         for day in dates

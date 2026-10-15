@@ -141,6 +141,48 @@
       "title": "Action",
       "type": "object"
     },
+    "BoundaryClock": {
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$",
+          "title": "Start",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start"
+      ],
+      "title": "BoundaryClock",
+      "type": "object"
+    },
+    "BoundarySolar": {
+      "additionalProperties": false,
+      "properties": {
+        "sun": {
+          "enum": [
+            "sunrise",
+            "sunset",
+            "dawn",
+            "dusk",
+            "noon",
+            "midnight"
+          ],
+          "title": "Sun",
+          "type": "string"
+        },
+        "start_offset": {
+          "default": "0s",
+          "title": "Start Offset",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sun"
+      ],
+      "title": "BoundarySolar",
+      "type": "object"
+    },
     "CountRange": {
       "additionalProperties": false,
       "properties": {
@@ -693,13 +735,161 @@
           "type": "array"
         },
         "timing": {
-          "$ref": "#/$defs/Timing"
+          "$ref": "#/$defs/StepTiming"
         }
       },
       "required": [
         "timing"
       ],
       "title": "Step",
+      "type": "object"
+    },
+    "StepTiming": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "relative_to"
+                ]
+              },
+              {
+                "required": [
+                  "duration"
+                ]
+              }
+            ]
+          },
+          "properties": {
+            "absolute_time": {
+              "not": {
+                "type": "null"
+              }
+            }
+          },
+          "required": [
+            "absolute_time"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "absolute_time"
+                ]
+              },
+              {
+                "required": [
+                  "duration"
+                ]
+              }
+            ]
+          },
+          "properties": {
+            "relative_to": {
+              "not": {
+                "type": "null"
+              }
+            }
+          },
+          "required": [
+            "relative_to"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "absolute_time"
+                ]
+              },
+              {
+                "required": [
+                  "relative_to"
+                ]
+              }
+            ]
+          },
+          "properties": {
+            "duration": {
+              "not": {
+                "type": "null"
+              }
+            }
+          },
+          "required": [
+            "duration"
+          ]
+        }
+      ],
+      "properties": {
+        "absolute_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AbsoluteTime"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "relative_to": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelativeTo"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "duration": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WindowDuration"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "latest_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimingBoundary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "not": {
+            "type": "null"
+          }
+        },
+        "only_before": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimingBoundary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "not": {
+            "type": "null"
+          }
+        }
+      },
+      "title": "StepTiming",
       "type": "object"
     },
     "Timing": {
@@ -820,6 +1010,64 @@
         }
       },
       "title": "Timing",
+      "type": "object"
+    },
+    "TimingBoundary": {
+      "additionalProperties": false,
+      "description": "A single source-date instant, without ranges, references or modifiers.",
+      "oneOf": [
+        {
+          "not": {
+            "required": [
+              "relative_to"
+            ]
+          },
+          "required": [
+            "absolute_time"
+          ]
+        },
+        {
+          "not": {
+            "required": [
+              "absolute_time"
+            ]
+          },
+          "required": [
+            "relative_to"
+          ]
+        }
+      ],
+      "properties": {
+        "absolute_time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BoundaryClock"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "not": {
+            "type": "null"
+          }
+        },
+        "relative_to": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BoundarySolar"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "not": {
+            "type": "null"
+          }
+        }
+      },
+      "title": "TimingBoundary",
       "type": "object"
     },
     "WindowDuration": {

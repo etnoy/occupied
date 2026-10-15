@@ -26,6 +26,34 @@ Each step requires `timing` and either a singular `action` with nonempty `entiti
 
 Weekdays are `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, and `sun`. A supplied list must not be empty. Entity IDs use HA's `domain.object_id` form. Entity members are deduplicated and sorted. Authored step order is preserved for presentation; changing it does not change sampling or dispatch order.
 
+## Step timing limits
+
+Available in the current `0.1.0` development build with `schema_version: 1`; earlier builds without these fields reject them. Keep exactly one base timing branch and optionally add either or both modifiers:
+
+```yaml
+timing:
+  relative_to: {sun: sunset, start_offset: -90m}
+  latest_at:
+    absolute_time: {start: '18:00'}
+# Or run at 05:30 only before the same date's sunrise plus 90 minutes:
+# timing:
+#   absolute_time: {start: '05:30'}
+#   only_before:
+#     relative_to: {sun: sunrise, start_offset: 90m}
+```
+
+`latest_at` caps the sampled instant at the boundary. `only_before` keeps it only when the resulting instant is **strictly before** its boundary; equality skips. When both are configured, apply the cap first, then the condition. A randomized base samples once: values beyond the cap land on the cap, and excluded values skip without resampling. These modifiers apply to scheduled steps only; random window starts and ends reject them.
+
+Each boundary accepts exactly one quoted `absolute_time.start` clock or `relative_to.sun` event with an optional signed `start_offset`. All six solar events are supported. Ranges, `end`, `end_offset`, durations, step/entity/random references, nested modifiers, explicit nulls, and unknown fields are rejected. Clock and offset validation follows the existing timing rules.
+
+Boundaries belong to the schedule's **source local date** and HA location, even when an offset crosses midnight. Earlier clock boundaries do not roll to the next day. Comparisons use UTC instants; repeated clocks use the first occurrence and nonexistent clocks advance to the first valid instant. Calendar previews place actions on their actual local date while retaining the source date and weekday selection. Solar events are calculated for that source date, rather than read from `sun.sun`'s next-event attributes. An unavailable base solar event or solar boundary skips the step; a clock cap is never a fallback. Missing timezone or location follows normal planning validation.
+
+Preview explains adjusted instants and strict-condition skips, including field paths and the candidate/boundary/adjusted instants. A skipped step creates no actions, stagger ticks, dependent anchor, lighting intent, startup target, or live-preview event. Dependents follow the capped time or skip with an unavailable anchor. Conditions are evaluated while planning; late execution does not compare against the current wall clock. Permission, pause, run-condition, missed-event, and manual-control policies still apply.
+
+Timing modifier edits change behavior hashes; title edits do not. Configurations without modifiers retain their normalized hashes and seeded samples. Scheduled occurrence journals retain source-date step identity across timing edits, replanning, reloads, and restarts; obsolete plan caches are regenerated without replaying completed calls.
+
+See [solar-limits.yaml](../examples/solar-limits.yaml) for both lighting rules with their original targets and brightness settings. Review these steps in the existing controller with management disabled before coordinating any replacement of Home Assistant automations.
+
 ## Optional run condition
 
 Available in the current `0.1.0` development build; earlier builds without this field reject it. Omit `run_condition` to retain ordinary activation and light handover.

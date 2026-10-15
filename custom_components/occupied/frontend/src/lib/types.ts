@@ -10,7 +10,14 @@ export type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue };
 
+export interface TimingBoundary {
+  absolute_time?: { start: string };
+  relative_to?: { sun: string; start_offset?: string };
+}
+
 export interface Timing {
+  latest_at?: TimingBoundary;
+  only_before?: TimingBoundary;
   absolute_time?: { start: string; end?: string };
   duration?: { min: string; max?: string };
   relative_to?: {
@@ -80,6 +87,8 @@ export interface StepEntry extends Omit<Step, "name" | "days"> {
 }
 
 export interface TimingForm {
+  latestAt?: BoundaryForm;
+  onlyBefore?: BoundaryForm;
   mode: string;
   start: string;
   end: string;
@@ -88,6 +97,13 @@ export interface TimingForm {
   endOffset: string | number;
   minDuration?: string;
   maxDuration?: string;
+}
+
+export interface BoundaryForm {
+  mode: string;
+  start: string;
+  anchor: string;
+  startOffset: string | number;
 }
 
 export interface ActionForm {
@@ -222,6 +238,7 @@ export interface Catalog {
 }
 
 export interface Issue {
+  details?: Record<string, string>;
   message: string;
   severity?: string;
   code?: string;
@@ -329,6 +346,7 @@ export interface Plan {
   steps: Record<string, string>;
   events: PlannedEvent[];
   history_events?: PlannedEvent[];
+  future_events?: PlannedEvent[];
   issues: Issue[];
 }
 

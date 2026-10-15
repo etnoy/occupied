@@ -262,6 +262,65 @@ class Schedule(Model):
         return tuple(day for day in WEEKDAYS if day in value)
 
 
+class BoundaryClock(Model):
+    start: Clock
+
+    _compact_clock = field_validator("start")(normalize_clock)
+
+
+class BoundarySolar(Model):
+    sun: SolarEvent
+    start_offset: SignedDuration = "0s"
+
+    @property
+    def latest_offset(self):
+        return self.start_offset
+
+
+class TimingBoundary(Model):
+    """A single source-date instant, without ranges, references or modifiers."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "oneOf": [
+                {"required": ["absolute_time"], "not": {"required": ["relative_to"]}},
+                {"required": ["relative_to"], "not": {"required": ["absolute_time"]}},
+            ]
+        }
+    )
+    absolute_time: BoundaryClock | None = Field(
+        default=None, json_schema_extra={"not": {"type": "null"}}
+    )
+    relative_to: BoundarySolar | None = Field(
+        default=None, json_schema_extra={"not": {"type": "null"}}
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def fixed_source(cls, value):
+        if isinstance(value, dict) and (
+            len(value) != 1 or next(iter(value.values()), None) is None
+        ):
+            raise ValueError("Choose exactly one fixed clock or solar boundary")
+        return value
+
+
+class StepTiming(Timing):
+    latest_at: TimingBoundary | None = Field(
+        default=None, validate_default=False, json_schema_extra={"not": {"type": "null"}}
+    )
+    only_before: TimingBoundary | None = Field(
+        default=None, validate_default=False, json_schema_extra={"not": {"type": "null"}}
+    )
+
+    @field_validator("latest_at", "only_before", mode="before")
+    @classmethod
+    def nonnull_boundary(cls, value):
+        if value is None:
+            raise ValueError("Omit an unused timing modifier instead of using null")
+        return value
+
+
 class Stagger(Model):
     enabled: Annotated[bool, Field(strict=True)] = False
     period: Annotated[SignedDuration, Field(ge=1, le=1800)] = "2m"
@@ -350,7 +409,7 @@ class Action(Model):
 
 
 class Step(Schedule, Action):
-    timing: Timing
+    timing: StepTiming
 
 
 EventCount = Annotated[int, Field(strict=True, ge=0, le=1000)]

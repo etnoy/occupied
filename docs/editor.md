@@ -34,6 +34,16 @@ In Steps, choose **Control covers** under **Step type** for the same controls. E
 
 Covers execute only future scheduled calls. Enabling late skips past cover actions and leaves the current position alone. Controller stop cancels future work and does not send a cover stop or restore earlier positions; author a **Stop cover** or **Stop tilt** action when needed.
 
+## Step timing limits
+
+The step Timing section offers optional **No later than** and **Only run before** controls below the base timing. Enable a control, choose an absolute clock or solar event, and set the clock or signed solar offset. Both controls can be used together and retain their values when changing the base timing, action, title, or weekdays. Random windows do not offer these controls.
+
+For bedroom lights, choose **Relative to → Sunset**, set the start offset to `-90m`, then enable **No later than → Absolute time → 18:00**. For morning lights, choose **Absolute time → 05:30**, then enable **Only run before → Solar events → Sunrise** with offset `90m`. See the complete [lighting example](../examples/solar-limits.yaml).
+
+The base time is sampled once, capped first, then tested strictly against the condition. Equality skips the step. Random samples beyond the cap land on the cap; excluded samples are skipped without another draw. Boundaries use the same source local date and HA location, with normal daylight-saving handling. A missing solar event skips the step and its dependents; a clock cap does not replace it. A skipped step contributes no startup state or live-preview calls. These are planning-time comparisons, so late dispatch does not reevaluate the condition against wall-clock time.
+
+Preview shows when the limit adjusted a candidate and when the strict condition excluded an occurrence. Returning to a date retains seeded choices. Check winter and summer dates before enabling management; use the existing lighting controller when migrating related rules.
+
 ## Run condition
 
 In **Settings**, enable **Run only when an entity matches**, select an entity, and choose one or more **Allowed states**. Alarm panels suggest states such as `armed_away` and `armed_night`; custom state values are supported for any domain. Matching any allowed state permits scheduling only when management permission is enabled and scheduling is unpaused.
@@ -54,7 +64,7 @@ All-week selections, normal enabled state, zero offsets, empty data, and equal e
 
 ## Preview
 
-**Preview** automatically loads the selected local calendar date. Use date arrows or Today. Sampling remains stable when returning to a date. Neighboring source-date plans supply overnight events on their actual calendar date. Device strips carry the preceding local day’s planned state across midnight, so overnight windows continue into the next day. Prior actions provide chart context only and are excluded from the selected day’s event details and live execution. These are plans rather than current HA state or recorder history. Opaque scenes/services do not invent resulting device state. Event details show native service names and targets.
+**Preview** automatically loads the selected local calendar date. Use date arrows or Today. Sampling remains stable when returning to a date. Neighboring source-date plans supply overnight events on their actual calendar date. Device strips carry the preceding local day’s planned state across midnight, so overnight windows continue into the next day. Prior actions provide chart context only and are excluded from the selected day’s event details and live execution. When the next planned state change is on the following day, hover text shows that end time and duration while the graph stays clipped at midnight. These are plans rather than current HA state or recorder history. Opaque scenes/services do not invent resulting device state. Event details show native service names and targets.
 
 Cover strips show independently authored position and tilt targets. Open and close establish 100% and 0% targets. Stop makes its affected axis Unknown, while preserving the other axis's known target. Travel time and intermediate positions are not inferred. An opaque call on an explicit cover target makes both axes Unknown.
 

@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from astral import Observer
 from astral.sun import dawn, dusk, midnight, noon, sunrise, sunset
 
-from .models import AbsoluteTime, Program, RelativeTo
+from .models import AbsoluteTime, BoundarySolar, Program, RelativeTo
 from .validation import Issue, ModelPath, ProgramError
 
 
@@ -103,7 +103,7 @@ class SimulationDay:
         )
         return start, end
 
-    def sun_bounds(self, spec: RelativeTo, path: ModelPath):
+    def sun_bounds(self, spec: RelativeTo | BoundarySolar, path: ModelPath):
         if self.observer is None:
             raise ProgramError(
                 [

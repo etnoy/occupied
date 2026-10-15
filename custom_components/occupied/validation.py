@@ -22,9 +22,13 @@ class Issue:
     severity: Literal["error", "warning", "info"] = "error"
     line: int | None = None
     column: int | None = None
+    details: dict[str, str] | None = None
 
     def to_dict(self):
-        return asdict(self) | {"path": format_path(self.path), "model_path": list(self.path)}
+        result = asdict(self) | {"path": format_path(self.path), "model_path": list(self.path)}
+        if self.details is None:
+            result.pop("details")
+        return result
 
 
 class ProgramError(ValueError):
@@ -46,6 +50,12 @@ def program_data(program):
     timings = [step["timing"] for step in data.get("steps", {}).values()]
     timings += [
         event[edge] for event in data.get("random", {}).values() for edge in ("start", "end")
+    ]
+    timings += [
+        timing[key]
+        for timing in tuple(timings)
+        for key in ("latest_at", "only_before")
+        if key in timing
     ]
     for timing in timings:
         source = timing.get("relative_to")

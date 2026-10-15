@@ -639,6 +639,105 @@ async def test_time_source_changes_reschedule_without_replaying_completed_steps(
     assert len([c for c in daily_devices if c.domain == "light"]) == 1
 
 
+async def test_timing_limit_edits_and_obsolete_cache_do_not_replay_completed_steps(
+    hass, daily_entry, daily_devices, freezer, runtime_program, hass_storage
+):
+    runtime_program["steps"] = {
+        "script": {
+            "timing": {
+                "absolute_time": {"start": "18:05"},
+                "latest_at": {"absolute_time": {"start": "18:01"}},
+            },
+            "action": "script.turn_on",
+            "entities": ["script.test"],
+        }
+    }
+    hass.config_entries.async_update_entry(
+        daily_entry, data={**daily_entry.data, "program": runtime_program}
+    )
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 60)
+    assert len(daily_devices) == 1
+    runtime_program["steps"]["script"]["timing"]["latest_at"]["absolute_time"]["start"] = "18:03"
+    await engine.async_replace_program(validate_program(runtime_program))
+    await advance(hass, freezer, 120)
+    assert len(daily_devices) == 1
+    await hass.config_entries.async_unload(daily_entry.entry_id)
+    saved = hass_storage[f"occupied.{daily_entry.entry_id}.runtime"]["data"]
+    # Emulate a pre-feature journal together with a now-obsolete plan cache.
+    saved["journal"] = {
+        key.replace("live:step:", f"live:{'a' * 64}:"): value
+        for key, value in saved["journal"].items()
+    }
+    for cached in saved["plans"]:
+        cached["planner_version"] = 10
+    assert await hass.config_entries.async_setup(daily_entry.entry_id)
+    await hass.async_block_till_done()
+    restarted = daily_entry.runtime_data
+    runtime_program["steps"]["script"]["timing"]["latest_at"]["absolute_time"]["start"] = "18:04"
+    await restarted.async_replace_program(validate_program(runtime_program))
+    await advance(hass, freezer, 60)
+    assert len(daily_devices) == 1
+
+
+@pytest.mark.parametrize("enforce", [False, True])
+async def test_excluded_steps_have_no_dispatch_handover_or_startup_intent(
+    hass, daily_entry, daily_devices, freezer, runtime_program, enforce
+):
+    for step in runtime_program["steps"].values():
+        step["timing"]["only_before"] = {"absolute_time": {"start": "05:00"}}
+    if enforce:
+        runtime_program["run_condition"] = {
+            "entity_id": "sensor.alarm",
+            "state": "armed_away",
+            "enforce_state_on_start": True,
+            "start_delay": "0s",
+        }
+        hass.states.async_set("sensor.alarm", "armed_away")
+    hass.config_entries.async_update_entry(
+        daily_entry, data={**daily_entry.data, "program": runtime_program}
+    )
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 600)
+    assert not daily_devices and not engine._handover
+    assert all(not plan.events for plan in engine._plans.values())
+
+
+async def test_early_solar_cap_journal_survives_until_its_future_source_date(
+    hass, daily_entry, daily_devices, freezer, runtime_program, monkeypatch
+):
+    def solar(observer, *, date, tzinfo):
+        return dt_util.parse_datetime(f"{date}T18:01:00+00:00")
+
+    monkeypatch.setattr("custom_components.occupied.time_utils.sunrise", solar)
+    hass.config.latitude, hass.config.longitude = 59.3, 18.1
+    runtime_program["steps"] = {
+        "script": {
+            "days": ["sat"],
+            "timing": {
+                "absolute_time": {"start": "18:05"},
+                "latest_at": {"relative_to": {"sun": "sunrise", "start_offset": "-96h"}},
+            },
+            "action": "script.turn_on",
+            "entities": ["script.test"],
+        }
+    }
+    hass.config_entries.async_update_entry(
+        daily_entry, data={**daily_entry.data, "program": runtime_program}
+    )
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 60)
+    assert len(daily_devices) == 1
+    await advance(hass, freezer, 4 * 86400 - 60)
+    runtime_program["steps"]["script"]["timing"]["latest_at"]["relative_to"]["start_offset"] = "0s"
+    await engine.async_replace_program(validate_program(runtime_program))
+    await advance(hass, freezer, 60)
+    assert len(daily_devices) == 1
+
+
 async def test_overnight_relative_step_dispatches_on_parent_source_date(
     hass, daily_entry, daily_devices, freezer, runtime_program
 ):

@@ -41,22 +41,27 @@ export function previewStateHistory(
     off: "off_label",
   };
   const label = (state) => t(stateLabels[state] || "unknown");
-  for (const event of [...(plan.history_events || []), ...plan.events].sort(
-    (a, b) => Date.parse(a.time) - Date.parse(b.time),
-  )) {
+  for (const event of [
+    ...(plan.history_events || []),
+    ...plan.events,
+    ...(plan.future_events || []),
+  ].sort((a, b) => Date.parse(a.time) - Date.parse(b.time))) {
     if (event.superseded) {
       continue;
     }
     const at = Date.parse(event.time);
-    if (at >= end) {
-      continue;
-    }
     const typed = /^(light|switch)\.turn_(on|off)$/.test(event.action.action);
     for (const entity of event.action.entities) {
       if (!/^(light|switch|cover)\./.test(entity)) {
         continue;
       }
       let history = entities.get(entity);
+      if (
+        at >= end &&
+        (!history || history.data.at(-1)?.end_time !== undefined)
+      ) {
+        continue;
+      }
       if (!history) {
         const initialState = entity.startsWith("cover.") ? "unknown" : "off";
         history = {
@@ -104,6 +109,12 @@ export function previewStateHistory(
         localized = parts.length > 0 ? parts.join(" · ") : label("unknown");
       }
       const previous = history.data.at(-1);
+      if (at >= end) {
+        if (previous.state !== state) {
+          previous.end_time = at;
+        }
+        continue;
+      }
       const time = Math.max(start, at);
       if (previous.last_changed === time) {
         previous.state = state;

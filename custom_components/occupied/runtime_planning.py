@@ -20,6 +20,13 @@ def runtime_dates(program, today):
         step = program.steps[key]
         source = step.timing.relative_to
         low, high = timing_bounds(step.timing, bounds)
+        if cap := step.timing.latest_at:
+            if cap.relative_to:
+                cap_low = cap.relative_to.start_offset
+                cap_high = DAY + cap_low
+            else:
+                cap_low, cap_high = 0, DAY
+            low, high = min(low, cap_low), min(high, cap_high)
         bounds[key] = low, high
         if not step.enabled or (source and source.step and source.step not in active):
             continue

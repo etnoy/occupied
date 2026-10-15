@@ -97,6 +97,21 @@ async def next_event(engine, request="next", user="owner"):
     )
 
 
+async def test_live_preview_uses_capped_plan_and_excludes_gated_custom_actions(
+    live_engine, live_program, live_calls
+):
+    live_program["steps"]["morning"]["timing"]["latest_at"] = {"absolute_time": {"start": "07:00"}}
+    for key in ("scene", "cover"):
+        live_program["steps"][key]["timing"]["only_before"] = {"absolute_time": {"start": "23:00"}}
+    result = await start(live_engine, live_program)
+    assert result["session"]["total"] == 1
+    assert result["session"]["next_group"]["time"].startswith("2026-10-14T07:00:")
+    await next_event(live_engine)
+    assert len(live_calls) == 3
+    assert all(call.domain in {"light", "switch"} for call in live_calls)
+    assert live_engine.live_preview.session["state"] == "completed"
+
+
 async def test_start_idle_status_and_group_order_are_isolated(
     live_engine, live_program, live_calls
 ):

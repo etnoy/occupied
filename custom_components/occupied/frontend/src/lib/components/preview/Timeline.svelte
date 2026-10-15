@@ -212,8 +212,8 @@
         </div>
       </details>
     {/if}
-    {#each plan.issues.filter((issue) => issue.severity !== "info") as issue (issue)}
-      <p class={issue.severity === "warning" ? "hint" : "error"}>
+    {#each plan.issues.filter((issue) => issue.severity !== "info" || ["latest_at_applied", "only_before_skipped"].includes(issue.code || "")) as issue (issue)}
+      <p class={issue.severity === "error" ? "error" : "hint"}>
         {issue.code}: {issue.message}
       </p>
     {/each}

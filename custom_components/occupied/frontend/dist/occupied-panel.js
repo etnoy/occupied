@@ -31,6 +31,7 @@ var en = {
   run_condition_countdown: "Enforcing expected states in {seconds} seconds.",
   run_condition_results: "State enforcement results",
   staggered_action: "Staggered action",
+  stagger_timing_summary: "Targets staggered over {duration} in random order",
   stagger_hint:
     "Factorio style: act on one entity at each evenly spaced tick, in a random order.",
   time_window: "Time window",
@@ -287,6 +288,17 @@ var en = {
   saturday: "Saturday",
   sunday: "Sunday",
   days_required_error: "Choose at least one day.",
+  no_later_than: "No later than",
+  only_run_before: "Only run before",
+  boundary_source: "Boundary source",
+  boundary_clock: "Boundary time",
+  latest_at_summary: "No later than {boundary}",
+  only_before_summary:
+    "Only runs strictly before {boundary}; equality skips the occurrence",
+  timing_limits_sampling_hint:
+    "Sample once, then apply the limit and condition. Samples beyond the limit land on the limit; excluded samples are skipped without resampling",
+  timing_limits_source_date_hint:
+    "Boundaries use the schedule's source date and Home Assistant location. An unavailable solar event skips the step and its dependents",
   enabled: "Enabled",
   disabled: "Disabled",
   save_step: "Save step",
@@ -524,6 +536,8 @@ var sv = {
     "Till\xE4mpar f\xF6rv\xE4ntade tillst\xE5nd om {seconds} sekunder.",
   run_condition_results: "Resultat f\xF6r till\xE4mpade tillst\xE5nd",
   staggered_action: "F\xF6rskjuten \xE5tg\xE4rd",
+  stagger_timing_summary:
+    "Enheterna \xE4ndras successivt under {duration} i slumpm\xE4ssig ordning",
   stagger_hint:
     "Factorio-stil: styr en enhet i taget med j\xE4mna tidsintervall, i slumpm\xE4ssig ordning.",
   time_window: "Tidsf\xF6nster",
@@ -798,6 +812,17 @@ var sv = {
   saturday: "L\xF6rdag",
   sunday: "S\xF6ndag",
   days_required_error: "V\xE4lj minst en dag.",
+  no_later_than: "Senast",
+  only_run_before: "K\xF6r endast f\xF6re",
+  boundary_source: "Gr\xE4nsens k\xE4lla",
+  boundary_clock: "Gr\xE4nstid",
+  latest_at_summary: "Senast {boundary}",
+  only_before_summary:
+    "K\xF6r endast strikt f\xF6re {boundary}; vid samma tid hoppas tillf\xE4llet \xF6ver",
+  timing_limits_sampling_hint:
+    "Slumpa en g\xE5ng och till\xE4mpa sedan gr\xE4nsen och villkoret. Tider efter gr\xE4nsen flyttas till gr\xE4nsen; uteslutna tillf\xE4llen hoppas \xF6ver utan ny slumpning",
+  timing_limits_source_date_hint:
+    "Gr\xE4nser anv\xE4nder schemats ursprungsdatum och Home Assistants plats. En otillg\xE4nglig solh\xE4ndelse hoppar \xF6ver steget och dess beroenden",
   enabled: "Aktiverat",
   disabled: "Inaktiverat",
   save_step: "Spara steg",
@@ -1258,6 +1283,8 @@ function timingForm(timing = {}) {
       minDuration: timing.duration.min,
       maxDuration: timing.duration.max || timing.duration.min,
     }),
+    ...(timing.latest_at && { latestAt: timingForm(timing.latest_at) }),
+    ...(timing.only_before && { onlyBefore: timingForm(timing.only_before) }),
   };
 }
 function offsetErrors(time) {
@@ -1324,13 +1351,65 @@ function timingSummary(entry, entries, t = translator(), sources = [], locale) {
   if (!entry.timing) {
     return `${t("repeated_activity_window")}${scheduleDaySuffix(entry.days, t)}`;
   }
-  return timingExplanation(timingForm(entry.timing), entries, t, sources, {
-    includeHints: false,
-    locale,
-    days: entry.days,
-  });
+  const timing = timingExplanation(
+    timingForm(entry.timing),
+    entries,
+    t,
+    sources,
+    {
+      includeHints: false,
+      locale,
+      days: entry.days,
+    },
+  );
+  const staggerSeconds = (entry.actions ?? [entry]).reduce(
+    (total, action2) =>
+      total +
+      (action2.stagger?.enabled
+        ? durationSeconds(action2.stagger.period ?? "2m")
+        : 0),
+    0,
+  );
+  return staggerSeconds > 0
+    ? `${timing}. ${t("stagger_timing_summary").replace("{duration}", () => durationLabel(staggerSeconds, t))}`
+    : timing;
 }
 function timingExplanation(
+  input,
+  entries = [],
+  t = translator(),
+  sources = [],
+  options = {},
+) {
+  const modified = input.latestAt || input.onlyBefore;
+  let explanation = baseTimingExplanation(input, entries, t, sources, {
+    ...options,
+    ...(modified && { includeHints: false }),
+  });
+  for (const key2 of ["latestAt", "onlyBefore"]) {
+    const boundary2 = input[key2];
+    if (!boundary2) {
+      continue;
+    }
+    let label = formatClock(boundary2.start, options.locale);
+    if (boundary2.mode === "relative") {
+      label =
+        durationSeconds(String(boundary2.startOffset)) === 0
+          ? t(boundary2.anchor.slice(4))
+          : baseTimingExplanation(boundary2, [], t, [], {
+              includeHints: false,
+            }).slice(t("runs").length + 1);
+    }
+    explanation += `. ${t(
+      key2 === "latestAt" ? "latest_at_summary" : "only_before_summary",
+    ).replace("{boundary}", () => label)}`;
+  }
+  if (modified && options.includeHints !== false) {
+    explanation += `. ${t("timing_limits_sampling_hint")}`;
+  }
+  return explanation;
+}
+function baseTimingExplanation(
   input,
   entries = [],
   t = translator(),
@@ -2908,11 +2987,11 @@ var Batch = class _Batch {
         this.#unlink();
         infinite_loop_guard();
       }
-      for (const root26 of this.#resolve()) {
+      for (const root27 of this.#resolve()) {
         try {
-          this.#traverse(root26, effects, render_effects);
+          this.#traverse(root27, effects, render_effects);
         } catch (e) {
-          reset_all(root26);
+          reset_all(root27);
           if (!this.#is_deferred()) this.discard();
           throw e;
         }
@@ -2991,9 +3070,9 @@ var Batch = class _Batch {
    * @param {Effect[]} effects
    * @param {Effect[]} render_effects
    */
-  #traverse(root26, effects, render_effects) {
-    root26.f ^= CLEAN;
-    var effect2 = root26.first;
+  #traverse(root27, effects, render_effects) {
+    root27.f ^= CLEAN;
+    var effect2 = root27.first;
     while (effect2 !== null) {
       var flags2 = effect2.f;
       var is_branch = (flags2 & (BRANCH_EFFECT | ROOT_EFFECT)) !== 0;
@@ -3257,8 +3336,8 @@ var Batch = class _Batch {
         }
         if (batch.#scheduled.length > 0 && !batch.#decrement_queued) {
           batch.apply();
-          for (var root26 of batch.#resolve()) {
-            batch.#traverse(root26, [], []);
+          for (var root27 of batch.#resolve()) {
+            batch.#traverse(root27, [], []);
           }
         }
         batch.deactivate();
@@ -4877,7 +4956,7 @@ function is_dirty(reaction) {
 function schedule_possible_effect_self_invalidation(
   signal,
   effect2,
-  root26 = true,
+  root27 = true,
 ) {
   var reactions = signal.reactions;
   if (reactions === null) return;
@@ -4898,7 +4977,7 @@ function schedule_possible_effect_self_invalidation(
         false,
       );
     } else if (effect2 === reaction) {
-      if (root26) {
+      if (root27) {
         set_signal_status(reaction, DIRTY);
       } else if ((reaction.f & CLEAN) !== 0) {
         set_signal_status(reaction, MAYBE_DIRTY);
@@ -7149,14 +7228,14 @@ function snippet(node, get_snippet, ...args) {
 function append_styles(anchor, css) {
   effect(() => {
     anchor = active_effect?.parent?.nodes?.start ?? anchor;
-    var root26 = anchor.getRootNode();
+    var root27 = anchor.getRootNode();
     var target =
       /** @type {ShadowRoot} */
-      root26.host
+      root27.host
         ? /** @type {ShadowRoot} */
-          root26
+          root27
         : /** @type {Document} */
-          (root26.head ?? /** @type {Document} */ root26.ownerDocument.head);
+          (root27.head ?? /** @type {Document} */ root27.ownerDocument.head);
     if (!target.querySelector("#" + css.hash)) {
       const style = create_element("style");
       style.id = css.hash;
@@ -9040,6 +9119,26 @@ function actionErrors(form) {
 }
 function timingErrors(program, time, id, randomId) {
   const errors = {};
+  for (const key2 of ["latestAt", "onlyBefore"]) {
+    const boundary2 = time[key2];
+    if (!boundary2) {
+      continue;
+    }
+    const boundaryErrors = timingErrors(program, {
+      ...boundary2,
+      end: "",
+      endOffset: "",
+    });
+    if (
+      boundary2.mode === "relative" &&
+      solarEvents.every((event2) => boundary2.anchor !== `sun:${event2}`)
+    ) {
+      boundaryErrors.anchor = "time_source_required_error";
+    }
+    for (const [field, error] of Object.entries(boundaryErrors)) {
+      errors[`${key2}.${field}`] = error;
+    }
+  }
   const clockPattern = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
   if (time.mode === "absolute") {
     if (!clockPattern.test(time.start)) {
@@ -9083,6 +9182,27 @@ function timingErrors(program, time, id, randomId) {
   return errors;
 }
 function formTiming(time) {
+  const timing = baseFormTiming(time);
+  for (const [key2, field] of [
+    ["latestAt", "latest_at"],
+    ["onlyBefore", "only_before"],
+  ]) {
+    const boundary2 = time[key2];
+    if (boundary2) {
+      timing[field] =
+        boundary2.mode === "absolute"
+          ? { absolute_time: { start: boundary2.start } }
+          : {
+              relative_to: {
+                sun: boundary2.anchor.slice(4),
+                start_offset: String(boundary2.startOffset || "0s"),
+              },
+            };
+    }
+  }
+  return timing;
+}
+function baseFormTiming(time) {
   if (time.mode === "duration") {
     return {
       duration: {
@@ -10568,6 +10688,125 @@ function SourcePicker($$anchor, $$props) {
   pop();
 }
 
+// custom_components/occupied/frontend/src/lib/components/shared/TimingBoundaryEditor.svelte
+var root8 = from_html(`<!> <!>`, 1);
+function TimingBoundaryEditor($$anchor, $$props) {
+  push($$props, true);
+  let boundary2 = user_derived(
+    () => new Proxy($$props.context.time[$$props.modifier], {}),
+  );
+  let fields = user_derived(() => ({
+    editor: {
+      ...$$props.context.editor,
+      errors: Object.fromEntries(
+        Object.entries($$props.context.editor.errors)
+          .filter(([key2]) => key2.startsWith(`${$$props.modifier}.`))
+          .map(([key2, value]) => [
+            key2.slice($$props.modifier.length + 1),
+            value,
+          ]),
+      ),
+    },
+    t: $$props.context.t,
+    fieldPrefix: `${$$props.modifier}.`,
+    changed: (key2) => $$props.context.changed(`${$$props.modifier}.${key2}`),
+  }));
+  var fragment = root8();
+  var node = first_child(fragment);
+  EditorField(node, {
+    get panel() {
+      return $$props.panel;
+    },
+    get context() {
+      return get(fields);
+    },
+    key: "mode",
+    label: "boundary_source",
+    get value() {
+      return get(boundary2).mode;
+    },
+    update: (value) => {
+      get(boundary2).mode = value;
+      get(boundary2).anchor ||= "sun:sunrise";
+    },
+    options: {
+      choices: [
+        ["absolute", "absolute_time"],
+        ["relative", "solar_events"],
+      ],
+    },
+  });
+  var node_1 = sibling(node, 2);
+  {
+    var consequent = ($$anchor2) => {
+      EditorField($$anchor2, {
+        get panel() {
+          return $$props.panel;
+        },
+        get context() {
+          return get(fields);
+        },
+        key: "start",
+        label: "boundary_clock",
+        get value() {
+          return get(boundary2).start;
+        },
+        update: (value) => (get(boundary2).start = value),
+        options: { type: "time", step: 1 },
+      });
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_2 = root8();
+      var node_2 = first_child(fragment_2);
+      {
+        let $0 = user_derived(() => ({
+          choices: solarEvents.map((event2) => [`sun:${event2}`, event2]),
+        }));
+        EditorField(node_2, {
+          get panel() {
+            return $$props.panel;
+          },
+          get context() {
+            return get(fields);
+          },
+          key: "anchor",
+          label: "solar_events",
+          get value() {
+            return get(boundary2).anchor;
+          },
+          update: (value) => (get(boundary2).anchor = value),
+          get options() {
+            return get($0);
+          },
+        });
+      }
+      var node_3 = sibling(node_2, 2);
+      EditorField(node_3, {
+        get panel() {
+          return $$props.panel;
+        },
+        get context() {
+          return get(fields);
+        },
+        key: "startOffset",
+        label: "start_offset",
+        get value() {
+          return get(boundary2).startOffset;
+        },
+        update: (value) => (get(boundary2).startOffset = value),
+        options: { placeholder: "-30m or 90m" },
+      });
+      append($$anchor2, fragment_2);
+    };
+    if_block(node_1, ($$render) => {
+      if (get(boundary2).mode === "absolute") $$render(consequent);
+      else $$render(alternate, -1);
+    });
+  }
+  append($$anchor, fragment);
+  pop();
+}
+
 // custom_components/occupied/frontend/src/lib/models/random-model.ts
 function countBounds(count) {
   return typeof count === "object"
@@ -10763,7 +11002,7 @@ function buildRandom(program, editor) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/shared/TimingEditor.svelte
-var root8 = from_html(
+var root9 = from_html(
   `<label class="timing-option"><input type="radio"/><span> </span></label>`,
 );
 var root_16 = from_html(`<button type="button" class="text-button"> </button>`);
@@ -10771,10 +11010,13 @@ var root_25 = from_html(`<!> <!>`, 1);
 var root_34 = from_html(`<p class="hint"> </p>`);
 var root_42 = from_html(`<!> <!> <!> <!> <!>`, 1);
 var root_52 = from_html(
-  `<p class="hint" data-timing-explanation="" aria-live="polite"> </p>`,
+  `<fieldset class="timing-options"><legend> </legend> <label class="timing-option"><input type="checkbox"/> <span> </span></label> <!></fieldset>`,
 );
 var root_62 = from_html(
-  `<div data-editor-section="time"><h3> </h3> <fieldset class="timing-options"><div class="timing-option-row"></div> <!></fieldset> <!> <!> <!></div>`,
+  `<p class="hint" data-timing-explanation="" aria-live="polite"> </p>`,
+);
+var root_7 = from_html(
+  `<div data-editor-section="time"><h3> </h3> <fieldset class="timing-options"><div class="timing-option-row"></div> <!></fieldset> <!> <!> <!> <!></div>`,
 );
 function TimingEditor($$anchor, $$props) {
   push($$props, true);
@@ -10829,7 +11071,7 @@ function TimingEditor($$anchor, $$props) {
     }
     return choices2;
   });
-  var div = root_62();
+  var div = root_7();
   var h3 = child(div);
   var text2 = only_child(h3, true);
   var fieldset = sibling(h3, 2);
@@ -10843,7 +11085,7 @@ function TimingEditor($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let value = () => get($$array)[0];
       let label = () => get($$array)[1];
-      var label_1 = root8();
+      var label_1 = root9();
       var input = child(label_1);
       remove_input_defaults(input);
       var span = sibling(input);
@@ -11192,11 +11434,112 @@ function TimingEditor($$anchor, $$props) {
   }
   var node_11 = sibling(node_1, 2);
   {
-    var consequent_7 = ($$anchor2) => {
-      var p_3 = root_52();
-      var text_8 = only_child(p_3, true);
+    var consequent_9 = ($$anchor2) => {
+      var fragment_5 = root_25();
+      var node_12 = first_child(fragment_5);
+      each(
+        node_12,
+        16,
+        () => [
+          ["latestAt", "no_later_than"],
+          ["onlyBefore", "only_run_before"],
+        ],
+        ([modifier, label]) => modifier,
+        ($$anchor3, $$item) => {
+          var $$array_1 = user_derived(() => to_array($$item, 2));
+          let modifier = () => get($$array_1)[0];
+          let label = () => get($$array_1)[1];
+          const key2 = user_derived(modifier);
+          var fieldset_1 = root_52();
+          var legend = child(fieldset_1);
+          var text_8 = only_child(legend, true);
+          var label_2 = sibling(legend, 2);
+          var input_1 = child(label_2);
+          remove_input_defaults(input_1);
+          var span_1 = sibling(input_1, 2);
+          var text_9 = only_child(span_1, true);
+          reset(label_2);
+          var node_13 = sibling(label_2, 2);
+          {
+            var consequent_7 = ($$anchor4) => {
+              TimingBoundaryEditor($$anchor4, {
+                get panel() {
+                  return $$props.panel;
+                },
+                get context() {
+                  return $$props.context;
+                },
+                get modifier() {
+                  return get(key2);
+                },
+              });
+            };
+            if_block(node_13, ($$render) => {
+              if (get(time)[get(key2)]) $$render(consequent_7);
+            });
+          }
+          reset(fieldset_1);
+          template_effect(
+            ($0, $1, $2) => {
+              set_text(text_8, $0);
+              set_attribute2(input_1, "data-builder-field", get(key2));
+              set_checked(input_1, $1);
+              set_text(text_9, $2);
+            },
+            [
+              () => get(t)(label()),
+              () => Boolean(get(time)[get(key2)]),
+              () => get(t)("enabled"),
+            ],
+          );
+          delegated("change", input_1, (event2) => {
+            get(time)[get(key2)] = event2.currentTarget.checked
+              ? {
+                  mode: "absolute",
+                  start: "18:00",
+                  anchor: "sun:sunrise",
+                  startOffset: "0s",
+                }
+              : void 0;
+            for (const field of Object.keys(get(editor).errors)) {
+              if (field.startsWith(`${get(key2)}.`)) {
+                delete get(editor).errors[field];
+              }
+            }
+            get(changed)(get(key2));
+          });
+          append($$anchor3, fieldset_1);
+        },
+      );
+      var node_14 = sibling(node_12, 2);
+      {
+        var consequent_8 = ($$anchor3) => {
+          var p_3 = root_34();
+          var text_10 = only_child(p_3, true);
+          template_effect(
+            ($0) => set_text(text_10, $0),
+            [() => get(t)("timing_limits_source_date_hint")],
+          );
+          append($$anchor3, p_3);
+        };
+        if_block(node_14, ($$render) => {
+          if (get(time).latestAt || get(time).onlyBefore)
+            $$render(consequent_8);
+        });
+      }
+      append($$anchor2, fragment_5);
+    };
+    if_block(node_11, ($$render) => {
+      if ($$props.context.stepId !== void 0) $$render(consequent_9);
+    });
+  }
+  var node_15 = sibling(node_11, 2);
+  {
+    var consequent_10 = ($$anchor2) => {
+      var p_4 = root_62();
+      var text_11 = only_child(p_4, true);
       template_effect(
-        ($0) => set_text(text_8, $0),
+        ($0) => set_text(text_11, $0),
         [
           () =>
             timingExplanation(
@@ -11226,25 +11569,25 @@ function TimingEditor($$anchor, $$props) {
             ),
         ],
       );
-      append($$anchor2, p_3);
-    };
-    if_block(node_11, ($$render) => {
-      if (showExplanation()) $$render(consequent_7);
-    });
-  }
-  var node_12 = sibling(node_11, 2);
-  {
-    var consequent_8 = ($$anchor2) => {
-      var p_4 = root_34();
-      var text_9 = only_child(p_4, true);
-      template_effect(
-        ($0) => set_text(text_9, $0),
-        [() => get(t)("managed_file_draft_hint")],
-      );
       append($$anchor2, p_4);
     };
-    if_block(node_12, ($$render) => {
-      if ($$props.panel.document?.source === "file") $$render(consequent_8);
+    if_block(node_15, ($$render) => {
+      if (showExplanation()) $$render(consequent_10);
+    });
+  }
+  var node_16 = sibling(node_15, 2);
+  {
+    var consequent_11 = ($$anchor2) => {
+      var p_5 = root_34();
+      var text_12 = only_child(p_5, true);
+      template_effect(
+        ($0) => set_text(text_12, $0),
+        [() => get(t)("managed_file_draft_hint")],
+      );
+      append($$anchor2, p_5);
+    };
+    if_block(node_16, ($$render) => {
+      if ($$props.panel.document?.source === "file") $$render(consequent_11);
     });
   }
   reset(div);
@@ -11266,7 +11609,7 @@ function TimingEditor($$anchor, $$props) {
 delegate(["change", "click"]);
 
 // custom_components/occupied/frontend/src/lib/components/shared/EntitiesEditor.svelte
-var root9 = from_html(`<p class="hint"> </p>`);
+var root10 = from_html(`<p class="hint"> </p>`);
 var root_17 = from_html(
   `<div data-editor-section="entities"><h4> </h4> <ha-selector></ha-selector> <!> <!></div>`,
   2,
@@ -11360,7 +11703,7 @@ function EntitiesEditor($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent = ($$anchor2) => {
-      var p = root9();
+      var p = root10();
       var text_1 = only_child(p, true);
       template_effect(
         ($0) => set_text(text_1, $0),
@@ -11463,7 +11806,7 @@ function changeActionKind(form, value, confirmReplace) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/shared/ActionEditor.svelte
-var root10 = from_html(
+var root11 = from_html(
   `<ha-code-editor></ha-code-editor> <!> <p class="hint"> </p>`,
   3,
 );
@@ -11551,7 +11894,7 @@ function ActionEditor($$anchor, $$props) {
   var node_2 = sibling(node_1, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment_1 = root10();
+      var fragment_1 = root11();
       var ha_code_editor = first_child(fragment_1);
       set_custom_element_data(ha_code_editor, "role", "group");
       template_effect(
@@ -11768,7 +12111,7 @@ function ActionEditor($$anchor, $$props) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/steps/StepEditor.svelte
-var root11 = from_html(
+var root12 = from_html(
   `<section class="step-editor"><div class="step-name-editor"><!></div> <div class="editor-sections"><!> <!></div> <!> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-step-submit=""> </button></div></section>`,
 );
 function StepEditor($$anchor, $$props) {
@@ -11783,7 +12126,7 @@ function StepEditor($$anchor, $$props) {
     editing = user_derived(() => get(context).editing),
     submit = user_derived(() => get(context).submit),
     cancel = user_derived(() => get(context).cancel);
-  var section = root11();
+  var section = root12();
   var div = child(section);
   var node = child(div);
   {
@@ -11926,7 +12269,7 @@ function StepEditor($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/steps/StepsView.svelte
-var root12 = from_html(
+var root13 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-step=""> </button></section>`,
 );
 var root_19 = from_html(`<span class="step-status-badge"> </span>`);
@@ -11940,7 +12283,7 @@ var root_53 = from_html(`<div><!></div>`);
 var root_63 = from_html(
   `<div><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong> <!></span> <span class="hint"> </span></span> <!></button> <!></div>`,
 );
-var root_7 = from_html(
+var root_72 = from_html(
   `<div class="step-layout"><div class="step-list"></div></div> <button type="button" class="primary" data-create-step=""> </button>`,
   1,
 );
@@ -11968,7 +12311,7 @@ function StepsView($$anchor, $$props) {
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var section = root12();
+      var section = root13();
       var h2 = child(section);
       var text2 = only_child(h2, true);
       var p = sibling(h2, 2);
@@ -11993,7 +12336,7 @@ function StepsView($$anchor, $$props) {
       append($$anchor2, section);
     };
     var alternate = ($$anchor2) => {
-      var fragment_1 = root_7();
+      var fragment_1 = root_72();
       var div = first_child(fragment_1);
       var div_1 = child(div);
       each(
@@ -12212,7 +12555,7 @@ function StepsView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/settings/RunConditionSettings.svelte
-var root13 = from_html(
+var root14 = from_html(
   `<fieldset class="svelte-111t7iy"><legend> </legend> <label for="run-condition-entity" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label for="run-condition-states" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <p class="hint"> </p> <label for="run-condition-delay" class="svelte-111t7iy"> </label> <input id="run-condition-delay" type="text"/> <!> <p class="hint"> </p></fieldset>`,
   2,
 );
@@ -12222,7 +12565,7 @@ var root_36 = from_html(`<p role="status"> </p> <!>`, 1);
 var root_44 = from_html(`<span> </span>`);
 var root_54 = from_html(`<p class="counts svelte-111t7iy"></p>`);
 var root_64 = from_html(`<li> </li>`);
-var root_72 = from_html(
+var root_73 = from_html(
   `<details><summary> </summary> <!> <ul></ul></details>`,
 );
 var root_8 = from_html(
@@ -12302,7 +12645,7 @@ function RunConditionSettings($$anchor, $$props) {
       var node_1 = sibling(label, 2);
       {
         var consequent = ($$anchor3) => {
-          var fieldset = root13();
+          var fieldset = root14();
           var legend = child(fieldset);
           var text_3 = only_child(legend, true);
           var label_1 = sibling(legend, 2);
@@ -12516,7 +12859,7 @@ function RunConditionSettings($$anchor, $$props) {
       var node_8 = sibling(node_6, 2);
       {
         var consequent_5 = ($$anchor3) => {
-          var details = root_72();
+          var details = root_73();
           var summary = child(details);
           var text_15 = only_child(summary);
           var node_9 = sibling(summary, 2);
@@ -12640,7 +12983,7 @@ function RunConditionSettings($$anchor, $$props) {
 delegate(["change", "input", "click"]);
 
 // custom_components/occupied/frontend/src/lib/components/settings/SettingsView.svelte
-var root14 = from_html(`<span class="changes svelte-g0xj3p"> </span>`);
+var root15 = from_html(`<span class="changes svelte-g0xj3p"> </span>`);
 var root_111 = from_html(
   `<!> <section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <div class="yaml-actions svelte-g0xj3p"><button type="button" class="primary"> </button> <button type="button"> </button> <button type="button" class="download svelte-g0xj3p"> </button></div></section>`,
   3,
@@ -12693,7 +13036,7 @@ function SettingsView($$anchor, $$props) {
   var node_1 = sibling(text2);
   {
     var consequent = ($$anchor2) => {
-      var span = root14();
+      var span = root15();
       var text_1 = only_child(span);
       template_effect(
         ($0) => set_text(text_1, `(${$0 ?? ""})`),
@@ -12798,6 +13141,41 @@ function SettingsView($$anchor, $$props) {
 }
 delegate(["change", "click"]);
 
+// custom_components/occupied/frontend/src/lib/actions/timeline-tooltip.ts
+function timelineTooltip(node, data) {
+  const chart = node;
+  const render = chart._renderTooltip;
+  if (typeof render !== "function") {
+    return;
+  }
+  let histories = data;
+  const adapt = (point) => {
+    const [entity, start] = point.value;
+    const end = histories
+      .find((history2) => history2.entity_id === entity)
+      ?.data.find((state2) => state2.last_changed === Number(start))?.end_time;
+    return end === void 0
+      ? point
+      : {
+          ...point,
+          value: [entity, start, new Date(end), ...point.value.slice(3)],
+        };
+  };
+  chart._renderTooltip = (point) =>
+    render.call(
+      chart,
+      Array.isArray(point) ? point.map((item) => adapt(item)) : adapt(point),
+    );
+  return {
+    update(next2) {
+      histories = next2;
+    },
+    destroy() {
+      chart._renderTooltip = render;
+    },
+  };
+}
+
 // custom_components/occupied/frontend/src/lib/services/ha-controls.ts
 async function loadHaControls() {
   if (
@@ -12878,22 +13256,27 @@ function previewStateHistory(plan, _program, names = {}, t = translator()) {
     off: "off_label",
   };
   const label = (state2) => t(stateLabels[state2] || "unknown");
-  for (const event2 of [...(plan.history_events || []), ...plan.events].sort(
-    (a, b) => Date.parse(a.time) - Date.parse(b.time),
-  )) {
+  for (const event2 of [
+    ...(plan.history_events || []),
+    ...plan.events,
+    ...(plan.future_events || []),
+  ].sort((a, b) => Date.parse(a.time) - Date.parse(b.time))) {
     if (event2.superseded) {
       continue;
     }
     const at = Date.parse(event2.time);
-    if (at >= end) {
-      continue;
-    }
     const typed = /^(light|switch)\.turn_(on|off)$/.test(event2.action.action);
     for (const entity of event2.action.entities) {
       if (!/^(light|switch|cover)\./.test(entity)) {
         continue;
       }
       let history2 = entities.get(entity);
+      if (
+        at >= end &&
+        (!history2 || history2.data.at(-1)?.end_time !== void 0)
+      ) {
+        continue;
+      }
       if (!history2) {
         const initialState = entity.startsWith("cover.") ? "unknown" : "off";
         history2 = {
@@ -12941,6 +13324,12 @@ function previewStateHistory(plan, _program, names = {}, t = translator()) {
         localized = parts.length > 0 ? parts.join(" \xB7 ") : label("unknown");
       }
       const previous = history2.data.at(-1);
+      if (at >= end) {
+        if (previous.state !== state2) {
+          previous.end_time = at;
+        }
+        continue;
+      }
       const time = Math.max(start, at);
       if (previous.last_changed === time) {
         previous.state = state2;
@@ -13041,7 +13430,7 @@ function staggerTransitions(plan) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/preview/PreviewStateGraph.svelte
-var root15 = from_html(`<p class="hint"> </p>`);
+var root16 = from_html(`<p class="hint"> </p>`);
 var root_112 = from_html(
   `<state-history-chart-timeline></state-history-chart-timeline>`,
   2,
@@ -13103,7 +13492,7 @@ function PreviewStateGraph($$anchor, $$props) {
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var p = root15();
+      var p = root16();
       var text2 = only_child(p, true);
       template_effect(
         ($0) => set_text(text2, $0),
@@ -13125,7 +13514,7 @@ function PreviewStateGraph($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var p_1 = root15();
+      var p_1 = root16();
       var text_1 = only_child(p_1, true);
       template_effect(
         ($0) => set_text(text_1, $0),
@@ -13143,7 +13532,7 @@ function PreviewStateGraph($$anchor, $$props) {
   var node_2 = sibling(node_1, 2);
   {
     var consequent_2 = ($$anchor2) => {
-      var p_2 = root15();
+      var p_2 = root16();
       var text_2 = only_child(p_2, true);
       template_effect(
         ($0) => set_text(text_2, $0),
@@ -13170,6 +13559,11 @@ function PreviewStateGraph($$anchor, $$props) {
         [() => $$props.t("planned_device_states")],
       );
       set_class(state_history_chart_timeline, 1, "svelte-1kps2qf");
+      action(
+        state_history_chart_timeline,
+        ($$node, $$action_arg) => timelineTooltip?.($$node, $$action_arg),
+        () => get(data),
+      );
       action(
         state_history_chart_timeline,
         ($$node, $$action_arg) => properties?.($$node, $$action_arg),
@@ -13285,7 +13679,7 @@ function lastGroupResult(session) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/preview/Timeline.svelte
-var root16 = from_html(`<h2> </h2>`);
+var root17 = from_html(`<h2> </h2>`);
 var root_113 = from_html(`<li> <!></li>`);
 var root_210 = from_html(
   `<details><summary> </summary> <p class="hint"> </p> <ol></ol></details>`,
@@ -13296,7 +13690,7 @@ var root_55 = from_html(`<td><!></td>`);
 var root_65 = from_html(
   `<tr><td> </td><td> </td><td> </td><td> </td><td> </td><!></tr>`,
 );
-var root_73 = from_html(
+var root_74 = from_html(
   `<details><summary> </summary> <p class="hint"> </p> <!> <input type="search"/> <div><div class="table-wrap"><table><thead><tr><!><!></tr></thead><tbody></tbody></table></div> <div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div></div></details>`,
 );
 var root_82 = from_html(`<p> </p>`);
@@ -13358,7 +13752,7 @@ function Timeline($$anchor, $$props) {
       append($$anchor2, fragment);
     };
     var consequent_1 = ($$anchor2) => {
-      var h2 = root16();
+      var h2 = root17();
       var text2 = only_child(h2, true);
       template_effect(
         ($0) => set_text(text2, $0),
@@ -13402,7 +13796,7 @@ function Timeline($$anchor, $$props) {
       var node_4 = sibling(node_3, 2);
       {
         var consequent_7 = ($$anchor3) => {
-          var details_1 = root_73();
+          var details_1 = root_74();
           var summary = child(details_1);
           var text_1 = only_child(summary);
           var p = sibling(summary, 2);
@@ -13710,7 +14104,14 @@ function Timeline($$anchor, $$props) {
       each(
         node_11,
         16,
-        () => $$props.plan.issues.filter((issue) => issue.severity !== "info"),
+        () =>
+          $$props.plan.issues.filter(
+            (issue) =>
+              issue.severity !== "info" ||
+              ["latest_at_applied", "only_before_skipped"].includes(
+                issue.code || "",
+              ),
+          ),
         (issue) => issue,
         ($$anchor3, issue) => {
           var p_2 = root_82();
@@ -13719,7 +14120,7 @@ function Timeline($$anchor, $$props) {
             set_class(
               p_2,
               1,
-              clsx2(issue.severity === "warning" ? "hint" : "error"),
+              clsx2(issue.severity === "error" ? "error" : "hint"),
             );
             set_text(text_20, `${issue.code ?? ""}: ${issue.message ?? ""}`);
           });
@@ -13750,7 +14151,7 @@ function Timeline($$anchor, $$props) {
 delegate(["input", "click"]);
 
 // custom_components/occupied/frontend/src/lib/components/preview/LivePreviewControls.svelte
-var root17 = from_html(
+var root18 = from_html(
   `<button type="button" class="primary svelte-jw9j7k"> </button> <button type="button" class="svelte-jw9j7k"> </button>`,
   1,
 );
@@ -13765,7 +14166,7 @@ var root_39 = from_html(`<div class="live-actions svelte-jw9j7k"><!></div>`);
 var root_46 = from_html(`<p class="svelte-jw9j7k"> </p>`);
 var root_56 = from_html(`<p class="error svelte-jw9j7k"> </p>`);
 var root_66 = from_html(`<p class="hint svelte-jw9j7k"> </p>`);
-var root_74 = from_html(`<p class="call svelte-jw9j7k"> <!></p>`);
+var root_75 = from_html(`<p class="call svelte-jw9j7k"> <!></p>`);
 var root_83 = from_html(
   `<p class="svelte-jw9j7k"><strong> </strong></p> <!>`,
   1,
@@ -13791,7 +14192,7 @@ function LivePreviewControls($$anchor, $$props) {
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
-        var fragment = root17();
+        var fragment = root18();
         var button = first_child(fragment);
         var text2 = only_child(button, true);
         var button_1 = sibling(button, 2);
@@ -14031,7 +14432,7 @@ function LivePreviewControls($$anchor, $$props) {
             () => get(session).next_group.calls,
             (call) => call.id,
             ($$anchor4, call) => {
-              var p_9 = root_74();
+              var p_9 = root_75();
               var text_16 = child(p_9);
               var node_11 = sibling(text_16);
               {
@@ -14180,7 +14581,7 @@ function LivePreviewControls($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/preview/PreviewView.svelte
-var root18 = from_html(`<span class="hint" role="status"> </span>`);
+var root19 = from_html(`<span class="hint" role="status"> </span>`);
 var root_116 = from_html(
   `<div class="schedule-heading svelte-1gez8n9"><h2 aria-live="polite" class="svelte-1gez8n9"> </h2> <!> <div class="day-navigation svelte-1gez8n9" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-1gez8n9"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
   2,
@@ -14200,7 +14601,7 @@ function PreviewView($$anchor, $$props) {
     var node = sibling(h2, 2);
     {
       var consequent = ($$anchor3) => {
-        var span = root18();
+        var span = root19();
         var text_1 = only_child(span, true);
         template_effect(
           ($0) => set_text(text_1, $0),
@@ -14391,7 +14792,7 @@ function PreviewView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/shared/UnsavedStepDialog.svelte
-var root19 = from_html(
+var root20 = from_html(
   `<div class="step-exit-overlay"><dialog open="" class="step-exit-dialog" role="alertdialog" aria-modal="true" aria-labelledby="step-exit-title" aria-describedby="step-exit-description"><h2 id="step-exit-title"> </h2> <p id="step-exit-description"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog></div>`,
 );
 function UnsavedStepDialog($$anchor, $$props) {
@@ -14399,7 +14800,7 @@ function UnsavedStepDialog($$anchor, $$props) {
   let t = user_derived(() => $$props.panel.t);
   let keepEditing;
   onMount(() => keepEditing.focus());
-  var div = root19();
+  var div = root20();
   var dialog = child(div);
   var h2 = child(dialog);
   var text2 = only_child(h2, true);
@@ -14633,7 +15034,7 @@ async function deleteRandom(panel) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/random/DeleteRandomDialog.svelte
-var root20 = from_html(`<li> </li>`);
+var root21 = from_html(`<li> </li>`);
 var root_117 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
 var root_213 = from_html(
   `<dialog class="step-delete-dialog" aria-labelledby="random-delete-title"><h2 id="random-delete-title"> </h2> <p> </p> <!> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog>`,
@@ -14671,7 +15072,7 @@ function DeleteRandomDialog($$anchor, $$props) {
         () => get(dependents),
         (entry) => entry.id,
         ($$anchor3, entry) => {
-          var li = root20();
+          var li = root21();
           var text_3 = only_child(li, true);
           template_effect(() => set_text(text_3, get(entry).name));
           append($$anchor3, li);
@@ -14741,7 +15142,7 @@ function DeleteRandomDialog($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/random/AdvancedRandomSettings.svelte
-var root21 = from_html(`<button type="button"> </button>`);
+var root22 = from_html(`<button type="button"> </button>`);
 var root_118 = from_html(
   `<label class="step-weekday-option"><input type="checkbox"/><span> </span></label>`,
 );
@@ -14820,7 +15221,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let label = () => get($$array)[0];
       let selection = () => get($$array)[1];
-      var button = root21();
+      var button = root22();
       var text_3 = only_child(button, true);
       template_effect(
         ($0, $1) => {
@@ -15007,7 +15408,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
 delegate(["click", "change"]);
 
 // custom_components/occupied/frontend/src/lib/components/random/RandomActions.svelte
-var root22 = from_html(
+var root23 = from_html(
   `<div role="separator"></div> <button type="button" role="menuitem" tabindex="-1" class="danger"> </button>`,
   1,
 );
@@ -15099,7 +15500,7 @@ function RandomActions($$anchor, $$props) {
   var node = sibling(button_1, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root22();
+      var fragment_1 = root23();
       var button_2 = sibling(first_child(fragment_1), 2);
       var text_1 = only_child(button_2, true);
       template_effect(
@@ -15423,7 +15824,7 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
-var root23 = from_html(`<button type="button" class="text-button"> </button>`);
+var root24 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_120 = from_html(
   `<label class="same-entities svelte-1n39iyr"><input type="checkbox"/> </label>`,
 );
@@ -15586,7 +15987,7 @@ function RandomEventEditor($$anchor, $$props) {
   var node_5 = sibling(node_4, 2);
   {
     var consequent = ($$anchor2) => {
-      var button_1 = root23();
+      var button_1 = root24();
       var text_3 = only_child(button_1, true);
       template_effect(
         ($0) => {
@@ -15613,7 +16014,7 @@ function RandomEventEditor($$anchor, $$props) {
     var consequent_1 = ($$anchor2) => {
       {
         const trailing = ($$anchor3) => {
-          var button_2 = root23();
+          var button_2 = root24();
           var text_4 = only_child(button_2, true);
           template_effect(
             ($0) => {
@@ -15849,7 +16250,7 @@ function RandomEventEditor($$anchor, $$props) {
 delegate(["click", "change"]);
 
 // custom_components/occupied/frontend/src/lib/components/random/RandomView.svelte
-var root24 = from_html(
+var root25 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-random=""> </button></section>`,
 );
 var root_121 = from_html(`<span class="step-status-badge"> </span>`);
@@ -15887,7 +16288,7 @@ function RandomView($$anchor, $$props) {
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var section = root24();
+      var section = root25();
       var h2 = child(section);
       var text2 = only_child(h2, true);
       var p = sibling(h2, 2);
@@ -16091,7 +16492,7 @@ function RandomView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/App.svelte
-var root25 = from_html(`<button type="button"> </button>`);
+var root26 = from_html(`<button type="button"> </button>`);
 var root_122 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
 var root_217 = from_html(`<p> </p>`);
 var root_312 = from_html(`<p id="house"> </p>`);
@@ -16101,7 +16502,7 @@ var root_57 = from_html(
   1,
 );
 var root_67 = from_html(`<p class="hint"> </p>`);
-var root_75 = from_html(`<p class="banner" role="status"> </p>`);
+var root_76 = from_html(`<p class="banner" role="status"> </p>`);
 var root_84 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_93 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
 var root_103 = from_html(`<p> </p> <button type="button"> </button>`, 1);
@@ -16118,7 +16519,7 @@ function App($$anchor, $$props) {
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
-        var button = root25();
+        var button = root26();
         var text_1 = only_child(button, true);
         template_effect(
           ($0) => {
@@ -16157,7 +16558,7 @@ function App($$anchor, $$props) {
     var node_1 = first_child(fragment);
     {
       var consequent_1 = ($$anchor3) => {
-        var button_1 = root25();
+        var button_1 = root26();
         var text_2 = only_child(button_1, true);
         template_effect(() => {
           set_class(button_1, 1, clsx2(get(className)));
@@ -16347,7 +16748,7 @@ function App($$anchor, $$props) {
     () => get(panel).selectedInstance?.overlaps || [],
     (overlap) => overlap.config_entry_id,
     ($$anchor2, overlap) => {
-      var p_4 = root_75();
+      var p_4 = root_76();
       var text_9 = only_child(p_4);
       template_effect(
         ($0, $1, $2) =>
@@ -16381,7 +16782,7 @@ function App($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let id = () => get($$array)[0];
       let label = () => get($$array)[1];
-      var button_2 = root25();
+      var button_2 = root26();
       var text_12 = only_child(button_2, true);
       template_effect(
         ($0) => {
@@ -16489,7 +16890,7 @@ function App($$anchor, $$props) {
               var node_11 = first_child(fragment_8);
               {
                 var consequent_8 = ($$anchor5) => {
-                  var button_5 = root25();
+                  var button_5 = root26();
                   var text_18 = only_child(button_5, true);
                   template_effect(
                     ($0) => set_text(text_18, $0),
@@ -17850,6 +18251,20 @@ function editorField(tail, form) {
     return form.kind === "service" ? "service" : "kind";
   }
   if (head2 === "timing") {
+    for (const [field, key2] of [
+      ["latest_at", "latestAt"],
+      ["only_before", "onlyBefore"],
+    ]) {
+      if (has(field)) {
+        let boundaryField = "anchor";
+        if (has("absolute_time")) {
+          boundaryField = "start";
+        } else if (has("start_offset")) {
+          boundaryField = "startOffset";
+        }
+        return `${key2}.${boundaryField}`;
+      }
+    }
     if (has("absolute_time")) {
       return has("end") ? "end" : "start";
     }
