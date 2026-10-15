@@ -1255,6 +1255,119 @@ async def test_enforce_now_without_condition_replaces_native_handover(
 
 
 @pytest.mark.parametrize(
+    "at",
+    ["2026-10-15T23:06:54+00:00", "2026-03-29T23:06:54+00:00", "2026-10-26T00:06:54+00:00"],
+)
+async def test_enforce_now_after_midnight_uses_previous_local_day_targets(
+    hass, daily_entry, daily_devices, cover_devices, freezer, at
+):
+    from custom_components.occupied.const import EVENT_ACTION
+    from custom_components.occupied.diagnostics import diagnostics_data
+
+    daily_entry.data["program"]["steps"] = {
+        "sunset": {
+            "timing": {"relative_to": {"sun": "dusk", "start_offset": "-30m"}},
+            "actions": [
+                {
+                    "action": "set_state",
+                    "entities": {
+                        "light.proof": {"state": "on", "brightness": 24},
+                        "light.late": {"state": "on", "brightness": 100},
+                        "light.opaque": {"state": "on"},
+                        "switch.proof": {"state": "on"},
+                        "switch.late": {"state": "on"},
+                    },
+                    "stagger": {"enabled": True, "period": "2m"},
+                },
+                {
+                    "action": "cover.set_cover_position",
+                    "entities": ["cover.blind"],
+                    "data": {"position": 60},
+                },
+                {"action": "script.turn_on", "entities": ["script.test"]},
+                {"action": "script.turn_on", "entities": ["light.opaque"]},
+            ],
+        },
+        "late_off": {
+            "timing": {"absolute_time": {"start": "23:30", "end": "00:20"}},
+            "action": "turn_off",
+            "entities": ["light.late", "switch.late"],
+            "stagger": {"enabled": True, "period": "2m"},
+        },
+        "morning": {
+            "timing": {"absolute_time": {"start": "05:30"}},
+            "action": "turn_off",
+            "entities": ["light.proof", "switch.proof"],
+        },
+        "first_intent": {
+            "timing": {"absolute_time": {"start": "05:30"}},
+            "days": ["fri"],
+            "action": "turn_on",
+            "entities": ["light.no_intent"],
+        },
+    }
+    for entity, state in (
+        ("light.late", "on"),
+        ("light.opaque", "off"),
+        ("light.no_intent", "off"),
+        ("switch.proof", "off"),
+        ("switch.late", "on"),
+    ):
+        hass.states.async_set(entity, state, {"supported_color_modes": ["brightness"]})
+    hass.config.latitude, hass.config.longitude = 59.3, 18.1
+    engine = await load(hass, daily_entry, freezer, at)
+    await hass.config.async_set_time_zone("Europe/Stockholm")
+    await hass.async_block_till_done()
+
+    async def switch(call):
+        daily_devices.append(call)
+        for entity in call.data["entity_id"]:
+            hass.states.async_set(
+                entity, "on" if call.service == "turn_on" else "off", context=call.context
+            )
+
+    for service in ("turn_on", "turn_off"):
+        hass.services.async_register(
+            "switch",
+            service,
+            switch,
+            schema=vol.Schema({vol.Required("entity_id"): cv.entity_ids}, extra=vol.ALLOW_EXTRA),
+        )
+    activity = []
+    hass.bus.async_listen(EVENT_ACTION, activity.append)
+    await engine.async_set_enabled(True)
+    assert not daily_devices and not cover_devices and not engine._yielded
+    scheduled_journal = dict(engine._journal)
+    plans, seed = dict(engine._plans), engine._seed
+    await press_enforce_now(hass, daily_entry)
+
+    assert hass.states.get("light.proof").state == "on"
+    assert hass.states.get("light.proof").attributes["brightness"] == 24
+    assert hass.states.get("switch.proof").state == "on"
+    assert hass.states.get("light.late").state == "off"
+    assert hass.states.get("switch.late").state == "off"
+    assert [call.service for call in cover_devices] == ["set_cover_position"]
+    assert len(daily_devices) == 4 and len(activity) == 5
+    assert diagnostics_data(engine)["reconciliation"] == {
+        "phase": "complete",
+        "counts": {"checked": 8, "applied": 5, "already_matching": 0, "failed": 0, "skipped": 3},
+    }
+    assert not any(call.domain == "script" for call in daily_devices)
+    for entity in ("light.opaque", "light.no_intent"):
+        assert engine.reconciliation["results"][entity] == {
+            "status": "skipped",
+            "reason": "Expected state is unknown or opaque",
+        }
+    assert engine._plans == plans and engine._seed == seed
+    assert all(engine._journal[key] == value for key, value in scheduled_journal.items())
+    await press_enforce_now(hass, daily_entry)
+    assert len(daily_devices) == 4 and len(cover_devices) == 1
+    await advance(hass, freezer, 4 * 3600 + 23 * 60 + 6)
+    assert hass.states.get("light.proof").state == "off"
+    assert hass.states.get("switch.proof").state == "off"
+
+
+@pytest.mark.parametrize(
     ("blocked", "reason"),
     [
         ("disabled", "Permission is disabled"),
@@ -1360,6 +1473,8 @@ async def test_enforce_now_skips_targets_that_cannot_supply_known_available_inte
         }
     elif target == "no_intent":
         condition_program["steps"]["on"]["timing"] = {"absolute_time": {"start": "19:00"}}
+        for key in ("on", "off"):
+            condition_program["steps"][key]["days"] = ["tue"]
     engine = await load(hass, daily_entry, freezer)
     await engine.async_set_enabled(True)
     await set_alarm(hass, "armed_away")
@@ -1820,7 +1935,7 @@ async def test_run_condition_stopped_cover_axis_and_opaque_switch_are_not_replay
     assert engine.reconciliation["results"]["switch.proof"]["status"] == "skipped"
 
 
-async def test_run_condition_delay_crossing_midnight_does_not_invent_baseline(
+async def test_run_condition_delay_crossing_midnight_preserves_known_targets(
     hass,
     daily_entry,
     daily_devices,
@@ -1832,8 +1947,11 @@ async def test_run_condition_delay_crossing_midnight_does_not_invent_baseline(
     await engine.async_set_enabled(True)
     await set_alarm(hass, "armed_away")
     await advance(hass, freezer, 30)
-    assert not daily_devices and engine.active
-    assert all(value["status"] == "skipped" for value in engine.reconciliation["results"].values())
+    assert engine.active
+    assert [call.domain for call in daily_devices] == ["switch"]
+    assert hass.states.get("switch.proof").state == "on"
+    assert engine.reconciliation["results"]["light.proof"]["status"] == "already_matching"
+    assert engine.reconciliation["results"]["switch.proof"]["status"] == "dispatched"
 
 
 async def test_run_condition_restart_after_shutdown_during_delay_still_qualifies(

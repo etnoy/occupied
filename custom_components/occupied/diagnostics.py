@@ -71,6 +71,11 @@ def diagnostics_data(engine, *, include_sensitive=False):
         "handover_targets": len(snapshot.get("handover", {})),
         "yielded_targets": len(snapshot.get("yielded", [])),
     }
+    if reconciliation := snapshot.get("reconciliation"):
+        result["reconciliation"] = {
+            "phase": reconciliation["phase"],
+            "counts": reconciliation["counts"],
+        }
     if source := snapshot.get("configuration_source"):
         result["configuration_source"] = {
             key: source[key] for key in ("mode", "status", "has_valid_program") if key in source

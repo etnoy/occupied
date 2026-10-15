@@ -656,12 +656,19 @@ class DailyEngine:
         day = simulation_date_at(self.program, at, self._context())
         return self._plans[day]
 
-    def _projection_plan(self, at):
+    def _projection_plan(self, at, *, include_previous_day=False):
         current = self._plan_at(at)
+        # Enforcement carries explicit intent over midnight, using local calendar
+        # boundaries so the preceding day can be 23 or 25 hours long.
+        start = (
+            self._plan_at(current.start - timedelta(microseconds=1)).start
+            if include_previous_day
+            else current.start
+        )
         events = [
             event
             for event in supersede_ticks(e for plan in self._plans.values() for e in plan.events)
-            if current.start <= event.at < current.end
+            if start <= event.at < current.end
         ]
         return replace(current, events=tuple(sorted(events, key=lambda e: e.order_key)))
 
@@ -844,7 +851,10 @@ class DailyEngine:
 
     def _expected_actions(self, at):
         return expected_actions(
-            self.program, self._projection_plan(at), at, yielded=frozenset(self._yielded)
+            self.program,
+            self._projection_plan(at, include_previous_day=True),
+            at,
+            yielded=frozenset(self._yielded),
         )
 
     def _target_matches(self, entity, action):

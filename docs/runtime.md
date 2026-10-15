@@ -36,11 +36,13 @@ The controller’s Home Assistant device also exposes an **Enforce expected stat
 
 This explicit action reclaims previously yielded entities and applies known light, switch, and cover targets. Unknown, unavailable, disabled, already matching, and opaque targets are skipped using the same reconciliation results and Activity entries as startup enforcement. Manual changes during reconciliation still yield those entities, and permission or condition loss cancels remaining calls. No historical scene, script, or generic service action is replayed.
 
+Both the button and delayed startup enforcement use explicit targets from the preceding local calendar day as well as today's actions. Yesterday's evening lighting therefore remains a known target after midnight, until a later action changes or invalidates it, matching Preview's overnight continuity. Actual stagger tick times and overnight actions determine which target is latest. Targets without a known action in either day stay unknown; no baseline is invented. Default light handover retains its current-day projection.
+
 The button cancels pending handover and retries, holds any still-owned native light fades before applying current targets, and resumes future scheduling. It preserves the startup switch, configured delay, seed, sampled times, and completed scheduled-event journal. Each press can repair fresh drift, including repeated presses within one activation. It does not continuously enforce device state.
 
 ## Known light state and handover
 
-Enabled step actions determine controlled entities. Only direct typed light control can establish a projected light intent. Each date begins Unknown until its first explicit action; activation leaves unknown light state alone. Add a visible midnight step if an initial state is wanted.
+Enabled step actions determine controlled entities. Only direct typed light control can establish a projected light intent. Default handover begins each date Unknown until its first explicit action; activation leaves unknown light state alone. Add a visible midnight step if an initial state is wanted. Explicit enforcement also considers the preceding local day's targets as described above.
 
 Handover reconciles known light intents toward their projected endpoint using the internal ten-minute default. Native transitions are preferred when supported; bounded fallback calls handle other dimmable lights, and stable staggered changes handle non-dimmable lights. An on intent without brightness preserves known/observed brightness or delegates brightness to the device. It never invents a percentage.
 
@@ -52,7 +54,7 @@ Missing, unknown, or unavailable state and subsequent recovery do not count as m
 
 ## Cover targets and activation
 
-Standard native cover open/close/stop and position/tilt commands supply typed preview targets. Position and tilt remain independent: open/close target 100%/0%, and stop invalidates only the affected target. Runtime projection starts Unknown on each local calendar date. The preview chart uses the preceding local day’s actions to display continuity across midnight. Preview does not model travel time or predict the physical position after a stop.
+Standard native cover open/close/stop and position/tilt commands supply typed preview targets. Position and tilt remain independent: open/close target 100%/0%, and stop invalidates only the affected target. Each local day's projection starts Unknown; Preview and explicit enforcement also consider the preceding local day's actions for continuity across midnight. Preview does not model travel time or predict the physical position after a stop.
 
 The default cover activation policy is **future only**. Explicit startup state enforcement and the enforcement button are the opt-in exceptions described above. Past cover calls are marked skipped, including position/tilt targets, and ordinary enabling or resuming management never moves covers to a historical target. Covers do not enter the light fade/handover path or receive automatic retries. Future authored commands dispatch normally. Controller stop cancels future work but does not send `cover.stop_cover`, `cover.stop_cover_tilt`, or restoration calls.
 
@@ -64,7 +66,7 @@ Each controller has its own seed, journal, permission, queues, source, and subsc
 
 Metadata-only edits preserve sampled times, generation, session, and handover deadlines. Behavior edits invalidate future work and recompile. Expected revisions prevent concurrent stale saves. Managed files retain their last valid program on a failed reload; an initially invalid file cannot execute an old GUI cache. See [managed configuration](managed-configuration.md).
 
-Admin `occupied/timeline` reports saved plans and actual journal outcomes. `occupied/diagnostics` returns redacted counts by default; explicit sensitive diagnostics include plans and journal. Pure validate/export/preview operations do not alter the live queue or control devices.
+Admin `occupied/timeline` reports saved plans and actual journal outcomes. `occupied/diagnostics` returns redacted counts by default, including the latest enforcement phase and applied, matching, failed, and skipped totals; explicit sensitive diagnostics include plans and journal. Pure validate/export/preview operations do not alter the live queue or control devices.
 
 ## Manual live preview
 

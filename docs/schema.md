@@ -167,7 +167,7 @@ The **Custom YAML** action choice accepts one action mapping or an ordered list.
 
 ## Projection and runtime
 
-Controlled entities are derived from enabled steps and both actions of enabled random events. Only direct typed light intents participate in handover. State starts Unknown for each local date until a scheduled action establishes intent; activation leaves unknown state alone. An explicit midnight step can establish an initial state. Scenes/services remain opaque and do not supply inferred baselines.
+Controlled entities are derived from enabled steps and both actions of enabled random events. Only direct typed light intents participate in handover. Default handover state starts Unknown for each local date until a scheduled action establishes intent; activation leaves unknown state alone. An explicit midnight step can establish an initial state. Explicit state enforcement, both on startup and through the enforcement button, also considers known targets from the preceding local calendar day, preserving overnight intent without replaying historical actions. Scenes/services remain opaque and do not supply inferred baselines.
 
 On without brightness keeps known desired brightness or delegates brightness to HA/the device. It never inserts a default percentage. Handover uses one internal ten-minute default and HA capabilities for native transitions or bounded fallback calls. Outside manual changes yield that entity until the next activation. Stopping leaves states and holds still-owned native fades at the observed level.
 
