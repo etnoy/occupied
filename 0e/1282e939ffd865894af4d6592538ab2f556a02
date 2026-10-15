@@ -1,0 +1,43 @@
+custom_components/occupied/frontend/dist/lib/controllers/random-editor-controller.js
+  s_bcbecb27c075fd::t_b919c540191b9b 39-41,110-112,121-123,125-127,141,158-160
+custom_components/occupied/frontend/dist/lib/controllers/step-editor-controller.js
+  s_bcbecb27c075fd::t_70a53e017c1fa8 25-27,58-60,69-71,76-78,89,108-110
+custom_components/occupied/frontend/dist/lib/utils/timeline.js
+  s_bcbecb27c075fd::t_d8189f9aeccdbb 61,67-68
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_15d4173c20c1b4::t_73085ce511ceea 9238-9240,9271-9273,9282-9284,9289-9291,9302,9321-9323,12900,12906-12907,14479-14481,14550-14552,14561-14563,14565-14567,14581,14598-14600
+custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts
+  s_15d4173c20c1b4::t_eb4fa3228a8d3d 51-54,136-138,147-149,151-153,168,186-188
+custom_components/occupied/frontend/src/lib/controllers/step-editor-controller.ts
+  s_15d4173c20c1b4::t_0ee2d87c478b86 30-33,68-70,79-81,88-91,103,125-127
+custom_components/occupied/frontend/src/lib/utils/timeline.ts
+  s_15d4173c20c1b4::t_dcd90f571ec60f 71,77-78
+tests/frontend/src/instances.test.ts
+  s_15d4173c20c1b4::t_495290cde692ae 1017-1154
+tests/frontend/src/timeline.test.ts
+  s_15d4173c20c1b4::t_8d3a71f56b5277 88,90-94,102,107-109,122,133,152,211
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0e1282e939ffd865894af4d6592538ab2f556a02",
+  "prompts": {},
+  "sessions": {
+    "s_15d4173c20c1b4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f96-b1cc-7aa1-b17f-58f39dd4deeb",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_bcbecb27c075fd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f97-ccb4-7452-8920-033b9cf2d853",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
