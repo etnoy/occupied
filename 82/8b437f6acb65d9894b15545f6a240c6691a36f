@@ -1,0 +1,23 @@
+custom_components/occupied/actions.py
+  s_7140202783f05d::t_36a736162b2a26 61-62,66,71-72
+tests/test_daily_runtime.py
+  s_7140202783f05d::t_002b6d58b91ef8 122-145
+tests/test_lighting.py
+  s_7140202783f05d::t_001daadeca3290 5-7,16-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "828b437f6acb65d9894b15545f6a240c6691a36f",
+  "prompts": {},
+  "sessions": {
+    "s_7140202783f05d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f4f-1509-7322-93df-1e1f2af9b9d8",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
