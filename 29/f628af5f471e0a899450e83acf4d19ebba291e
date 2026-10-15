@@ -1,0 +1,25 @@
+custom_components/occupied/frontend/dist/lib/utils/custom-action.js
+  s_b0aa5cb43b97cb::t_9188be264353d9 25-26,42
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_b0aa5cb43b97cb::t_d80f2c61589dc8 8607-8608,8624
+custom_components/occupied/frontend/src/lib/utils/custom-action.ts
+  s_b0aa5cb43b97cb::t_bddaa7e36154a4 34-35,53
+tests/frontend/src/custom-actions.test.ts
+  s_b0aa5cb43b97cb::t_612166dd79f8b0 30-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "29f628af5f471e0a899450e83acf4d19ebba291e",
+  "prompts": {},
+  "sessions": {
+    "s_b0aa5cb43b97cb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f62-fc4c-78d1-84ce-ab88898a0e4c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
