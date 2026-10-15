@@ -1254,6 +1254,112 @@ async def test_enforce_now_without_condition_replaces_native_handover(
     assert len(daily_devices) == count
 
 
+@pytest.mark.parametrize("fail_first", [False, True])
+async def test_enforce_now_dispatches_independent_targets_without_waiting_or_fading(
+    hass, daily_entry, daily_devices, condition_program, freezer, hass_storage, fail_first
+):
+    import asyncio
+    import threading
+
+    from homeassistant.exceptions import HomeAssistantError
+
+    from custom_components.occupied.const import EVENT_ACTION
+
+    entities = ["light.proof", "light.second", "light.third"]
+    condition_program["run_condition"]["enforce_state_on_start"] = False
+    condition_program["steps"]["on"].update(
+        entities=entities,
+        action="light.turn_on",
+        data={"brightness_pct": 75, "transition": 60},
+        stagger={"enabled": True, "period": "2m"},
+    )
+    condition_program["steps"].pop("switch")
+    attrs = dict(hass.states.get("light.proof").attributes)
+    for entity in entities[1:]:
+        hass.states.async_set(entity, "off", attrs)
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    all_started, release = threading.Event(), asyncio.Event()
+    activity = []
+    hass.bus.async_listen(EVENT_ACTION, activity.append)
+
+    async def handle(call):
+        daily_devices.append(call)
+        assert engine.status == "active"
+        journal = hass_storage[f"occupied.{daily_entry.entry_id}.runtime"]["data"]["journal"]
+        assert any(
+            key.startswith("enforce:manual:")
+            and value["status"] == "pending"
+            and value["intended"]["entities"] == call.data["entity_id"]
+            for key, value in journal.items()
+        )
+        if len(daily_devices) == len(entities):
+            all_started.set()
+        await release.wait()
+        for entity in call.data["entity_id"]:
+            if fail_first and entity == "light.proof":
+                raise HomeAssistantError("Device failed")
+            hass.states.async_set(
+                entity, "on", attrs | {"brightness": round(75 * 255 / 100)}, context=call.context
+            )
+
+    hass.services.async_register(
+        "light",
+        "turn_on",
+        handle,
+        schema=vol.Schema({vol.Required("entity_id"): cv.entity_ids}, extra=vol.ALLOW_EXTRA),
+    )
+    before = dt_util.utcnow()
+    press = hass.async_create_task(engine.async_enforce_state_now())
+    try:
+        assert await hass.async_add_executor_job(all_started.wait, 2)
+        assert not press.done() and not activity
+        assert all(call.data["transition"] == 0 for call in daily_devices)
+        assert all(
+            value["status"] == "pending"
+            for key, value in engine._journal.items()
+            if key.startswith("enforce:manual:")
+        )
+    finally:
+        release.set()
+        await press
+    assert dt_util.utcnow() == before
+    assert len(activity) == len(entities) - fail_first
+    assert not engine._handover and not engine._native_fades
+    assert engine.reconciliation["phase"] == "complete"
+    counts = engine._reconciliation_snapshot()["counts"]
+    assert counts["applied"] == len(entities) - fail_first
+    assert counts["failed"] == fail_first
+    assert all(hass.states.get(entity).state == "on" for entity in entities[1:])
+    assert hass.states.get("light.proof").state == ("off" if fail_first else "on")
+    assert not any(event.kind == "retry" for event in engine._queue)
+
+
+async def test_enforce_now_concurrent_writes_fail_closed_before_dispatch(
+    hass, daily_entry, daily_devices, condition_program, freezer, monkeypatch
+):
+    from homeassistant.exceptions import HomeAssistantError
+
+    condition_program["run_condition"]["enforce_state_on_start"] = False
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    save = engine._store.async_save
+
+    async def fail_pending(data):
+        if any(value["status"] == "pending" for value in data["journal"].values()):
+            raise HomeAssistantError("Disk full")
+        await save(data)
+
+    monkeypatch.setattr(engine._store, "async_save", fail_pending)
+    await engine.async_enforce_state_now()
+    assert not daily_devices and not engine.active and not engine._queue
+    assert engine._storage_failed and engine.status == "inactive"
+    assert engine.reconciliation["phase"] == "cancelled"
+
+
 @pytest.mark.parametrize(
     "at",
     ["2026-10-15T23:06:54+00:00", "2026-03-29T23:06:54+00:00", "2026-10-26T00:06:54+00:00"],
@@ -1407,11 +1513,24 @@ async def test_enforce_now_rejects_ineligible_controller_without_reclaiming_enti
 
 
 @pytest.mark.parametrize("interruption", ["condition", "permission", "pause"])
+@pytest.mark.parametrize("concurrency", [1, 2])
 async def test_enforce_now_interruption_during_dispatch_cancels_remaining_calls(
-    hass, daily_entry, daily_devices, condition_program, freezer, interruption
+    hass,
+    daily_entry,
+    daily_devices,
+    condition_program,
+    freezer,
+    interruption,
+    concurrency,
+    monkeypatch,
 ):
     import asyncio
 
+    monkeypatch.setattr(
+        "custom_components.occupied.engine_daily.ENFORCEMENT_CONCURRENCY", concurrency
+    )
+    condition_program["steps"]["on"]["entities"].append("light.second")
+    hass.states.async_set("light.second", "off", {"supported_color_modes": ["brightness"]})
     engine = await load(hass, daily_entry, freezer)
     register_stagger_switch(hass, daily_devices)
     await engine.async_set_enabled(True)
@@ -1420,7 +1539,8 @@ async def test_enforce_now_interruption_during_dispatch_cancels_remaining_calls(
 
     async def handle(call):
         daily_devices.append(call)
-        started.set()
+        if len(daily_devices) == concurrency:
+            started.set()
         await release.wait()
 
     hass.services.async_register("light", "turn_on", handle)
@@ -1442,7 +1562,8 @@ async def test_enforce_now_interruption_during_dispatch_cancels_remaining_calls(
     if control:
         await control
     await hass.async_block_till_done()
-    assert len(daily_devices) == 1
+    assert len(daily_devices) == concurrency
+    assert all(call.domain == "light" for call in daily_devices)
     assert not engine.active and not engine._queue
     assert engine.reconciliation["phase"] == "cancelled"
 

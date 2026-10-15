@@ -38,7 +38,9 @@ This explicit action reclaims previously yielded entities and applies known ligh
 
 Both the button and delayed startup enforcement use explicit targets from the preceding local calendar day as well as today's actions. Yesterday's evening lighting therefore remains a known target after midnight, until a later action changes or invalidates it, matching Preview's overnight continuity. Actual stagger tick times and overnight actions determine which target is latest. Targets without a known action in either day stay unknown; no baseline is invented. Default light handover retains its current-day projection.
 
-The button cancels pending handover and retries, holds any still-owned native light fades before applying current targets, and resumes future scheduling. It preserves the startup switch, configured delay, seed, sampled times, and completed scheduled-event journal. Each press can repair fresh drift, including repeated presses within one activation. It does not continuously enforce device state.
+The button cancels pending handover and retries, holds any still-owned native light fades before applying current targets, and resumes future scheduling. Independent targets dispatch concurrently, with at most 32 entities in flight, without scheduled stagger delays or handover fades. Supported lights receive `transition: 0` to override a device's default fade. Commands for separate axes of the same cover remain ordered. Status stays Managing while the button applies targets; reconciliation reports progress and outcomes separately. Stopping management prevents remaining dispatch; already delivered commands can finish.
+
+It preserves the startup switch, configured delay, seed, sampled times, and completed scheduled-event journal. Each press can repair fresh drift, including repeated presses within one activation. It does not continuously enforce device state.
 
 ## Known light state and handover
 

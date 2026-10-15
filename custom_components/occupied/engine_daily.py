@@ -61,6 +61,7 @@ from .validation import (
 
 _LOGGER = logging.getLogger(__name__)
 DISPATCH_BATCH = 64
+ENFORCEMENT_CONCURRENCY = 32
 MAX_JOURNAL = 50000
 
 
@@ -75,7 +76,7 @@ class RuntimeEvent:
 
 
 class DailyEngine:
-    """Serialize bounded writes; invalidate new work immediately when the gate closes."""
+    """Serialize scheduling and journal writes; invalidate work when the gate closes."""
 
     def __init__(self, hass, entry_id, program):
         self.hass, self.entry_id, self.program = hass, entry_id, program
@@ -97,6 +98,7 @@ class DailyEngine:
         )
         self._store = DurableStore(hass, 1, f"{DOMAIN}.{entry_id}.runtime", atomic_writes=True)
         self._lock = asyncio.Lock()
+        self._persist_lock = asyncio.Lock()
         from .live_preview import LivePreviewManager
 
         self.live_preview = LivePreviewManager(self)
@@ -427,6 +429,10 @@ class DailyEngine:
             self._cancel_timer = None
 
     async def _persist(self):
+        async with self._persist_lock:
+            return await self._persist_locked()
+
+    async def _persist_locked(self):
         if len(self._journal) > MAX_JOURNAL:
             candidates = sorted(
                 (value.get("time", ""), key)
@@ -552,7 +558,10 @@ class DailyEngine:
                     at = dt_util.utcnow()
                     self._queue_plans(skip_through=at)
                     await self._enforce_expected_state(
-                        at, generation, key_prefix=f"enforce:manual:{secrets.token_hex(16)}"
+                        at,
+                        generation,
+                        key_prefix=f"enforce:manual:{secrets.token_hex(16)}",
+                        immediate=True,
                     )
             finally:
                 if generation != self.generation or not self._effective_gate()[0]:
@@ -867,28 +876,30 @@ class DailyEngine:
         axis, target = next(iter(cover_target(action).to_dict().items()))
         return observed["attributes"].get(f"current_{axis}") == target
 
-    async def _enforce_expected_state(self, at, generation, *, key_prefix=None):
+    async def _enforce_expected_state(self, at, generation, *, key_prefix=None, immediate=False):
         call_prefix = key_prefix or f"enforce:live:{self.session}"
         self.reconciliation["phase"] = "applying"
-        self.status, self.reason = "transitioning", "Enforcing expected states"
+        self.status = "active" if immediate else "transitioning"
+        self.reason = "Enforcing expected states now" if immediate else "Enforcing expected states"
         self._notify()
         results = self.reconciliation["results"]
         targets = self._expected_actions(at)
-        for entity in sorted(controlled_entities(self.program)):
+
+        async def reconcile(entity):
             if generation != self.generation or not self._effective_gate()[0]:
                 return
             if entity in self._yielded:
                 results[entity] = {"status": "skipped", "reason": "Manual control yielded entity"}
-                continue
+                return
             if entity not in targets:
                 results[entity] = {
                     "status": "skipped",
                     "reason": "Expected state is unknown or opaque",
                 }
-                continue
+                return
             if self._observe(entity) is None:
                 results[entity] = {"status": "skipped", "reason": "Entity is unavailable"}
-                continue
+                return
             outcomes = []
             for index, original in enumerate(targets[entity]):
                 if self._observe(entity) is None:
@@ -904,8 +915,13 @@ class DailyEngine:
                     outcomes.append("already_matching")
                     continue
                 key = f"{call_prefix}:{entity}:{index}"
+                dispatched_action = (
+                    replace(action, data=action.data | {"transition": 0})
+                    if immediate and action.action.startswith("light.")
+                    else action
+                )
                 await self._call(
-                    action,
+                    dispatched_action,
                     key,
                     generation,
                     allow_retry=False,
@@ -934,6 +950,23 @@ class DailyEngine:
                 "skipped",
             )
             results[entity] = {"status": status, "calls": outcomes}
+
+        entities = sorted(controlled_entities(self.program))
+        if immediate:
+            semaphore = asyncio.Semaphore(ENFORCEMENT_CONCURRENCY)
+
+            async def bounded_reconcile(entity):
+                async with semaphore:
+                    await reconcile(entity)
+
+            async with asyncio.TaskGroup() as group:
+                for entity in entities:
+                    group.create_task(bounded_reconcile(entity))
+        else:
+            for entity in entities:
+                await reconcile(entity)
+        if generation != self.generation or not self._effective_gate()[0]:
+            return
         self.reconciliation["phase"] = "complete"
         self._record(
             key_prefix or f"enforce:{self.session}",
