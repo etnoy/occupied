@@ -1,0 +1,61 @@
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_f4659a75e93fd1::t_ec08d3d8ca7f3c 56,549
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_f4659a75e93fd1::t_0160b7b66738a2 56,549
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_f4659a75e93fd1::t_b5c7f399c7e981 55,551
+docs/runtime.md
+  s_f4659a75e93fd1::t_e2d215a3c3cb61 3,27,47,49,61,63,67
+README.md
+  s_682a6ca3757029::t_e73f5455e882d7 35,103
+custom_components/occupied/__init__.py
+  s_682a6ca3757029::t_eb9604578d82b4 122,130-134
+custom_components/occupied/engine_daily.py
+  s_682a6ca3757029::t_1e192e0ffdaefb 19,39,84,148-152,159,164-171,174,366,439,581,633,662,740,782,859,910,1147,1305
+custom_components/occupied/sensor.py
+  s_682a6ca3757029::t_f78ec726c99581 75
+custom_components/occupied/strings.json
+  s_682a6ca3757029::t_60cdecd5615586 92
+custom_components/occupied/switch.py
+  s_682a6ca3757029::t_a00144c2f68d7e 16
+custom_components/occupied/translations/en.json
+  s_682a6ca3757029::t_339a337efe95a5 92
+docs/custom-yaml.md
+  s_682a6ca3757029::t_8bc6be4dd08d2e 131
+docs/editor.md
+  s_682a6ca3757029::t_f70b5bde916226 65,69
+docs/installation.md
+  s_682a6ca3757029::t_b692008a54dfc8 9,53
+docs/schema.md
+  s_682a6ca3757029::t_f755037f302330 146
+docs/yaml-redesign-plan.md
+  s_682a6ca3757029::t_25db120313df0a 99,107,117
+tests/test_daily_runtime.py
+  s_682a6ca3757029::t_0e25e2684c4890 290-360,380,397,408-418,950,963-970
+tests/test_live_preview.py
+  s_682a6ca3757029::t_5167d649f1239a 104,118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "7bb08c9ea006ccce425a342352d6419a8da8b3d5",
+  "prompts": {},
+  "sessions": {
+    "s_682a6ca3757029": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13eae-3078-7b11-bcd5-b8cfede53ff4",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_f4659a75e93fd1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec5949cfdffeX2oAzoHi6dVZIK",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
