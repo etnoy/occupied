@@ -1,0 +1,19 @@
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_eec1ced0ffabef::t_582857e4215914 13771
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "003429e65f2da23b50e216991487b8e2e4ce4c1d",
+  "prompts": {},
+  "sessions": {
+    "s_eec1ced0ffabef": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f64-a3f9-7592-a7c7-7137b5eb3127",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
