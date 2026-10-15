@@ -21,6 +21,12 @@ import type {
 } from "./lib/types.js";
 import { errorMessage } from "./lib/utils/util.js";
 import { copy, set } from "./lib/models/model.js";
+import {
+  runConditionForm,
+  runConditionErrors,
+  runConditionValue,
+  type RunConditionForm,
+} from "./lib/models/run-condition.js";
 import styles from "./app.css";
 import { translator } from "./lib/i18n/translations.js";
 import { mount, unmount, flushSync } from "svelte";
@@ -72,7 +78,10 @@ export class OccupiedPanel extends HTMLElement {
       return hasStepChanges(this.stepEditor);
     }
 
-    return this.randomEditor ? hasRandomChanges(this.randomEditor) : false;
+    return (
+      this.hasRunConditionChanges ||
+      (this.randomEditor ? hasRandomChanges(this.randomEditor) : false)
+    );
   }
 
   pendingStepExit: (() => void) | null = null;
@@ -89,6 +98,71 @@ export class OccupiedPanel extends HTMLElement {
   liveStopping = false;
   liveCanAdvance = false;
   schedulingPaused = false;
+  runtimeSnapshot: RuntimeSnapshot = {};
+  runConditionForm: RunConditionForm | null = null;
+  runConditionOriginal: RunConditionForm | null = null;
+  runConditionErrors: Record<string, string> = {};
+
+  get hasRunConditionChanges() {
+    return (
+      JSON.stringify(this.runConditionForm) !==
+      JSON.stringify(this.runConditionOriginal)
+    );
+  }
+
+  openRunCondition() {
+    this.runConditionForm = runConditionForm(this.draft.run_condition);
+    this.runConditionOriginal = copy(this.runConditionForm);
+    this.runConditionErrors = {};
+    this.flush();
+  }
+
+  updateRunCondition() {
+    if (this.runConditionForm) {
+      this.runConditionForm = {
+        ...this.runConditionForm,
+        states: [...this.runConditionForm.states],
+      };
+    }
+    this.version++;
+    this.runConditionErrors = {};
+    this.flush();
+  }
+
+  async saveRunCondition() {
+    if (!this.runConditionForm || this.yamlDirty || this.busy) {
+      return;
+    }
+    this.runConditionErrors = runConditionErrors(this.runConditionForm);
+    if (Object.keys(this.runConditionErrors).length > 0) {
+      this.flush();
+
+      return;
+    }
+    const candidate = copy(this.draft);
+    const config = runConditionValue(this.runConditionForm);
+    if (config) {
+      candidate.run_condition = config;
+    } else {
+      delete candidate.run_condition;
+    }
+    if (this.document.source === "file") {
+      this.change([], candidate);
+      this.openRunCondition();
+      await this.exportYaml();
+
+      return;
+    }
+    await this.save(candidate);
+    if (
+      !this.dirty &&
+      !this.error &&
+      this.issues.every((issue) => issue.severity !== "error")
+    ) {
+      this.openRunCondition();
+      await this.exportYaml();
+    }
+  }
 
   get liveRunning() {
     return liveRunning(this.liveSession);
@@ -321,6 +395,10 @@ export class OccupiedPanel extends HTMLElement {
       liveStopping: false,
       liveCanAdvance: false,
       schedulingPaused: false,
+      runtimeSnapshot: {},
+      runConditionForm: null,
+      runConditionOriginal: null,
+      runConditionErrors: {},
       yaml: "",
       yamlSaved: "",
     });
@@ -362,6 +440,7 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   private _onSnapshot(snapshot: RuntimeSnapshot) {
+    this.runtimeSnapshot = snapshot;
     if (snapshot.loaded === false) {
       this.previewController.invalidate();
     }
@@ -387,7 +466,13 @@ export class OccupiedPanel extends HTMLElement {
       snapshot.source_revision !== this.revision
     );
     this.flush();
-    if (this.stale && !this.dirty && !this.busy && !this.activeEditor) {
+    if (
+      this.stale &&
+      !this.dirty &&
+      !this.busy &&
+      !this.activeEditor &&
+      !this.hasRunConditionChanges
+    ) {
       void this.reloadSaved();
     }
   }
@@ -458,7 +543,13 @@ export class OccupiedPanel extends HTMLElement {
       if (epoch !== this.epoch) {
         return;
       }
-      if (this.draft && (this.dirty || this.yamlDirty || this.activeEditor)) {
+      if (
+        this.draft &&
+        (this.dirty ||
+          this.yamlDirty ||
+          this.activeEditor ||
+          this.hasRunConditionChanges)
+      ) {
         this.document = doc;
         this.saved = doc.program;
         this.stale = doc.revision !== this.revision;
@@ -507,7 +598,7 @@ export class OccupiedPanel extends HTMLElement {
     if (this.tab === tab) {
       return;
     }
-    if (this.yamlDirty) {
+    if (this.yamlDirty || this.hasRunConditionChanges) {
       if (!globalThis.confirm(this.t("view_switch_confirm"))) {
         return;
       }
@@ -589,6 +680,9 @@ export class OccupiedPanel extends HTMLElement {
 
   private resetDraft() {
     this.draft = copy(this.saved);
+    this.runConditionForm = null;
+    this.runConditionOriginal = null;
+    this.runConditionErrors = {};
     this.dirty = !!this.document.needs_apply;
     this.version++;
     this.validatedVersion = -1;
@@ -812,7 +906,11 @@ export class OccupiedPanel extends HTMLElement {
   async reloadSaved(discard = false) {
     if (
       this.busy ||
-      ((this.dirty || this.yamlDirty || this.activeEditor) && !discard)
+      ((this.dirty ||
+        this.yamlDirty ||
+        this.activeEditor ||
+        this.hasRunConditionChanges) &&
+        !discard)
     ) {
       return;
     }
@@ -890,6 +988,7 @@ export class OccupiedPanel extends HTMLElement {
         this.dirty = false;
         this.version++;
         this.validatedVersion = this.version;
+        this.openRunCondition();
       }
       this.flush();
     });

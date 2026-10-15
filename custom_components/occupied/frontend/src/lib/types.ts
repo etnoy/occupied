@@ -57,9 +57,17 @@ export interface RandomEvent extends Schedule {
   off: Action;
 }
 
+export interface RunCondition {
+  entity_id: string;
+  state: string | string[];
+  enforce_state_on_start?: boolean;
+  start_delay?: string;
+}
+
 export interface Program {
   schema_version?: number;
   name?: string;
+  run_condition?: RunCondition;
   steps?: Record<string, Step>;
   random?: Record<string, RandomEvent>;
 }
@@ -262,6 +270,23 @@ export type ApiResult<T> =
   | { valid: false; issues: Issue[] };
 
 export interface RuntimeSnapshot {
+  reason?: string;
+  run_condition?:
+    | (RunCondition & {
+        current_state: string | null;
+        matches: boolean;
+        activation_deadline: string | null;
+        remaining_seconds: number | null;
+      })
+    | null;
+  reconciliation?: {
+    phase: string;
+    counts?: Record<string, number>;
+    results: Record<
+      string,
+      { status: string; reason?: string; calls?: string[] }
+    >;
+  };
   loaded?: boolean;
   source_revision?: string;
   configuration_source?: ConfigurationSource;

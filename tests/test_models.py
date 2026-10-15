@@ -234,3 +234,66 @@ def test_generic_service_data_rejects_nonfinite_json(program_dict):
     with pytest.raises(ProgramError) as raised:
         validate_program(program_dict)
     assert raised.value.issues[0].path == ("steps", "wake", "data")
+
+
+def test_run_condition_roundtrip_and_sampling_identity(program_dict):
+    original = validate_program(program_dict)
+    configured = validate_program(
+        program_dict
+        | {
+            "run_condition": {
+                "entity_id": "alarm_control_panel.8124_aaa_zone_1_alarm",
+                "state": ["armed_away", "armed_night", "armed_away"],
+                "enforce_state_on_start": True,
+            }
+        }
+    )
+    assert configured.run_condition.state == ["armed_away", "armed_night"]
+    assert configured.run_condition.start_delay == 30
+    assert load_yaml(export_yaml(configured)) == configured
+    assert program_revision(configured) != program_revision(original)
+    assert behavior_hash(configured) == behavior_hash(original)
+    scalar = validate_program(
+        program_dict
+        | {
+            "run_condition": {
+                "entity_id": "sensor.alarm",
+                "state": "armed_away",
+            }
+        }
+    )
+    assert scalar.run_condition.state == ["armed_away"]
+    assert not scalar.run_condition.enforce_state_on_start
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"state": []},
+        {"state": ""},
+        {"state": [" "]},
+        {"state": "unknown"},
+        {"state": "unavailable"},
+        {"state": [True]},
+        {"entity_id": "bad"},
+        {"enforce_state_on_start": "true"},
+        {"enforce_state_on_start": 1},
+        {"start_delay": -1},
+        {"start_delay": "-1s"},
+        {"start_delay": "1h1s"},
+        {"start_delay": None},
+        {"unexpected": True},
+    ],
+)
+def test_run_condition_invalid_fields(program_dict, fields):
+    with pytest.raises(ProgramError):
+        validate_program(
+            program_dict
+            | {
+                "run_condition": {
+                    "entity_id": "sensor.alarm",
+                    "state": "armed_away",
+                    **fields,
+                }
+            }
+        )

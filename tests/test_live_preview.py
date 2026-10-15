@@ -587,3 +587,63 @@ async def test_live_custom_stagger_failure_remains_blocked_across_advances(
         o["status"] == "blocked"
         for o in live_engine.live_preview.requests["second"]["outcomes"].values()
     )
+
+
+async def test_live_preview_draft_condition_blocks_start_and_cancels_on_loss(
+    hass,
+    live_engine,
+    live_program,
+    live_calls,
+):
+    live_program["run_condition"] = {"entity_id": "sensor.alarm", "state": "armed_away"}
+    hass.states.async_set("sensor.alarm", "disarmed")
+    with pytest.raises(LivePreviewError, match="Run condition"):
+        await start(live_engine, live_program)
+    assert not live_calls
+    hass.states.async_set("sensor.alarm", "armed_away")
+    await start(live_engine, live_program)
+    await next_event(live_engine)
+    count = len(live_calls)
+    assert count == 3
+    hass.states.async_set("sensor.alarm", "disarmed")
+    await hass.async_block_till_done()
+    assert not live_engine.live_preview.running
+    with pytest.raises(LivePreviewError):
+        await next_event(live_engine, "later")
+    assert len(live_calls) == count
+
+
+async def test_live_preview_cannot_bypass_saved_condition_by_removing_it_from_draft(
+    hass,
+    live_engine,
+    live_program,
+    live_calls,
+):
+    configured = deepcopy(live_program)
+    configured["run_condition"] = {"entity_id": "sensor.alarm", "state": "armed_away"}
+    await live_engine.async_replace_program(validate_program(configured))
+    hass.states.async_set("sensor.alarm", "disarmed")
+    with pytest.raises(LivePreviewError, match="Run condition"):
+        await start(live_engine, live_program)
+    assert not live_calls
+
+
+async def test_live_preview_condition_loss_during_group_cancels_remaining_calls(
+    hass,
+    live_engine,
+    live_program,
+    live_calls,
+):
+    live_program["run_condition"] = {"entity_id": "sensor.alarm", "state": "armed_away"}
+    hass.states.async_set("sensor.alarm", "armed_away")
+    calls = []
+
+    async def handler(call):
+        calls.append(call)
+        hass.states.async_set("sensor.alarm", "disarmed")
+
+    hass.services.async_register("light", "turn_on", handler)
+    await start(live_engine, live_program)
+    await next_event(live_engine)
+    assert len(calls) == 1 and not live_calls
+    assert not live_engine.live_preview.running

@@ -10,6 +10,22 @@ Future actions are queued in UTC. Historical generic service calls are marked sk
 
 Completed occurrence identities remain stable when a time helper or timestamp/calendar source changes. Source updates reschedule future work without replaying completed steps for the same source date. Restart retains valid sampled plans, seed, journal, handover, ownership, and yielded state. Obsolete cache shapes are rejected and rebuilt without changing version numbers.
 
+## Run condition and delayed state enforcement
+
+Configure an optional **Run condition** in Settings or canonical YAML. For example, `alarm_control_panel.8124_aaa_zone_1_alarm` can allow `armed_away` and `armed_night`. Match any exact configured state; a missing, unknown, or unavailable entity blocks execution. Management permission must remain enabled and scheduling unpaused. A matching condition never overrides either control.
+
+With **Enforce expected state on start** off (the default), matching starts future scheduled execution and skips startup handover. With enforcement on, Occupied waits for **Delay before enforcing state** (default `30s`, configurable from `0s` to `1h`). Scheduled events cannot switch devices during that wait. At its end, Occupied applies the states expected at the actual reconciliation time, including any typed changes scheduled during the delay, and resumes future execution. Historical opaque actions are skipped.
+
+Reconciliation applies known light on/off and brightness/color, switch on/off, and cover position/tilt. This opt-in can move covers even when their target was scheduled earlier. A cover stop makes its affected target unknown; it is never replayed. Already matching, unavailable, disabled, unknown, and opaque targets are skipped with per-entity results. Scenes/scripts/services cannot supply inferred device states. No midnight baseline or unspecified brightness is invented. Commands begin after the delay; device latency and travel time still determine physical completion. The existing ten-minute light handover is not added to this activation.
+
+**When the condition ends, Occupied only stops: no entity commands are sent.** It cancels deadlines, queued actions, retries, and remaining calls without turn-off, restoration, native-transition hold/cancel, or cover-stop calls. Work already delivered to a device may continue. Unknown/unavailable condition states also cause this stop. Permission remains enabled for a later activation.
+
+Moving between allowed states keeps the session and deadline. A later false-to-true activation gets a fresh delay. Enabling permission or resuming while the condition already matches also begins a new qualification delay. Manual changes during the delay yield that entity for the activation. Reconciliation happens once; it does not continuously overwrite manual changes.
+
+A restart cannot establish continuous eligibility across downtime for an unfinished activation, so it starts a fresh delay. Durable completed/uncertain call journals prevent blind replay. Changes to the condition or its enforcement/delay settings restart qualification but preserve sampled times, counts, stagger order, and authored-event identity. Title/order-only edits preserve an active deadline. Status exposes the current condition, deadline/countdown, and per-entity reconciliation outcomes/counts.
+
+Dry run observes the same condition/delay and applies targets to virtual state only. Read-only Preview stays available regardless of eligibility. Real-device live preview requires the saved controller condition and any draft condition to match, including before every call; condition loss interrupts it without cleanup commands. Its explicit Next-event workflow does not automatically reconcile states or apply the ordinary scheduling startup delay.
+
 ## Known light state and handover
 
 Enabled step actions determine controlled entities. Only direct typed light control can establish a projected light intent. Each date begins Unknown until its first explicit action; activation leaves unknown light state alone. Add a visible midnight step if an initial state is wanted.
@@ -18,13 +34,13 @@ Handover reconciles known light intents toward their projected endpoint using th
 
 Generic service and scene effects are opaque. Occupied does not infer their device changes or inverse actions. Related steps can schedule later actions, but they do not promise lifecycle cleanup or exclusive resource ownership.
 
-Outside manual changes yield an entity until the next activation. Permission loss, pause, unload, and configuration failure invalidate queued work immediately. Stop leaves device states; still-owned native fades are held at their observed level without interfering with another actor's transition.
+Outside manual changes yield an entity until the next activation. Permission loss, pause, unload, configuration failure, and run-condition loss invalidate queued work immediately. Explicit stop leaves device states; still-owned native fades are held at their observed level without interfering with another actor's transition. Run-condition loss sends no such hold command and leaves device transitions alone.
 
 ## Cover targets and activation
 
 Standard native cover open/close/stop and position/tilt commands supply typed preview targets. Position and tilt remain independent: open/close target 100%/0%, and stop invalidates only the affected target. Each local calendar date starts Unknown. Preview does not model travel time or predict the physical position after a stop.
 
-The cover activation policy is **future only**. Past cover calls are marked skipped, including position/tilt targets, and enabling or resuming management never moves covers to a historical target. Covers do not enter the light fade/handover path or receive automatic retries. Future authored commands dispatch normally. Controller stop cancels future work but does not send `cover.stop_cover`, `cover.stop_cover_tilt`, or restoration calls.
+The default cover activation policy is **future only**. Explicit startup state enforcement is the opt-in exception described above. Past cover calls are marked skipped, including position/tilt targets, and ordinary enabling or resuming management never moves covers to a historical target. Covers do not enter the light fade/handover path or receive automatic retries. Future authored commands dispatch normally. Controller stop cancels future work but does not send `cover.stop_cover`, `cover.stop_cover_tilt`, or restoration calls.
 
 Outside state, `current_position`, or `current_tilt_position` changes yield the cover until the next activation, including attribute-only changes while its state remains `open`. Updates with Occupied's service context remain attributable to Occupied; unrelated telemetry attributes do not cause yielding.
 

@@ -125,3 +125,33 @@ def test_random_cover_start_and_end_project_through_native_services():
     assert not start.action.replay_safe and not end.action.replay_safe
     assert project_covers(program, plan, start.at) == {"cover.blind": CoverPosition(100)}
     assert project_covers(program, plan, end.at) == {"cover.blind": CoverPosition(0)}
+
+
+@pytest.mark.parametrize(
+    "service,expected",
+    [
+        ("open_cover", "open_cover"),
+        ("close_cover", "close_cover"),
+        ("open_cover_tilt", "open_cover_tilt"),
+        ("close_cover_tilt", "close_cover_tilt"),
+    ],
+)
+def test_startup_enforcement_uses_native_endpoint_commands(service, expected):
+    from custom_components.occupied.reconciliation import expected_actions
+
+    program = validate_program(
+        {
+            "schema_version": 1,
+            "name": "Endpoints",
+            "steps": {
+                "target": {
+                    "timing": {"absolute_time": {"start": "08:00"}},
+                    "action": f"cover.{service}",
+                    "entities": ["cover.blind"],
+                }
+            },
+        }
+    )
+    plan = generate_plan(program, date(2026, 10, 13), 0, context=PlanningContext("UTC"))
+    calls = expected_actions(program, plan, datetime(2026, 10, 13, 9, tzinfo=UTC))["cover.blind"]
+    assert [(call.action, call.data) for call in calls] == [(f"cover.{expected}", {})]

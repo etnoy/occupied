@@ -11,6 +11,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 
 from .actions import dispatch_service, observe
+from .activation import ActivationGate
 from .const import DOMAIN
 from .file_config import load_program
 from .instances import controlled_entities
@@ -41,6 +42,7 @@ class LivePreviewManager:
         )
         self.session = None
         self.program = self.plan = None
+        self.condition_gate = None
         self.groups = ()
         self.generation = 0
         self.requests = {}
@@ -100,6 +102,10 @@ class LivePreviewManager:
             return
         try:
             self.program = load_program(saved["program"])
+            self.condition_gate = ActivationGate.for_run_condition(
+                self.hass, self.program.run_condition
+            )
+            await self.condition_gate.async_prepare()
             self.plan = plan_from_data(saved["plan"])
             self.groups = occurrence_groups(self.plan)
         except (ValueError, KeyError, TypeError) as err:
@@ -164,6 +170,33 @@ class LivePreviewManager:
             return False
         return True
 
+    def condition_passes(self):
+        controller_passes = (
+            self.engine.run_condition_status()[0]
+            if hasattr(self.engine, "run_condition_status")
+            else True
+        )
+        return controller_passes and (
+            self.condition_gate is None or self.condition_gate.evaluate()[0]
+        )
+
+    def _check_condition(self, gate=None):
+        passed = (
+            self.condition_passes()
+            if gate is None
+            else (
+                gate.evaluate()[0]
+                and (
+                    self.engine.run_condition_status()[0]
+                    if hasattr(self.engine, "run_condition_status")
+                    else True
+                )
+            )
+        )
+        if not passed:
+            self.invalidate("Run condition does not match", interrupted=True)
+            raise LivePreviewError("run_condition", "Run condition does not match")
+
     def _available(self):
         if (
             self.engine.closed
@@ -215,6 +248,9 @@ class LivePreviewManager:
                 raise LivePreviewError("request_budget", "Live preview start journal is full")
             context = planning_context(self.hass)
             program = await self.hass.async_add_executor_job(load_program, source)
+            gate = ActivationGate.for_run_condition(self.hass, program.run_condition)
+            await gate.async_prepare()
+            self._check_condition(gate)
             preview = await self.hass.async_add_executor_job(
                 partial(preview_draft, source, date.fromisoformat(day), 1, seed, context)
             )
@@ -225,6 +261,7 @@ class LivePreviewManager:
                 raise LivePreviewError("empty_schedule", "Choose a nonempty, feasible preview day")
             async with self.engine._lock:
                 self._available()
+                self._check_condition(gate)
                 if generation != self.generation:
                     raise LivePreviewError(
                         "session_conflict", "Start cancelled by controller control"
@@ -235,6 +272,9 @@ class LivePreviewManager:
                     raise LivePreviewError("schedule_changed", "Schedule changed; refresh Preview")
                 self._check_overlap({e for event in plan.events for e in event.action.targets})
                 self.program, self.plan, self.groups = program, plan, occurrence_groups(plan)
+                self.condition_gate = gate
+                if hasattr(self.engine, "_listen_states"):
+                    self.engine._listen_states()
                 self.requests = {}
                 self.session = {
                     "id": secrets.token_hex(16),
@@ -321,6 +361,7 @@ class LivePreviewManager:
                     "call_outcomes": deepcopy(cached["outcomes"]),
                 }
             self._available()
+            self._check_condition()
             if self.session["state"] != "ready":
                 raise LivePreviewError("session_conflict", "Live preview is not ready to advance")
             group = self.groups[self.session["cursor"]]
@@ -337,6 +378,7 @@ class LivePreviewManager:
                     break
                 try:
                     self._available()
+                    self._check_condition()
                     self._check_overlap(self.targets)
                 except LivePreviewError as err:
                     self.invalidate(str(err), interrupted=True)
@@ -373,6 +415,7 @@ class LivePreviewManager:
                     break
                 try:
                     self._available()
+                    self._check_condition()
                     self._check_overlap(self.targets)
                 except LivePreviewError as err:
                     outcome.update(status="cancelled", detail=str(err))

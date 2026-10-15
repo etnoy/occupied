@@ -6,8 +6,6 @@ export function get(object, path) {
   for (const key of path) {
     value = value?.[key];
   }
-  // Dynamic JSON paths are the boundary of the advanced editor. Callers supply
-  // the expected field type; the backend validates edited values before saving.
   return value;
 }
 export function set(object, path, value) {

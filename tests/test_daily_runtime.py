@@ -727,3 +727,387 @@ async def test_staggered_off_dispatches_one_entity_per_tick(
     assert sum(c.service == "turn_off" for c in daily_devices) == 1
     await advance(hass, freezer, 60)
     assert sum(c.service == "turn_off" for c in daily_devices) == 2
+
+
+@pytest.fixture
+def condition_program(daily_entry, hass):
+    program = daily_entry.data["program"]
+    program["run_condition"] = {
+        "entity_id": "alarm_control_panel.8124_aaa_zone_1_alarm",
+        "state": ["armed_away", "armed_night"],
+        "enforce_state_on_start": True,
+    }
+    program["steps"]["on"]["timing"] = {"absolute_time": {"start": "17:00"}}
+    program["steps"]["off"]["timing"] = {"absolute_time": {"start": "23:00"}}
+    program["steps"]["switch"] = {
+        "timing": {"absolute_time": {"start": "17:00"}},
+        "action": "turn_on",
+        "entities": ["switch.proof"],
+    }
+    hass.states.async_set("switch.proof", "off")
+    hass.states.async_set("alarm_control_panel.8124_aaa_zone_1_alarm", "disarmed")
+    return program
+
+
+async def set_alarm(hass, state, context=None):
+    entity = "alarm_control_panel.8124_aaa_zone_1_alarm"
+    if state is None:
+        hass.states.async_remove(entity, context=context)
+    else:
+        hass.states.async_set(entity, state, context=context)
+    await hass.async_block_till_done()
+
+
+async def test_run_condition_delay_enforces_all_known_targets(
+    hass,
+    daily_entry,
+    daily_devices,
+    cover_devices,
+    condition_program,
+    freezer,
+):
+    engine = await load(hass, daily_entry, freezer, "2026-10-13T18:03:00+00:00")
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    assert not engine.active and not daily_devices and not cover_devices
+    assert "current state disarmed" in engine.reason
+    await set_alarm(hass, "armed_away")
+    deadline = engine.activation_deadline
+    assert engine.status == "waiting" and engine.active
+    await advance(hass, freezer, 29)
+    assert not daily_devices and not cover_devices
+    await set_alarm(hass, "armed_night")
+    assert engine.activation_deadline == deadline
+    await advance(hass, freezer, 1)
+    assert {(c.domain, c.service) for c in daily_devices} == {
+        ("light", "turn_on"),
+        ("switch", "turn_on"),
+    }
+    assert [c.service for c in cover_devices] == ["set_cover_position", "set_cover_tilt_position"]
+    assert engine.reconciliation["phase"] == "complete"
+    assert engine.activation_deadline is None and not engine._handover
+    assert engine.snapshot()["run_condition"]["matches"]
+    assert engine._observe("cover.blind")["attributes"]["current_position"] == 60
+
+
+@pytest.mark.parametrize("ended_state", ["disarmed", "unknown", "unavailable", None])
+async def test_run_condition_cancels_delay_and_stops_without_any_entity_commands(
+    hass,
+    daily_entry,
+    daily_devices,
+    condition_program,
+    freezer,
+    ended_state,
+):
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    await advance(hass, freezer, 20)
+    # Explicitly exercise the old cleanup path that would hold a native fade.
+    engine._native_fades.add("light.proof")
+    engine._owned["light.proof"] = engine._observe("light.proof")
+    await set_alarm(hass, ended_state)
+    await advance(hass, freezer, 60)
+    assert not engine.active and engine.enabled and not engine._queue
+    assert not daily_devices and not engine._owned and not engine._native_fades
+    assert engine.reconciliation["phase"] == "cancelled"
+    await set_alarm(hass, "armed_away")
+    await advance(hass, freezer, 29)
+    assert not daily_devices
+    await advance(hass, freezer, 1)
+    count = len(daily_devices)
+    assert count == 2
+    await set_alarm(hass, "disarmed")
+    await advance(hass, freezer, 3600)
+    assert len(daily_devices) == count
+
+
+async def test_run_condition_uses_deadline_projection_and_skips_opaque_events(
+    hass,
+    daily_entry,
+    daily_devices,
+    condition_program,
+    freezer,
+):
+    condition_program["steps"]["off"]["timing"] = {"absolute_time": {"start": "18:00:20"}}
+    condition_program["steps"]["script"]["timing"] = {"absolute_time": {"start": "18:00:10"}}
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    await advance(hass, freezer, 20)
+    assert not daily_devices
+    await advance(hass, freezer, 10)
+    assert [(c.domain, c.service) for c in daily_devices] == [("switch", "turn_on")]
+    assert engine.reconciliation["results"]["light.proof"]["status"] == "already_matching"
+    assert engine.reconciliation["results"]["script.test"]["status"] == "skipped"
+    assert any(
+        "script" in key and value["status"] == "historical_skipped"
+        for key, value in engine._journal.items()
+    )
+
+
+async def test_run_condition_disabled_enforcement_is_future_only(
+    hass,
+    daily_entry,
+    daily_devices,
+    condition_program,
+    freezer,
+):
+    condition_program["run_condition"]["enforce_state_on_start"] = False
+    condition_program["steps"]["off"]["timing"] = {"absolute_time": {"start": "18:01"}}
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    await advance(hass, freezer, 0)
+    assert engine.active and not engine._handover and engine.activation_deadline is None
+    assert not daily_devices
+    await advance(hass, freezer, 60)
+    assert [c.service for c in daily_devices] == ["turn_off"]
+
+
+async def test_run_condition_manual_changes_yield_during_delay(
+    hass,
+    daily_entry,
+    daily_devices,
+    condition_program,
+    freezer,
+):
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    hass.states.async_set("switch.proof", "on")
+    await hass.async_block_till_done()
+    hass.states.async_set("switch.proof", "off")
+    await hass.async_block_till_done()
+    await advance(hass, freezer, 30)
+    assert [c.domain for c in daily_devices] == ["light"]
+    assert (
+        engine.reconciliation["results"]["switch.proof"]["reason"]
+        == "Manual control yielded entity"
+    )
+
+
+async def test_run_condition_dry_run_reconciles_covers_and_switches(
+    hass,
+    daily_entry,
+    daily_devices,
+    cover_devices,
+    condition_program,
+    freezer,
+):
+    engine = await load(hass, daily_entry, freezer, "2026-10-13T18:03:00+00:00")
+    await engine.async_set_dry_run(True)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    await advance(hass, freezer, 30)
+    assert not daily_devices and not cover_devices
+    assert engine._observe("switch.proof")["state"] == "on"
+    assert engine._observe("cover.blind")["attributes"]["current_position"] == 60
+    assert engine._observe("cover.blind")["attributes"]["current_tilt_position"] == 25
+    assert hass.states.get("switch.proof").state == "off"
+    assert hass.states.get("cover.blind").attributes["current_position"] == 20
+
+
+async def test_run_condition_restart_waits_fresh_delay_without_resampling(
+    hass,
+    daily_entry,
+    daily_devices,
+    condition_program,
+    freezer,
+):
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    await advance(hass, freezer, 20)
+    plans = {day: plan.to_dict() for day, plan in engine._plans.items()}
+    assert await hass.config_entries.async_reload(daily_entry.entry_id)
+    await hass.async_block_till_done()
+    restarted = daily_entry.runtime_data
+    assert {day: plan.to_dict() for day, plan in restarted._plans.items()} == plans
+    await advance(hass, freezer, 10)
+    assert not daily_devices
+    await advance(hass, freezer, 20)
+    assert len(daily_devices) == 2
+
+
+async def test_run_condition_policy_edits_preserve_plans_and_metadata_preserves_deadline(
+    hass,
+    daily_entry,
+    daily_devices,
+    condition_program,
+    freezer,
+):
+    from custom_components.occupied.validation import program_data
+
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    plans = dict(engine._plans)
+    source = program_data(engine.program)
+    source["name"] = "Changed name"
+    deadline, session = engine.activation_deadline, engine.session
+    await engine.async_replace_program(validate_program(source))
+    assert (engine.activation_deadline, engine.session) == (deadline, session)
+    await advance(hass, freezer, 5)
+    source["run_condition"]["start_delay"] = "40s"
+    await engine.async_replace_program(validate_program(source))
+    assert engine.activation_deadline == dt_util.utcnow() + timedelta(seconds=40)
+    assert engine._plans == plans
+    await advance(hass, freezer, 39)
+    assert not daily_devices
+    await advance(hass, freezer, 1)
+    assert len(daily_devices) == 2
+
+
+async def test_run_condition_loss_during_dispatch_prevents_remaining_calls(
+    hass,
+    daily_entry,
+    daily_devices,
+    condition_program,
+    freezer,
+):
+    from homeassistant.core import Context
+
+    condition_program["run_condition"]["start_delay"] = "0s"
+    calls = []
+
+    async def handle(call):
+        calls.append(call)
+        # Own-context condition changes must still close the gate synchronously.
+        hass.states.async_set(
+            "alarm_control_panel.8124_aaa_zone_1_alarm",
+            "disarmed",
+            context=Context(parent_id=call.context.id),
+        )
+
+    hass.services.async_register("light", "turn_on", handle)
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    await advance(hass, freezer, 0)
+    assert len(calls) == 1 and not daily_devices
+    assert not engine.active and not engine._owned and not engine._queue
+
+
+async def test_run_condition_enforces_known_light_settings_without_legacy_fade(
+    hass,
+    daily_entry,
+    daily_devices,
+    condition_program,
+    freezer,
+):
+    condition_program["steps"]["on"].update(
+        action="light.turn_on",
+        data={"brightness": 32, "color_temp_kelvin": 3000},
+    )
+    attrs = dict(hass.states.get("light.proof").attributes)
+    attrs["supported_color_modes"] = ["color_temp"]
+    hass.states.async_set("light.proof", "off", attrs)
+    engine = await load(hass, daily_entry, freezer)
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    await advance(hass, freezer, 30)
+    call = next(c for c in daily_devices if c.domain == "light")
+    assert call.data["brightness_pct"] == pytest.approx(32 * 100 / 255)
+    assert call.data["color_temp_kelvin"] == 3000
+    assert "transition" not in call.data and not engine._handover
+    count, session = len(daily_devices), engine.session
+    await set_alarm(hass, "armed_night")
+    await advance(hass, freezer, 60)
+    assert len(daily_devices) == count and engine.session == session
+
+
+async def test_run_condition_stopped_cover_axis_and_opaque_switch_are_not_replayed(
+    hass,
+    daily_entry,
+    daily_devices,
+    cover_devices,
+    condition_program,
+    freezer,
+):
+    condition_program["steps"]["opaque_switch"] = {
+        "timing": {"absolute_time": {"start": "18:00"}},
+        "action": "switch.toggle",
+        "entities": ["switch.proof"],
+    }
+    engine = await load(hass, daily_entry, freezer, "2026-10-13T18:06:00+00:00")
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    await advance(hass, freezer, 30)
+    assert [c.service for c in cover_devices] == ["set_cover_tilt_position"]
+    assert [c.domain for c in daily_devices] == ["light"]
+    assert engine.reconciliation["results"]["switch.proof"]["status"] == "skipped"
+
+
+async def test_run_condition_delay_crossing_midnight_does_not_invent_baseline(
+    hass,
+    daily_entry,
+    daily_devices,
+    condition_program,
+    freezer,
+):
+    engine = await load(hass, daily_entry, freezer, "2026-10-13T23:59:45+00:00")
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    await advance(hass, freezer, 30)
+    assert not daily_devices and engine.active
+    assert all(value["status"] == "skipped" for value in engine.reconciliation["results"].values())
+
+
+async def test_run_condition_restart_after_shutdown_during_delay_still_qualifies(
+    hass,
+    daily_entry,
+    daily_devices,
+    condition_program,
+    freezer,
+):
+    from custom_components.occupied.engine_daily import DailyEngine
+
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    await advance(hass, freezer, 20)
+    await engine.async_close(cleanup=False)
+    restarted = DailyEngine(hass, daily_entry.entry_id, engine.program)
+    await restarted.async_prepare()
+    await restarted.async_start()
+    try:
+        assert restarted.activation_deadline == dt_util.utcnow() + timedelta(seconds=30)
+        await advance(hass, freezer, 10)
+        assert not daily_devices
+    finally:
+        await restarted.async_close()
+
+
+async def test_run_condition_cover_becoming_unavailable_does_not_block_other_entities(
+    hass,
+    daily_entry,
+    daily_devices,
+    cover_devices,
+    condition_program,
+    freezer,
+):
+    async def unavailable_after_position(call):
+        cover_devices.append(call)
+        hass.states.async_set("cover.blind", "unavailable", context=call.context)
+
+    hass.services.async_register("cover", "set_cover_position", unavailable_after_position)
+    engine = await load(hass, daily_entry, freezer, "2026-10-13T18:03:00+00:00")
+    register_stagger_switch(hass, daily_devices)
+    await engine.async_set_enabled(True)
+    await set_alarm(hass, "armed_away")
+    await advance(hass, freezer, 30)
+    assert [call.service for call in cover_devices] == ["set_cover_position"]
+    assert len(daily_devices) == 2 and engine.reconciliation["phase"] == "complete"
+    assert engine.reconciliation["results"]["cover.blind"]["calls"] == ["dispatched", "unavailable"]

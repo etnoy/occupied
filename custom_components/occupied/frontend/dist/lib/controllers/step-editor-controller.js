@@ -32,7 +32,6 @@ export function createStepEditorContext(panel) {
     panel.validatedVersion = -1;
     delete editor.errors[key];
     if (key === "days") {
-      // Weekday edits can resolve an error on the relative time source.
       const { anchor } = editorErrors(panel.draft, editor);
       if (anchor) {
         editor.errors.anchor = anchor;
@@ -50,7 +49,6 @@ export function createStepEditorContext(panel) {
         }
       }
     }
-    // Svelte updates the existing inputs and HA selectors; typing retains focus.
     panel.flush();
   };
   const submit = async () => {

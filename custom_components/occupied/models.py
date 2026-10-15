@@ -404,9 +404,31 @@ class RandomEvent(Schedule):
         return value
 
 
+class RunCondition(Model):
+    """Optional execution policy, independent of schedule sampling."""
+
+    entity_id: EntityId
+    state: list[Annotated[str, StringConstraints(min_length=1)]] = Field(min_length=1)
+    enforce_state_on_start: Annotated[bool, Field(strict=True)] = False
+    start_delay: Annotated[Duration, Field(le=3600)] = "30s"
+
+    @field_validator("state", mode="before", json_schema_input_type=str | list[str])
+    @classmethod
+    def state_list(cls, value):
+        return [value] if isinstance(value, str) else value
+
+    @field_validator("state")
+    @classmethod
+    def resolved_states(cls, value):
+        if any(not state.strip() or state in {"unknown", "unavailable"} for state in value):
+            raise ValueError("Choose nonempty resolved entity states")
+        return list(dict.fromkeys(value))
+
+
 class Program(Model):
     schema_version: Literal[1]
     name: str
+    run_condition: RunCondition | None = None
     steps: dict[Identifier, Step] = Field(default_factory=dict)
     random: dict[Identifier, RandomEvent] = Field(default_factory=dict)
 

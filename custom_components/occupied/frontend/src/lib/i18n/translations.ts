@@ -1,5 +1,35 @@
 // Keep UI wording here; call sites use stable, descriptive shorthand keys.
 export const en = {
+  run_condition_count_checked: "Checked",
+  run_condition_count_applied: "Applied",
+  run_condition_count_already_matching: "Already matching",
+  run_condition_count_failed: "Failed",
+  run_condition_count_skipped: "Skipped",
+  already_matching: "Already matching",
+  would_dispatch: "Would apply",
+  skipped: "Skipped",
+  complete: "Complete",
+  applying: "Applying",
+  run_condition: "Run condition",
+  run_condition_enable: "Run only when an entity matches",
+  run_condition_entity: "Condition entity",
+  run_condition_states: "Allowed states (match any)",
+  run_condition_hint:
+    "When the condition ends, Occupied stops without changing any entities. Management permission and pause still apply.",
+  run_condition_enforce: "Enforce expected state on start",
+  run_condition_enforce_hint:
+    "Set known light, switch, and cover targets after the delay. This can move covers. Unknown states and scene/service effects are skipped.",
+  run_condition_delay: "Delay before enforcing state",
+  run_condition_delay_hint:
+    "Default: 30s. Use 0s to 1h. Scheduled device changes wait for this delay, then use the state expected at that time.",
+  run_condition_yaml_hint:
+    "Save or discard YAML edits before changing the run condition.",
+  run_condition_entity_error: "Select a valid condition entity.",
+  run_condition_states_error:
+    "Choose at least one state; unknown and unavailable cannot activate management.",
+  run_condition_delay_error: "Use a duration from 0s to 1h, for example 30s.",
+  run_condition_countdown: "Enforcing expected states in {seconds} seconds.",
+  run_condition_results: "State enforcement results",
   staggered_action: "Staggered action",
   stagger_hint:
     "Factorio style: act on one entity at each evenly spaced tick, in a random order.",
@@ -23,7 +53,7 @@ export const en = {
   live_preview_paused_hint:
     "Scheduling stays paused until you choose Resume scheduling.",
   live_preview_controls_hint:
-    "Normal scheduling pauses until you choose Resume scheduling. Each press runs one event immediately, even with management disabled or dry run selected.",
+    "Normal scheduling pauses until you choose Resume scheduling. Each press runs one event immediately, even with management disabled or dry run selected. Configured run conditions must match.",
   live_preview_start_hint:
     "Starting prepares the session. Devices run only when you press Next event.",
   start_live_preview: "Start live preview",
@@ -465,6 +495,37 @@ export type TranslationKey = keyof typeof en;
 
 // Missing translations fall back to English.
 export const sv: Partial<Record<TranslationKey, string>> = {
+  run_condition_count_checked: "Kontrollerade",
+  run_condition_count_applied: "Tillämpade",
+  run_condition_count_already_matching: "Matchar redan",
+  run_condition_count_failed: "Misslyckade",
+  run_condition_count_skipped: "Överhoppade",
+  already_matching: "Matchar redan",
+  would_dispatch: "Skulle tillämpas",
+  skipped: "Överhoppad",
+  complete: "Klar",
+  applying: "Tillämpar",
+  run_condition: "Körvillkor",
+  run_condition_enable: "Kör endast när en entitet matchar",
+  run_condition_entity: "Entitet för villkor",
+  run_condition_states: "Tillåtna tillstånd (matcha något)",
+  run_condition_hint:
+    "När villkoret upphör stannar Occupied utan att ändra några entiteter. Hanteringstillstånd och paus gäller fortfarande.",
+  run_condition_enforce: "Tillämpa förväntat tillstånd vid start",
+  run_condition_enforce_hint:
+    "Ställ in kända mål för lampor, strömbrytare och jalusier efter fördröjningen. Detta kan flytta jalusier. Okända tillstånd och effekter av scener/tjänster hoppas över.",
+  run_condition_delay: "Fördröjning före tillämpning",
+  run_condition_delay_hint:
+    "Standard: 30s. Ange 0s till 1h. Schemalagda enhetsändringar väntar på fördröjningen och använder sedan det tillstånd som förväntas då.",
+  run_condition_yaml_hint:
+    "Spara eller kasta YAML-ändringar innan du ändrar körvillkoret.",
+  run_condition_entity_error: "Välj en giltig entitet för villkoret.",
+  run_condition_states_error:
+    "Välj minst ett tillstånd; unknown och unavailable kan inte aktivera hantering.",
+  run_condition_delay_error: "Ange en tid från 0s till 1h, till exempel 30s.",
+  run_condition_countdown:
+    "Tillämpar förväntade tillstånd om {seconds} sekunder.",
+  run_condition_results: "Resultat för tillämpade tillstånd",
   staggered_action: "Förskjuten åtgärd",
   stagger_hint:
     "Factorio-stil: styr en enhet i taget med jämna tidsintervall, i slumpmässig ordning.",

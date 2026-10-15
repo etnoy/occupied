@@ -53,6 +53,28 @@ class ActivationGate:
         for item in self.conditions:
             collect(item)
 
+    @classmethod
+    def for_run_condition(cls, hass, config):
+        return cls(
+            hass,
+            [{"condition": "state", "entity_id": config.entity_id, "state": config.state}]
+            if config
+            else [],
+        )
+
+    def run_status(self, config):
+        passed, reason = self.evaluate()
+        if config and not passed:
+            state = self.hass.states.get(config.entity_id)
+            current = state.state if state else "missing (unresolved)"
+            if current in {STATE_UNKNOWN, STATE_UNAVAILABLE}:
+                current += " (unresolved)"
+            reason = (
+                f"Waiting for {config.entity_id}: expected {' or '.join(config.state)}; "
+                f"current state {current}"
+            )
+        return passed, reason
+
     async def async_prepare(self) -> None:
         """Build the checks through HA's own condition implementation."""
         self._checks = [

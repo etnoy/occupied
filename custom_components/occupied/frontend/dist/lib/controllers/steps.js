@@ -80,7 +80,6 @@ export function stepTree(entries) {
       append(step, 0);
     }
   }
-  // Cycles have no root; list any remaining steps at the top level.
   for (const step of entries) {
     append(step, 0);
   }

@@ -373,6 +373,8 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
 
 def behavior_hash(program):
     data = program.model_dump(mode="json", exclude_none=True)
+    # Execution policy must not resample plans or change authored event identities.
+    data.pop("run_condition", None)
 
     def normalize_action(action):
         if not action["stagger"]["enabled"]:

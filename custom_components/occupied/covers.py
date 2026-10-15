@@ -65,7 +65,7 @@ def cover_target(action, previous=None):
 
 
 def project_covers(program, plan, instant, *, yielded=frozenset()):
-    """Preview only; covers always skip historical calls on late activation."""
+    """Project known axes for preview and explicit startup enforcement."""
     if instant.tzinfo is None:
         raise ProgramError([Issue("naive_projection", "Use a timezone-aware instant")])
     instant = instant.astimezone(UTC)
@@ -82,6 +82,8 @@ def project_covers(program, plan, instant, *, yielded=frozenset()):
     for event in plan.events:
         if event.at > instant:
             break
+        if event.superseded:
+            continue
         for entity in covers.intersection(event.action.targets):
             target = cover_target(event.action, states.get(entity))
             if target.to_dict():

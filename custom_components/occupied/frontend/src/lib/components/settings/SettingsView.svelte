@@ -3,6 +3,7 @@
 
   import { properties } from "../../actions/dom.js";
   import { download, isValueChangedEvent } from "../../utils/util.js";
+  import RunConditionSettings from "./RunConditionSettings.svelte";
 
   let { panel, revision }: { panel: OccupiedPanel; revision: number } =
     $props();
@@ -39,6 +40,7 @@
   });
 </script>
 
+<RunConditionSettings {panel} {revision} />
 <section class="yaml-panel" class:has-changes={yamlDirty}>
   <h2>
     {t("yaml")}
@@ -89,7 +91,8 @@
       disabled={panel.busy ||
         panel.stale ||
         panel.document.source === "file" ||
-        !panel.yaml}
+        !panel.yaml ||
+        panel.hasRunConditionChanges}
       onclick={() => panel.saveYaml()}
     >
       {t("save_changes")}

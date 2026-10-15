@@ -26,6 +26,24 @@ Each step requires `timing` and either a singular `action` with nonempty `entiti
 
 Weekdays are `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, and `sun`. A supplied list must not be empty. Entity IDs use HA's `domain.object_id` form. Entity members are deduplicated and sorted. Authored step order is preserved for presentation; changing it does not change sampling or dispatch order.
 
+## Optional run condition
+
+Available in the current `0.1.0` development build; earlier builds without this field reject it. Omit `run_condition` to retain ordinary activation and light handover.
+
+```yaml
+run_condition:
+  entity_id: alarm_control_panel.8124_aaa_zone_1_alarm
+  state: [armed_away, armed_night]
+  enforce_state_on_start: true
+  start_delay: 30s
+```
+
+`entity_id` accepts any entity domain. `state` is one nonempty string or a nonempty list, matching any of the exact HA state values; duplicate states are removed. Quote values such as `"on"` and `"off"` in YAML. Missing, `unknown`, and `unavailable` entities block execution; those last two values cannot be allowed states.
+
+`enforce_state_on_start` is a strict boolean, default `false`. With enforcement off, a matching condition starts future scheduled execution without historical reconciliation. With enforcement on, all new scheduled device writes wait for `start_delay`, then Occupied applies supported known targets at that time. The delay defaults to `30s`, allows `0s` through `1h`, and uses explicit duration units; bare numbers are rejected. A customized delay is retained but unused when enforcement is off.
+
+Permission and pause still apply. Allowed-state transitions do not restart an activation. Condition loss cancels further work without any device commands, including transition holds or cover stops. Editing the policy preserves sampled schedules and completed event identities. See [runtime behavior](runtime.md#run-condition-and-delayed-state-enforcement).
+
 ## Timing
 
 Choose exactly one `timing.absolute_time` or `timing.relative_to` branch. The GUI calls these **Absolute time** and **Relative to**.
@@ -125,9 +143,9 @@ Controlled entities are derived from enabled steps and both actions of enabled r
 
 On without brightness keeps known desired brightness or delegates brightness to HA/the device. It never inserts a default percentage. Handover uses one internal ten-minute default and HA capabilities for native transitions or bounded fallback calls. Outside manual changes yield that entity until the next activation. Stopping leaves states and holds still-owned native fades at the observed level.
 
-Permission, pause, and dry run are HA controls. HA automations can drive permission using their own conditions. These runtime controls and activation policy choices are not YAML step fields. Historical generic actions are never replayed; service calls are journaled durably before dispatch.
+Permission, pause, and dry run are HA controls. HA automations can drive permission using their own conditions. These runtime controls are not YAML step fields. The optional program-level `run_condition` controls eligibility and startup state enforcement. Historical generic actions are never replayed; service calls are journaled durably before dispatch.
 
-Standard cover commands provide independent position/tilt targets for preview. A stop clears its affected target because the actual stopped position is unknown. Cover activation is **future only**: past calls are skipped, even when preview has a known target. Covers never participate in light handover or catch-up movement. Outside changes to `current_position` or `current_tilt_position` yield the entity until the next activation. Controller stop leaves cover movement to the device and does not implicitly send a stop or restore call.
+Standard cover commands provide independent position/tilt targets for preview. A stop clears its affected target because the actual stopped position is unknown. Cover activation is **future only** by default; explicit `run_condition.enforce_state_on_start` also reconciles known cover axes. Without that option, past calls are skipped, even when preview has a known target. Covers never participate in light handover; historical movement requires the explicit startup-enforcement option. Outside changes to `current_position` or `current_tilt_position` yield the entity until the next activation. Controller stop leaves cover movement to the device and does not implicitly send a stop or restore call.
 
 ## Validation, export, and identity
 
@@ -135,7 +153,7 @@ Unknown/retired fields, duplicate YAML keys, unsafe tags, recursive aliases, and
 
 Export omits all-week selections, enabled true, zero offsets, equal ends, empty data, and internal defaults. Unicode and presentation order are preserved; opaque payload contents and list ordering remain untouched. Repeated export/import stabilizes after one normalization.
 
-The behavior hash includes effective step behavior and excludes titles and presentation order. Explicit equivalent defaults have the same hash. Source revision separately includes metadata and presentation order. Metadata-only saves retain sampled times and active handover deadlines. Random streams are keyed by source date and stable step ID, so unrelated steps do not shift existing choices.
+The behavior hash identifies sampled schedule behavior and excludes run-condition policy, titles, and presentation order. Run-condition policy changes update the source revision and activation lifecycle without changing sampled event identities. Explicit equivalent defaults have the same hash. Source revision separately includes metadata and presentation order. Metadata-only saves retain sampled times and active handover deadlines. Random streams are keyed by source date and stable step ID, so unrelated steps do not shift existing choices.
 
 `occupied-config rename-id FILE step OLD NEW` and `occupied/rename_id` atomically rename a key and its typed step references. Opaque data is not rewritten. Renaming an ID selects a new random stream; changing a title does not. See [editor](editor.md), [runtime](runtime.md), and [managed configuration](managed-configuration.md).
 

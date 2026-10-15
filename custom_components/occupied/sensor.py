@@ -6,6 +6,7 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from .entity import OccupiedEntity
 
@@ -63,6 +64,14 @@ class OccupiedStatusSensor(OccupiedEntity, SensorEntity):
                 {
                     "dry_run": self.engine.dry_run,
                     "handover_targets": len(self.engine._handover),
+                    **(
+                        {
+                            "run_condition": self.engine._run_condition_snapshot(dt_util.utcnow()),
+                            "reconciliation": self.engine._reconciliation_snapshot(),
+                        }
+                        if hasattr(self.engine, "run_condition_status")
+                        else {}
+                    ),
                 }
                 if hasattr(self.engine, "dry_run")
                 else {}

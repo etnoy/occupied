@@ -34,6 +34,16 @@ In Steps, choose **Control covers** under **Step type** for the same controls. E
 
 Covers execute only future scheduled calls. Enabling late skips past cover actions and leaves the current position alone. Controller stop cancels future work and does not send a cover stop or restore earlier positions; author a **Stop cover** or **Stop tilt** action when needed.
 
+## Run condition
+
+In **Settings**, enable **Run only when an entity matches**, select an entity, and choose one or more **Allowed states**. Alarm panels suggest states such as `armed_away` and `armed_night`; custom state values are supported for any domain. Matching any allowed state permits scheduling only when management permission is enabled and scheduling is unpaused.
+
+Optionally check **Enforce expected state on start**. **Delay before enforcing state** defaults to `30s` and accepts `0s` through `1h`. Scheduled device changes wait until the delay finishes, then Occupied applies supported known light, switch, and cover targets expected at that time. This can move covers. Unknown initial states and opaque scene/service effects are skipped. Without enforcement, only future scheduled actions run.
+
+Choose **Save changes**, or **Add to draft** for a managed source. Controls use revision checks and unsaved-change protection. Save/discard pending YAML before editing controls, and save/discard pending run-condition edits before saving YAML. Disabling the condition and saving removes it from the program, restoring ordinary activation behavior. The section shows runtime eligibility, a live deadline countdown, and per-entity enforcement results.
+
+When the condition ends, Occupied stops without changing entities or sending transition-hold/cover-stop commands. A later activation starts a fresh delay; switching between allowed states keeps the existing countdown. See [runtime details](runtime.md#run-condition-and-delayed-state-enforcement).
+
 ## YAML and managed files
 
 **Settings** shows the YAML editor directly. Load a YAML/JSON file or edit the code and choose **Save changes**. Saving validates YAML, schema, dependencies, and installed services before applying changes. Invalid code remains in the editor and leaves the saved program intact. **Download** saves the current text. Comments remain in the open editor but are not stored in the canonical program.
@@ -52,7 +62,7 @@ Loading Preview reads known HA time-source snapshots without invoking device ser
 
 ### Manual live preview
 
-Choose a date, inspect the schedule, then choose **Start live preview**. **Controls real devices** identifies explicit permission to run the draft's actions, including when ordinary management is disabled or dry run is selected. Unsaved drafts and managed-file drafts can be tested without changing the saved program or file. Start pauses this controller's normal scheduling and cleans up its owned transitions; it prepares the session without running its first event.
+Choose a date, inspect the schedule, then choose **Start live preview**. **Controls real devices** identifies explicit permission to run the draft's actions, including when ordinary management is disabled or dry run is selected. Saved controller and draft run conditions must still match; condition loss interrupts live preview without changing entities. The scheduling startup delay and state enforcement do not run in manual live preview. Unsaved drafts and managed-file drafts can be tested without changing the saved program or file. Start pauses this controller's normal scheduling and cleans up its owned transitions; it prepares the session without running its first event.
 
 Walk around with your phone and press **Next event** when ready. Each press runs one authored step or one random occurrence's start/end phase immediately, with no wait for its scheduled time. A step with several targets takes one press, executing its resolved calls in order. Unrelated events at the same time take separate presses. The session card shows the simulated time, progress, next action/targets, and last result. Event details show individual results; the device graph continues to show planned states. Native transitions, script delays, and device travel still follow the called service. A completed service handler does not prove that a cover finished moving.
 

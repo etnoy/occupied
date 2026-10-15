@@ -487,6 +487,49 @@
       "title": "RelativeTo",
       "type": "object"
     },
+    "RunCondition": {
+      "additionalProperties": false,
+      "description": "Optional execution policy, independent of schedule sampling.",
+      "properties": {
+        "entity_id": {
+          "pattern": "^[a-z_][a-z0-9_]*\\.[a-z0-9_]+$",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "state": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "title": "State"
+        },
+        "enforce_state_on_start": {
+          "default": false,
+          "title": "Enforce State On Start",
+          "type": "boolean"
+        },
+        "start_delay": {
+          "default": "30s",
+          "ge": 0,
+          "le": 3600,
+          "title": "Start Delay",
+          "type": "string"
+        }
+      },
+      "required": [
+        "entity_id",
+        "state"
+      ],
+      "title": "RunCondition",
+      "type": "object"
+    },
     "Stagger": {
       "additionalProperties": false,
       "properties": {
@@ -818,6 +861,17 @@
     "name": {
       "title": "Name",
       "type": "string"
+    },
+    "run_condition": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RunCondition"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "steps": {
       "patternProperties": {

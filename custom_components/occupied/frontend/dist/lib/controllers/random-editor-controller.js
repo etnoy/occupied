@@ -52,7 +52,6 @@ export function createRandomEditorContext(panel) {
     }
     panel.version++;
     panel.validatedVersion = -1;
-    // Keep submitted errors current while allowing untouched fields to stay quiet.
     const errors = randomErrors(panel.draft, editor);
     for (const field of Object.keys(editor.errors)) {
       if (errors[field]) {
@@ -178,6 +177,5 @@ export async function deleteRandom(panel) {
     panel.change([], candidate, true);
     return;
   }
-  // Keep the open editor until the guarded save succeeds, preserving edits on failure.
   await panel.save(candidate);
 }

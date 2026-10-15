@@ -4,9 +4,6 @@ export function shiftScheduleDate(value, days) {
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
 }
-/**
-Resolve local midnight in the plan's timezone, including DST offset changes.
-*/
 export function calendarMidnight(value, zone) {
   const target = Date.parse(`${value}T00:00:00Z`);
   const formatter = new Intl.DateTimeFormat("en-CA", {
@@ -80,9 +77,6 @@ function formatterLocale(locale) {
 function hourCycle(locale) {
   return usesAmPm(locale) ? "h12" : "h23";
 }
-/**
-Format a canonical local clock value without applying a timezone offset.
-*/
 export function formatClock(value, locale) {
   const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
   if (!match) {
@@ -100,9 +94,6 @@ export function formatClock(value, locale) {
     timeZone: "UTC",
   }).format(date);
 }
-/**
-Format an absolute timestamp with HA's time preference and the requested zone.
-*/
 export function formatTimestamp(value, zone, locale) {
   return new Intl.DateTimeFormat(formatterLocale(locale), {
     dateStyle: "short",

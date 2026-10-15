@@ -37,10 +37,12 @@ from .actions import (
 )
 from .activation import ActivationGate
 from .const import DOMAIN, SIGNAL_PREFIX
+from .covers import COVER_ACTIONS, cover_target
 from .handover import calls_for_target
 from .lighting import LightState, project_lighting
 from .models import Handover, controlled_entities, projectable_lights
 from .planner import DailyPlan, PlanEvent, ResolvedAction, preview_dates, supersede_ticks
+from .reconciliation import expected_actions
 from .runtime_planning import MAX_EVENTS, runtime_dates
 from .storage import DurableStore, instant, plan_from_data, program_store
 from .time_sources import planning_context, source_entities
@@ -91,7 +93,9 @@ class DailyEngine:
         self.hass, self.entry_id, self.program = hass, entry_id, program
         self.config = {"name": program.name}
         self.signal = f"{SIGNAL_PREFIX}_{entry_id}"
-        self.gate = ActivationGate(hass, [])
+        self.gate = ActivationGate.for_run_condition(hass, program.run_condition)
+        self.activation_deadline = None
+        self.reconciliation = {"phase": "idle", "results": {}}
         self.enabled = self.paused = self.dry_run = self.active = self.started = self.closed = False
         self.session = self.generation = 0
         self.status, self.reason = "disabled", "Permission is disabled"
@@ -167,7 +171,14 @@ class DailyEngine:
         saved = await self._store.async_load() or {}
         self._seed = saved.get("seed", self._seed)
         self.session = saved.get("session", 0)
-        self._restoring = saved.get("active", False) and saved.get("dry_run") == self.dry_run
+        self._restoring = (
+            saved.get("active", False)
+            and saved.get("dry_run") == self.dry_run
+            and saved.get("run_condition") == self._run_condition_data()
+            and saved.get("reconciliation", {}).get("phase")
+            not in {"waiting", "applying", "cancelled"}
+        )
+        self.reconciliation = saved.get("reconciliation", self.reconciliation)
         self._journal = saved.get("journal", {})
         self._saved_context = saved.get("context")
         self._contexts.extend(saved.get("contexts", []))
@@ -237,7 +248,11 @@ class DailyEngine:
         if self._state_unsub:
             self._state_unsub()
         self._time_source_entities = source_entities(self.program)
-        entities = controlled_entities(self.program) | self._time_source_entities
+        entities = (
+            controlled_entities(self.program) | self._time_source_entities | self.gate.entities
+        )
+        if self.live_preview.condition_gate:
+            entities |= self.live_preview.condition_gate.entities
         self._state_unsub = async_track_state_change_event(self.hass, entities, self._state_changed)
 
     async def _async_started(self, _):
@@ -268,7 +283,7 @@ class DailyEngine:
                 await self._persist()
                 self._notify()
                 return
-            if self.active:
+            if self.active and self.activation_deadline is None:
                 retained = [
                     event for event in self._queue if event.kind not in {"plan", "boundary"}
                 ]
@@ -303,11 +318,35 @@ class DailyEngine:
                 if not self.enabled
                 else "Management is paused"
             )
-        return self.gate.evaluate()
+        return self.run_condition_status()
+
+    def run_condition_status(self):
+        return self.gate.run_status(self.program.run_condition)
+
+    def _run_condition_data(self):
+        config = self.program.run_condition
+        return config.model_dump(mode="json") if config else None
+
+    @callback
+    def _forget_owned(self):
+        """Internal cancellation only: never hold a fade or stop a device."""
+        self._handover.clear()
+        self._owned.clear()
+        self._native_fades.clear()
 
     @callback
     def _state_changed(self, event):
         entity = event.data["entity_id"]
+        preview_gate = self.live_preview.condition_gate
+        if entity in self.gate.entities or (preview_gate and entity in preview_gate.entities):
+            if not self.run_condition_status()[0]:
+                self._invalidate()
+                self._forget_owned()
+            if not self.live_preview.condition_passes():
+                self.live_preview.invalidate("Run condition ended", interrupted=True)
+            self.hass.async_create_task(self._async_condition_changed())
+            if entity not in controlled_entities(self.program) | self._time_source_entities:
+                return
         if entity in self._time_source_entities:
             if self._saved_context != self._context_identity():
                 self.hass.async_create_task(self._async_time_sources_changed())
@@ -343,6 +382,11 @@ class DailyEngine:
         self._handover.pop(entity, None)
         self.hass.async_create_task(self._async_observation_changed(entity))
 
+    async def _async_condition_changed(self):
+        async with self._lock:
+            await self.live_preview.finish_stop_locked()
+            await self._reevaluate_locked()
+
     async def _async_observation_changed(self, entity):
         async with self._lock:
             await self._cancel_native_fades({entity})
@@ -352,6 +396,9 @@ class DailyEngine:
     @callback
     def _invalidate(self):
         self.active = False
+        self.activation_deadline = None
+        if self.reconciliation["phase"] in {"waiting", "applying"}:
+            self.reconciliation["phase"] = "cancelled"
         self.generation += 1
         self._queue.clear()
         if self._cancel_timer:
@@ -373,6 +420,11 @@ class DailyEngine:
             "active": self.active,
             "dry_run": self.dry_run,
             "behavior": behavior_hash(self.program),
+            "run_condition": self._run_condition_data(),
+            "activation_deadline": self.activation_deadline.isoformat()
+            if self.activation_deadline
+            else None,
+            "reconciliation": self.reconciliation,
             "context": self._context_identity(),
             "plans": [p.to_dict() for p in self._plans.values()],
             "journal": self._journal,
@@ -468,13 +520,22 @@ class DailyEngine:
                 self._yielded.clear()
             try:
                 await self._ensure_plans()
-                self._queue_plans()
-                await self._begin_handover(recover=self._restoring)
+                if not self.active or not self._effective_gate()[0]:
+                    await self._reevaluate_locked()
+                    return
+                config = self.program.run_condition
+                if config and config.enforce_state_on_start and not self._restoring:
+                    self.activation_deadline = dt_util.utcnow() + timedelta(
+                        seconds=config.start_delay
+                    )
+                    self.reconciliation = {"phase": "waiting", "results": {}}
+                    self._push(self.activation_deadline, "activation", f"activation:{self.session}")
+                else:
+                    self._queue_plans()
+                    if config is None:
+                        await self._begin_handover(recover=self._restoring)
                 self._restoring = False
-                self.status = "transitioning" if self._handover else "active"
-                self.reason = (
-                    "Converging projected lighting" if self._handover else "Managing entities"
-                )
+                self._update_active_status()
                 self._arm_timer()
             except (ProgramError, ValueError) as err:
                 self._invalidate()
@@ -483,6 +544,14 @@ class DailyEngine:
                 self._record("planning", "failed", self.reason)
         await self._persist()
         self._notify()
+
+    def _update_active_status(self):
+        if self.activation_deadline:
+            self.status = "waiting"
+            self.reason = "Run condition met; waiting to enforce expected states"
+        else:
+            self.status = "transitioning" if self._handover else "active"
+            self.reason = "Converging projected lighting" if self._handover else "Managing entities"
 
     async def _ensure_plans(self, *, force=False):
         context = self._context()
@@ -545,7 +614,7 @@ class DailyEngine:
     def _push(self, at, kind, key, payload=None, order=(20, 1, "", 0), attempt=0):
         heapq.heappush(self._queue, RuntimeEvent(at, order + (key,), key, kind, payload, attempt))
 
-    def _queue_plans(self):
+    def _queue_plans(self, *, skip_through=None):
         now = dt_util.utcnow()
         self._queue.clear()
         current = self._plan_at(now)
@@ -571,7 +640,7 @@ class DailyEngine:
                         "A newer authored intent cancelled this tick",
                     )
                     continue
-                if event.at < now:
+                if event.at < now or (skip_through is not None and event.at <= skip_through):
                     # Covers use future-only activation, including position/tilt
                     # targets. Light handover never reconciles past cover calls.
                     self._journal[key] = {
@@ -691,6 +760,91 @@ class DailyEngine:
             self.hass, due, max(dt_util.utcnow(), self._queue[0].at)
         )
 
+    def _expected_actions(self, at):
+        return expected_actions(
+            self.program, self._projection_plan(at), at, yielded=frozenset(self._yielded)
+        )
+
+    def _target_matches(self, entity, action):
+        if entity.startswith("light."):
+            state = action.action.removeprefix("light.turn_")
+            return light_matches(self._lighting_source(), entity, LightState(state, **action.data))
+        observed = self._observe(entity)
+        if entity.startswith("switch."):
+            return observed["state"] == action.action.removeprefix("switch.turn_")
+        axis, target = next(iter(cover_target(action).to_dict().items()))
+        return observed["attributes"].get(f"current_{axis}") == target
+
+    async def _enforce_expected_state(self, at, generation):
+        self.reconciliation["phase"] = "applying"
+        self.status, self.reason = "transitioning", "Enforcing expected states"
+        self._notify()
+        results = self.reconciliation["results"]
+        targets = self._expected_actions(at)
+        for entity in sorted(controlled_entities(self.program)):
+            if generation != self.generation or not self._effective_gate()[0]:
+                return
+            if entity in self._yielded:
+                results[entity] = {"status": "skipped", "reason": "Manual control yielded entity"}
+                continue
+            if entity not in targets:
+                results[entity] = {
+                    "status": "skipped",
+                    "reason": "Expected state is unknown or opaque",
+                }
+                continue
+            if self._observe(entity) is None:
+                results[entity] = {"status": "skipped", "reason": "Entity is unavailable"}
+                continue
+            outcomes = []
+            for index, original in enumerate(targets[entity]):
+                if self._observe(entity) is None:
+                    outcomes.append("unavailable")
+                    continue
+                # A preceding service handler can advance time past a newer intent.
+                actions = self._expected_actions(dt_util.utcnow()).get(entity, [])
+                action = next((a for a in actions if a.action == original.action), None)
+                if action is None:
+                    outcomes.append("superseded")
+                    continue
+                if self._target_matches(entity, action):
+                    outcomes.append("already_matching")
+                    continue
+                key = f"enforce:{'dry' if self.dry_run else 'live'}:{self.session}:{entity}:{index}"
+                await self._call(
+                    action,
+                    key,
+                    generation,
+                    allow_retry=False,
+                    still_current=lambda a=action, e=entity: (
+                        a in self._expected_actions(dt_util.utcnow()).get(e, [])
+                    ),
+                )
+                outcomes.append(self._journal.get(key, {}).get("status", "cancelled"))
+                if generation != self.generation or not self._effective_gate()[0]:
+                    return
+            status = next(
+                (
+                    value
+                    for value in (
+                        "failed",
+                        "uncertain",
+                        "cancelled_before_dispatch",
+                        "dispatched",
+                        "would_dispatch",
+                        "service_missing",
+                        "entity_disabled",
+                        "unavailable",
+                        "already_matching",
+                    )
+                    if value in outcomes
+                ),
+                "skipped",
+            )
+            results[entity] = {"status": status, "calls": outcomes}
+        self.reconciliation["phase"] = "complete"
+        self._record(f"enforce:{self.session}", "reconciled", f"Checked {len(results)} entities")
+
     async def _async_dispatch(self, generation):
         async with self._lock:
             for _ in range(DISPATCH_BATCH):
@@ -700,11 +854,30 @@ class DailyEngine:
                 if not self._queue or self._queue[0].at > dt_util.utcnow():
                     break
                 event = heapq.heappop(self._queue)
-                if event.kind == "boundary":
+                if event.kind == "activation":
+                    self.activation_deadline = None
+                    try:
+                        await self._ensure_plans()
+                        if generation != self.generation or not self._effective_gate()[0]:
+                            await self._reevaluate_locked()
+                            return
+                        at = dt_util.utcnow()
+                        self._queue_plans(skip_through=at)
+                        await self._enforce_expected_state(at, generation)
+                    except (ProgramError, ValueError) as err:
+                        self._invalidate()
+                        self.status, self.reason = (
+                            "inactive",
+                            f"Cannot enforce expected states: {err}",
+                        )
+                        self.last_error = str(err)
+                        self._record(event.key, "failed", self.reason)
+                elif event.kind == "boundary":
                     try:
                         await self._ensure_plans()
                         self._queue_plans()
-                        await self._begin_handover()
+                        if self.program.run_condition is None:
+                            await self._begin_handover()
                     except (ProgramError, ValueError) as err:
                         self._invalidate()
                         await self._stop_owned()
@@ -750,18 +923,28 @@ class DailyEngine:
                     await self._execute_plan(plan, planned, event.key, generation)
             await self._persist()
             if self.active:
-                self.status = "transitioning" if self._handover else "active"
-                self.reason = (
-                    "Converging projected lighting" if self._handover else "Managing entities"
-                )
+                self._update_active_status()
             self._arm_timer()
             self._notify()
 
-    async def _call(self, action, key, generation, *, retry=0, cleanup=False, allow_retry=True):
+    async def _call(
+        self,
+        action,
+        key,
+        generation,
+        *,
+        retry=0,
+        cleanup=False,
+        allow_retry=True,
+        still_current=None,
+    ):
         previous = self._journal.get(key, {}).get("status")
         if previous in {"dispatched", "would_dispatch"}:
             return True
         if previous in {"uncertain", "historical_skipped"}:
+            return False
+        # Even cleanup calls must never touch devices after the run condition ends.
+        if not self.run_condition_status()[0]:
             return False
         if not cleanup and (generation != self.generation or not self._effective_gate()[0]):
             return False
@@ -821,9 +1004,12 @@ class DailyEngine:
         if not await self._persist():
             return False
         # Storage yields to state listeners; check permission/ownership again at dispatch.
-        if (not cleanup and (generation != self.generation or not self._effective_gate()[0])) or (
-            set(action.targets) | set(action.resources)
-        ) & self._yielded:
+        if (
+            not self.run_condition_status()[0]
+            or (not cleanup and (generation != self.generation or not self._effective_gate()[0]))
+            or (set(action.targets) | set(action.resources)) & self._yielded
+            or (still_current is not None and not still_current())
+        ):
             self._finish(key, "cancelled_before_dispatch", action)
             await self._persist()
             return False
@@ -852,7 +1038,12 @@ class DailyEngine:
                 self._push(dt_util.utcnow() + timedelta(seconds=1), "retry", key, action, attempt=1)
             return False
         for entity in action.targets:
-            if entity.startswith(("light.", "switch.")) and entity not in self._yielded:
+            if (
+                entity.startswith(("light.", "switch."))
+                and entity not in self._yielded
+                and self.run_condition_status()[0]
+                and (cleanup or generation == self.generation)
+            ):
                 if value := self._observe(entity):
                     self._owned[entity] = value
         self._finish(key, "dispatched", action)
@@ -860,6 +1051,18 @@ class DailyEngine:
         return True
 
     def _simulate(self, action, data):
+        if action.action in COVER_ACTIONS:
+            for entity in action.targets:
+                before = self._observe(entity) or {"state": "open", "attributes": {}}
+                attrs = dict(before["attributes"])
+                for axis, value in cover_target(action).to_dict().items():
+                    attrs[f"current_{axis}"] = value
+                position = cover_target(action).position
+                state = (
+                    before["state"] if position is None else "closed" if position == 0 else "open"
+                )
+                self._virtual[entity] = {"state": state, "attributes": attrs}
+            return
         if not action.replay_safe:
             return
         for entity in action.targets:
@@ -1030,12 +1233,12 @@ class DailyEngine:
             )
 
     async def _stop_owned(self):
-        await self._cancel_native_fades()
-        self._handover.clear()
-        self._owned.clear()
+        if self.run_condition_status()[0]:
+            await self._cancel_native_fades()
+        self._forget_owned()
 
     async def async_replace_program(self, program, *, expected_revision=None, persist_program=True):
-        gate = ActivationGate(self.hass, [])
+        gate = ActivationGate.for_run_condition(self.hass, program.run_condition)
         await gate.async_prepare()
         today = simulation_date_at(program, dt_util.utcnow(), self._context())
         plans = await self.hass.async_add_executor_job(
@@ -1062,7 +1265,9 @@ class DailyEngine:
                 await program_store(self.hass, self.entry_id).async_save(program_data(program))
             was_ready = self.configuration_ready
             self.configuration_ready = True
-            if behavior_hash(program) == behavior_hash(self.program):
+            same_schedule = behavior_hash(program) == behavior_hash(self.program)
+            same_policy = program.run_condition == self.program.run_condition
+            if same_schedule and same_policy:
                 self.program = program
                 self.config["name"] = program.name
                 if not was_ready and self.started:
@@ -1076,10 +1281,11 @@ class DailyEngine:
                 await self._cancel_native_fades()
             self.program, self.gate = program, gate
             self.config["name"] = program.name
-            self._plans.clear()
+            if not same_schedule:
+                self._plans.clear()
             self._handover.clear()
             if self.started:
-                self._restoring = True
+                self._restoring = same_policy
                 self._listen_states()
                 await self._reevaluate_locked()
             else:
@@ -1154,6 +1360,8 @@ class DailyEngine:
             if self.handover_deadline
             else None,
             "handover": handover,
+            "run_condition": self._run_condition_snapshot(now),
+            "reconciliation": self._reconciliation_snapshot(),
             "yielded": sorted(self._yielded),
             "last_error": self.last_error,
             "source_revision": revision(self.program),
@@ -1164,6 +1372,40 @@ class DailyEngine:
                 {"time": e.at.isoformat(), "event": e.kind, "id": e.key}
                 for e in sorted(self._queue)
             ],
+        }
+
+    def _reconciliation_snapshot(self):
+        result = deepcopy(self.reconciliation)
+        statuses = [entry["status"] for entry in result["results"].values()]
+        applied = statuses.count("dispatched") + statuses.count("would_dispatch")
+        matching = statuses.count("already_matching")
+        failed = sum(
+            status in {"failed", "uncertain", "cancelled_before_dispatch"} for status in statuses
+        )
+        skipped = len(statuses) - applied - matching - failed
+        result["counts"] = {
+            "checked": len(statuses),
+            "applied": applied,
+            "already_matching": matching,
+            "failed": failed,
+            "skipped": skipped,
+        }
+        return result
+
+    def _run_condition_snapshot(self, now):
+        config = self.program.run_condition
+        if config is None:
+            return None
+        state = self.hass.states.get(config.entity_id)
+        return self._run_condition_data() | {
+            "current_state": state.state if state else None,
+            "matches": self.run_condition_status()[0],
+            "activation_deadline": self.activation_deadline.isoformat()
+            if self.activation_deadline
+            else None,
+            "remaining_seconds": max(0, (self.activation_deadline - now).total_seconds())
+            if self.activation_deadline
+            else None,
         }
 
     async def async_close(self, *, cleanup=True):

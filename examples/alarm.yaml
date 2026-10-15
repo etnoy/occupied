@@ -1,0 +1,18 @@
+schema_version: 1
+name: Alarm-controlled house
+run_condition:
+  entity_id: alarm_control_panel.8124_aaa_zone_1_alarm
+  state: [armed_away, armed_night]
+  enforce_state_on_start: true
+  start_delay: 30s
+steps:
+  evening:
+    timing:
+      absolute_time: {start: '18:00'}
+    action: turn_on
+    entities: [light.living_room, switch.table_lamp]
+  bedtime:
+    timing:
+      absolute_time: {start: '23:00'}
+    action: turn_off
+    entities: [light.living_room, switch.table_lamp]
