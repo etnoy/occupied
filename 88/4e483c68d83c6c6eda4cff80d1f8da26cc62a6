@@ -1,0 +1,55 @@
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_2ca8b359917d26::t_fbd2b15c93592f 332,834
+custom_components/occupied/frontend/dist/lib/utils/timeline.js
+  s_2ca8b359917d26::t_70b84908e19734 44,122-123
+custom_components/occupied/frontend/dist/lib/utils/util.js
+  s_2ca8b359917d26::t_ce0175268924c1 293-294
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_2ca8b359917d26::t_3f5af20f52d9ad 332,843,1436-1437,12881
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_cbacf01fb6bca4::t_a72494107e5a82 331,836
+custom_components/occupied/frontend/src/lib/types.ts
+  s_2ca8b359917d26::t_f8f8582c19e859 331
+custom_components/occupied/frontend/src/lib/utils/timeline.ts
+  s_2ca8b359917d26::t_2eec631dd16b3c 54,134-135
+custom_components/occupied/frontend/src/lib/utils/util.ts
+  s_2ca8b359917d26::t_5745cae99e68c2 352-353
+custom_components/occupied/planner.py
+  s_2ca8b359917d26::t_4bc25fe966546d 177-178,213-216,531-538,555-559
+custom_components/occupied/storage.py
+  s_2ca8b359917d26::t_2379158f2a4c3c 53-54,71,73-79,108
+docs/editor.md
+  s_2ca8b359917d26::t_c139a4fa14a01a 57
+docs/runtime.md
+  s_2ca8b359917d26::t_899397cdf2dd77 43
+tests/frontend/src/model.test.ts
+  s_cbacf01fb6bca4::t_7f795c1cc61abb 251,256,311-332
+tests/frontend/src/timeline.test.ts
+  s_2ca8b359917d26::t_8f185d59c329f9 136-137,140,142-144,146-148,150-178
+tests/test_planner.py
+  s_2ca8b359917d26::t_f0268da7bf11f1 213-250
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "884e483c68d83c6c6eda4cff80d1f8da26cc62a6",
+  "prompts": {},
+  "sessions": {
+    "s_2ca8b359917d26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f9f-d4a0-7091-869c-6f1bcf7c96b4",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_cbacf01fb6bca4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f9f-2b4a-7503-a899-3516e3bc99f7",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
