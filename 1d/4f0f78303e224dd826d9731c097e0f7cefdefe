@@ -1,0 +1,103 @@
+custom_components/occupied/frontend/src/lib/components/shared/TimingBoundaryEditor.svelte
+  s_6afecb647551a6::t_e1ea5049188223 1-81
+custom_components/occupied/frontend/src/lib/models/step-model.ts
+  s_6afecb647551a6::t_2bf9af4a8ce725 339-358,404-426
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_6afecb647551a6::t_bdfc96bcb32720 1042-1056
+custom_components/occupied/planner.py
+  s_6afecb647551a6::t_f6412d8fc88b89 14,26,179,218-221,332-334,466-516,594,611-623,632-636
+docs/editor.md
+  s_6afecb647551a6::t_28cdeb68581008 37-46,67
+docs/schema.md
+  s_6afecb647551a6::t_fae3e8a2d969b5 29-56
+examples/solar-limits.yaml
+  s_6afecb647551a6::t_2ca0c79ba7dd29 1-41
+schema/occupied.schema.json
+  s_6afecb647551a6::t_aecba9d75564f4 144-185,738,747-894,1015-1072
+tests/test_live_preview.py
+  s_6afecb647551a6::t_95ce6c08b7f942 100-114
+tests/test_timing_limits.py
+  s_6afecb647551a6::t_347f5d9af07207 1-370
+README.md
+  s_65bde9fbf8fac8::t_5a22a4cbe3d6c5 15-16
+custom_components/occupied/engine_daily.py
+  s_65bde9fbf8fac8::t_1ef6cc7244c148 168,553,583-584,587-599
+custom_components/occupied/frontend/dist/lib/actions/timeline-tooltip.js
+  s_65bde9fbf8fac8::t_186aa89f689679 1-37
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_65bde9fbf8fac8::t_1c84256f51cc66 34,291-301,539-540,806-816
+custom_components/occupied/frontend/dist/lib/models/step-model.js
+  s_65bde9fbf8fac8::t_1927322bc64434 291-310,354-374
+custom_components/occupied/frontend/dist/lib/utils/timeline.js
+  s_65bde9fbf8fac8::t_b7e6d99d1571aa 44-48,59-64,112-117
+custom_components/occupied/frontend/dist/lib/utils/util.js
+  s_65bde9fbf8fac8::t_5b46bdd1f81810 112-113,186-207,210-242
+custom_components/occupied/frontend/src/lib/actions/timeline-tooltip.ts
+  s_2ca8b359917d26::t_5e03cea908fccb 1-49
+custom_components/occupied/frontend/src/lib/components/preview/PreviewStateGraph.svelte
+  s_2ca8b359917d26::t_9b7131029fc07e 4,94
+custom_components/occupied/frontend/src/lib/components/preview/Timeline.svelte
+  s_2ca8b359917d26::t_4af5baeb291d33 215-216
+custom_components/occupied/frontend/src/lib/components/shared/TimingEditor.svelte
+  s_65bde9fbf8fac8::t_38bd14cb0530e5 7,264-301
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_2ca8b359917d26::t_eacfb3214fb1a6 33,290-300,541-542,808-818
+custom_components/occupied/frontend/src/lib/types.ts
+  s_2ca8b359917d26::t_d23f63711e7944 13-17,19-20,90-91,102-108,241,349
+custom_components/occupied/frontend/src/lib/utils/timeline.ts
+  s_65bde9fbf8fac8::t_0548835bf4d0e8 36-41,59-63,74-79,127-132
+custom_components/occupied/frontend/src/lib/utils/util.ts
+  s_65bde9fbf8fac8::t_a6f4f2455b886b 3,149-150,222,232-254,262-298
+custom_components/occupied/models.py
+  s_65bde9fbf8fac8::t_b2fe4005f35191 265-323,412
+custom_components/occupied/runtime_planning.py
+  s_65bde9fbf8fac8::t_57274b6b29e906 23-29
+custom_components/occupied/storage.py
+  s_2ca8b359917d26::t_c9361102487c99 105,110
+custom_components/occupied/time_utils.py
+  s_65bde9fbf8fac8::t_6582d59fe0e66b 10,106
+custom_components/occupied/validation.py
+  s_65bde9fbf8fac8::t_7ed0069e9eba35 25,28-31,54-59
+tests/frontend/src/timeline-tooltip.test.ts
+  s_2ca8b359917d26::t_3c07e6b9979956 1-39
+tests/frontend/src/timeline.test.ts
+  s_65bde9fbf8fac8::t_4871c5683ed3ad 239-269
+tests/frontend/src/timing-limits.test.ts
+  s_65bde9fbf8fac8::t_445de65fbaaacc 1-88
+tests/test_daily_runtime.py
+  s_65bde9fbf8fac8::t_78f5646b2f7902 642-740
+tests/test_planner.py
+  s_65bde9fbf8fac8::t_56f29fd1f89442 245-246,252-254
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "1d4f0f78303e224dd826d9731c097e0f7cefdefe",
+  "prompts": {},
+  "sessions": {
+    "s_2ca8b359917d26": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f9f-d4a0-7091-869c-6f1bcf7c96b4",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_65bde9fbf8fac8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13fa8-2663-7112-a1e4-82d1fec8cdb0",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_6afecb647551a6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec08c5196ffeunFGW5kxxhS63w",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
