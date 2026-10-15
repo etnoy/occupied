@@ -90,10 +90,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             return result if call.return_response else None
         if call.service in {"start", "stop"}:
             await engine.async_set_enabled(call.service == "start")
-        elif call.service == "set_dry_run":
-            if not hasattr(engine, "async_set_dry_run"):
-                raise HomeAssistantError("Apply a daily program before selecting dry run")
-            await engine.async_set_dry_run(call.data["dry_run"])
         else:
             await engine.async_set_paused(call.service == "pause")
 
@@ -102,12 +98,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         hass.services.async_register(DOMAIN, service, control, schema=schema)
     hass.services.async_register(
         DOMAIN, "reload", control, schema=schema, supports_response=SupportsResponse.OPTIONAL
-    )
-    hass.services.async_register(
-        DOMAIN,
-        "set_dry_run",
-        control,
-        schema=vol.Schema({vol.Required("config_entry_id"): str, vol.Required("dry_run"): bool}),
     )
     async_register_websocket(hass)
     from homeassistant.helpers import issue_registry as ir
@@ -129,12 +119,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> 
     """Initialize entities, a bundled panel, then HA state listeners and timers."""
     import voluptuous as vol
     from homeassistant.exceptions import ConfigEntryError
+    from homeassistant.helpers import entity_registry as er
 
     from .config_flow import validate_input
     from .const import DOMAIN, PLATFORMS
     from .engine import OccupiedEngine
     from .panel import async_register_panel, async_remove_panel
     from .storage import program_store
+
+    # Remove the retired control from existing entity registries.
+    registry = er.async_get(hass)
+    if entity_id := registry.async_get_entity_id("switch", DOMAIN, f"{entry.entry_id}_dry_run"):
+        registry.async_remove(entity_id)
 
     managed = entry.data.get("source") == "file"
     from .bootstrap import check_bootstrap

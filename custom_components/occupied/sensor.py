@@ -62,7 +62,6 @@ class OccupiedStatusSensor(OccupiedEntity, SensorEntity):
             ),
             **(
                 {
-                    "dry_run": self.engine.dry_run,
                     "handover_targets": len(self.engine._handover),
                     **(
                         {
@@ -73,7 +72,7 @@ class OccupiedStatusSensor(OccupiedEntity, SensorEntity):
                         else {}
                     ),
                 }
-                if hasattr(self.engine, "dry_run")
+                if hasattr(self.engine, "_handover")
                 else {}
             ),
         }

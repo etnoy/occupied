@@ -38,20 +38,6 @@ resume:
       selector:
         config_entry:
           integration: occupied
-set_dry_run:
-  name: Set dry run
-  description: Select simulated execution for a daily program. Changing mode stops the previous session using its configured cleanup.
-  fields:
-    config_entry_id:
-      name: Controller
-      required: true
-      selector:
-        config_entry:
-          integration: occupied
-    dry_run:
-      required: true
-      selector:
-        boolean:
 reload:
   name: Reload managed file
   description: Validate and atomically reload the selected managed file. Invalid updates retain the last valid program.

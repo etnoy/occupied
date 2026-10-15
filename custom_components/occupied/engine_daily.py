@@ -10,14 +10,13 @@ from copy import deepcopy
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 from functools import partial
-from types import SimpleNamespace
 
 from homeassistant.const import (
     EVENT_CORE_CONFIG_UPDATE,
     EVENT_HOMEASSISTANT_STARTED,
     EVENT_HOMEASSISTANT_STOP,
 )
-from homeassistant.core import Context, State, callback
+from homeassistant.core import Context, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -37,7 +36,7 @@ from .actions import (
 )
 from .activation import ActivationGate
 from .const import DOMAIN, SIGNAL_PREFIX
-from .covers import COVER_ACTIONS, cover_target
+from .covers import cover_target
 from .handover import calls_for_target
 from .lighting import LightState, project_lighting
 from .models import Handover, controlled_entities, projectable_lights
@@ -72,20 +71,6 @@ class RuntimeEvent:
     attempt: int = field(default=0, compare=False)
 
 
-class VirtualStates:
-    def __init__(self, engine):
-        self.engine = engine
-
-    def get(self, entity):
-        real = self.engine.hass.states.get(entity)
-        if entity not in self.engine._virtual:
-            return real
-        value = self.engine._virtual[entity]
-        return State(
-            entity, value["state"], (dict(real.attributes) if real else {}) | value["attributes"]
-        )
-
-
 class DailyEngine:
     """Serialize bounded writes; invalidate new work immediately when the gate closes."""
 
@@ -96,7 +81,7 @@ class DailyEngine:
         self.gate = ActivationGate.for_run_condition(hass, program.run_condition)
         self.activation_deadline = None
         self.reconciliation = {"phase": "idle", "results": {}}
-        self.enabled = self.paused = self.dry_run = self.active = self.started = self.closed = False
+        self.enabled = self.paused = self.active = self.started = self.closed = False
         self.session = self.generation = 0
         self.status, self.reason = "disabled", "Permission is disabled"
         self.last_error = None
@@ -122,7 +107,6 @@ class DailyEngine:
         self._owned = {}
         self._handover = {}
         self._native_fades = set()
-        self._virtual = {}
         self._restoring = False
         self._saved_context = None
         self._storage_failed = False
@@ -154,35 +138,40 @@ class DailyEngine:
         ]
 
     def _observe(self, entity):
-        if self.dry_run and entity in self._virtual:
-            return self._virtual[entity]
         return observe(self.hass, entity)
-
-    def _lighting_source(self):
-        return SimpleNamespace(states=VirtualStates(self)) if self.dry_run else self.hass
 
     async def async_prepare(self):
         await self.gate.async_prepare()
         permission = await self._permission.async_load() or {}
         self.enabled = permission.get("enabled", False)
         self.paused = permission.get("paused", False)
-        self.dry_run = permission.get("dry_run", False)
+        if "dry_run" in permission:
+            # Removing simulation must never turn an enabled rehearsal into a live run.
+            if permission["dry_run"]:
+                self.enabled = False
+            await self._save_permission()
         await self.live_preview.async_prepare()
         saved = await self._store.async_load() or {}
         self._seed = saved.get("seed", self._seed)
         self.session = saved.get("session", 0)
         self._restoring = (
             saved.get("active", False)
-            and saved.get("dry_run") == self.dry_run
+            and not saved.get("dry_run", False)
             and saved.get("run_condition") == self._run_condition_data()
             and saved.get("reconciliation", {}).get("phase")
             not in {"waiting", "applying", "cancelled"}
         )
-        self.reconciliation = saved.get("reconciliation", self.reconciliation)
-        self._journal = saved.get("journal", {})
+        if not saved.get("dry_run", False):
+            self.reconciliation = saved.get("reconciliation", self.reconciliation)
+        self._journal = {
+            key: value
+            for key, value in saved.get("journal", {}).items()
+            if not key.startswith(("dry:", "enforce:dry:"))
+            and value.get("status") != "would_dispatch"
+        }
         self._saved_context = saved.get("context")
         self._contexts.extend(saved.get("contexts", []))
-        if saved.get("dry_run") == self.dry_run:
+        if not saved.get("dry_run", False):
             self._yielded = set(saved.get("yielded", []))
             self._owned = {
                 key: value
@@ -191,7 +180,6 @@ class DailyEngine:
             }
             self._handover = saved.get("handover", {})
             self._native_fades = set(saved.get("native_fades", []))
-            self._virtual = saved.get("virtual", {})
         if (
             saved.get("behavior") == behavior_hash(self.program)
             and self._saved_context == self._context_identity()
@@ -375,7 +363,7 @@ class DailyEngine:
             and all(old.attributes.get(key) == new.attributes.get(key) for key in watched)
         ):
             return
-        if not self.active or self.dry_run:
+        if not self.active:
             return
         self._yielded.add(entity)
         self._owned.pop(entity, None)
@@ -418,7 +406,6 @@ class DailyEngine:
             "seed": self._seed,
             "session": self.session,
             "active": self.active,
-            "dry_run": self.dry_run,
             "behavior": behavior_hash(self.program),
             "run_condition": self._run_condition_data(),
             "activation_deadline": self.activation_deadline.isoformat()
@@ -433,7 +420,6 @@ class DailyEngine:
             "handover": self._handover,
             "native_fades": sorted(self._native_fades),
             "contexts": list(self._contexts),
-            "virtual": self._virtual,
         }
         try:
             if len(self._journal) > MAX_JOURNAL:
@@ -450,9 +436,7 @@ class DailyEngine:
         return True
 
     async def _save_permission(self):
-        await self._permission.async_save(
-            {"enabled": self.enabled, "paused": self.paused, "dry_run": self.dry_run}
-        )
+        await self._permission.async_save({"enabled": self.enabled, "paused": self.paused})
 
     async def async_set_enabled(self, enabled):
         if not enabled:
@@ -475,21 +459,6 @@ class DailyEngine:
             self._invalidate()
         async with self._lock:
             await self.live_preview.finish_stop_locked()
-            await self._save_permission()
-            await self._reevaluate_locked()
-
-    async def async_set_dry_run(self, dry_run):
-        if self.dry_run == dry_run:
-            return
-        self._invalidate()
-        async with self._lock:
-            await self._stop_owned()
-            self._handover.clear()
-            self._owned.clear()
-            self._yielded.clear()
-            self._virtual.clear()
-            self.dry_run = dry_run
-            self._restoring = False
             await self._save_permission()
             await self._reevaluate_locked()
 
@@ -609,7 +578,7 @@ class DailyEngine:
             self._plans[day] = plans[0]
 
     def _key(self, plan, event):
-        return f"{'dry' if self.dry_run else 'live'}:{plan.behavior_hash}:{event.id}"
+        return f"live:{plan.behavior_hash}:{event.id}"
 
     def _push(self, at, kind, key, payload=None, order=(20, 1, "", 0), attempt=0):
         heapq.heappush(self._queue, RuntimeEvent(at, order + (key,), key, kind, payload, attempt))
@@ -661,7 +630,7 @@ class DailyEngine:
         old = self._handover if recover else {}
         self._handover = {}
         observed = {
-            entity: light_observation(self._lighting_source(), entity)
+            entity: light_observation(self.hass, entity)
             for entity in projectable_lights(self.program)
         }
         managed = project_lighting(
@@ -690,7 +659,7 @@ class DailyEngine:
             if current is None or target is None:
                 self._record(entity, "handover_skipped", "Managed target is unavailable")
                 continue
-            if light_matches(self._lighting_source(), entity, target):
+            if light_matches(self.hass, entity, target):
                 if previous and entity in self._native_fades and deadline > now:
                     self._handover[entity] = previous
                     self._push(
@@ -768,7 +737,7 @@ class DailyEngine:
     def _target_matches(self, entity, action):
         if entity.startswith("light."):
             state = action.action.removeprefix("light.turn_")
-            return light_matches(self._lighting_source(), entity, LightState(state, **action.data))
+            return light_matches(self.hass, entity, LightState(state, **action.data))
         observed = self._observe(entity)
         if entity.startswith("switch."):
             return observed["state"] == action.action.removeprefix("switch.turn_")
@@ -810,7 +779,7 @@ class DailyEngine:
                 if self._target_matches(entity, action):
                     outcomes.append("already_matching")
                     continue
-                key = f"enforce:{'dry' if self.dry_run else 'live'}:{self.session}:{entity}:{index}"
+                key = f"enforce:live:{self.session}:{entity}:{index}"
                 await self._call(
                     action,
                     key,
@@ -831,7 +800,6 @@ class DailyEngine:
                         "uncertain",
                         "cancelled_before_dispatch",
                         "dispatched",
-                        "would_dispatch",
                         "service_missing",
                         "entity_disabled",
                         "unavailable",
@@ -888,7 +856,7 @@ class DailyEngine:
                     if data := self._handover.get(event.payload):
                         target = LightState(**data["target"])
                         if event.payload not in self._yielded and not light_matches(
-                            self._lighting_source(), event.payload, target
+                            self.hass, event.payload, target
                         ):
                             payload = target.to_dict()
                             payload.pop("state")
@@ -939,7 +907,7 @@ class DailyEngine:
         still_current=None,
     ):
         previous = self._journal.get(key, {}).get("status")
-        if previous in {"dispatched", "would_dispatch"}:
+        if previous == "dispatched":
             return True
         if previous in {"uncertain", "historical_skipped"}:
             return False
@@ -1013,14 +981,6 @@ class DailyEngine:
             self._finish(key, "cancelled_before_dispatch", action)
             await self._persist()
             return False
-        if self.dry_run:
-            self._simulate(action, data)
-            for entity in action.targets:
-                if entity.startswith(("light.", "switch.")):
-                    self._owned[entity] = self._observe(entity)
-            self._finish(key, "would_dispatch", action)
-            await self._persist()
-            return True
         try:
             await dispatch_service(self.hass, action, context, data=data)
         except Exception as err:
@@ -1049,40 +1009,6 @@ class DailyEngine:
         self._finish(key, "dispatched", action)
         await self._persist()
         return True
-
-    def _simulate(self, action, data):
-        if action.action in COVER_ACTIONS:
-            for entity in action.targets:
-                before = self._observe(entity) or {"state": "open", "attributes": {}}
-                attrs = dict(before["attributes"])
-                for axis, value in cover_target(action).to_dict().items():
-                    attrs[f"current_{axis}"] = value
-                position = cover_target(action).position
-                state = (
-                    before["state"] if position is None else "closed" if position == 0 else "open"
-                )
-                self._virtual[entity] = {"state": state, "attributes": attrs}
-            return
-        if not action.replay_safe:
-            return
-        for entity in action.targets:
-            before = self._observe(entity) or {"state": "off", "attributes": {}}
-            attrs = dict(before["attributes"])
-            if action.action.endswith(".turn_on"):
-                attrs.update(
-                    {
-                        key: data[key]
-                        for key in ("brightness", "color_temp_kelvin", "hs_color", "rgb_color")
-                        if key in data
-                    }
-                )
-                if "brightness_pct" in data:
-                    attrs["brightness"] = round(data["brightness_pct"] * 255 / 100)
-                if "activity" in data:
-                    attrs["current_activity"] = data["activity"]
-                self._virtual[entity] = {"state": "on", "attributes": attrs}
-            elif action.action.endswith(".turn_off"):
-                self._virtual[entity] = {"state": "off", "attributes": attrs}
 
     def _finish(self, key, outcome, action=None, detail=""):
         entry = self._journal.setdefault(key, {"date": dt_util.utcnow().date().isoformat()})
@@ -1218,7 +1144,7 @@ class DailyEngine:
             if entity in self._yielded or entity not in self._owned:
                 continue
             current = light_observation(self.hass, entity)
-            if current is None or self.dry_run:
+            if current is None:
                 continue
             data = {"transition": 0}
             if current.state == "on" and current.brightness_pct is not None:
@@ -1350,7 +1276,6 @@ class DailyEngine:
             "enabled": self.enabled,
             "paused": self.paused,
             "live_preview": self.live_preview.snapshot(),
-            "dry_run": self.dry_run,
             "active": self.active,
             "status": self.status,
             "reason": self.reason,
@@ -1377,7 +1302,7 @@ class DailyEngine:
     def _reconciliation_snapshot(self):
         result = deepcopy(self.reconciliation)
         statuses = [entry["status"] for entry in result["results"].values()]
-        applied = statuses.count("dispatched") + statuses.count("would_dispatch")
+        applied = statuses.count("dispatched")
         matching = statuses.count("already_matching")
         failed = sum(
             status in {"failed", "uncertain", "cancelled_before_dispatch"} for status in statuses

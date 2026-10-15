@@ -89,10 +89,7 @@
   "entity": {
     "switch": {
       "enabled": {
-        "name": "Management"
-      },
-      "dry_run": {
-        "name": "Dry run"
+        "name": "Enable"
       }
     },
     "sensor": {

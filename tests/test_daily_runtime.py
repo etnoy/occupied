@@ -271,18 +271,6 @@ async def test_manual_control_yields_until_new_activation(
     assert not engine._yielded
 
 
-async def test_dry_run_uses_virtual_states_and_leaves_devices_alone(
-    hass, daily_entry, daily_devices, freezer
-):
-    engine = await load(hass, daily_entry, freezer)
-    await engine.async_set_dry_run(True)
-    await engine.async_set_enabled(True)
-    await advance(hass, freezer, 60)
-    assert not daily_devices and hass.states.get("light.proof").state == "off"
-    assert engine._virtual["light.proof"]["state"] == "on"
-    assert any(v["status"] == "would_dispatch" for v in engine._journal.values())
-
-
 async def test_metadata_apply_preserves_generation_and_plans(
     hass, daily_entry, daily_devices, freezer, runtime_program
 ):
@@ -297,6 +285,77 @@ async def test_metadata_apply_preserves_generation_and_plans(
     await engine.async_replace_program(validate_program(runtime_program))
     assert engine._plans == plans and engine.generation == generation and engine.session == session
     assert not daily_devices
+
+
+@pytest.mark.parametrize("legacy_dry_run", [False, True])
+async def test_retired_execution_mode_migrates_without_starting_simulated_controllers(
+    hass, daily_entry, daily_devices, freezer, hass_storage, legacy_dry_run
+):
+    from homeassistant.helpers import entity_registry as er
+
+    registry = er.async_get(hass)
+    retired = registry.async_get_or_create(
+        "switch",
+        "occupied",
+        f"{daily_entry.entry_id}_dry_run",
+        config_entry=daily_entry,
+    )
+    permission_key = f"occupied.{daily_entry.entry_id}.permission"
+    runtime_key = f"occupied.{daily_entry.entry_id}.runtime"
+    hass_storage[permission_key] = {
+        "version": 1,
+        "data": {"enabled": True, "paused": False, "dry_run": legacy_dry_run},
+    }
+    hass_storage[runtime_key] = {
+        "version": 1,
+        "data": {
+            "seed": "existing-seed",
+            "dry_run": legacy_dry_run,
+            "active": True,
+            "virtual": {"light.proof": {"state": "on", "attributes": {}}},
+            "owned": {"light.proof": {"state": "on", "attributes": {}}} if legacy_dry_run else {},
+            "journal": {
+                "dry:old": {"status": "historical_skipped"},
+                "enforce:dry:old": {"status": "would_dispatch"},
+                "handover:old": {"status": "would_dispatch"},
+                "live:completed": {"status": "dispatched"},
+            },
+        },
+    }
+
+    engine = await load(hass, daily_entry, freezer)
+    assert engine.enabled is not legacy_dry_run
+    assert not daily_devices and not engine._owned and not engine._yielded
+    assert engine._seed == "existing-seed"
+    assert not registry.async_get(retired.entity_id)
+    switches = [
+        entity
+        for entity in er.async_entries_for_config_entry(registry, daily_entry.entry_id)
+        if entity.domain == "switch"
+    ]
+    assert [entity.unique_id for entity in switches] == [f"{daily_entry.entry_id}_enabled"]
+    assert not hass.services.has_service("occupied", "set_dry_run")
+    assert "dry_run" not in engine.snapshot()
+    assert all("dry_run" not in state.attributes for state in hass.states.async_all("sensor"))
+    assert engine._journal["live:completed"]["status"] == "dispatched"
+    assert not any(key.startswith(("dry:", "enforce:dry:")) for key in engine._journal)
+    assert not any(item["status"] == "would_dispatch" for item in engine._journal.values())
+    assert hass_storage[permission_key]["data"] == {
+        "enabled": not legacy_dry_run,
+        "paused": False,
+    }
+    assert "dry_run" not in hass_storage[runtime_key]["data"]
+    assert "virtual" not in hass_storage[runtime_key]["data"]
+
+    if legacy_dry_run:
+        await advance(hass, freezer, 30)
+        assert not daily_devices
+        await engine.async_set_enabled(True)
+        await advance(hass, freezer, 30)
+    else:
+        await advance(hass, freezer, 60)
+    assert [call.service for call in daily_devices] == ["turn_on"]
+    assert hass.states.get("light.proof").state == "on"
 
 
 async def test_restart_retains_sampled_plans_and_does_not_replay(
@@ -317,9 +376,8 @@ async def test_restart_retains_sampled_plans_and_does_not_replay(
     assert len(daily_devices) == before
 
 
-@pytest.mark.parametrize("dry_run", [False, True])
 async def test_random_activity_dispatch_restart_and_manual_control(
-    hass, daily_entry, daily_devices, freezer, runtime_program, dry_run
+    hass, daily_entry, daily_devices, freezer, runtime_program
 ):
     runtime_program["steps"] = {}
     runtime_program["random"] = {
@@ -334,10 +392,9 @@ async def test_random_activity_dispatch_restart_and_manual_control(
         }
     }
     engine = await load(hass, daily_entry, freezer)
-    await engine.async_set_dry_run(dry_run)
     await engine.async_set_enabled(True)
     await advance(hass, freezer, 60)
-    assert hass.states.get("light.proof").state == ("off" if dry_run else "on")
+    assert hass.states.get("light.proof").state == "on"
     plans = {day: plan.to_dict() for day, plan in engine._plans.items()}
     before = len(daily_devices)
     assert await hass.config_entries.async_reload(daily_entry.entry_id)
@@ -348,18 +405,17 @@ async def test_random_activity_dispatch_restart_and_manual_control(
     assert len(daily_devices) == before
     await advance(hass, freezer, 1200)
     assert hass.states.get("light.proof").state == "off"
-    assert [call.service for call in daily_devices] == ([] if dry_run else ["turn_on", "turn_off"])
-    if not dry_run:
-        await restarted.async_set_enabled(False)
-        await advance(hass, freezer, 85200)
-        await restarted.async_set_enabled(True)
-        await advance(hass, freezer, 0)
-        hass.states.async_set("light.proof", "off")
-        await hass.async_block_till_done()
-        assert "light.proof" in restarted._yielded
-        before = len(daily_devices)
-        await advance(hass, freezer, 60)
-        assert len(daily_devices) == before
+    assert [call.service for call in daily_devices] == ["turn_on", "turn_off"]
+    await restarted.async_set_enabled(False)
+    await advance(hass, freezer, 85200)
+    await restarted.async_set_enabled(True)
+    await advance(hass, freezer, 0)
+    hass.states.async_set("light.proof", "off")
+    await hass.async_block_till_done()
+    assert "light.proof" in restarted._yielded
+    before = len(daily_devices)
+    await advance(hass, freezer, 60)
+    assert len(daily_devices) == before
 
 
 async def test_permission_and_pause_cancel_future_dispatch(
@@ -891,7 +947,7 @@ async def test_run_condition_manual_changes_yield_during_delay(
     )
 
 
-async def test_run_condition_dry_run_reconciles_covers_and_switches(
+async def test_run_condition_reconciles_covers_and_switches(
     hass,
     daily_entry,
     daily_devices,
@@ -900,17 +956,18 @@ async def test_run_condition_dry_run_reconciles_covers_and_switches(
     freezer,
 ):
     engine = await load(hass, daily_entry, freezer, "2026-10-13T18:03:00+00:00")
-    await engine.async_set_dry_run(True)
     register_stagger_switch(hass, daily_devices)
     await engine.async_set_enabled(True)
     await set_alarm(hass, "armed_away")
     await advance(hass, freezer, 30)
-    assert not daily_devices and not cover_devices
-    assert engine._observe("switch.proof")["state"] == "on"
-    assert engine._observe("cover.blind")["attributes"]["current_position"] == 60
-    assert engine._observe("cover.blind")["attributes"]["current_tilt_position"] == 25
-    assert hass.states.get("switch.proof").state == "off"
-    assert hass.states.get("cover.blind").attributes["current_position"] == 20
+    assert any(call.domain == "switch" for call in daily_devices)
+    assert [call.service for call in cover_devices] == [
+        "set_cover_position",
+        "set_cover_tilt_position",
+    ]
+    assert hass.states.get("switch.proof").state == "on"
+    assert hass.states.get("cover.blind").attributes["current_position"] == 60
+    assert hass.states.get("cover.blind").attributes["current_tilt_position"] == 25
 
 
 async def test_run_condition_restart_waits_fresh_delay_without_resampling(

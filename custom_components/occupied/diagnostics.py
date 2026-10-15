@@ -54,7 +54,6 @@ def diagnostics_data(engine, *, include_sensitive=False):
             "mode",
             "enabled",
             "paused",
-            "dry_run",
             "active",
             "status",
             "session",

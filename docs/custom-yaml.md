@@ -128,7 +128,7 @@ In an ordered list, the following action starts after the stagger period ends. C
 
 Timing and related-step anchors still refer to the original scheduled start, not the final tick. Add the period to a related-step offset to run after completion. Overnight ticks appear on their actual calendar date. Random start-block periods must total less than `min_duration`; any end-block period reserves space inside the enclosing window. Infeasible windows produce validation/planning errors rather than shorten the period.
 
-Preview shows each tick's time and target. Manual live preview's **Next event** advances one scheduled tick immediately, without waiting in real time; ordinary calls at the same boundary follow it in list order. Normal scheduling and dry run consume the planned tick times. Existing activation handover retains its independent rules and may subsume typed light calls while converging.
+Preview shows each tick's time and target. Manual live preview's **Next event** advances one scheduled tick immediately, without waiting in real time; ordinary calls at the same boundary follow it in list order. Normal scheduling consumes the planned tick times. Existing activation handover retains its independent rules and may subsume typed light calls while converging.
 
 For an off action, use the same options:
 

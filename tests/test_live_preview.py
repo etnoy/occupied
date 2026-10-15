@@ -101,8 +101,7 @@ async def test_start_idle_status_and_group_order_are_isolated(
     live_engine, live_program, live_calls
 ):
     engine = live_engine
-    before = (engine._seed, deepcopy(engine._journal), deepcopy(engine._virtual), engine.program)
-    await engine.async_set_dry_run(True)
+    before = (engine._seed, deepcopy(engine._journal), engine.program)
     result = await start(engine, live_program)
     assert result["session"]["simulated_time"] is None
     assert result["session"]["total"] == 3
@@ -116,7 +115,7 @@ async def test_start_idle_status_and_group_order_are_isolated(
     assert [call.domain for call in live_calls] == ["light", "light", "switch", "cover", "scene"]
     assert live_calls[3].data["position"] == 25
     assert engine.live_preview.session["state"] == "completed" and engine.paused
-    assert (engine._seed, engine._journal, engine._virtual, engine.program) == before
+    assert (engine._seed, engine._journal, engine.program) == before
     await start(engine, live_program, "again")
     assert len(live_calls) == 5 and engine.live_preview.session["cursor"] == 0
 

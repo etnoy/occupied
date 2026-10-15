@@ -71,7 +71,6 @@ async def test_read_only_install_and_idempotent_reload(hass, file_entry, managed
     original = managed_file.read_bytes()
     engine = await load(hass, file_entry)
     assert engine.configuration_ready and not engine.enabled
-    await engine.async_set_dry_run(True)
     await engine.async_set_enabled(True)
     plans, queue, generation = dict(engine._plans), list(engine._queue), engine.generation
     result = await engine.source_manager.async_reload()
@@ -85,7 +84,6 @@ async def test_raw_only_and_metadata_changes_preserve_plans(
     hass, file_entry, managed_file, program_dict
 ):
     engine = await load(hass, file_entry)
-    await engine.async_set_dry_run(True)
     await engine.async_set_enabled(True)
     manager = engine.source_manager
     old_hash, plans, generation, deadline = (
@@ -111,7 +109,6 @@ async def test_invalid_update_retains_live_program_then_recovers(
     hass, file_entry, managed_file, program_dict, failure
 ):
     engine = await load(hass, file_entry)
-    await engine.async_set_dry_run(True)
     await engine.async_set_enabled(True)
     program, plans, queue, generation = (
         engine.program,
@@ -374,7 +371,6 @@ async def test_entry_removal_deletes_private_stores_and_retains_managed_source(
     hass, file_entry, managed_file, hass_storage
 ):
     engine = await load(hass, file_entry)
-    await engine.async_set_dry_run(True)
     await engine.async_set_enabled(True)
     original = managed_file.read_bytes()
     assert await hass.config_entries.async_remove(file_entry.entry_id)

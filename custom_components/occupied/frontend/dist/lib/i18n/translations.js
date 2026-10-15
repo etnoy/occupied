@@ -7,7 +7,6 @@ export const en = {
   run_condition_count_failed: "Failed",
   run_condition_count_skipped: "Skipped",
   already_matching: "Already matching",
-  would_dispatch: "Would apply",
   skipped: "Skipped",
   complete: "Complete",
   applying: "Applying",
@@ -54,7 +53,7 @@ export const en = {
   live_preview_paused_hint:
     "Scheduling stays paused until you choose Resume scheduling.",
   live_preview_controls_hint:
-    "Normal scheduling pauses until you choose Resume scheduling. Each press runs one event immediately, even with management disabled or dry run selected. Configured run conditions must match.",
+    "Normal scheduling pauses until you choose Resume scheduling. Each press runs one event immediately, even with management disabled. Configured run conditions must match.",
   live_preview_start_hint:
     "Starting prepares the session. Devices run only when you press Next event.",
   start_live_preview: "Start live preview",
@@ -499,7 +498,6 @@ export const sv = {
   run_condition_count_failed: "Misslyckade",
   run_condition_count_skipped: "Överhoppade",
   already_matching: "Matchar redan",
-  would_dispatch: "Skulle tillämpas",
   skipped: "Överhoppad",
   complete: "Klar",
   applying: "Tillämpar",
@@ -548,7 +546,7 @@ export const sv = {
   live_preview_paused_hint:
     "Schemaläggningen förblir pausad tills du väljer Återuppta schemaläggning.",
   live_preview_controls_hint:
-    "Schemaläggningen pausas tills du väljer Återuppta schemaläggning. Varje tryck kör en händelse direkt, även när styrningen är avstängd eller torrkörning är vald.",
+    "Schemaläggningen pausas tills du väljer Återuppta schemaläggning. Varje tryck kör en händelse direkt, även när styrningen är avstängd. Konfigurerade körvillkor måste matcha.",
   live_preview_start_hint:
     "Start förbereder sessionen. Enheterna styrs först när du trycker på Nästa händelse.",
   start_live_preview: "Starta liveförhandsvisning",

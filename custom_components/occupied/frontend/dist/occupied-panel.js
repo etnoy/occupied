@@ -7,7 +7,6 @@ var en = {
   run_condition_count_failed: "Failed",
   run_condition_count_skipped: "Skipped",
   already_matching: "Already matching",
-  would_dispatch: "Would apply",
   skipped: "Skipped",
   complete: "Complete",
   applying: "Applying",
@@ -54,7 +53,7 @@ var en = {
   live_preview_paused_hint:
     "Scheduling stays paused until you choose Resume scheduling.",
   live_preview_controls_hint:
-    "Normal scheduling pauses until you choose Resume scheduling. Each press runs one event immediately, even with management disabled or dry run selected. Configured run conditions must match.",
+    "Normal scheduling pauses until you choose Resume scheduling. Each press runs one event immediately, even with management disabled. Configured run conditions must match.",
   live_preview_start_hint:
     "Starting prepares the session. Devices run only when you press Next event.",
   start_live_preview: "Start live preview",
@@ -498,7 +497,6 @@ var sv = {
   run_condition_count_failed: "Misslyckade",
   run_condition_count_skipped: "\xD6verhoppade",
   already_matching: "Matchar redan",
-  would_dispatch: "Skulle till\xE4mpas",
   skipped: "\xD6verhoppad",
   complete: "Klar",
   applying: "Till\xE4mpar",
@@ -548,7 +546,7 @@ var sv = {
   live_preview_paused_hint:
     "Schemal\xE4ggningen f\xF6rblir pausad tills du v\xE4ljer \xC5teruppta schemal\xE4ggning.",
   live_preview_controls_hint:
-    "Schemal\xE4ggningen pausas tills du v\xE4ljer \xC5teruppta schemal\xE4ggning. Varje tryck k\xF6r en h\xE4ndelse direkt, \xE4ven n\xE4r styrningen \xE4r avst\xE4ngd eller torrk\xF6rning \xE4r vald.",
+    "Schemal\xE4ggningen pausas tills du v\xE4ljer \xC5teruppta schemal\xE4ggning. Varje tryck k\xF6r en h\xE4ndelse direkt, \xE4ven n\xE4r styrningen \xE4r avst\xE4ngd. Konfigurerade k\xF6rvillkor m\xE5ste matcha.",
   live_preview_start_hint:
     "Start f\xF6rbereder sessionen. Enheterna styrs f\xF6rst n\xE4r du trycker p\xE5 N\xE4sta h\xE4ndelse.",
   start_live_preview: "Starta livef\xF6rhandsvisning",

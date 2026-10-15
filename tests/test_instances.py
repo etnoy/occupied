@@ -87,8 +87,6 @@ async def test_permissions_plans_and_restart_are_independent(hass, households, s
     first, second = main.runtime_data, guest.runtime_data
     assert first._seed != second._seed
     assert first.signal != second.signal
-    await first.async_set_dry_run(True)
-    await second.async_set_dry_run(True)
     await first.async_set_enabled(True)
     assert first.active and not second.enabled
     await second.async_set_enabled(True)
@@ -173,7 +171,6 @@ async def test_removing_one_entry_keeps_other_panel_stores_and_source(
 ):
     main, guest = await setup_pair(hass, households)
     second = guest.runtime_data
-    await second.async_set_dry_run(True)
     await second.async_set_enabled(True)
     before = deepcopy(second.snapshot())
     assert await hass.config_entries.async_remove(main.entry_id)
@@ -235,7 +232,6 @@ async def test_assigning_yaml_id_preserves_legacy_entry_and_runtime(hass, househ
     legacy.add_to_hass(hass)
     assert await hass.config_entries.async_setup(legacy.entry_id)
     engine = legacy.runtime_data
-    await engine.async_set_dry_run(True)
     await engine.async_set_enabled(True)
     seed = engine._seed
     await async_bootstrap(
@@ -313,7 +309,6 @@ async def test_instance_subscription_tracks_controls_and_unload(hass, households
     assert response["success"]
     event = await client.receive_json()
     assert len(event["event"]) == 2
-    await main.runtime_data.async_set_dry_run(True)
     await main.runtime_data.async_set_enabled(True)
     await hass.async_block_till_done()
 

@@ -1,6 +1,6 @@
 # Daily runtime
 
-Create a controller and author steps in the [editor](editor.md), or deploy [canonical YAML](schema.md). Permission starts disabled. HA provides management, pause, and dry-run controls. Use HA automations to turn management permission on/off based on household conditions.
+Create a controller and author steps in the [editor](editor.md), or deploy [canonical YAML](schema.md). Permission starts disabled. HA provides Enable and pause controls. Use HA automations to turn management permission on/off based on household conditions.
 
 ## Activation and dispatch
 
@@ -24,7 +24,7 @@ Moving between allowed states keeps the session and deadline. A later false-to-t
 
 A restart cannot establish continuous eligibility across downtime for an unfinished activation, so it starts a fresh delay. Durable completed/uncertain call journals prevent blind replay. Changes to the condition or its enforcement/delay settings restart qualification but preserve sampled times, counts, stagger order, and authored-event identity. Title/order-only edits preserve an active deadline. Status exposes the current condition, deadline/countdown, and per-entity reconciliation outcomes/counts.
 
-Dry run observes the same condition/delay and applies targets to virtual state only. Read-only Preview stays available regardless of eligibility. Real-device live preview requires the saved controller condition and any draft condition to match, including before every call; condition loss interrupts it without cleanup commands. Its explicit Next-event workflow does not automatically reconcile states or apply the ordinary scheduling startup delay.
+Read-only Preview stays available regardless of eligibility. Real-device live preview requires the saved controller condition and any draft condition to match, including before every call; condition loss interrupts it without cleanup commands. Its explicit Next-event workflow does not automatically reconcile states or apply the ordinary scheduling startup delay.
 
 ## Known light state and handover
 
@@ -44,9 +44,9 @@ The default cover activation policy is **future only**. Explicit startup state e
 
 Outside state, `current_position`, or `current_tilt_position` changes yield the cover until the next activation, including attribute-only changes while its state remains `open`. Updates with Occupied's service context remain attributable to Occupied; unrelated telemetry attributes do not cause yielding.
 
-## Dry run, updates, and isolation
+## Updates and isolation
 
-Dry run uses a virtual state map and records would-dispatch outcomes without calling native services. Live observed state remains unchanged. Each controller has its own seed, journal, permission, queues, source, and subscriptions. Shared explicitly controlled entities appear as overlap warnings.
+Each controller has its own seed, journal, permission, queues, source, and subscriptions. Shared explicitly controlled entities appear as overlap warnings.
 
 Metadata-only edits preserve sampled times, generation, session, and handover deadlines. Behavior edits invalidate future work and recompile. Expected revisions prevent concurrent stale saves. Managed files retain their last valid program on a failed reload; an initially invalid file cannot execute an old GUI cache. See [managed configuration](managed-configuration.md).
 
@@ -58,12 +58,12 @@ The editor's explicit **Start live preview** control freezes one local calendar 
 
 Live preview pauses the selected controller using its ordinary queue invalidation and transition cleanup. Device dispatch and journal changes use that controller's lock. A separate durable store retains the frozen program/day, owning HA admin, cursor, request results, and per-call outcomes. Pending records must persist before native dispatch and outcomes afterward; any persistence failure blocks remaining calls. Calls carry the owner's HA user context and use a bounded service timeout. Timeouts and restart-interrupted pending calls remain uncertain and are never automatically replayed. Independent calls in one group may succeed despite another member failing, with partial results retained.
 
-Stop invalidates the session immediately, including during an awaited service call. Delivered calls may finish; remaining calls are cancelled. Completion and Stop preserve the controller's pause and leave devices as they are. Explicit normal Resume ends live preview before reevaluating current-time scheduling, respecting management permission and dry run; an Occupied Stop command also ends the session. Unload, shutdown, unresolved configuration, and runtime persistence failures interrupt preview. Restart requires a new explicit session.
+Stop invalidates the session immediately, including during an awaited service call. Delivered calls may finish; remaining calls are cancelled. Completion and Stop preserve the controller's pause and leave devices as they are. Explicit normal Resume ends live preview before reevaluating current-time scheduling, respecting management permission; an Occupied Stop command also ends the session. Unload, shutdown, unresolved configuration, and runtime persistence failures interrupt preview. Restart requires a new explicit session.
 
-The preview journal, seed, cursor, and actions remain separate from normal scheduled execution, ownership, and dry-run virtual states. Other controllers stay independent; Start and every advance reject declared targets overlapping another running controller/live session. Indirect scene/script effects and unrelated HA automations remain outside that overlap check. See the [manual controls](editor.md#manual-live-preview) for the phone workflow.
+The preview journal, seed, cursor, and actions remain separate from normal scheduled execution and ownership. Other controllers stay independent; Start and every advance reject declared targets overlapping another running controller/live session. Indirect scene/script effects and unrelated HA automations remain outside that overlap check. See the [manual controls](editor.md#manual-live-preview) for the phone workflow.
 
 ## Scheduled staggered activation
 
-Opt-in action staggering creates one shuffled permutation and equally spaced single-target tick events. Persisted plans retain tick times and ordering; fresh transitions use independent random streams without changing timing/count/duration sampling. Tick events have both a parent occurrence identity and a timestamp-specific execution group, so ordered custom blocks retain their failure policy across queued continuations. Other work can dispatch between ticks, and Stop/permission changes invalidate remaining ticks. Newer direct intents supersede older pending ticks. Projection and dry run use actual tick times and ignore superseded ticks.
+Opt-in action staggering creates one shuffled permutation and equally spaced single-target tick events. Persisted plans retain tick times and ordering; fresh transitions use independent random streams without changing timing/count/duration sampling. Tick events have both a parent occurrence identity and a timestamp-specific execution group, so ordered custom blocks retain their failure policy across queued continuations. Other work can dispatch between ticks, and Stop/permission changes invalidate remaining ticks. Newer direct intents supersede older pending ticks. Projection uses actual tick times and ignores superseded ticks.
 
 A manual live preview advance runs one tick execution group rather than all members of the parent occurrence. At the final tick, subsequent ordinary custom actions at that same time retain authored order. Per-call results remain durable and failed custom blocks stay blocked across advances. Tick times represent planned service dispatch; device latency and the existing overdue/recovery and activation handover policies still apply.
