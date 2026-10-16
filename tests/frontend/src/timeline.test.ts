@@ -7,8 +7,9 @@ import {
   previewStateHistory,
   staggerTransitions,
   eventDetails,
+  groupPreviewEvents,
 } from "@occupied/lib/utils/timeline.js";
-import type { Plan, PlannedEvent } from "@occupied/lib/types.js";
+import type { Plan, PlannedEvent, Program } from "@occupied/lib/types.js";
 import {
   calendarMidnight,
   shiftScheduleDate,
@@ -123,6 +124,61 @@ void test("event details localize time and common actions while preserving custo
     translator(),
   );
   assert.equal(cover.action, "Set cover position · 45%");
+});
+
+void test("preview groups simultaneous actions by source and combines matching on/off targets", () => {
+  const first = {
+    ...event(7, "light.turn_on", "light.bedroom"),
+    source_id: "morning",
+  };
+  const second = {
+    ...first,
+    action: { action: "switch.turn_on", entities: ["switch.coffee"] },
+  };
+  const off = {
+    ...first,
+    action: { action: "light.turn_off", entities: ["light.hall"] },
+  };
+  const custom = {
+    ...first,
+    action: { ...first.action, data: { brightness: 20 } },
+  };
+  const otherStep = { ...first, source_id: "breakfast" };
+  const later = { ...first, time: time(8) };
+  const random = { ...first, kind: "random_start" };
+  const events = [first, second, off, otherStep, custom, later, random];
+  const original = JSON.stringify(events);
+  const groups = groupPreviewEvents(events);
+  assert.equal(groups.length, 4);
+  assert.equal(groups[0]!.event, first);
+  assert.equal(groups[0]!.actions.length, 3);
+  assert.deepEqual(groups[0]!.actions[0]!.entities, [
+    "light.bedroom",
+    "switch.coffee",
+  ]);
+  assert.deepEqual(groups[0]!.actions[0]!.events, [first, second]);
+  assert.equal(groups[0]!.actions[1]!.event, off);
+  assert.equal(groups[0]!.actions[2]!.event, custom);
+  assert.equal(groups[1]!.event, otherStep);
+  assert.equal(groups[2]!.event, later);
+  assert.equal(groups[3]!.event, random);
+  assert.equal(JSON.stringify(events), original);
+  assert.deepEqual(groupPreviewEvents([]), []);
+});
+
+void test("preview grouping keeps scene actions and superseded calls separate", () => {
+  const first = { ...event(18, "light.turn_on"), source_id: "evening" };
+  const scene = {
+    ...first,
+    action: { action: "scene.turn_on", entities: ["scene.evening"] },
+  };
+  const superseded = { ...first, superseded: true };
+  const sameInstant = { ...first, time: "2026-10-13T20:00:00+02:00" };
+  const groups = groupPreviewEvents([first, scene, superseded, sameInstant]);
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0]!.actions.length, 3);
+  assert.deepEqual(groups[0]!.actions[0]!.events, [first, sameInstant]);
+  assert.deepEqual(groups[0]!.actions[0]!.entities, ["light.bedroom"]);
 });
 
 void test("lights and switches start off until the first typed action", () => {
@@ -306,4 +362,77 @@ void test("overnight tooltip context uses the first actual state change without 
   );
   assert.equal(current.end, "2026-10-14T00:00:00Z");
   assert.equal(current.events.length, 1);
+});
+
+void test("extra off entities appear as full-day off rows even without scheduled events", () => {
+  const program: Program = {
+    run_condition: {
+      entity_id: "alarm_control_panel.house",
+      state: "armed_away",
+      off_entities: ["light.bathroom", "switch.fan", "light.bathroom"],
+    },
+  };
+  const empty = plan([]);
+  const names = { "light.bathroom": "Bathroom", "switch.fan": "Fan" };
+  const original = structuredClone(program);
+  for (const history of [
+    previewStateHistory(empty, program, names),
+    calendarStateHistory([empty], empty, program, names),
+  ]) {
+    assert.deepEqual(
+      history.map((row) => row.name),
+      ["Bathroom", "Fan"],
+    );
+    for (const row of history) {
+      assert.deepEqual(row.data, [
+        {
+          state: "off",
+          state_localize: "Off",
+          last_changed: Date.parse(empty.start),
+        },
+      ]);
+    }
+  }
+  assert.deepEqual(program, original);
+});
+
+void test("extra entity rows preserve scheduled targets and show unknown for disabled managed targets", () => {
+  const program: Program = {
+    run_condition: {
+      entity_id: "sensor.alarm",
+      state: "armed",
+      off_entities: ["light.bedroom", "switch.disabled", "light.bathroom"],
+    },
+    steps: {
+      on: { timing: {}, entities: ["light.bedroom"], action: "turn_on" },
+      disabled: {
+        timing: {},
+        enabled: false,
+        entities: ["switch.disabled"],
+        action: "turn_on",
+      },
+    },
+  };
+  const history = previewStateHistory(
+    plan([event(18, "light.turn_on"), event(19, "light.turn_off")]),
+    program,
+  );
+  assert.deepEqual(
+    history
+      .find((row) => row.entity_id === "light.bedroom")
+      ?.data.map((state) => state.state),
+    ["off", "on", "off"],
+  );
+  assert.deepEqual(
+    history
+      .find((row) => row.entity_id === "switch.disabled")
+      ?.data.map((state) => state.state),
+    ["unknown"],
+  );
+  assert.deepEqual(
+    history
+      .find((row) => row.entity_id === "light.bathroom")
+      ?.data.map((state) => state.state),
+    ["off"],
+  );
 });

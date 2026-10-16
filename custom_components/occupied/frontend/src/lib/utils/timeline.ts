@@ -1,3 +1,4 @@
+import { managedOffEntities } from "../models/run-condition.js";
 import { translator } from "../i18n/translations.js";
 import type { Program, Translate, Plan, PlannedEvent } from "../types.js";
 import type { HomeAssistantLocale } from "./time-format.js";
@@ -44,7 +45,7 @@ export interface PreviewHistoryEntity {
 
 export function previewStateHistory(
   plan: Plan,
-  _program: Program,
+  program: Program,
   names: Record<string, string> = {},
   t: Translate = translator(),
 ): PreviewHistoryEntity[] {
@@ -57,6 +58,19 @@ export function previewStateHistory(
     off: "off_label",
   };
   const label = (state: string) => t(stateLabels[state] || "unknown");
+  const extraEntities = program.run_condition?.off_entities ?? [];
+  const managedExtras = new Set(managedOffEntities(program, extraEntities));
+  for (const entity of extraEntities) {
+    if (managedExtras.has(entity)) {
+      continue;
+    }
+    const state = "off";
+    entities.set(entity, {
+      entity_id: entity,
+      name: names[entity] || entity,
+      data: [{ state, state_localize: label(state), last_changed: start }],
+    });
+  }
   for (const event of [
     ...(plan.history_events || []),
     ...plan.events,
@@ -145,6 +159,22 @@ export function previewStateHistory(
     }
   }
 
+  for (const entity of managedExtras) {
+    if (!entities.has(entity)) {
+      entities.set(entity, {
+        entity_id: entity,
+        name: names[entity] || entity,
+        data: [
+          {
+            state: "unknown",
+            state_localize: label("unknown"),
+            last_changed: start,
+          },
+        ],
+      });
+    }
+  }
+
   return [...entities.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -229,6 +259,64 @@ export function eventDetails(
       .map((entity) => entityNames[entity] || entity)
       .join(", "),
   };
+}
+
+export function groupPreviewEvents(events: PlannedEvent[]) {
+  const groups = new Map<
+    string,
+    {
+      event: PlannedEvent;
+      actions: {
+        event: PlannedEvent;
+        events: PlannedEvent[];
+        entities: string[];
+      }[];
+    }
+  >();
+  const actionKeys = new Map<string, Map<string, number>>();
+  for (const event of events) {
+    const key = JSON.stringify([
+      Date.parse(event.time),
+      event.source_id,
+      event.kind,
+      event.source_date,
+    ]);
+    let group = groups.get(key);
+    if (!group) {
+      group = { event, actions: [] };
+      groups.set(key, group);
+      actionKeys.set(key, new Map());
+    }
+    // On/off calls can be split by entity domain by the planner.
+    const service = /^(?:light|switch|homeassistant)\.turn_(on|off)$/.test(
+      event.action.action,
+    )
+      ? event.action.action.split(".", 2)[1]
+      : event.action.action;
+    const actionKey = JSON.stringify([
+      service,
+      Object.entries(event.action.data || {}).sort(([a], [b]) =>
+        a.localeCompare(b),
+      ),
+      !!event.superseded,
+    ]);
+    const keys = actionKeys.get(key)!;
+    let index = keys.get(actionKey);
+    if (index === undefined) {
+      index = group.actions.length;
+      keys.set(actionKey, index);
+      group.actions.push({ event, events: [], entities: [] });
+    }
+    const action = group.actions[index]!;
+    action.events.push(event);
+    for (const entity of event.action.entities) {
+      if (!action.entities.includes(entity)) {
+        action.entities.push(entity);
+      }
+    }
+  }
+
+  return [...groups.values()];
 }
 
 export function staggerTransitions(plan: Plan) {

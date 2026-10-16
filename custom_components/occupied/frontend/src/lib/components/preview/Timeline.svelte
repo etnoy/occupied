@@ -5,7 +5,7 @@
   import PreviewStateGraph from "./PreviewStateGraph.svelte";
   import type { HomeAssistantLocale } from "../../utils/time-format.js";
   import { formatScheduleDate } from "../../utils/time-format.js";
-  import { eventDetails } from "../../utils/timeline.js";
+  import { eventDetails, groupPreviewEvents } from "../../utils/timeline.js";
   import { stepEntries } from "../../models/step-model.js";
   import { randomEntries } from "../../models/random-model.js";
   import type { PlannedEvent } from "../../types.js";
@@ -74,8 +74,9 @@
   });
 
   let events = $derived(plan?.events ?? []);
+  let groups = $derived(groupPreviewEvents(events));
   let currentPage = $derived(
-    Math.max(0, Math.min(page, Math.ceil(events.length / 50) - 1)),
+    Math.max(0, Math.min(page, Math.ceil(groups.length / 50) - 1)),
   );
 </script>
 
@@ -111,82 +112,115 @@
                   <th scope="col">{t("source")}</th>
                 </tr>
               </thead>
-              <tbody>
-                {#each events.slice(currentPage * 50, currentPage * 50 + 50) as event (event)}
-                  {@const live = eventLiveResult(event, liveSession)}
-                  {@const details = eventDetails(
-                    event,
-                    eventLabel(event),
-                    plan.timezone,
-                    t,
-                    locale,
-                    entityNames,
-                  )}
-                  <tr
-                    onpointerenter={() => (hoveredEventTime = event.time)}
-                    onpointerleave={() => (hoveredEventTime = null)}
-                    onfocusin={() => (hoveredEventTime = event.time)}
-                    onfocusout={() => (hoveredEventTime = null)}
-                    class:current={live?.current}
-                    class:completed={live?.outcome?.status === "dispatched"}
-                    aria-current={live?.current ? "step" : undefined}
-                  >
-                    <td class="planned-time">
-                      <svg
-                        class="hover-indicator"
-                        viewBox="0 0 12 12"
-                        aria-hidden="true"
-                      >
-                        <path d="M4 2 8 6 4 10" />
-                      </svg>
-                      {details.time}
-                    </td>
-                    <td>{details.targets}</td>
-                    <td>
-                      <span class="event-action">
-                        {#if details.actionState}
-                          <span
-                            class="action-indicator"
-                            class:on={details.actionState === "on"}
+              {#each groups.slice(currentPage * 50, currentPage * 50 + 50) as group (group)}
+                <tbody
+                  onpointerenter={() => (hoveredEventTime = group.event.time)}
+                  onpointerleave={() => (hoveredEventTime = null)}
+                  onfocusin={() => (hoveredEventTime = group.event.time)}
+                  onfocusout={() => (hoveredEventTime = null)}
+                >
+                  {#each group.actions as action, index (action)}
+                    {@const event = action.event}
+                    {@const results = action.events.map((event) => ({
+                      event,
+                      live: eventLiveResult(event, liveSession),
+                    }))}
+                    {@const current = results.some(({ live }) => live?.current)}
+                    {@const details = eventDetails(
+                      {
+                        ...event,
+                        action: { ...event.action, entities: action.entities },
+                      },
+                      eventLabel(event),
+                      plan.timezone,
+                      t,
+                      locale,
+                      entityNames,
+                    )}
+                    <tr
+                      class:current
+                      class:completed={results.every(
+                        ({ live }) => live?.outcome?.status === "dispatched",
+                      )}
+                      aria-current={current ? "step" : undefined}
+                    >
+                      {#if index === 0}
+                        <td class="planned-time" rowspan={group.actions.length}>
+                          <svg
+                            class="hover-indicator"
+                            viewBox="0 0 12 12"
                             aria-hidden="true"
-                          ></span>
-                        {/if}
-                        {details.action}
-                      </span>
-                    </td>
-                    {#if liveSession}
-                      <td>
-                        {#if live?.outcome}
-                          <span
-                            class={live.outcome.status === "dispatched"
-                              ? "hint"
-                              : "error"}>{t(live.outcome.status)}</span
                           >
-                          <div>{live.outcome.detail}</div>
-                        {:else if live?.current}
-                          {t("next_event")}
-                        {/if}
-                      </td>
-                    {/if}
-                    <td>
-                      {#if onOpenSource}
-                        <button
-                          type="button"
-                          class="text-button source-link"
-                          disabled={loading}
-                          onclick={() => onOpenSource?.(event)}
-                          >{details.source}</button
-                        >
-                      {:else}
-                        {details.source}
+                            <path d="M4 2 8 6 4 10" />
+                          </svg>
+                          {details.time}
+                        </td>
                       {/if}
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
+                      <td>{details.targets}</td>
+                      <td>
+                        <span class="event-action">
+                          {#if details.actionState}
+                            <span
+                              class="action-indicator"
+                              class:on={details.actionState === "on"}
+                              aria-hidden="true"
+                            ></span>
+                          {/if}
+                          {details.action}
+                        </span>
+                      </td>
+                      {#if liveSession}
+                        <td>
+                          {#each results as result (result.event)}
+                            {#if result.live?.outcome}
+                              <div>
+                                {#if results.length > 1}
+                                  <span
+                                    >{result.event.action.entities
+                                      .map(
+                                        (entity) =>
+                                          entityNames[entity] || entity,
+                                      )
+                                      .join(", ")}:
+                                  </span>
+                                {/if}
+                                <span
+                                  class={result.live.outcome.status ===
+                                  "dispatched"
+                                    ? "hint"
+                                    : "error"}
+                                  >{t(result.live.outcome.status)}</span
+                                >
+                                <div>{result.live.outcome.detail}</div>
+                              </div>
+                            {:else if result.live?.current}
+                              <div>{t("next_event")}</div>
+                            {/if}
+                          {/each}
+                        </td>
+                      {/if}
+                      {#if index === 0}
+                        <td rowspan={group.actions.length}>
+                          {#if onOpenSource}
+                            <button
+                              type="button"
+                              class="text-button source-link"
+                              disabled={loading}
+                              onclick={() => onOpenSource?.(group.event)}
+                              >{details.source}</button
+                            >
+                          {:else}
+                            {details.source}
+                          {/if}
+                        </td>
+                      {/if}
+                    </tr>
+                  {/each}
+                </tbody>
+              {/each}
             </table>
           </div>
-          {#if events.length > 50}
+          {#if groups.length > 50}
             <div class="row">
               <button
                 type="button"
@@ -197,12 +231,12 @@
                 >{events.length}
                 {t("events")} · {currentPage + 1}/{Math.max(
                   1,
-                  Math.ceil(events.length / 50),
+                  Math.ceil(groups.length / 50),
                 )}</span
               >
               <button
                 type="button"
-                disabled={(currentPage + 1) * 50 >= events.length}
+                disabled={(currentPage + 1) * 50 >= groups.length}
                 onclick={() => (page = currentPage + 1)}>{t("next")}</button
               >
             </div>
@@ -224,6 +258,14 @@
   th,
   td {
     padding: 6px 9px;
+  }
+
+  tbody tr:not(:last-child) td:not([rowspan]) {
+    border-bottom: 0;
+  }
+
+  td[rowspan] {
+    vertical-align: top;
   }
 
   th:first-child,
@@ -251,8 +293,8 @@
     pointer-events: none;
   }
 
-  tr:hover .hover-indicator,
-  tr:focus-within .hover-indicator {
+  tbody:hover .hover-indicator,
+  tbody:focus-within .hover-indicator {
     opacity: 0.7;
   }
 

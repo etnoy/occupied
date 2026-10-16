@@ -14363,7 +14363,7 @@ function calendarDayPlan(plans, date) {
     issues: plans.flatMap((plan) => plan.issues),
   };
 }
-function previewStateHistory(plan, _program, names = {}, t = translator()) {
+function previewStateHistory(plan, program, names = {}, t = translator()) {
   const start = Date.parse(plan.start),
     end = Date.parse(plan.end);
   const entities = /* @__PURE__ */ new Map();
@@ -14373,6 +14373,21 @@ function previewStateHistory(plan, _program, names = {}, t = translator()) {
     off: "off_label",
   };
   const label = (state2) => t(stateLabels[state2] || "unknown");
+  const extraEntities = program.run_condition?.off_entities ?? [];
+  const managedExtras = new Set(managedOffEntities(program, extraEntities));
+  for (const entity of extraEntities) {
+    if (managedExtras.has(entity)) {
+      continue;
+    }
+    const state2 = "off";
+    entities.set(entity, {
+      entity_id: entity,
+      name: names[entity] || entity,
+      data: [
+        { state: state2, state_localize: label(state2), last_changed: start },
+      ],
+    });
+  }
   for (const event2 of [
     ...(plan.history_events || []),
     ...plan.events,
@@ -14460,6 +14475,21 @@ function previewStateHistory(plan, _program, names = {}, t = translator()) {
       }
     }
   }
+  for (const entity of managedExtras) {
+    if (!entities.has(entity)) {
+      entities.set(entity, {
+        entity_id: entity,
+        name: names[entity] || entity,
+        data: [
+          {
+            state: "unknown",
+            state_localize: label("unknown"),
+            last_changed: start,
+          },
+        ],
+      });
+    }
+  }
   return [...entities.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 function calendarStateHistory(
@@ -14526,6 +14556,51 @@ function eventDetails(event2, label, timezone, t, locale, entityNames = {}) {
       .map((entity) => entityNames[entity] || entity)
       .join(", "),
   };
+}
+function groupPreviewEvents(events) {
+  const groups = /* @__PURE__ */ new Map();
+  const actionKeys = /* @__PURE__ */ new Map();
+  for (const event2 of events) {
+    const key2 = JSON.stringify([
+      Date.parse(event2.time),
+      event2.source_id,
+      event2.kind,
+      event2.source_date,
+    ]);
+    let group = groups.get(key2);
+    if (!group) {
+      group = { event: event2, actions: [] };
+      groups.set(key2, group);
+      actionKeys.set(key2, /* @__PURE__ */ new Map());
+    }
+    const service = /^(?:light|switch|homeassistant)\.turn_(on|off)$/.test(
+      event2.action.action,
+    )
+      ? event2.action.action.split(".", 2)[1]
+      : event2.action.action;
+    const actionKey = JSON.stringify([
+      service,
+      Object.entries(event2.action.data || {}).sort(([a], [b]) =>
+        a.localeCompare(b),
+      ),
+      !!event2.superseded,
+    ]);
+    const keys = actionKeys.get(key2);
+    let index2 = keys.get(actionKey);
+    if (index2 === void 0) {
+      index2 = group.actions.length;
+      keys.set(actionKey, index2);
+      group.actions.push({ event: event2, events: [], entities: [] });
+    }
+    const action2 = group.actions[index2];
+    action2.events.push(event2);
+    for (const entity of event2.action.entities) {
+      if (!action2.entities.includes(entity)) {
+        action2.entities.push(entity);
+      }
+    }
+  }
+  return [...groups.values()];
 }
 
 // custom_components/occupied/frontend/src/lib/components/preview/PreviewStateGraph.svelte
@@ -14839,28 +14914,35 @@ function lastGroupResult(session) {
 // custom_components/occupied/frontend/src/lib/components/preview/Timeline.svelte
 var root18 = from_html(`<h2> </h2>`);
 var root_114 = from_html(`<th scope="col" class="svelte-1iz1525"> </th>`);
-var root_211 = from_html(`<span aria-hidden="true"></span>`);
-var root_39 = from_html(`<span> </span> <div> </div>`, 1);
-var root_47 = from_html(`<td class="svelte-1iz1525"><!></td>`);
-var root_56 = from_html(
+var root_211 = from_html(
+  `<td class="planned-time svelte-1iz1525"><svg class="hover-indicator svelte-1iz1525" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2 8 6 4 10"></path></svg> </td>`,
+);
+var root_39 = from_html(`<span aria-hidden="true"></span>`);
+var root_47 = from_html(`<span> </span>`);
+var root_56 = from_html(`<div><!> <span> </span> <div> </div></div>`);
+var root_66 = from_html(`<div> </div>`);
+var root_74 = from_html(`<td class="svelte-1iz1525"></td>`);
+var root_83 = from_html(
   `<button type="button" class="text-button source-link svelte-1iz1525"> </button>`,
 );
-var root_66 = from_html(
-  `<tr><td class="planned-time svelte-1iz1525"><svg class="hover-indicator svelte-1iz1525" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2 8 6 4 10"></path></svg> </td><td class="svelte-1iz1525"> </td><td class="svelte-1iz1525"><span class="event-action svelte-1iz1525"><!> </span></td><!><td class="svelte-1iz1525"><!></td></tr>`,
+var root_92 = from_html(`<td class="svelte-1iz1525"><!></td>`);
+var root_10 = from_html(
+  `<tr><!><td class="svelte-1iz1525"> </td><td class="svelte-1iz1525"><span class="event-action svelte-1iz1525"><!> </span></td><!><!></tr>`,
 );
-var root_74 = from_html(
+var root_11 = from_html(`<tbody class="svelte-1iz1525"></tbody>`);
+var root_122 = from_html(
   `<div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div>`,
 );
-var root_83 = from_html(
-  `<div class="event-details"><div><div class="table-wrap"><table><thead><tr><!><!><th scope="col" class="svelte-1iz1525"> </th></tr></thead><tbody></tbody></table></div> <!></div></div>`,
+var root_132 = from_html(
+  `<div class="event-details"><div><div class="table-wrap"><table><thead><tr><!><!><th scope="col" class="svelte-1iz1525"> </th></tr></thead><!></table></div> <!></div></div>`,
 );
-var root_92 = from_html(`<p> </p>`);
-var root_10 = from_html(`<!> <!> <!>`, 1);
-var root_11 = from_html(`<p role="status"> </p>`);
-var root_122 = from_html(`<section><!> <!></section>`);
+var root_142 = from_html(`<p> </p>`);
+var root_152 = from_html(`<!> <!> <!>`, 1);
+var root_162 = from_html(`<p role="status"> </p>`);
+var root_172 = from_html(`<section><!> <!></section>`);
 var $$css6 = {
   hash: "svelte-1iz1525",
-  code: "th.svelte-1iz1525,\n  td.svelte-1iz1525 {padding:6px 9px;}th.svelte-1iz1525:first-child,\n  .planned-time.svelte-1iz1525 {padding-left:24px;}.planned-time.svelte-1iz1525 {position:relative;}.hover-indicator.svelte-1iz1525 {position:absolute;left:6px;top:50%;transform:translateY(-50%);width:12px;height:12px;fill:none;stroke:var(--info-color, #039be5);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:0;pointer-events:none;}tr.svelte-1iz1525:hover .hover-indicator:where(.svelte-1iz1525),\n  tr.svelte-1iz1525:focus-within .hover-indicator:where(.svelte-1iz1525) {opacity:0.7;}.source-link.svelte-1iz1525 {min-height:30px;padding:3px 4px;margin:0;text-align:left;}.event-action.svelte-1iz1525 {display:inline-flex;align-items:center;gap:7px;}.action-indicator.svelte-1iz1525 {display:inline-block;width:12px;height:12px;flex:0 0 12px;box-sizing:border-box;border:2px solid var(--info-color, #039be5);border-radius:50%;}.action-indicator.on.svelte-1iz1525 {background:var(--info-color, #039be5);}tr.current.svelte-1iz1525 {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-1iz1525 {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}",
+  code: "th.svelte-1iz1525,\n  td.svelte-1iz1525 {padding:6px 9px;}tbody.svelte-1iz1525 tr:where(.svelte-1iz1525):not(:last-child) td:where(.svelte-1iz1525):not([rowspan]) {border-bottom:0;}td[rowspan].svelte-1iz1525 {vertical-align:top;}th.svelte-1iz1525:first-child,\n  .planned-time.svelte-1iz1525 {padding-left:24px;}.planned-time.svelte-1iz1525 {position:relative;}.hover-indicator.svelte-1iz1525 {position:absolute;left:6px;top:50%;transform:translateY(-50%);width:12px;height:12px;fill:none;stroke:var(--info-color, #039be5);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:0;pointer-events:none;}tbody.svelte-1iz1525:hover .hover-indicator:where(.svelte-1iz1525),\n  tbody.svelte-1iz1525:focus-within .hover-indicator:where(.svelte-1iz1525) {opacity:0.7;}.source-link.svelte-1iz1525 {min-height:30px;padding:3px 4px;margin:0;text-align:left;}.event-action.svelte-1iz1525 {display:inline-flex;align-items:center;gap:7px;}.action-indicator.svelte-1iz1525 {display:inline-block;width:12px;height:12px;flex:0 0 12px;box-sizing:border-box;border:2px solid var(--info-color, #039be5);border-radius:50%;}.action-indicator.on.svelte-1iz1525 {background:var(--info-color, #039be5);}tr.current.svelte-1iz1525 {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-1iz1525 {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}",
 };
 function Timeline($$anchor, $$props) {
   push($$props, true);
@@ -14901,10 +14983,11 @@ function Timeline($$anchor, $$props) {
     set2(hoveredEventTime, null);
   });
   let events = user_derived(() => $$props.plan?.events ?? []);
+  let groups = user_derived(() => groupPreviewEvents(get(events)));
   let currentPage = user_derived(() =>
-    Math.max(0, Math.min(get(page), Math.ceil(get(events).length / 50) - 1)),
+    Math.max(0, Math.min(get(page), Math.ceil(get(groups).length / 50) - 1)),
   );
-  var section = root_122();
+  var section = root_172();
   var node = child(section);
   {
     var consequent = ($$anchor2) => {
@@ -14932,8 +15015,8 @@ function Timeline($$anchor, $$props) {
   }
   var node_2 = sibling(node, 2);
   {
-    var consequent_10 = ($$anchor2) => {
-      var fragment_1 = root_10();
+    var consequent_13 = ($$anchor2) => {
+      var fragment_1 = root_152();
       var node_3 = first_child(fragment_1);
       PreviewStateGraph(node_3, {
         get plan() {
@@ -14960,8 +15043,8 @@ function Timeline($$anchor, $$props) {
       });
       var node_4 = sibling(node_3, 2);
       {
-        var consequent_9 = ($$anchor3) => {
-          var div = root_83();
+        var consequent_12 = ($$anchor3) => {
+          var div = root_132();
           var div_1 = child(div);
           var div_2 = child(div_1);
           var table = child(div_2);
@@ -14999,197 +15082,300 @@ function Timeline($$anchor, $$props) {
           var text_3 = only_child(th_2, true);
           reset(tr);
           reset(thead);
-          var tbody = sibling(thead);
+          var node_7 = sibling(thead);
           each(
-            tbody,
-            20,
+            node_7,
+            16,
             () =>
-              get(events).slice(
+              get(groups).slice(
                 get(currentPage) * 50,
                 get(currentPage) * 50 + 50,
               ),
-            (event2) => event2,
-            ($$anchor4, event2) => {
-              const live = user_derived(() =>
-                eventLiveResult(event2, liveSession()),
-              );
-              const details = user_derived(() =>
-                eventDetails(
-                  event2,
-                  eventLabel(event2),
-                  $$props.plan.timezone,
-                  t(),
-                  $$props.locale,
-                  entityNames(),
-                ),
-              );
-              var tr_1 = root_66();
-              let classes;
-              var td = child(tr_1);
-              var text_4 = sibling(child(td));
-              reset(td);
-              var td_1 = sibling(td);
-              var text_5 = only_child(td_1, true);
-              var td_2 = sibling(td_1);
-              var span = child(td_2);
-              var node_7 = child(span);
-              {
-                var consequent_3 = ($$anchor5) => {
-                  var span_1 = root_211();
-                  let classes_1;
-                  template_effect(
-                    () =>
-                      (classes_1 = set_class(
-                        span_1,
-                        1,
-                        "action-indicator svelte-1iz1525",
-                        null,
-                        classes_1,
-                        { on: get(details).actionState === "on" },
-                      )),
+            (group) => group,
+            ($$anchor4, group) => {
+              var tbody = root_11();
+              each(
+                tbody,
+                22,
+                () => group.actions,
+                (action2) => action2,
+                ($$anchor5, action2, index2) => {
+                  const event2 = user_derived(() => action2.event);
+                  const results = user_derived(() =>
+                    action2.events.map((event3) => ({
+                      event: event3,
+                      live: eventLiveResult(event3, liveSession()),
+                    })),
                   );
-                  append($$anchor5, span_1);
-                };
-                if_block(node_7, ($$render) => {
-                  if (get(details).actionState) $$render(consequent_3);
-                });
-              }
-              var text_6 = sibling(node_7);
-              reset(span);
-              reset(td_2);
-              var node_8 = sibling(td_2);
-              {
-                var consequent_6 = ($$anchor5) => {
-                  var td_3 = root_47();
-                  var node_9 = child(td_3);
-                  {
-                    var consequent_4 = ($$anchor6) => {
-                      var fragment_2 = root_39();
-                      var span_2 = first_child(fragment_2);
-                      var text_7 = only_child(span_2, true);
-                      var div_3 = sibling(span_2, 2);
-                      var text_8 = only_child(div_3, true);
-                      template_effect(
-                        ($0) => {
-                          set_class(
-                            span_2,
-                            1,
-                            clsx2(
-                              get(live).outcome.status === "dispatched"
-                                ? "hint"
-                                : "error",
-                            ),
-                          );
-                          set_text(text_7, $0);
-                          set_text(text_8, get(live).outcome.detail);
+                  const current = user_derived(() =>
+                    get(results).some(({ live }) => live?.current),
+                  );
+                  const details = user_derived(() =>
+                    eventDetails(
+                      {
+                        ...get(event2),
+                        action: {
+                          ...get(event2).action,
+                          entities: action2.entities,
                         },
-                        [() => t()(get(live).outcome.status)],
-                      );
-                      append($$anchor6, fragment_2);
+                      },
+                      eventLabel(get(event2)),
+                      $$props.plan.timezone,
+                      t(),
+                      $$props.locale,
+                      entityNames(),
+                    ),
+                  );
+                  var tr_1 = root_10();
+                  let classes;
+                  var node_8 = child(tr_1);
+                  {
+                    var consequent_3 = ($$anchor6) => {
+                      var td = root_211();
+                      var text_4 = sibling(child(td));
+                      reset(td);
+                      template_effect(() => {
+                        set_attribute2(td, "rowspan", group.actions.length);
+                        set_text(text_4, ` ${get(details).time ?? ""}`);
+                      });
+                      append($$anchor6, td);
                     };
-                    var consequent_5 = ($$anchor6) => {
-                      var text_9 = text();
-                      template_effect(
-                        ($0) => set_text(text_9, $0),
-                        [() => t()("next_event")],
-                      );
-                      append($$anchor6, text_9);
-                    };
-                    if_block(node_9, ($$render) => {
-                      if (get(live)?.outcome) $$render(consequent_4);
-                      else if (get(live)?.current) $$render(consequent_5, 1);
+                    if_block(node_8, ($$render) => {
+                      if (get(index2) === 0) $$render(consequent_3);
                     });
                   }
-                  reset(td_3);
-                  append($$anchor5, td_3);
-                };
-                if_block(node_8, ($$render) => {
-                  if (liveSession()) $$render(consequent_6);
-                });
-              }
-              var td_4 = sibling(node_8);
-              var node_10 = child(td_4);
-              {
-                var consequent_7 = ($$anchor5) => {
-                  var button = root_56();
-                  var text_10 = only_child(button, true);
-                  template_effect(() => {
-                    button.disabled = loading();
-                    set_text(text_10, get(details).source);
-                  });
-                  delegated("click", button, () =>
-                    $$props.onOpenSource?.(event2),
+                  var td_1 = sibling(node_8);
+                  var text_5 = only_child(td_1, true);
+                  var td_2 = sibling(td_1);
+                  var span = child(td_2);
+                  var node_9 = child(span);
+                  {
+                    var consequent_4 = ($$anchor6) => {
+                      var span_1 = root_39();
+                      let classes_1;
+                      template_effect(
+                        () =>
+                          (classes_1 = set_class(
+                            span_1,
+                            1,
+                            "action-indicator svelte-1iz1525",
+                            null,
+                            classes_1,
+                            { on: get(details).actionState === "on" },
+                          )),
+                      );
+                      append($$anchor6, span_1);
+                    };
+                    if_block(node_9, ($$render) => {
+                      if (get(details).actionState) $$render(consequent_4);
+                    });
+                  }
+                  var text_6 = sibling(node_9);
+                  reset(span);
+                  reset(td_2);
+                  var node_10 = sibling(td_2);
+                  {
+                    var consequent_8 = ($$anchor6) => {
+                      var td_3 = root_74();
+                      each(
+                        td_3,
+                        21,
+                        () => get(results),
+                        (result) => result.event,
+                        ($$anchor7, result) => {
+                          var fragment_2 = comment();
+                          var node_11 = first_child(fragment_2);
+                          {
+                            var consequent_6 = ($$anchor8) => {
+                              var div_3 = root_56();
+                              var node_12 = child(div_3);
+                              {
+                                var consequent_5 = ($$anchor9) => {
+                                  var span_2 = root_47();
+                                  var text_7 = only_child(span_2);
+                                  template_effect(
+                                    ($0) => set_text(text_7, `${$0 ?? ""}:`),
+                                    [
+                                      () =>
+                                        get(result)
+                                          .event.action.entities.map(
+                                            (entity) =>
+                                              entityNames()[entity] || entity,
+                                          )
+                                          .join(", "),
+                                    ],
+                                  );
+                                  append($$anchor9, span_2);
+                                };
+                                if_block(node_12, ($$render) => {
+                                  if (get(results).length > 1)
+                                    $$render(consequent_5);
+                                });
+                              }
+                              var span_3 = sibling(node_12, 2);
+                              var text_8 = only_child(span_3, true);
+                              var div_4 = sibling(span_3, 2);
+                              var text_9 = only_child(div_4, true);
+                              reset(div_3);
+                              template_effect(
+                                ($0) => {
+                                  set_class(
+                                    span_3,
+                                    1,
+                                    clsx2(
+                                      get(result).live.outcome.status ===
+                                        "dispatched"
+                                        ? "hint"
+                                        : "error",
+                                    ),
+                                  );
+                                  set_text(text_8, $0);
+                                  set_text(
+                                    text_9,
+                                    get(result).live.outcome.detail,
+                                  );
+                                },
+                                [() => t()(get(result).live.outcome.status)],
+                              );
+                              append($$anchor8, div_3);
+                            };
+                            var consequent_7 = ($$anchor8) => {
+                              var div_5 = root_66();
+                              var text_10 = only_child(div_5, true);
+                              template_effect(
+                                ($0) => set_text(text_10, $0),
+                                [() => t()("next_event")],
+                              );
+                              append($$anchor8, div_5);
+                            };
+                            if_block(node_11, ($$render) => {
+                              if (get(result).live?.outcome)
+                                $$render(consequent_6);
+                              else if (get(result).live?.current)
+                                $$render(consequent_7, 1);
+                            });
+                          }
+                          append($$anchor7, fragment_2);
+                        },
+                      );
+                      reset(td_3);
+                      append($$anchor6, td_3);
+                    };
+                    if_block(node_10, ($$render) => {
+                      if (liveSession()) $$render(consequent_8);
+                    });
+                  }
+                  var node_13 = sibling(node_10);
+                  {
+                    var consequent_10 = ($$anchor6) => {
+                      var td_4 = root_92();
+                      var node_14 = child(td_4);
+                      {
+                        var consequent_9 = ($$anchor7) => {
+                          var button = root_83();
+                          var text_11 = only_child(button, true);
+                          template_effect(() => {
+                            button.disabled = loading();
+                            set_text(text_11, get(details).source);
+                          });
+                          delegated("click", button, () =>
+                            $$props.onOpenSource?.(group.event),
+                          );
+                          append($$anchor7, button);
+                        };
+                        var alternate = ($$anchor7) => {
+                          var text_12 = text();
+                          template_effect(() =>
+                            set_text(text_12, get(details).source),
+                          );
+                          append($$anchor7, text_12);
+                        };
+                        if_block(node_14, ($$render) => {
+                          if ($$props.onOpenSource) $$render(consequent_9);
+                          else $$render(alternate, -1);
+                        });
+                      }
+                      reset(td_4);
+                      template_effect(() =>
+                        set_attribute2(td_4, "rowspan", group.actions.length),
+                      );
+                      append($$anchor6, td_4);
+                    };
+                    if_block(node_13, ($$render) => {
+                      if (get(index2) === 0) $$render(consequent_10);
+                    });
+                  }
+                  reset(tr_1);
+                  template_effect(
+                    ($0) => {
+                      set_attribute2(
+                        tr_1,
+                        "aria-current",
+                        get(current) ? "step" : void 0,
+                      );
+                      classes = set_class(
+                        tr_1,
+                        1,
+                        "svelte-1iz1525",
+                        null,
+                        classes,
+                        { current: get(current), completed: $0 },
+                      );
+                      set_text(text_5, get(details).targets);
+                      set_text(text_6, ` ${get(details).action ?? ""}`);
+                    },
+                    [
+                      () =>
+                        get(results).every(
+                          ({ live }) => live?.outcome?.status === "dispatched",
+                        ),
+                    ],
                   );
-                  append($$anchor5, button);
-                };
-                var alternate = ($$anchor5) => {
-                  var text_11 = text();
-                  template_effect(() => set_text(text_11, get(details).source));
-                  append($$anchor5, text_11);
-                };
-                if_block(node_10, ($$render) => {
-                  if ($$props.onOpenSource) $$render(consequent_7);
-                  else $$render(alternate, -1);
-                });
-              }
-              reset(td_4);
-              reset(tr_1);
-              template_effect(() => {
-                set_attribute2(
-                  tr_1,
-                  "aria-current",
-                  get(live)?.current ? "step" : void 0,
-                );
-                classes = set_class(tr_1, 1, "svelte-1iz1525", null, classes, {
-                  current: get(live)?.current,
-                  completed: get(live)?.outcome?.status === "dispatched",
-                });
-                set_text(text_4, ` ${get(details).time ?? ""}`);
-                set_text(text_5, get(details).targets);
-                set_text(text_6, ` ${get(details).action ?? ""}`);
-              });
-              event("pointerenter", tr_1, () =>
-                set2(hoveredEventTime, event2.time, true),
+                  append($$anchor5, tr_1);
+                },
               );
-              event("pointerleave", tr_1, () => set2(hoveredEventTime, null));
-              delegated("focusin", tr_1, () =>
-                set2(hoveredEventTime, event2.time, true),
+              reset(tbody);
+              event("pointerenter", tbody, () =>
+                set2(hoveredEventTime, group.event.time, true),
               );
-              delegated("focusout", tr_1, () => set2(hoveredEventTime, null));
-              append($$anchor4, tr_1);
+              event("pointerleave", tbody, () => set2(hoveredEventTime, null));
+              delegated("focusin", tbody, () =>
+                set2(hoveredEventTime, group.event.time, true),
+              );
+              delegated("focusout", tbody, () => set2(hoveredEventTime, null));
+              append($$anchor4, tbody);
             },
           );
-          reset(tbody);
           reset(table);
           reset(div_2);
-          var node_11 = sibling(div_2, 2);
+          var node_15 = sibling(div_2, 2);
           {
-            var consequent_8 = ($$anchor4) => {
-              var div_4 = root_74();
-              var button_1 = child(div_4);
-              var text_12 = only_child(button_1, true);
-              var span_3 = sibling(button_1, 2);
-              var text_13 = only_child(span_3);
-              var button_2 = sibling(span_3, 2);
-              var text_14 = only_child(button_2, true);
-              reset(div_4);
+            var consequent_11 = ($$anchor4) => {
+              var div_6 = root_122();
+              var button_1 = child(div_6);
+              var text_13 = only_child(button_1, true);
+              var span_4 = sibling(button_1, 2);
+              var text_14 = only_child(span_4);
+              var button_2 = sibling(span_4, 2);
+              var text_15 = only_child(button_2, true);
+              reset(div_6);
               template_effect(
                 ($0, $1, $2, $3) => {
                   button_1.disabled = get(currentPage) === 0;
-                  set_text(text_12, $0);
+                  set_text(text_13, $0);
                   set_text(
-                    text_13,
+                    text_14,
                     `${get(events).length ?? ""}
                 ${$1 ?? ""} \xB7 ${get(currentPage) + 1}/${$2 ?? ""}`,
                   );
                   button_2.disabled =
-                    (get(currentPage) + 1) * 50 >= get(events).length;
-                  set_text(text_14, $3);
+                    (get(currentPage) + 1) * 50 >= get(groups).length;
+                  set_text(text_15, $3);
                 },
                 [
                   () => t()("previous"),
                   () => t()("events"),
-                  () => Math.max(1, Math.ceil(get(events).length / 50)),
+                  () => Math.max(1, Math.ceil(get(groups).length / 50)),
                   () => t()("next"),
                 ],
               );
@@ -15199,10 +15385,10 @@ function Timeline($$anchor, $$props) {
               delegated("click", button_2, () =>
                 set2(page, get(currentPage) + 1),
               );
-              append($$anchor4, div_4);
+              append($$anchor4, div_6);
             };
-            if_block(node_11, ($$render) => {
-              if (get(events).length > 50) $$render(consequent_8);
+            if_block(node_15, ($$render) => {
+              if (get(groups).length > 50) $$render(consequent_11);
             });
           }
           reset(div_1);
@@ -15211,12 +15397,12 @@ function Timeline($$anchor, $$props) {
           append($$anchor3, div);
         };
         if_block(node_4, ($$render) => {
-          if ($$props.plan.events.length > 0) $$render(consequent_9);
+          if ($$props.plan.events.length > 0) $$render(consequent_12);
         });
       }
-      var node_12 = sibling(node_4, 2);
+      var node_16 = sibling(node_4, 2);
       each(
-        node_12,
+        node_16,
         16,
         () =>
           $$props.plan.issues.filter(
@@ -15228,33 +15414,33 @@ function Timeline($$anchor, $$props) {
           ),
         (issue) => issue,
         ($$anchor3, issue) => {
-          var p = root_92();
-          var text_15 = only_child(p);
+          var p = root_142();
+          var text_16 = only_child(p);
           template_effect(() => {
             set_class(
               p,
               1,
               clsx2(issue.severity === "error" ? "error" : "hint"),
             );
-            set_text(text_15, `${issue.code ?? ""}: ${issue.message ?? ""}`);
+            set_text(text_16, `${issue.code ?? ""}: ${issue.message ?? ""}`);
           });
           append($$anchor3, p);
         },
       );
       append($$anchor2, fragment_1);
     };
-    var consequent_11 = ($$anchor2) => {
-      var p_1 = root_11();
-      var text_16 = only_child(p_1, true);
+    var consequent_14 = ($$anchor2) => {
+      var p_1 = root_162();
+      var text_17 = only_child(p_1, true);
       template_effect(
-        ($0) => set_text(text_16, $0),
+        ($0) => set_text(text_17, $0),
         [() => t()("loading_schedule")],
       );
       append($$anchor2, p_1);
     };
     if_block(node_2, ($$render) => {
-      if ($$props.plan) $$render(consequent_10);
-      else if (showLoading()) $$render(consequent_11, 1);
+      if ($$props.plan) $$render(consequent_13);
+      else if (showLoading()) $$render(consequent_14, 1);
     });
   }
   reset(section);
