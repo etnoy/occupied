@@ -13,6 +13,8 @@ artifacts.mkdir(exist_ok=True)
 config = Path(tempfile.mkdtemp(prefix="ha-", dir=artifacts))
 with ZipFile(ROOT / "dist" / "occupied.zip") as archive:
     archive.extractall(config / "custom_components" / "occupied")
+# Prefer the extracted release over the editable checkout's namespace package.
+(config / "custom_components" / "__init__.py").touch()
 (config / "configuration.yaml").write_text(
     """homeassistant:
   name: Occupied browser tests
