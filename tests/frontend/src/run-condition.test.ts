@@ -24,7 +24,7 @@ void test("editing enforcement and delay preserves the other run condition setti
   });
   assert.deepEqual(scalar.states, ["armed_away"]);
   const form = runConditionForm({
-    entity_id: "alarm_control_panel.8124_aaa_zone_1_alarm",
+    entity_id: "alarm_control_panel.alarm",
     state: ["armed_away", "armed_night"],
     enforce_state_on_start: true,
     start_delay: "45s",

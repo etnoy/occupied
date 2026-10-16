@@ -1,10 +1,66 @@
 # Custom YAML actions
 
-Choose **Custom YAML** in the Action dropdown to edit one action or an ordered list of actions. The usual controls still set the title, timing, weekdays, and enabled state. Custom YAML is also available for each random event's start and end.
+For advanced action configurations, choose **Custom YAML**. This allows you, for example, to set brighness and other extra settings for lights.
 
-Switching from an existing action generates equivalent YAML using the current form values. Group on/off becomes an entity-state mapping; covers, services, and scenes retain their existing service name, targets, and data. No devices are controlled by switching editors or validating text.
+This document is a reference for what is possible with custom yaml.
 
-## Individual states
+## What to enter in the editor
+
+Choose **Custom YAML** in a step or a random event's action editor. Enter either one action mapping:
+
+```yaml
+action: turn_on
+entities:
+  - light.living_room
+  - switch.window_lights
+```
+
+Or an ordered list of action mappings:
+
+```yaml
+- action: light.turn_on
+  entities:
+    - light.living_room
+  data:
+    brightness_pct: 50
+    transition: 3
+- action: scene.turn_on
+  entities:
+    - scene.evening
+```
+
+The editor accepts the action itself. Do not add an `actions:` wrapper, `steps:`, timing fields, or a complete program here. Timing, weekdays, and whether a step is enabled are configured outside the action editor. See [Full program YAML](#full-program-yaml) for the file representation and [configuration schema](schema.md) for scheduling options.
+
+## Action fields
+
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `action` | Yes | `turn_on`, `turn_off`, `set_state`, or a qualified Home Assistant service such as `light.turn_on`. |
+| `entities` | Yes | A nonempty list of entity IDs for service actions; a nonempty entity-to-settings mapping for `set_state`. |
+| `data` | No | Service parameters as a YAML mapping. Defaults to `{}`. The permitted fields depend on the action. |
+| `stagger` | No | Settings for spreading eligible light/switch changes over time. See [Staggered action](#staggered-action). |
+
+Unknown action fields are rejected. Entity IDs use Home Assistant's `domain.object_id` form. Lists are deduplicated and sorted; state mappings are sorted by entity ID. Entity order therefore does not control execution order. Use separate actions in a list when order matters.
+
+Targets belong in `entities`. The keys `entity_id`, `device_id`, and `area_id` are rejected inside `data`. There are no area, device, or label target selectors in the action format.
+
+## Turn lights and switches on or off
+
+The shorthand actions `turn_on` and `turn_off` accept any combination of light and switch entities:
+
+```yaml
+action: turn_off
+entities:
+  - light.sofa_lamp
+  - light.reading_lamp
+  - switch.window_lights
+```
+
+These actions take no service data. Occupied resolves the matching light and switch services internally. To set brightness, color, or a fade, use `set_state` or an explicit `light.turn_on`/`light.turn_off` action.
+
+## Individual states with `set_state`
+
+Use `set_state` to give each entity its own settings in one action:
 
 ```yaml
 action: set_state
@@ -12,12 +68,18 @@ entities:
   light.sofa_lamp:
     state: "on"
     brightness: 128
-    rgb_color: [255, 80, 0]
+    rgb_color:
+      - 255
+      - 80
+      - 0
     transition: 3
   light.reading_lamp:
     state: "on"
     brightness: 200
     color_temp_kelvin: 2700
+  light.hallway:
+    state: "off"
+    transition: 2
   switch.window_lights:
     state: "on"
   cover.living_room:
@@ -26,22 +88,157 @@ entities:
     state: "closed"
 ```
 
-`set_state` is an Occupied action using a Home Assistant scene-style entity mapping. It dispatches ordinary light, switch, and cover calls; it does not create a Home Assistant scene.
+`set_state` is an Occupied action with a scene-style entity mapping. It dispatches ordinary Home Assistant services; it does not create a scene or directly overwrite Home Assistant's state registry. Only lights, switches, and covers are supported. Put settings under each entity; a nonempty top-level `data` mapping is rejected.
 
-| Entity | Supported settings |
+### Light settings
+
+| Field | Accepted value | Available with |
+| --- | --- | --- |
+| `state` | Required quoted string `"on"` or `"off"`. | On and off |
+| `brightness` | Integer from 1 to 255; 255 is full brightness. | On |
+| `rgb_color` | Three integers from 0 to 255: `[red, green, blue]`. | On |
+| `hs_color` | Two numbers: `[hue, saturation]`, with hue 0–360 and saturation 0–100. | On |
+| `color_temp_kelvin` | Number from 1 to 100000, in kelvin. Device limits may be narrower. | On |
+| `transition` | Number from 0 to 604800, in seconds. Device support may be narrower. | On and off |
+
+Use only one of `rgb_color`, `hs_color`, or `color_temp_kelvin` for a light. `brightness_pct` is not accepted in `set_state`; use `brightness` here or an explicit light service for percentages. Brightness zero is rejected: use `state: "off"`.
+
+An on entry without brightness does not request a new brightness. During light state enforcement, Occupied keeps a known desired brightness when available; otherwise brightness is left to Home Assistant or the device.
+
+Actual device capabilities still apply. Occupied removes unsupported dimming, color, and transition parameters during light service preparation. A valid configuration cannot add capabilities to a device.
+
+### Switch settings
+
+Switch entries accept only `state: "on"` or `state: "off"`. Brightness, color, and transition fields are rejected.
+
+### Cover settings
+
+Each cover entry accepts exactly one of:
+
+| Field | Accepted value |
 | --- | --- |
-| Light on | Required `state: "on"`; optional `brightness`, `rgb_color`, `hs_color`, `color_temp_kelvin`, `transition` |
-| Light off | Required `state: "off"`; optional `transition` |
-| Switch | Required `state: "on"` or `state: "off"` |
-| Cover | Either `state: "open"`/`state: "closed"` or `position: 0–100` |
+| `state` | `"open"` or `"closed"`. |
+| `position` | Integer from 0 (fully closed) to 100 (fully open). |
 
-Quote state strings. `brightness` is an integer from 1 to 255, where 255 is full brightness. The new state mapping accepts only `brightness`, not `brightness_pct`; existing service actions retain their previous data support. Use state off rather than brightness zero.
+Do not combine `state` and `position`. Tilt, stop, and other cover operations use explicit service actions below.
 
-RGB takes three integers from 0 to 255. HS takes hue 0–360 and saturation 0–100. Kelvin controls white temperature. Use only one color representation per light. Transitions are nonnegative seconds. Actual support depends on the device; unsupported light settings follow Occupied's existing capability-aware service preparation. An on entry without brightness does not request a new brightness.
+## Explicit light and switch services
 
-For covers, 0 is closed and 100 is fully open. Do not specify both state and position. Tilt and stop are available through explicit cover service actions. Covers retain their existing preview projection and future-only execution; light handover does not replay historical cover calls.
+Use a qualified action when several entities share the same parameters:
+
+```yaml
+action: light.turn_on
+entities:
+  - light.sofa_lamp
+  - light.reading_lamp
+data:
+  brightness_pct: 65
+  hs_color:
+    - 30
+    - 80
+  transition: 5
+```
+
+| Action | Targets | Accepted `data` |
+| --- | --- | --- |
+| `light.turn_on` | Lights only | `brightness`, `brightness_pct`, `rgb_color`, `hs_color`, `color_temp_kelvin`, `transition`. |
+| `light.turn_off` | Lights only | `transition` only. |
+| `switch.turn_on` | Switches only | None. |
+| `switch.turn_off` | Switches only | None. |
+
+For explicit light services, `brightness` accepts numbers from 1 to 255 and `brightness_pct` accepts numbers from 0.01 to 100. Choose one brightness field. RGB components accept numbers from 0 to 255. Other numeric ranges and the one-color-setting rule match the light settings table above. The stricter integer requirements for `set_state` brightness and RGB do not apply to these service data fields.
+
+These four services use Occupied's typed control validation; arbitrary extra Home Assistant light or switch parameters are rejected. For example, `effect` and `flash` are not supported by `light.turn_on` in this format. A Home Assistant scene or script can encapsulate behavior that needs other parameters.
+
+A fade to off can be written as:
+
+```yaml
+action: light.turn_off
+entities:
+  - light.sofa_lamp
+data:
+  transition: 10
+```
+
+`transition` is a device fade duration in seconds. It does not delay the start of the next action in a list.
+
+## Home Assistant scenes
+
+`scene.turn_on` requires exactly one scene entity. Optional `data` is passed to the service, subject to Home Assistant validation:
+
+```yaml
+action: scene.turn_on
+entities:
+  - scene.evening
+data:
+  transition: 3
+```
+
+Use separate actions to activate multiple scenes. Occupied treats scene effects as opaque: it cannot infer affected entities, calculate an inverse, or automatically restore a previous scene.
+
+## Cover services
+
+Use native cover services for movement, position, tilt, and stopping:
+
+| Action | Standard parameters |
+| --- | --- |
+| `cover.open_cover` | No data needed. |
+| `cover.close_cover` | No data needed. |
+| `cover.stop_cover` | No data needed. |
+| `cover.set_cover_position` | `data: {position: 60}`. |
+| `cover.open_cover_tilt` | No data needed. |
+| `cover.close_cover_tilt` | No data needed. |
+| `cover.stop_cover_tilt` | No data needed. |
+| `cover.set_cover_tilt_position` | `data: {tilt_position: 25}`. |
+
+Positions run from 0 (closed) to 100 (open). The GUI's cover controls use whole percentages; native service payloads are checked against the installed Home Assistant service schema.
+
+```yaml
+- action: cover.set_cover_position
+  entities:
+    - cover.living_room
+  data:
+    position: 60
+- action: cover.set_cover_tilt_position
+  entities:
+    - cover.living_room
+  data:
+    tilt_position: 25
+```
+
+Standard cover commands contribute position and tilt targets to preview. A stop clears the affected target because the final position is unknown. Waiting for a service call to return does not necessarily wait for the cover to finish moving.
+
+## Other entity services
+
+Other qualified `domain.service` actions can call installed Home Assistant services with explicit entity targets and JSON-compatible data:
+
+```yaml
+action: media_player.volume_set
+entities:
+  - media_player.living_room
+data:
+  volume_level: 0.25
+```
+
+```yaml
+action: script.turn_on
+entities:
+  - script.evening_routine
+data:
+  variables:
+    room: living_room
+    brightness: 80
+```
+
+Data may contain strings, numbers, booleans, nulls, lists, and nested mappings as permitted by the service. Non-finite numbers and non-JSON values are rejected. Installed service schemas are checked during GUI validation/save without executing the action; the YAML parser alone cannot verify that a service exists or accepts a payload.
+
+Services must fit this entity-targeted format. `event.fire` is explicitly rejected. Home Assistant automation syntax such as `target:`, `service:`, or `service_data:` is not accepted; use Occupied's `action`, `entities`, and `data` fields.
+
+Generic services are opaque to Occupied. It does not infer their device effects, inverse actions, cleanup, or expected state for enforcement.
 
 ## Combine actions
+
+A list combines different action types at one scheduled occurrence:
 
 ```yaml
 - action: set_state
@@ -51,31 +248,91 @@ For covers, 0 is closed and 100 is fully open. Do not specify both state and pos
       brightness: 20
     cover.living_room:
       position: 40
-
 - action: scene.turn_on
-  entities: [scene.evening]
-
+  entities:
+    - scene.evening
 - action: cover.stop_cover
-  entities: [cover.bedroom]
+  entities:
+    - cover.bedroom
 ```
 
-All actions share one scheduled occurrence and activation time. Calls run in list order. Entity mappings are canonicalized by entity ID, so mapping order is not an execution-order control. Use separate actions in the list when order matters.
+Actions share one sampled start time and run in list order. Ordinary service calls are awaited, but device movement and native fades can continue after a service returns. An enabled stagger period defers the following action until that period ends.
 
-A failed call stops the remaining calls in the block. Calls already completed are not rolled back; custom blocks are not retried as a whole. Permission changes stop remaining dispatch. Disabled/unavailable typed targets retain their existing skip policies. Each scheduled call reclaims its explicit targets from earlier manual overrides; new overrides during dispatch still cancel affected calls. Results are recorded per call. Scenes and generic services remain opaque: Occupied cannot infer which other entities they affect, and handover does not replay them.
+A failed call stops the remaining calls in the block. Completed calls are not rolled back, and the block is not retried as a whole. Permission changes stop remaining dispatch. Disabled or unavailable typed targets follow the runtime's skip policies. Results are recorded per call.
 
-Custom YAML supports the existing `action`, `entities`, and optional `data` fields. Use entity lists for existing services and an entity mapping for `set_state`. Targets belong in `entities`, not in service data. Templates, delays, conditions, loops, parallel blocks, and nested action lists are not supported. Blocks support at most 100 actions and 1000 declared targets/calls; the existing planner budget also applies.
+Each scheduled call reclaims its explicit targets from earlier manual overrides. New manual overrides during dispatch can still cancel affected calls. Opaque scene/script effects do not establish ownership of entities absent from the declared targets.
 
-## Editing, validation, and storage
+Blocks allow 1–100 actions and at most 1000 declared entity targets across their members, after per-action deduplication. A `set_state` mapping also has a 1000-entity limit. Planner event budgets can impose additional limits on the resulting schedule. Nested action lists are rejected.
 
-The code editor accepts the action mapping or list itself, without an enclosing `actions:` key or a complete program. Syntax and entity-state validation use the same strict YAML parser as managed files, including duplicate-key rejection. Errors include block line numbers. Invalid text stays available for correction and cannot replace the last valid configuration.
+## Staggered action
 
-Switching back to simple controls converts a representable single action without losing settings. Replacing individual settings or a multi-action block requires an explicit decision. Custom text remains available while the editor is open. Editing titles or timing preserves the complete action block.
+Staggering changes one light or switch at each evenly spaced tick, in a shuffled order:
 
-The existing submit/save flow validates the whole candidate and installed service schemas. In managed-file mode, edits create a draft for export; Occupied never writes the managed source. Deploy the exported configuration and reload it. Moving to GUI storage copies all supported action settings.
+```yaml
+action: set_state
+stagger:
+  enabled: true
+  period: 90s
+entities:
+  light.sofa_lamp:
+    state: "on"
+    brightness: 128
+  light.reading_lamp:
+    state: "on"
+    brightness: 200
+  switch.window_lights:
+    state: "off"
+```
+
+| Field | Default | Accepted value |
+| --- | --- | --- |
+| `stagger.enabled` | `false` | Boolean `true` or `false`. |
+| `stagger.period` | `2m` | Explicit duration from `1s` through `30m`, such as `90s`, `2m`, or `1m30s`. |
+
+Bare numbers and colon durations such as `00:02:00` are rejected. A custom period can be retained while staggering is disabled.
+
+Staggering supports `turn_on`, `turn_off`, `light.turn_on`, `light.turn_off`, `switch.turn_on`, `switch.turn_off`, and `set_state` containing only light/switch on/off entries. A state mapping can mix on and off entries. Enabled staggering is rejected for scenes, covers, and other services.
+
+For `N` entities and a period `W`, ticks are `W / N` apart. The first tick occurs after one interval and the last at the period's end. Four targets over `2m` change at +30, +60, +90, and +120 seconds. A single target changes at the endpoint. Each new transition gets a new permutation; an already sampled plan retains its order through preview and restart.
+
+A light's `transition` remains its fade duration after its tick. Stagger options are never passed as Home Assistant service data.
+
+### Staggering in a list
+
+Put `stagger` on individual actions, not on an `actions` wrapper:
+
+```yaml
+- action: turn_on
+  entities:
+    - light.sofa_lamp
+    - switch.window_lights
+  stagger:
+    enabled: true
+    period: 2m
+- action: light.turn_on
+  entities:
+    - light.reading_lamp
+  data:
+    brightness_pct: 30
+```
+
+Here the reading-lamp call follows the last stagger tick, two minutes after the block's scheduled start. Enabled stagger periods in a block may total at most 30 minutes.
+
+A block failure stops future ticks and later actions. An unavailable or disabled target consumes its tick without moving the remaining times. Unrelated scheduled events can run between ticks. A newer direct intent for an entity cancels that entity's pending older ticks.
+
+Timing and related-step anchors still refer to the original scheduled start. To schedule a related step after a stagger completes, include the period in its offset. Ticks crossing midnight appear on their actual calendar date.
+
+For random events, enabled periods in the start block must total strictly less than `min_duration`. End-block periods reserve room inside the enclosing window. Infeasible windows produce validation or planning errors instead of silently shortening the periods.
+
+Preview shows each tick's time and target. Manual live preview's **Next event** advances one tick immediately; ordinary calls at the same boundary follow in list order. Normal scheduling uses the planned tick times. Activation handover has its own timing rules and can subsume typed light calls while converging to the expected state.
+
+### Editing stagger settings
+
+For an eligible light/switch action, open **Advanced settings** and enable **Staggered action**. **Time window** defaults to `2m`. Random events have separate controls for start and end actions. A single validated Custom YAML action can use these controls; multi-action blocks retain their per-action YAML settings. Applying the dialog updates the form; saving the step or event persists it. Cancel leaves the form unchanged.
 
 ## Full program YAML
 
-Custom actions are saved under `actions`, even when there is only one. Existing simple steps retain `action`/`entities`/`data`. Choose one representation per step; never specify both.
+In a complete configuration file, custom blocks belong under `actions`, including single-action blocks. Simple steps can instead use singular `action`/`entities`/`data`/`stagger` fields. Choose one representation per step or event phase; do not combine them.
 
 ```yaml
 schema_version: 1
@@ -93,54 +350,51 @@ steps:
           cover.living_room:
             position: 40
       - action: scene.turn_on
-        entities: [scene.evening]
+        entities:
+          - scene.evening
+random:
+  evening_activity:
+    start: {absolute_time: {start: "18:00"}}
+    end: {absolute_time: {start: "23:00"}}
+    min_duration: 5m
+    max_duration: 15m
+    count: {min: 2, max: 4}
+    "on":
+      actions:
+        - action: light.turn_on
+          entities:
+            - light.reading_lamp
+          data:
+            brightness_pct: 60
+        - action: switch.turn_on
+          entities:
+            - switch.window_lights
+    "off":
+      actions:
+        - action: turn_off
+          entities:
+            - light.reading_lamp
+            - switch.window_lights
 ```
 
-For random events, either `on` or `off` may contain an `actions` list instead of a singular action. End actions declare their own targets; the GUI's reuse-targets shortcut remains available for compatible simple controls. Export preserves behavior and action order, but not original comments, anchors, or formatting. Schema version remains 1; installations without Custom YAML support reject the new action/mapping/list shapes.
+Random event `on` and `off` phases independently accept a singular action or an `actions` list. These are start/end phase names; either phase can contain any supported action. End actions declare their own targets and behavior. They do not automatically reverse the start block. The GUI's reuse-targets shortcut is available for compatible simple controls.
 
-## Staggered action
+See [examples/custom.yaml](../examples/custom.yaml) for another complete configuration. The schema remains version 1; older installations lacking custom actions or staggering reject the corresponding fields.
 
-Open **Advanced settings** and enable **Staggered action** for a light/switch on or off action. This is Factorio style: one entity changes at each evenly spaced tick, in a random order. It is unchecked by default. The **Time window** defaults to `2m` and is editable in the dialog or Custom YAML:
+## Validation, editing, and export
 
-```yaml
-action: set_state
-stagger:
-  enabled: true
-  period: 90s
-entities:
-  light.sofa_lamp:
-    state: "on"
-    brightness: 128
-  light.reading_lamp:
-    state: "on"
-    brightness: 200
-  switch.window_lights:
-    state: "on"
-```
+Quote state strings such as `"on"` and `"off"`, and full-program phase keys `"on"` and `"off"`. The YAML loader otherwise interprets these unquoted words as booleans. Quote clock strings as well.
 
-The targets are shuffled once per transition. For `N` entities and period `W`, each tick is `W / N` apart and changes exactly one entity. The first tick is after one interval and the last is at the period's end: four entities over `2m` change at +30, +60, +90, and +120 seconds. A single entity turns on at the endpoint. Each new transition receives its own permutation; an already sampled plan keeps its order through preview and restart.
+The editor uses the same strict YAML loader as managed files. It rejects duplicate keys, non-string mapping keys, unsafe tags, recursive aliases, merge keys (`<<`), unknown fields, and inputs larger than 1 MiB. Errors include field paths and source line numbers. Ordinary nonrecursive aliases can be parsed, but export does not preserve the original anchor structure.
 
-`stagger` belongs beside `action` and `entities`, including inside individual actions in a list. It is supported on direct `turn_on` and `turn_off` actions and their `light.*`/`switch.*` equivalents. State mappings may contain on and off entries; each tick applies its entity's declared state. Scenes, covers, and other services cannot enable it. Periods use explicit units from `1s` through `30m`. `enabled` defaults to false, and `period` to `2m`. A disabled custom period is retained for re-enabling.
+Invalid custom text stays available for correction and cannot replace the last valid configuration. Editing a title or timing preserves the complete action block. Switching to simple controls converts a representable single action without losing settings; replacing individual settings or a multi-action block requires an explicit decision. Custom text remains available while the editor is open.
 
-An individual light's `transition` setting remains its brightness-fade duration after its tick. Staggering never passes its options to HA services.
+The submit/save flow validates the complete candidate and installed service schemas. In managed-file mode, edits create a draft for export; Occupied does not write the managed source. Deploy the exported configuration and reload it. Moving to GUI storage copies supported action settings.
 
-In an ordered list, the following action starts after the stagger period ends. Combined periods in one block cannot exceed 30 minutes. A custom-block failure stops future ticks and later actions; unavailable/disabled targets consume their tick without changing the remaining times. Unrelated events run between ticks. A newer direct intent for an entity cancels its pending older ticks, so an older action cannot undo a newer intent.
+Export preserves behavior, action order, and service payloads, but normalizes entity ordering and defaults. Original comments, anchors, and formatting are not preserved.
 
-Timing and related-step anchors still refer to the original scheduled start, not the final tick. Add the period to a related-step offset to run after completion. Overnight ticks appear on their actual calendar date. Random start-block periods must total less than `min_duration`; any end-block period reserves space inside the enclosing window. Infeasible windows produce validation/planning errors rather than shorten the period.
+## Runtime and unsupported constructs
 
-Preview shows each tick's time and target. Manual live preview's **Next event** advances one scheduled tick immediately, without waiting in real time; ordinary calls at the same boundary follow it in list order. Normal scheduling consumes the planned tick times. Existing activation handover retains its independent rules and may subsume typed light calls while converging.
+Only direct typed light intents contribute to light handover and expected light state. Historical scene and generic service calls are not replayed during activation. Covers have independent position/tilt projection and are future-only by default; configured startup state enforcement can reconcile known cover targets. Covers do not participate in light handover. 
 
-For an off action, use the same options:
-
-```yaml
-action: turn_off
-stagger:
-  enabled: true
-  period: 2m
-entities:
-  - light.sofa_lamp
-  - light.reading_lamp
-  - switch.window_lights
-```
-
-Random events have separate **Staggered action** and **Time window** controls for their start and end actions in Advanced settings. A single validated Custom YAML light/switch action can also be configured there; multi-action blocks retain per-action YAML options. Applying the dialog updates the form; saving the step/event persists it. Cancel leaves the form unchanged.
+Custom YAML is an action format, not Home Assistant's automation or script language. It does not support templates, conditions, delays, waits, loops, choose/if branches, parallel blocks, nested action lists, variables at the action level, or per-action scheduling fields. Use related scheduled steps for separate times, random events for paired activity, or a Home Assistant script invoked through an entity service for more complex behavior.

@@ -6,16 +6,18 @@
   "scripts": {
     "build": "node scripts/build-frontend.ts",
     "build:check": "node scripts/build-frontend.ts --check",
-    "lint": "eslint \"custom_components/occupied/frontend/src/**/*.{ts,svelte}\" \"tests/frontend/**/*.ts\" \"scripts/*.{ts,mjs}\" --max-warnings 0",
+    "lint": "eslint \"custom_components/occupied/frontend/src/**/*.{ts,svelte}\" \"tests/frontend/**/*.ts\" \"tests/browser/**/*.ts\" \"scripts/*.{ts,mjs}\" --max-warnings 0",
     "typecheck": "tsc --noEmit && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "test": "pnpm run build:tests && node --test tests/frontend/generated/*.test.js",
-    "format:check": "prettier --check custom_components/occupied/frontend tests/frontend \"scripts/*.{ts,mjs}\" eslint.config.mjs tsconfig.json package.json .prettierrc.json .github/workflows",
-    "format:fix": "prettier --write \"custom_components/occupied/frontend/src/**/*.{ts,svelte,css}\" \"tests/frontend/src/*.ts\" \"scripts/*.{ts,mjs}\" eslint.config.mjs tsconfig.json package.json .prettierrc.json .github/workflows && pnpm run build",
+    "format:check": "prettier --check custom_components/occupied/frontend tests/frontend tests/browser \"scripts/*.{ts,mjs}\" eslint.config.mjs tsconfig.json package.json .prettierrc.json .github/workflows .github/dependabot.yml",
+    "format:fix": "prettier --write \"custom_components/occupied/frontend/src/**/*.{ts,svelte,css}\" \"tests/frontend/src/*.ts\" tests/browser \"scripts/*.{ts,mjs}\" eslint.config.mjs tsconfig.json package.json .prettierrc.json .github/workflows && pnpm run build",
     "build:tests": "node scripts/build-frontend.ts --tests-only",
-    "lint:fix": "eslint \"custom_components/occupied/frontend/src/**/*.{ts,svelte}\" \"tests/frontend/**/*.ts\" \"scripts/*.{ts,mjs}\" --fix --max-warnings 0 && pnpm run build"
+    "lint:fix": "eslint \"custom_components/occupied/frontend/src/**/*.{ts,svelte}\" \"tests/frontend/**/*.ts\" \"tests/browser/**/*.ts\" \"scripts/*.{ts,mjs}\" --fix --max-warnings 0 && pnpm run build",
+    "test:browser": "playwright test --config tests/browser/playwright.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
     "@stylistic/eslint-plugin": "5.10.0",
     "@types/node": "24.19.1",
     "esbuild": "0.28.2",

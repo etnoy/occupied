@@ -7,13 +7,22 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   verify:
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
     uses: ./.github/workflows/check.yml
 
   publish:
     needs: verify
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:

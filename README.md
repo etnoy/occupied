@@ -4,13 +4,13 @@
 
 Burglars look for living spaces that look like nobody's home: make sure yours looks occupied!
 
-Occupied is an occupancy simulator for Home Assistant that lets you create schedules for lights, covers, and other entities. But remember the scene in *Home Alone* where Harry knows exactly when each house's lights will come on? Your timers probably shouldn't be that predictable. Therefore, Occupied has built in support for randomness to make your home look lived in. 
+Occupied is an occupancy simulator for Home Assistant that lets you create schedules for lights, covers, and other entities. But remember the scene in *Home Alone* where Harry knows exactly when each house's lights will come on? Your timers probably shouldn't be that predictable. Therefore, Occupied has built in support for randomness to make your home look lived in.
 
 ![Harry and Marv predicting the automated timers](https://raw.githubusercontent.com/etnoy/occupied/main/media/homealone.png)
 
 Occupied also has an easy-to-use GUI, which makes it much easier to set up than traditional automations.
 
-Occupied is the spiritual successor of [Occusim](https://github.com/acockburn/occusim) which is no longer maintained. 
+Occupied is the spiritual successor of [Occusim](https://github.com/acockburn/occusim) which is no longer maintained.
 
 # Use cases
 
@@ -28,7 +28,7 @@ Install through [HACS](https://hacs.xyz/):
 4. Go to **Settings → Devices & services → Add integration → Occupied** and create a controller. Choose GUI storage to get started with the editor.
 5. Select **Configure** on the integration to open the Occupied panel.
 
-New controllers start with permission disabled, so you can create and preview a schedule before enabling it. See the [installation guide](docs/installation.md) for manual installation, upgrades, and troubleshooting.
+New controllers start with permission disabled, so you can create and preview a schedule before enabling it.
 
 # Usage
 
@@ -40,12 +40,16 @@ Open Occupied through the integration's **Configure** control (the cog wheel), t
 
 1. Choose **Absolute time** to run the action at a specific time ("run at 8 AM"), or have it be a random time within a window ("run between 7:30 AM and 8:30 AM")
 2. Choose **Relative to** to run the action relative to another event, say "run at sunrise" or "run this step after that step". You add a time offset, like "run 30 minutes before dawn" and optionally make it choose a random time, say "run at a random time between 20 and 40 minutes after sunset"
-2. Next, choose an action to run. A simple example is to turn a light on
-4. Click on **Save step**. 
+3. Next, choose an action to run. A simple example is to turn a light on
+4. Click on **Save step**.
 
 You can now create more steps and have those steps either be absolute in time, or relative to the previous step
 
-For more advanced usage like turning on a light at a specific brigthness, use **Custom YAML** as the action. See [Custom YAML actions](docs/custom-yaml.md).
+<img src="media/screenshots/create-step.png" alt="Step editor with a randomized dinner time and two kitchen lights" width="1070">
+
+*Dinner lights come on at a different time each evening, within a 30-minute window.*
+
+For more advanced usage like turning on a light at a specific brightness, use **Custom YAML** as the action. See [Custom YAML actions](docs/custom-yaml.md).
 
 ## Create a Random Event
 
@@ -57,9 +61,17 @@ Random Events manage a light for both on and off, so you can have a kitchen ligh
 4. Choose the entities to turn on and off during each window.
 5. Save the random event.
 
+<img src="media/screenshots/random-event.png" alt="Random event editor with two to four kitchen visits between 20:00 and 22:30, each lasting 5–15 minutes" width="820">
+
+*Short kitchen visits add activity between the main steps. Each visit turns the same light on, then off again.*
+
 ## Preview the timeline
 
 Open **Preview** to see how the entities would be turned on and off. This will be a render of the random events within the ranges you chose before, so navigate back and forth during the days to see how those will be randomized.
+
+<img src="media/screenshots/timeline.png" alt="Daily timeline showing scheduled lighting and random activity across household lights and switches" width="1072">
+
+*Yellow shows when each device is on. Morning routines, random visits, and evening lighting form a different pattern each day.*
 
 ## Add a run condition
 
@@ -67,7 +79,7 @@ You probably only want to pretend someone is home when nobody actually is. A run
 
 In **Settings → Run condition**, enable **Run only when an entity matches**, pick your entity, and choose the states that should let Occupied run. For an alarm, that could be `armed_away`, or both `armed_away` and `armed_night`.
 
-When the condition stops matching, i.e. when you get home and disarm the alarm, Occupied stops running actions and leaves the lights as they are. 
+When the condition stops matching, i.e. when you get home and disarm the alarm, Occupied stops running actions and leaves the lights as they are.
 
 ## Enable the integration
 
@@ -86,13 +98,17 @@ To add another controller, go to **Settings → Devices & services → Add integ
 
 With run conditions, you can also enforce state. This means that as soon as you leave home, it switches to the expected state without having to wait for the next action.
 
-Under **Settings → Run condition**, enable a run condition, then enable **Enforce expected state on start**. 
+Under **Settings → Run condition**, enable a run condition, then enable **Enforce expected state on start**.
 
 There is a default setting in **Delay before enforcing state** of `30s`, giving you time to get out of the house before device changes begin.
 
-There is also a button, **Enforce expected state**, that you can press if you accidentally turned on and off some lights and want Occupied to fix that for you. 
+There is also a button, **Enforce expected state**, that you can press if you accidentally turned on and off some lights and want Occupied to fix that for you.
 
-Use **Extra entities to turn off** for lights and switches that Occupied does not manage but you want turned off when away. This is great for that bathroom light you don't want to forget to turn off when you are away, but you don't want it in a Step or Random Event becuase the bathroom has no windows.
+Use **Extra entities to turn off** for lights and switches that Occupied does not manage but you want turned off when away. This is great for that bathroom light you don't want to forget to turn off when you are away, but you don't want it in a Step or Random Event because the bathroom has no windows.
+
+<img src="media/screenshots/run-condition.png" alt="Away mode run condition with state enforcement, a 30-second delay, and extra devices to turn off" width="900">
+
+*When Away mode turns on, enforce the expected state after 30 seconds and switch off extra devices such as the bathroom light and coffee machine.*
 
 ## Limit when a step can run
 
@@ -103,19 +119,27 @@ Use the timing controls to combine clock times and solar events:
 
 ## Try a live preview
 
-In **Preview**, select **Start live preview**. This allows you to preview the scedule on real devices, and you click **Next event** to walk through the simulation step by step.
+In **Preview**, select **Start live preview**. This allows you to preview the schedule on real devices, and you click **Next event** to walk through the simulation step by step.
+
+<img src="media/screenshots/live-preview.png" alt="Live preview ready for the next event, showing a dispatched action and the next hallway light change" width="1072">
+
+*Walk through the schedule one event at a time and see which action will run next.*
 
 ## Factorio-style lights
 
-In Factorio, a group of lights dont turn on at once when the sun sets, bur they have a tiny delay each, creating a beautiful staggered look. You can do this in Occupied by enabling **Staggered action** under **Advanced settings**. 
+In Factorio, a group of lights don't turn on at once when the sun sets, but they have a tiny delay each, creating a beautiful staggered look. You can do this in Occupied by enabling **Staggered action** under **Advanced settings**.
 
 The **Time window** defaults to `2m`, so with four entities over two minutes, actions occur at 30-second intervals.
+
+<img src="media/screenshots/staggered-lights.png" alt="Advanced step settings with staggered actions enabled over a two-minute window" width="480">
+
+*Spread the welcome-home lights across two minutes, with a different device order each day.*
 
 See the [staggered-action example](examples/stagger.yaml).
 
 # YAML configuration
 
-While we've put a lot of effort into the GUI, it is still very powerful to do plain old yaml. 
+While we've put a lot of effort into the GUI, it is still very powerful to do plain old yaml.
 
 ## Import and export
 
@@ -134,9 +158,7 @@ occupied:
 
 Each controller has its own permission and schedule so you can have multiple instances controlled by yaml.
 
-With file-based config, you cannot edit programs with the GUI. 
-
-See [managed configuration](docs/managed-configuration.md) for source switching, multiple instances, and deployment with configuration management systems.
+With file-based config, you cannot edit programs with the GUI.
 
 ## CLI
 
@@ -197,4 +219,4 @@ The frontend uses Svelte 5 and TypeScript, with `OccupiedPanel` as HA’s custom
 
 Run `pnpm run lint:fix` for automatic lint fixes and `pnpm run format:fix` for formatting.
 
-Run `pnpm run build` after editing `.ts`, `.svelte`, or `.css` files and commit the generated JavaScript under `custom_components/occupied/frontend/dist/` alongside its sources. 
+Run `pnpm run build` after editing `.ts`, `.svelte`, or `.css` files and commit the generated JavaScript under `custom_components/occupied/frontend/dist/` alongside its sources.
