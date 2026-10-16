@@ -175,12 +175,6 @@ jobs:
         with:
           version: "11.25.0"
           cache: true
-      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
-        with:
-          version: "0.12.23"
-          python-version: "3.14.8"
-          enable-cache: true
-      - run: uv sync --locked
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm run test:browser

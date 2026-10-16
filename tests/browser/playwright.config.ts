@@ -25,11 +25,11 @@ export default defineConfig({
     video: "retain-on-failure",
   },
   webServer: {
-    command: ".venv/bin/python tests/browser/serve.py",
+    command: "python3 tests/browser/serve.py",
     cwd: "../..",
     url: "http://127.0.0.1:18123/api/onboarding",
-    timeout: 120_000,
+    timeout: 240_000,
     reuseExistingServer: false,
-    gracefulShutdown: { signal: "SIGTERM", timeout: 10_000 },
+    gracefulShutdown: { signal: "SIGTERM", timeout: 40_000 },
   },
 });

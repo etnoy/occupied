@@ -69,20 +69,24 @@ Dependabot proposes weekly updates for Actions, pnpm dependencies, and uv
 dependencies. Minor and patch updates are grouped by ecosystem; major versions
 remain separate and updates are never automatically merged. Home Assistant and
 its frontend/test-plugin pins are maintained together with the compatibility
-matrix and hashed minimum-version requirements. Dependency updates that change
+matrix, browser image digest, and hashed minimum-version requirements. Dependency updates that change
 the compiled frontend must include regenerated assets before CI can pass.
 
 The browser smoke test downloads the verified `occupied-release` artifact and
-extracts its ZIP into a fresh HA configuration bound to `127.0.0.1:18123`. It
+extracts its ZIP into a fresh HA configuration. A digest-pinned official HA
+container provides the complete frontend runtime and publishes only
+`127.0.0.1:18123` on the host. It
 creates a disposable owner through onboarding, signs in, creates a controller,
 saves a step with native HA time/entity selectors, reloads to check persistence,
 and opens Preview. It uses a virtual light and no existing HA configuration.
-Playwright owns the HA process and stops it when the test finishes. Temporary
+Playwright owns the fixture process; it stops and removes its Docker container
+when the test finishes. Temporary
 configuration and authentication data stay in ignored `.browser-artifacts/`
 directories and are never uploaded. Coverage/JUnit results, the browser report,
 failure traces/screenshots/video, and HA logs are retained for seven days.
 
-Run the browser test locally after installing development dependencies:
+Run the browser test locally with Docker running, after installing development
+dependencies:
 
 ```sh
 uv build --out-dir dist
@@ -91,5 +95,5 @@ pnpm exec playwright install chromium
 pnpm run test:browser
 ```
 
-The browser job uses the locked HA baseline, while Python tests cover both
+The browser job uses the official HA baseline image, while Python tests cover both
 supported versions. Physical-device and extended soak testing remain manual.

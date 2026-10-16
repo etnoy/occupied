@@ -1,10 +1,12 @@
 """Serve the release ZIP in an isolated Home Assistant instance for browser tests."""
 
 import json
-import os
+import signal
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from uuid import uuid4
 from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -26,7 +28,7 @@ with ZipFile(ROOT / "dist" / "occupied.zip") as archive:
   country: SE
 frontend:
 http:
-  server_host: 127.0.0.1
+  server_host: 0.0.0.0
   server_port: 18123
 logger:
   default: warning
@@ -52,17 +54,55 @@ template:
         }
     )
 )
-os.chdir(config)
-os.execv(
-    sys.executable,
-    [
-        sys.executable,
-        "-m",
-        "homeassistant",
-        "--config",
-        str(config),
-        "--log-file",
-        str(artifacts / "homeassistant.log"),
-        "--skip-pip",
-    ],
+# Use HA's complete runtime: its frontend imports optional integrations that the
+# unit-test lock intentionally does not install. Pin the multi-architecture image.
+image = (
+    "ghcr.io/home-assistant/home-assistant:2026.9.4@"
+    "sha256:3e6710a7ab2a61311d9d899b719f6c3657791c63e8f4942cec4ebc42401d6b76"
 )
+container = f"occupied-browser-{uuid4().hex[:12]}"
+command = [
+    "docker",
+    "run",
+    "--rm",
+    "--init",
+    "--name",
+    container,
+    "--publish",
+    "127.0.0.1:18123:18123",
+    "--volume",
+    f"{config}:/config",
+    "--volume",
+    f"{artifacts}:/artifacts",
+    "--entrypoint",
+    "python",
+    image,
+    "-m",
+    "homeassistant",
+    "--config",
+    "/config",
+    "--log-file",
+    "/artifacts/homeassistant.log",
+]
+
+
+def stop(signum, _frame):
+    """Let Playwright's shutdown signal run the container cleanup below."""
+    raise SystemExit(128 + signum)
+
+
+signal.signal(signal.SIGTERM, stop)
+signal.signal(signal.SIGINT, stop)
+server = subprocess.Popen(command)
+try:
+    sys.exit(server.wait())
+finally:
+    for arguments in (["stop", "--time", "5"], ["rm", "--force"]):
+        subprocess.run(
+            ["docker", *arguments, container],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT,
+            timeout=15,
+        )
+    server.wait(timeout=15)
