@@ -31,7 +31,7 @@ def _date(value):
 
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(
-        prog="occupied-config",
+        prog="occupied",
         description=(
             "Validate and preview Occupied's schema without Home Assistant or device calls."
         ),

@@ -39,8 +39,8 @@ Install the release wheel into a separate Python 3.14.2+ environment, for exampl
 ```sh
 python3.14 -m venv /opt/occupied
 /opt/occupied/bin/pip install ./occupied-0.1.0-py3-none-any.whl
-/opt/occupied/bin/occupied-config validate candidate.yaml --date today --days 7 --seed deploy --timezone Europe/Stockholm --latitude 59.3293 --longitude 18.0686
-/opt/occupied/bin/occupied-config rename-id candidate.yaml step wake morning_wake --output reviewed.yaml
+/opt/occupied/bin/occupied validate candidate.yaml --date today --days 7 --seed deploy --timezone Europe/Stockholm --latitude 59.3293 --longitude 18.0686
+/opt/occupied/bin/occupied rename-id candidate.yaml step wake morning_wake --output reviewed.yaml
 ```
 
 `today` uses the program's resolved timezone and schedule day boundary. Provide the same HA timezone/location context as the installed engine when the program inherits them. CLI validation shares the model/planner and performs no device calls. The CLI's three direct dependencies are pinned independently of HA; it has no HA import or frontend build requirement.
@@ -48,7 +48,7 @@ python3.14 -m venv /opt/occupied
 For an authenticated immediate reload, store a HA admin long-lived access token in a restricted file. Pass the token file path rather than token contents:
 
 ```sh
-/opt/occupied/bin/occupied-config reload --url https://ha.example --entry-id YOUR_OCCUPIED_ENTRY_ID --token-file /etc/occupied/ha.token
+/opt/occupied/bin/occupied reload --url https://ha.example --entry-id YOUR_OCCUPIED_ENTRY_ID --token-file /etc/occupied/ha.token
 ```
 
 Use your final HA origin: redirects are refused. HTTPS is appropriate when the token crosses a network; loopback HTTP is supported. The request has a ten-second timeout, verifies the returned Occupied result, and exits 2 for invalid updates/transport errors. CLI output omits tokens, response bodies and source paths. Preview/validate/migrate remain entirely offline; this optional command is a one-shot deployment helper.

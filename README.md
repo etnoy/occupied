@@ -78,91 +78,80 @@ When ready, turn on the controller's **Enable** switch in Home Assistant. You wi
 
 ## Multiple controllers
 
-You can have more than one Occupied controller, each with its own schedule and run condition. For example, one controller can pretend someone is home while you're away, with random lights and a run condition like "only run when the alarm is armed". Another can handle your everyday lights, turning window lights on at sunset and off at sunrise, without a run condition so it runs whether you're home or not.
+You can have more than one Occupied controller, each with its own schedule and run condition. For example, one controller can pretend someone is home while you're away, with random lights and a run condition like "only run when the alarm is armed". Another can run all the time and manage your everyday lights, turning window lights on at sunset and off at sunrise. Of course, you can add randomness to those actions as well.
 
 To add another controller, go to **Settings → Devices & services → Add integration → Occupied** again and give it a different name. You can switch between controllers in the Occupied panel, and each has its own **Enable** switch.
 
-## Factorio-style lights
-
-Enable **Staggered action** under a step's **Advanced settings** to turn lights or switches on or off one at a time in a shuffled order. The **Time window** defaults to `2m`. With four entities over two minutes, actions occur at 30-second intervals, giving the impression of someone walking through the house. See the [staggered-action example](examples/stagger.yaml).
-
 ## Enforce state when a run condition starts
 
-Under **Settings → Run condition**, select an entity and its allowed states, then enable **Enforce expected state on start**. For example, use an alarm panel with `armed_away` so Occupied applies the schedule's known light, switch, and cover targets when you leave. **Delay before enforcing state** defaults to `30s`, giving you time to get out of the house before device changes begin.
+With run conditions, you can also enforce state. This means that as soon as you leave home, it switches to the expected state without having to wait for the next action.
 
-Use **Extra entities to turn off** for lights and switches outside the schedule, such as bathroom lights. These turn off during startup enforcement. Without enforcement, a matching run condition starts future scheduled actions only. When the condition stops matching, Occupied stops scheduling without changing device states.
+Under **Settings → Run condition**, enable a run condition, then enable **Enforce expected state on start**. 
 
-You can also press **Enforce expected state** on the controller's Home Assistant device to apply known targets immediately. This requires permission, unpaused scheduling, and a matching run condition if one is configured. See [run conditions](docs/runtime.md#run-condition-and-delayed-state-enforcement) and the [alarm example](examples/alarm.yaml).
+There is a default setting in **Delay before enforcing state** of `30s`, giving you time to get out of the house before device changes begin.
+
+There is also a button, **Enforce expected state**, that you can press if you accidentally turned on and off some lights and want Occupied to fix that for you. 
+
+Use **Extra entities to turn off** for lights and switches that Occupied does not manage but you want turned off when away. This is great for that bathroom light you don't want to forget to turn off when you are away, but you don't want it in a Step or Random Event becuase the bathroom has no windows.
 
 ## Limit when a step can run
 
 Use the timing controls to combine clock times and solar events:
 
-* **No later than** caps a step's time. For example, turn lights on 90 minutes before sunset, but no later than 18:00.
+* **No later than** caps a step's time. For example, turn lights on 90 minutes before sunset, but no later than 18:00. This is useful if you don't want sun-controlled lights to turn on when you are sleeping.
 * **Only run before** skips a step unless its time is strictly before the selected boundary. For example, turn lights on at 05:30 only if that is before sunrise plus 90 minutes.
-
-Both controls can be combined. Preview explains capped and skipped occurrences. See [timing limits](docs/schema.md#step-timing-limits) and the [lighting example](examples/solar-limits.yaml).
 
 ## Try a live preview
 
-In **Preview**, choose a date and select **Start live preview** to test the schedule on real devices. Walk around with your phone and press **Next event** to run each action immediately instead of waiting for its scheduled time. Unsaved drafts can be tested too.
+In **Preview**, select **Start live preview**. This allows you to preview the scedule on real devices, and you click **Next event** to walk through the simulation step by step.
 
-Live preview pauses normal scheduling. **Stop** and **Day complete** leave devices as they are and scheduling paused; choose **Resume scheduling** when you want normal operation again. Configured run conditions must still match during live preview. See [manual live preview](docs/editor.md#manual-live-preview).
+## Factorio-style lights
+
+In Factorio, a group of lights dont turn on at once when the sun sets, bur they have a tiny delay each, creating a beautiful staggered look. You can do this in Occupied by enabling **Staggered action** under **Advanced settings**. 
+
+The **Time window** defaults to `2m`, so with four entities over two minutes, actions occur at 30-second intervals.
+
+See the [staggered-action example](examples/stagger.yaml).
 
 # YAML configuration
 
+While we've put a lot of effort into the GUI, it is still very powerful to do plain old yaml. 
+
 ## Import and export
 
-The GUI and YAML use the same program format. Open **Settings** to edit the YAML directly or load a YAML/JSON file, then choose **Save changes** to validate and apply it. Importing a file this way copies its contents into GUI storage; later changes to the original file do not update the controller. **Download** exports the current editor text.
-
-For example, this program turns a living-room light on between 18:00 and 18:30, then turns it off two hours after the sampled start:
-
-```yaml
-schema_version: 1
-name: Occupied
-steps:
-  evening:
-    timing:
-      absolute_time: {start: '18:00', end: '18:30'}
-    action: turn_on
-    entities: [light.living_room]
-  bedtime:
-    timing:
-      relative_to: {step: evening, start_offset: 2h}
-    action: turn_off
-    entities: [light.living_room]
-```
+Open **Settings** in the controller to edit the YAML directly or load a file, then choose **Save changes** to validate and apply it. If you are an agent wanting to edit Occupied settings, this is the way to do it!
 
 See the [schema reference](docs/schema.md) and [example programs](examples/house.yaml) for more options.
 
 ## Use a managed YAML file
 
-To keep configuration in a file instead of GUI storage, put a complete Occupied program at `/config/occupied/house.yaml`, then add this to Home Assistant's `configuration.yaml` and restart:
+To keep configuration in a file instead of GUI storage, put a complete Occupied program at `/config/occupied/house.yaml` on the Home Assistant filesystem, then add this to Home Assistant's `configuration.yaml` and restart:
 
 ```yaml
 occupied:
   config_file: occupied/house.yaml
 ```
 
-The path is relative to Home Assistant's configuration directory. You can also select a managed file when adding the integration. Each controller has its own permission and schedule; named instances support multiple managed files.
+Each controller has its own permission and schedule so you can have multiple instances controlled by yaml.
 
-The file remains authoritative, and Occupied never writes to it. Changes are detected automatically; call `occupied.reload` with the controller's `config_entry_id` for an immediate reload. Invalid updates leave the current valid in-memory program running, but an invalid file at startup must be corrected before that controller can run.
+With file-based config, you cannot edit programs with the GUI. 
 
-You can use the editor to preview and export drafts in managed-file mode. Apply changes by updating the source file and reloading it. See [managed configuration](docs/managed-configuration.md) for source switching, multiple instances, and deployment with Puppet.
+See [managed configuration](docs/managed-configuration.md) for source switching, multiple instances, and deployment with configuration management systems.
 
-The standalone `occupied-config` CLI validates, exports, previews, and renames typed step IDs without importing Home Assistant or executing device services:
+## CLI
+
+The standalone `occupied` CLI validates, exports, previews, and renames typed step IDs without importing Home Assistant or executing device services:
 
 ```sh
-occupied-config validate examples/house.yaml --date 2026-10-13 --days 7 --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
-occupied-config preview examples/house.yaml --date 2026-10-13 --seed preview --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
-occupied-config export examples/house.yaml
-occupied-config rename-id examples/house.yaml step wake_up morning
+occupied validate examples/house.yaml --date 2026-10-13 --days 7 --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
+occupied preview examples/house.yaml --date 2026-10-13 --seed preview --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
+occupied export examples/house.yaml
+occupied rename-id examples/house.yaml step wake_up morning
 ```
 
-## Development and verification
+# Development
 
-Use [mise](https://mise.jdx.dev/) with Python's built-in virtual environment
-and pip; uv is optional:
+Use [mise](https://mise.jdx.dev/) with Python's built-in virtual environment and pip; uv is optional:
 
 ```sh
 mise trust
@@ -204,10 +193,8 @@ pnpm test
 uv run python scripts/check_release.py
 ```
 
-The frontend uses Svelte 5 and TypeScript, with `OccupiedPanel` as HA’s custom element and backend controller. Sources live in `custom_components/occupied/frontend/src/`, following Immich's `web/src/lib` organization: components are grouped by feature in `lib/components`, with separate folders for controllers, models, actions, services, translations, and utilities. See the [frontend layout](custom_components/occupied/frontend/README.md). HTML lives in `.svelte` components, using template blocks for conditionals and lists. Model and validation logic remain independent of rendering. Preview orchestration lives in `lib/controllers/preview-controller.ts`; subscription lifecycle guards live in `lib/services/subscription.ts`. The editor requires Home Assistant and loads its native selectors and picker before rendering. A small DOM bridge passes object properties and custom events to those HA elements. Controller updates use Svelte's `flushSync` so editor actions can immediately focus newly rendered fields. TypeScript 6 is pinned for compatibility with `svelte-check`'s TypeScript API; strict checks cover both TypeScript and Svelte sources.
+The frontend uses Svelte 5 and TypeScript, with `OccupiedPanel` as HA’s custom element and backend controller. Sources live in `custom_components/occupied/frontend/src/`: components are grouped by feature in `lib/components`, with separate folders for controllers, models, actions, services, translations, and utilities. See the [frontend layout](custom_components/occupied/frontend/README.md). HTML lives in `.svelte` components, using template blocks for conditionals and lists. Model and validation logic remain independent of rendering. Preview orchestration lives in `lib/controllers/preview-controller.ts`; subscription lifecycle guards live in `lib/services/subscription.ts`. The editor requires Home Assistant and loads its native selectors and picker before rendering. A small DOM bridge passes object properties and custom events to those HA elements. Controller updates use Svelte's `flushSync` so editor actions can immediately focus newly rendered fields. TypeScript 6 is pinned for compatibility with `svelte-check`'s TypeScript API; strict checks cover both TypeScript and Svelte sources.
 
-Frontend style uses two-space indentation and Prettier's 80-column wrapping. Separate imports from code, declarations and methods from their neighbors, and logical sections with blank lines. In Svelte scripts, group imports, props, state, derived values, and handlers; keep conditional/list bodies on separate lines and key repeated elements. Move complex label expressions into named helpers. Shared CSS lives in `src/app.css` and is injected into the panel's shadow root; keep related selectors together and preserve cascade order. Run `pnpm run lint:fix` for automatic lint/spacing fixes and `pnpm run format:fix` for formatting; both rebuild the shipped assets.
+Run `pnpm run lint:fix` for automatic lint fixes and `pnpm run format:fix` for formatting.
 
-Run `pnpm run build` after editing `.ts`, `.svelte`, or `.css` files and commit the generated JavaScript under `custom_components/occupied/frontend/dist/` alongside its sources. The build preserves the source directory structure for modules and bundles Svelte, all UI components, and the shared `src/app.css` into the local `dist/occupied-panel.js` asset; the separate model modules support tests. Release ZIPs and wheels include the built frontend, so installations need no Node tooling or external CDN. Test output in `tests/frontend/generated/` stays ignored. `pnpm test` compiles the pure model tests and exercises the committed frontend model modules without rebuilding them. `pnpm run lint` checks TypeScript sources and Svelte scripts/templates, including typed promise handling, keyed lists, import placement, and blank lines between declarations and methods. `pnpm run format:check` checks TypeScript, Svelte, and CSS with Prettier; generated assets are excluded. `pnpm run typecheck` checks TypeScript and Svelte types and accessibility diagnostics, failing on warnings. `pnpm run build:check` rejects missing, stale or unexpected assets without rewriting them. CI runs it before lint and tests, alongside `pnpm run typecheck` and `pnpm run format:check`.
-
-`uv.lock` pins the complete test environment, including the HA frontend package. Python tests use virtual device handlers. Node tests cover the step editor’s model and validation logic. Test the UI in an installed Home Assistant instance. CI checks the supported HA matrix, generated schema, examples, hassfest/HACS metadata and installable artifacts; it uses locked Python and frontend development dependencies. See [release verification](docs/releasing.md) and [the editor guide](docs/editor.md). Tests use real HA config entries, entities, storage, timers, HTTP, and WebSocket APIs with virtual device handlers. They cover stable step sampling, midnight/DST, known-source date rules, compact round trips, typed ID renames, unknown startup state, handover, restart, persistence failure, manual control, managed files, instance isolation, authenticated saves, and preview isolation. No existing HA installation or physical devices are modified. Physical-device timing and a hardware soak remain deployment acceptance work.
+Run `pnpm run build` after editing `.ts`, `.svelte`, or `.css` files and commit the generated JavaScript under `custom_components/occupied/frontend/dist/` alongside its sources. 

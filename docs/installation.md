@@ -52,7 +52,7 @@ Back up HA before upgrading. GUI programs, permissions, random seed, sampled pla
 
 Disable permission before replacing integration files, update the complete integration through HACS or manual extraction, then restart HA. For HACS installs from `main`, updating HACS downloads the latest commit from the default branch. Reloading the integration explicitly performs still-owned cleanup; a HA shutdown preserves active activity snapshots for restart recovery. Restore permission after the upgrade. Source selection and GUI programs survive entry reload; unchanged managed programs retain deterministic saved plans and activity deadlines after restart. Preview rerolls never change the live seed.
 
-Schema version 1 remains the supported program format. Unknown versions are rejected with actionable validation issues. Rename identifiers through the editor's **Migrate identifier** or `occupied-config rename-id`; labels can be changed without changing sampled times. Review emitted YAML before deploying it. Future schema/storage migrations must include tests and an upgrade note before release.
+Schema version 1 remains the supported program format. Unknown versions are rejected with actionable validation issues. Rename identifiers through the editor's **Migrate identifier** or `occupied rename-id`; labels can be changed without changing sampled times. Review emitted YAML before deploying it. Future schema/storage migrations must include tests and an upgrade note before release.
 
 ## Troubleshooting
 

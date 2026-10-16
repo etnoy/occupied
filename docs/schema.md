@@ -186,7 +186,7 @@ Export omits all-week selections, enabled true, zero offsets, equal ends, empty 
 
 The behavior hash identifies sampled schedule behavior and excludes run-condition policy, titles, and presentation order. Run-condition policy changes update the source revision and activation lifecycle without changing sampled event identities. Explicit equivalent defaults have the same hash. Source revision separately includes metadata and presentation order. Metadata-only saves retain sampled times and active handover deadlines. Random streams are keyed by source date and stable step ID, so unrelated steps do not shift existing choices.
 
-`occupied-config rename-id FILE step OLD NEW` and `occupied/rename_id` atomically rename a key and its typed step references. Opaque data is not rewritten. Renaming an ID selects a new random stream; changing a title does not. See [editor](editor.md), [runtime](runtime.md), and [managed configuration](managed-configuration.md).
+`occupied rename-id FILE step OLD NEW` and `occupied/rename_id` atomically rename a key and its typed step references. Opaque data is not rewritten. Renaming an ID selects a new random stream; changing a title does not. See [editor](editor.md), [runtime](runtime.md), and [managed configuration](managed-configuration.md).
 
 ### Staggered actions
 
