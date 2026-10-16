@@ -3,12 +3,7 @@ export type Path = (string | number)[];
 export type Translate = (key: string) => string;
 
 export type JsonValue =
-  | null
-  | boolean
-  | number
-  | string
-  | JsonValue[]
-  | { [key: string]: JsonValue };
+  null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
 export interface TimingBoundary {
   absolute_time?: { start: string };
@@ -284,8 +279,7 @@ export interface InstanceDocument {
 }
 
 export type ApiResult<T> =
-  | ({ valid: true; issues?: Issue[] } & T)
-  | { valid: false; issues: Issue[] };
+  ({ valid: true; issues?: Issue[] } & T) | { valid: false; issues: Issue[] };
 
 export interface RuntimeSnapshot {
   enforce_state_on_start?: boolean;
