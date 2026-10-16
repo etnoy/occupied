@@ -1,0 +1,21 @@
+tests/browser/occupied.spec.ts
+  s_9043b623a9e665::t_c53a1157b867a3 7-12
+tests/browser/serve.py
+  s_9043b623a9e665::t_570e0ba3ab9469 30-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "6f5190817ff2fd5b22fe958094d5a5de7a5bc4d5",
+  "prompts": {},
+  "sessions": {
+    "s_9043b623a9e665": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a146ba-0132-75a2-baac-461111133a15",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
