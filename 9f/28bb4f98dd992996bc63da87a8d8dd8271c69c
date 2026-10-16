@@ -1,0 +1,21 @@
+tests/browser/playwright.config.ts
+  s_a4d16be4a91535::t_44038919ff64ac 28,31,33
+tests/browser/serve.py
+  s_a4d16be4a91535::t_8baa5d6e51a4a7 4-5,9,31,57-61,63-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "9f28bb4f98dd992996bc63da87a8d8dd8271c69c",
+  "prompts": {},
+  "sessions": {
+    "s_a4d16be4a91535": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14478-e45d-71c0-b5cb-9d6b6096b2e3",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
