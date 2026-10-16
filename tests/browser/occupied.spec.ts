@@ -20,12 +20,29 @@ test("create a controller, save a step, and preview the installed release", asyn
   });
   expect(owner.ok(), await owner.text()).toBeTruthy();
 
+  const { auth_code: authCode } = (await owner.json()) as { auth_code: string };
+  const response = await request.post("/auth/token", {
+    form: {
+      grant_type: "authorization_code",
+      code: authCode,
+      client_id: "http://127.0.0.1:18123/",
+    },
+  });
+  expect(response.ok(), await response.text()).toBeTruthy();
+  const tokens = await response.json();
+  await page.addInitScript(
+    (session) => {
+      localStorage.setItem("hassTokens", JSON.stringify(session));
+    },
+    {
+      ...tokens,
+      hassUrl: "http://127.0.0.1:18123",
+      clientId: "http://127.0.0.1:18123/",
+      expires: Date.now() + tokens.expires_in * 1000,
+    },
+  );
+
   await page.goto("/config/integrations/dashboard/add?domain=occupied");
-  await page.getByLabel("Username", { exact: true }).fill("smoke");
-  await page
-    .getByLabel("Password", { exact: true })
-    .fill("disposable-smoke-password");
-  await page.getByRole("button", { name: "Log in", exact: true }).click();
   await page.getByLabel("Name", { exact: true }).fill("Smoke controller");
   await page.getByRole("button", { name: "Submit", exact: true }).click();
   await page.getByRole("button", { name: "Finish", exact: true }).click();

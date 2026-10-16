@@ -2,13 +2,32 @@
 
 GUI storage, YAML snapshot import and managed-file authority are explicit choices. Snapshot import copies the program into a draft and GUI storage after saving. Managed mode reads a YAML file under HA's config directory, including a read-only mounted file, and keeps that file authoritative. Occupied never writes it or edits Puppet-managed configuration.
 
-Each integration entry can select its own managed file through setup or the authenticated `occupied/source` API. Permissions, reload locks, watchers, Repairs, seeds and runtime stores are independent. Reload services and CLI deployment commands always target a specific `config_entry_id`/`--entry-id`. See [named YAML bootstrap](installation.md#unattended-managed-setup) for unattended creation of multiple entries. Each source file remains a complete program; identifiers inside different programs can be reused.
+Each integration entry can select its own managed file through setup or the authenticated `occupied/source` API. Permissions, reload locks, watchers, Repairs, seeds and runtime stores are independent. Reload services and CLI deployment commands always target a specific `config_entry_id`/`--entry-id`. See [named YAML bootstrap](#unattended-managed-setup) for unattended creation of multiple entries. Each source file remains a complete program; identifiers inside different programs can be reused.
 
 The panel warns when loaded instances declare the same controlled entities, including resources retained by active cleanup snapshots. Instances do not coordinate device ownership. Scene contents and undeclared targets inside opaque service data cannot be inferred; use separate device targets when independent behavior is required.
 
+## Unattended managed setup
+
+To create named file-based controllers at startup, add each controller to HA's
+`configuration.yaml`, then restart Home Assistant:
+
+```yaml
+occupied:
+  instances:
+    - id: house
+      config_file: occupied/house.yaml
+    - id: annex
+      config_file: occupied/annex.yaml
+```
+
+Each file must contain a complete valid program and live under HA's configuration
+directory. Keep each `id` stable across restarts. Controllers start with permission
+disabled; enable their **Enable** switch when ready. For a single controller, use
+`occupied: {config_file: occupied/house.yaml}` instead.
+
 ## Read, preview and change the source
 
-Choose a file during native setup, use [unattended bootstrap](installation.md#unattended-managed-setup), or select it through the authenticated `occupied/source` API with its relative path. The complete candidate must validate and compile before replacing the saved program. Absolute paths, traversal and symlinks outside the config directory are rejected; files are bounded to 1 MiB and read in HA's executor.
+Choose a file during native setup, use [unattended bootstrap](#unattended-managed-setup), or select it through the authenticated `occupied/source` API with its relative path. The complete candidate must validate and compile before replacing the saved program. Absolute paths, traversal and symlinks outside the config directory are rejected; files are bounded to 1 MiB and read in HA's executor.
 
 File mode exposes the complete saved program. The step builder finishes with **Add to draft**; forms, previews, ID migration and export can create a temporary draft. **Save changes** is disabled and both backend save/apply APIs enforce file authority. Export the draft, review/deploy the resulting YAML, then reload the managed source. Importing a local browser file does not select it as the managed source.
 
@@ -55,7 +74,7 @@ Use your final HA origin: redirects are refused. HTTPS is appropriate when the t
 
 ## Puppet example
 
-The [example manifest](../examples/puppet/occupied.pp) manages only the source YAML and calls reload after a successful changed deployment. Preinstall the release CLI wheel and integration, provision the token file separately, and provide the exported program from your own Puppet module/Hiera. Set the owner and config directory to match your installation; for Container, the host directory must map under HA's `/config`.
+A Puppet manifest can manage the source YAML and call reload after a successful changed deployment. Preinstall the release CLI wheel and integration, provision the token file separately, and provide the exported program from your own Puppet module/Hiera. Set the owner and config directory to match your installation; for Container, the host directory must map under HA's `/config`.
 
 Puppet's `file.validate_cmd` checks the candidate before replacement, using the same timezone/location and a seven-date preview. Failed validation retains the deployed file. Keep staging on the destination filesystem to support atomic replacement. A `refreshonly` reload subscribes to the file change and authenticates using the token file. The watcher makes redundant reloads harmless. The relevant resource semantics are documented in [Puppet's file/exec reference](https://help.puppet.com/core/current/Content/PuppetCore/Markdown/type.htm).
 

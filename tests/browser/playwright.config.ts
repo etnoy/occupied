@@ -16,6 +16,8 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:18123",
     browserName: "chromium",
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
     viewport: { width: 1440, height: 1000 },
     locale: "en-US",
     trace: "retain-on-failure",
