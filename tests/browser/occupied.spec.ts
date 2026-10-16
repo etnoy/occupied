@@ -4,11 +4,6 @@ test("create a controller, save a step, and preview the installed release", asyn
   page,
   request,
 }) => {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => {
-    errors.push(error.message);
-  });
-
   const owner = await request.post("/api/onboarding/users", {
     data: {
       name: "Browser tests",
@@ -42,11 +37,23 @@ test("create a controller, save a step, and preview the installed release", asyn
     },
   );
 
+  await page.goto("/config/integrations/dashboard");
+  await page.getByRole("button", { name: "Confirm", exact: true }).click();
   await page.goto("/config/integrations/dashboard/add?domain=occupied");
-  await page.getByLabel("Name", { exact: true }).fill("Smoke controller");
+  await page.getByRole("button", { name: "OK", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Controller name*", exact: true })
+    .fill("Smoke controller");
   await page.getByRole("button", { name: "Submit", exact: true }).click();
-  await page.getByRole("button", { name: "Finish", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Skip and finish", exact: true })
+    .click();
 
+  // Capture errors throughout the installed Occupied panel, including reload.
+  const errors: string[] = [];
+  page.on("pageerror", (error) => {
+    errors.push(error.message);
+  });
   await page.goto("/occupied");
   const panel = page.locator("occupied-panel");
   await expect(
@@ -60,11 +67,15 @@ test("create a controller, save a step, and preview the installed release", asyn
     .getByRole("radio", { name: "Absolute time", exact: true })
     .check();
   // Interact with HA's real time and entity selectors through their native inputs.
-  await panel.locator('[data-builder-field="start"] input').fill("18:00");
+  const clock = panel.locator('[data-builder-field="start"]');
+  await clock.locator('input[name="hours"]').fill("7");
+  await clock.locator('input[name="minutes"]').fill("15");
+  await clock.locator('input[name="minutes"]').press("Tab");
   await panel
-    .locator('[data-builder-field="entities"] input')
-    .fill("Smoke light");
-  await page.getByRole("option", { name: /Smoke light/ }).click();
+    .locator('[data-builder-field="entities"]')
+    .getByRole("listitem")
+    .click();
+  await page.getByText("Smoke light", { exact: true }).click();
   await panel.getByRole("button", { name: "Save step", exact: true }).click();
   await expect(
     panel.getByRole("button", { name: "Evening light", exact: true }),
@@ -75,9 +86,12 @@ test("create a controller, save a step, and preview the installed release", asyn
     panel.getByRole("button", { name: "Evening light", exact: true }),
   ).toBeVisible();
   await panel.getByRole("button", { name: "Preview", exact: true }).click();
-  await expect(panel.locator(".timeline")).toBeVisible();
+  await expect(panel.locator("state-history-chart-timeline")).toBeVisible();
   await expect(
-    panel.getByText("Smoke light", { exact: true }).first(),
+    panel.getByRole("cell", { name: "Smoke light", exact: true }),
+  ).toBeVisible();
+  await expect(
+    panel.getByRole("button", { name: "Evening light · step", exact: true }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
