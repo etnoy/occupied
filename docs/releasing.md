@@ -20,7 +20,7 @@ pnpm run format:check
 pnpm test
 ```
 
-Review the frontend in an installed Home Assistant instance. There is no standalone editor or browser fixture.
+Review the frontend in an installed Home Assistant instance. The browser smoke test below covers the installed editor; there is no standalone editor.
 
 To reproduce the minimum HA suite in an independent environment:
 
@@ -51,3 +51,45 @@ Install the wheel in a clean environment and invoke its CLI from outside the rep
 Set matching manifest/project versions and add `docs/releases/<version>.md` before publication. Push an ordinary commit and confirm the Verify workflow passes. Then create/push `v<version>`. `release.yml` reruns all verification, checks tag/version and artifact checksums, and creates the GitHub release with those tested assets. Versions ending in `aN`, `bN`, or `rcN` are published as GitHub prereleases, which HACS can include when prereleases are enabled for Occupied. For example, version `0.2.0b1` uses tag `v0.2.0b1` and notes at `docs/releases/0.2.0b1.md`. HACS users can select a tagged release or the default branch, both of which contain the compiled frontend. Automatic per-commit development releases are no longer published. The `occupied.zip` artifact remains available for manual installs. This workflow does not upload to PyPI or submit a HACS default-repository listing.
 
 Physical-device timing, a full running-HA browser soak, and a full day of hardware testing with a controller remain deployment acceptance work. The checked matrix bounds compatibility claims; extend it with an independently pinned environment and actual test results when supporting another HA release.
+
+## Pull request checks
+
+Every PR and push to `main` runs Verify. The final `ci` check requires every
+verification job, packaging, local documentation links, workflow linting, security
+analysis, and the browser smoke test to succeed. Branch protection requires `ci`
+before merging; failed, skipped, and cancelled dependencies fail that gate.
+`merge_group` is also supported if a merge queue is enabled later.
+
+Documentation links are checked only by GitHub Actions: local files and anchors
+on every PR, plus external URLs weekly. Workflow YAML is checked by actionlint.
+CodeQL scans Python, TypeScript/JavaScript, and Actions on PRs and weekly; dependency
+review rejects newly introduced high or critical known vulnerabilities.
+
+Dependabot proposes weekly updates for Actions, pnpm dependencies, and uv
+dependencies. Minor and patch updates are grouped by ecosystem; major versions
+remain separate and updates are never automatically merged. Home Assistant and
+its frontend/test-plugin pins are maintained together with the compatibility
+matrix and hashed minimum-version requirements. Dependency updates that change
+the compiled frontend must include regenerated assets before CI can pass.
+
+The browser smoke test downloads the verified `occupied-release` artifact and
+extracts its ZIP into a fresh HA configuration bound to `127.0.0.1:18123`. It
+creates a disposable owner through onboarding, signs in, creates a controller,
+saves a step with native HA time/entity selectors, reloads to check persistence,
+and opens Preview. It uses a virtual light and no existing HA configuration.
+Playwright owns the HA process and stops it when the test finishes. Temporary
+configuration and authentication data stay in ignored `.browser-artifacts/`
+directories and are never uploaded. Coverage/JUnit results, the browser report,
+failure traces/screenshots/video, and HA logs are retained for seven days.
+
+Run the browser test locally after installing development dependencies:
+
+```sh
+uv build --out-dir dist
+uv run python scripts/build_release.py
+pnpm exec playwright install chromium
+pnpm run test:browser
+```
+
+The browser job uses the locked HA baseline, while Python tests cover both
+supported versions. Physical-device and extended soak testing remain manual.

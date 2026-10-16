@@ -28,7 +28,7 @@ Install through [HACS](https://hacs.xyz/):
 4. Go to **Settings → Devices & services → Add integration → Occupied** and create a controller. Choose GUI storage to get started with the editor.
 5. Select **Configure** on the integration to open the Occupied panel.
 
-New controllers start with permission disabled, so you can create and preview a schedule before enabling it. See the [installation guide](docs/installation.md) for manual installation, upgrades, and troubleshooting.
+New controllers start with permission disabled, so you can create and preview a schedule before enabling it.
 
 # Usage
 
