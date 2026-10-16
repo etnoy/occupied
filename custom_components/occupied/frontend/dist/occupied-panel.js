@@ -2410,8 +2410,8 @@ function add_form_reset_listener() {
       (evt) => {
         Promise.resolve().then(() => {
           if (!evt.defaultPrevented) {
-            /**@type {HTMLFormElement} */
-            for (const e of evt.target.elements) {
+            for (const e of /**@type {HTMLFormElement} */
+            evt.target.elements) {
               e[FORM_RESET_HANDLER]?.();
             }
           }
@@ -3599,8 +3599,8 @@ function flushSync(fn) {
 function infinite_loop_guard() {
   if (dev_fallback_default) {
     var updates = /* @__PURE__ */ new Map();
-    /** @type {Batch} */
-    for (const source2 of current_batch.current.keys()) {
+    for (const source2 of /** @type {Batch} */
+    current_batch.current.keys()) {
       for (const [stack2, update2] of source2.updated ?? []) {
         var entry = updates.get(stack2);
         if (!entry) {
@@ -7834,10 +7834,10 @@ function get_attributes(element2) {
   return (
     /** @type {Record<string | symbol, unknown>} **/
     /** @type {any} */
-    (element2[ATTRIBUTES_CACHE] ??= {
+    element2[ATTRIBUTES_CACHE] ??= {
       [IS_CUSTOM_ELEMENT]: element2.nodeName.includes("-"),
       [IS_HTML]: element2.namespaceURI === NAMESPACE_HTML,
-    })
+    }
   );
 }
 var setters_cache = /* @__PURE__ */ new Map();
@@ -13566,12 +13566,9 @@ function RunConditionSettings($$anchor, $$props) {
             $$props.panel.updateRunCondition();
           });
           event("value-changed", ha_selector_1, (event2) => {
-            if (
-              !(
-                isValueChangedEvent(event2) &&
-                Array.isArray(event2.detail.value)
-              )
-            ) {
+            if (!(
+              isValueChangedEvent(event2) && Array.isArray(event2.detail.value)
+            )) {
               return;
             }
             get(form).states = event2.detail.value;
@@ -13586,12 +13583,9 @@ function RunConditionSettings($$anchor, $$props) {
             $$props.panel.updateRunCondition();
           });
           event("value-changed", ha_selector_2, (event2) => {
-            if (
-              !(
-                isValueChangedEvent(event2) &&
-                Array.isArray(event2.detail.value)
-              )
-            ) {
+            if (!(
+              isValueChangedEvent(event2) && Array.isArray(event2.detail.value)
+            )) {
               return;
             }
             get(form).offEntities = event2.detail.value;
