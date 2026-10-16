@@ -1,0 +1,31 @@
+custom_components/occupied/frontend/dist/lib/actions/timeline-now.js
+  s_2e909f1dcd47e0::t_6caa2edb7afee0 1-83
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_2e909f1dcd47e0::t_ca75b0748b337a 329,855
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_2e909f1dcd47e0::t_43f496aef196e6 329,864,13539-13620,14044-14048
+custom_components/occupied/frontend/src/lib/actions/timeline-now.ts
+  s_2e909f1dcd47e0::t_82f06eda0f74df 1-101
+custom_components/occupied/frontend/src/lib/components/preview/PreviewStateGraph.svelte
+  s_2e909f1dcd47e0::t_1d18903fe5a212 4,96
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_2e909f1dcd47e0::t_b207de38fd1549 328,857
+tests/frontend/src/timeline-now.test.ts
+  s_2e909f1dcd47e0::t_c259c01e3063e9 1-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "639621d58f8f8638a620dcbf725c41be79e3b1e9",
+  "prompts": {},
+  "sessions": {
+    "s_2e909f1dcd47e0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14373-5478-7743-a756-6a33078fba0a",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
