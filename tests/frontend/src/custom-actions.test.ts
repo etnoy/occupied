@@ -31,14 +31,14 @@ void test("imported custom actions show one entity per line and save unchanged",
   const actions = [
     {
       action: "turn_on",
-      entities: ["light.takbelysning_korridor", "light.takbelysning_sovrum"],
+      entities: ["light.hallway_ceiling", "light.bedroom_ceiling"],
     },
     {
       action: "turn_off",
       entities: [
-        "light.takbelysning_korridor",
-        "light.takbelysning_williams_rum",
-        "light.takbelysning_wincents_rum",
+        "light.hallway_ceiling",
+        "light.guest_room_ceiling",
+        "light.study_ceiling",
       ],
     },
   ];
@@ -56,13 +56,13 @@ void test("imported custom actions show one entity per line and save unchanged",
     [
       '- action: "turn_on"',
       "  entities:",
-      '    - "light.takbelysning_korridor"',
-      '    - "light.takbelysning_sovrum"',
+      '    - "light.hallway_ceiling"',
+      '    - "light.bedroom_ceiling"',
       '- action: "turn_off"',
       "  entities:",
-      '    - "light.takbelysning_korridor"',
-      '    - "light.takbelysning_williams_rum"',
-      '    - "light.takbelysning_wincents_rum"',
+      '    - "light.hallway_ceiling"',
+      '    - "light.guest_room_ceiling"',
+      '    - "light.study_ceiling"',
     ].join("\n"),
   );
   assert.equal(editor.form.customAccepted, editor.form.customYaml);

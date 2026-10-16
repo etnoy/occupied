@@ -5,13 +5,20 @@ on:
     branches: [main]
   pull_request:
   workflow_call:
+  workflow_dispatch:
+  merge_group:
 
 permissions:
   contents: read
 
+concurrency:
+  group: verify-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   python:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -37,12 +44,24 @@ jobs:
           uv pip install --no-deps -e .
       - run: .venv/bin/ruff check custom_components tests scripts
       - run: .venv/bin/ruff format --check custom_components tests scripts
-      - run: .venv/bin/pytest --cov=custom_components.occupied --cov-fail-under=88
+      - run: .venv/bin/pytest --cov=custom_components.occupied --cov-fail-under=88 --cov-report=term-missing --cov-report=xml --cov-report=html --junitxml=test-results/python.xml
+      - name: Upload Python coverage and test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: python-results-${{ matrix.homeassistant }}
+          path: |
+            coverage.xml
+            htmlcov/
+            test-results/python.xml
+          if-no-files-found: ignore
+          retention-days: 7
       - run: .venv/bin/python scripts/check_release.py
       - run: .venv/bin/occupied validate examples/house.yaml --date 2026-10-06 --days 7 --seed release --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
 
   frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: pnpm/action-setup@d15e628ca66d93ee5f352c71671a7bc6a97af5c9 # v6.0.8
@@ -65,12 +84,14 @@ jobs:
 
   hassfest:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: home-assistant/actions/hassfest@06749dd8c0b54f350bc69c8752456cee498808a3
 
   hacs:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa
@@ -81,6 +102,7 @@ jobs:
   package:
     needs: [python, frontend, hassfest, hacs]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
@@ -109,3 +131,86 @@ jobs:
           path: /tmp/occupied-artifact
       - name: Verify the uploaded artifact can be downloaded intact
         run: .venv/bin/python scripts/check_artifacts.py /tmp/occupied-artifact
+
+  docs:
+    uses: ./.github/workflows/docs.yml
+
+  workflows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install and run actionlint
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v1.7.12 --repo rhysd/actionlint --pattern actionlint_1.7.12_linux_amd64.tar.gz --dir "$RUNNER_TEMP/actionlint"
+          cd "$RUNNER_TEMP/actionlint"
+          echo '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  actionlint_1.7.12_linux_amd64.tar.gz' | sha256sum --check
+          tar -xzf actionlint_1.7.12_linux_amd64.tar.gz
+          cd "$GITHUB_WORKSPACE"
+          "$RUNNER_TEMP/actionlint/actionlint" -color
+
+  security:
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    uses: ./.github/workflows/security.yml
+
+  browser:
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: occupied-release
+          path: dist
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@d15e628ca66d93ee5f352c71671a7bc6a97af5c9 # v6.0.8
+        with:
+          version: "11.25.0"
+          cache: true
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm run test:browser
+      - name: Upload browser report, traces, screenshots, and HA logs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: browser-results
+          include-hidden-files: true
+          path: |
+            playwright-report/
+            test-results/browser/
+            .browser-artifacts/*.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ci:
+    name: ci
+    if: ${{ always() }}
+    needs:
+      [
+        python,
+        frontend,
+        hassfest,
+        hacs,
+        package,
+        docs,
+        workflows,
+        security,
+        browser,
+      ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every check to succeed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq -e 'all(.[]; .result == "success")'

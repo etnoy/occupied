@@ -8,5 +8,5 @@ recursive-include tests/fixtures *.yaml *.md
 recursive-include .github/workflows *.yml
 recursive-include schema *.json
 recursive-include custom_components/occupied *.json *.yaml *.js *.ts *.svelte *.css *.png
-include custom_components/occupied/frontend/README.md
+include custom_components/occupied/frontend/README.md .github/dependabot.yml
 global-exclude __pycache__ *.py[cod] .DS_Store

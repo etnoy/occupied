@@ -13,6 +13,7 @@ const configDirectory = path.dirname(fileURLToPath(import.meta.url));
 const typescriptFiles = [
   "custom_components/occupied/frontend/src/**/*.ts",
   "tests/frontend/src/**/*.ts",
+  "tests/browser/**/*.ts",
   "scripts/*.ts",
 ];
 const svelteFiles = ["custom_components/occupied/frontend/src/**/*.svelte"];
@@ -158,7 +159,11 @@ export default typescriptEslint.config([
     languageOptions: { globals: globals.browser },
   },
   {
-    files: ["tests/frontend/src/**/*.ts", "scripts/*.{ts,mjs}"],
+    files: [
+      "tests/frontend/src/**/*.ts",
+      "tests/browser/**/*.ts",
+      "scripts/*.{ts,mjs}",
+    ],
     languageOptions: { globals: globals.node },
   },
 ]);

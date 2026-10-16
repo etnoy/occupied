@@ -13,3 +13,8 @@ node_modules/
 build/
 playwright-report/
 tests/frontend/generated/
+
+coverage.xml
+test-results/
+.browser-artifacts/
+lychee/

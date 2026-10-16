@@ -5,37 +5,59 @@ steps:
   sunset_bedroom_lights:
     name: Sunset bedroom lights
     timing:
-      relative_to: {sun: sunset, start_offset: -90m}
+      relative_to:
+        sun: sunset
+        start_offset: -90m
       latest_at:
-        absolute_time: {start: '18:00'}
+        absolute_time:
+          start: '18:00'
     action: turn_on
     entities:
-      - switch.lamputtag_sovrum
-      - switch.lamputtag_agnes_rum
-      - switch.lamputtag_williams_rum
-      - switch.sovrumsfonster
-      - switch.agnes_fonster
-      - switch.williams_fonster
-      - switch.wincents_fonster
+      - switch.bedroom_lamp
+      - switch.basement_lamp
+      - switch.guest_room_lamp
+      - switch.bedroom_window
+      - switch.basement_window
+      - switch.guest_room_window
+      - switch.study_window
   early_morning_lights:
     name: Early morning lights
     timing:
-      absolute_time: {start: '05:30'}
+      absolute_time:
+        start: '05:30'
       only_before:
-        relative_to: {sun: sunrise, start_offset: 90m}
+        relative_to:
+          sun: sunrise
+          start_offset: 90m
     action: set_state
     entities:
-      switch.vardagsrumsfonster_1: {state: 'on'}
-      switch.vardagsrumsfonster_2: {state: 'on'}
-      switch.vardagsrumsfonster_3: {state: 'on'}
-      switch.vardagsrumsfonster_4: {state: 'on'}
-      switch.koksfonster_1: {state: 'on'}
-      switch.koksfonster_3: {state: 'on'}
-      switch.slinga_gillestugan: {state: 'on'}
-      switch.arbetslampa: {state: 'on'}
-      switch.vitrinskap: {state: 'on'}
-      light.fonsterspottar_vardagsrum: {state: 'on', brightness: 255}
-      light.fonsterspottar_kok: {state: 'on', brightness: 255}
-      switch.lamputtag_vardagsrum: {state: 'on'}
-      switch.altantrappa: {state: 'on'}
-      switch.adventsljusstake: {state: 'on'}
+      switch.living_room_window_1:
+        state: 'on'
+      switch.living_room_window_2:
+        state: 'on'
+      switch.living_room_window_3:
+        state: 'on'
+      switch.living_room_window_4:
+        state: 'on'
+      switch.kitchen_window_1:
+        state: 'on'
+      switch.kitchen_window_2:
+        state: 'on'
+      switch.basement_string_lights:
+        state: 'on'
+      switch.desk_lamp:
+        state: 'on'
+      switch.display_cabinet:
+        state: 'on'
+      light.living_room:
+        state: 'on'
+        brightness: 255
+      light.kitchen:
+        state: 'on'
+        brightness: 255
+      switch.living_room_lamp:
+        state: 'on'
+      switch.porch_steps:
+        state: 'on'
+      switch.decorative_lamp:
+        state: 'on'

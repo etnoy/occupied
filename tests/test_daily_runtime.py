@@ -1211,7 +1211,7 @@ async def test_staggered_off_dispatches_one_entity_per_tick(
 def condition_program(daily_entry, hass):
     program = daily_entry.data["program"]
     program["run_condition"] = {
-        "entity_id": "alarm_control_panel.8124_aaa_zone_1_alarm",
+        "entity_id": "alarm_control_panel.alarm",
         "state": ["armed_away", "armed_night"],
         "enforce_state_on_start": True,
     }
@@ -1223,12 +1223,12 @@ def condition_program(daily_entry, hass):
         "entities": ["switch.proof"],
     }
     hass.states.async_set("switch.proof", "off")
-    hass.states.async_set("alarm_control_panel.8124_aaa_zone_1_alarm", "disarmed")
+    hass.states.async_set("alarm_control_panel.alarm", "disarmed")
     return program
 
 
 async def set_alarm(hass, state, context=None):
-    entity = "alarm_control_panel.8124_aaa_zone_1_alarm"
+    entity = "alarm_control_panel.alarm"
     if state is None:
         hass.states.async_remove(entity, context=context)
     else:
@@ -1646,7 +1646,7 @@ async def test_enforce_now_interruption_during_dispatch_cancels_remaining_calls(
     press = hass.async_create_task(engine.async_enforce_state_now())
     await started.wait()
     if interruption == "condition":
-        hass.states.async_set("alarm_control_panel.8124_aaa_zone_1_alarm", "disarmed")
+        hass.states.async_set("alarm_control_panel.alarm", "disarmed")
         await asyncio.sleep(0)
         control = None
     else:
@@ -1747,7 +1747,7 @@ async def test_enforce_now_rechecks_eligibility_after_planning_before_reclaiming
     if failure == "condition":
 
         async def plan():
-            hass.states.async_set("alarm_control_panel.8124_aaa_zone_1_alarm", "disarmed")
+            hass.states.async_set("alarm_control_panel.alarm", "disarmed")
             await asyncio.sleep(0)
 
         monkeypatch.setattr(engine, "_ensure_plans", plan)
@@ -2080,7 +2080,7 @@ async def test_run_condition_loss_during_dispatch_prevents_remaining_calls(
         calls.append(call)
         # Own-context condition changes must still close the gate synchronously.
         hass.states.async_set(
-            "alarm_control_panel.8124_aaa_zone_1_alarm",
+            "alarm_control_panel.alarm",
             "disarmed",
             context=Context(parent_id=call.context.id),
         )

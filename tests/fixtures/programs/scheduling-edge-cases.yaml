@@ -16,7 +16,7 @@ steps:
         start: '18:00'
     action: turn_on
     entities:
-    - light.fonsterspottar_badrum
+    - light.bathroom_window
   step_2:
     name: Fönsterspottar badrum off
     days:
@@ -31,7 +31,7 @@ steps:
         end: '19:00'
     action: turn_off
     entities:
-    - light.fonsterspottar_badrum
+    - light.bathroom_window
   step_3:
     name: Spis AutomaticZoneSelection on
     timing:
@@ -39,7 +39,7 @@ steps:
         sun: sunrise
     action: turn_on
     entities:
-    - switch.spis_cooking_hob_setting_automaticzoneselection
+    - switch.kitchen_appliance
   fixed_equal_bounds:
     name: '   '
     days:

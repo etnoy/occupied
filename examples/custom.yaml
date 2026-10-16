@@ -4,35 +4,34 @@ steps:
   sunset_lights:
     name: Sunset lights
     timing:
-      relative_to: {sun: sunset}
+      relative_to:
+        sun: sunset
     actions:
       - action: set_state
         entities:
-          switch.elflugan:
+          switch.porch_light:
             state: "on"
-          light.fonsterspottar_vardagsrum:
+          light.living_room:
             state: "on"
             brightness: 255
-          light.fonsterspottar_sovrum:
+          light.bedroom_window:
             state: "on"
             brightness: 20
-          light.fonsterspottar_williams_rum:
-            state: "on"
-            brightness: 100
-          light.fonsterspottar_agnes_rum:
+          light.basement_window:
             state: "on"
             brightness: 24
           cover.living_room:
             position: 40
       - action: scene.turn_on
-        entities: [scene.evening]
+        entities:
+          - scene.evening
   bedtime:
     timing:
-      absolute_time: {start: '23:00'}
+      absolute_time:
+        start: '23:00'
     action: turn_off
     entities:
-      - switch.elflugan
-      - light.fonsterspottar_vardagsrum
-      - light.fonsterspottar_sovrum
-      - light.fonsterspottar_williams_rum
-      - light.fonsterspottar_agnes_rum
+      - switch.porch_light
+      - light.living_room
+      - light.bedroom_window
+      - light.basement_window

@@ -340,31 +340,31 @@ def test_lighting_example_preserves_exact_scene_targets_and_brightness():
     p = read_program(Path(__file__).parents[1] / "examples/solar-limits.yaml")
     bedroom = resolve_actions(p.steps["sunset_bedroom_lights"])
     assert {a.targets[0] for a in bedroom} == {
-        "switch.lamputtag_sovrum",
-        "switch.lamputtag_agnes_rum",
-        "switch.lamputtag_williams_rum",
-        "switch.sovrumsfonster",
-        "switch.agnes_fonster",
-        "switch.williams_fonster",
-        "switch.wincents_fonster",
+        "switch.bedroom_lamp",
+        "switch.basement_lamp",
+        "switch.guest_room_lamp",
+        "switch.bedroom_window",
+        "switch.basement_window",
+        "switch.guest_room_window",
+        "switch.study_window",
     }
     assert len(bedroom) == 7 and all(a.action == "switch.turn_on" for a in bedroom)
     morning = resolve_actions(p.steps["early_morning_lights"])
     assert {a.targets[0]: a.data for a in morning} == {
-        "switch.vardagsrumsfonster_1": {},
-        "switch.vardagsrumsfonster_2": {},
-        "switch.vardagsrumsfonster_3": {},
-        "switch.vardagsrumsfonster_4": {},
-        "switch.koksfonster_1": {},
-        "switch.koksfonster_3": {},
-        "switch.slinga_gillestugan": {},
-        "switch.arbetslampa": {},
-        "switch.vitrinskap": {},
-        "light.fonsterspottar_vardagsrum": {"brightness": 255},
-        "light.fonsterspottar_kok": {"brightness": 255},
-        "switch.lamputtag_vardagsrum": {},
-        "switch.altantrappa": {},
-        "switch.adventsljusstake": {},
+        "switch.living_room_window_1": {},
+        "switch.living_room_window_2": {},
+        "switch.living_room_window_3": {},
+        "switch.living_room_window_4": {},
+        "switch.kitchen_window_1": {},
+        "switch.kitchen_window_2": {},
+        "switch.basement_string_lights": {},
+        "switch.desk_lamp": {},
+        "switch.display_cabinet": {},
+        "light.living_room": {"brightness": 255},
+        "light.kitchen": {"brightness": 255},
+        "switch.living_room_lamp": {},
+        "switch.porch_steps": {},
+        "switch.decorative_lamp": {},
     }
     assert len(morning) == 14
     assert all(a.action.endswith(".turn_on") for a in morning)

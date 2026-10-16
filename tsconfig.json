@@ -25,6 +25,7 @@
     "custom_components/occupied/frontend/src/**/*.ts",
     "custom_components/occupied/frontend/src/**/*.svelte",
     "tests/frontend/**/*.ts",
-    "scripts/*.ts"
+    "scripts/*.ts",
+    "tests/browser/**/*.ts"
   ]
 }
