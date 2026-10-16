@@ -102,3 +102,10 @@ export function formatTimestamp(value, zone, locale) {
     timeZone: zone && zone !== "home_assistant" ? zone : undefined,
   }).format(new Date(value));
 }
+export function formatEventTime(value, zone, locale) {
+  return new Intl.DateTimeFormat(formatterLocale(locale), {
+    timeStyle: "medium",
+    hourCycle: hourCycle(locale),
+    timeZone: zone && zone !== "home_assistant" ? zone : undefined,
+  }).format(new Date(value));
+}

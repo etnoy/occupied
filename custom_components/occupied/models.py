@@ -471,6 +471,15 @@ class RunCondition(Model):
     enforce_state_on_start: Annotated[bool, Field(strict=True)] = False
     start_delay: Annotated[Duration, Field(le=3600)] = "30s"
 
+    off_entities: list[
+        Annotated[str, StringConstraints(pattern=r"^(?:light|switch)\.[a-z0-9_]+$")]
+    ] = Field(default_factory=list)
+
+    @field_validator("off_entities")
+    @classmethod
+    def unique_off_entities(cls, value):
+        return list(dict.fromkeys(value))
+
     @field_validator("state", mode="before", json_schema_input_type=str | list[str])
     @classmethod
     def state_list(cls, value):
@@ -508,7 +517,20 @@ class Handover(Model):
 
 
 def controlled_entities(program: Program) -> frozenset[str]:
-    return frozenset(entity for _, action in program_actions(program) for entity in action.entities)
+    return frozenset(
+        entity for _, action in program_actions(program) for entity in action.entities
+    ) | enforcement_off_entities(program)
+
+
+def enforcement_off_entities(program: Program) -> frozenset[str]:
+    """Extra off targets never override entities declared in steps or random events."""
+    scheduled = {
+        entity
+        for _, action in program_actions(program, enabled_only=False)
+        for entity in action.entities
+    }
+    configured = program.run_condition.off_entities if program.run_condition else []
+    return frozenset(configured) - scheduled
 
 
 def projectable_lights(program: Program) -> frozenset[str]:

@@ -354,6 +354,25 @@ nav button[aria-current="page"] {
 }
 
 /* Step lists and empty states */
+.activity-intro {
+  border-left: 3px solid var(--primary-color, #167b94);
+  padding: 4px 0 4px 16px;
+  margin: 0 0 24px;
+}
+
+.activity-intro h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.activity-intro p {
+  max-width: 68ch;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
 .step-empty {
   text-align: center;
   padding: 60px 32px;
@@ -383,27 +402,31 @@ nav button[aria-current="page"] {
   min-width: 0;
 }
 
-.activity-order-toolbar {
+.activity-list-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 36px;
-  margin: 0 0 8px 40px;
 }
 
-.activity-order-toolbar button {
-  padding: 6px 10px;
-  font-size: 12px;
+.activity-reset-order {
+  margin-left: auto;
 }
 
 .activity-item {
   position: relative;
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
-  align-items: start;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
   min-width: 0;
+}
+
+.activity-children {
+  display: flex;
+  flex-direction: column;
+  grid-column: 1 / -1;
+  gap: 10px;
+  margin-left: 14px;
 }
 
 .activity-drag-handle {
@@ -411,7 +434,7 @@ nav button[aria-current="page"] {
   place-items: center;
   width: 32px;
   min-height: 44px;
-  margin-top: 12px;
+  margin: 4px 6px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -438,7 +461,7 @@ nav button[aria-current="page"] {
 .activity-drop-after::after {
   content: "";
   position: absolute;
-  left: 40px;
+  left: 0;
   right: 0;
   height: 3px;
   border-radius: 2px;
@@ -473,6 +496,16 @@ nav button[aria-current="page"] {
   border-radius: 12px;
   background: var(--card-background-color, #fff);
   overflow: hidden;
+}
+
+.step-card-header {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+}
+
+.step-card-header:has(.step-row[aria-expanded="true"]) {
+  border-bottom: 1px solid var(--divider-color, #d5dce3);
 }
 
 .step-card.step-disabled {
@@ -543,10 +576,6 @@ nav button[aria-current="page"] {
 
 .step-row:not(:disabled):hover {
   background: var(--secondary-background-color, #e3eef2);
-}
-
-.step-row[aria-expanded="true"] {
-  border-bottom: 1px solid var(--divider-color, #d5dce3);
 }
 
 .step-card .step-editor {

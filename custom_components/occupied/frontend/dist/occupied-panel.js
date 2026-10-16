@@ -31,6 +31,12 @@ var en = {
   run_condition_delay: "Delay before enforcing state",
   run_condition_delay_hint:
     "Default: 30s. Use 0s to 1h. Scheduled device changes wait for this delay, then use the state expected at that time.",
+  run_condition_off_entities: "Extra entities to turn off",
+  run_condition_off_entities_hint:
+    "Turn off these lights and switches when expected states are enforced, after the startup delay or with the enforcement button. Entities used in steps or events keep their scheduled targets. Manual changes are respected until the next activation or button press.",
+  run_condition_off_entities_error: "Select valid light or switch entities.",
+  run_condition_off_entities_warning:
+    "Already managed by steps or events (including disabled ones). These entities keep their scheduled targets and will not be turned off by this list:",
   run_condition_yaml_hint:
     "Save or discard YAML edits before changing the run condition.",
   run_condition_entity_error: "Select a valid condition entity.",
@@ -400,7 +406,6 @@ var en = {
   sunset: "sunset",
   search_entities_or_rooms: "Search entities or rooms",
   selected: "selected",
-  controller: "Controller",
   managing: "Managing",
   waiting: "Waiting",
   paused: "Paused",
@@ -545,6 +550,13 @@ var sv = {
   run_condition_delay: "F\xF6rdr\xF6jning f\xF6re till\xE4mpning",
   run_condition_delay_hint:
     "Standard: 30s. Ange 0s till 1h. Schemalagda enhets\xE4ndringar v\xE4ntar p\xE5 f\xF6rdr\xF6jningen och anv\xE4nder sedan det tillst\xE5nd som f\xF6rv\xE4ntas d\xE5.",
+  run_condition_off_entities: "Extra entiteter att st\xE4nga av",
+  run_condition_off_entities_hint:
+    "St\xE4ng av dessa lampor och str\xF6mbrytare n\xE4r f\xF6rv\xE4ntade tillst\xE5nd till\xE4mpas, efter startf\xF6rdr\xF6jningen eller med till\xE4mpningsknappen. Entiteter i steg eller h\xE4ndelser beh\xE5ller sina schemalagda m\xE5l. Manuella \xE4ndringar respekteras tills n\xE4sta aktivering eller knapptryckning.",
+  run_condition_off_entities_error:
+    "V\xE4lj giltiga lamp- eller str\xF6mbrytarentiteter.",
+  run_condition_off_entities_warning:
+    "Hanteras redan av steg eller h\xE4ndelser (\xE4ven inaktiverade). Dessa entiteter beh\xE5ller sina schemalagda m\xE5l och st\xE4ngs inte av via denna lista:",
   run_condition_yaml_hint:
     "Spara eller kasta YAML-\xE4ndringar innan du \xE4ndrar k\xF6rvillkoret.",
   run_condition_entity_error: "V\xE4lj en giltig entitet f\xF6r villkoret.",
@@ -938,7 +950,6 @@ var sv = {
   sunset: "solnedg\xE5ng",
   search_entities_or_rooms: "S\xF6k entiteter eller rum",
   selected: "valda",
-  controller: "Styrenhet",
   managing: "Styr",
   waiting: "V\xE4ntar",
   paused: "Pausad",
@@ -1089,6 +1100,13 @@ function formatClock(value, locale) {
 function formatTimestamp(value, zone, locale) {
   return new Intl.DateTimeFormat(formatterLocale(locale), {
     dateStyle: "short",
+    timeStyle: "medium",
+    hourCycle: hourCycle(locale),
+    timeZone: zone && zone !== "home_assistant" ? zone : void 0,
+  }).format(new Date(value));
+}
+function formatEventTime(value, zone, locale) {
+  return new Intl.DateTimeFormat(formatterLocale(locale), {
     timeStyle: "medium",
     hourCycle: hourCycle(locale),
     timeZone: zone && zone !== "home_assistant" ? zone : void 0,
@@ -1559,6 +1577,7 @@ function runConditionForm(config) {
     states: config ? [config.state].flat() : [],
     enforceState: config?.enforce_state_on_start ?? false,
     startDelay: config?.start_delay ?? "30s",
+    offEntities: [...(config?.off_entities ?? [])],
   };
 }
 function runConditionErrors(form) {
@@ -1577,6 +1596,13 @@ function runConditionErrors(form) {
   ) {
     errors.states = "run_condition_states_error";
   }
+  if (
+    form.offEntities.some(
+      (entity) => !/^(light|switch)\.[a-z0-9_]+$/.test(entity),
+    )
+  ) {
+    errors.offEntities = "run_condition_off_entities_error";
+  }
   const delay = durationSeconds(form.startDelay);
   if (!Number.isFinite(delay) || delay < 0 || delay > 3600) {
     errors.startDelay = "run_condition_delay_error";
@@ -1592,6 +1618,9 @@ function runConditionValue(form) {
     state: [...new Set(form.states)],
     enforce_state_on_start: form.enforceState,
     start_delay: form.startDelay,
+    ...(form.offEntities.length > 0 && {
+      off_entities: [...new Set(form.offEntities)],
+    }),
   };
 }
 function runConditionStateOptions(entity, states, current) {
@@ -1617,10 +1646,38 @@ function runConditionStateOptions(entity, states, current) {
     ]),
   ];
 }
+function managedOffEntities(program, entities) {
+  const managed2 = /* @__PURE__ */ new Set();
+  const visit = (action2) => {
+    const targets = action2.entities ?? [];
+    for (const entity of Array.isArray(targets)
+      ? targets
+      : Object.keys(targets)) {
+      managed2.add(entity);
+    }
+    for (const child2 of action2.actions ?? []) {
+      visit(child2);
+    }
+  };
+  for (const step of Object.values(program.steps ?? {})) {
+    visit(step);
+  }
+  for (const event2 of Object.values(program.random ?? {})) {
+    visit(event2.on);
+    visit(event2.off);
+  }
+  const overlaps = /* @__PURE__ */ new Set();
+  for (const entity of entities) {
+    if (managed2.has(entity)) {
+      overlaps.add(entity);
+    }
+  }
+  return [...overlaps];
+}
 
 // custom_components/occupied/frontend/src/app.css
 var app_default =
-  '/* Shared element defaults */\np,\nli {\n  overflow-wrap: anywhere;\n}\n\n:host {\n  display: block;\n  min-height: 100%;\n  background: var(--primary-background-color, #f4f5f8);\n  color: var(--primary-text-color, #202c37);\n  font:\n    15px/1.5 system-ui,\n    sans-serif;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nmain {\n  max-width: 1200px;\n  margin: auto;\n  padding: 24px;\n}\n\nh1 {\n  margin: 0;\n  font-size: 28px;\n}\n\nh2 {\n  font-size: 21px;\n  margin: 0 0 12px;\n}\n\nh3 {\n  font-size: 17px;\n}\n\np {\n  margin: 8px 0;\n}\n\nsmall,\n.hint {\n  color: var(--secondary-text-color, #596773);\n}\n\nheader {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  flex-wrap: wrap;\n}\n\nnav,\n.row,\n.toolbar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\nnav {\n  margin: 18px 0;\n}\n\nnav button[aria-current="page"] {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nsection {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  padding: 20px;\n  margin: 16px 0;\n  min-width: 0;\n}\n\nsection section {\n  border-radius: 8px;\n}\n\ndetails {\n  padding: 12px 0;\n}\n\nsummary {\n  cursor: pointer;\n  font-weight: 600;\n}\n\nbutton,\ninput,\nselect,\ntextarea {\n  font: inherit;\n  color: inherit;\n}\n\nbutton {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #bdc9d2);\n  padding: 8px 14px;\n  border-radius: 8px;\n  cursor: pointer;\n  min-height: 42px;\n}\n\nbutton.primary {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nbutton:disabled {\n  opacity: 0.5;\n  cursor: default;\n}\n\nbutton:focus-visible,\ninput:focus-visible,\nselect:focus-visible,\ntextarea:focus-visible,\nsummary:focus-visible,\na:focus-visible,\n[tabindex]:focus-visible {\n  outline: 3px solid var(--primary-color, #167b94);\n  outline-offset: 2px;\n}\n\n.field {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  margin: 12px 0;\n  max-width: 700px;\n}\n\nlabel {\n  font-weight: 500;\n}\n\ninput:not([type="checkbox"]),\nselect,\ntextarea {\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 6px;\n  background: var(--card-background-color, #fff);\n  padding: 9px;\n  min-width: 0;\n  max-width: 100%;\n}\n\n.field input,\n.field select,\n.field textarea {\n  width: 100%;\n}\n\ntextarea {\n  resize: vertical;\n}\n\n.field textarea {\n  font:\n    14px/1.5 ui-monospace,\n    monospace;\n}\n\ninput[type="checkbox"] {\n  width: 20px;\n  height: 20px;\n  vertical-align: middle;\n}\n\nfieldset {\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 8px;\n  margin: 12px 0;\n  min-width: 0;\n}\n\n.banner {\n  padding: 12px 16px;\n  border-radius: 8px;\n  background: var(--secondary-background-color, #e3eef2);\n  margin: 12px 0;\n  overflow-wrap: anywhere;\n}\n\n.banner.unsaved {\n  border: 1px solid var(--warning-color, #e69500);\n  border-left-width: 4px;\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #e69500) 18%,\n    var(--card-background-color, #fff)\n  );\n  color: var(--primary-text-color, #202c37);\n  font-weight: 600;\n}\n\n.error,\n[aria-invalid="true"] {\n  color: var(--error-color, #b3261e);\n}\n\n[aria-invalid="true"] {\n  border-color: var(--error-color, #b3261e);\n}\n\n[hidden] {\n  display: none !important;\n}\n\n.toolbar {\n  position: sticky;\n  top: 0;\n  padding: 12px 0;\n  background: var(--primary-background-color, #f4f5f8);\n  z-index: 2;\n}\n\n.table-wrap {\n  overflow: auto;\n}\n\ntable {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 13px;\n}\n\nth,\ntd {\n  padding: 9px;\n  text-align: left;\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  max-width: 300px;\n  overflow-wrap: anywhere;\n}\n\nth {\n  white-space: nowrap;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 14px;\n  }\n\n  section {\n    padding: 14px;\n  }\n\n  nav {\n    gap: 5px;\n  }\n\n  nav button {\n    padding: 7px 10px;\n  }\n\n  .row input {\n    width: 100%;\n  }\n}\n\n/* Panel shell overrides: keep these after the shared defaults. */\nmain {\n  max-width: 1120px;\n  padding: 32px;\n}\n\nheader {\n  margin-bottom: 24px;\n}\n\nheader h1 {\n  font-size: 24px;\n  letter-spacing: -0.7px;\n}\n\nheader p {\n  margin: 2px 0;\n  font-size: 13px;\n}\n\nnav {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  gap: 24px;\n  margin: 16px 0 32px;\n}\n\nnav button,\nnav button[aria-current="page"] {\n  border: 0;\n  border-radius: 0;\n  border-bottom: 3px solid transparent;\n  background: transparent;\n  padding: 10px 0;\n  color: var(--secondary-text-color, #596773);\n}\n\nnav button[aria-current="page"] {\n  border-bottom-color: var(--primary-color, #167b94);\n  color: var(--primary-color, #167b94);\n  font-weight: 650;\n}\n\n.field-label-row {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: baseline;\n  gap: 4px 12px;\n}\n\n.field-label-row .text-button {\n  min-height: 24px;\n  padding: 0;\n  border: 0;\n  font-size: 13px;\n}\n\n.text-button {\n  border-color: transparent;\n  background: transparent;\n  color: var(--primary-color, #167b94);\n  padding-left: 4px;\n  padding-right: 4px;\n}\n\n.page-heading {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 24px;\n  margin: 24px 0;\n}\n\n.page-heading h2 {\n  font-size: 30px;\n  letter-spacing: -0.8px;\n  margin: 0;\n}\n\n.page-heading .hint {\n  max-width: 500px;\n}\n\n/* Step lists and empty states */\n.step-empty {\n  text-align: center;\n  padding: 60px 32px;\n  border-style: dashed;\n}\n\n.step-empty h2 {\n  font-size: 25px;\n  letter-spacing: -0.5px;\n}\n\n.step-empty p {\n  max-width: 490px;\n  margin: 12px auto 24px;\n}\n\n.empty-steps {\n  font-size: 13px;\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-list {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  margin: 0 0 20px;\n  min-width: 0;\n}\n\n.activity-order-toolbar {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n  min-height: 36px;\n  margin: 0 0 8px 40px;\n}\n\n.activity-order-toolbar button {\n  padding: 6px 10px;\n  font-size: 12px;\n}\n\n.activity-item {\n  position: relative;\n  display: grid;\n  grid-template-columns: 32px minmax(0, 1fr);\n  align-items: start;\n  gap: 8px;\n  min-width: 0;\n}\n\n.activity-drag-handle {\n  display: grid;\n  place-items: center;\n  width: 32px;\n  min-height: 44px;\n  margin-top: 12px;\n  padding: 0;\n  border: 0;\n  background: transparent;\n  color: var(--secondary-text-color, #596773);\n  cursor: grab;\n  touch-action: none;\n  user-select: none;\n}\n\n.activity-drag-handle:active {\n  cursor: grabbing;\n}\n\n.activity-drag-handle:focus-visible {\n  outline: 2px solid var(--primary-color, #03a9f4);\n  outline-offset: 2px;\n}\n\n.activity-dragging .step-card {\n  opacity: 0.45;\n}\n\n.activity-drop-before::before,\n.activity-drop-after::after {\n  content: "";\n  position: absolute;\n  left: 40px;\n  right: 0;\n  height: 3px;\n  border-radius: 2px;\n  background: var(--primary-color, #03a9f4);\n  pointer-events: none;\n}\n\n.activity-drop-before::before {\n  top: -6px;\n}\n\n.activity-drop-after::after {\n  bottom: -6px;\n}\n\n.visually-hidden {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n  border: 0;\n}\n\n.step-card {\n  width: calc(100% - var(--depth) * 14px);\n  margin-left: calc(var(--depth) * 14px);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  overflow: hidden;\n}\n\n.step-card.step-disabled {\n  border-style: dashed;\n}\n\n.step-card.step-warning {\n  border-color: var(--warning-color, #ffa600);\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 10%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-card.step-warning .step-row:not(:disabled):hover {\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 18%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-row-warning {\n  display: flex;\n  align-items: flex-start;\n  gap: 8px;\n  color: var(--warning-color, #ffa600);\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-warning ha-icon {\n  --mdc-icon-size: 20px;\n  flex-shrink: 0;\n}\n\n.step-warning-message {\n  display: block;\n}\n\n.step-card.step-disabled .step-row {\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-row {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);\n  align-items: center;\n  gap: 14px;\n  text-align: left;\n  width: 100%;\n  padding: 20px;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  color: inherit;\n}\n\n.step-row:disabled {\n  opacity: 1;\n  cursor: default;\n}\n\n.step-row.editing {\n  grid-template-columns: minmax(0, 1fr);\n}\n\n.step-row:not(:disabled):hover {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-row[aria-expanded="true"] {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n}\n\n.step-card .step-editor {\n  margin: 0;\n}\n\n.step-editor-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n/* Editor action menus */\n.step-actions-menu {\n  position: fixed;\n  inset: auto;\n  width: 240px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  margin: 0;\n  padding: 6px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 10px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-actions-menu button {\n  display: block;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  text-align: left;\n}\n\n.step-actions-menu button:hover,\n.step-actions-menu button:focus-visible {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-actions-menu [role="separator"] {\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  margin: 6px 8px;\n}\n\n.step-row-content {\n  display: flex;\n  min-width: 0;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.step-row-heading {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.step-status-badge {\n  padding: 2px 8px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 999px;\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--secondary-text-color, #596773);\n  font-size: 11px;\n  font-weight: 500;\n  line-height: 1.5;\n  white-space: nowrap;\n}\n\n.step-row strong {\n  font-size: 16px;\n  font-weight: 650;\n  overflow-wrap: anywhere;\n}\n\n.step-row-content .hint {\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-time {\n  text-align: right;\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n/* Editor dialogs */\n.step-delete-dialog,\n.step-advanced-dialog {\n  width: 440px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-delete-dialog::backdrop,\n.step-advanced-dialog::backdrop {\n  background: #0006;\n}\n\n.step-weekdays {\n  padding: 12px;\n}\n\n.step-weekday-presets {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-bottom: 16px;\n}\n\n.step-weekday-presets button {\n  padding: 6px 10px;\n}\n\n.step-weekday-presets button[aria-pressed="true"] {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.step-weekday-options {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.step-weekday-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  min-height: 42px;\n  cursor: pointer;\n}\n\n.step-weekday-option input {\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-exit-overlay {\n  position: fixed;\n  inset: 0;\n  z-index: 10;\n  display: grid;\n  place-items: center;\n  padding: 16px;\n  background: #0004;\n}\n\n.step-exit-dialog {\n  position: relative;\n  inset: auto;\n  width: 440px;\n  max-width: 100%;\n  margin: 0;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-exit-dialog h2 {\n  margin-top: 0;\n}\n\n.step-delete-actions {\n  display: flex;\n  justify-content: flex-end;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n.danger {\n  color: var(--error-color, #b3261e);\n}\n\n.icon-button {\n  display: inline-grid;\n  place-items: center;\n  width: 42px;\n  padding: 8px;\n}\n\n.icon-button svg {\n  width: 20px;\n  height: 20px;\n  fill: currentColor;\n}\n\n.step-editor {\n  max-width: none;\n  margin: 0 auto 32px;\n  padding: 32px;\n}\n\n.step-editor h3 {\n  font-size: 23px;\n  font-weight: 600;\n  letter-spacing: -0.5px;\n  margin: 28px 0 8px;\n}\n\n.entity-native-selector {\n  display: block;\n  width: 100%;\n}\n\n.builder-footer {\n  display: flex;\n  gap: 10px;\n  align-items: center;\n  flex-wrap: wrap;\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  padding-top: 22px;\n  margin-top: 28px;\n}\n\n.builder-footer .step-editor-actions {\n  margin-top: 0;\n}\n\n.builder-footer > button:first-child {\n  margin-right: auto;\n}\n\n.step-editor details {\n  padding: 8px 0;\n}\n\n.step-editor .field {\n  margin: 18px 0;\n}\n\n.source-picker {\n  position: relative;\n}\n\n.source-picker ha-generic-picker {\n  display: block;\n  width: 100%;\n}\n\n.step-editor .error {\n  font-size: 13px;\n}\n\n.timing-options {\n  border: 0;\n  padding: 0;\n  margin: 18px 0;\n}\n\n.timing-option-row {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.timing-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 10px 12px;\n  min-height: 44px;\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 8px;\n  cursor: pointer;\n}\n\n.timing-option:has(input:checked) {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.timing-options input[type="radio"] {\n  width: 18px;\n  height: 18px;\n  padding: 0;\n  margin: 0;\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-editor .step-name-editor .field {\n  max-width: none;\n  margin: 20px 0 28px;\n}\n\n.step-editor .step-name-editor label {\n  font-weight: 600;\n}\n\n.step-editor .step-name-editor input {\n  font-family: inherit;\n  font-size: 22px;\n  font-weight: 600;\n  line-height: 1.4;\n  padding: 14px;\n}\n\n.step-editor .editor-sections {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 28px;\n}\n\n.step-editor .editor-sections > div {\n  min-width: 0;\n}\n\n.step-editor h3 {\n  margin: 16px 0 8px;\n  font-size: 20px;\n}\n\n.step-editor h4 {\n  margin: 14px 0 8px;\n  font-size: 16px;\n  font-weight: 600;\n}\n\n.step-editor .field {\n  margin: 14px 0;\n}\n\n@media (max-width: 900px) {\n  .step-editor .editor-sections {\n    grid-template-columns: 1fr;\n    gap: 20px;\n  }\n\n  .step-editor .editor-sections > div + div {\n    border-top: 1px solid var(--divider-color, #d5dce3);\n    padding-top: 12px;\n  }\n}\n\n#issues:empty {\n  display: none;\n}\n\n#issues button {\n  margin: 0 6px 8px 0;\n  text-align: left;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 18px 14px;\n  }\n\n  header {\n    gap: 10px;\n    margin-bottom: 8px;\n  }\n\n  nav {\n    margin-bottom: 24px;\n  }\n\n  .page-heading {\n    align-items: flex-start;\n    flex-direction: column;\n    gap: 12px;\n  }\n\n  .page-heading h2 {\n    font-size: 27px;\n  }\n\n  .step-row {\n    padding: 14px;\n    gap: 10px;\n    grid-template-columns: minmax(0, 1fr);\n  }\n\n  .step-row-time {\n    text-align: left;\n  }\n\n  .step-editor {\n    padding: 20px 16px;\n  }\n\n  .builder-footer {\n    gap: 6px;\n  }\n\n  .builder-footer button {\n    padding: 8px 12px;\n  }\n\n  .step-empty {\n    padding: 36px 20px;\n  }\n\n  .empty-steps {\n    line-height: 2;\n  }\n}\n';
+  '/* Shared element defaults */\np,\nli {\n  overflow-wrap: anywhere;\n}\n\n:host {\n  display: block;\n  min-height: 100%;\n  background: var(--primary-background-color, #f4f5f8);\n  color: var(--primary-text-color, #202c37);\n  font:\n    15px/1.5 system-ui,\n    sans-serif;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nmain {\n  max-width: 1200px;\n  margin: auto;\n  padding: 24px;\n}\n\nh1 {\n  margin: 0;\n  font-size: 28px;\n}\n\nh2 {\n  font-size: 21px;\n  margin: 0 0 12px;\n}\n\nh3 {\n  font-size: 17px;\n}\n\np {\n  margin: 8px 0;\n}\n\nsmall,\n.hint {\n  color: var(--secondary-text-color, #596773);\n}\n\nheader {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  flex-wrap: wrap;\n}\n\nnav,\n.row,\n.toolbar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\nnav {\n  margin: 18px 0;\n}\n\nnav button[aria-current="page"] {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nsection {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  padding: 20px;\n  margin: 16px 0;\n  min-width: 0;\n}\n\nsection section {\n  border-radius: 8px;\n}\n\ndetails {\n  padding: 12px 0;\n}\n\nsummary {\n  cursor: pointer;\n  font-weight: 600;\n}\n\nbutton,\ninput,\nselect,\ntextarea {\n  font: inherit;\n  color: inherit;\n}\n\nbutton {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #bdc9d2);\n  padding: 8px 14px;\n  border-radius: 8px;\n  cursor: pointer;\n  min-height: 42px;\n}\n\nbutton.primary {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nbutton:disabled {\n  opacity: 0.5;\n  cursor: default;\n}\n\nbutton:focus-visible,\ninput:focus-visible,\nselect:focus-visible,\ntextarea:focus-visible,\nsummary:focus-visible,\na:focus-visible,\n[tabindex]:focus-visible {\n  outline: 3px solid var(--primary-color, #167b94);\n  outline-offset: 2px;\n}\n\n.field {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  margin: 12px 0;\n  max-width: 700px;\n}\n\nlabel {\n  font-weight: 500;\n}\n\ninput:not([type="checkbox"]),\nselect,\ntextarea {\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 6px;\n  background: var(--card-background-color, #fff);\n  padding: 9px;\n  min-width: 0;\n  max-width: 100%;\n}\n\n.field input,\n.field select,\n.field textarea {\n  width: 100%;\n}\n\ntextarea {\n  resize: vertical;\n}\n\n.field textarea {\n  font:\n    14px/1.5 ui-monospace,\n    monospace;\n}\n\ninput[type="checkbox"] {\n  width: 20px;\n  height: 20px;\n  vertical-align: middle;\n}\n\nfieldset {\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 8px;\n  margin: 12px 0;\n  min-width: 0;\n}\n\n.banner {\n  padding: 12px 16px;\n  border-radius: 8px;\n  background: var(--secondary-background-color, #e3eef2);\n  margin: 12px 0;\n  overflow-wrap: anywhere;\n}\n\n.banner.unsaved {\n  border: 1px solid var(--warning-color, #e69500);\n  border-left-width: 4px;\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #e69500) 18%,\n    var(--card-background-color, #fff)\n  );\n  color: var(--primary-text-color, #202c37);\n  font-weight: 600;\n}\n\n.error,\n[aria-invalid="true"] {\n  color: var(--error-color, #b3261e);\n}\n\n[aria-invalid="true"] {\n  border-color: var(--error-color, #b3261e);\n}\n\n[hidden] {\n  display: none !important;\n}\n\n.toolbar {\n  position: sticky;\n  top: 0;\n  padding: 12px 0;\n  background: var(--primary-background-color, #f4f5f8);\n  z-index: 2;\n}\n\n.table-wrap {\n  overflow: auto;\n}\n\ntable {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 13px;\n}\n\nth,\ntd {\n  padding: 9px;\n  text-align: left;\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  max-width: 300px;\n  overflow-wrap: anywhere;\n}\n\nth {\n  white-space: nowrap;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 14px;\n  }\n\n  section {\n    padding: 14px;\n  }\n\n  nav {\n    gap: 5px;\n  }\n\n  nav button {\n    padding: 7px 10px;\n  }\n\n  .row input {\n    width: 100%;\n  }\n}\n\n/* Panel shell overrides: keep these after the shared defaults. */\nmain {\n  max-width: 1120px;\n  padding: 32px;\n}\n\nheader {\n  margin-bottom: 24px;\n}\n\nheader h1 {\n  font-size: 24px;\n  letter-spacing: -0.7px;\n}\n\nheader p {\n  margin: 2px 0;\n  font-size: 13px;\n}\n\nnav {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  gap: 24px;\n  margin: 16px 0 32px;\n}\n\nnav button,\nnav button[aria-current="page"] {\n  border: 0;\n  border-radius: 0;\n  border-bottom: 3px solid transparent;\n  background: transparent;\n  padding: 10px 0;\n  color: var(--secondary-text-color, #596773);\n}\n\nnav button[aria-current="page"] {\n  border-bottom-color: var(--primary-color, #167b94);\n  color: var(--primary-color, #167b94);\n  font-weight: 650;\n}\n\n.field-label-row {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: baseline;\n  gap: 4px 12px;\n}\n\n.field-label-row .text-button {\n  min-height: 24px;\n  padding: 0;\n  border: 0;\n  font-size: 13px;\n}\n\n.text-button {\n  border-color: transparent;\n  background: transparent;\n  color: var(--primary-color, #167b94);\n  padding-left: 4px;\n  padding-right: 4px;\n}\n\n.page-heading {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 24px;\n  margin: 24px 0;\n}\n\n.page-heading h2 {\n  font-size: 30px;\n  letter-spacing: -0.8px;\n  margin: 0;\n}\n\n.page-heading .hint {\n  max-width: 500px;\n}\n\n/* Step lists and empty states */\n.activity-intro {\n  border-left: 3px solid var(--primary-color, #167b94);\n  padding: 4px 0 4px 16px;\n  margin: 0 0 24px;\n}\n\n.activity-intro h2 {\n  font-size: 16px;\n  font-weight: 600;\n  margin: 0 0 4px;\n}\n\n.activity-intro p {\n  max-width: 68ch;\n  margin: 0;\n  font-size: 14px;\n  line-height: 1.6;\n}\n\n.step-empty {\n  text-align: center;\n  padding: 60px 32px;\n  border-style: dashed;\n}\n\n.step-empty h2 {\n  font-size: 25px;\n  letter-spacing: -0.5px;\n}\n\n.step-empty p {\n  max-width: 490px;\n  margin: 12px auto 24px;\n}\n\n.empty-steps {\n  font-size: 13px;\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-list {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  margin: 0 0 20px;\n  min-width: 0;\n}\n\n.activity-list-actions {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n}\n\n.activity-reset-order {\n  margin-left: auto;\n}\n\n.activity-item {\n  position: relative;\n  display: grid;\n  grid-template-columns: minmax(0, 1fr);\n  gap: 10px;\n  min-width: 0;\n}\n\n.activity-children {\n  display: flex;\n  flex-direction: column;\n  grid-column: 1 / -1;\n  gap: 10px;\n  margin-left: 14px;\n}\n\n.activity-drag-handle {\n  display: grid;\n  place-items: center;\n  width: 32px;\n  min-height: 44px;\n  margin: 4px 6px;\n  padding: 0;\n  border: 0;\n  background: transparent;\n  color: var(--secondary-text-color, #596773);\n  cursor: grab;\n  touch-action: none;\n  user-select: none;\n}\n\n.activity-drag-handle:active {\n  cursor: grabbing;\n}\n\n.activity-drag-handle:focus-visible {\n  outline: 2px solid var(--primary-color, #03a9f4);\n  outline-offset: 2px;\n}\n\n.activity-dragging .step-card {\n  opacity: 0.45;\n}\n\n.activity-drop-before::before,\n.activity-drop-after::after {\n  content: "";\n  position: absolute;\n  left: 0;\n  right: 0;\n  height: 3px;\n  border-radius: 2px;\n  background: var(--primary-color, #03a9f4);\n  pointer-events: none;\n}\n\n.activity-drop-before::before {\n  top: -6px;\n}\n\n.activity-drop-after::after {\n  bottom: -6px;\n}\n\n.visually-hidden {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n  border: 0;\n}\n\n.step-card {\n  width: calc(100% - var(--depth) * 14px);\n  margin-left: calc(var(--depth) * 14px);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  overflow: hidden;\n}\n\n.step-card-header {\n  display: grid;\n  grid-template-columns: 44px minmax(0, 1fr);\n  align-items: center;\n}\n\n.step-card-header:has(.step-row[aria-expanded="true"]) {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n}\n\n.step-card.step-disabled {\n  border-style: dashed;\n}\n\n.step-card.step-warning {\n  border-color: var(--warning-color, #ffa600);\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 10%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-card.step-warning .step-row:not(:disabled):hover {\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 18%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-row-warning {\n  display: flex;\n  align-items: flex-start;\n  gap: 8px;\n  color: var(--warning-color, #ffa600);\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-warning ha-icon {\n  --mdc-icon-size: 20px;\n  flex-shrink: 0;\n}\n\n.step-warning-message {\n  display: block;\n}\n\n.step-card.step-disabled .step-row {\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-row {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);\n  align-items: center;\n  gap: 14px;\n  text-align: left;\n  width: 100%;\n  padding: 20px;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  color: inherit;\n}\n\n.step-row:disabled {\n  opacity: 1;\n  cursor: default;\n}\n\n.step-row.editing {\n  grid-template-columns: minmax(0, 1fr);\n}\n\n.step-row:not(:disabled):hover {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-card .step-editor {\n  margin: 0;\n}\n\n.step-editor-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n/* Editor action menus */\n.step-actions-menu {\n  position: fixed;\n  inset: auto;\n  width: 240px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  margin: 0;\n  padding: 6px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 10px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-actions-menu button {\n  display: block;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  text-align: left;\n}\n\n.step-actions-menu button:hover,\n.step-actions-menu button:focus-visible {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-actions-menu [role="separator"] {\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  margin: 6px 8px;\n}\n\n.step-row-content {\n  display: flex;\n  min-width: 0;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.step-row-heading {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.step-status-badge {\n  padding: 2px 8px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 999px;\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--secondary-text-color, #596773);\n  font-size: 11px;\n  font-weight: 500;\n  line-height: 1.5;\n  white-space: nowrap;\n}\n\n.step-row strong {\n  font-size: 16px;\n  font-weight: 650;\n  overflow-wrap: anywhere;\n}\n\n.step-row-content .hint {\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-time {\n  text-align: right;\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n/* Editor dialogs */\n.step-delete-dialog,\n.step-advanced-dialog {\n  width: 440px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-delete-dialog::backdrop,\n.step-advanced-dialog::backdrop {\n  background: #0006;\n}\n\n.step-weekdays {\n  padding: 12px;\n}\n\n.step-weekday-presets {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-bottom: 16px;\n}\n\n.step-weekday-presets button {\n  padding: 6px 10px;\n}\n\n.step-weekday-presets button[aria-pressed="true"] {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.step-weekday-options {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.step-weekday-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  min-height: 42px;\n  cursor: pointer;\n}\n\n.step-weekday-option input {\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-exit-overlay {\n  position: fixed;\n  inset: 0;\n  z-index: 10;\n  display: grid;\n  place-items: center;\n  padding: 16px;\n  background: #0004;\n}\n\n.step-exit-dialog {\n  position: relative;\n  inset: auto;\n  width: 440px;\n  max-width: 100%;\n  margin: 0;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-exit-dialog h2 {\n  margin-top: 0;\n}\n\n.step-delete-actions {\n  display: flex;\n  justify-content: flex-end;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n.danger {\n  color: var(--error-color, #b3261e);\n}\n\n.icon-button {\n  display: inline-grid;\n  place-items: center;\n  width: 42px;\n  padding: 8px;\n}\n\n.icon-button svg {\n  width: 20px;\n  height: 20px;\n  fill: currentColor;\n}\n\n.step-editor {\n  max-width: none;\n  margin: 0 auto 32px;\n  padding: 32px;\n}\n\n.step-editor h3 {\n  font-size: 23px;\n  font-weight: 600;\n  letter-spacing: -0.5px;\n  margin: 28px 0 8px;\n}\n\n.entity-native-selector {\n  display: block;\n  width: 100%;\n}\n\n.builder-footer {\n  display: flex;\n  gap: 10px;\n  align-items: center;\n  flex-wrap: wrap;\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  padding-top: 22px;\n  margin-top: 28px;\n}\n\n.builder-footer .step-editor-actions {\n  margin-top: 0;\n}\n\n.builder-footer > button:first-child {\n  margin-right: auto;\n}\n\n.step-editor details {\n  padding: 8px 0;\n}\n\n.step-editor .field {\n  margin: 18px 0;\n}\n\n.source-picker {\n  position: relative;\n}\n\n.source-picker ha-generic-picker {\n  display: block;\n  width: 100%;\n}\n\n.step-editor .error {\n  font-size: 13px;\n}\n\n.timing-options {\n  border: 0;\n  padding: 0;\n  margin: 18px 0;\n}\n\n.timing-option-row {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.timing-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 10px 12px;\n  min-height: 44px;\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 8px;\n  cursor: pointer;\n}\n\n.timing-option:has(input:checked) {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.timing-options input[type="radio"] {\n  width: 18px;\n  height: 18px;\n  padding: 0;\n  margin: 0;\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-editor .step-name-editor .field {\n  max-width: none;\n  margin: 20px 0 28px;\n}\n\n.step-editor .step-name-editor label {\n  font-weight: 600;\n}\n\n.step-editor .step-name-editor input {\n  font-family: inherit;\n  font-size: 22px;\n  font-weight: 600;\n  line-height: 1.4;\n  padding: 14px;\n}\n\n.step-editor .editor-sections {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 28px;\n}\n\n.step-editor .editor-sections > div {\n  min-width: 0;\n}\n\n.step-editor h3 {\n  margin: 16px 0 8px;\n  font-size: 20px;\n}\n\n.step-editor h4 {\n  margin: 14px 0 8px;\n  font-size: 16px;\n  font-weight: 600;\n}\n\n.step-editor .field {\n  margin: 14px 0;\n}\n\n@media (max-width: 900px) {\n  .step-editor .editor-sections {\n    grid-template-columns: 1fr;\n    gap: 20px;\n  }\n\n  .step-editor .editor-sections > div + div {\n    border-top: 1px solid var(--divider-color, #d5dce3);\n    padding-top: 12px;\n  }\n}\n\n#issues:empty {\n  display: none;\n}\n\n#issues button {\n  margin: 0 6px 8px 0;\n  text-align: left;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 18px 14px;\n  }\n\n  header {\n    gap: 10px;\n    margin-bottom: 8px;\n  }\n\n  nav {\n    margin-bottom: 24px;\n  }\n\n  .page-heading {\n    align-items: flex-start;\n    flex-direction: column;\n    gap: 12px;\n  }\n\n  .page-heading h2 {\n    font-size: 27px;\n  }\n\n  .step-row {\n    padding: 14px;\n    gap: 10px;\n    grid-template-columns: minmax(0, 1fr);\n  }\n\n  .step-row-time {\n    text-align: left;\n  }\n\n  .step-editor {\n    padding: 20px 16px;\n  }\n\n  .builder-footer {\n    gap: 6px;\n  }\n\n  .builder-footer button {\n    padding: 8px 12px;\n  }\n\n  .step-empty {\n    padding: 36px 20px;\n  }\n\n  .empty-steps {\n    line-height: 2;\n  }\n}\n';
 
 // node_modules/.pnpm/esm-env@1.2.2/node_modules/esm-env/dev-fallback.js
 var node_env = globalThis.process?.env?.NODE_ENV;
@@ -3018,11 +3075,11 @@ var Batch = class _Batch {
         this.#unlink();
         infinite_loop_guard();
       }
-      for (const root27 of this.#resolve()) {
+      for (const root28 of this.#resolve()) {
         try {
-          this.#traverse(root27, effects, render_effects);
+          this.#traverse(root28, effects, render_effects);
         } catch (e) {
-          reset_all(root27);
+          reset_all(root28);
           if (!this.#is_deferred()) this.discard();
           throw e;
         }
@@ -3101,9 +3158,9 @@ var Batch = class _Batch {
    * @param {Effect[]} effects
    * @param {Effect[]} render_effects
    */
-  #traverse(root27, effects, render_effects) {
-    root27.f ^= CLEAN;
-    var effect2 = root27.first;
+  #traverse(root28, effects, render_effects) {
+    root28.f ^= CLEAN;
+    var effect2 = root28.first;
     while (effect2 !== null) {
       var flags2 = effect2.f;
       var is_branch = (flags2 & (BRANCH_EFFECT | ROOT_EFFECT)) !== 0;
@@ -3367,8 +3424,8 @@ var Batch = class _Batch {
         }
         if (batch.#scheduled.length > 0 && !batch.#decrement_queued) {
           batch.apply();
-          for (var root27 of batch.#resolve()) {
-            batch.#traverse(root27, [], []);
+          for (var root28 of batch.#resolve()) {
+            batch.#traverse(root28, [], []);
           }
         }
         batch.deactivate();
@@ -4987,7 +5044,7 @@ function is_dirty(reaction) {
 function schedule_possible_effect_self_invalidation(
   signal,
   effect2,
-  root27 = true,
+  root28 = true,
 ) {
   var reactions = signal.reactions;
   if (reactions === null) return;
@@ -5008,7 +5065,7 @@ function schedule_possible_effect_self_invalidation(
         false,
       );
     } else if (effect2 === reaction) {
-      if (root27) {
+      if (root28) {
         set_signal_status(reaction, DIRTY);
       } else if ((reaction.f & CLEAN) !== 0) {
         set_signal_status(reaction, MAYBE_DIRTY);
@@ -7283,14 +7340,14 @@ function snippet(node, get_snippet, ...args) {
 function append_styles(anchor, css) {
   effect(() => {
     anchor = active_effect?.parent?.nodes?.start ?? anchor;
-    var root27 = anchor.getRootNode();
+    var root28 = anchor.getRootNode();
     var target =
       /** @type {ShadowRoot} */
-      root27.host
+      root28.host
         ? /** @type {ShadowRoot} */
-          root27
+          root28
         : /** @type {Document} */
-          (root27.head ?? /** @type {Document} */ root27.ownerDocument.head);
+          (root28.head ?? /** @type {Document} */ root28.ownerDocument.head);
     if (!target.querySelector("#" + css.hash)) {
       const style = create_element("style");
       style.id = css.hash;
@@ -7389,6 +7446,103 @@ function to_class(value, hash2, directives) {
   }
   return classname === "" ? null : classname;
 }
+function append_styles2(styles, important = false) {
+  var separator = important ? " !important;" : ";";
+  var css = "";
+  for (var key2 of Object.keys(styles)) {
+    var value = styles[key2];
+    if (value != null && value !== "") {
+      css += " " + key2 + ": " + value + separator;
+    }
+  }
+  return css;
+}
+function to_css_name(name) {
+  if (name[0] !== "-" || name[1] !== "-") {
+    return name.toLowerCase();
+  }
+  return name;
+}
+function to_style(value, styles) {
+  if (styles) {
+    var new_style = "";
+    var normal_styles;
+    var important_styles;
+    if (Array.isArray(styles)) {
+      normal_styles = styles[0];
+      important_styles = styles[1];
+    } else {
+      normal_styles = styles;
+    }
+    if (value) {
+      value = String(value)
+        .replaceAll(/\/\*.*?\*\//g, "")
+        .trim();
+      var in_str = false;
+      var in_apo = 0;
+      var in_comment = false;
+      var reserved_names = [];
+      if (normal_styles) {
+        reserved_names.push(...Object.keys(normal_styles).map(to_css_name));
+      }
+      if (important_styles) {
+        reserved_names.push(...Object.keys(important_styles).map(to_css_name));
+      }
+      var start_index = 0;
+      var name_index = -1;
+      const len = value.length;
+      for (var i = 0; i < len; i++) {
+        var c = value[i];
+        if (in_comment) {
+          if (c === "/" && value[i - 1] === "*") {
+            in_comment = false;
+          }
+        } else if (in_str) {
+          if (in_str === c) {
+            in_str = false;
+          }
+        } else if (c === "/" && value[i + 1] === "*") {
+          in_comment = true;
+        } else if (c === '"' || c === "'") {
+          in_str = c;
+        } else if (c === "(") {
+          in_apo++;
+        } else if (c === ")") {
+          in_apo--;
+        }
+        if (!in_comment && in_str === false && in_apo === 0) {
+          if (c === ":" && name_index === -1) {
+            name_index = i;
+          } else if (c === ";" || i === len - 1) {
+            if (name_index !== -1) {
+              var name = to_css_name(
+                value.substring(start_index, name_index).trim(),
+              );
+              if (!reserved_names.includes(name)) {
+                if (c !== ";") {
+                  i++;
+                }
+                var property = value.substring(start_index, i).trim();
+                new_style += " " + property + ";";
+              }
+            }
+            start_index = i + 1;
+            name_index = -1;
+          }
+        }
+      }
+    }
+    if (normal_styles) {
+      new_style += append_styles2(normal_styles);
+    }
+    if (important_styles) {
+      new_style += append_styles2(important_styles, true);
+    }
+    new_style = new_style.trim();
+    return new_style === "" ? null : new_style;
+  }
+  return value == null ? null : String(value);
+}
 
 // node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/elements/class.js
 function set_class(dom, is_html, value, hash2, prev_classes, next_classes) {
@@ -7416,6 +7570,44 @@ function set_class(dom, is_html, value, hash2, prev_classes, next_classes) {
     }
   }
   return next_classes;
+}
+
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/elements/style.js
+function update_styles(dom, prev = {}, next2, priority) {
+  for (var key2 in next2) {
+    var value = next2[key2];
+    if (prev[key2] !== value) {
+      if (next2[key2] == null) {
+        dom.style.removeProperty(key2);
+      } else {
+        dom.style.setProperty(key2, value, priority);
+      }
+    }
+  }
+}
+function set_style(dom, value, prev_styles, next_styles) {
+  var prev =
+    /** @type {any} */
+    dom[STYLE_CACHE];
+  if (hydrating || prev !== value) {
+    var next_style_attr = to_style(value, next_styles);
+    if (!hydrating || next_style_attr !== dom.getAttribute("style")) {
+      if (next_style_attr == null) {
+        dom.removeAttribute("style");
+      } else {
+        dom.style.cssText = next_style_attr;
+      }
+    }
+    dom[STYLE_CACHE] = value;
+  } else if (next_styles) {
+    if (Array.isArray(next_styles)) {
+      update_styles(dom, prev_styles?.[0], next_styles[0]);
+      update_styles(dom, prev_styles?.[1], next_styles[1], "important");
+    } else {
+      update_styles(dom, prev_styles, next_styles);
+    }
+  }
+  return next_styles;
 }
 
 // node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dom/elements/bindings/select.js
@@ -12311,6 +12503,38 @@ function applyActivityOrder(entries, order) {
       (positions.get(a.id) ?? Infinity) - (positions.get(b.id) ?? Infinity),
   );
 }
+function activityTree(entries, parentId) {
+  const nodes = new Map(
+    entries.map((entry) => [entry.id, { entry, children: [] }]),
+  );
+  const parents = new Map(
+    entries.map((entry) => [entry.id, parentId?.(entry)]),
+  );
+  const roots = [];
+  for (const entry of entries) {
+    const seen2 = /* @__PURE__ */ new Set([entry.id]);
+    let ancestor = parents.get(entry.id);
+    while (ancestor && nodes.has(ancestor) && !seen2.has(ancestor)) {
+      seen2.add(ancestor);
+      ancestor = parents.get(ancestor);
+    }
+    const parent =
+      ancestor && seen2.has(ancestor)
+        ? void 0
+        : nodes.get(parents.get(entry.id) || "");
+    (parent?.children || roots).push(nodes.get(entry.id));
+  }
+  return roots;
+}
+function moveActivityInTree(nodes, id, index2) {
+  const siblings = nodes.map((node) => node.entry.id);
+  const order = moveActivity(siblings, id, index2);
+  const byId = new Map(nodes.map((node) => [node.entry.id, node]));
+  return order.flatMap((key2) => [
+    key2,
+    ...moveActivityInTree(byId.get(key2).children, id, index2),
+  ]);
+}
 function moveActivity(order, id, index2) {
   if (!order.includes(id)) {
     return order;
@@ -12340,18 +12564,125 @@ function writeActivityOrder(key2, order) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/shared/ActivityList.svelte
-var root_19 = from_html(`<button type="button"> </button>`);
-var root_27 = from_html(
-  `<div><button type="button" class="activity-drag-handle"><ha-icon></ha-icon></button> <!></div>`,
+var root_19 = from_html(
+  `<button type="button" class="activity-drag-handle"><ha-icon></ha-icon></button>`,
   2,
 );
-var root_35 = from_html(
-  `<div class="activity-order-toolbar"><span class="hint"> </span> <!></div> <span class="visually-hidden"> </span> <div class="visually-hidden" role="status" aria-live="polite"> </div> <div class="step-list"></div>`,
+var root_27 = from_html(`<div class="activity-children"><!></div>`);
+var root_35 = from_html(`<div><!> <!></div>`);
+var root_43 = from_html(
+  `<button type="button" class="activity-reset-order"> </button>`,
+);
+var root_53 = from_html(`<div class="activity-list-actions"><!> <!></div>`);
+var root_63 = from_html(
+  `<span class="visually-hidden"> </span> <div class="visually-hidden" role="status" aria-live="polite"> </div> <div class="step-list"><!></div> <!>`,
   1,
 );
 function ActivityList($$anchor, $$props) {
   const instructionsId = props_id();
   push($$props, true);
+  const group = ($$anchor2, nodes = noop) => {
+    const remaining = user_derived(() =>
+      nodes().filter((node) => node.entry.id !== get(dragging)),
+    );
+    var fragment = comment();
+    var node_1 = first_child(fragment);
+    each(
+      node_1,
+      17,
+      nodes,
+      (node) => node.entry.id,
+      ($$anchor3, node) => {
+        const entry = user_derived(() => get(node).entry);
+        const remainingIndex = user_derived(() =>
+          get(remaining).findIndex((item) => item.entry.id === get(entry).id),
+        );
+        const activeGroup = user_derived(() =>
+          nodes().some((item) => item.entry.id === get(dragging)),
+        );
+        var div = root_35();
+        let classes;
+        {
+          const dragHandle = ($$anchor4) => {
+            var button = root_19();
+            var ha_icon = child(button);
+            set_custom_element_data(ha_icon, "icon", "mdi:drag");
+            set_custom_element_data(ha_icon, "aria-hidden", "true");
+            reset(button);
+            template_effect(
+              ($0, $1) => {
+                set_attribute2(button, "aria-label", $0);
+                set_attribute2(button, "aria-describedby", instructionsId);
+                set_attribute2(button, "title", $1);
+                button.disabled = disabled() || nodes().length < 2;
+              },
+              [
+                () =>
+                  $$props
+                    .t("reorder_activity")
+                    .replace("{name}", () => get(entry2).name),
+                () => $$props.t("reorder_activity_hint"),
+              ],
+            );
+            delegated("pointerdown", button, (event2) =>
+              startDrag(event2, get(entry2).id, nodes()),
+            );
+            delegated("keydown", button, (event2) =>
+              keydown(event2, get(entry2).id, nodes()),
+            );
+            append($$anchor4, button);
+          };
+          const entry2 = user_derived(() => get(node).entry);
+          const remainingIndex2 = user_derived(() =>
+            get(remaining).findIndex(
+              (item) => item.entry.id === get(entry2).id,
+            ),
+          );
+          const activeGroup2 = user_derived(() =>
+            nodes().some((item) => item.entry.id === get(dragging)),
+          );
+          var node_2 = child(div);
+          snippet(
+            node_2,
+            () => $$props.children,
+            () => get(entry2),
+            () => dragHandle,
+          );
+          var node_3 = sibling(node_2, 2);
+          {
+            var consequent = ($$anchor4) => {
+              var div_1 = root_27();
+              var node_4 = child(div_1);
+              group(node_4, () => get(node).children);
+              reset(div_1);
+              append($$anchor4, div_1);
+            };
+            if_block(node_3, ($$render) => {
+              if (get(node).children.length) $$render(consequent);
+            });
+          }
+          reset(div);
+        }
+        template_effect(() => {
+          classes = set_class(div, 1, "activity-item", null, classes, {
+            "activity-dragging": get(dragging) === get(entry).id,
+            "activity-drop-before":
+              get(activeGroup) &&
+              get(dragging) !== get(entry).id &&
+              get(target) === get(remainingIndex),
+            "activity-drop-after":
+              get(activeGroup) &&
+              get(dragging) !== get(entry).id &&
+              get(remainingIndex) === get(remaining).length - 1 &&
+              get(target) === nodes().length - 1,
+          });
+          set_attribute2(div, "data-activity-id", get(entry).id);
+        });
+        append($$anchor3, div);
+      },
+    );
+    append($$anchor2, fragment);
+  };
   let disabled = prop($$props, "disabled", 3, false);
   let preference = state(null);
   let order = user_derived(() =>
@@ -12362,11 +12693,9 @@ function ActivityList($$anchor, $$props) {
   let sorted2 = user_derived(() =>
     applyActivityOrder($$props.entries, get(order)),
   );
+  let tree = user_derived(() => activityTree(get(sorted2), $$props.parentId));
   let list;
   let dragging = state(null);
-  let remaining = user_derived(() =>
-    get(sorted2).filter((entry) => entry.id !== get(dragging)),
-  );
   let target = state(null);
   let announcement = state("");
   let cancelDrag = null;
@@ -12375,10 +12704,10 @@ function ActivityList($$anchor, $$props) {
     set2(preference, { key: $$props.storageKey, order: next2 }, true);
     writeActivityOrder($$props.storageKey, next2);
   }
-  async function move2(id, index2) {
-    const ids = get(sorted2).map((entry2) => entry2.id);
-    const next2 = moveActivity(ids, id, index2);
-    if (next2.every((item, position) => item === ids[position])) {
+  async function move2(id, index2, siblings) {
+    const next2 = moveActivityInTree(get(tree), id, index2);
+    const current = moveActivityInTree(get(tree), "", 0);
+    if (next2.every((item, position) => item === current[position])) {
       return;
     }
     save2(next2);
@@ -12388,8 +12717,10 @@ function ActivityList($$anchor, $$props) {
       $$props
         .t("activity_moved")
         .replace("{name}", () => entry.name)
-        .replace("{position}", () => String(next2.indexOf(id) + 1))
-        .replace("{total}", () => String(next2.length)),
+        .replace("{position}", () =>
+          String(Math.max(0, Math.min(index2, siblings.length - 1)) + 1),
+        )
+        .replace("{total}", () => String(siblings.length)),
       true,
     );
     await tick();
@@ -12398,7 +12729,7 @@ function ActivityList($$anchor, $$props) {
     );
     row?.querySelector(".activity-drag-handle")?.focus({ preventScroll: true });
   }
-  function keydown(event2, id) {
+  function keydown(event2, id, siblings) {
     if (event2.key === "Escape" && cancelDrag) {
       event2.preventDefault();
       cancelDrag();
@@ -12407,18 +12738,18 @@ function ActivityList($$anchor, $$props) {
     if (cancelDrag) {
       return;
     }
-    const index2 = get(sorted2).findIndex((entry) => entry.id === id);
+    const index2 = siblings.findIndex((node) => node.entry.id === id);
     const targets = {
       ArrowUp: index2 - 1,
       ArrowDown: index2 + 1,
       Home: 0,
-      End: get(sorted2).length - 1,
+      End: siblings.length - 1,
     };
     if (disabled() || targets[event2.key] === void 0) {
       return;
     }
     event2.preventDefault();
-    void move2(id, targets[event2.key]);
+    void move2(id, targets[event2.key], siblings);
   }
   function scrollContainer(element2) {
     let current = element2;
@@ -12429,18 +12760,18 @@ function ActivityList($$anchor, $$props) {
       ) {
         return current;
       }
-      const root27 = current.getRootNode();
+      const root28 = current.getRootNode();
       current =
         current.assignedSlot ||
         current.parentElement ||
-        (root27 instanceof ShadowRoot ? root27.host : null);
+        (root28 instanceof ShadowRoot ? root28.host : null);
     }
     return document.scrollingElement;
   }
-  function startDrag(event2, id) {
+  function startDrag(event2, id, siblings) {
     if (
       disabled() ||
-      get(sorted2).length < 2 ||
+      siblings.length < 2 ||
       event2.button !== 0 ||
       !event2.isPrimary
     ) {
@@ -12448,17 +12779,19 @@ function ActivityList($$anchor, $$props) {
     }
     cancelDrag?.();
     const handle = event2.currentTarget;
+    const group2 = handle.closest(".activity-item").parentElement;
     const scroller = scrollContainer(handle);
     const initialY = event2.clientY;
     const initialKey = $$props.storageKey;
+    const initialTree = get(tree);
     const initialIds = get(sorted2).map((entry) => entry.id);
     let clientY = initialY;
     let frame = 0;
     handle.setPointerCapture(event2.pointerId);
     const updateTarget = () => {
-      const rows = [...list.querySelectorAll(".activity-item")].filter(
-        (row) => row.dataset.activityId !== id,
-      );
+      const rows = [
+        ...group2.querySelectorAll(":scope > .activity-item"),
+      ].filter((row) => row.dataset.activityId !== id);
       const index2 = rows.findIndex((row) => {
         const rect = row.getBoundingClientRect();
         return clientY < rect.top + rect.height / 2;
@@ -12509,12 +12842,13 @@ function ActivityList($$anchor, $$props) {
         index2 !== null &&
         !disabled() &&
         $$props.storageKey === initialKey &&
+        get(tree) === initialTree &&
         initialIds.every(
           (item, position) => item === get(sorted2)[position]?.id,
         ) &&
         initialIds.length === get(sorted2).length
       ) {
-        void move2(id, index2);
+        void move2(id, index2, siblings);
       }
     };
     const stop = (pointer) => {
@@ -12528,121 +12862,86 @@ function ActivityList($$anchor, $$props) {
     handle.addEventListener("pointercancel", stop);
     handle.addEventListener("lostpointercapture", stop);
   }
-  var fragment = root_35();
-  var div = first_child(fragment);
-  var span = child(div);
+  var fragment_1 = root_63();
+  var span = first_child(fragment_1);
   var text2 = only_child(span, true);
-  var node = sibling(span, 2);
-  {
-    var consequent = ($$anchor2) => {
-      var button = root_19();
-      var text_1 = only_child(button, true);
-      template_effect(
-        ($0) => {
-          button.disabled = disabled();
-          set_text(text_1, $0);
-        },
-        [() => $$props.t("reset_chronological_order")],
-      );
-      delegated("click", button, () => save2(null));
-      append($$anchor2, button);
-    };
-    if_block(node, ($$render) => {
-      if (get(order)) $$render(consequent);
-    });
-  }
-  reset(div);
-  var span_1 = sibling(div, 2);
-  var text_2 = only_child(span_1, true);
-  var div_1 = sibling(span_1, 2);
-  var text_3 = only_child(div_1, true);
-  var div_2 = sibling(div_1, 2);
-  each(
-    div_2,
-    21,
-    () => get(sorted2),
-    (entry) => entry.id,
-    ($$anchor2, entry) => {
-      const remainingIndex = user_derived(() =>
-        get(remaining).findIndex((item) => item.id === get(entry).id),
-      );
-      var div_3 = root_27();
-      let classes;
-      var button_1 = child(div_3);
-      var ha_icon = child(button_1);
-      set_custom_element_data(ha_icon, "icon", "mdi:drag");
-      set_custom_element_data(ha_icon, "aria-hidden", "true");
-      reset(button_1);
-      var node_1 = sibling(button_1, 2);
-      snippet(
-        node_1,
-        () => $$props.children,
-        () => get(entry),
-      );
-      reset(div_3);
-      template_effect(
-        ($0, $1) => {
-          classes = set_class(div_3, 1, "activity-item", null, classes, {
-            "activity-dragging": get(dragging) === get(entry).id,
-            "activity-drop-before":
-              get(dragging) !== get(entry).id &&
-              get(target) === get(remainingIndex),
-            "activity-drop-after":
-              get(dragging) !== get(entry).id &&
-              get(remainingIndex) === get(remaining).length - 1 &&
-              get(target) === get(sorted2).length - 1,
-          });
-          set_attribute2(div_3, "data-activity-id", get(entry).id);
-          set_attribute2(button_1, "aria-label", $0);
-          set_attribute2(button_1, "aria-describedby", instructionsId);
-          set_attribute2(button_1, "title", $1);
-          button_1.disabled = disabled() || get(sorted2).length < 2;
-        },
-        [
-          () =>
-            $$props
-              .t("reorder_activity")
-              .replace("{name}", () => get(entry).name),
-          () => $$props.t("reorder_activity_hint"),
-        ],
-      );
-      delegated("pointerdown", button_1, (event2) =>
-        startDrag(event2, get(entry).id),
-      );
-      delegated("keydown", button_1, (event2) =>
-        keydown(event2, get(entry).id),
-      );
-      append($$anchor2, div_3);
-    },
-  );
-  reset(div_2);
+  var div_2 = sibling(span, 2);
+  var text_1 = only_child(div_2, true);
+  var div_3 = sibling(div_2, 2);
+  var node_5 = child(div_3);
+  group(node_5, () => get(tree));
+  reset(div_3);
   bind_this(
-    div_2,
+    div_3,
     ($$value) => (list = $$value),
     () => list,
   );
+  var node_6 = sibling(div_3, 2);
+  {
+    var consequent_2 = ($$anchor2) => {
+      var div_4 = root_53();
+      var node_7 = child(div_4);
+      snippet(node_7, () => $$props.createAction ?? noop);
+      var node_8 = sibling(node_7, 2);
+      {
+        var consequent_1 = ($$anchor3) => {
+          var button_1 = root_43();
+          var text_2 = only_child(button_1, true);
+          template_effect(
+            ($0) => {
+              button_1.disabled = disabled();
+              set_text(text_2, $0);
+            },
+            [() => $$props.t("reset_chronological_order")],
+          );
+          delegated("click", button_1, () => save2(null));
+          append($$anchor3, button_1);
+        };
+        if_block(node_8, ($$render) => {
+          if (get(order)) $$render(consequent_1);
+        });
+      }
+      reset(div_4);
+      append($$anchor2, div_4);
+    };
+    if_block(node_6, ($$render) => {
+      if ($$props.createAction || get(order)) $$render(consequent_2);
+    });
+  }
   template_effect(
-    ($0, $1, $2) => {
-      set_attribute2(span, "title", $0);
-      set_text(text2, $1);
-      set_attribute2(span_1, "id", instructionsId);
-      set_text(text_2, $2);
-      set_text(text_3, get(announcement));
-      set_attribute2(div_2, "aria-label", $$props.label);
+    ($0) => {
+      set_attribute2(span, "id", instructionsId);
+      set_text(text2, $0);
+      set_text(text_1, get(announcement));
+      set_attribute2(div_3, "aria-label", $$props.label);
     },
-    [
-      () => $$props.t("chronological_order_hint"),
-      () => $$props.t(get(order) ? "manual_order" : "chronological_order"),
-      () => $$props.t("reorder_activity_hint"),
-    ],
+    [() => $$props.t("reorder_activity_hint")],
   );
-  append($$anchor, fragment);
+  append($$anchor, fragment_1);
   pop();
 }
-delegate(["click", "pointerdown", "keydown"]);
+delegate(["pointerdown", "keydown", "click"]);
+
+// custom_components/occupied/frontend/src/lib/components/shared/ActivityIntro.svelte
+var root13 = from_html(
+  `<div class="activity-intro"><h2> </h2> <p class="hint"> </p></div>`,
+);
+function ActivityIntro($$anchor, $$props) {
+  var div = root13();
+  var h2 = child(div);
+  var text2 = only_child(h2, true);
+  var p = sibling(h2, 2);
+  var text_1 = only_child(p, true);
+  reset(div);
+  template_effect(() => {
+    set_text(text2, $$props.title);
+    set_text(text_1, $$props.description);
+  });
+  append($$anchor, div);
+}
 
 // custom_components/occupied/frontend/src/lib/components/steps/StepsView.svelte
-var root13 = from_html(
+var root14 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-step=""> </button></section>`,
 );
 var root_110 = from_html(`<span class="step-status-badge"> </span>`);
@@ -12651,15 +12950,15 @@ var root_36 = from_html(
   `<span class="step-row-warning"><ha-icon></ha-icon> <span></span></span>`,
   2,
 );
-var root_43 = from_html(`<span class="step-row-time"> </span>`);
-var root_53 = from_html(`<div><!></div>`);
-var root_63 = from_html(
-  `<div style="--depth:0"><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong> <!></span> <span class="hint"> </span></span> <!></button> <!></div>`,
+var root_44 = from_html(`<span class="step-row-time"> </span>`);
+var root_54 = from_html(`<div><!></div>`);
+var root_64 = from_html(
+  `<div style="--depth:0"><div class="step-card-header"><!> <button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong> <!></span> <span class="hint"> </span></span> <!></button></div> <!></div>`,
 );
 var root_72 = from_html(
-  `<div class="step-layout"><!></div> <button type="button" class="primary" data-create-step=""> </button>`,
-  1,
+  `<button type="button" class="primary" data-create-step=""> </button>`,
 );
+var root_8 = from_html(`<!> <div class="step-layout"><!></div>`, 1);
 function StepsView($$anchor, $$props) {
   push($$props, true);
   let data = user_derived(() => {
@@ -12691,7 +12990,7 @@ function StepsView($$anchor, $$props) {
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var section = root13();
+      var section = root14();
       var h2 = child(section);
       var text2 = only_child(h2, true);
       var p = sibling(h2, 2);
@@ -12716,11 +13015,24 @@ function StepsView($$anchor, $$props) {
       append($$anchor2, section);
     };
     var alternate = ($$anchor2) => {
-      var fragment_1 = root_72();
-      var div = first_child(fragment_1);
-      var node_1 = child(div);
+      var fragment_1 = root_8();
+      var node_1 = first_child(fragment_1);
       {
-        const children = ($$anchor3, entry = noop) => {
+        let $0 = user_derived(() => get(t)("scheduled_activity"));
+        let $1 = user_derived(() => get(t)("steps_hint"));
+        ActivityIntro(node_1, {
+          get title() {
+            return get($0);
+          },
+          get description() {
+            return get($1);
+          },
+        });
+      }
+      var div = sibling(node_1, 2);
+      var node_2 = child(div);
+      {
+        const children = ($$anchor3, entry = noop, dragHandle = noop) => {
           const warnings = user_derived(() =>
             get(issues)
               .filter(({ stepId }) => stepId === entry().id)
@@ -12743,15 +13055,18 @@ function StepsView($$anchor, $$props) {
               (!$$props.panel.stepEditor &&
                 $$props.panel.selectedStep === entry().id),
           );
-          var div_1 = root_63();
+          var div_1 = root_64();
           let classes;
-          var button_1 = child(div_1);
+          var div_2 = child(div_1);
+          var node_3 = child(div_2);
+          snippet(node_3, dragHandle);
+          var button_1 = sibling(node_3, 2);
           let classes_1;
           var span = child(button_1);
           var span_1 = child(span);
           var strong = child(span_1);
           var text_3 = only_child(strong, true);
-          var node_2 = sibling(strong, 2);
+          var node_4 = sibling(strong, 2);
           {
             var consequent_1 = ($$anchor4) => {
               var span_2 = root_110();
@@ -12762,7 +13077,7 @@ function StepsView($$anchor, $$props) {
               );
               append($$anchor4, span_2);
             };
-            if_block(node_2, ($$render) => {
+            if_block(node_4, ($$render) => {
               if (get(stepDisabled)) $$render(consequent_1);
             });
           }
@@ -12770,7 +13085,7 @@ function StepsView($$anchor, $$props) {
           var span_3 = sibling(span_1, 2);
           var text_5 = only_child(span_3);
           reset(span);
-          var node_3 = sibling(span, 2);
+          var node_5 = sibling(span, 2);
           {
             var consequent_2 = ($$anchor4) => {
               var span_4 = root_36();
@@ -12798,7 +13113,7 @@ function StepsView($$anchor, $$props) {
               append($$anchor4, span_4);
             };
             var consequent_3 = ($$anchor4) => {
-              var span_7 = root_43();
+              var span_7 = root_44();
               var text_7 = only_child(span_7, true);
               template_effect(
                 ($02) => set_text(text_7, $02),
@@ -12815,17 +13130,18 @@ function StepsView($$anchor, $$props) {
               );
               append($$anchor4, span_7);
             };
-            if_block(node_3, ($$render) => {
+            if_block(node_5, ($$render) => {
               if (get(warnings).length) $$render(consequent_2);
               else if (!get(editing)) $$render(consequent_3, 1);
             });
           }
           reset(button_1);
-          var node_4 = sibling(button_1, 2);
+          reset(div_2);
+          var node_6 = sibling(div_2, 2);
           {
             var consequent_5 = ($$anchor4) => {
-              var div_2 = root_53();
-              var node_5 = child(div_2);
+              var div_3 = root_54();
+              var node_7 = child(div_3);
               {
                 var consequent_4 = ($$anchor5) => {
                   StepEditor($$anchor5, {
@@ -12837,17 +13153,17 @@ function StepsView($$anchor, $$props) {
                     },
                   });
                 };
-                if_block(node_5, ($$render) => {
+                if_block(node_7, ($$render) => {
                   if ($$props.panel.stepEditor) $$render(consequent_4);
                 });
               }
-              reset(div_2);
+              reset(div_3);
               template_effect(() =>
-                set_attribute2(div_2, "id", `step-editor-${entry().id}`),
+                set_attribute2(div_3, "id", `step-editor-${entry().id}`),
               );
-              append($$anchor4, div_2);
+              append($$anchor4, div_3);
             };
-            if_block(node_4, ($$render) => {
+            if_block(node_6, ($$render) => {
               if (get(expanded)) $$render(consequent_5);
             });
           }
@@ -12882,7 +13198,7 @@ function StepsView($$anchor, $$props) {
               set_text(
                 text_5,
                 `${$12 ?? ""} \xB7
-                ${$2 ?? ""}`,
+                  ${$2 ?? ""}`,
               );
             },
             [
@@ -12902,14 +13218,28 @@ function StepsView($$anchor, $$props) {
           delegated("click", button_1, () => openStep($$props.panel, entry()));
           append($$anchor3, div_1);
         };
+        const createAction = ($$anchor3) => {
+          var button_2 = root_72();
+          var text_8 = only_child(button_2, true);
+          template_effect(
+            ($02) => {
+              button_2.disabled = $$props.panel.busy;
+              set_text(text_8, $02);
+            },
+            [() => get(t)("create_step")],
+          );
+          delegated("click", button_2, () => startStep($$props.panel));
+          append($$anchor3, button_2);
+        };
         let $0 = user_derived(
           () => `occupied:activity-order:${$$props.panel.selectedEntry}:steps`,
         );
         let $1 = user_derived(() => get(t)("steps"));
-        ActivityList(node_1, {
+        ActivityList(node_2, {
           get entries() {
             return get(ordered);
           },
+          parentId: (entry) => entry.timing.relative_to?.step,
           get storageKey() {
             return get($0);
           },
@@ -12923,20 +13253,11 @@ function StepsView($$anchor, $$props) {
             return get(t);
           },
           children,
-          $$slots: { default: true },
+          createAction,
+          $$slots: { default: true, createAction: true },
         });
       }
       reset(div);
-      var button_2 = sibling(div, 2);
-      var text_8 = only_child(button_2, true);
-      template_effect(
-        ($0) => {
-          button_2.disabled = $$props.panel.busy;
-          set_text(text_8, $0);
-        },
-        [() => get(t)("create_step")],
-      );
-      delegated("click", button_2, () => startStep($$props.panel));
       append($$anchor2, fragment_1);
     };
     if_block(node, ($$render) => {
@@ -12950,25 +13271,28 @@ function StepsView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/settings/RunConditionSettings.svelte
-var root14 = from_html(
-  `<fieldset class="svelte-111t7iy"><legend> </legend> <label for="run-condition-entity" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label for="run-condition-states" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <p class="hint"> </p> <label for="run-condition-delay" class="svelte-111t7iy"> </label> <input id="run-condition-delay" type="text"/> <!> <p class="hint"> </p></fieldset>`,
+var root15 = from_html(
+  `<p class="managed-warning svelte-111t7iy" role="alert"> </p>`,
+);
+var root_111 = from_html(
+  `<fieldset class="svelte-111t7iy"><legend> </legend> <label for="run-condition-entity" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label for="run-condition-states" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <p class="hint"> </p> <label for="run-condition-delay" class="svelte-111t7iy"> </label> <input id="run-condition-delay" type="text"/> <!> <p class="hint"> </p> <label for="run-condition-offEntities" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <p class="hint"> </p> <!></fieldset>`,
   2,
 );
-var root_111 = from_html(`<p class="hint"> </p>`);
-var root_29 = from_html(`<p> </p>`);
-var root_37 = from_html(`<p role="status"> </p> <!>`, 1);
-var root_44 = from_html(`<span> </span>`);
-var root_54 = from_html(`<p class="counts svelte-111t7iy"></p>`);
-var root_64 = from_html(`<li> </li>`);
-var root_73 = from_html(
+var root_29 = from_html(`<p class="hint"> </p>`);
+var root_37 = from_html(`<p> </p>`);
+var root_45 = from_html(`<p role="status"> </p> <!>`, 1);
+var root_55 = from_html(`<span> </span>`);
+var root_65 = from_html(`<p class="counts svelte-111t7iy"></p>`);
+var root_73 = from_html(`<li> </li>`);
+var root_82 = from_html(
   `<details><summary> </summary> <!> <ul></ul></details>`,
 );
-var root_8 = from_html(
-  `<section><h2> </h2> <p class="hint"> </p> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <!> <!> <div class="actions svelte-111t7iy"><button type="button" class="primary"> </button> <button type="button"> </button></div> <!> <!></section>`,
+var root_9 = from_html(
+  `<section><h2> </h2> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <!> <!> <div class="actions svelte-111t7iy"><button type="button" class="primary"> </button> <button type="button"> </button></div> <!> <!></section>`,
 );
 var $$css3 = {
   hash: "svelte-111t7iy",
-  code: "fieldset.svelte-111t7iy {margin:12px 0;}label.svelte-111t7iy {display:block;margin:12px 0 6px;}.actions.svelte-111t7iy {display:flex;gap:8px;margin-top:12px;}.counts.svelte-111t7iy {display:flex;flex-wrap:wrap;gap:12px;}",
+  code: "fieldset.svelte-111t7iy {margin:12px 0;}label.svelte-111t7iy {display:block;margin:12px 0 6px;}.actions.svelte-111t7iy {display:flex;gap:8px;margin-top:12px;}.managed-warning.svelte-111t7iy {color:var(--warning-color, #e69500);}.counts.svelte-111t7iy {display:flex;flex-wrap:wrap;gap:12px;}",
 };
 function RunConditionSettings($$anchor, $$props) {
   push($$props, true);
@@ -12980,12 +13304,17 @@ function RunConditionSettings($$anchor, $$props) {
       form: $$props.panel.runConditionForm,
       errors: $$props.panel.runConditionErrors,
       snapshot: $$props.panel.runtimeSnapshot,
+      managedExtras: managedOffEntities(
+        $$props.panel.draft,
+        $$props.panel.runConditionForm?.offEntities ?? [],
+      ),
     };
   });
   let t = user_derived(() => get(data).t),
     form = user_derived(() => get(data).form),
     errors = user_derived(() => get(data).errors),
-    snapshot2 = user_derived(() => get(data).snapshot);
+    snapshot2 = user_derived(() => get(data).snapshot),
+    managedExtras = user_derived(() => get(data).managedExtras);
   let current = user_derived(() =>
     $$props.panel.catalog.entities.find(
       (item) => item.entity_id === get(form)?.entityId,
@@ -13026,25 +13355,23 @@ function RunConditionSettings($$anchor, $$props) {
   var fragment = comment();
   var node = first_child(fragment);
   {
-    var consequent_6 = ($$anchor2) => {
-      var section = root_8();
+    var consequent_7 = ($$anchor2) => {
+      var section = root_9();
       var h2 = child(section);
       var text2 = only_child(h2, true);
-      var p = sibling(h2, 2);
-      var text_1 = only_child(p, true);
-      var label = sibling(p, 2);
+      var label = sibling(h2, 2);
       var input = child(label);
       remove_input_defaults(input);
-      var text_2 = sibling(input);
+      var text_1 = sibling(input);
       reset(label);
       var node_1 = sibling(label, 2);
       {
-        var consequent = ($$anchor3) => {
-          var fieldset = root14();
+        var consequent_1 = ($$anchor3) => {
+          var fieldset = root_111();
           var legend = child(fieldset);
-          var text_3 = only_child(legend, true);
+          var text_2 = only_child(legend, true);
           var label_1 = sibling(legend, 2);
-          var text_4 = only_child(label_1, true);
+          var text_3 = only_child(label_1, true);
           var ha_selector = sibling(label_1, 2);
           set_custom_element_data(ha_selector, "id", "run-condition-entity");
           template_effect(
@@ -13073,7 +13400,7 @@ function RunConditionSettings($$anchor, $$props) {
             fieldPrefix: "run-condition-",
           });
           var label_2 = sibling(node_2, 2);
-          var text_5 = only_child(label_2, true);
+          var text_4 = only_child(label_2, true);
           var ha_selector_1 = sibling(label_2, 2);
           set_custom_element_data(ha_selector_1, "id", "run-condition-states");
           template_effect(
@@ -13114,12 +13441,12 @@ function RunConditionSettings($$anchor, $$props) {
           var label_3 = sibling(node_3, 2);
           var input_1 = child(label_3);
           remove_input_defaults(input_1);
-          var text_6 = sibling(input_1);
+          var text_5 = sibling(input_1);
           reset(label_3);
-          var p_1 = sibling(label_3, 2);
-          var text_7 = only_child(p_1, true);
-          var label_4 = sibling(p_1, 2);
-          var text_8 = only_child(label_4, true);
+          var p = sibling(label_3, 2);
+          var text_6 = only_child(p, true);
+          var label_4 = sibling(p, 2);
+          var text_7 = only_child(label_4, true);
           var input_2 = sibling(label_4, 2);
           remove_input_defaults(input_2);
           var node_4 = sibling(input_2, 2);
@@ -13133,23 +13460,88 @@ function RunConditionSettings($$anchor, $$props) {
             key: "startDelay",
             fieldPrefix: "run-condition-",
           });
-          var p_2 = sibling(node_4, 2);
-          var text_9 = only_child(p_2, true);
+          var p_1 = sibling(node_4, 2);
+          var text_8 = only_child(p_1, true);
+          var label_5 = sibling(p_1, 2);
+          var text_9 = only_child(label_5, true);
+          var ha_selector_2 = sibling(label_5, 2);
+          set_custom_element_data(
+            ha_selector_2,
+            "id",
+            "run-condition-offEntities",
+          );
+          template_effect(
+            ($0) => set_custom_element_data(ha_selector_2, "aria-label", $0),
+            [() => get(t)("run_condition_off_entities")],
+          );
+          action(
+            ha_selector_2,
+            ($$node, $$action_arg) => properties?.($$node, $$action_arg),
+            () => ({
+              hass: $$props.panel._hass,
+              selector: {
+                entity: {
+                  multiple: true,
+                  filter: { domain: ["light", "switch"] },
+                },
+              },
+              value: get(form).offEntities,
+              disabled: $$props.panel.busy || $$props.panel.yamlDirty,
+            }),
+          );
+          var node_5 = sibling(ha_selector_2, 2);
+          FieldError(node_5, {
+            get t() {
+              return get(t);
+            },
+            get errors() {
+              return get(errors);
+            },
+            key: "offEntities",
+            fieldPrefix: "run-condition-",
+          });
+          var p_2 = sibling(node_5, 2);
+          var text_10 = only_child(p_2, true);
+          var node_6 = sibling(p_2, 2);
+          {
+            var consequent = ($$anchor4) => {
+              var p_3 = root15();
+              var text_11 = only_child(p_3);
+              template_effect(
+                ($0, $1) =>
+                  set_text(
+                    text_11,
+                    `${$0 ?? ""}
+            ${$1 ?? ""}`,
+                  ),
+                [
+                  () => get(t)("run_condition_off_entities_warning"),
+                  () => get(managedExtras).join(", "),
+                ],
+              );
+              append($$anchor4, p_3);
+            };
+            if_block(node_6, ($$render) => {
+              if (get(managedExtras).length > 0) $$render(consequent);
+            });
+          }
           reset(fieldset);
           template_effect(
-            ($0, $1, $2, $3, $4, $5, $6) => {
+            ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
               fieldset.disabled = $$props.panel.busy || $$props.panel.yamlDirty;
-              set_text(text_3, $0);
-              set_text(text_4, $1);
-              set_text(text_5, $2);
+              set_text(text_2, $0);
+              set_text(text_3, $1);
+              set_text(text_4, $2);
               set_checked(input_1, get(form).enforceState);
-              set_text(text_6, ` ${$3 ?? ""}`);
-              set_text(text_7, $4);
-              set_text(text_8, $5);
+              set_text(text_5, ` ${$3 ?? ""}`);
+              set_text(text_6, $4);
+              set_text(text_7, $5);
               set_value(input_2, get(form).startDelay);
               input_2.disabled = !get(form).enforceState;
               set_attribute2(input_2, "aria-invalid", !!get(errors).startDelay);
-              set_text(text_9, $6);
+              set_text(text_8, $6);
+              set_text(text_9, $7);
+              set_text(text_10, $8);
             },
             [
               () => get(t)("run_condition"),
@@ -13159,6 +13551,8 @@ function RunConditionSettings($$anchor, $$props) {
               () => get(t)("run_condition_enforce_hint"),
               () => get(t)("run_condition_delay"),
               () => get(t)("run_condition_delay_hint"),
+              () => get(t)("run_condition_off_entities"),
+              () => get(t)("run_condition_off_entities_hint"),
             ],
           );
           event("value-changed", ha_selector, (event2) => {
@@ -13191,46 +13585,58 @@ function RunConditionSettings($$anchor, $$props) {
             get(form).startDelay = event2.currentTarget.value;
             $$props.panel.updateRunCondition();
           });
+          event("value-changed", ha_selector_2, (event2) => {
+            if (
+              !(
+                isValueChangedEvent(event2) &&
+                Array.isArray(event2.detail.value)
+              )
+            ) {
+              return;
+            }
+            get(form).offEntities = event2.detail.value;
+            $$props.panel.updateRunCondition();
+          });
           append($$anchor3, fieldset);
         };
         if_block(node_1, ($$render) => {
-          if (get(form).enabled) $$render(consequent);
+          if (get(form).enabled) $$render(consequent_1);
         });
       }
-      var node_5 = sibling(node_1, 2);
+      var node_7 = sibling(node_1, 2);
       {
-        var consequent_1 = ($$anchor3) => {
-          var p_3 = root_111();
-          var text_10 = only_child(p_3, true);
+        var consequent_2 = ($$anchor3) => {
+          var p_4 = root_29();
+          var text_12 = only_child(p_4, true);
           template_effect(
-            ($0) => set_text(text_10, $0),
+            ($0) => set_text(text_12, $0),
             [() => get(t)("run_condition_yaml_hint")],
           );
-          append($$anchor3, p_3);
+          append($$anchor3, p_4);
         };
-        if_block(node_5, ($$render) => {
-          if ($$props.panel.yamlDirty) $$render(consequent_1);
+        if_block(node_7, ($$render) => {
+          if ($$props.panel.yamlDirty) $$render(consequent_2);
         });
       }
-      var div = sibling(node_5, 2);
+      var div = sibling(node_7, 2);
       var button = child(div);
-      var text_11 = only_child(button, true);
+      var text_13 = only_child(button, true);
       var button_1 = sibling(button, 2);
-      var text_12 = only_child(button_1, true);
+      var text_14 = only_child(button_1, true);
       reset(div);
-      var node_6 = sibling(div, 2);
+      var node_8 = sibling(div, 2);
       {
-        var consequent_3 = ($$anchor3) => {
-          var fragment_1 = root_37();
-          var p_4 = first_child(fragment_1);
-          var text_13 = only_child(p_4, true);
-          var node_7 = sibling(p_4, 2);
+        var consequent_4 = ($$anchor3) => {
+          var fragment_1 = root_45();
+          var p_5 = first_child(fragment_1);
+          var text_15 = only_child(p_5, true);
+          var node_9 = sibling(p_5, 2);
           {
-            var consequent_2 = ($$anchor4) => {
-              var p_5 = root_29();
-              var text_14 = only_child(p_5, true);
+            var consequent_3 = ($$anchor4) => {
+              var p_6 = root_37();
+              var text_16 = only_child(p_6, true);
               template_effect(
-                ($0) => set_text(text_14, $0),
+                ($0) => set_text(text_16, $0),
                 [
                   () =>
                     get(t)("run_condition_countdown").replace("{seconds}", () =>
@@ -13238,31 +13644,31 @@ function RunConditionSettings($$anchor, $$props) {
                     ),
                 ],
               );
-              append($$anchor4, p_5);
+              append($$anchor4, p_6);
             };
-            if_block(node_7, ($$render) => {
-              if (get(deadline)) $$render(consequent_2);
+            if_block(node_9, ($$render) => {
+              if (get(deadline)) $$render(consequent_3);
             });
           }
-          template_effect(() => set_text(text_13, get(snapshot2).reason));
+          template_effect(() => set_text(text_15, get(snapshot2).reason));
           append($$anchor3, fragment_1);
         };
-        if_block(node_6, ($$render) => {
-          if (get(snapshot2).run_condition) $$render(consequent_3);
+        if_block(node_8, ($$render) => {
+          if (get(snapshot2).run_condition) $$render(consequent_4);
         });
       }
-      var node_8 = sibling(node_6, 2);
+      var node_10 = sibling(node_8, 2);
       {
-        var consequent_5 = ($$anchor3) => {
-          var details = root_73();
+        var consequent_6 = ($$anchor3) => {
+          var details = root_82();
           var summary = child(details);
-          var text_15 = only_child(summary);
-          var node_9 = sibling(summary, 2);
+          var text_17 = only_child(summary);
+          var node_11 = sibling(summary, 2);
           {
-            var consequent_4 = ($$anchor4) => {
-              var p_6 = root_54();
+            var consequent_5 = ($$anchor4) => {
+              var p_7 = root_65();
               each(
-                p_6,
+                p_7,
                 21,
                 () => Object.entries(get(snapshot2).reconciliation.counts),
                 ([kind, count]) => kind,
@@ -13270,23 +13676,23 @@ function RunConditionSettings($$anchor, $$props) {
                   var $$array = user_derived(() => to_array(get($$item), 2));
                   let kind = () => get($$array)[0];
                   let count = () => get($$array)[1];
-                  var span = root_44();
-                  var text_16 = only_child(span);
+                  var span = root_55();
+                  var text_18 = only_child(span);
                   template_effect(
-                    ($0) => set_text(text_16, `${$0 ?? ""}: ${count() ?? ""}`),
+                    ($0) => set_text(text_18, `${$0 ?? ""}: ${count() ?? ""}`),
                     [() => get(t)(`run_condition_count_${kind()}`)],
                   );
                   append($$anchor5, span);
                 },
               );
-              reset(p_6);
-              append($$anchor4, p_6);
+              reset(p_7);
+              append($$anchor4, p_7);
             };
-            if_block(node_9, ($$render) => {
-              if (get(snapshot2).reconciliation.counts) $$render(consequent_4);
+            if_block(node_11, ($$render) => {
+              if (get(snapshot2).reconciliation.counts) $$render(consequent_5);
             });
           }
-          var ul = sibling(node_9, 2);
+          var ul = sibling(node_11, 2);
           each(
             ul,
             21,
@@ -13296,12 +13702,12 @@ function RunConditionSettings($$anchor, $$props) {
               var $$array_1 = user_derived(() => to_array(get($$item), 2));
               let entity = () => get($$array_1)[0];
               let result = () => get($$array_1)[1];
-              var li = root_64();
-              var text_17 = only_child(li);
+              var li = root_73();
+              var text_19 = only_child(li);
               template_effect(
                 ($0) =>
                   set_text(
-                    text_17,
+                    text_19,
                     `${entity() ?? ""}: ${$0 ?? ""}${result().reason ? ` \xB7 ${result().reason}` : ""}`,
                   ),
                 [() => get(t)(result().status)],
@@ -13312,7 +13718,7 @@ function RunConditionSettings($$anchor, $$props) {
           reset(ul);
           reset(details);
           template_effect(
-            ($0, $1) => set_text(text_15, `${$0 ?? ""} \xB7 ${$1 ?? ""}`),
+            ($0, $1) => set_text(text_17, `${$0 ?? ""} \xB7 ${$1 ?? ""}`),
             [
               () => get(t)("run_condition_results"),
               () => get(t)(get(snapshot2).reconciliation.phase),
@@ -13325,31 +13731,29 @@ function RunConditionSettings($$anchor, $$props) {
             get(snapshot2).reconciliation &&
             Object.keys(get(snapshot2).reconciliation.results).length > 0,
         );
-        if_block(node_8, ($$render) => {
-          if (get(d)) $$render(consequent_5);
+        if_block(node_10, ($$render) => {
+          if (get(d)) $$render(consequent_6);
         });
       }
       reset(section);
       template_effect(
-        ($0, $1, $2, $3, $4) => {
+        ($0, $1, $2, $3) => {
           set_text(text2, $0);
-          set_text(text_1, $1);
           set_checked(input, get(form).enabled);
           input.disabled = $$props.panel.busy || $$props.panel.yamlDirty;
-          set_text(text_2, ` ${$2 ?? ""}`);
+          set_text(text_1, ` ${$1 ?? ""}`);
           button.disabled =
             $$props.panel.busy ||
             $$props.panel.stale ||
             $$props.panel.yamlDirty ||
             !$$props.panel.hasRunConditionChanges;
-          set_text(text_11, $3);
+          set_text(text_13, $2);
           button_1.disabled =
             $$props.panel.busy || !$$props.panel.hasRunConditionChanges;
-          set_text(text_12, $4);
+          set_text(text_14, $3);
         },
         [
           () => get(t)("run_condition"),
-          () => get(t)("run_condition_hint"),
           () => get(t)("run_condition_enable"),
           () =>
             get(t)(
@@ -13369,7 +13773,7 @@ function RunConditionSettings($$anchor, $$props) {
       append($$anchor2, section);
     };
     if_block(node, ($$render) => {
-      if (get(form)) $$render(consequent_6);
+      if (get(form)) $$render(consequent_7);
     });
   }
   append($$anchor, fragment);
@@ -13378,7 +13782,7 @@ function RunConditionSettings($$anchor, $$props) {
 delegate(["change", "input", "click"]);
 
 // custom_components/occupied/frontend/src/lib/components/settings/SettingsView.svelte
-var root15 = from_html(`<span class="changes svelte-g0xj3p"> </span>`);
+var root16 = from_html(`<span class="changes svelte-g0xj3p"> </span>`);
 var root_112 = from_html(
   `<!> <section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <div class="yaml-actions svelte-g0xj3p"><button type="button" class="primary"> </button> <button type="button"> </button> <button type="button" class="download svelte-g0xj3p"> </button></div></section>`,
   3,
@@ -13431,7 +13835,7 @@ function SettingsView($$anchor, $$props) {
   var node_1 = sibling(text2);
   {
     var consequent = ($$anchor2) => {
-      var span = root15();
+      var span = root16();
       var text_1 = only_child(span);
       template_effect(
         ($0) => set_text(text_1, `(${$0 ?? ""})`),
@@ -13536,55 +13940,291 @@ function SettingsView($$anchor, $$props) {
 }
 delegate(["change", "click"]);
 
+// custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts
+function openRandom(panel, entry) {
+  if (panel.busy) {
+    return;
+  }
+  if (panel.activeEditor) {
+    const same = !!entry && panel.randomEditor?.id === entry.id;
+    panel.requestStepExit(() => {
+      if (!same) {
+        openRandom(panel, entry);
+      }
+    });
+    return;
+  }
+  panel.randomEditor = randomEditor(panel.draft, entry);
+  panel.tab = "random";
+  panel.error = "";
+  panel.issues = [];
+  panel.renderView();
+  focusEditor(panel, "name");
+  if (entry) {
+    panel.shadowRoot
+      .getElementById(`random-editor-${entry.id}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+function createRandomEditorContext(panel) {
+  const editor = panel.randomEditor,
+    form = editor.form,
+    t = panel.t;
+  const epoch = panel.epoch;
+  const isCurrent = () =>
+    panel.epoch === epoch && panel.activeEditor === editor;
+  const refresh = (key2) => {
+    panel.flush();
+    focusEditor(panel, key2);
+  };
+  const changed = (key2) => {
+    if (
+      !["entities", "cover"].includes(form.on.kind) ||
+      form.on.kind !== form.off.kind
+    ) {
+      form.sameEntities = false;
+    }
+    if (form.sameEntities) {
+      form.off.entities = [...form.on.entities];
+    }
+    panel.version++;
+    panel.validatedVersion = -1;
+    const errors = randomErrors(panel.draft, editor);
+    for (const field of Object.keys(editor.errors)) {
+      if (errors[field]) {
+        editor.errors[field] = errors[field];
+      } else {
+        delete editor.errors[field];
+      }
+    }
+    delete editor.errors[key2];
+    panel.flush();
+  };
+  const scopedEditor = (prefix, options) =>
+    new Proxy(editor, {
+      get(target, key2) {
+        if (key2 === "errors") {
+          return Object.fromEntries(
+            Object.entries(target.errors)
+              .filter(([field]) => field.startsWith(prefix))
+              .map(([field, message]) => [field.slice(prefix.length), message]),
+          );
+        }
+        if (options && (key2 === "showEndTime" || key2 === "showEndOffset")) {
+          return options[key2];
+        }
+        return Reflect.get(target, key2);
+      },
+      set(target, key2, value) {
+        if (options && (key2 === "showEndTime" || key2 === "showEndOffset")) {
+          options[key2] = value;
+          return true;
+        }
+        return Reflect.set(target, key2, value);
+      },
+    });
+  const timing = (edge) => ({
+    editor: scopedEditor(`${edge}.`, editor[`${edge}Options`]),
+    form: new Proxy(form, {}),
+    time: new Proxy(form[edge], {}),
+    t,
+    fieldPrefix: `${edge}.`,
+    ...(edge === "start" && { randomId: editor.id }),
+    changed: (key2) => changed(`${edge}.${key2}`),
+    refresh: (key2) => refresh(key2 ? `${edge}.${key2}` : void 0),
+  });
+  const action2 = (phase) => ({
+    editor: scopedEditor(`${phase}.`),
+    form: new Proxy(form[phase], {}),
+    t,
+    fieldPrefix: `${phase}.`,
+    changed: (key2) => changed(`${phase}.${key2}`),
+  });
+  const submit = async () => {
+    if (!isCurrent()) {
+      return;
+    }
+    editor.errors = randomErrors(panel.draft, editor);
+    if (Object.keys(editor.errors).length > 0) {
+      return refresh(Object.keys(editor.errors)[0]);
+    }
+    try {
+      for (const phase of ["on", "off"]) {
+        try {
+          await prepareCustomAction(panel, form[phase]);
+          if (!isCurrent()) {
+            return;
+          }
+        } catch (error) {
+          if (!isCurrent()) {
+            return;
+          }
+          editor.errors[`${phase}.customYaml`] =
+            error instanceof Error ? error.message : String(error);
+          return refresh(`${phase}.customYaml`);
+        }
+      }
+      const candidate = buildRandom(panel.draft, editor);
+      editor.candidatePath = ["random", editor.id];
+      if (panel.document?.source === "file") {
+        if (form.on.kind === "custom" || form.off.kind === "custom") {
+          const version = panel.version;
+          const validation = await panel.ws("editor_validate", {
+            program: candidate,
+          });
+          if (panel.version !== version || !isCurrent()) {
+            return;
+          }
+          if (!validation.valid) {
+            panel.showIssues(validation);
+            if (validation.issues.length > 0) {
+              panel.focusIssue(validation.issues[0]);
+            }
+            return;
+          }
+        }
+        panel.randomEditor = null;
+        panel.change([], candidate, true);
+      } else {
+        await panel.save(candidate);
+      }
+    } catch (error) {
+      if (isCurrent()) {
+        panel.fail(error);
+      }
+    }
+  };
+  const cancel = () =>
+    panel.requestStepExit(() =>
+      panel.shadowRoot.getElementById(`random-card-${editor.id}`)?.focus(),
+    );
+  const context = { editor: new Proxy(editor, {}), t, changed };
+  return {
+    ...context,
+    form: new Proxy(form, {}),
+    timing,
+    action: action2,
+    submit,
+    cancel,
+  };
+}
+async function deleteRandom(panel) {
+  const editor = panel.randomEditor;
+  if (!editor || panel.busy) {
+    return;
+  }
+  const candidate = copy(panel.draft);
+  if (randomReferences(candidate, editor.id).length > 0) {
+    panel.error = panel.t("random_dependents_error");
+    panel.flush();
+    return;
+  }
+  delete candidate.random?.[editor.id];
+  if (panel.document?.source === "file") {
+    panel.randomEditor = null;
+    panel.change([], candidate, true);
+    return;
+  }
+  await panel.save(candidate);
+}
+
 // custom_components/occupied/frontend/src/lib/actions/timeline-now.ts
-function timelineNow(node, label) {
+function timelineNow(node, options) {
   const chart = node;
   const generate = chart._generateData;
   if (typeof generate !== "function") {
     return;
   }
-  let text2 = label;
+  let current = typeof options === "string" ? { label: options } : options;
   const markerId = "occupied-now";
+  const eventMarkerId = "occupied-event";
   const refresh = () => {
+    const now = Date.now();
+    const showNow =
+      (current.startTime === void 0 || now >= Date.parse(current.startTime)) &&
+      (current.endTime === void 0 || now < Date.parse(current.endTime));
+    if (!showNow) {
+      current.onNowPosition?.(null);
+    }
     if (!chart._chartData) {
       return;
     }
     const color =
       getComputedStyle(node).getPropertyValue("--primary-text-color").trim() ||
       "#333";
+    const eventTime = current.eventTime ? Date.parse(current.eventTime) : NaN;
+    const markers = [
+      ...(showNow
+        ? [
+            {
+              id: markerId,
+              time: now,
+              text: current.onNowPosition ? "" : current.label,
+              color,
+              dashed: true,
+            },
+          ]
+        : []),
+      ...(Number.isFinite(eventTime)
+        ? [
+            {
+              id: eventMarkerId,
+              time: eventTime,
+              text: "",
+              color:
+                getComputedStyle(node)
+                  .getPropertyValue("--info-color")
+                  .trim() || "#039be5",
+              dashed: false,
+            },
+          ]
+        : []),
+    ];
     chart._chartData = [
-      ...chart._chartData.filter((series) => series.id !== markerId),
-      {
-        id: markerId,
+      ...chart._chartData.filter(
+        (series) => series.id !== markerId && series.id !== eventMarkerId,
+      ),
+      ...markers.map((marker) => ({
+        id: marker.id,
         type: "custom",
         silent: true,
         animation: false,
         z: 10,
         tooltip: { show: false },
         encode: { x: 0 },
-        data: [[Date.now()]],
+        data: [[marker.time]],
         renderItem: (params, api) => {
           const { x, y, width, height } = params.coordSys;
           const position = api.coord([api.value(0), 0])[0];
           if (position < x || position > x + width) {
+            if (marker.id === markerId) {
+              current.onNowPosition?.(null);
+            }
             return null;
           }
           const alignRight = position > x + width - 40;
+          if (marker.id === markerId) {
+            current.onNowPosition?.({ x: position, alignRight });
+          }
           return {
             type: "group",
             children: [
               {
                 type: "line",
                 shape: { x1: position, x2: position, y1: y, y2: y + height },
-                style: { stroke: color, lineWidth: 2, lineDash: [4, 3] },
+                style: {
+                  stroke: marker.color,
+                  lineWidth: 2,
+                  lineDash: marker.dashed ? [4, 3] : [],
+                },
               },
               {
                 type: "text",
                 style: {
                   x: position + (alignRight ? -4 : 4),
                   y: y + 2,
-                  text: text2,
-                  fill: color,
+                  text: marker.text,
+                  fill: marker.color,
                   fontSize: 12,
                   fontWeight: "bold",
                   align: alignRight ? "right" : "left",
@@ -13594,7 +14234,7 @@ function timelineNow(node, label) {
             ],
           };
         },
-      },
+      })),
     ];
   };
   chart._generateData = () => {
@@ -13605,14 +14245,14 @@ function timelineNow(node, label) {
   const timer = globalThis.setInterval(refresh, 3e4);
   return {
     update(next2) {
-      text2 = next2;
+      current = typeof next2 === "string" ? { label: next2 } : next2;
       refresh();
     },
     destroy() {
       globalThis.clearInterval(timer);
       chart._generateData = generate;
       chart._chartData = chart._chartData?.filter(
-        (series) => series.id !== markerId,
+        (series) => series.id !== markerId && series.id !== eventMarkerId,
       );
     },
   };
@@ -13849,82 +14489,77 @@ function stamp(value, zone, locale) {
     return value;
   }
 }
-function eventDetails(event2, label, timezone, t, locale) {
+function eventDetails(event2, label, timezone, t, locale, entityNames = {}) {
   const kinds = {
     random_start: "random_start",
     random_end: "random_end",
   };
-  let action2 = event2.action.action;
-  if (event2.tick) {
-    const tick2 = t("tick_progress")
-      .replace("{tick}", () => String(event2.tick))
-      .replace("{count}", () => String(event2.tick_count));
-    action2 += ` \xB7 ${tick2} \xB7 ${event2.period_seconds}s`;
+  const actionLabels2 = {
+    turn_on: "on_label",
+    turn_off: "off_label",
+    "scene.turn_on": "activate_scene",
+    ...Object.fromEntries(coverActions),
+  };
+  const service = event2.action.action;
+  const shortService = service.split(".").at(-1);
+  const actionLabel = actionLabels2[service] || actionLabels2[shortService];
+  let action2 = actionLabel ? t(actionLabel) : service;
+  const positionFields = {
+    "cover.set_cover_position": "position",
+    "cover.set_cover_tilt_position": "tilt_position",
+  };
+  const positionField = positionFields[service];
+  if (positionField && event2.action.data?.[positionField] !== void 0) {
+    action2 += ` \xB7 ${event2.action.data[positionField]}%`;
   }
   if (event2.superseded) {
     action2 += ` \xB7 ${t("superseded")}`;
   }
   return {
-    time: stamp(event2.time, timezone, locale),
+    time: formatEventTime(event2.time, timezone, locale),
     source: `${label} \xB7 ${t(kinds[event2.kind] || event2.kind)}`,
     action: action2,
-    targets: event2.action.entities.join(", "),
-    settings:
-      Object.keys(event2.action.data || {}).length > 0
-        ? JSON.stringify(event2.action.data)
-        : "\u2014",
+    actionState: ["on_label", "off_label"].includes(actionLabel)
+      ? shortService.slice(5)
+      : void 0,
+    targets: event2.action.entities
+      .map((entity) => entityNames[entity] || entity)
+      .join(", "),
   };
-}
-function staggerTransitions(plan) {
-  const groups = /* @__PURE__ */ new Map();
-  for (const event2 of plan.events) {
-    if (
-      !event2.tick ||
-      !event2.authored_at ||
-      !event2.period_seconds ||
-      !event2.tick_count
-    ) {
-      continue;
-    }
-    const id = `${event2.occurrence_id}:${event2.configured_index}`;
-    let group = groups.get(id);
-    if (!group) {
-      group = {
-        start: event2.authored_at,
-        end: new Date(
-          Date.parse(event2.authored_at) + event2.period_seconds * 1e3,
-        ).toISOString(),
-        period: event2.period_seconds,
-        interval: event2.period_seconds / event2.tick_count,
-        count: event2.tick_count,
-        events: [],
-      };
-      groups.set(id, group);
-    }
-    group.events.push(event2);
-  }
-  return [...groups].map(([id, group]) => ({ id, ...group }));
 }
 
 // custom_components/occupied/frontend/src/lib/components/preview/PreviewStateGraph.svelte
-var root16 = from_html(`<p class="hint"> </p>`);
+var root17 = from_html(`<p class="hint"> </p>`);
 var root_113 = from_html(
-  `<state-history-chart-timeline></state-history-chart-timeline>`,
+  `<span class="now-label svelte-1kps2qf" aria-hidden="true"> </span>`,
+);
+var root_210 = from_html(
+  `<div><!> <state-history-chart-timeline></state-history-chart-timeline></div>`,
   2,
 );
-var root_210 = from_html(`<p role="status"> </p>`);
-var root_38 = from_html(`<!> <!> <!>`, 1);
+var root_38 = from_html(`<p role="status"> </p>`);
+var root_46 = from_html(`<!> <!> <!>`, 1);
 var $$css5 = {
   hash: "svelte-1kps2qf",
-  code: "state-history-chart-timeline.svelte-1kps2qf {display:block;width:100%;}state-history-chart-timeline[hidden].svelte-1kps2qf {display:none;}",
+  code: ".preview-graph.svelte-1kps2qf {position:relative;padding-top:18px;}.preview-graph.empty.svelte-1kps2qf {display:none;}.now-label.svelte-1kps2qf {position:absolute;top:0;color:var(--secondary-text-color, #727272);font-size:12px;line-height:16px;transform:translateX(-50%);pointer-events:none;}state-history-chart-timeline.svelte-1kps2qf {display:block;width:100%;}state-history-chart-timeline[hidden].svelte-1kps2qf {display:none;}",
 };
 function PreviewStateGraph($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css5);
-  let names = prop($$props, "names", 19, () => ({}));
+  let names = prop($$props, "names", 19, () => ({})),
+    eventTime = prop($$props, "eventTime", 3, null);
   let ready = state(false);
   let failed = state(false);
   let narrow = state(false);
+  let nowPosition = state(null);
+  function updateNowPosition(position) {
+    if (
+      position?.x !== get(nowPosition)?.x ||
+      position?.alignRight !== get(nowPosition)?.alignRight
+    ) {
+      set2(nowPosition, position, true);
+    }
+  }
   let data = user_derived(() =>
     $$props.schedulePlans
       ? calendarStateHistory(
@@ -13965,11 +14600,11 @@ function PreviewStateGraph($$anchor, $$props) {
       media.removeEventListener("change", updateNarrow);
     };
   });
-  var fragment = root_38();
+  var fragment = root_46();
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var p = root16();
+      var p = root17();
       var text2 = only_child(p, true);
       template_effect(
         ($0) => set_text(text2, $0),
@@ -13991,7 +14626,7 @@ function PreviewStateGraph($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var p_1 = root16();
+      var p_1 = root17();
       var text_1 = only_child(p_1, true);
       template_effect(
         ($0) => set_text(text_1, $0),
@@ -14009,7 +14644,7 @@ function PreviewStateGraph($$anchor, $$props) {
   var node_2 = sibling(node_1, 2);
   {
     var consequent_2 = ($$anchor2) => {
-      var p_2 = root16();
+      var p_2 = root17();
       var text_2 = only_child(p_2, true);
       template_effect(
         ($0) => set_text(text_2, $0),
@@ -14017,8 +14652,31 @@ function PreviewStateGraph($$anchor, $$props) {
       );
       append($$anchor2, p_2);
     };
-    var consequent_3 = ($$anchor2) => {
-      var state_history_chart_timeline = root_113();
+    var consequent_4 = ($$anchor2) => {
+      var div = root_210();
+      let classes;
+      var node_3 = child(div);
+      {
+        var consequent_3 = ($$anchor3) => {
+          var span = root_113();
+          let styles;
+          var text_3 = only_child(span, true);
+          template_effect(
+            ($0) => {
+              styles = set_style(span, "", styles, {
+                left: `${get(nowPosition).x}px`,
+              });
+              set_text(text_3, $0);
+            },
+            [() => $$props.t("preview_now")],
+          );
+          append($$anchor3, span);
+        };
+        if_block(node_3, ($$render) => {
+          if (get(nowPosition)) $$render(consequent_3);
+        });
+      }
+      var state_history_chart_timeline = sibling(node_3, 2);
       template_effect(() =>
         set_custom_element_data(
           state_history_chart_timeline,
@@ -14044,7 +14702,13 @@ function PreviewStateGraph($$anchor, $$props) {
       action(
         state_history_chart_timeline,
         ($$node, $$action_arg) => timelineNow?.($$node, $$action_arg),
-        () => $$props.t("preview_now"),
+        () => ({
+          label: $$props.t("preview_now"),
+          eventTime: eventTime(),
+          startTime: $$props.plan.start,
+          endTime: $$props.plan.end,
+          onNowPosition: updateNowPosition,
+        }),
       );
       action(
         state_history_chart_timeline,
@@ -14057,25 +14721,37 @@ function PreviewStateGraph($$anchor, $$props) {
           endTime: new Date($$props.plan.end),
           showNames: true,
           narrow: get(narrow),
-          paddingYAxis: get(narrow) ? 105 : 185,
+          paddingYAxis: 0,
           clickForMoreInfo: false,
         }),
       );
-      append($$anchor2, state_history_chart_timeline);
-    };
-    var consequent_4 = ($$anchor2) => {
-      var p_3 = root_210();
-      var text_3 = only_child(p_3, true);
+      reset(div);
       template_effect(
-        ($0) => set_text(text_3, $0),
+        () =>
+          (classes = set_class(
+            div,
+            1,
+            "preview-graph svelte-1kps2qf",
+            null,
+            classes,
+            { empty: get(data).length === 0 },
+          )),
+      );
+      append($$anchor2, div);
+    };
+    var consequent_5 = ($$anchor2) => {
+      var p_3 = root_38();
+      var text_4 = only_child(p_3, true);
+      template_effect(
+        ($0) => set_text(text_4, $0),
         [() => $$props.t("loading_graph")],
       );
       append($$anchor2, p_3);
     };
     if_block(node_2, ($$render) => {
       if (get(failed) && get(data).length > 0) $$render(consequent_2);
-      else if (get(ready)) $$render(consequent_3, 1);
-      else if (get(data).length > 0) $$render(consequent_4, 2);
+      else if (get(ready)) $$render(consequent_4, 1);
+      else if (get(data).length > 0) $$render(consequent_5, 2);
     });
   }
   append($$anchor, fragment);
@@ -14161,27 +14837,30 @@ function lastGroupResult(session) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/preview/Timeline.svelte
-var root17 = from_html(`<h2> </h2>`);
-var root_114 = from_html(`<li> <!></li>`);
-var root_211 = from_html(
-  `<details><summary> </summary> <p class="hint"> </p> <ol></ol></details>`,
+var root18 = from_html(`<h2> </h2>`);
+var root_114 = from_html(`<th scope="col" class="svelte-1iz1525"> </th>`);
+var root_211 = from_html(`<span aria-hidden="true"></span>`);
+var root_39 = from_html(`<span> </span> <div> </div>`, 1);
+var root_47 = from_html(`<td class="svelte-1iz1525"><!></td>`);
+var root_56 = from_html(
+  `<button type="button" class="text-button source-link svelte-1iz1525"> </button>`,
 );
-var root_39 = from_html(`<th scope="col"> </th>`);
-var root_45 = from_html(`<span> </span> <div> </div>`, 1);
-var root_55 = from_html(`<td><!></td>`);
-var root_65 = from_html(
-  `<tr><td> </td><td> </td><td> </td><td> </td><td> </td><!></tr>`,
+var root_66 = from_html(
+  `<tr><td class="planned-time svelte-1iz1525"><svg class="hover-indicator svelte-1iz1525" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2 8 6 4 10"></path></svg> </td><td class="svelte-1iz1525"> </td><td class="svelte-1iz1525"><span class="event-action svelte-1iz1525"><!> </span></td><!><td class="svelte-1iz1525"><!></td></tr>`,
 );
 var root_74 = from_html(
-  `<details><summary> </summary> <p class="hint"> </p> <!> <input type="search"/> <div><div class="table-wrap"><table><thead><tr><!><!></tr></thead><tbody></tbody></table></div> <div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div></div></details>`,
+  `<div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div>`,
 );
-var root_82 = from_html(`<p> </p>`);
-var root_9 = from_html(`<!> <!> <!>`, 1);
-var root_10 = from_html(`<p role="status"> </p>`);
-var root_11 = from_html(`<section><!> <!></section>`);
+var root_83 = from_html(
+  `<div class="event-details"><div><div class="table-wrap"><table><thead><tr><!><!><th scope="col" class="svelte-1iz1525"> </th></tr></thead><tbody></tbody></table></div> <!></div></div>`,
+);
+var root_92 = from_html(`<p> </p>`);
+var root_10 = from_html(`<!> <!> <!>`, 1);
+var root_11 = from_html(`<p role="status"> </p>`);
+var root_122 = from_html(`<section><!> <!></section>`);
 var $$css6 = {
   hash: "svelte-1iz1525",
-  code: "tr.current.svelte-1iz1525 {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-1iz1525 {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}",
+  code: "th.svelte-1iz1525,\n  td.svelte-1iz1525 {padding:6px 9px;}th.svelte-1iz1525:first-child,\n  .planned-time.svelte-1iz1525 {padding-left:24px;}.planned-time.svelte-1iz1525 {position:relative;}.hover-indicator.svelte-1iz1525 {position:absolute;left:6px;top:50%;transform:translateY(-50%);width:12px;height:12px;fill:none;stroke:var(--info-color, #039be5);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:0;pointer-events:none;}tr.svelte-1iz1525:hover .hover-indicator:where(.svelte-1iz1525),\n  tr.svelte-1iz1525:focus-within .hover-indicator:where(.svelte-1iz1525) {opacity:0.7;}.source-link.svelte-1iz1525 {min-height:30px;padding:3px 4px;margin:0;text-align:left;}.event-action.svelte-1iz1525 {display:inline-flex;align-items:center;gap:7px;}.action-indicator.svelte-1iz1525 {display:inline-block;width:12px;height:12px;flex:0 0 12px;box-sizing:border-box;border:2px solid var(--info-color, #039be5);border-radius:50%;}.action-indicator.on.svelte-1iz1525 {background:var(--info-color, #039be5);}tr.current.svelte-1iz1525 {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-1iz1525 {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}",
 };
 function Timeline($$anchor, $$props) {
   push($$props, true);
@@ -14191,17 +14870,21 @@ function Timeline($$anchor, $$props) {
     loading = prop($$props, "loading", 3, false),
     showLoading = prop($$props, "showLoading", 19, loading),
     liveSession = prop($$props, "liveSession", 3, null);
+  let catalog = user_derived(() => ({
+    entities: Object.entries(entityNames()).map(([entity_id, name]) => ({
+      entity_id,
+      name,
+    })),
+  }));
   let labels = user_derived(
     () =>
       new Map([
-        ...stepEntries($$props.program || {}, void 0, t()).map((resource) => [
-          `step:${resource.id}`,
-          resource.name,
-        ]),
-        ...randomEntries($$props.program || {}).map((resource) => [
-          `random:${resource.id}`,
-          resource.name,
-        ]),
+        ...stepEntries($$props.program || {}, get(catalog), t()).map(
+          (resource) => [`step:${resource.id}`, resource.name],
+        ),
+        ...randomEntries($$props.program || {}, get(catalog)).map(
+          (resource) => [`random:${resource.id}`, resource.name],
+        ),
       ]),
   );
   function eventLabel(event2) {
@@ -14211,20 +14894,17 @@ function Timeline($$anchor, $$props) {
       ) || event2.source_id
     );
   }
-  let query = state("");
   let page = state(0);
-  let filtered = user_derived(
-    () =>
-      $$props.plan?.events.filter(
-        (event2) =>
-          JSON.stringify(event2).toLowerCase().includes(get(query)) ||
-          eventLabel(event2).toLowerCase().includes(get(query)),
-      ) ?? [],
-  );
+  let hoveredEventTime = state(null);
+  user_effect(() => {
+    void $$props.plan;
+    set2(hoveredEventTime, null);
+  });
+  let events = user_derived(() => $$props.plan?.events ?? []);
   let currentPage = user_derived(() =>
-    Math.max(0, Math.min(get(page), Math.ceil(get(filtered).length / 50) - 1)),
+    Math.max(0, Math.min(get(page), Math.ceil(get(events).length / 50) - 1)),
   );
-  var section = root_11();
+  var section = root_122();
   var node = child(section);
   {
     var consequent = ($$anchor2) => {
@@ -14234,7 +14914,7 @@ function Timeline($$anchor, $$props) {
       append($$anchor2, fragment);
     };
     var consequent_1 = ($$anchor2) => {
-      var h2 = root17();
+      var h2 = root18();
       var text2 = only_child(h2, true);
       template_effect(
         ($0) => set_text(text2, $0),
@@ -14252,8 +14932,8 @@ function Timeline($$anchor, $$props) {
   }
   var node_2 = sibling(node, 2);
   {
-    var consequent_8 = ($$anchor2) => {
-      var fragment_1 = root_9();
+    var consequent_10 = ($$anchor2) => {
+      var fragment_1 = root_10();
       var node_3 = first_child(fragment_1);
       PreviewStateGraph(node_3, {
         get plan() {
@@ -14274,145 +14954,49 @@ function Timeline($$anchor, $$props) {
         get t() {
           return t();
         },
+        get eventTime() {
+          return get(hoveredEventTime);
+        },
       });
       var node_4 = sibling(node_3, 2);
       {
-        var consequent_7 = ($$anchor3) => {
-          var details_1 = root_74();
-          var summary = child(details_1);
-          var text_1 = only_child(summary);
-          var p = sibling(summary, 2);
-          var text_2 = only_child(p);
-          var node_5 = sibling(p, 2);
+        var consequent_9 = ($$anchor3) => {
+          var div = root_83();
+          var div_1 = child(div);
+          var div_2 = child(div_1);
+          var table = child(div_2);
+          var thead = child(table);
+          var tr = child(thead);
+          var node_5 = child(tr);
           each(
             node_5,
             16,
-            () => staggerTransitions($$props.plan),
-            (transition2) => transition2,
-            ($$anchor4, transition2) => {
-              var details_2 = root_211();
-              var summary_1 = child(details_2);
-              var text_3 = only_child(summary_1);
-              var p_1 = sibling(summary_1, 2);
-              var text_4 = only_child(p_1);
-              var ol = sibling(p_1, 2);
-              each(
-                ol,
-                20,
-                () => transition2.events,
-                (tick2) => tick2,
-                ($$anchor5, tick2) => {
-                  var li = root_114();
-                  var text_5 = child(li);
-                  var node_6 = sibling(text_5);
-                  {
-                    var consequent_2 = ($$anchor6) => {
-                      var text_6 = text();
-                      template_effect(
-                        ($0) => set_text(text_6, `\xB7 ${$0 ?? ""}`),
-                        [() => t()("superseded")],
-                      );
-                      append($$anchor6, text_6);
-                    };
-                    if_block(node_6, ($$render) => {
-                      if (tick2.superseded) $$render(consequent_2);
-                    });
-                  }
-                  reset(li);
-                  template_effect(
-                    ($0, $1) => {
-                      set_value(li, tick2.tick);
-                      set_text(text_5, `${$0 ?? ""} \xB7 ${$1 ?? ""} `);
-                    },
-                    [
-                      () =>
-                        stamp(
-                          tick2.time,
-                          $$props.plan.timezone,
-                          $$props.locale,
-                        ),
-                      () =>
-                        tick2.action.entities
-                          .map((entity) => entityNames()[entity] || entity)
-                          .join(", "),
-                    ],
-                  );
-                  append($$anchor5, li);
-                },
-              );
-              reset(ol);
-              reset(details_2);
-              template_effect(
-                ($0, $1, $2, $3, $4, $5, $6, $7) => {
-                  set_text(
-                    text_3,
-                    `${$0 ?? ""} \xB7 ${$1 ?? ""} \xB7 ${transition2.count ?? ""}
-              ${$2 ?? ""}`,
-                  );
-                  set_text(
-                    text_4,
-                    `${$3 ?? ""}\u2013${$4 ?? ""}
-              \xB7 ${$5 ?? ""}: ${transition2.period ?? ""}s \xB7 ${$6 ?? ""}: ${$7 ?? ""}s`,
-                  );
-                },
-                [
-                  () => eventLabel(transition2.events[0]),
-                  () => t()("staggered_action"),
-                  () => t()("entities"),
-                  () =>
-                    stamp(
-                      transition2.start,
-                      $$props.plan.timezone,
-                      $$props.locale,
-                    ),
-                  () =>
-                    stamp(
-                      transition2.end,
-                      $$props.plan.timezone,
-                      $$props.locale,
-                    ),
-                  () => t()("period"),
-                  () => t()("tick_interval"),
-                  () => Number(transition2.interval.toFixed(3)),
-                ],
-              );
-              append($$anchor4, details_2);
-            },
-          );
-          var input = sibling(node_5, 2);
-          var div = sibling(input, 2);
-          var div_1 = child(div);
-          var table = child(div_1);
-          var thead = child(table);
-          var tr = child(thead);
-          var node_7 = child(tr);
-          each(
-            node_7,
-            16,
-            () => ["planned_time", "source", "action", "targets", "settings"],
+            () => ["planned_time", "targets", "action"],
             (label) => label,
             ($$anchor4, label) => {
-              var th = root_39();
-              var text_7 = only_child(th, true);
-              template_effect(($0) => set_text(text_7, $0), [() => t()(label)]);
+              var th = root_114();
+              var text_1 = only_child(th, true);
+              template_effect(($0) => set_text(text_1, $0), [() => t()(label)]);
               append($$anchor4, th);
             },
           );
-          var node_8 = sibling(node_7);
+          var node_6 = sibling(node_5);
           {
-            var consequent_3 = ($$anchor4) => {
-              var th_1 = root_39();
-              var text_8 = only_child(th_1, true);
+            var consequent_2 = ($$anchor4) => {
+              var th_1 = root_114();
+              var text_2 = only_child(th_1, true);
               template_effect(
-                ($0) => set_text(text_8, $0),
+                ($0) => set_text(text_2, $0),
                 [() => t()("result")],
               );
               append($$anchor4, th_1);
             };
-            if_block(node_8, ($$render) => {
-              if (liveSession()) $$render(consequent_3);
+            if_block(node_6, ($$render) => {
+              if (liveSession()) $$render(consequent_2);
             });
           }
+          var th_2 = sibling(node_6);
+          var text_3 = only_child(th_2, true);
           reset(tr);
           reset(thead);
           var tbody = sibling(thead);
@@ -14420,7 +15004,7 @@ function Timeline($$anchor, $$props) {
             tbody,
             20,
             () =>
-              get(filtered).slice(
+              get(events).slice(
                 get(currentPage) * 50,
                 get(currentPage) * 50 + 50,
               ),
@@ -14436,36 +15020,59 @@ function Timeline($$anchor, $$props) {
                   $$props.plan.timezone,
                   t(),
                   $$props.locale,
+                  entityNames(),
                 ),
               );
-              var tr_1 = root_65();
+              var tr_1 = root_66();
               let classes;
               var td = child(tr_1);
-              var text_9 = only_child(td, true);
+              var text_4 = sibling(child(td));
+              reset(td);
               var td_1 = sibling(td);
-              var text_10 = only_child(td_1, true);
+              var text_5 = only_child(td_1, true);
               var td_2 = sibling(td_1);
-              var text_11 = only_child(td_2, true);
-              var td_3 = sibling(td_2);
-              var text_12 = only_child(td_3, true);
-              var td_4 = sibling(td_3);
-              var text_13 = only_child(td_4, true);
-              var node_9 = sibling(td_4);
+              var span = child(td_2);
+              var node_7 = child(span);
+              {
+                var consequent_3 = ($$anchor5) => {
+                  var span_1 = root_211();
+                  let classes_1;
+                  template_effect(
+                    () =>
+                      (classes_1 = set_class(
+                        span_1,
+                        1,
+                        "action-indicator svelte-1iz1525",
+                        null,
+                        classes_1,
+                        { on: get(details).actionState === "on" },
+                      )),
+                  );
+                  append($$anchor5, span_1);
+                };
+                if_block(node_7, ($$render) => {
+                  if (get(details).actionState) $$render(consequent_3);
+                });
+              }
+              var text_6 = sibling(node_7);
+              reset(span);
+              reset(td_2);
+              var node_8 = sibling(td_2);
               {
                 var consequent_6 = ($$anchor5) => {
-                  var td_5 = root_55();
-                  var node_10 = child(td_5);
+                  var td_3 = root_47();
+                  var node_9 = child(td_3);
                   {
                     var consequent_4 = ($$anchor6) => {
-                      var fragment_3 = root_45();
-                      var span = first_child(fragment_3);
-                      var text_14 = only_child(span, true);
-                      var div_2 = sibling(span, 2);
-                      var text_15 = only_child(div_2, true);
+                      var fragment_2 = root_39();
+                      var span_2 = first_child(fragment_2);
+                      var text_7 = only_child(span_2, true);
+                      var div_3 = sibling(span_2, 2);
+                      var text_8 = only_child(div_3, true);
                       template_effect(
                         ($0) => {
                           set_class(
-                            span,
+                            span_2,
                             1,
                             clsx2(
                               get(live).outcome.status === "dispatched"
@@ -14473,33 +15080,59 @@ function Timeline($$anchor, $$props) {
                                 : "error",
                             ),
                           );
-                          set_text(text_14, $0);
-                          set_text(text_15, get(live).outcome.detail);
+                          set_text(text_7, $0);
+                          set_text(text_8, get(live).outcome.detail);
                         },
                         [() => t()(get(live).outcome.status)],
                       );
-                      append($$anchor6, fragment_3);
+                      append($$anchor6, fragment_2);
                     };
                     var consequent_5 = ($$anchor6) => {
-                      var text_16 = text();
+                      var text_9 = text();
                       template_effect(
-                        ($0) => set_text(text_16, $0),
+                        ($0) => set_text(text_9, $0),
                         [() => t()("next_event")],
                       );
-                      append($$anchor6, text_16);
+                      append($$anchor6, text_9);
                     };
-                    if_block(node_10, ($$render) => {
+                    if_block(node_9, ($$render) => {
                       if (get(live)?.outcome) $$render(consequent_4);
                       else if (get(live)?.current) $$render(consequent_5, 1);
                     });
                   }
-                  reset(td_5);
-                  append($$anchor5, td_5);
+                  reset(td_3);
+                  append($$anchor5, td_3);
                 };
-                if_block(node_9, ($$render) => {
+                if_block(node_8, ($$render) => {
                   if (liveSession()) $$render(consequent_6);
                 });
               }
+              var td_4 = sibling(node_8);
+              var node_10 = child(td_4);
+              {
+                var consequent_7 = ($$anchor5) => {
+                  var button = root_56();
+                  var text_10 = only_child(button, true);
+                  template_effect(() => {
+                    button.disabled = loading();
+                    set_text(text_10, get(details).source);
+                  });
+                  delegated("click", button, () =>
+                    $$props.onOpenSource?.(event2),
+                  );
+                  append($$anchor5, button);
+                };
+                var alternate = ($$anchor5) => {
+                  var text_11 = text();
+                  template_effect(() => set_text(text_11, get(details).source));
+                  append($$anchor5, text_11);
+                };
+                if_block(node_10, ($$render) => {
+                  if ($$props.onOpenSource) $$render(consequent_7);
+                  else $$render(alternate, -1);
+                });
+              }
+              reset(td_4);
               reset(tr_1);
               template_effect(() => {
                 set_attribute2(
@@ -14511,80 +15144,79 @@ function Timeline($$anchor, $$props) {
                   current: get(live)?.current,
                   completed: get(live)?.outcome?.status === "dispatched",
                 });
-                set_text(text_9, get(details).time);
-                set_text(text_10, get(details).source);
-                set_text(text_11, get(details).action);
-                set_text(text_12, get(details).targets);
-                set_text(text_13, get(details).settings);
+                set_text(text_4, ` ${get(details).time ?? ""}`);
+                set_text(text_5, get(details).targets);
+                set_text(text_6, ` ${get(details).action ?? ""}`);
               });
+              event("pointerenter", tr_1, () =>
+                set2(hoveredEventTime, event2.time, true),
+              );
+              event("pointerleave", tr_1, () => set2(hoveredEventTime, null));
+              delegated("focusin", tr_1, () =>
+                set2(hoveredEventTime, event2.time, true),
+              );
+              delegated("focusout", tr_1, () => set2(hoveredEventTime, null));
               append($$anchor4, tr_1);
             },
           );
           reset(tbody);
           reset(table);
+          reset(div_2);
+          var node_11 = sibling(div_2, 2);
+          {
+            var consequent_8 = ($$anchor4) => {
+              var div_4 = root_74();
+              var button_1 = child(div_4);
+              var text_12 = only_child(button_1, true);
+              var span_3 = sibling(button_1, 2);
+              var text_13 = only_child(span_3);
+              var button_2 = sibling(span_3, 2);
+              var text_14 = only_child(button_2, true);
+              reset(div_4);
+              template_effect(
+                ($0, $1, $2, $3) => {
+                  button_1.disabled = get(currentPage) === 0;
+                  set_text(text_12, $0);
+                  set_text(
+                    text_13,
+                    `${get(events).length ?? ""}
+                ${$1 ?? ""} \xB7 ${get(currentPage) + 1}/${$2 ?? ""}`,
+                  );
+                  button_2.disabled =
+                    (get(currentPage) + 1) * 50 >= get(events).length;
+                  set_text(text_14, $3);
+                },
+                [
+                  () => t()("previous"),
+                  () => t()("events"),
+                  () => Math.max(1, Math.ceil(get(events).length / 50)),
+                  () => t()("next"),
+                ],
+              );
+              delegated("click", button_1, () =>
+                set2(page, get(currentPage) - 1),
+              );
+              delegated("click", button_2, () =>
+                set2(page, get(currentPage) + 1),
+              );
+              append($$anchor4, div_4);
+            };
+            if_block(node_11, ($$render) => {
+              if (get(events).length > 50) $$render(consequent_8);
+            });
+          }
           reset(div_1);
-          var div_3 = sibling(div_1, 2);
-          var button = child(div_3);
-          var text_17 = only_child(button, true);
-          var span_1 = sibling(button, 2);
-          var text_18 = only_child(span_1);
-          var button_1 = sibling(span_1, 2);
-          var text_19 = only_child(button_1, true);
-          reset(div_3);
           reset(div);
-          reset(details_1);
-          template_effect(
-            ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10) => {
-              set_text(
-                text_1,
-                `${$0 ?? ""} \xB7 ${$$props.plan.events.length ?? ""}`,
-              );
-              set_text(
-                text_2,
-                `${$1 ?? ""}: ${$2 ?? ""} \xB7 ${$3 ?? ""}: ${$4 ?? ""}`,
-              );
-              set_attribute2(input, "placeholder", $5);
-              set_attribute2(input, "aria-label", $6);
-              button.disabled = get(currentPage) === 0;
-              set_text(text_17, $7);
-              set_text(
-                text_18,
-                `${get(filtered).length ?? ""}
-              ${$8 ?? ""} \xB7 ${get(currentPage) + 1}/${$9 ?? ""}`,
-              );
-              button_1.disabled =
-                (get(currentPage) + 1) * 50 >= get(filtered).length;
-              set_text(text_19, $10);
-            },
-            [
-              () => t()("event_details"),
-              () => t()("behavior_revision"),
-              () => $$props.plan.behavior_hash.slice(0, 12),
-              () => t()("plan_revision"),
-              () => $$props.plan.source_revision?.slice(0, 12) || "\u2014",
-              () => t()("filter_events"),
-              () => t()("filter_events"),
-              () => t()("previous"),
-              () => t()("events"),
-              () => Math.max(1, Math.ceil(get(filtered).length / 50)),
-              () => t()("next"),
-            ],
-          );
-          delegated("input", input, (event2) => {
-            set2(query, event2.currentTarget.value.toLowerCase(), true);
-            set2(page, 0);
-          });
-          delegated("click", button, () => set2(page, get(currentPage) - 1));
-          delegated("click", button_1, () => set2(page, get(currentPage) + 1));
-          append($$anchor3, details_1);
+          template_effect(($0) => set_text(text_3, $0), [() => t()("source")]);
+          append($$anchor3, div);
         };
         if_block(node_4, ($$render) => {
-          if ($$props.plan.events.length > 0) $$render(consequent_7);
+          if ($$props.plan.events.length > 0) $$render(consequent_9);
         });
       }
-      var node_11 = sibling(node_4, 2);
+      var node_12 = sibling(node_4, 2);
       each(
-        node_11,
+        node_12,
         16,
         () =>
           $$props.plan.issues.filter(
@@ -14596,33 +15228,33 @@ function Timeline($$anchor, $$props) {
           ),
         (issue) => issue,
         ($$anchor3, issue) => {
-          var p_2 = root_82();
-          var text_20 = only_child(p_2);
+          var p = root_92();
+          var text_15 = only_child(p);
           template_effect(() => {
             set_class(
-              p_2,
+              p,
               1,
               clsx2(issue.severity === "error" ? "error" : "hint"),
             );
-            set_text(text_20, `${issue.code ?? ""}: ${issue.message ?? ""}`);
+            set_text(text_15, `${issue.code ?? ""}: ${issue.message ?? ""}`);
           });
-          append($$anchor3, p_2);
+          append($$anchor3, p);
         },
       );
       append($$anchor2, fragment_1);
     };
-    var consequent_9 = ($$anchor2) => {
-      var p_3 = root_10();
-      var text_21 = only_child(p_3, true);
+    var consequent_11 = ($$anchor2) => {
+      var p_1 = root_11();
+      var text_16 = only_child(p_1, true);
       template_effect(
-        ($0) => set_text(text_21, $0),
+        ($0) => set_text(text_16, $0),
         [() => t()("loading_schedule")],
       );
-      append($$anchor2, p_3);
+      append($$anchor2, p_1);
     };
     if_block(node_2, ($$render) => {
-      if ($$props.plan) $$render(consequent_8);
-      else if (showLoading()) $$render(consequent_9, 1);
+      if ($$props.plan) $$render(consequent_10);
+      else if (showLoading()) $$render(consequent_11, 1);
     });
   }
   reset(section);
@@ -14630,10 +15262,10 @@ function Timeline($$anchor, $$props) {
   append($$anchor, section);
   pop();
 }
-delegate(["input", "click"]);
+delegate(["focusin", "focusout", "click"]);
 
 // custom_components/occupied/frontend/src/lib/components/preview/LivePreviewControls.svelte
-var root18 = from_html(
+var root19 = from_html(
   `<button type="button" class="primary svelte-jw9j7k"> </button> <button type="button" class="svelte-jw9j7k"> </button>`,
   1,
 );
@@ -14641,27 +15273,27 @@ var root_115 = from_html(
   `<button type="button" class="svelte-jw9j7k"> </button>`,
 );
 var root_212 = from_html(
-  `<button type="button" class="primary svelte-jw9j7k"> </button> <!> <button type="button" class="svelte-jw9j7k"> </button>`,
+  `<button type="button" class="primary svelte-jw9j7k"> </button> <!>`,
   1,
 );
 var root_310 = from_html(`<div class="live-actions svelte-jw9j7k"><!></div>`);
-var root_46 = from_html(`<p class="svelte-jw9j7k"> </p>`);
-var root_56 = from_html(`<p class="error svelte-jw9j7k"> </p>`);
-var root_66 = from_html(`<p class="hint svelte-jw9j7k"> </p>`);
+var root_48 = from_html(`<p class="svelte-jw9j7k"> </p>`);
+var root_57 = from_html(`<p class="error svelte-jw9j7k"> </p>`);
+var root_67 = from_html(`<p class="hint svelte-jw9j7k"> </p>`);
 var root_75 = from_html(`<p class="call svelte-jw9j7k"> <!></p>`);
-var root_83 = from_html(
+var root_84 = from_html(
   `<p class="svelte-jw9j7k"><strong> </strong></p> <!>`,
   1,
 );
-var root_92 = from_html(
+var root_93 = from_html(
   `<div role="status" aria-live="polite" aria-atomic="true"><strong> </strong> <p class="svelte-jw9j7k"> </p> <!> <!></div> <!> <!> <!> <!> <!>`,
   1,
 );
 var root_102 = from_html(`<p role="status" class="hint svelte-jw9j7k"> </p>`);
 var root_116 = from_html(
-  `<!> <section class="live-card svelte-jw9j7k"><h2 class="svelte-jw9j7k"> </h2> <p class="svelte-jw9j7k"><strong> </strong></p> <p class="hint svelte-jw9j7k"> </p> <!> <!></section> <!>`,
-  1,
+  `<section class="live-card svelte-jw9j7k"><h2 class="svelte-jw9j7k"> </h2> <!> <!></section>`,
 );
+var root_123 = from_html(`<!> <!> <!>`, 1);
 var $$css7 = {
   hash: "svelte-jw9j7k",
   code: ".live-card.svelte-jw9j7k {border:1px solid var(--divider-color, #ddd);border-radius:12px;padding:16px;margin-bottom:16px;}h2.svelte-jw9j7k {margin:0;}p.svelte-jw9j7k {margin:8px 0;}.call.svelte-jw9j7k {overflow-wrap:anywhere;}.live-actions.svelte-jw9j7k {display:flex;flex-wrap:wrap;gap:8px;padding:12px;margin-bottom:16px;background:var(--card-background-color, white);border:1px solid var(--divider-color, #ddd);border-radius:12px;}.live-actions.svelte-jw9j7k button:where(.svelte-jw9j7k) {min-height:48px;margin:0;}.primary.svelte-jw9j7k {flex:1;}\n\n  @media (max-width: 600px) {.live-actions.svelte-jw9j7k {padding-bottom:max(12px, env(safe-area-inset-bottom, 0px));}\n  }",
@@ -14674,7 +15306,7 @@ function LivePreviewControls($$anchor, $$props) {
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
-        var fragment = root18();
+        var fragment = root19();
         var button = first_child(fragment);
         var text2 = only_child(button, true);
         var button_1 = sibling(button, 2);
@@ -14729,24 +15361,14 @@ function LivePreviewControls($$anchor, $$props) {
             if ($$props.panel.schedulingPaused) $$render(consequent_1);
           });
         }
-        var button_4 = sibling(node_1, 2);
-        var text_4 = only_child(button_4, true);
         template_effect(
-          ($0, $1) => {
+          ($0) => {
             button_2.disabled = !get(canStart);
             set_text(text_2, $0);
-            button_4.disabled = $$props.panel.busy || $$props.panel.liveBusy;
-            set_text(text_4, $1);
           },
-          [
-            () => get(t)(get(session) ? "run_again" : "start_live_preview"),
-            () => get(t)("refresh_preview"),
-          ],
+          [() => get(t)(get(session) ? "run_again" : "start_live_preview")],
         );
         delegated("click", button_2, () => $$props.panel.startLivePreview());
-        delegated("click", button_4, () =>
-          $$props.panel.refreshPreviewSchedule(),
-        );
         append($$anchor3, fragment_1);
       };
       if_block(node, ($$render) => {
@@ -14788,7 +15410,7 @@ function LivePreviewControls($$anchor, $$props) {
       (outcome) => outcome.group_id === get(session)?.last_group_id,
     ),
   );
-  var fragment_2 = root_116();
+  var fragment_2 = root_123();
   var node_2 = first_child(fragment_2);
   {
     var consequent_2 = ($$anchor2) => {
@@ -14798,292 +15420,305 @@ function LivePreviewControls($$anchor, $$props) {
       if (get(session)) $$render(consequent_2);
     });
   }
-  var section = sibling(node_2, 2);
-  var h2 = child(section);
-  var text_5 = only_child(h2, true);
-  var p = sibling(h2, 2);
-  var strong = child(p);
-  var text_6 = only_child(strong, true);
-  reset(p);
-  var p_1 = sibling(p, 2);
-  var text_7 = only_child(p_1, true);
-  var node_3 = sibling(p_1, 2);
+  var node_3 = sibling(node_2, 2);
   {
-    var consequent_10 = ($$anchor2) => {
-      var fragment_4 = root_92();
-      var div_1 = first_child(fragment_4);
-      var strong_1 = child(div_1);
-      var text_8 = only_child(strong_1, true);
-      var p_2 = sibling(strong_1, 2);
-      var text_9 = only_child(p_2);
-      var node_4 = sibling(p_2, 2);
+    var consequent_12 = ($$anchor2) => {
+      var section = root_116();
+      var h2 = child(section);
+      var text_4 = only_child(h2, true);
+      var node_4 = sibling(h2, 2);
       {
-        var consequent_3 = ($$anchor3) => {
-          var p_3 = root_46();
-          var text_10 = only_child(p_3);
-          template_effect(
-            ($0, $1) => set_text(text_10, `${$0 ?? ""}: ${$1 ?? ""}`),
-            [
-              () => get(t)("simulated_time"),
-              () =>
-                stamp(
-                  get(session).simulated_time,
-                  $$props.panel.livePlan.timezone,
-                  $$props.panel._hass.locale,
-                ),
-            ],
-          );
-          append($$anchor3, p_3);
-        };
-        if_block(node_4, ($$render) => {
-          if (get(session).simulated_time && $$props.panel.livePlan)
-            $$render(consequent_3);
-        });
-      }
-      var node_5 = sibling(node_4, 2);
-      {
-        var consequent_4 = ($$anchor3) => {
-          var p_4 = root_46();
-          var text_11 = only_child(p_4);
-          template_effect(
-            ($0, $1) => set_text(text_11, `${$0 ?? ""}: ${$1 ?? ""}`),
-            [() => get(t)("last_result"), () => get(t)(get(lastResult))],
-          );
-          append($$anchor3, p_4);
-        };
-        if_block(node_5, ($$render) => {
-          if (get(lastResult)) $$render(consequent_4);
-        });
-      }
-      reset(div_1);
-      var node_6 = sibling(div_1, 2);
-      {
-        var consequent_5 = ($$anchor3) => {
-          var p_5 = root_56();
-          var text_12 = only_child(p_5, true);
-          template_effect(() => set_text(text_12, get(session).detail));
-          append($$anchor3, p_5);
-        };
-        if_block(node_6, ($$render) => {
-          if (get(session).state === "interrupted") $$render(consequent_5);
-        });
-      }
-      var node_7 = sibling(node_6, 2);
-      {
-        var consequent_6 = ($$anchor3) => {
-          var p_6 = root_66();
-          var text_13 = only_child(p_6, true);
-          template_effect(
-            ($0) => set_text(text_13, $0),
-            [() => get(t)("live_preview_revision_hint")],
-          );
-          append($$anchor3, p_6);
-        };
-        if_block(node_7, ($$render) => {
-          if (get(session).earlier_revision) $$render(consequent_6);
-        });
-      }
-      var node_8 = sibling(node_7, 2);
-      {
-        var consequent_7 = ($$anchor3) => {
-          var p_7 = root_66();
-          var text_14 = only_child(p_7, true);
-          template_effect(
-            ($0) => set_text(text_14, $0),
-            [() => get(t)("live_preview_owner_hint")],
-          );
-          append($$anchor3, p_7);
-        };
-        if_block(node_8, ($$render) => {
-          if (!$$props.panel.liveCanAdvance && get(running))
-            $$render(consequent_7);
-        });
-      }
-      var node_9 = sibling(node_8, 2);
-      {
-        var consequent_9 = ($$anchor3) => {
-          var fragment_5 = root_83();
-          var p_8 = first_child(fragment_5);
-          var strong_2 = child(p_8);
-          var text_15 = only_child(strong_2);
-          reset(p_8);
-          var node_10 = sibling(p_8, 2);
-          each(
-            node_10,
-            17,
-            () => get(session).next_group.calls,
-            (call) => call.id,
-            ($$anchor4, call) => {
-              var p_9 = root_75();
-              var text_16 = child(p_9);
-              var node_11 = sibling(text_16);
-              {
-                var consequent_8 = ($$anchor5) => {
-                  var text_17 = text();
+        var consequent_10 = ($$anchor3) => {
+          var fragment_4 = root_93();
+          var div_1 = first_child(fragment_4);
+          var strong = child(div_1);
+          var text_5 = only_child(strong, true);
+          var p = sibling(strong, 2);
+          var text_6 = only_child(p);
+          var node_5 = sibling(p, 2);
+          {
+            var consequent_3 = ($$anchor4) => {
+              var p_1 = root_48();
+              var text_7 = only_child(p_1);
+              template_effect(
+                ($0, $1) => set_text(text_7, `${$0 ?? ""}: ${$1 ?? ""}`),
+                [
+                  () => get(t)("simulated_time"),
+                  () =>
+                    stamp(
+                      get(session).simulated_time,
+                      $$props.panel.livePlan.timezone,
+                      $$props.panel._hass.locale,
+                    ),
+                ],
+              );
+              append($$anchor4, p_1);
+            };
+            if_block(node_5, ($$render) => {
+              if (get(session).simulated_time && $$props.panel.livePlan)
+                $$render(consequent_3);
+            });
+          }
+          var node_6 = sibling(node_5, 2);
+          {
+            var consequent_4 = ($$anchor4) => {
+              var p_2 = root_48();
+              var text_8 = only_child(p_2);
+              template_effect(
+                ($0, $1) => set_text(text_8, `${$0 ?? ""}: ${$1 ?? ""}`),
+                [() => get(t)("last_result"), () => get(t)(get(lastResult))],
+              );
+              append($$anchor4, p_2);
+            };
+            if_block(node_6, ($$render) => {
+              if (get(lastResult)) $$render(consequent_4);
+            });
+          }
+          reset(div_1);
+          var node_7 = sibling(div_1, 2);
+          {
+            var consequent_5 = ($$anchor4) => {
+              var p_3 = root_57();
+              var text_9 = only_child(p_3, true);
+              template_effect(() => set_text(text_9, get(session).detail));
+              append($$anchor4, p_3);
+            };
+            if_block(node_7, ($$render) => {
+              if (get(session).state === "interrupted") $$render(consequent_5);
+            });
+          }
+          var node_8 = sibling(node_7, 2);
+          {
+            var consequent_6 = ($$anchor4) => {
+              var p_4 = root_67();
+              var text_10 = only_child(p_4, true);
+              template_effect(
+                ($0) => set_text(text_10, $0),
+                [() => get(t)("live_preview_revision_hint")],
+              );
+              append($$anchor4, p_4);
+            };
+            if_block(node_8, ($$render) => {
+              if (get(session).earlier_revision) $$render(consequent_6);
+            });
+          }
+          var node_9 = sibling(node_8, 2);
+          {
+            var consequent_7 = ($$anchor4) => {
+              var p_5 = root_67();
+              var text_11 = only_child(p_5, true);
+              template_effect(
+                ($0) => set_text(text_11, $0),
+                [() => get(t)("live_preview_owner_hint")],
+              );
+              append($$anchor4, p_5);
+            };
+            if_block(node_9, ($$render) => {
+              if (!$$props.panel.liveCanAdvance && get(running))
+                $$render(consequent_7);
+            });
+          }
+          var node_10 = sibling(node_9, 2);
+          {
+            var consequent_9 = ($$anchor4) => {
+              var fragment_5 = root_84();
+              var p_6 = first_child(fragment_5);
+              var strong_1 = child(p_6);
+              var text_12 = only_child(strong_1);
+              reset(p_6);
+              var node_11 = sibling(p_6, 2);
+              each(
+                node_11,
+                17,
+                () => get(session).next_group.calls,
+                (call) => call.id,
+                ($$anchor5, call) => {
+                  var p_7 = root_75();
+                  var text_13 = child(p_7);
+                  var node_12 = sibling(text_13);
+                  {
+                    var consequent_8 = ($$anchor6) => {
+                      var text_14 = text();
+                      template_effect(
+                        ($0) => set_text(text_14, `\xB7 ${$0 ?? ""}`),
+                        [
+                          () =>
+                            get(t)("tick_progress")
+                              .replace("{tick}", () => String(get(call).tick))
+                              .replace("{count}", () =>
+                                String(get(call).tick_count),
+                              ),
+                        ],
+                      );
+                      append($$anchor6, text_14);
+                    };
+                    if_block(node_12, ($$render) => {
+                      if (get(call).tick) $$render(consequent_8);
+                    });
+                  }
+                  reset(p_7);
                   template_effect(
-                    ($0) => set_text(text_17, `\xB7 ${$0 ?? ""}`),
-                    [
-                      () =>
-                        get(t)("tick_progress")
-                          .replace("{tick}", () => String(get(call).tick))
-                          .replace("{count}", () =>
-                            String(get(call).tick_count),
-                          ),
-                    ],
+                    ($0) =>
+                      set_text(
+                        text_13,
+                        `${get(call).action.action ?? ""} \xB7 ${$0 ?? ""} `,
+                      ),
+                    [() => get(call).action.entities.join(", ")],
                   );
-                  append($$anchor5, text_17);
-                };
-                if_block(node_11, ($$render) => {
-                  if (get(call).tick) $$render(consequent_8);
-                });
-              }
-              reset(p_9);
+                  append($$anchor5, p_7);
+                },
+              );
               template_effect(
                 ($0) =>
                   set_text(
-                    text_16,
-                    `${get(call).action.action ?? ""} \xB7 ${$0 ?? ""} `,
+                    text_12,
+                    `${$0 ?? ""}: ${get(session).next_group.title ?? ""}`,
                   ),
-                [() => get(call).action.entities.join(", ")],
+                [() => get(t)("next_event")],
               );
-              append($$anchor4, p_9);
+              append($$anchor4, fragment_5);
+            };
+            if_block(node_10, ($$render) => {
+              if (get(session).next_group && get(running))
+                $$render(consequent_9);
+            });
+          }
+          var node_13 = sibling(node_10, 2);
+          each(
+            node_13,
+            16,
+            () =>
+              get(currentOutcomes).filter(
+                (outcome) => outcome.status !== "dispatched",
+              ),
+            (outcome) => outcome,
+            ($$anchor4, outcome) => {
+              var p_8 = root_57();
+              var text_15 = only_child(p_8);
+              template_effect(() =>
+                set_text(
+                  text_15,
+                  `${(outcome.action?.action || "") ?? ""}: ${outcome.detail ?? ""}`,
+                ),
+              );
+              append($$anchor4, p_8);
             },
           );
           template_effect(
-            ($0) =>
-              set_text(
-                text_15,
-                `${$0 ?? ""}: ${get(session).next_group.title ?? ""}`,
-              ),
-            [() => get(t)("next_event")],
+            ($0, $1) => {
+              set_text(text_5, $0);
+              set_text(text_6, `${get(session).date ?? ""} \xB7 ${$1 ?? ""}`);
+            },
+            [
+              () => get(t)(liveSessionStatus(get(session))),
+              () =>
+                get(t)("live_preview_progress")
+                  .replace("{done}", () => String(get(session).cursor))
+                  .replace("{total}", () => String(get(session).total)),
+            ],
           );
-          append($$anchor3, fragment_5);
+          append($$anchor3, fragment_4);
         };
-        if_block(node_9, ($$render) => {
-          if (get(session).next_group && get(running)) $$render(consequent_9);
+        if_block(node_4, ($$render) => {
+          if (get(session)) $$render(consequent_10);
         });
       }
-      var node_12 = sibling(node_9, 2);
-      each(
-        node_12,
-        16,
-        () =>
-          get(currentOutcomes).filter(
-            (outcome) => outcome.status !== "dispatched",
-          ),
-        (outcome) => outcome,
-        ($$anchor3, outcome) => {
-          var p_10 = root_56();
-          var text_18 = only_child(p_10);
-          template_effect(() =>
-            set_text(
-              text_18,
-              `${(outcome.action?.action || "") ?? ""}: ${outcome.detail ?? ""}`,
-            ),
+      var node_14 = sibling(node_4, 2);
+      {
+        var consequent_11 = ($$anchor3) => {
+          var p_9 = root_102();
+          var text_16 = only_child(p_9, true);
+          template_effect(
+            ($0) => set_text(text_16, $0),
+            [() => get(t)("recovering_live_preview")],
           );
-          append($$anchor3, p_10);
-        },
-      );
+          append($$anchor3, p_9);
+        };
+        if_block(node_14, ($$render) => {
+          if (!$$props.panel.liveReady) $$render(consequent_11);
+        });
+      }
+      reset(section);
       template_effect(
         ($0, $1) => {
-          set_text(text_8, $0);
-          set_text(text_9, `${get(session).date ?? ""} \xB7 ${$1 ?? ""}`);
+          set_attribute2(section, "aria-label", $0);
+          set_text(text_4, $1);
         },
-        [
-          () => get(t)(liveSessionStatus(get(session))),
-          () =>
-            get(t)("live_preview_progress")
-              .replace("{done}", () => String(get(session).cursor))
-              .replace("{total}", () => String(get(session).total)),
-        ],
+        [() => get(t)("live_preview"), () => get(t)("live_preview")],
       );
-      append($$anchor2, fragment_4);
-    };
-    var alternate_1 = ($$anchor2) => {
-      var p_11 = root_66();
-      var text_19 = only_child(p_11, true);
-      template_effect(
-        ($0) => set_text(text_19, $0),
-        [() => get(t)("live_preview_start_hint")],
-      );
-      append($$anchor2, p_11);
+      append($$anchor2, section);
     };
     if_block(node_3, ($$render) => {
-      if (get(session)) $$render(consequent_10);
-      else $$render(alternate_1, -1);
+      if (get(session) || !$$props.panel.liveReady) $$render(consequent_12);
     });
   }
-  var node_13 = sibling(node_3, 2);
+  var node_15 = sibling(node_3, 2);
   {
-    var consequent_11 = ($$anchor2) => {
-      var p_12 = root_102();
-      var text_20 = only_child(p_12, true);
-      template_effect(
-        ($0) => set_text(text_20, $0),
-        [() => get(t)("recovering_live_preview")],
-      );
-      append($$anchor2, p_12);
-    };
-    if_block(node_13, ($$render) => {
-      if (!$$props.panel.liveReady) $$render(consequent_11);
-    });
-  }
-  reset(section);
-  var node_14 = sibling(section, 2);
-  {
-    var consequent_12 = ($$anchor2) => {
+    var consequent_13 = ($$anchor2) => {
       actionControls($$anchor2);
     };
-    if_block(node_14, ($$render) => {
-      if (!get(session)) $$render(consequent_12);
+    if_block(node_15, ($$render) => {
+      if (!get(session)) $$render(consequent_13);
     });
   }
-  template_effect(
-    ($0, $1, $2, $3) => {
-      set_attribute2(section, "aria-label", $0);
-      set_text(text_5, $1);
-      set_text(text_6, $2);
-      set_text(text_7, $3);
-    },
-    [
-      () => get(t)("live_preview"),
-      () => get(t)("live_preview"),
-      () => get(t)("controls_real_devices"),
-      () =>
-        get(t)(
-          get(session)
-            ? "live_preview_paused_hint"
-            : "live_preview_controls_hint",
-        ),
-    ],
-  );
   append($$anchor, fragment_2);
   pop();
 }
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/preview/PreviewView.svelte
-var root19 = from_html(`<span class="hint" role="status"> </span>`);
-var root_117 = from_html(
-  `<div class="schedule-heading svelte-1gez8n9"><h2 aria-live="polite" class="svelte-1gez8n9"> </h2> <!> <div class="day-navigation svelte-1gez8n9" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-1gez8n9"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
+var root20 = from_html(
+  `<button type="button" class="refresh-button svelte-1gez8n9"><svg viewBox="0 0 24 24" aria-hidden="true" class="svelte-1gez8n9"><path></path></svg></button>`,
+);
+var root_117 = from_html(`<span class="hint" role="status"> </span>`);
+var root_213 = from_html(
+  `<div class="schedule-heading svelte-1gez8n9"><div class="schedule-title svelte-1gez8n9"><h2 aria-live="polite" class="svelte-1gez8n9"> </h2> <!></div> <!> <div class="day-navigation svelte-1gez8n9" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-1gez8n9"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
   2,
 );
-var root_213 = from_html(`<!> <!>`, 1);
+var root_311 = from_html(`<!> <!>`, 1);
 var $$css8 = {
   hash: "svelte-1gez8n9",
-  code: ".schedule-heading.svelte-1gez8n9 {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-bottom:20px;}h2.svelte-1gez8n9 {margin:0;}.day-navigation.svelte-1gez8n9 {display:flex;align-items:center;gap:4px;}.day-navigation.svelte-1gez8n9 button:where(.svelte-1gez8n9) {margin:0;}",
+  code: ".schedule-heading.svelte-1gez8n9 {display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-bottom:20px;}h2.svelte-1gez8n9 {margin:0;line-height:1.25;}.schedule-title.svelte-1gez8n9 {display:flex;align-items:center;gap:8px;}.refresh-button.svelte-1gez8n9 {display:grid;place-items:center;flex:0 0 36px;width:36px;min-height:36px;padding:0;border:0;border-radius:50%;background:transparent;}.refresh-button.svelte-1gez8n9:hover:not(:disabled) {background:var(--secondary-background-color, #eee);}.refresh-button.svelte-1gez8n9 svg:where(.svelte-1gez8n9) {width:24px;height:24px;fill:currentColor;}.day-navigation.svelte-1gez8n9 {display:flex;align-items:center;gap:4px;margin-left:auto;}.day-navigation.svelte-1gez8n9 button:where(.svelte-1gez8n9) {margin:0;}",
 };
 function PreviewView($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css8);
   const dayHeading = ($$anchor2) => {
-    var div = root_117();
-    var h2 = child(div);
+    var div = root_213();
+    var div_1 = child(div);
+    var h2 = child(div_1);
     var text2 = only_child(h2, true);
     var node = sibling(h2, 2);
     {
       var consequent = ($$anchor3) => {
-        var span = root19();
+        var button = root20();
+        var svg = child(button);
+        var path = child(svg);
+        set_attribute2(path, "d", refreshIcon);
+        reset(svg);
+        reset(button);
+        template_effect(
+          ($0, $1) => {
+            set_attribute2(button, "title", $0);
+            set_attribute2(button, "aria-label", $1);
+            button.disabled = $$props.panel.busy || $$props.panel.liveBusy;
+          },
+          [() => get(t)("refresh_preview"), () => get(t)("refresh_preview")],
+        );
+        delegated("click", button, () =>
+          $$props.panel.refreshPreviewSchedule(),
+        );
+        append($$anchor3, button);
+      };
+      if_block(node, ($$render) => {
+        if (!$$props.panel.liveRunning) $$render(consequent);
+      });
+    }
+    reset(div_1);
+    var node_1 = sibling(div_1, 2);
+    {
+      var consequent_1 = ($$anchor3) => {
+        var span = root_117();
         var text_1 = only_child(span, true);
         template_effect(
           ($0) => set_text(text_1, $0),
@@ -15091,12 +15726,12 @@ function PreviewView($$anchor, $$props) {
         );
         append($$anchor3, span);
       };
-      if_block(node, ($$render) => {
-        if (get(showLoading) && get(plan)) $$render(consequent);
+      if_block(node_1, ($$render) => {
+        if (get(showLoading) && get(plan)) $$render(consequent_1);
       });
     }
-    var div_1 = sibling(node, 2);
-    var ha_icon_button = child(div_1);
+    var div_2 = sibling(node_1, 2);
+    var ha_icon_button = child(div_2);
     template_effect(
       ($0) => set_custom_element_data(ha_icon_button, "title", $0),
       [() => get(t)("previous_day")],
@@ -15113,9 +15748,9 @@ function PreviewView($$anchor, $$props) {
           $$props.panel.liveBusy,
       }),
     );
-    var button = sibling(ha_icon_button, 2);
-    var text_2 = only_child(button, true);
-    var ha_icon_button_1 = sibling(button, 2);
+    var button_1 = sibling(ha_icon_button, 2);
+    var text_2 = only_child(button_1, true);
+    var ha_icon_button_1 = sibling(button_1, 2);
     template_effect(
       ($0) => set_custom_element_data(ha_icon_button_1, "title", $0),
       [() => get(t)("next_day")],
@@ -15132,13 +15767,13 @@ function PreviewView($$anchor, $$props) {
           $$props.panel.liveBusy,
       }),
     );
-    reset(div_1);
+    reset(div_2);
     reset(div);
     template_effect(
       ($0, $1, $2) => {
         set_text(text2, $0);
-        set_attribute2(div_1, "aria-label", $1);
-        button.disabled =
+        set_attribute2(div_2, "aria-label", $1);
+        button_1.disabled =
           $$props.panel.busy ||
           $$props.panel.liveRunning ||
           $$props.panel.liveBusy ||
@@ -15158,7 +15793,7 @@ function PreviewView($$anchor, $$props) {
       ],
     );
     delegated("click", ha_icon_button, () => $$props.panel.movePreviewDay(-1));
-    delegated("click", button, () =>
+    delegated("click", button_1, () =>
       $$props.panel.selectPreviewDate($$props.panel.document.simulation_date),
     );
     delegated("click", ha_icon_button_1, () => $$props.panel.movePreviewDay(1));
@@ -15198,10 +15833,32 @@ function PreviewView($$anchor, $$props) {
       $$props.panel.previewDate ||
       $$props.panel.document.simulation_date,
   );
+  function openSource(event2) {
+    if (event2.kind.startsWith("random_")) {
+      const entry = randomEntries(
+        $$props.panel.draft,
+        $$props.panel.catalog,
+      ).find((entry2) => entry2.id === event2.source_id);
+      if (entry) {
+        openRandom($$props.panel, entry);
+      }
+    } else {
+      const entry = stepEntries(
+        $$props.panel.draft,
+        $$props.panel.catalog,
+        $$props.panel.t,
+      ).find((entry2) => entry2.id === event2.source_id);
+      if (entry) {
+        openStep($$props.panel, entry);
+      }
+    }
+  }
   const previousIcon =
     "M15.41,16.59L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.59Z";
   const nextIcon =
     "M8.59,16.59L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.59Z";
+  const refreshIcon =
+    "M17.65,6.35C16.2,4.9 14.21,4 12,4C7.58,4 4,7.58 4,12C4,16.42 7.58,20 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18C8.69,18 6,15.31 6,12C6,8.69 8.69,6 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z";
   let entityNames = user_derived(() =>
     Object.fromEntries(
       $$props.panel.catalog.entities.map((entity) => [
@@ -15210,14 +15867,8 @@ function PreviewView($$anchor, $$props) {
       ]),
     ),
   );
-  var fragment = root_213();
-  var node_1 = first_child(fragment);
-  LivePreviewControls(node_1, {
-    get panel() {
-      return $$props.panel;
-    },
-  });
-  var node_2 = sibling(node_1, 2);
+  var fragment = root_311();
+  var node_2 = first_child(fragment);
   {
     let $0 = user_derived(() =>
       $$props.panel.liveVisible && $$props.panel.livePlan
@@ -15257,6 +15908,7 @@ function PreviewView($$anchor, $$props) {
       get entityNames() {
         return get(entityNames);
       },
+      onOpenSource: openSource,
       get heading() {
         return dayHeading;
       },
@@ -15268,13 +15920,19 @@ function PreviewView($$anchor, $$props) {
       },
     });
   }
+  var node_3 = sibling(node_2, 2);
+  LivePreviewControls(node_3, {
+    get panel() {
+      return $$props.panel;
+    },
+  });
   append($$anchor, fragment);
   pop();
 }
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/shared/UnsavedStepDialog.svelte
-var root20 = from_html(
+var root21 = from_html(
   `<div class="step-exit-overlay"><dialog open="" class="step-exit-dialog" role="alertdialog" aria-modal="true" aria-labelledby="step-exit-title" aria-describedby="step-exit-description"><h2 id="step-exit-title"> </h2> <p id="step-exit-description"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog></div>`,
 );
 function UnsavedStepDialog($$anchor, $$props) {
@@ -15282,7 +15940,7 @@ function UnsavedStepDialog($$anchor, $$props) {
   let t = user_derived(() => $$props.panel.t);
   let keepEditing;
   onMount(() => keepEditing.focus());
-  var div = root20();
+  var div = root21();
   var dialog = child(div);
   var h2 = child(dialog);
   var text2 = only_child(h2, true);
@@ -15327,196 +15985,8 @@ function UnsavedStepDialog($$anchor, $$props) {
 }
 delegate(["click"]);
 
-// custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts
-function openRandom(panel, entry) {
-  if (panel.busy) {
-    return;
-  }
-  if (panel.activeEditor) {
-    const same = !!entry && panel.randomEditor?.id === entry.id;
-    panel.requestStepExit(() => {
-      if (!same) {
-        openRandom(panel, entry);
-      }
-    });
-    return;
-  }
-  panel.randomEditor = randomEditor(panel.draft, entry);
-  panel.tab = "random";
-  panel.error = "";
-  panel.issues = [];
-  panel.renderView();
-  focusEditor(panel, "name");
-  if (entry) {
-    panel.shadowRoot
-      .getElementById(`random-editor-${entry.id}`)
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-}
-function createRandomEditorContext(panel) {
-  const editor = panel.randomEditor,
-    form = editor.form,
-    t = panel.t;
-  const epoch = panel.epoch;
-  const isCurrent = () =>
-    panel.epoch === epoch && panel.activeEditor === editor;
-  const refresh = (key2) => {
-    panel.flush();
-    focusEditor(panel, key2);
-  };
-  const changed = (key2) => {
-    if (
-      !["entities", "cover"].includes(form.on.kind) ||
-      form.on.kind !== form.off.kind
-    ) {
-      form.sameEntities = false;
-    }
-    if (form.sameEntities) {
-      form.off.entities = [...form.on.entities];
-    }
-    panel.version++;
-    panel.validatedVersion = -1;
-    const errors = randomErrors(panel.draft, editor);
-    for (const field of Object.keys(editor.errors)) {
-      if (errors[field]) {
-        editor.errors[field] = errors[field];
-      } else {
-        delete editor.errors[field];
-      }
-    }
-    delete editor.errors[key2];
-    panel.flush();
-  };
-  const scopedEditor = (prefix, options) =>
-    new Proxy(editor, {
-      get(target, key2) {
-        if (key2 === "errors") {
-          return Object.fromEntries(
-            Object.entries(target.errors)
-              .filter(([field]) => field.startsWith(prefix))
-              .map(([field, message]) => [field.slice(prefix.length), message]),
-          );
-        }
-        if (options && (key2 === "showEndTime" || key2 === "showEndOffset")) {
-          return options[key2];
-        }
-        return Reflect.get(target, key2);
-      },
-      set(target, key2, value) {
-        if (options && (key2 === "showEndTime" || key2 === "showEndOffset")) {
-          options[key2] = value;
-          return true;
-        }
-        return Reflect.set(target, key2, value);
-      },
-    });
-  const timing = (edge) => ({
-    editor: scopedEditor(`${edge}.`, editor[`${edge}Options`]),
-    form: new Proxy(form, {}),
-    time: new Proxy(form[edge], {}),
-    t,
-    fieldPrefix: `${edge}.`,
-    ...(edge === "start" && { randomId: editor.id }),
-    changed: (key2) => changed(`${edge}.${key2}`),
-    refresh: (key2) => refresh(key2 ? `${edge}.${key2}` : void 0),
-  });
-  const action2 = (phase) => ({
-    editor: scopedEditor(`${phase}.`),
-    form: new Proxy(form[phase], {}),
-    t,
-    fieldPrefix: `${phase}.`,
-    changed: (key2) => changed(`${phase}.${key2}`),
-  });
-  const submit = async () => {
-    if (!isCurrent()) {
-      return;
-    }
-    editor.errors = randomErrors(panel.draft, editor);
-    if (Object.keys(editor.errors).length > 0) {
-      return refresh(Object.keys(editor.errors)[0]);
-    }
-    try {
-      for (const phase of ["on", "off"]) {
-        try {
-          await prepareCustomAction(panel, form[phase]);
-          if (!isCurrent()) {
-            return;
-          }
-        } catch (error) {
-          if (!isCurrent()) {
-            return;
-          }
-          editor.errors[`${phase}.customYaml`] =
-            error instanceof Error ? error.message : String(error);
-          return refresh(`${phase}.customYaml`);
-        }
-      }
-      const candidate = buildRandom(panel.draft, editor);
-      editor.candidatePath = ["random", editor.id];
-      if (panel.document?.source === "file") {
-        if (form.on.kind === "custom" || form.off.kind === "custom") {
-          const version = panel.version;
-          const validation = await panel.ws("editor_validate", {
-            program: candidate,
-          });
-          if (panel.version !== version || !isCurrent()) {
-            return;
-          }
-          if (!validation.valid) {
-            panel.showIssues(validation);
-            if (validation.issues.length > 0) {
-              panel.focusIssue(validation.issues[0]);
-            }
-            return;
-          }
-        }
-        panel.randomEditor = null;
-        panel.change([], candidate, true);
-      } else {
-        await panel.save(candidate);
-      }
-    } catch (error) {
-      if (isCurrent()) {
-        panel.fail(error);
-      }
-    }
-  };
-  const cancel = () =>
-    panel.requestStepExit(() =>
-      panel.shadowRoot.getElementById(`random-card-${editor.id}`)?.focus(),
-    );
-  const context = { editor: new Proxy(editor, {}), t, changed };
-  return {
-    ...context,
-    form: new Proxy(form, {}),
-    timing,
-    action: action2,
-    submit,
-    cancel,
-  };
-}
-async function deleteRandom(panel) {
-  const editor = panel.randomEditor;
-  if (!editor || panel.busy) {
-    return;
-  }
-  const candidate = copy(panel.draft);
-  if (randomReferences(candidate, editor.id).length > 0) {
-    panel.error = panel.t("random_dependents_error");
-    panel.flush();
-    return;
-  }
-  delete candidate.random?.[editor.id];
-  if (panel.document?.source === "file") {
-    panel.randomEditor = null;
-    panel.change([], candidate, true);
-    return;
-  }
-  await panel.save(candidate);
-}
-
 // custom_components/occupied/frontend/src/lib/components/random/DeleteRandomDialog.svelte
-var root21 = from_html(`<li> </li>`);
+var root22 = from_html(`<li> </li>`);
 var root_118 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
 var root_214 = from_html(
   `<dialog class="step-delete-dialog" aria-labelledby="random-delete-title"><h2 id="random-delete-title"> </h2> <p> </p> <!> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog>`,
@@ -15554,7 +16024,7 @@ function DeleteRandomDialog($$anchor, $$props) {
         () => get(dependents),
         (entry) => entry.id,
         ($$anchor3, entry) => {
-          var li = root21();
+          var li = root22();
           var text_3 = only_child(li, true);
           template_effect(() => set_text(text_3, get(entry).name));
           append($$anchor3, li);
@@ -15624,12 +16094,12 @@ function DeleteRandomDialog($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/random/AdvancedRandomSettings.svelte
-var root22 = from_html(`<button type="button"> </button>`);
+var root23 = from_html(`<button type="button"> </button>`);
 var root_119 = from_html(
   `<label class="step-weekday-option"><input type="checkbox"/><span> </span></label>`,
 );
 var root_215 = from_html(`<h3> </h3> <!>`, 1);
-var root_311 = from_html(
+var root_312 = from_html(
   `<dialog class="step-advanced-dialog" aria-labelledby="random-advanced-title" aria-describedby="random-weekdays-description"><h2 id="random-advanced-title"> </h2> <p id="random-weekdays-description" class="hint"> </p> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!> <!> <!> <p class="hint"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
 );
 function AdvancedRandomSettings($$anchor, $$props) {
@@ -15685,7 +16155,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
     }
     dialog.close();
   }
-  var dialog_1 = root_311();
+  var dialog_1 = root_312();
   var h2 = child(dialog_1);
   var text2 = only_child(h2, true);
   var p = sibling(h2, 2);
@@ -15703,7 +16173,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let label = () => get($$array)[0];
       let selection = () => get($$array)[1];
-      var button = root22();
+      var button = root23();
       var text_3 = only_child(button, true);
       template_effect(
         ($0, $1) => {
@@ -15892,7 +16362,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
 delegate(["click", "change"]);
 
 // custom_components/occupied/frontend/src/lib/components/random/RandomActions.svelte
-var root23 = from_html(
+var root24 = from_html(
   `<div role="separator"></div> <button type="button" role="menuitem" tabindex="-1" class="danger"> </button>`,
   1,
 );
@@ -15984,7 +16454,7 @@ function RandomActions($$anchor, $$props) {
   var node = sibling(button_1, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root23();
+      var fragment_1 = root24();
       var button_2 = sibling(first_child(fragment_1), 2);
       var text_1 = only_child(button_2, true);
       template_effect(
@@ -16308,7 +16778,7 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
-var root24 = from_html(`<button type="button" class="text-button"> </button>`);
+var root25 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_121 = from_html(
   `<label class="same-entities svelte-1n39iyr"><input type="checkbox"/> </label>`,
 );
@@ -16471,7 +16941,7 @@ function RandomEventEditor($$anchor, $$props) {
   var node_5 = sibling(node_4, 2);
   {
     var consequent = ($$anchor2) => {
-      var button_1 = root24();
+      var button_1 = root25();
       var text_3 = only_child(button_1, true);
       template_effect(
         ($0) => {
@@ -16498,7 +16968,7 @@ function RandomEventEditor($$anchor, $$props) {
     var consequent_1 = ($$anchor2) => {
       {
         const trailing = ($$anchor3) => {
-          var button_2 = root24();
+          var button_2 = root25();
           var text_4 = only_child(button_2, true);
           template_effect(
             ($0) => {
@@ -16734,18 +17204,18 @@ function RandomEventEditor($$anchor, $$props) {
 delegate(["click", "change"]);
 
 // custom_components/occupied/frontend/src/lib/components/random/RandomView.svelte
-var root25 = from_html(
+var root26 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-random=""> </button></section>`,
 );
-var root_122 = from_html(`<span class="step-status-badge"> </span>`);
+var root_124 = from_html(`<span class="step-status-badge"> </span>`);
 var root_217 = from_html(`<span class="step-row-time"> </span>`);
-var root_312 = from_html(
-  `<div style="--depth:0"><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button> <div><!></div></div>`,
+var root_313 = from_html(
+  `<div style="--depth:0"><div class="step-card-header"><!> <button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button></div> <div><!></div></div>`,
 );
-var root_47 = from_html(
-  `<p class="hint"> </p> <!> <button type="button" class="primary" data-create-random=""> </button>`,
-  1,
+var root_49 = from_html(
+  `<button type="button" class="primary" data-create-random=""> </button>`,
 );
+var root_58 = from_html(`<!> <!>`, 1);
 function RandomView($$anchor, $$props) {
   push($$props, true);
   let data = user_derived(() => {
@@ -16777,7 +17247,7 @@ function RandomView($$anchor, $$props) {
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var section = root25();
+      var section = root26();
       var h2 = child(section);
       var text2 = only_child(h2, true);
       var p = sibling(h2, 2);
@@ -16802,12 +17272,23 @@ function RandomView($$anchor, $$props) {
       append($$anchor2, section);
     };
     var alternate = ($$anchor2) => {
-      var fragment_1 = root_47();
-      var p_1 = first_child(fragment_1);
-      var text_3 = only_child(p_1, true);
-      var node_1 = sibling(p_1, 2);
+      var fragment_1 = root_58();
+      var node_1 = first_child(fragment_1);
       {
-        const children = ($$anchor3, entry = noop) => {
+        let $0 = user_derived(() => get(t)("random_activity"));
+        let $1 = user_derived(() => get(t)("random_activity_hint"));
+        ActivityIntro(node_1, {
+          get title() {
+            return get($0);
+          },
+          get description() {
+            return get($1);
+          },
+        });
+      }
+      var node_2 = sibling(node_1, 2);
+      {
+        const children = ($$anchor3, entry = noop, dragHandle = noop) => {
           const editing = user_derived(
             () =>
               $$props.panel.randomEditor?.existing &&
@@ -16819,41 +17300,44 @@ function RandomView($$anchor, $$props) {
                 ? $$props.panel.randomEditor?.form.enabled
                 : entry().enabled) === false,
           );
-          var div = root_312();
+          var div = root_313();
           let classes;
-          var button_1 = child(div);
+          var div_1 = child(div);
+          var node_3 = child(div_1);
+          snippet(node_3, dragHandle);
+          var button_1 = sibling(node_3, 2);
           let classes_1;
           var span = child(button_1);
           var span_1 = child(span);
           var strong = child(span_1);
-          var text_4 = only_child(strong, true);
-          var node_2 = sibling(strong);
+          var text_3 = only_child(strong, true);
+          var node_4 = sibling(strong);
           {
             var consequent_1 = ($$anchor4) => {
-              var span_2 = root_122();
-              var text_5 = only_child(span_2, true);
+              var span_2 = root_124();
+              var text_4 = only_child(span_2, true);
               template_effect(
-                ($02) => set_text(text_5, $02),
+                ($02) => set_text(text_4, $02),
                 [() => get(t)("disabled")],
               );
               append($$anchor4, span_2);
             };
-            if_block(node_2, ($$render) => {
+            if_block(node_4, ($$render) => {
               if (get(disabled)) $$render(consequent_1);
             });
           }
           reset(span_1);
           var span_3 = sibling(span_1, 2);
-          var text_6 = only_child(span_3);
+          var text_5 = only_child(span_3);
           reset(span);
-          var node_3 = sibling(span, 2);
+          var node_5 = sibling(span, 2);
           {
             var consequent_2 = ($$anchor4) => {
               var span_4 = root_217();
-              var text_7 = only_child(span_4);
+              var text_6 = only_child(span_4);
               template_effect(
                 ($02, $12) =>
-                  set_text(text_7, `${$02 ?? ""} \u2192 ${$12 ?? ""}`),
+                  set_text(text_6, `${$02 ?? ""} \u2192 ${$12 ?? ""}`),
                 [
                   () =>
                     timingSummary(
@@ -16879,13 +17363,14 @@ function RandomView($$anchor, $$props) {
               );
               append($$anchor4, span_4);
             };
-            if_block(node_3, ($$render) => {
+            if_block(node_5, ($$render) => {
               if (!get(editing)) $$render(consequent_2);
             });
           }
           reset(button_1);
-          var div_1 = sibling(button_1, 2);
-          var node_4 = child(div_1);
+          reset(div_1);
+          var div_2 = sibling(div_1, 2);
+          var node_6 = child(div_2);
           {
             var consequent_3 = ($$anchor4) => {
               RandomEventEditor($$anchor4, {
@@ -16897,11 +17382,11 @@ function RandomView($$anchor, $$props) {
                 },
               });
             };
-            if_block(node_4, ($$render) => {
+            if_block(node_6, ($$render) => {
               if (get(editing)) $$render(consequent_3);
             });
           }
-          reset(div_1);
+          reset(div_2);
           reset(div);
           template_effect(
             ($02, $12, $2, $3) => {
@@ -16921,13 +17406,13 @@ function RandomView($$anchor, $$props) {
                 `random-editor-${entry().id}`,
               );
               button_1.disabled = $$props.panel.busy;
-              set_text(text_4, entry().name);
+              set_text(text_3, entry().name);
               set_text(
-                text_6,
+                text_5,
                 `${$12 ?? ""}
-              ${$2 ?? ""} \xB7 ${(entry().min_duration || "5m") ?? ""}\u2013${(entry().max_duration || "15m") ?? ""} \xB7 ${$3 ?? ""}`,
+                ${$2 ?? ""} \xB7 ${(entry().min_duration || "5m") ?? ""}\u2013${(entry().max_duration || "15m") ?? ""} \xB7 ${$3 ?? ""}`,
               );
-              set_attribute2(div_1, "id", `random-editor-${entry().id}`);
+              set_attribute2(div_2, "id", `random-editor-${entry().id}`);
             },
             [
               () =>
@@ -16949,11 +17434,24 @@ function RandomView($$anchor, $$props) {
           );
           append($$anchor3, div);
         };
+        const createAction = ($$anchor3) => {
+          var button_2 = root_49();
+          var text_7 = only_child(button_2, true);
+          template_effect(
+            ($02) => {
+              button_2.disabled = $$props.panel.busy;
+              set_text(text_7, $02);
+            },
+            [() => get(t)("create_random_event")],
+          );
+          delegated("click", button_2, () => openRandom($$props.panel));
+          append($$anchor3, button_2);
+        };
         let $0 = user_derived(
           () => `occupied:activity-order:${$$props.panel.selectedEntry}:random`,
         );
         let $1 = user_derived(() => get(t)("random_events"));
-        ActivityList(node_1, {
+        ActivityList(node_2, {
           get entries() {
             return get(entries);
           },
@@ -16970,23 +17468,10 @@ function RandomView($$anchor, $$props) {
             return get(t);
           },
           children,
-          $$slots: { default: true },
+          createAction,
+          $$slots: { default: true, createAction: true },
         });
       }
-      var button_2 = sibling(node_1, 2);
-      var text_8 = only_child(button_2, true);
-      template_effect(
-        ($0, $1) => {
-          set_text(text_3, $0);
-          button_2.disabled = $$props.panel.busy;
-          set_text(text_8, $1);
-        },
-        [
-          () => get(t)("random_activity_hint"),
-          () => get(t)("create_random_event"),
-        ],
-      );
-      delegated("click", button_2, () => openRandom($$props.panel));
       append($$anchor2, fragment_1);
     };
     if_block(node, ($$render) => {
@@ -17000,22 +17485,16 @@ function RandomView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/App.svelte
-var root26 = from_html(`<button type="button"> </button>`);
-var root_123 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
+var root27 = from_html(`<button type="button"> </button>`);
+var root_125 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
 var root_218 = from_html(`<p> </p>`);
-var root_313 = from_html(`<p id="house"> </p>`);
-var root_48 = from_html(`<option> </option>`);
-var root_57 = from_html(
-  `<label for="instance-select"> </label> <select id="instance-select"></select>`,
-  1,
-);
-var root_67 = from_html(`<p class="hint"> </p>`);
-var root_76 = from_html(`<p class="banner" role="status"> </p>`);
-var root_84 = from_html(`<button type="button" class="text-button"> </button>`);
-var root_93 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
-var root_103 = from_html(`<p> </p> <button type="button"> </button>`, 1);
-var root_1110 = from_html(
-  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><header><div><!> <!> <!></div></header> <!> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
+var root_314 = from_html(`<header><p class="hint"> </p></header>`);
+var root_410 = from_html(`<p class="banner" role="status"> </p>`);
+var root_59 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_68 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
+var root_76 = from_html(`<p> </p> <button type="button"> </button>`, 1);
+var root_85 = from_html(
+  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><!> <!> <!> <div id="notice" class="banner" role="status"> </div> <div id="error" class="error" role="alert"> </div> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
   3,
 );
 function App($$anchor, $$props) {
@@ -17023,11 +17502,11 @@ function App($$anchor, $$props) {
   const $updates = () => store_get($$props.updates, "$updates", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   const toolbar = ($$anchor2) => {
-    var div = root_123();
+    var div = root_125();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
-        var button = root26();
+        var button = root27();
         var text_1 = only_child(button, true);
         template_effect(
           ($0) => {
@@ -17066,7 +17545,7 @@ function App($$anchor, $$props) {
     var node_1 = first_child(fragment);
     {
       var consequent_1 = ($$anchor3) => {
-        var button_1 = root26();
+        var button_1 = root27();
         var text_2 = only_child(button_1, true);
         template_effect(() => {
           set_class(button_1, 1, clsx2(get(className)));
@@ -17102,9 +17581,6 @@ function App($$anchor, $$props) {
     });
   });
   let revision = user_derived($updates);
-  let controllerName = user_derived(
-    () => get(panel).draft?.name || get(panel).selectedInstance?.name,
-  );
   let state2 = user_derived(() => {
     void get(revision);
     const showingSteps =
@@ -17133,7 +17609,7 @@ function App($$anchor, $$props) {
     ["preview", "preview"],
     ["settings", "settings"],
   ];
-  var fragment_1 = root_1110();
+  var fragment_1 = root_85();
   var ha_top_app_bar_fixed = first_child(fragment_1);
   set_custom_element_data(ha_top_app_bar_fixed, "back-button", true);
   template_effect(
@@ -17141,127 +17617,37 @@ function App($$anchor, $$props) {
     [() => get(panel).hasAttribute("narrow")],
   );
   var main = sibling(child(ha_top_app_bar_fixed), 2);
-  var header = child(main);
-  var div_1 = child(header);
-  var node_2 = child(div_1);
+  var node_2 = child(main);
   {
     var consequent_2 = ($$anchor2) => {
-      var p_1 = root_313();
+      var header = root_314();
+      var p_1 = child(header);
       var text_4 = only_child(p_1, true);
+      reset(header);
       template_effect(
         ($0) => set_text(text_4, $0),
-        [() => get(t)("loading_controller")],
+        [() => get(t)("managed_file")],
       );
-      append($$anchor2, p_1);
+      append($$anchor2, header);
     };
-    var consequent_3 = ($$anchor2) => {
-      var p_2 = root_313();
-      var text_5 = only_child(p_2, true);
-      template_effect(() => set_text(text_5, get(controllerName)));
-      append($$anchor2, p_2);
-    };
-    var d = user_derived(
-      () =>
-        get(controllerName) !== en.occupied &&
-        !/^Occupied [0-9a-f]{8}$/.test(get(controllerName)),
-    );
     if_block(node_2, ($$render) => {
-      if (!get(controllerName)) $$render(consequent_2);
-      else if (get(d)) $$render(consequent_3, 1);
+      if (get(panel).selectedInstance?.source === "file")
+        $$render(consequent_2);
     });
   }
   var node_3 = sibling(node_2, 2);
-  {
-    var consequent_4 = ($$anchor2) => {
-      var fragment_2 = root_57();
-      var label_1 = first_child(fragment_2);
-      var text_6 = only_child(label_1, true);
-      var select = sibling(label_1, 2);
-      each(
-        select,
-        21,
-        () => get(panel).instances,
-        (instance) => instance.config_entry_id,
-        ($$anchor3, instance) => {
-          var option = root_48();
-          var text_7 = only_child(option);
-          var option_value = {};
-          template_effect(
-            ($0) => {
-              set_text(text_7, `${get(instance).name ?? ""} \xB7 ${$0 ?? ""}`);
-              if (
-                option_value !== (option_value = get(instance).config_entry_id)
-              ) {
-                option.value = (option.__value = option_value) ?? "";
-              }
-            },
-            [
-              () =>
-                get(t)(
-                  get(instance).loaded ? get(instance).status : "unloaded",
-                ),
-            ],
-          );
-          append($$anchor3, option);
-        },
-      );
-      reset(select);
-      var select_value;
-      init_select(select);
-      template_effect(
-        ($0) => {
-          set_text(text_6, $0);
-          select.disabled = get(panel).busy;
-          if (
-            select_value !== (select_value = get(panel).selectedEntry || "")
-          ) {
-            ((select.value = (select.__value = select_value) ?? ""),
-              select_option(select, select_value));
-          }
-        },
-        [() => get(t)("controller")],
-      );
-      delegated("change", select, (event2) => {
-        get(panel).selectInstance(event2.currentTarget.value);
-        event2.currentTarget.value = get(panel).selectedEntry || "";
-      });
-      append($$anchor2, fragment_2);
-    };
-    if_block(node_3, ($$render) => {
-      if (get(panel).instances.length > 1) $$render(consequent_4);
-    });
-  }
-  var node_4 = sibling(node_3, 2);
-  {
-    var consequent_5 = ($$anchor2) => {
-      var p_3 = root_67();
-      var text_8 = only_child(p_3, true);
-      template_effect(
-        ($0) => set_text(text_8, $0),
-        [() => get(t)("managed_file")],
-      );
-      append($$anchor2, p_3);
-    };
-    if_block(node_4, ($$render) => {
-      if (get(panel).selectedInstance?.source === "file")
-        $$render(consequent_5);
-    });
-  }
-  reset(div_1);
-  reset(header);
-  var node_5 = sibling(header, 2);
   each(
-    node_5,
+    node_3,
     17,
     () => get(panel).selectedInstance?.overlaps || [],
     (overlap) => overlap.config_entry_id,
     ($$anchor2, overlap) => {
-      var p_4 = root_76();
-      var text_9 = only_child(p_4);
+      var p_2 = root_410();
+      var text_5 = only_child(p_2);
       template_effect(
         ($0, $1, $2) =>
           set_text(
-            text_9,
+            text_5,
             `${$0 ?? ""}
         ${get(overlap).name ?? ""}: ${$1 ?? ""}. ${$2 ?? ""}`,
           ),
@@ -17271,16 +17657,16 @@ function App($$anchor, $$props) {
           () => get(t)("instance_overlap_hint"),
         ],
       );
-      append($$anchor2, p_4);
+      append($$anchor2, p_2);
     },
   );
-  var node_6 = sibling(node_5, 2);
-  toolbar(node_6);
-  var div_2 = sibling(node_6, 2);
-  var text_10 = only_child(div_2, true);
-  var div_3 = sibling(div_2, 2);
-  var text_11 = only_child(div_3, true);
-  var nav = sibling(div_3, 2);
+  var node_4 = sibling(node_3, 2);
+  toolbar(node_4);
+  var div_1 = sibling(node_4, 2);
+  var text_6 = only_child(div_1, true);
+  var div_2 = sibling(div_1, 2);
+  var text_7 = only_child(div_2, true);
+  var nav = sibling(div_2, 2);
   each(
     nav,
     21,
@@ -17290,8 +17676,8 @@ function App($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let id = () => get($$array)[0];
       let label = () => get($$array)[1];
-      var button_2 = root26();
-      var text_12 = only_child(button_2, true);
+      var button_2 = root27();
+      var text_8 = only_child(button_2, true);
       template_effect(
         ($0) => {
           set_attribute2(button_2, "data-tab", id());
@@ -17301,7 +17687,7 @@ function App($$anchor, $$props) {
             get(panel).tab === id() ? "page" : "false",
           );
           button_2.disabled = !get(panel).selectedInstance?.loaded;
-          set_text(text_12, $0);
+          set_text(text_8, $0);
         },
         [() => get(t)(label())],
       );
@@ -17310,27 +17696,27 @@ function App($$anchor, $$props) {
     },
   );
   reset(nav);
-  var div_4 = sibling(nav, 2);
-  var node_7 = child(div_4);
+  var div_3 = sibling(nav, 2);
+  var node_5 = child(div_3);
   {
-    var consequent_6 = ($$anchor2) => {
-      var button_3 = root_84();
-      var text_13 = only_child(button_3, true);
+    var consequent_3 = ($$anchor2) => {
+      var button_3 = root_59();
+      var text_9 = only_child(button_3, true);
       template_effect(
-        ($0) => set_text(text_13, $0),
+        ($0) => set_text(text_9, $0),
         [() => get(t)("back_to_steps")],
       );
       delegated("click", button_3, () => get(panel).navigate("steps"));
       append($$anchor2, button_3);
     };
-    if_block(node_7, ($$render) => {
-      if (!get(primary)) $$render(consequent_6);
+    if_block(node_5, ($$render) => {
+      if (!get(primary)) $$render(consequent_3);
     });
   }
-  reset(div_4);
-  var div_5 = sibling(div_4, 2);
+  reset(div_3);
+  var div_4 = sibling(div_3, 2);
   each(
-    div_5,
+    div_4,
     20,
     () => get(issues),
     (issue) => issue,
@@ -17342,48 +17728,48 @@ function App($$anchor, $$props) {
       );
     },
   );
-  reset(div_5);
-  var div_6 = sibling(div_5, 2);
-  var node_8 = child(div_6);
+  reset(div_4);
+  var div_5 = sibling(div_4, 2);
+  var node_6 = child(div_5);
   key(
-    node_8,
+    node_6,
     () => `${get(panel).selectedEntry}:${get(panel).tab}`,
     ($$anchor2) => {
-      var fragment_4 = comment();
-      var node_9 = first_child(fragment_4);
+      var fragment_3 = comment();
+      var node_7 = first_child(fragment_3);
       {
         const failed = ($$anchor3, error = noop) => {
-          var fragment_5 = root_93();
-          var p_5 = first_child(fragment_5);
-          var text_14 = only_child(p_5, true);
-          var p_6 = sibling(p_5, 2);
-          var text_15 = only_child(p_6, true);
+          var fragment_4 = root_68();
+          var p_3 = first_child(fragment_4);
+          var text_10 = only_child(p_3, true);
+          var p_4 = sibling(p_3, 2);
+          var text_11 = only_child(p_4, true);
           template_effect(
             ($0, $1) => {
-              set_text(text_14, $0);
-              set_text(text_15, $1);
+              set_text(text_10, $0);
+              set_text(text_11, $1);
             },
             [
               () => get(t)(errorMessage(error())),
               () => get(t)("draft_invalid_hint"),
             ],
           );
-          append($$anchor3, fragment_5);
+          append($$anchor3, fragment_4);
         };
-        boundary(node_9, { failed }, ($$anchor3) => {
-          var fragment_6 = comment();
-          var node_10 = first_child(fragment_6);
+        boundary(node_7, { failed }, ($$anchor3) => {
+          var fragment_5 = comment();
+          var node_8 = first_child(fragment_5);
           {
-            var consequent_7 = ($$anchor4) => {
-              var fragment_7 = root_103();
-              var p_7 = first_child(fragment_7);
-              var text_16 = only_child(p_7, true);
-              var button_4 = sibling(p_7, 2);
-              var text_17 = only_child(button_4, true);
+            var consequent_4 = ($$anchor4) => {
+              var fragment_6 = root_76();
+              var p_5 = first_child(fragment_6);
+              var text_12 = only_child(p_5, true);
+              var button_4 = sibling(p_5, 2);
+              var text_13 = only_child(button_4, true);
               template_effect(
                 ($0, $1) => {
-                  set_text(text_16, $0);
-                  set_text(text_17, $1);
+                  set_text(text_12, $0);
+                  set_text(text_13, $1);
                 },
                 [
                   () => get(t)("instance_unavailable_hint"),
@@ -17391,30 +17777,30 @@ function App($$anchor, $$props) {
                 ],
               );
               delegated("click", button_4, () => get(panel).retry());
-              append($$anchor4, fragment_7);
+              append($$anchor4, fragment_6);
             };
-            var consequent_9 = ($$anchor4) => {
-              var fragment_8 = comment();
-              var node_11 = first_child(fragment_8);
+            var consequent_6 = ($$anchor4) => {
+              var fragment_7 = comment();
+              var node_9 = first_child(fragment_7);
               {
-                var consequent_8 = ($$anchor5) => {
-                  var button_5 = root26();
-                  var text_18 = only_child(button_5, true);
+                var consequent_5 = ($$anchor5) => {
+                  var button_5 = root27();
+                  var text_14 = only_child(button_5, true);
                   template_effect(
-                    ($0) => set_text(text_18, $0),
+                    ($0) => set_text(text_14, $0),
                     [() => get(t)("retry")],
                   );
                   delegated("click", button_5, () => get(panel).retry());
                   append($$anchor5, button_5);
                 };
-                if_block(node_11, ($$render) => {
+                if_block(node_9, ($$render) => {
                   if (get(panel).error && !get(panel)._loading)
-                    $$render(consequent_8);
+                    $$render(consequent_5);
                 });
               }
-              append($$anchor4, fragment_8);
+              append($$anchor4, fragment_7);
             };
-            var consequent_10 = ($$anchor4) => {
+            var consequent_7 = ($$anchor4) => {
               StepEditor($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -17424,7 +17810,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_11 = ($$anchor4) => {
+            var consequent_8 = ($$anchor4) => {
               RandomEventEditor($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -17434,7 +17820,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_12 = ($$anchor4) => {
+            var consequent_9 = ($$anchor4) => {
               StepsView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -17444,7 +17830,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_13 = ($$anchor4) => {
+            var consequent_10 = ($$anchor4) => {
               RandomView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -17454,7 +17840,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_14 = ($$anchor4) => {
+            var consequent_11 = ($$anchor4) => {
               SettingsView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -17464,7 +17850,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_15 = ($$anchor4) => {
+            var consequent_12 = ($$anchor4) => {
               PreviewView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -17474,56 +17860,56 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            if_block(node_10, ($$render) => {
+            if_block(node_8, ($$render) => {
               if (
                 get(panel).selectedEntry &&
                 !get(panel).selectedInstance?.loaded
               )
-                $$render(consequent_7);
+                $$render(consequent_4);
               else if (get(panel)._loading || !get(panel).draft)
-                $$render(consequent_9, 1);
+                $$render(consequent_6, 1);
               else if (get(panel).stepEditor && !get(panel).stepEditor.existing)
-                $$render(consequent_10, 2);
+                $$render(consequent_7, 2);
               else if (
                 get(panel).randomEditor &&
                 !get(panel).randomEditor.existing
               )
-                $$render(consequent_11, 3);
-              else if (get(panel).tab === "steps") $$render(consequent_12, 4);
-              else if (get(panel).tab === "random") $$render(consequent_13, 5);
+                $$render(consequent_8, 3);
+              else if (get(panel).tab === "steps") $$render(consequent_9, 4);
+              else if (get(panel).tab === "random") $$render(consequent_10, 5);
               else if (get(panel).tab === "settings")
-                $$render(consequent_14, 6);
-              else if (get(panel).tab === "preview") $$render(consequent_15, 7);
+                $$render(consequent_11, 6);
+              else if (get(panel).tab === "preview") $$render(consequent_12, 7);
             });
           }
-          append($$anchor3, fragment_6);
+          append($$anchor3, fragment_5);
         });
       }
-      append($$anchor2, fragment_4);
+      append($$anchor2, fragment_3);
     },
   );
-  reset(div_6);
+  reset(div_5);
   reset(main);
   reset(ha_top_app_bar_fixed);
-  var node_12 = sibling(ha_top_app_bar_fixed, 2);
+  var node_10 = sibling(ha_top_app_bar_fixed, 2);
   {
-    var consequent_16 = ($$anchor2) => {
+    var consequent_13 = ($$anchor2) => {
       UnsavedStepDialog($$anchor2, {
         get panel() {
           return get(panel);
         },
       });
     };
-    if_block(node_12, ($$render) => {
-      if (get(panel).pendingStepExit) $$render(consequent_16);
+    if_block(node_10, ($$render) => {
+      if (get(panel).pendingStepExit) $$render(consequent_13);
     });
   }
   template_effect(
     ($0) => {
-      set_attribute2(div_2, "hidden", !get(notices));
-      set_text(text_10, get(notices));
-      set_attribute2(div_3, "hidden", !get(panel).error);
-      set_text(text_11, get(panel).error);
+      set_attribute2(div_1, "hidden", !get(notices));
+      set_text(text_6, get(notices));
+      set_attribute2(div_2, "hidden", !get(panel).error);
+      set_text(text_7, get(panel).error);
       set_attribute2(nav, "aria-label", $0);
     },
     [() => get(t)("occupied")],
@@ -17532,7 +17918,7 @@ function App($$anchor, $$props) {
   pop();
   $$cleanup();
 }
-delegate(["click", "change"]);
+delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/controllers/preview-controller.ts
 var PreviewController = class {
@@ -18120,18 +18506,6 @@ var OccupiedPanel = class extends HTMLElement {
     url.searchParams.set("config_entry", entry);
     history[replace ? "replaceState" : "pushState"](null, "", url);
     globalThis.dispatchEvent(new Event("location-changed"));
-  }
-  selectInstance(entry) {
-    if (entry === this.selectedEntry || this.busy) {
-      return;
-    }
-    if (!this._canSwitchInstance()) {
-      this.flush();
-      return;
-    }
-    this._resetInstance(entry);
-    this._writeSelection(entry);
-    void this._load();
   }
   _canSwitchInstance() {
     return (

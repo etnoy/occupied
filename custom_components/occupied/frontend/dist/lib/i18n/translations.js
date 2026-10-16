@@ -31,6 +31,12 @@ export const en = {
   run_condition_delay: "Delay before enforcing state",
   run_condition_delay_hint:
     "Default: 30s. Use 0s to 1h. Scheduled device changes wait for this delay, then use the state expected at that time.",
+  run_condition_off_entities: "Extra entities to turn off",
+  run_condition_off_entities_hint:
+    "Turn off these lights and switches when expected states are enforced, after the startup delay or with the enforcement button. Entities used in steps or events keep their scheduled targets. Manual changes are respected until the next activation or button press.",
+  run_condition_off_entities_error: "Select valid light or switch entities.",
+  run_condition_off_entities_warning:
+    "Already managed by steps or events (including disabled ones). These entities keep their scheduled targets and will not be turned off by this list:",
   run_condition_yaml_hint:
     "Save or discard YAML edits before changing the run condition.",
   run_condition_entity_error: "Select a valid condition entity.",
@@ -400,7 +406,6 @@ export const en = {
   sunset: "sunset",
   search_entities_or_rooms: "Search entities or rooms",
   selected: "selected",
-  controller: "Controller",
   managing: "Managing",
   waiting: "Waiting",
   paused: "Paused",
@@ -546,6 +551,13 @@ export const sv = {
   run_condition_delay: "Fördröjning före tillämpning",
   run_condition_delay_hint:
     "Standard: 30s. Ange 0s till 1h. Schemalagda enhetsändringar väntar på fördröjningen och använder sedan det tillstånd som förväntas då.",
+  run_condition_off_entities: "Extra entiteter att stänga av",
+  run_condition_off_entities_hint:
+    "Stäng av dessa lampor och strömbrytare när förväntade tillstånd tillämpas, efter startfördröjningen eller med tillämpningsknappen. Entiteter i steg eller händelser behåller sina schemalagda mål. Manuella ändringar respekteras tills nästa aktivering eller knapptryckning.",
+  run_condition_off_entities_error:
+    "Välj giltiga lamp- eller strömbrytarentiteter.",
+  run_condition_off_entities_warning:
+    "Hanteras redan av steg eller händelser (även inaktiverade). Dessa entiteter behåller sina schemalagda mål och stängs inte av via denna lista:",
   run_condition_yaml_hint:
     "Spara eller kasta YAML-ändringar innan du ändrar körvillkoret.",
   run_condition_entity_error: "Välj en giltig entitet för villkoret.",
@@ -929,7 +941,6 @@ export const sv = {
   sunset: "solnedgång",
   search_entities_or_rooms: "Sök entiteter eller rum",
   selected: "valda",
-  controller: "Styrenhet",
   managing: "Styr",
   waiting: "Väntar",
   paused: "Pausad",

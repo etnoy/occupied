@@ -90,7 +90,7 @@ class DailyEngine:
         self.reconciliation = {"phase": "idle", "results": {}}
         self.enabled = self.paused = self.active = self.started = self.closed = False
         self.session = self.generation = 0
-        self.status, self.reason = "disabled", "Permission is disabled"
+        self.status, self.reason = "disabled", "Disabled by user"
         self.last_error = None
         self.outcomes = deque(maxlen=100)
         self._permission = DurableStore(
@@ -317,7 +317,7 @@ class DailyEngine:
                 if self.closed
                 else "Waiting for Home Assistant startup"
                 if not self.started
-                else "Permission is disabled"
+                else "Disabled by user"
                 if not self.enabled
                 else "Management is paused"
             )

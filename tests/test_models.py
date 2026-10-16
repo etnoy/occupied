@@ -297,3 +297,28 @@ def test_run_condition_invalid_fields(program_dict, fields):
                 }
             }
         )
+
+
+def test_extra_off_entities_roundtrip_and_ownership(program_dict):
+    from custom_components.occupied.models import controlled_entities
+
+    program_dict["run_condition"] = {
+        "entity_id": "sensor.alarm",
+        "state": "armed",
+        "off_entities": ["light.bathroom", "switch.fan", "light.bathroom"],
+    }
+    program = validate_program(program_dict)
+    assert program.run_condition.off_entities == ["light.bathroom", "switch.fan"]
+    assert {"light.bathroom", "switch.fan"} <= controlled_entities(program)
+    assert load_yaml(export_yaml(program)) == program
+
+
+@pytest.mark.parametrize("entities", [["cover.blind"], ["bad"], [True], "light.bathroom", None])
+def test_extra_off_entities_reject_invalid_values(program_dict, entities):
+    program_dict["run_condition"] = {
+        "entity_id": "sensor.alarm",
+        "state": "armed",
+        "off_entities": entities,
+    }
+    with pytest.raises(ProgramError):
+        validate_program(program_dict)

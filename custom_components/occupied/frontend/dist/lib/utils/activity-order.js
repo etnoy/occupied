@@ -149,6 +149,40 @@ export function applyActivityOrder(entries, order) {
       (positions.get(a.id) ?? Infinity) - (positions.get(b.id) ?? Infinity),
   );
 }
+// Keep dependency branches intact, applying the incoming order only to siblings.
+// Broken references and cycles stay visible as roots so they can be repaired.
+export function activityTree(entries, parentId) {
+  const nodes = new Map(
+    entries.map((entry) => [entry.id, { entry, children: [] }]),
+  );
+  const parents = new Map(
+    entries.map((entry) => [entry.id, parentId?.(entry)]),
+  );
+  const roots = [];
+  for (const entry of entries) {
+    const seen = new Set([entry.id]);
+    let ancestor = parents.get(entry.id);
+    while (ancestor && nodes.has(ancestor) && !seen.has(ancestor)) {
+      seen.add(ancestor);
+      ancestor = parents.get(ancestor);
+    }
+    const parent =
+      ancestor && seen.has(ancestor)
+        ? undefined
+        : nodes.get(parents.get(entry.id) || "");
+    (parent?.children || roots).push(nodes.get(entry.id));
+  }
+  return roots;
+}
+export function moveActivityInTree(nodes, id, index) {
+  const siblings = nodes.map((node) => node.entry.id);
+  const order = moveActivity(siblings, id, index);
+  const byId = new Map(nodes.map((node) => [node.entry.id, node]));
+  return order.flatMap((key) => [
+    key,
+    ...moveActivityInTree(byId.get(key).children, id, index),
+  ]);
+}
 export function moveActivity(order, id, index) {
   if (!order.includes(id)) {
     return order;

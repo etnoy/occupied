@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  managedOffEntities,
   runConditionForm,
   runConditionErrors,
   runConditionValue,
@@ -85,4 +86,54 @@ void test("alarm suggestions retain custom states without suggesting unresolved 
   );
   assert.equal(choices.filter((choice) => choice === "armed_away").length, 1);
   assert.ok(!choices.includes("unavailable"));
+});
+
+void test("extra off entities round trip, deduplicate, and validate supported domains", () => {
+  const config = {
+    entity_id: "sensor.alarm",
+    state: "armed",
+    off_entities: ["light.bathroom", "switch.fan"],
+  };
+  const form = runConditionForm(config);
+  form.offEntities.push("light.bathroom");
+  assert.deepEqual(config.off_entities, ["light.bathroom", "switch.fan"]);
+  assert.deepEqual(runConditionValue(form)?.off_entities, config.off_entities);
+  assert.deepEqual(runConditionErrors(form), {});
+  form.offEntities.push("cover.blind");
+  assert.equal(
+    runConditionErrors(form).offEntities,
+    "run_condition_off_entities_error",
+  );
+});
+
+void test("extra off entity warnings find step, custom, disabled and random targets", () => {
+  const program = {
+    steps: {
+      regular: { timing: {}, entities: ["light.regular"] },
+      disabled: {
+        timing: {},
+        enabled: false,
+        actions: [{ entities: { "switch.custom": {} } }],
+      },
+    },
+    random: {
+      event: {
+        start: {},
+        end: {},
+        on: { entities: ["light.random_on"] },
+        off: { actions: [{ entities: ["light.random_off"] }] },
+      },
+    },
+  };
+  assert.deepEqual(
+    managedOffEntities(program, [
+      "light.extra",
+      "light.regular",
+      "switch.custom",
+      "light.random_on",
+      "light.random_off",
+      "light.regular",
+    ]),
+    ["light.regular", "switch.custom", "light.random_on", "light.random_off"],
+  );
 });

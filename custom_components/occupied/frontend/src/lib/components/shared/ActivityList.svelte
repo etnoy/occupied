@@ -3,7 +3,9 @@
   import type { Translate } from "../../types.js";
   import {
     applyActivityOrder,
-    moveActivity,
+    activityTree,
+    moveActivityInTree,
+    type ActivityNode,
     readActivityOrder,
     writeActivityOrder,
   } from "../../utils/activity-order.js";
@@ -15,13 +17,17 @@
     disabled = false,
     t,
     children,
+    parentId,
+    createAction,
   }: {
     entries: T[];
     storageKey: string;
     label: string;
     disabled?: boolean;
     t: Translate;
-    children: Snippet<[T]>;
+    children: Snippet<[T, Snippet]>;
+    createAction?: Snippet;
+    parentId?: (entry: T) => string | undefined;
   } = $props();
 
   const instructionsId = $props.id();
@@ -34,10 +40,9 @@
       : readActivityOrder(storageKey),
   );
   let sorted = $derived(applyActivityOrder(entries, order));
+  let tree = $derived(activityTree(sorted, parentId));
   let list: HTMLDivElement;
   let dragging = $state<string | null>(null);
-
-  let remaining = $derived(sorted.filter((entry) => entry.id !== dragging));
 
   let target = $state<number | null>(null);
   let announcement = $state("");
@@ -50,18 +55,20 @@
     writeActivityOrder(storageKey, next);
   }
 
-  async function move(id: string, index: number) {
-    const ids = sorted.map((entry) => entry.id);
-    const next = moveActivity(ids, id, index);
-    if (next.every((item, position) => item === ids[position])) {
+  async function move(id: string, index: number, siblings: ActivityNode<T>[]) {
+    const next = moveActivityInTree(tree, id, index);
+    const current = moveActivityInTree(tree, "", 0);
+    if (next.every((item, position) => item === current[position])) {
       return;
     }
     save(next);
     const entry = entries.find((item) => item.id === id)!;
     announcement = t("activity_moved")
       .replace("{name}", () => entry.name)
-      .replace("{position}", () => String(next.indexOf(id) + 1))
-      .replace("{total}", () => String(next.length));
+      .replace("{position}", () =>
+        String(Math.max(0, Math.min(index, siblings.length - 1)) + 1),
+      )
+      .replace("{total}", () => String(siblings.length));
     await tick();
     const row = [...list.querySelectorAll<HTMLElement>(".activity-item")].find(
       (item) => item.dataset.activityId === id,
@@ -71,7 +78,11 @@
       ?.focus({ preventScroll: true });
   }
 
-  function keydown(event: KeyboardEvent, id: string) {
+  function keydown(
+    event: KeyboardEvent,
+    id: string,
+    siblings: ActivityNode<T>[],
+  ) {
     if (event.key === "Escape" && cancelDrag) {
       event.preventDefault();
       cancelDrag();
@@ -81,18 +92,18 @@
     if (cancelDrag) {
       return;
     }
-    const index = sorted.findIndex((entry) => entry.id === id);
+    const index = siblings.findIndex((node) => node.entry.id === id);
     const targets: Record<string, number> = {
       ArrowUp: index - 1,
       ArrowDown: index + 1,
       Home: 0,
-      End: sorted.length - 1,
+      End: siblings.length - 1,
     };
     if (disabled || targets[event.key] === undefined) {
       return;
     }
     event.preventDefault();
-    void move(id, targets[event.key]);
+    void move(id, targets[event.key], siblings);
   }
 
   function scrollContainer(element: HTMLElement): HTMLElement {
@@ -114,10 +125,14 @@
     return document.scrollingElement as HTMLElement;
   }
 
-  function startDrag(event: PointerEvent, id: string) {
+  function startDrag(
+    event: PointerEvent,
+    id: string,
+    siblings: ActivityNode<T>[],
+  ) {
     if (
       disabled ||
-      sorted.length < 2 ||
+      siblings.length < 2 ||
       event.button !== 0 ||
       !event.isPrimary
     ) {
@@ -125,16 +140,18 @@
     }
     cancelDrag?.();
     const handle = event.currentTarget as HTMLButtonElement;
+    const group = handle.closest(".activity-item")!.parentElement!;
     const scroller = scrollContainer(handle);
     const initialY = event.clientY;
     const initialKey = storageKey;
+    const initialTree = tree;
     const initialIds = sorted.map((entry) => entry.id);
     let clientY = initialY;
     let frame = 0;
     handle.setPointerCapture(event.pointerId);
     const updateTarget = () => {
       const rows = [
-        ...list.querySelectorAll<HTMLElement>(".activity-item"),
+        ...group.querySelectorAll<HTMLElement>(":scope > .activity-item"),
       ].filter((row) => row.dataset.activityId !== id);
       const index = rows.findIndex((row) => {
         const rect = row.getBoundingClientRect();
@@ -187,10 +204,11 @@
         index !== null &&
         !disabled &&
         storageKey === initialKey &&
+        tree === initialTree &&
         initialIds.every((item, position) => item === sorted[position]?.id) &&
         initialIds.length === sorted.length
       ) {
-        void move(id, index);
+        void move(id, index, siblings);
       }
     };
     const stop = (pointer: PointerEvent) => {
@@ -206,50 +224,70 @@
   }
 </script>
 
-<div class="activity-order-toolbar">
-  <span class="hint" title={t("chronological_order_hint")}
-    >{t(order ? "manual_order" : "chronological_order")}</span
-  >
-  {#if order}
-    <button type="button" {disabled} onclick={() => save(null)}
-      >{t("reset_chronological_order")}</button
-    >
-  {/if}
-</div>
 <span id={instructionsId} class="visually-hidden"
   >{t("reorder_activity_hint")}</span
 >
 <div class="visually-hidden" role="status" aria-live="polite">
   {announcement}
 </div>
-<div class="step-list" aria-label={label} bind:this={list}>
-  {#each sorted as entry (entry.id)}
+{#snippet group(nodes: ActivityNode<T>[])}
+  {@const remaining = nodes.filter((node) => node.entry.id !== dragging)}
+  {#each nodes as node (node.entry.id)}
+    {@const entry = node.entry}
     {@const remainingIndex = remaining.findIndex(
-      (item) => item.id === entry.id,
+      (item) => item.entry.id === entry.id,
     )}
+    {@const activeGroup = nodes.some((item) => item.entry.id === dragging)}
     <div
       class="activity-item"
       class:activity-dragging={dragging === entry.id}
-      class:activity-drop-before={dragging !== entry.id &&
+      class:activity-drop-before={activeGroup &&
+        dragging !== entry.id &&
         target === remainingIndex}
-      class:activity-drop-after={dragging !== entry.id &&
+      class:activity-drop-after={activeGroup &&
+        dragging !== entry.id &&
         remainingIndex === remaining.length - 1 &&
-        target === sorted.length - 1}
+        target === nodes.length - 1}
       data-activity-id={entry.id}
     >
-      <button
-        type="button"
-        class="activity-drag-handle"
-        aria-label={t("reorder_activity").replace("{name}", () => entry.name)}
-        aria-describedby={instructionsId}
-        title={t("reorder_activity_hint")}
-        disabled={disabled || sorted.length < 2}
-        onpointerdown={(event) => startDrag(event, entry.id)}
-        onkeydown={(event) => keydown(event, entry.id)}
-      >
-        <ha-icon icon="mdi:drag" aria-hidden="true"></ha-icon>
-      </button>
-      {@render children(entry)}
+      {#snippet dragHandle()}
+        <button
+          type="button"
+          class="activity-drag-handle"
+          aria-label={t("reorder_activity").replace("{name}", () => entry.name)}
+          aria-describedby={instructionsId}
+          title={t("reorder_activity_hint")}
+          disabled={disabled || nodes.length < 2}
+          onpointerdown={(event) => startDrag(event, entry.id, nodes)}
+          onkeydown={(event) => keydown(event, entry.id, nodes)}
+        >
+          <ha-icon icon="mdi:drag" aria-hidden="true"></ha-icon>
+        </button>
+      {/snippet}
+      {@render children(entry, dragHandle)}
+      {#if node.children.length}
+        <div class="activity-children">
+          {@render group(node.children)}
+        </div>
+      {/if}
     </div>
   {/each}
+{/snippet}
+
+<div class="step-list" aria-label={label} bind:this={list}>
+  {@render group(tree)}
 </div>
+
+{#if createAction || order}
+  <div class="activity-list-actions">
+    {@render createAction?.()}
+    {#if order}
+      <button
+        type="button"
+        class="activity-reset-order"
+        {disabled}
+        onclick={() => save(null)}>{t("reset_chronological_order")}</button
+      >
+    {/if}
+  </div>
+{/if}

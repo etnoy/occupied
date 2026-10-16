@@ -2,7 +2,7 @@
 
 from .covers import project_covers
 from .lighting import project_lighting
-from .models import controlled_entities
+from .models import controlled_entities, enforcement_off_entities
 from .planner import ResolvedAction
 
 
@@ -45,4 +45,7 @@ def expected_actions(program, plan, at, *, yielded=frozenset()):
             else:
                 service, data = f"cover.set_cover_{axis}", {axis: value}
             actions[entity].append(ResolvedAction(service, (entity,), data, (entity,), False))
+    for entity in enforcement_off_entities(program) - yielded:
+        domain = entity.split(".", 1)[0]
+        actions[entity] = [ResolvedAction(f"{domain}.turn_off", (entity,), {}, (entity,), True)]
     return actions

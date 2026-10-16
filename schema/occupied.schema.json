@@ -563,6 +563,14 @@
           "le": 3600,
           "title": "Start Delay",
           "type": "string"
+        },
+        "off_entities": {
+          "items": {
+            "pattern": "^(?:light|switch)\\.[a-z0-9_]+$",
+            "type": "string"
+          },
+          "title": "Off Entities",
+          "type": "array"
         }
       },
       "required": [

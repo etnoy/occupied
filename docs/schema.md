@@ -64,11 +64,14 @@ run_condition:
   state: [armed_away, armed_night]
   enforce_state_on_start: true
   start_delay: 30s
+  off_entities: [light.bathroom, switch.utility_room]
 ```
 
 `entity_id` accepts any entity domain. `state` is one nonempty string or a nonempty list, matching any of the exact HA state values; duplicate states are removed. Quote values such as `"on"` and `"off"` in YAML. Missing, `unknown`, and `unavailable` entities block execution; those last two values cannot be allowed states.
 
 `enforce_state_on_start` is a strict boolean, default `false`, controlled by **Enforce expected state on start** in Settings → Run condition and saved in the program. With the setting off, a matching condition starts future scheduled execution without historical reconciliation. With the setting on, all new scheduled device writes wait for `start_delay`, then Occupied applies supported known targets at that time. The delay remains in Settings and canonical YAML, defaults to `30s`, allows `0s` through `1h`, and uses explicit duration units; bare numbers are rejected. A customized delay is retained but unused when enforcement is off.
+
+Select **Extra entities to turn off** below the enforcement delay to add lights and switches outside your steps and events, such as windowless bathroom lights. These are turned off during startup enforcement after the delay, and by the **Enforce expected state** button. The list is saved as `run_condition.off_entities` (default `[]`); duplicate IDs are removed. Entities declared in any step or event, including disabled ones, keep their scheduled behavior. Unavailable and already-off entities are skipped. Manual changes yield an extra entity until the next activation or explicit enforcement; the list does not continuously force devices off.
 
 Permission and pause still apply. Allowed-state transitions do not restart an activation. Condition loss cancels further work without any device commands, including transition holds or cover stops. Editing the policy preserves sampled schedules and completed event identities. See [runtime behavior](runtime.md#run-condition-and-delayed-state-enforcement).
 

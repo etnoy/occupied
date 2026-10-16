@@ -1,10 +1,11 @@
 // Generated from custom_components/occupied/frontend/src/lib/utils/timeline.ts by pnpm run build. Do not edit.
 import { translator } from "../i18n/translations.js";
-import { coverTarget } from "./cover.js";
+import { coverActions, coverTarget } from "./cover.js";
 import {
   calendarMidnight,
   shiftScheduleDate,
   formatTimestamp,
+  formatEventTime,
 } from "./time-format.js";
 export function calendarDayPlan(plans, date) {
   const current = plans.find((plan) => plan.simulation_date === date);
@@ -159,30 +160,49 @@ export function stamp(value, zone, locale) {
     return value;
   }
 }
-export function eventDetails(event, label, timezone, t, locale) {
+export function eventDetails(
+  event,
+  label,
+  timezone,
+  t,
+  locale,
+  entityNames = {},
+) {
   const kinds = {
     random_start: "random_start",
     random_end: "random_end",
   };
-  let action = event.action.action;
-  if (event.tick) {
-    const tick = t("tick_progress")
-      .replace("{tick}", () => String(event.tick))
-      .replace("{count}", () => String(event.tick_count));
-    action += ` · ${tick} · ${event.period_seconds}s`;
+  const actionLabels = {
+    turn_on: "on_label",
+    turn_off: "off_label",
+    "scene.turn_on": "activate_scene",
+    ...Object.fromEntries(coverActions),
+  };
+  const service = event.action.action;
+  const shortService = service.split(".").at(-1);
+  const actionLabel = actionLabels[service] || actionLabels[shortService];
+  let action = actionLabel ? t(actionLabel) : service;
+  const positionFields = {
+    "cover.set_cover_position": "position",
+    "cover.set_cover_tilt_position": "tilt_position",
+  };
+  const positionField = positionFields[service];
+  if (positionField && event.action.data?.[positionField] !== undefined) {
+    action += ` · ${event.action.data[positionField]}%`;
   }
   if (event.superseded) {
     action += ` · ${t("superseded")}`;
   }
   return {
-    time: stamp(event.time, timezone, locale),
+    time: formatEventTime(event.time, timezone, locale),
     source: `${label} · ${t(kinds[event.kind] || event.kind)}`,
     action,
-    targets: event.action.entities.join(", "),
-    settings:
-      Object.keys(event.action.data || {}).length > 0
-        ? JSON.stringify(event.action.data)
-        : "—",
+    actionState: ["on_label", "off_label"].includes(actionLabel)
+      ? shortService.slice(5)
+      : undefined,
+    targets: event.action.entities
+      .map((entity) => entityNames[entity] || entity)
+      .join(", "),
   };
 }
 export function staggerTransitions(plan) {

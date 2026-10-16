@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import type { HomeAssistant, Program } from "@occupied/lib/types.js";
 import {
   chronologicalEntries,
+  activityTree,
+  moveActivityInTree,
   applyActivityOrder,
   moveActivity,
   readActivityOrder,
@@ -236,4 +238,163 @@ void test("saved orders are isolated by key, resettable and resilient to corrupt
   });
   assert.equal(readActivityOrder("blocked"), null);
   assert.doesNotThrow(() => writeActivityOrder("blocked", ["a"]));
+});
+
+const nestedSteps = () => {
+  const program: Program = {
+    steps: {
+      evening: { timing: at("19:00") },
+      work: {
+        timing: { relative_to: { step: "breakfast", start_offset: "1h" } },
+      },
+      morning: { timing: at("06:40") },
+      breakfast: {
+        timing: { relative_to: { step: "morning", start_offset: "45s" } },
+      },
+      day: {
+        timing: { relative_to: { step: "breakfast", start_offset: "30s" } },
+      },
+      weekend: { timing: at("07:40") },
+      before: {
+        timing: { relative_to: { step: "morning", start_offset: "-10m" } },
+      },
+    },
+  };
+  const chronological = chronologicalEntries(
+    entries(...Object.keys(program.steps!)),
+    program,
+    "steps",
+  );
+  const parent = (entry: { id: string }) =>
+    program.steps![entry.id].timing.relative_to?.step;
+
+  return { chronological, parent, program };
+};
+
+void test("step dependencies stay nested and siblings remain chronological, including negative offsets", () => {
+  const { chronological, parent } = nestedSteps();
+  const tree = activityTree(chronological, parent);
+  assert.deepEqual(ids(tree.map((node) => node.entry)), [
+    "morning",
+    "weekend",
+    "evening",
+  ]);
+  assert.deepEqual(ids(tree[0].children.map((node) => node.entry)), [
+    "before",
+    "breakfast",
+  ]);
+  assert.deepEqual(
+    ids(
+      tree[0].children
+        .find((node) => node.entry.id === "breakfast")!
+        .children.map((node) => node.entry),
+    ),
+    ["day", "work"],
+  );
+  assert.deepEqual(moveActivityInTree(tree, "missing", 0), [
+    "morning",
+    "before",
+    "breakfast",
+    "day",
+    "work",
+    "weekend",
+    "evening",
+  ]);
+});
+
+void test("manual moves stay within the same parent and carry the entire dependency branch", () => {
+  const { chronological, parent, program } = nestedSteps();
+  const original = structuredClone(program);
+  const tree = activityTree(chronological, parent);
+  assert.deepEqual(moveActivityInTree(tree, "work", 0), [
+    "morning",
+    "before",
+    "breakfast",
+    "work",
+    "day",
+    "weekend",
+    "evening",
+  ]);
+  assert.deepEqual(moveActivityInTree(tree, "breakfast", -99), [
+    "morning",
+    "breakfast",
+    "day",
+    "work",
+    "before",
+    "weekend",
+    "evening",
+  ]);
+  assert.deepEqual(moveActivityInTree(tree, "day", 99), [
+    "morning",
+    "before",
+    "breakfast",
+    "work",
+    "day",
+    "weekend",
+    "evening",
+  ]);
+  const moved = moveActivityInTree(tree, "morning", 99);
+  assert.deepEqual(moved, [
+    "weekend",
+    "evening",
+    "morning",
+    "before",
+    "breakfast",
+    "day",
+    "work",
+  ]);
+  assert.deepEqual(
+    moveActivityInTree(
+      activityTree(applyActivityOrder(chronological, moved), parent),
+      "missing",
+      0,
+    ),
+    moved,
+  );
+  assert.deepEqual(program, original);
+});
+
+void test("old flat preferences cannot separate children from their parents; resetting restores sibling chronology", () => {
+  const { chronological, parent } = nestedSteps();
+  const order = [
+    "work",
+    "evening",
+    "day",
+    "breakfast",
+    "weekend",
+    "morning",
+    "before",
+  ];
+  assert.deepEqual(
+    moveActivityInTree(
+      activityTree(applyActivityOrder(chronological, order), parent),
+      "missing",
+      0,
+    ),
+    ["evening", "weekend", "morning", "breakfast", "work", "day", "before"],
+  );
+  assert.deepEqual(
+    moveActivityInTree(
+      activityTree(applyActivityOrder(chronological, null), parent),
+      "missing",
+      0,
+    ),
+    ["morning", "before", "breakfast", "day", "work", "weekend", "evening"],
+  );
+  assert.deepEqual(
+    ids(activityTree(chronological).map((node) => node.entry)),
+    ids(chronological),
+  );
+});
+
+void test("missing parents, self references, and dependency cycles remain visible exactly once", () => {
+  const items = [
+    { id: "orphan", parent: "missing" },
+    { id: "self", parent: "self" },
+    { id: "a", parent: "b" },
+    { id: "b", parent: "a" },
+    { id: "child", parent: "a" },
+  ];
+  const tree = activityTree(items, (entry) => entry.parent);
+  assert.deepEqual(moveActivityInTree(tree, "missing", 0), ids(items));
 });

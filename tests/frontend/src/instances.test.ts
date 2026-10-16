@@ -384,7 +384,7 @@ void test("late live status from another controller cannot replace the current s
         : Promise.resolve({ session: null, can_advance: false }),
     );
     const recovery = f.panel.recoverLivePreview();
-    f.panel.selectInstance("guest");
+    f.route("guest");
     await settle();
     resolve({
       session: liveSession(),
@@ -530,7 +530,7 @@ void test("preview day navigation loads adjacent dates and Today without overlap
         (message) => message.days === 1 && message.seed === seed,
       ),
     );
-    f.panel.selectInstance("guest");
+    f.route("guest");
     await settle();
     assert.equal(f.panel.previewDate, "");
     f.panel.navigate("preview");
@@ -625,10 +625,10 @@ void test("saved warnings survive navigation and editor exits until a resolved p
     assert.deepEqual(f.panel.visibleIssues(), [warning]);
     await f.panel.reloadSaved();
     assert.deepEqual(f.panel.visibleIssues(), [warning]);
-    f.panel.selectInstance("guest");
+    f.route("guest");
     await settle();
     assert.deepEqual(f.panel.visibleIssues(), []);
-    f.panel.selectInstance("main");
+    f.route("main");
     await settle();
     assert.deepEqual(f.panel.visibleIssues(), [warning]);
     f.documents.main = { ...f.documents.main, warnings: [] };
@@ -639,23 +639,23 @@ void test("saved warnings survive navigation and editor exits until a resolved p
   }
 });
 
-void test("instance switching preserves unsaved drafts and step forms when declined", async () => {
+void test("navigation to another controller preserves unsaved drafts and step forms when declined", async () => {
   const f = await fixture();
   try {
     f.panel.change(["name"], "Pending name");
-    f.panel.selectInstance("guest");
+    f.route("guest");
     await settle();
     assert.equal(f.panel.selectedEntry, "main");
     assert.equal(f.panel.draft.name, "Pending name");
     f.panel.discardEdits();
     f.panel.stepEditor = stepEditor(f.panel.draft);
     f.panel.stepEditor.form.name = "Pending step";
-    f.panel.selectInstance("guest");
+    f.route("guest");
     assert.equal(f.panel.selectedEntry, "main");
     assert.equal(f.panel.stepEditor.form.name, "Pending step");
     assert.equal(f.confirmations, 2);
     f.accept();
-    f.panel.selectInstance("guest");
+    f.route("guest");
     await settle();
     assert.equal(f.panel.draft.name, "guest");
     assert.equal(f.panel.stepEditor, null);
@@ -669,7 +669,7 @@ void test("responses and snapshots from a previous instance cannot replace the s
   const f = await fixture();
   try {
     const oldSnapshot = f.subscriptions.get("occupied/subscribe:main")!;
-    f.panel.selectInstance("guest");
+    f.route("guest");
     await settle();
     oldSnapshot({
       source_revision: "old-main-revision",
@@ -685,9 +685,9 @@ void test("responses and snapshots from a previous instance cannot replace the s
           })
         : Promise.resolve(f.documents[entry]),
     );
-    f.panel.selectInstance("main");
+    f.route("main");
     await settle();
-    f.panel.selectInstance("guest");
+    f.route("guest");
     await settle();
     resolveProgram(f.documents.main);
     await settle();
@@ -886,7 +886,7 @@ void test("random forms preserve unsaved changes and backend field errors", asyn
 void test("managed random edits stay in the draft and can be exported or removed", async () => {
   const f = await fixture();
   try {
-    f.panel.selectInstance("guest");
+    f.route("guest");
     await settle();
     const before = f.messages.length;
     openRandom(f.panel);
@@ -1032,7 +1032,7 @@ for (const kind of ["step", "random"] as const) {
       }
       const pending = submit();
       f.accept();
-      f.panel.selectInstance("guest");
+      f.route("guest");
       await pending;
       await settle();
       assert.equal(f.panel.selectedEntry, "guest");
@@ -1080,7 +1080,7 @@ void test("steps, random events, and preview requests use only the selected cont
     }
     await f.panel.reloadSaved();
     for (const entry of ["main", "guest", "main"]) {
-      f.panel.selectInstance(entry);
+      f.route(entry);
       await settle();
       assert.deepEqual(
         stepEntries(f.panel.draft).map((step) => step.name),
@@ -1138,7 +1138,7 @@ for (const kind of ["step", "random"] as const) {
           : createRandomEditorContext(f.panel).submit();
       assert.ok(resolve);
       f.accept();
-      f.panel.selectInstance("guest");
+      f.route("guest");
       await settle();
       resolve({ valid: false, issues: [{ message: "Old controller error" }] });
       await pending;

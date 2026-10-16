@@ -7,6 +7,7 @@ export function runConditionForm(config) {
     states: config ? [config.state].flat() : [],
     enforceState: config?.enforce_state_on_start ?? false,
     startDelay: config?.start_delay ?? "30s",
+    offEntities: [...(config?.off_entities ?? [])],
   };
 }
 export function runConditionErrors(form) {
@@ -25,6 +26,13 @@ export function runConditionErrors(form) {
   ) {
     errors.states = "run_condition_states_error";
   }
+  if (
+    form.offEntities.some(
+      (entity) => !/^(light|switch)\.[a-z0-9_]+$/.test(entity),
+    )
+  ) {
+    errors.offEntities = "run_condition_off_entities_error";
+  }
   const delay = durationSeconds(form.startDelay);
   if (!Number.isFinite(delay) || delay < 0 || delay > 3600) {
     errors.startDelay = "run_condition_delay_error";
@@ -40,6 +48,9 @@ export function runConditionValue(form) {
     state: [...new Set(form.states)],
     enforce_state_on_start: form.enforceState,
     start_delay: form.startDelay,
+    ...(form.offEntities.length > 0 && {
+      off_entities: [...new Set(form.offEntities)],
+    }),
   };
 }
 export function runConditionStateOptions(entity, states, current) {
@@ -64,4 +75,32 @@ export function runConditionStateOptions(entity, states, current) {
         : []),
     ]),
   ];
+}
+export function managedOffEntities(program, entities) {
+  const managed = new Set();
+  const visit = (action) => {
+    const targets = action.entities ?? [];
+    for (const entity of Array.isArray(targets)
+      ? targets
+      : Object.keys(targets)) {
+      managed.add(entity);
+    }
+    for (const child of action.actions ?? []) {
+      visit(child);
+    }
+  };
+  for (const step of Object.values(program.steps ?? {})) {
+    visit(step);
+  }
+  for (const event of Object.values(program.random ?? {})) {
+    visit(event.on);
+    visit(event.off);
+  }
+  const overlaps = new Set();
+  for (const entity of entities) {
+    if (managed.has(entity)) {
+      overlaps.add(entity);
+    }
+  }
+  return [...overlaps];
 }

@@ -49,7 +49,7 @@ const plan = (events: PlannedEvent[]): Plan => ({
   issues: [],
 });
 
-void test("event details preserve random labels, stagger ticks, superseded state, and settings", () => {
+void test("event details omit stagger metadata while preserving random labels, superseded state, and friendly names", () => {
   const details = eventDetails(
     {
       ...event(18, "light.turn_on"),
@@ -67,14 +67,14 @@ void test("event details preserve random labels, stagger ticks, superseded state
     "Evening",
     "UTC",
     translator(),
+    undefined,
+    { "light.a": "Kitchen", "light.b": "Hall" },
   );
   assert.equal(details.source, "Evening · Random end");
-  assert.equal(
-    details.action,
-    "light.turn_on · Tick 2 of 3 · 120s · Superseded",
-  );
-  assert.equal(details.targets, "light.a, light.b");
-  assert.equal(details.settings, '{"brightness":100}');
+  assert.equal(details.action, "On · Superseded");
+  assert.equal(details.actionState, "on");
+  assert.equal(details.targets, "Kitchen, Hall");
+  assert.equal(details.time, "18:00:00");
   const simple = eventDetails(
     event(18, "light.turn_off"),
     "Bedtime",
@@ -82,9 +82,49 @@ void test("event details preserve random labels, stagger ticks, superseded state
     translator(),
   );
   assert.equal(simple.source, "Bedtime · step");
-  assert.equal(simple.action, "light.turn_off");
-  assert.equal(simple.settings, "—");
+  assert.equal(simple.action, "Off");
+  assert.equal(simple.actionState, "off");
+  assert.equal(simple.targets, "light.bedroom");
 });
+void test("event details localize time and common actions while preserving custom services", () => {
+  for (const [service, expected] of [
+    ["switch.turn_on", "On"],
+    ["homeassistant.turn_off", "Off"],
+    ["scene.turn_on", "Activate scene"],
+    ["cover.open_cover", "Open cover"],
+    ["notify.send_message", "notify.send_message"],
+  ]) {
+    const details = eventDetails(
+      event(18, service),
+      "Evening",
+      "Europe/Stockholm",
+      translator(),
+      { language: "en", time_format: "12" },
+    );
+    assert.equal(details.action, expected);
+    const states: Record<string, string> = {
+      "switch.turn_on": "on",
+      "homeassistant.turn_off": "off",
+    };
+    assert.equal(details.actionState, states[service]);
+    assert.equal(details.time, "8:00:00 PM");
+  }
+  const cover = eventDetails(
+    {
+      ...event(18, "cover.set_cover_position", "cover.blinds"),
+      action: {
+        action: "cover.set_cover_position",
+        entities: ["cover.blinds"],
+        data: { position: 45 },
+      },
+    },
+    "Blinds",
+    "UTC",
+    translator(),
+  );
+  assert.equal(cover.action, "Set cover position · 45%");
+});
+
 void test("lights and switches start off until the first typed action", () => {
   const histories = previewStateHistory(
     plan([

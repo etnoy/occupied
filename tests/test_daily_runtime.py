@@ -1575,7 +1575,7 @@ async def test_enforce_now_after_midnight_uses_previous_local_day_targets(
 @pytest.mark.parametrize(
     ("blocked", "reason"),
     [
-        ("disabled", "Permission is disabled"),
+        ("disabled", "Disabled by user"),
         ("paused", "Management is paused"),
         ("condition", "current state disarmed"),
         ("unavailable", "unresolved"),
@@ -2245,3 +2245,61 @@ async def test_closed_daily_controller_entities_are_unavailable(hass, daily_entr
         "switch.occupied_enable",
     ):
         assert hass.states.get(entity_id).state == "unavailable"
+
+
+@pytest.mark.parametrize("startup_enforcement", [False, True])
+async def test_extra_off_entities_follow_enforcement_delay_gate_and_manual_control(
+    hass, daily_entry, daily_devices, condition_program, freezer, startup_enforcement
+):
+    from homeassistant.exceptions import HomeAssistantError
+
+    condition_program["run_condition"].update(
+        enforce_state_on_start=startup_enforcement,
+        off_entities=["light.bathroom", "switch.fan", "light.proof", "light.missing"],
+    )
+    hass.states.async_set("light.bathroom", "on")
+    hass.states.async_set("switch.fan", "on")
+    engine = await load(hass, daily_entry, freezer)
+
+    # Restore virtual switches after HA's switch platform installs its services.
+    async def handle_switch(call):
+        daily_devices.append(call)
+        for entity in call.data["entity_id"]:
+            hass.states.async_set(
+                entity, "on" if call.service == "turn_on" else "off", context=call.context
+            )
+
+    for service in ("turn_on", "turn_off"):
+        hass.services.async_register(
+            "switch",
+            service,
+            handle_switch,
+            schema=vol.Schema({vol.Required("entity_id"): cv.entity_ids}),
+        )
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 30)
+    assert hass.states.get("light.bathroom").state == "on"
+    await set_alarm(hass, "armed_away")
+    await advance(hass, freezer, 29)
+    assert hass.states.get("light.bathroom").state == "on"
+    await advance(hass, freezer, 1)
+    if not startup_enforcement:
+        assert hass.states.get("light.bathroom").state == "on"
+        await press_enforce_now(hass, daily_entry)
+    assert hass.states.get("light.bathroom").state == "off"
+    assert hass.states.get("switch.fan").state == "off"
+    assert hass.states.get("light.proof").state == "on"
+    assert engine.reconciliation["results"]["light.missing"]["status"] == "skipped"
+    hass.states.async_set("light.bathroom", "on")
+    await hass.async_block_till_done()
+    assert "light.bathroom" in engine._yielded
+    await advance(hass, freezer, 60)
+    assert hass.states.get("light.bathroom").state == "on"
+    await press_enforce_now(hass, daily_entry)
+    assert hass.states.get("light.bathroom").state == "off"
+    await set_alarm(hass, "disarmed")
+    hass.states.async_set("light.bathroom", "on")
+    await hass.async_block_till_done()
+    with pytest.raises(HomeAssistantError):
+        await press_enforce_now(hass, daily_entry)
+    assert hass.states.get("light.bathroom").state == "on"

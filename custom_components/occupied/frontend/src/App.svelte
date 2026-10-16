@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { en } from "./lib/i18n/translations.js";
   import type { OccupiedPanel } from "./occupied-panel.js";
   import type { Issue, Tab } from "./lib/types.js";
   import { errorMessage } from "./lib/utils/util.js";
@@ -36,9 +35,6 @@
     });
   });
   let revision = $derived($updates);
-  let controllerName = $derived(
-    panel.draft?.name || panel.selectedInstance?.name,
-  );
   let state = $derived.by(() => {
     void revision;
     const showingSteps =
@@ -105,40 +101,11 @@
 <ha-top-app-bar-fixed back-button narrow={panel.hasAttribute("narrow")}>
   <div slot="title">Occupied</div>
   <main>
-    <header>
-      <div>
-        {#if !controllerName}
-          <p id="house">{t("loading_controller")}</p>
-        {:else if controllerName !== en.occupied && !/^Occupied [0-9a-f]{8}$/.test(controllerName)}
-          <p id="house">{controllerName}</p>
-        {/if}
-        {#if panel.instances.length > 1}
-          <label for="instance-select">{t("controller")}</label>
-          <select
-            id="instance-select"
-            value={panel.selectedEntry || ""}
-            disabled={panel.busy}
-            onchange={(event) => {
-              panel.selectInstance(event.currentTarget.value);
-              event.currentTarget.value = panel.selectedEntry || "";
-            }}
-          >
-            {#each panel.instances as instance (instance.config_entry_id)}
-              <option value={instance.config_entry_id}>
-                {instance.name} · {t(
-                  instance.loaded ? instance.status : "unloaded",
-                )}
-              </option>
-            {/each}
-          </select>
-        {/if}
-        {#if panel.selectedInstance?.source === "file"}
-          <p class="hint">
-            {t("managed_file")}
-          </p>
-        {/if}
-      </div>
-    </header>
+    {#if panel.selectedInstance?.source === "file"}
+      <header>
+        <p class="hint">{t("managed_file")}</p>
+      </header>
+    {/if}
     {#each panel.selectedInstance?.overlaps || [] as overlap (overlap.config_entry_id)}
       <p class="banner" role="status">
         {t("shared_devices_with")}

@@ -338,20 +338,6 @@ export class OccupiedPanel extends HTMLElement {
     globalThis.dispatchEvent(new Event("location-changed"));
   }
 
-  selectInstance(entry: string) {
-    if (entry === this.selectedEntry || this.busy) {
-      return;
-    }
-    if (!this._canSwitchInstance()) {
-      this.flush();
-
-      return;
-    }
-    this._resetInstance(entry);
-    this._writeSelection(entry);
-    void this._load();
-  }
-
   private _canSwitchInstance() {
     return (
       !(this.dirty || this.yamlDirty || this.hasEditorChanges) ||

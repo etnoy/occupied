@@ -5,11 +5,7 @@
   import PreviewStateGraph from "./PreviewStateGraph.svelte";
   import type { HomeAssistantLocale } from "../../utils/time-format.js";
   import { formatScheduleDate } from "../../utils/time-format.js";
-  import {
-    stamp,
-    staggerTransitions,
-    eventDetails,
-  } from "../../utils/timeline.js";
+  import { eventDetails } from "../../utils/timeline.js";
   import { stepEntries } from "../../models/step-model.js";
   import { randomEntries } from "../../models/random-model.js";
   import type { PlannedEvent } from "../../types.js";
@@ -28,6 +24,7 @@
     loading = false,
     showLoading = loading,
     liveSession = null,
+    onOpenSource,
   }: {
     plan?: Plan;
     schedulePlans?: Plan[];
@@ -40,14 +37,21 @@
     loading?: boolean;
     showLoading?: boolean;
     liveSession?: LivePreviewSession | null;
+    onOpenSource?: (event: PlannedEvent) => void;
   } = $props();
 
+  let catalog = $derived({
+    entities: Object.entries(entityNames).map(([entity_id, name]) => ({
+      entity_id,
+      name,
+    })),
+  });
   let labels = $derived(
     new Map([
-      ...stepEntries(program || {}, undefined, t).map(
+      ...stepEntries(program || {}, catalog, t).map(
         (resource) => [`step:${resource.id}`, resource.name] as const,
       ),
-      ...randomEntries(program || {}).map(
+      ...randomEntries(program || {}, catalog).map(
         (resource) => [`random:${resource.id}`, resource.name] as const,
       ),
     ]),
@@ -61,18 +65,17 @@
     );
   }
 
-  let query = $state("");
   let page = $state(0);
+  let hoveredEventTime = $state<string | null>(null);
 
-  let filtered = $derived(
-    plan?.events.filter(
-      (event) =>
-        JSON.stringify(event).toLowerCase().includes(query) ||
-        eventLabel(event).toLowerCase().includes(query),
-    ) ?? [],
-  );
+  $effect(() => {
+    void plan;
+    hoveredEventTime = null;
+  });
+
+  let events = $derived(plan?.events ?? []);
   let currentPage = $derived(
-    Math.max(0, Math.min(page, Math.ceil(filtered.length / 50) - 1)),
+    Math.max(0, Math.min(page, Math.ceil(events.length / 50) - 1)),
   );
 </script>
 
@@ -90,69 +93,26 @@
       {hass}
       names={entityNames}
       {t}
+      eventTime={hoveredEventTime}
     />
     {#if plan.events.length > 0}
-      <details>
-        <summary>{t("event_details")} · {plan.events.length}</summary>
-        <p class="hint">
-          {t("behavior_revision")}: {plan.behavior_hash.slice(0, 12)} · {t(
-            "plan_revision",
-          )}: {plan.source_revision?.slice(0, 12) || "—"}
-        </p>
-        {#each staggerTransitions(plan) as transition (transition)}
-          <details>
-            <summary>
-              {eventLabel(transition.events[0])} · {t("staggered_action")} · {transition.count}
-              {t("entities")}
-            </summary>
-            <p class="hint">
-              {stamp(transition.start, plan.timezone, locale)}–{stamp(
-                transition.end,
-                plan.timezone,
-                locale,
-              )}
-              · {t("period")}: {transition.period}s · {t("tick_interval")}: {Number(
-                transition.interval.toFixed(3),
-              )}s
-            </p>
-            <ol>
-              {#each transition.events as tick (tick)}
-                <li value={tick.tick}>
-                  {stamp(tick.time, plan.timezone, locale)} · {tick.action.entities
-                    .map((entity) => entityNames[entity] || entity)
-                    .join(", ")}
-                  {#if tick.superseded}
-                    · {t("superseded")}
-                  {/if}
-                </li>
-              {/each}
-            </ol>
-          </details>
-        {/each}
-        <input
-          type="search"
-          placeholder={t("filter_events")}
-          aria-label={t("filter_events")}
-          oninput={(event) => {
-            query = event.currentTarget.value.toLowerCase();
-            page = 0;
-          }}
-        />
+      <div class="event-details">
         <div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  {#each ["planned_time", "source", "action", "targets", "settings"] as label (label)}
+                  {#each ["planned_time", "targets", "action"] as label (label)}
                     <th scope="col">{t(label)}</th>
                   {/each}
                   {#if liveSession}
                     <th scope="col">{t("result")}</th>
                   {/if}
+                  <th scope="col">{t("source")}</th>
                 </tr>
               </thead>
               <tbody>
-                {#each filtered.slice(currentPage * 50, currentPage * 50 + 50) as event (event)}
+                {#each events.slice(currentPage * 50, currentPage * 50 + 50) as event (event)}
                   {@const live = eventLiveResult(event, liveSession)}
                   {@const details = eventDetails(
                     event,
@@ -160,17 +120,40 @@
                     plan.timezone,
                     t,
                     locale,
+                    entityNames,
                   )}
                   <tr
+                    onpointerenter={() => (hoveredEventTime = event.time)}
+                    onpointerleave={() => (hoveredEventTime = null)}
+                    onfocusin={() => (hoveredEventTime = event.time)}
+                    onfocusout={() => (hoveredEventTime = null)}
                     class:current={live?.current}
                     class:completed={live?.outcome?.status === "dispatched"}
                     aria-current={live?.current ? "step" : undefined}
                   >
-                    <td>{details.time}</td>
-                    <td>{details.source}</td>
-                    <td>{details.action}</td>
+                    <td class="planned-time">
+                      <svg
+                        class="hover-indicator"
+                        viewBox="0 0 12 12"
+                        aria-hidden="true"
+                      >
+                        <path d="M4 2 8 6 4 10" />
+                      </svg>
+                      {details.time}
+                    </td>
                     <td>{details.targets}</td>
-                    <td>{details.settings}</td>
+                    <td>
+                      <span class="event-action">
+                        {#if details.actionState}
+                          <span
+                            class="action-indicator"
+                            class:on={details.actionState === "on"}
+                            aria-hidden="true"
+                          ></span>
+                        {/if}
+                        {details.action}
+                      </span>
+                    </td>
                     {#if liveSession}
                       <td>
                         {#if live?.outcome}
@@ -185,32 +168,47 @@
                         {/if}
                       </td>
                     {/if}
+                    <td>
+                      {#if onOpenSource}
+                        <button
+                          type="button"
+                          class="text-button source-link"
+                          disabled={loading}
+                          onclick={() => onOpenSource?.(event)}
+                          >{details.source}</button
+                        >
+                      {:else}
+                        {details.source}
+                      {/if}
+                    </td>
                   </tr>
                 {/each}
               </tbody>
             </table>
           </div>
-          <div class="row">
-            <button
-              type="button"
-              disabled={currentPage === 0}
-              onclick={() => (page = currentPage - 1)}>{t("previous")}</button
-            >
-            <span
-              >{filtered.length}
-              {t("events")} · {currentPage + 1}/{Math.max(
-                1,
-                Math.ceil(filtered.length / 50),
-              )}</span
-            >
-            <button
-              type="button"
-              disabled={(currentPage + 1) * 50 >= filtered.length}
-              onclick={() => (page = currentPage + 1)}>{t("next")}</button
-            >
-          </div>
+          {#if events.length > 50}
+            <div class="row">
+              <button
+                type="button"
+                disabled={currentPage === 0}
+                onclick={() => (page = currentPage - 1)}>{t("previous")}</button
+              >
+              <span
+                >{events.length}
+                {t("events")} · {currentPage + 1}/{Math.max(
+                  1,
+                  Math.ceil(events.length / 50),
+                )}</span
+              >
+              <button
+                type="button"
+                disabled={(currentPage + 1) * 50 >= events.length}
+                onclick={() => (page = currentPage + 1)}>{t("next")}</button
+              >
+            </div>
+          {/if}
         </div>
-      </details>
+      </div>
     {/if}
     {#each plan.issues.filter((issue) => issue.severity !== "info" || ["latest_at_applied", "only_before_skipped"].includes(issue.code || "")) as issue (issue)}
       <p class={issue.severity === "error" ? "error" : "hint"}>
@@ -223,6 +221,68 @@
 </section>
 
 <style>
+  th,
+  td {
+    padding: 6px 9px;
+  }
+
+  th:first-child,
+  .planned-time {
+    padding-left: 24px;
+  }
+
+  .planned-time {
+    position: relative;
+  }
+
+  .hover-indicator {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: var(--info-color, #039be5);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  tr:hover .hover-indicator,
+  tr:focus-within .hover-indicator {
+    opacity: 0.7;
+  }
+
+  .source-link {
+    min-height: 30px;
+    padding: 3px 4px;
+    margin: 0;
+    text-align: left;
+  }
+
+  .event-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .action-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    flex: 0 0 12px;
+    box-sizing: border-box;
+    border: 2px solid var(--info-color, #039be5);
+    border-radius: 50%;
+  }
+
+  .action-indicator.on {
+    background: var(--info-color, #039be5);
+  }
+
   tr.current {
     background: var(--secondary-background-color, #eef4ff);
     outline: 2px solid var(--primary-color, #03a9f4);

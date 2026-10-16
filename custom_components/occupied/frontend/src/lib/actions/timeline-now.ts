@@ -14,7 +14,23 @@ interface TimelineSeries {
 
 // Use a native custom series so the marker follows HA's plot, zoom and resize.
 // Like the tooltip adapter, leave unsupported native chart versions alone.
-export function timelineNow(node: HTMLElement, label: string) {
+export interface NowPosition {
+  x: number;
+  alignRight: boolean;
+}
+
+interface MarkerOptions {
+  label: string;
+  eventTime?: string | null;
+  startTime?: string;
+  endTime?: string;
+  onNowPosition?: (position: NowPosition | null) => void;
+}
+
+export function timelineNow(
+  node: HTMLElement,
+  options: string | MarkerOptions,
+) {
   const chart = node as HTMLElement & {
     _generateData?: () => void;
     _chartData?: TimelineSeries[];
@@ -23,33 +39,79 @@ export function timelineNow(node: HTMLElement, label: string) {
   if (typeof generate !== "function") {
     return;
   }
-  let text = label;
+  let current = typeof options === "string" ? { label: options } : options;
   const markerId = "occupied-now";
+  const eventMarkerId = "occupied-event";
   const refresh = () => {
+    const now = Date.now();
+    const showNow =
+      (current.startTime === undefined ||
+        now >= Date.parse(current.startTime)) &&
+      (current.endTime === undefined || now < Date.parse(current.endTime));
+    if (!showNow) {
+      current.onNowPosition?.(null);
+    }
     if (!chart._chartData) {
       return;
     }
     const color =
       getComputedStyle(node).getPropertyValue("--primary-text-color").trim() ||
       "#333";
+    const eventTime = current.eventTime ? Date.parse(current.eventTime) : NaN;
+    const markers = [
+      ...(showNow
+        ? [
+            {
+              id: markerId,
+              time: now,
+              text: current.onNowPosition ? "" : current.label,
+              color,
+              dashed: true,
+            },
+          ]
+        : []),
+      ...(Number.isFinite(eventTime)
+        ? [
+            {
+              id: eventMarkerId,
+              time: eventTime,
+              text: "",
+              color:
+                getComputedStyle(node)
+                  .getPropertyValue("--info-color")
+                  .trim() || "#039be5",
+              dashed: false,
+            },
+          ]
+        : []),
+    ];
     chart._chartData = [
-      ...chart._chartData.filter((series) => series.id !== markerId),
-      {
-        id: markerId,
+      ...chart._chartData.filter(
+        (series) => series.id !== markerId && series.id !== eventMarkerId,
+      ),
+      ...markers.map((marker) => ({
+        id: marker.id,
         type: "custom",
         silent: true,
         animation: false,
         z: 10,
         tooltip: { show: false },
         encode: { x: 0 },
-        data: [[Date.now()]],
+        data: [[marker.time]],
         renderItem: (params: RenderParameters, api: RenderApi) => {
           const { x, y, width, height } = params.coordSys;
           const position = api.coord([api.value(0), 0])[0]!;
           if (position < x || position > x + width) {
+            if (marker.id === markerId) {
+              current.onNowPosition?.(null);
+            }
+
             return null;
           }
           const alignRight = position > x + width - 40;
+          if (marker.id === markerId) {
+            current.onNowPosition?.({ x: position, alignRight });
+          }
 
           return {
             type: "group",
@@ -57,15 +119,19 @@ export function timelineNow(node: HTMLElement, label: string) {
               {
                 type: "line",
                 shape: { x1: position, x2: position, y1: y, y2: y + height },
-                style: { stroke: color, lineWidth: 2, lineDash: [4, 3] },
+                style: {
+                  stroke: marker.color,
+                  lineWidth: 2,
+                  lineDash: marker.dashed ? [4, 3] : [],
+                },
               },
               {
                 type: "text",
                 style: {
                   x: position + (alignRight ? -4 : 4),
                   y: y + 2,
-                  text,
-                  fill: color,
+                  text: marker.text,
+                  fill: marker.color,
                   fontSize: 12,
                   fontWeight: "bold",
                   align: alignRight ? "right" : "left",
@@ -75,7 +141,7 @@ export function timelineNow(node: HTMLElement, label: string) {
             ],
           };
         },
-      },
+      })),
     ];
   };
   chart._generateData = () => {
@@ -86,15 +152,15 @@ export function timelineNow(node: HTMLElement, label: string) {
   const timer = globalThis.setInterval(refresh, 30_000);
 
   return {
-    update(next: string) {
-      text = next;
+    update(next: string | MarkerOptions) {
+      current = typeof next === "string" ? { label: next } : next;
       refresh();
     },
     destroy() {
       globalThis.clearInterval(timer);
       chart._generateData = generate;
       chart._chartData = chart._chartData?.filter(
-        (series) => series.id !== markerId,
+        (series) => series.id !== markerId && series.id !== eventMarkerId,
       );
     },
   };

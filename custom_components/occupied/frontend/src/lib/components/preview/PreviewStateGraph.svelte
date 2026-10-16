@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { HomeAssistant, Plan, Program, Translate } from "../../types.js";
-  import { timelineNow } from "../../actions/timeline-now.js";
+  import { timelineNow, type NowPosition } from "../../actions/timeline-now.js";
   import { timelineTooltip } from "../../actions/timeline-tooltip.js";
   import { properties } from "../../actions/dom.js";
   import { loadHaHistoryChart } from "../../services/ha-controls.js";
@@ -17,6 +17,7 @@
     hass,
     names = {},
     t,
+    eventTime = null,
   }: {
     plan: Plan;
     schedulePlans?: Plan[];
@@ -24,11 +25,22 @@
     hass: HomeAssistant;
     names?: Record<string, string>;
     t: Translate;
+    eventTime?: string | null;
   } = $props();
 
   let ready = $state(false);
   let failed = $state(false);
   let narrow = $state(false);
+  let nowPosition = $state<NowPosition | null>(null);
+
+  function updateNowPosition(position: NowPosition | null) {
+    if (
+      position?.x !== nowPosition?.x ||
+      position?.alignRight !== nowPosition?.alignRight
+    ) {
+      nowPosition = position;
+    }
+  }
 
   let data = $derived(
     schedulePlans
@@ -89,30 +101,63 @@
     {t("preview_graph_error")}
   </p>
 {:else if ready}
-  <state-history-chart-timeline
-    hidden={data.length === 0}
-    aria-label={t("planned_device_states")}
-    use:timelineTooltip={data}
-    use:timelineNow={t("preview_now")}
-    use:properties={{
-      hass: chartHass,
-      data,
-      names,
-      startTime: new Date(plan.start),
-      endTime: new Date(plan.end),
-      showNames: true,
-      narrow,
-      // Reserve HA's maximum label width before the chart's first render.
-      // Its deferred measurement can then update without moving the plot.
-      paddingYAxis: narrow ? 105 : 185,
-      clickForMoreInfo: false,
-    }}
-  ></state-history-chart-timeline>
+  <div class="preview-graph" class:empty={data.length === 0}>
+    {#if nowPosition}
+      <span
+        class="now-label"
+        style:left={`${nowPosition.x}px`}
+        aria-hidden="true">{t("preview_now")}</span
+      >
+    {/if}
+    <state-history-chart-timeline
+      hidden={data.length === 0}
+      aria-label={t("planned_device_states")}
+      use:timelineTooltip={data}
+      use:timelineNow={{
+        label: t("preview_now"),
+        eventTime,
+        startTime: plan.start,
+        endTime: plan.end,
+        onNowPosition: updateNowPosition,
+      }}
+      use:properties={{
+        hass: chartHass,
+        data,
+        names,
+        startTime: new Date(plan.start),
+        endTime: new Date(plan.end),
+        showNames: true,
+        narrow,
+        // Let HA measure the entity names instead of reserving its maximum width.
+        paddingYAxis: 0,
+        clickForMoreInfo: false,
+      }}
+    ></state-history-chart-timeline>
+  </div>
 {:else if data.length > 0}
   <p role="status">{t("loading_graph")}</p>
 {/if}
 
 <style>
+  .preview-graph {
+    position: relative;
+    padding-top: 18px;
+  }
+
+  .preview-graph.empty {
+    display: none;
+  }
+
+  .now-label {
+    position: absolute;
+    top: 0;
+    color: var(--secondary-text-color, #727272);
+    font-size: 12px;
+    line-height: 16px;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
   state-history-chart-timeline {
     display: block;
     width: 100%;

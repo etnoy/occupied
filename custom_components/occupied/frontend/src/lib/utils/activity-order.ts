@@ -172,6 +172,59 @@ export function applyActivityOrder<T extends { id: string }>(
   );
 }
 
+export interface ActivityNode<T> {
+  entry: T;
+  children: ActivityNode<T>[];
+}
+
+// Keep dependency branches intact, applying the incoming order only to siblings.
+// Broken references and cycles stay visible as roots so they can be repaired.
+export function activityTree<T extends { id: string }>(
+  entries: T[],
+  parentId?: (entry: T) => string | undefined,
+): ActivityNode<T>[] {
+  const nodes = new Map(
+    entries.map((entry) => [
+      entry.id,
+      { entry, children: [] } as ActivityNode<T>,
+    ]),
+  );
+  const parents = new Map(
+    entries.map((entry) => [entry.id, parentId?.(entry)]),
+  );
+  const roots: ActivityNode<T>[] = [];
+  for (const entry of entries) {
+    const seen = new Set([entry.id]);
+    let ancestor = parents.get(entry.id);
+    while (ancestor && nodes.has(ancestor) && !seen.has(ancestor)) {
+      seen.add(ancestor);
+      ancestor = parents.get(ancestor);
+    }
+    const parent =
+      ancestor && seen.has(ancestor)
+        ? undefined
+        : nodes.get(parents.get(entry.id) || "");
+    (parent?.children || roots).push(nodes.get(entry.id)!);
+  }
+
+  return roots;
+}
+
+export function moveActivityInTree<T extends { id: string }>(
+  nodes: ActivityNode<T>[],
+  id: string,
+  index: number,
+): string[] {
+  const siblings = nodes.map((node) => node.entry.id);
+  const order = moveActivity(siblings, id, index);
+  const byId = new Map(nodes.map((node) => [node.entry.id, node]));
+
+  return order.flatMap((key) => [
+    key,
+    ...moveActivityInTree(byId.get(key)!.children, id, index),
+  ]);
+}
+
 export function moveActivity(
   order: string[],
   id: string,

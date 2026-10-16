@@ -66,12 +66,6 @@
           >{t("resume_scheduling")}</button
         >
       {/if}
-      <button
-        type="button"
-        disabled={panel.busy || panel.liveBusy}
-        onclick={() => panel.refreshPreviewSchedule()}
-        >{t("refresh_preview")}</button
-      >
     {/if}
   </div>
 {/snippet}
@@ -80,75 +74,69 @@
   {@render actionControls()}
 {/if}
 
-<section class="live-card" aria-label={t("live_preview")}>
-  <h2>{t("live_preview")}</h2>
-  <p><strong>{t("controls_real_devices")}</strong></p>
-  <p class="hint">
-    {t(session ? "live_preview_paused_hint" : "live_preview_controls_hint")}
-  </p>
-  {#if session}
-    <div role="status" aria-live="polite" aria-atomic="true">
-      <strong>{t(liveSessionStatus(session))}</strong>
-      <p>
-        {session.date} · {t("live_preview_progress")
-          .replace("{done}", () => String(session.cursor))
-          .replace("{total}", () => String(session.total))}
-      </p>
-      {#if session.simulated_time && panel.livePlan}
+{#if session || !panel.liveReady}
+  <section class="live-card" aria-label={t("live_preview")}>
+    <h2>{t("live_preview")}</h2>
+    {#if session}
+      <div role="status" aria-live="polite" aria-atomic="true">
+        <strong>{t(liveSessionStatus(session))}</strong>
         <p>
-          {t("simulated_time")}: {stamp(
-            session.simulated_time,
-            panel.livePlan.timezone,
-            panel._hass.locale,
-          )}
+          {session.date} · {t("live_preview_progress")
+            .replace("{done}", () => String(session.cursor))
+            .replace("{total}", () => String(session.total))}
+        </p>
+        {#if session.simulated_time && panel.livePlan}
+          <p>
+            {t("simulated_time")}: {stamp(
+              session.simulated_time,
+              panel.livePlan.timezone,
+              panel._hass.locale,
+            )}
+          </p>
+        {/if}
+        {#if lastResult}
+          <p>{t("last_result")}: {t(lastResult)}</p>
+        {/if}
+      </div>
+      {#if session.state === "interrupted"}
+        <p class="error">
+          {session.detail}
         </p>
       {/if}
-      {#if lastResult}
-        <p>{t("last_result")}: {t(lastResult)}</p>
-      {/if}
-    </div>
-    {#if session.state === "interrupted"}
-      <p class="error">
-        {session.detail}
-      </p>
-    {/if}
-    {#if session.earlier_revision}
-      <p class="hint">
-        {t("live_preview_revision_hint")}
-      </p>
-    {/if}
-    {#if !panel.liveCanAdvance && running}
-      <p class="hint">
-        {t("live_preview_owner_hint")}
-      </p>
-    {/if}
-    {#if session.next_group && running}
-      <p><strong>{t("next_event")}: {session.next_group.title}</strong></p>
-      {#each session.next_group.calls as call (call.id)}
-        <p class="call">
-          {call.action.action} · {call.action.entities.join(", ")}
-          {#if call.tick}
-            · {t("tick_progress")
-              .replace("{tick}", () => String(call.tick))
-              .replace("{count}", () => String(call.tick_count))}
-          {/if}
+      {#if session.earlier_revision}
+        <p class="hint">
+          {t("live_preview_revision_hint")}
         </p>
+      {/if}
+      {#if !panel.liveCanAdvance && running}
+        <p class="hint">
+          {t("live_preview_owner_hint")}
+        </p>
+      {/if}
+      {#if session.next_group && running}
+        <p><strong>{t("next_event")}: {session.next_group.title}</strong></p>
+        {#each session.next_group.calls as call (call.id)}
+          <p class="call">
+            {call.action.action} · {call.action.entities.join(", ")}
+            {#if call.tick}
+              · {t("tick_progress")
+                .replace("{tick}", () => String(call.tick))
+                .replace("{count}", () => String(call.tick_count))}
+            {/if}
+          </p>
+        {/each}
+      {/if}
+      {#each currentOutcomes.filter((outcome) => outcome.status !== "dispatched") as outcome (outcome)}
+        <p class="error">{outcome.action?.action || ""}: {outcome.detail}</p>
       {/each}
     {/if}
-    {#each currentOutcomes.filter((outcome) => outcome.status !== "dispatched") as outcome (outcome)}
-      <p class="error">{outcome.action?.action || ""}: {outcome.detail}</p>
-    {/each}
-  {:else}
-    <p class="hint">
-      {t("live_preview_start_hint")}
-    </p>
-  {/if}
-  {#if !panel.liveReady}
-    <p role="status" class="hint">
-      {t("recovering_live_preview")}
-    </p>
-  {/if}
-</section>
+    {#if !panel.liveReady}
+      <p role="status" class="hint">
+        {t("recovering_live_preview")}
+      </p>
+    {/if}
+  </section>
+{/if}
 
 {#if !session}
   {@render actionControls()}

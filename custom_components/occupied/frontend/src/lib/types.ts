@@ -69,6 +69,7 @@ export interface RunCondition {
   state: string | string[];
   enforce_state_on_start?: boolean;
   start_delay?: string;
+  off_entities?: string[];
 }
 
 export interface Program {

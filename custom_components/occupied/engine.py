@@ -81,7 +81,7 @@ class OccupiedEngine:
         self.started = False
         self.closed = False
         self.status = "disabled"
-        self.reason = "Permission is disabled"
+        self.reason = "Disabled by user"
         self.session = 0
         self.generation = 0
         self.handover_deadline: datetime | None = None
@@ -156,7 +156,7 @@ class OccupiedEngine:
         if not self.started:
             return False, "Waiting for Home Assistant startup"
         if not self.enabled:
-            return False, "Permission is disabled"
+            return False, "Disabled by user"
         if self.paused:
             return False, "Management is paused"
         return self.gate.evaluate()

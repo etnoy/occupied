@@ -35,6 +35,9 @@ checking and to the corresponding committed `dist/*` modules when compiled.
 Step and random activity lists default to chronological start-time order. Relative
 sources include their offsets; solar sources use Home Assistant's current sun
 times, with approximate daily times as a fallback. Unresolved sources appear last.
+Steps remain nested beneath the step they depend on. Chronological sorting and
+manual moves apply within each group of siblings; moving a parent carries its
+dependent steps with it.
 Drag the left handle (or use its arrow keys) to set a manual order, and use Reset
 to chronological to restore automatic sorting. Manual orders are browser-local,
 stored separately for each controller and activity list; they do not alter the

@@ -1,7 +1,10 @@
 <script lang="ts">
   import type { OccupiedPanel } from "../../../occupied-panel.js";
   import { properties } from "../../actions/dom.js";
-  import { runConditionStateOptions } from "../../models/run-condition.js";
+  import {
+    managedOffEntities,
+    runConditionStateOptions,
+  } from "../../models/run-condition.js";
   import { isValueChangedEvent } from "../../utils/util.js";
   import FieldError from "../shared/FieldError.svelte";
 
@@ -16,9 +19,13 @@
       form: panel.runConditionForm,
       errors: panel.runConditionErrors,
       snapshot: panel.runtimeSnapshot,
+      managedExtras: managedOffEntities(
+        panel.draft,
+        panel.runConditionForm?.offEntities ?? [],
+      ),
     };
   });
-  let { t, form, errors, snapshot } = $derived(data);
+  let { t, form, errors, snapshot, managedExtras } = $derived(data);
   let current = $derived(
     panel.catalog.entities.find((item) => item.entity_id === form?.entityId),
   );
@@ -62,7 +69,6 @@
 {#if form}
   <section>
     <h2>{t("run_condition")}</h2>
-    <p class="hint">{t("run_condition_hint")}</p>
     <label>
       <input
         type="checkbox"
@@ -162,6 +168,46 @@
           fieldPrefix="run-condition-"
         />
         <p class="hint">{t("run_condition_delay_hint")}</p>
+        <label for="run-condition-offEntities"
+          >{t("run_condition_off_entities")}</label
+        >
+        <ha-selector
+          id="run-condition-offEntities"
+          aria-label={t("run_condition_off_entities")}
+          use:properties={{
+            hass: panel._hass,
+            selector: {
+              entity: {
+                multiple: true,
+                filter: { domain: ["light", "switch"] },
+              },
+            },
+            value: form.offEntities,
+            disabled: panel.busy || panel.yamlDirty,
+          }}
+          onvalue-changed={(event: Event) => {
+            if (
+              !(isValueChangedEvent(event) && Array.isArray(event.detail.value))
+            ) {
+              return;
+            }
+            form!.offEntities = event.detail.value as string[];
+            panel.updateRunCondition();
+          }}
+        ></ha-selector>
+        <FieldError
+          {t}
+          {errors}
+          key="offEntities"
+          fieldPrefix="run-condition-"
+        />
+        <p class="hint">{t("run_condition_off_entities_hint")}</p>
+        {#if managedExtras.length > 0}
+          <p class="managed-warning" role="alert">
+            {t("run_condition_off_entities_warning")}
+            {managedExtras.join(", ")}
+          </p>
+        {/if}
       </fieldset>
     {/if}
     {#if panel.yamlDirty}
@@ -236,6 +282,9 @@
     display: flex;
     gap: 8px;
     margin-top: 12px;
+  }
+  .managed-warning {
+    color: var(--warning-color, #e69500);
   }
   .counts {
     display: flex;

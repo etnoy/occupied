@@ -1,11 +1,12 @@
 import { translator } from "../i18n/translations.js";
 import type { Program, Translate, Plan, PlannedEvent } from "../types.js";
 import type { HomeAssistantLocale } from "./time-format.js";
-import { coverTarget, type CoverPosition } from "./cover.js";
+import { coverActions, coverTarget, type CoverPosition } from "./cover.js";
 import {
   calendarMidnight,
   shiftScheduleDate,
   formatTimestamp,
+  formatEventTime,
 } from "./time-format.js";
 
 export function calendarDayPlan(plans: Plan[], date: string): Plan | undefined {
@@ -189,31 +190,44 @@ export function eventDetails(
   timezone: string,
   t: Translate,
   locale?: HomeAssistantLocale,
+  entityNames: Record<string, string> = {},
 ) {
   const kinds: Record<string, string> = {
     random_start: "random_start",
     random_end: "random_end",
   };
-  let action = event.action.action;
-  if (event.tick) {
-    const tick = t("tick_progress")
-      .replace("{tick}", () => String(event.tick))
-      .replace("{count}", () => String(event.tick_count));
-    action += ` · ${tick} · ${event.period_seconds}s`;
+  const actionLabels: Record<string, string> = {
+    turn_on: "on_label",
+    turn_off: "off_label",
+    "scene.turn_on": "activate_scene",
+    ...Object.fromEntries(coverActions),
+  };
+  const service = event.action.action;
+  const shortService = service.split(".").at(-1)!;
+  const actionLabel = actionLabels[service] || actionLabels[shortService];
+  let action = actionLabel ? t(actionLabel) : service;
+  const positionFields: Record<string, string> = {
+    "cover.set_cover_position": "position",
+    "cover.set_cover_tilt_position": "tilt_position",
+  };
+  const positionField = positionFields[service];
+  if (positionField && event.action.data?.[positionField] !== undefined) {
+    action += ` · ${event.action.data[positionField]}%`;
   }
   if (event.superseded) {
     action += ` · ${t("superseded")}`;
   }
 
   return {
-    time: stamp(event.time, timezone, locale),
+    time: formatEventTime(event.time, timezone, locale),
     source: `${label} · ${t(kinds[event.kind] || event.kind)}`,
     action,
-    targets: event.action.entities.join(", "),
-    settings:
-      Object.keys(event.action.data || {}).length > 0
-        ? JSON.stringify(event.action.data)
-        : "—",
+    actionState: ["on_label", "off_label"].includes(actionLabel)
+      ? shortService.slice(5)
+      : undefined,
+    targets: event.action.entities
+      .map((entity) => entityNames[entity] || entity)
+      .join(", "),
   };
 }
 
