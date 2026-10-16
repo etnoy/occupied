@@ -47,7 +47,7 @@ jobs:
       - run: .venv/bin/pytest --cov=custom_components.occupied --cov-fail-under=88 --cov-report=term-missing --cov-report=xml --cov-report=html --junitxml=test-results/python.xml
       - name: Upload Python coverage and test results
         if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: python-results-${{ matrix.homeassistant }}
           path: |
@@ -120,7 +120,7 @@ jobs:
           cd /tmp
           /tmp/occupied-cli/bin/python -c 'import sys; from custom_components.occupied.cli import main; assert "homeassistant" not in sys.modules'
           /tmp/occupied-cli/bin/occupied validate "$GITHUB_WORKSPACE/examples/house.yaml" --date 2026-10-06 --days 7 --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: occupied-release
           path: dist/*
@@ -180,7 +180,7 @@ jobs:
       - run: pnpm run test:browser
       - name: Upload browser report, traces, screenshots, and HA logs
         if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: browser-results
           include-hidden-files: true
