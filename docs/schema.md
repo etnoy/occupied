@@ -60,7 +60,7 @@ Available in the current `0.1.0` development build; earlier builds without this 
 
 ```yaml
 run_condition:
-  entity_id: alarm_control_panel.8124_aaa_zone_1_alarm
+  entity_id: alarm_control_panel.alarm
   state: [armed_away, armed_night]
   enforce_state_on_start: true
   start_delay: 30s

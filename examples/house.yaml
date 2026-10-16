@@ -3,35 +3,73 @@ name: House
 steps:
   wake_up:
     name: Wake up
-    days: [mon, tue, wed, thu, fri]
+    days:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
     timing:
-      absolute_time: {start: '06:40', end: '07:20'}
+      absolute_time:
+        start: '06:40'
+        end: '07:20'
     action: turn_on
-    entities: [light.bedroom, light.childrens_room]
+    entities:
+      - light.bedroom
+      - light.childrens_room
   breakfast:
     name: Breakfast
-    days: [mon, tue, wed, thu, fri]
+    days:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
     timing:
-      relative_to: {step: wake_up, start_offset: 10s, end_offset: 20m}
+      relative_to:
+        step: wake_up
+        start_offset: 10s
+        end_offset: 20m
     action: turn_on
-    entities: [light.hall, light.kitchen]
+    entities:
+      - light.hall
+      - light.kitchen
   breakfast_scene:
     name: Breakfast scene
-    days: [mon, tue, wed, thu, fri]
+    days:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
     timing:
-      relative_to: {step: breakfast}
+      relative_to:
+        step: breakfast
     action: scene.turn_on
-    entities: [scene.breakfast]
+    entities:
+      - scene.breakfast
   sunrise_blinds:
     name: Sunrise blinds
     timing:
-      relative_to: {sun: sunrise, start_offset: -10m, end_offset: 10m}
+      relative_to:
+        sun: sunrise
+        start_offset: -10m
+        end_offset: 10m
     action: cover.set_cover_position
-    entities: [cover.kitchen, cover.living_room]
-    data: {position: 75}
+    entities:
+      - cover.kitchen
+      - cover.living_room
+    data:
+      position: 75
   bedtime:
     name: Bedtime
     timing:
-      absolute_time: {start: '22:30', end: '23:00'}
+      absolute_time:
+        start: '22:30'
+        end: '23:00'
     action: turn_off
-    entities: [light.bedroom, light.childrens_room, light.hall, light.kitchen]
+    entities:
+      - light.bedroom
+      - light.childrens_room
+      - light.hall
+      - light.kitchen

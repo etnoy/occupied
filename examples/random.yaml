@@ -3,14 +3,25 @@ name: Evening activity
 random:
   living_room:
     name: Living room lamps
-    start: {relative_to: {sun: sunset, start_offset: -30m}}
-    end: {absolute_time: {start: '23:00'}}
-    count: {min: 2, max: 6}
+    start:
+      relative_to:
+        sun: sunset
+        start_offset: -30m
+    end:
+      absolute_time:
+        start: '23:00'
+    count:
+      min: 2
+      max: 6
     min_duration: 5m
     max_duration: 20m
     'on':
       action: turn_on
-      entities: [light.living_room, switch.table_lamp]
+      entities:
+        - light.living_room
+        - switch.table_lamp
     'off':
       action: turn_off
-      entities: [light.living_room, switch.table_lamp]
+      entities:
+        - light.living_room
+        - switch.table_lamp

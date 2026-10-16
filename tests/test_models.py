@@ -242,7 +242,7 @@ def test_run_condition_roundtrip_and_sampling_identity(program_dict):
         program_dict
         | {
             "run_condition": {
-                "entity_id": "alarm_control_panel.8124_aaa_zone_1_alarm",
+                "entity_id": "alarm_control_panel.alarm",
                 "state": ["armed_away", "armed_night", "armed_away"],
                 "enforce_state_on_start": True,
             }
