@@ -1,0 +1,29 @@
+.github/workflows/check.yml
+  s_200ef905883db9::t_70d8f7c7049943 45-46
+scripts/requirements-ha-2026.9.3.txt
+  s_81c547a49aa581::t_6499a527435e6c 2-5,21-23,25-144,833-954,961-1010,1557-1559,1821-1992,1996-2070,2072-2146,2255-2257,2265-2267,2269-2390,2524-2644,2646-2648,2654-2656,2745-2747,2834-2836,3095-3097,3111-3163,3179-3181,3187-3189,3266-3268,3284-3303,3515-3619,3624-3706
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "fd5a7ad735a6bf88992b462c7496564161dbc0be",
+  "prompts": {},
+  "sessions": {
+    "s_200ef905883db9": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eb92ed559ffeD10eQO1f3V0l6Z",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_81c547a49aa581": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a146cf-f4b0-7832-90d0-c179378c693e",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
