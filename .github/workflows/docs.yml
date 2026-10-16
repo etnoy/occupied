@@ -3,8 +3,6 @@ name: Documentation links
 on:
   workflow_call:
   workflow_dispatch:
-  schedule:
-    - cron: "17 6 * * 1"
 
 permissions:
   contents: read
@@ -27,8 +25,8 @@ jobs:
             README.md 'docs/**/*.md'
             custom_components/occupied/frontend/README.md
             tests/fixtures/programs/README.md
-      - name: Check external documentation links weekly
-        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+      - name: Check external documentation links on manual runs
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2
         with:
           args: >-

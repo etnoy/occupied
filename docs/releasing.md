@@ -61,8 +61,8 @@ before merging; failed, skipped, and cancelled dependencies fail that gate.
 `merge_group` is also supported if a merge queue is enabled later.
 
 Documentation links are checked only by GitHub Actions: local files and anchors
-on every PR, plus external URLs weekly. Workflow YAML is checked by actionlint.
-CodeQL scans Python, TypeScript/JavaScript, and Actions on PRs and weekly; dependency
+on every PR, plus external URLs on manual runs. Workflow YAML is checked by actionlint.
+CodeQL scans Python, TypeScript/JavaScript, and Actions on PRs, pushes to `main`, and manual runs; dependency
 review rejects newly introduced high or critical known vulnerabilities.
 
 Dependabot proposes weekly updates for Actions, pnpm dependencies, and uv
