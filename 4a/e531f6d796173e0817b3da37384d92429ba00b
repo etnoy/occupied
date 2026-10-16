@@ -1,0 +1,29 @@
+docs/custom-yaml.md
+  s_61ba8f4f377f85::t_50cc2e13a2d354 398
+docs/schema.md
+  s_f4659a75e93fd1::t_3edd84990f1f6e 76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "4ae531f6d796173e0817b3da37384d92429ba00b",
+  "prompts": {},
+  "sessions": {
+    "s_61ba8f4f377f85": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14486-5f2a-77b3-af0b-8c4c6f9a7329",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_f4659a75e93fd1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec5949cfdffeX2oAzoHi6dVZIK",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
