@@ -1,0 +1,23 @@
+.github/workflows/check.yml
+  s_a4d16be4a91535::t_a5c4bcba2b2bdb 192
+package.json
+  s_a4d16be4a91535::t_fbbfbb2d5b58a2 15
+tests/browser/occupied.spec.ts
+  s_a4d16be4a91535::t_6434975d6c5979 40-41,43-46,48-50,52-56,70-73,75-78,89-92,94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "68ae01d9440e942b548e669857a7a196d8877aa3",
+  "prompts": {},
+  "sessions": {
+    "s_a4d16be4a91535": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14478-e45d-71c0-b5cb-9d6b6096b2e3",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
