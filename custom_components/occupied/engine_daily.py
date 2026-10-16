@@ -153,15 +153,11 @@ class DailyEngine:
         permission = await self._permission.async_load() or {}
         self.enabled = permission.get("enabled", False)
         self.paused = permission.get("paused", False)
-        self.enforce_state_on_start = permission.get(
-            "enforce_state_on_start", self.enforce_state_on_start
-        )
         if "dry_run" in permission:
             # Removing simulation must never turn an enabled rehearsal into a live run.
             if permission["dry_run"]:
                 self.enabled = False
-        if "dry_run" in permission or "enforce_state_on_start" not in permission:
-            # Seed the entity from legacy program settings once, including untouched entries.
+        if "dry_run" in permission or "enforce_state_on_start" in permission:
             await self._save_permission()
         await self.live_preview.async_prepare()
         saved = await self._store.async_load() or {}
@@ -479,25 +475,8 @@ class DailyEngine:
             {
                 "enabled": self.enabled,
                 "paused": self.paused,
-                "enforce_state_on_start": self.enforce_state_on_start,
             }
         )
-
-    async def async_set_enforce_state_on_start(self, enabled):
-        if self.closed:
-            raise HomeAssistantError("Occupied is unloaded; reload before changing controls")
-        if self.enforce_state_on_start == enabled:
-            return
-        self.enforce_state_on_start = enabled
-        if self.program.run_condition:
-            self._invalidate()
-        async with self._lock:
-            await self._save_permission()
-            if self.program.run_condition:
-                self._restoring = False
-                await self._reevaluate_locked()
-            else:
-                self._notify()
 
     async def async_set_enabled(self, enabled):
         if not enabled:
@@ -1359,15 +1338,7 @@ class DailyEngine:
             was_ready = self.configuration_ready
             self.configuration_ready = True
             same_schedule = behavior_hash(program) == behavior_hash(self.program)
-            same_policy = (
-                program.run_condition.model_dump(exclude={"enforce_state_on_start"})
-                if program.run_condition
-                else None
-            ) == (
-                self.program.run_condition.model_dump(exclude={"enforce_state_on_start"})
-                if self.program.run_condition
-                else None
-            )
+            same_policy = program.run_condition == self.program.run_condition
             if same_schedule and same_policy:
                 self.program = program
                 self.config["name"] = program.name
@@ -1381,6 +1352,9 @@ class DailyEngine:
             if self.started:
                 await self._cancel_native_fades()
             self.program, self.gate = program, gate
+            self.enforce_state_on_start = bool(
+                program.run_condition and program.run_condition.enforce_state_on_start
+            )
             self.config["name"] = program.name
             if not same_schedule:
                 self._plans.clear()

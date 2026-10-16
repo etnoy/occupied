@@ -577,7 +577,6 @@ async def test_retired_execution_mode_migrates_without_starting_simulated_contro
     ]
     assert {entity.unique_id for entity in switches} == {
         f"{daily_entry.entry_id}_enabled",
-        f"{daily_entry.entry_id}_enforce_state_on_start",
     }
     assert not hass.services.has_service("occupied", "set_dry_run")
     assert "dry_run" not in engine.snapshot()
@@ -588,7 +587,6 @@ async def test_retired_execution_mode_migrates_without_starting_simulated_contro
     assert hass_storage[permission_key]["data"] == {
         "enabled": not legacy_dry_run,
         "paused": False,
-        "enforce_state_on_start": False,
     }
     assert "dry_run" not in hass_storage[runtime_key]["data"]
     assert "virtual" not in hass_storage[runtime_key]["data"]
@@ -1289,11 +1287,7 @@ async def test_enforce_now_button_repairs_yielded_targets_immediately_and_preser
         "switch", "occupied", f"{daily_entry.entry_id}_enabled"
     )
     assert registry.async_get(entity_id).device_id == registry.async_get(switch_id).device_id
-    assert (
-        hass.states.get(entity_id)
-        .attributes["friendly_name"]
-        .endswith("Enforce expected state now")
-    )
+    assert hass.states.get(entity_id).attributes["friendly_name"].endswith("Enforce expected state")
     assert hass.states.get("light.proof").state == "on"
     assert hass.states.get("light.proof").attributes["brightness"] == round(75 * 255 / 100)
     assert hass.states.get("switch.proof").state == "on"
@@ -1770,103 +1764,80 @@ async def test_enforce_now_rechecks_eligibility_after_planning_before_reclaiming
     assert not daily_devices and "light.proof" in engine._yielded
 
 
-@pytest.mark.parametrize("legacy", [False, True])
-async def test_enforcement_switch_migrates_once_and_survives_reload(
-    hass, daily_entry, condition_program, freezer, hass_storage, legacy
+@pytest.mark.parametrize("enforce", [False, True])
+async def test_startup_enforcement_uses_settings_and_removes_retired_switch(
+    hass, daily_entry, condition_program, freezer, hass_storage, enforce
 ):
     from homeassistant.helpers import entity_registry as er
 
-    condition_program["run_condition"]["enforce_state_on_start"] = legacy
-    engine = await load(hass, daily_entry, freezer)
-    registry = er.async_get(hass)
-    entity_id = registry.async_get_entity_id(
-        "switch", "occupied", f"{daily_entry.entry_id}_enforce_state_on_start"
-    )
-    permission_id = registry.async_get_entity_id(
-        "switch", "occupied", f"{daily_entry.entry_id}_enabled"
-    )
-    assert entity_id and hass.states.get(entity_id).state == ("on" if legacy else "off")
-    assert registry.async_get(entity_id).device_id == registry.async_get(permission_id).device_id
+    condition_program["run_condition"]["enforce_state_on_start"] = enforce
     key = f"occupied.{daily_entry.entry_id}.permission"
-    assert hass_storage[key]["data"]["enforce_state_on_start"] is legacy
-    source_revision = program_revision(engine.program)
-    await hass.services.async_call(
-        "switch", "turn_off" if legacy else "turn_on", {"entity_id": entity_id}, blocking=True
+    hass_storage[key] = {
+        "version": 1,
+        "data": {"enabled": False, "paused": False, "enforce_state_on_start": not enforce},
+    }
+    registry = er.async_get(hass)
+    retired = registry.async_get_or_create(
+        "switch",
+        "occupied",
+        f"{daily_entry.entry_id}_enforce_state_on_start",
+        config_entry=daily_entry,
     )
-    assert engine.enforce_state_on_start is not legacy
-    assert hass.states.get(entity_id).state == ("off" if legacy else "on")
-    assert not engine.enabled
-    assert program_revision(engine.program) == source_revision
-    # Other permission writes retain the switch value.
-    await engine.async_set_paused(True)
+    engine = await load(hass, daily_entry, freezer)
+    assert not registry.async_get(retired.entity_id)
+    assert engine.enforce_state_on_start is enforce
+    assert "enforce_state_on_start" not in hass_storage[key]["data"]
+    assert engine.snapshot()["run_condition"]["enforce_state_on_start"] is enforce
     assert await hass.config_entries.async_reload(daily_entry.entry_id)
     await hass.async_block_till_done()
-    assert daily_entry.runtime_data.enforce_state_on_start is not legacy
-    assert hass_storage[key]["data"]["enforce_state_on_start"] is not legacy
-    assert hass.states.get(entity_id).state == ("off" if legacy else "on")
+    assert daily_entry.runtime_data.enforce_state_on_start is enforce
 
 
-async def test_enforcement_switch_restarts_qualification_and_cancels_pending_enforcement(
+async def test_enforcement_settings_restart_qualification_and_cancel_pending_enforcement(
     hass, daily_entry, daily_devices, condition_program, freezer
 ):
+    from custom_components.occupied.validation import program_data
+
     engine = await load(hass, daily_entry, freezer)
     register_stagger_switch(hass, daily_devices)
     await engine.async_set_enabled(True)
     await set_alarm(hass, "armed_away")
     plans = dict(engine._plans)
     await advance(hass, freezer, 10)
-    await engine.async_set_enforce_state_on_start(False)
+    source = program_data(engine.program)
+    source["run_condition"]["enforce_state_on_start"] = False
+    await engine.async_replace_program(validate_program(source))
     assert engine.active and engine.activation_deadline is None
     assert engine.snapshot()["run_condition"]["enforce_state_on_start"] is False
     await advance(hass, freezer, 20)
     assert not daily_devices
     assert engine.program.run_condition.start_delay == 30
-    await engine.async_set_enforce_state_on_start(True)
+    source["run_condition"]["enforce_state_on_start"] = True
+    await engine.async_replace_program(validate_program(source))
     assert engine.activation_deadline == dt_util.utcnow() + timedelta(seconds=30)
-    # Repeated turn_on calls must not reset the deadline.
     deadline = engine.activation_deadline
     await advance(hass, freezer, 10)
-    await engine.async_set_enforce_state_on_start(True)
+    await engine.async_replace_program(validate_program(source))
     assert engine.activation_deadline == deadline
     await advance(hass, freezer, 20)
     assert len(daily_devices) == 2
     assert engine._plans == plans
 
 
-async def test_program_edits_preserve_enforcement_switch_and_active_deadline(
+async def test_unrelated_program_edits_preserve_enforcement_deadline(
     hass, daily_entry, condition_program, freezer
 ):
     from custom_components.occupied.validation import program_data
 
     engine = await load(hass, daily_entry, freezer)
-    await engine.async_set_enforce_state_on_start(False)
     await engine.async_set_enabled(True)
     await set_alarm(hass, "armed_away")
-    source = program_data(engine.program)
-    source["run_condition"]["start_delay"] = "45s"
-    await engine.async_replace_program(validate_program(source))
-    assert not engine.enforce_state_on_start and engine.activation_deadline is None
-    await engine.async_set_enforce_state_on_start(True)
-    assert engine.activation_deadline == dt_util.utcnow() + timedelta(seconds=45)
     deadline, session = engine.activation_deadline, engine.session
-    # Legacy YAML values only seed new controls; saved controls remain authoritative.
-    source["run_condition"]["enforce_state_on_start"] = False
+    source = program_data(engine.program)
+    source["name"] = "Renamed controller"
     await engine.async_replace_program(validate_program(source))
     assert engine.enforce_state_on_start
     assert (engine.activation_deadline, engine.session) == (deadline, session)
-
-
-async def test_enforcement_switch_without_run_condition_does_not_restart_management(
-    hass, daily_entry, freezer
-):
-    engine = await load(hass, daily_entry, freezer)
-    assert not engine.enforce_state_on_start
-    await engine.async_set_enabled(True)
-    session, generation = engine.session, engine.generation
-    await engine.async_set_enforce_state_on_start(True)
-    assert engine.active and engine.activation_deadline is None
-    assert (engine.session, engine.generation) == (session, generation)
-    assert engine.snapshot()["enforce_state_on_start"] is True
 
 
 async def test_run_condition_delay_enforces_all_known_targets(

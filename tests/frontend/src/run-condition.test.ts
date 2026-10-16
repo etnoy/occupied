@@ -10,13 +10,13 @@ import {
 void test("optional condition defaults to no gate with a retained 30 second enforcement delay", () => {
   const form = runConditionForm();
   assert.equal(form.enabled, false);
-  assert.equal(form.legacyEnforceState, undefined);
+  assert.equal(form.enforceState, false);
   assert.equal(form.startDelay, "30s");
   assert.deepEqual(runConditionErrors(form), {});
   assert.equal(runConditionValue(form), undefined);
 });
 
-void test("editing delay preserves the legacy enforcement value without controlling the HA switch", () => {
+void test("editing enforcement and delay preserves the other run condition settings", () => {
   const scalar = runConditionForm({
     entity_id: "sensor.alarm",
     state: "armed_away",
@@ -30,8 +30,9 @@ void test("editing delay preserves the legacy enforcement value without controll
   });
   assert.deepEqual(runConditionErrors(form), {});
   form.startDelay = "50s";
+  form.enforceState = false;
   assert.equal(runConditionValue(form)?.start_delay, "50s");
-  assert.equal(runConditionValue(form)?.enforce_state_on_start, true);
+  assert.equal(runConditionValue(form)?.enforce_state_on_start, false);
   assert.deepEqual(runConditionValue(form)?.state, [
     "armed_away",
     "armed_night",
@@ -59,13 +60,14 @@ void test("invalid states, entity IDs and out of bounds delays receive field err
   }
 });
 
-void test("delay remains editable without introducing a legacy enforcement option", () => {
+void test("enforcement defaults off and retains a customized delay", () => {
   const form = runConditionForm({ entity_id: "sensor.alarm", state: "armed" });
   form.startDelay = "1m";
   assert.deepEqual(runConditionErrors(form), {});
   assert.deepEqual(runConditionValue(form), {
     entity_id: "sensor.alarm",
     state: ["armed"],
+    enforce_state_on_start: false,
     start_delay: "1m",
   });
 });

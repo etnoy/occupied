@@ -25,8 +25,9 @@ export const en = {
   run_condition_states: "Allowed states (match any)",
   run_condition_hint:
     "When the condition ends, Occupied stops without changing any entities. Management permission and pause still apply.",
+  run_condition_enforce: "Enforce expected state on start",
   run_condition_enforce_hint:
-    'Use the "Enforce expected state on start" switch on this controller’s Home Assistant device to apply known light, switch, and cover targets after the delay. This can move covers. Unknown states and scene/service effects are skipped.',
+    "Apply known light, switch, and cover targets after the delay. This can move covers. Unknown states and scene/service effects are skipped.",
   run_condition_delay: "Delay before enforcing state",
   run_condition_delay_hint:
     "Default: 30s. Use 0s to 1h. Scheduled device changes wait for this delay, then use the state expected at that time.",
@@ -538,8 +539,9 @@ export const sv = {
   run_condition_states: "Tillåtna tillstånd (matcha något)",
   run_condition_hint:
     "När villkoret upphör stannar Occupied utan att ändra några entiteter. Hanteringstillstånd och paus gäller fortfarande.",
+  run_condition_enforce: "Tillämpa förväntat tillstånd vid start",
   run_condition_enforce_hint:
-    "Använd reglaget ”Enforce expected state on start” på styrenhetens enhet i Home Assistant för att tillämpa kända mål för lampor, strömbrytare och jalusier efter fördröjningen. Detta kan flytta jalusier. Okända tillstånd och effekter av scener/tjänster hoppas över.",
+    "Tillämpa kända mål för lampor, strömbrytare och jalusier efter fördröjningen. Detta kan flytta jalusier. Okända tillstånd och effekter av scener/tjänster hoppas över.",
   run_condition_delay: "Fördröjning före tillämpning",
   run_condition_delay_hint:
     "Standard: 30s. Ange 0s till 1h. Schemalagda enhetsändringar väntar på fördröjningen och använder sedan det tillstånd som förväntas då.",

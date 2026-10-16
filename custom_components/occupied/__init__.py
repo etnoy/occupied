@@ -127,10 +127,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> 
     from .panel import async_register_panel, async_remove_panel
     from .storage import program_store
 
-    # Remove the retired control from existing entity registries.
+    # Remove retired controls from existing entity registries.
     registry = er.async_get(hass)
-    if entity_id := registry.async_get_entity_id("switch", DOMAIN, f"{entry.entry_id}_dry_run"):
-        registry.async_remove(entity_id)
+    for control in ("dry_run", "enforce_state_on_start"):
+        if entity_id := registry.async_get_entity_id(
+            "switch", DOMAIN, f"{entry.entry_id}_{control}"
+        ):
+            registry.async_remove(entity_id)
 
     managed = entry.data.get("source") == "file"
     from .bootstrap import check_bootstrap

@@ -89,15 +89,12 @@
   "entity": {
     "button": {
       "enforce_state_now": {
-        "name": "Enforce expected state now"
+        "name": "Enforce expected state"
       }
     },
     "switch": {
       "enabled": {
         "name": "Enable"
-      },
-      "enforce_state_on_start": {
-        "name": "Enforce expected state on start"
       }
     },
     "sensor": {
