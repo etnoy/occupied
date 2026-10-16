@@ -1,0 +1,27 @@
+custom_components/occupied/frontend/dist/lib/utils/timeline.js
+  s_0d19655ea3fbdf::t_ac4dcda72e7626 2,33,46-58,146-160,237-282
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_0d19655ea3fbdf::t_31154f7a55e8be 14366,14376-14390,14478-14492,14560-14604,14917-14925,14928-14930,14932-14933,14936-14937,14939-14942,14945,14986,14988,14990,15018-15019,15046-15047,15085,15087-15088,15090,15094-15108,15110-15151,15154-15155,15157-15159,15161-15258,15261-15262,15264-15300,15302,15304-15305,15308-15332,15334-15339,15341-15343,15345-15346,15351,15353-15361,15365,15367,15372-15373,15378,15388,15390-15391,15400,15403,15405,15417-15418,15425,15432-15434,15436,15442-15443
+custom_components/occupied/frontend/src/lib/components/preview/Timeline.svelte
+  s_0d19655ea3fbdf::t_51f223b01fec15 8,77,79,115-151,154-170,172-200,202-220,223,234,239,263-270,296-297
+custom_components/occupied/frontend/src/lib/utils/timeline.ts
+  s_0d19655ea3fbdf::t_9358f8e3b698d4 1,48,61-73,162-177,264-321
+tests/frontend/src/timeline.test.ts
+  s_0d19655ea3fbdf::t_2953cb73c7591b 10,12,129-183,366-438
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0e8d869af10c1c8628934594b7c59b2d1c216db4",
+  "prompts": {},
+  "sessions": {
+    "s_0d19655ea3fbdf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a143c7-dbf7-7d51-8464-7a60d56ce93f",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
