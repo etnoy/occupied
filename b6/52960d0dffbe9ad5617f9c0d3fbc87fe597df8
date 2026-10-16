@@ -1,0 +1,71 @@
+custom_components/occupied/frontend/dist/lib/controllers/random-editor-controller.js
+  s_305add40da48a5::t_1349ae5214985b 79-81
+custom_components/occupied/frontend/dist/lib/models/model.js
+  s_305add40da48a5::t_bc9fc122cf3714 94-95,97-98
+custom_components/occupied/frontend/dist/lib/utils/activity-order.js
+  s_305add40da48a5::t_09feaad0cf8a3b 26-28,102-104
+custom_components/occupied/frontend/dist/lib/utils/random-explanation.js
+  s_305add40da48a5::t_8304a759e383ca 195,200-201
+custom_components/occupied/frontend/dist/lib/utils/stagger.js
+  s_305add40da48a5::t_b43593c3ec1c35 62-63,65-66
+custom_components/occupied/frontend/dist/lib/utils/util.js
+  s_305add40da48a5::t_3278c1473f846b 9-13
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_83230cf20f0e71::t_9f634ceff14651 1202-1203,1205-1206,1224-1228,8975-8976,8978-8979,11724,12387-12389,12460-12462,13805-13806,13808-13818,13912-13918,13920-13921,14013-14015,16921,16926-16927,17003-17004,17006-17007,18461-18464,18531-18533,18535,18537-18538,19286-19287,19289-19290,19338
+custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
+  s_7c966cc6a5d40c::t_a0540f7ee51a59 38-39,41-43
+custom_components/occupied/frontend/src/lib/components/settings/SettingsView.svelte
+  s_83230cf20f0e71::t_0076c976256ca3 24-25,27-40,61-67,69-70
+custom_components/occupied/frontend/src/lib/components/shared/EntitiesEditor.svelte
+  s_7c966cc6a5d40c::t_ab5a6173a74959 26
+custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts
+  s_7c966cc6a5d40c::t_2a3c7f874af69f 100-102
+custom_components/occupied/frontend/src/lib/models/model.ts
+  s_7c966cc6a5d40c::t_4010cbc5cec6ad 118-119,121-123
+custom_components/occupied/frontend/src/lib/utils/activity-order.ts
+  s_7c966cc6a5d40c::t_e99d55d6f00008 31-33,116-118
+custom_components/occupied/frontend/src/lib/utils/random-explanation.ts
+  s_7c966cc6a5d40c::t_7e9d694a42e368 205-206,211-212
+custom_components/occupied/frontend/src/lib/utils/stagger.ts
+  s_7c966cc6a5d40c::t_e4d818e8feb69e 70-71,73-75
+custom_components/occupied/frontend/src/lib/utils/util.ts
+  s_83230cf20f0e71::t_f01bc4c7ed4a78 21-25
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_7c966cc6a5d40c::t_4aafa693ef2d56 77-80,154-156,158,160-162,993-994,996-998,1050
+eslint.config.mjs
+  s_83230cf20f0e71::t_46fb308804d065 125-128
+tests/frontend/src/instances.test.ts
+  s_7c966cc6a5d40c::t_78068246695ac8 172-175
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b652960d0dffbe9ad5617f9c0d3fbc87fe597df8",
+  "prompts": {},
+  "sessions": {
+    "s_305add40da48a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a146c9-b581-7192-89fe-7d60137c5eeb",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_7c966cc6a5d40c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a146c9-7c69-7390-8992-2c5b5d221325",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_83230cf20f0e71": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a146c9-bd21-7c80-b73b-6cbefacda634",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
