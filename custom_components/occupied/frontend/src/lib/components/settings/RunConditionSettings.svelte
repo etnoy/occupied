@@ -126,9 +126,9 @@
             disabled: panel.busy || panel.yamlDirty,
           }}
           onvalue-changed={(event: Event) => {
-            if (
-              !(isValueChangedEvent(event) && Array.isArray(event.detail.value))
-            ) {
+            if (!(
+              isValueChangedEvent(event) && Array.isArray(event.detail.value)
+            )) {
               return;
             }
 
@@ -186,9 +186,9 @@
             disabled: panel.busy || panel.yamlDirty,
           }}
           onvalue-changed={(event: Event) => {
-            if (
-              !(isValueChangedEvent(event) && Array.isArray(event.detail.value))
-            ) {
+            if (!(
+              isValueChangedEvent(event) && Array.isArray(event.detail.value)
+            )) {
               return;
             }
             form!.offEntities = event.detail.value as string[];
