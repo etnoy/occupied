@@ -1,0 +1,29 @@
+.github/workflows/check.yml
+  s_e8484c9681a44b::t_094ba5ac1c40bb 42,100
+custom_components/occupied/cli.py
+  s_e8484c9681a44b::t_5483727847b538 34
+docs/installation.md
+  s_e8484c9681a44b::t_9699fce0f687c2 55
+docs/managed-configuration.md
+  s_e8484c9681a44b::t_849f8cba8a980b 42-43,51
+docs/schema.md
+  s_e8484c9681a44b::t_16381c4607f03f 189
+pyproject.toml
+  s_e8484c9681a44b::t_57cc30e50c5d91 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "af4b193a1d51a40666266290d2cf0d2ae52799f5",
+  "prompts": {},
+  "sessions": {
+    "s_e8484c9681a44b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1444b-6e21-7ff3-842c-1331edf66455",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
