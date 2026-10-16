@@ -4,6 +4,12 @@ test("create a controller, save a step, and preview the installed release", asyn
   page,
   request,
 }) => {
+  // Capture errors throughout HA setup and the installed panel, including reload.
+  const errors: string[] = [];
+  page.on("pageerror", (error) => {
+    errors.push(error.message);
+  });
+
   const owner = await request.post("/api/onboarding/users", {
     data: {
       name: "Browser tests",
@@ -49,11 +55,6 @@ test("create a controller, save a step, and preview the installed release", asyn
     .getByRole("button", { name: "Skip and finish", exact: true })
     .click();
 
-  // Capture errors throughout the installed Occupied panel, including reload.
-  const errors: string[] = [];
-  page.on("pageerror", (error) => {
-    errors.push(error.message);
-  });
   await page.goto("/occupied");
   const panel = page.locator("occupied-panel");
   await expect(

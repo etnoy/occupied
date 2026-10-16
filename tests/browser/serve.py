@@ -27,6 +27,8 @@ with ZipFile(ROOT / "dist" / "occupied.zip") as archive:
   time_zone: Europe/Stockholm
   country: SE
 frontend:
+# HA's application shell requests recorder/info even outside history panels.
+recorder:
 http:
   server_host: 0.0.0.0
   server_port: 18123
