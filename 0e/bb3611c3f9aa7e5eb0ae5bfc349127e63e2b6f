@@ -1,0 +1,57 @@
+README.md
+  s_e62f5de9e408b0::t_3f566d692ba8e7 39
+custom_components/occupied/__init__.py
+  s_015fed321ee57c::t_61a3b0c928b88d 153
+custom_components/occupied/activation.py
+  s_015fed321ee57c::t_3aeb2b7a217996 73-74
+custom_components/occupied/engine.py
+  s_015fed321ee57c::t_bb51dae4e5a8f7 227-228,233,315,462
+custom_components/occupied/engine_daily.py
+  s_015fed321ee57c::t_d6ea36e716cb97 287,471,576-577,583-592,622,1004,1018,1259-1261,1290,1292,1533
+custom_components/occupied/entity.py
+  s_015fed321ee57c::t_afd1eb3ee151e5 23-26
+custom_components/occupied/sensor.py
+  s_015fed321ee57c::t_2a2088f378ff2c 1,18-22,32,84-97
+custom_components/occupied/strings.json
+  s_015fed321ee57c::t_e0bd984d041dea 109,112,115-117,126
+custom_components/occupied/translations/en.json
+  s_015fed321ee57c::t_5244e742d8aa39 109,112,115-117,126
+docs/custom-yaml.md
+  s_e62f5de9e408b0::t_20c9bfc1958380 64,127
+docs/managed-configuration.md
+  s_015fed321ee57c::t_9dbf9d6bb34950 31
+docs/runtime.md
+  s_015fed321ee57c::t_ea9b3345e49e41 7-8,29,43,55,57
+docs/schema.md
+  s_e62f5de9e408b0::t_78f9587d6df7a6 172,176
+tests/test_caller_chain.py
+  s_015fed321ee57c::t_f4085cf57b4858 68-75,133,151,293-305
+tests/test_daily_runtime.py
+  s_015fed321ee57c::t_97b6fab32f7e71 206,224-227,229-233,293-335,338-343,348,350,352-369,371-396,450-454,665-669,1462-1464,1884-1893,1898,1935-1938,2244-2276
+tests/test_managed.py
+  s_015fed321ee57c::t_8e512eecc903f4 154-158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0ebb3611c3f9aa7e5eb0ae5bfc349127e63e2b6f",
+  "prompts": {},
+  "sessions": {
+    "s_015fed321ee57c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1435b-0e7b-7bd2-87c2-aa5d66e157c9",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_e62f5de9e408b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1435d-5e2c-7f42-932c-6a845dd5bc46",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
