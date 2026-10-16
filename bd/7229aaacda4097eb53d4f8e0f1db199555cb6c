@@ -1,0 +1,19 @@
+tests/browser/serve.py
+  s_a4d16be4a91535::t_4676348c0223dc 16-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "bd7229aaacda4097eb53d4f8e0f1db199555cb6c",
+  "prompts": {},
+  "sessions": {
+    "s_a4d16be4a91535": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14478-e45d-71c0-b5cb-9d6b6096b2e3",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
