@@ -1,0 +1,23 @@
+docs/managed-configuration.md
+  s_a4d16be4a91535::t_ac8aa97ee5f73b 5,9-27,30,77
+tests/browser/occupied.spec.ts
+  s_a4d16be4a91535::t_fd54d617f1eb71 23-44
+tests/browser/playwright.config.ts
+  s_a4d16be4a91535::t_57bcb51de564cc 19-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "136c4cf1ae00d6dc0162212e6ad67b4d3a2cc277",
+  "prompts": {},
+  "sessions": {
+    "s_a4d16be4a91535": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14478-e45d-71c0-b5cb-9d6b6096b2e3",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
