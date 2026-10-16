@@ -1,0 +1,19 @@
+README.md
+  s_d5efdf92ff13a3::t_d1f75afe5eee6b 5,7,9,11,13-15,17,19-114,132-134,136,138-141,143,145,147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "6d2e65b8632a7b4361f6c870d49ef7abca188c51",
+  "prompts": {},
+  "sessions": {
+    "s_d5efdf92ff13a3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a143fd-3d81-78a2-ad82-08e6d763d62c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
