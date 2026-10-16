@@ -395,6 +395,6 @@ Export preserves behavior, action order, and service payloads, but normalizes en
 
 ## Runtime and unsupported constructs
 
-Only direct typed light intents contribute to light handover and expected light state. Historical scene and generic service calls are not replayed during activation. Covers have independent position/tilt projection and are future-only by default; configured startup state enforcement can reconcile known cover targets. Covers do not participate in light handover. See [runtime behavior](runtime.md) for activation, manual control, permission, pause, and state enforcement.
+Only direct typed light intents contribute to light handover and expected light state. Historical scene and generic service calls are not replayed during activation. Covers have independent position/tilt projection and are future-only by default; configured startup state enforcement can reconcile known cover targets. Covers do not participate in light handover. 
 
 Custom YAML is an action format, not Home Assistant's automation or script language. It does not support templates, conditions, delays, waits, loops, choose/if branches, parallel blocks, nested action lists, variables at the action level, or per-action scheduling fields. Use related scheduled steps for separate times, random events for paired activity, or a Home Assistant script invoked through an entity service for more complex behavior.

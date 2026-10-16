@@ -73,7 +73,7 @@ run_condition:
 
 Select **Extra entities to turn off** below the enforcement delay to add lights and switches outside your steps and events, such as windowless bathroom lights. These are turned off during startup enforcement after the delay, and by the **Enforce expected state** button. The list is saved as `run_condition.off_entities` (default `[]`); duplicate IDs are removed. Entities declared in any step or event, including disabled ones, keep their scheduled behavior. Unavailable and already-off entities are skipped. Manual changes yield an extra entity until the next activation or explicit enforcement; the list does not continuously force devices off.
 
-Permission and pause still apply. Allowed-state transitions do not restart an activation. Condition loss cancels further work without any device commands, including transition holds or cover stops. Editing the policy preserves sampled schedules and completed event identities. See [runtime behavior](runtime.md#run-condition-and-delayed-state-enforcement).
+Permission and pause still apply. Allowed-state transitions do not restart an activation. Condition loss cancels further work without any device commands, including transition holds or cover stops. Editing the policy preserves sampled schedules and completed event identities.
 
 ## Timing
 
@@ -186,7 +186,7 @@ Export omits all-week selections, enabled true, zero offsets, equal ends, empty 
 
 The behavior hash identifies sampled schedule behavior and excludes run-condition policy, titles, and presentation order. Run-condition policy changes update the source revision and activation lifecycle without changing sampled event identities. Explicit equivalent defaults have the same hash. Source revision separately includes metadata and presentation order. Metadata-only saves retain sampled times and active handover deadlines. Random streams are keyed by source date and stable step ID, so unrelated steps do not shift existing choices.
 
-`occupied rename-id FILE step OLD NEW` and `occupied/rename_id` atomically rename a key and its typed step references. Opaque data is not rewritten. Renaming an ID selects a new random stream; changing a title does not. See [editor](editor.md), [runtime](runtime.md), and [managed configuration](managed-configuration.md).
+`occupied rename-id FILE step OLD NEW` and `occupied/rename_id` atomically rename a key and its typed step references. Opaque data is not rewritten. Renaming an ID selects a new random stream; changing a title does not. 
 
 ### Staggered actions
 

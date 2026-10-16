@@ -160,8 +160,6 @@ Each controller has its own permission and schedule so you can have multiple ins
 
 With file-based config, you cannot edit programs with the GUI.
 
-See [managed configuration](docs/managed-configuration.md) for source switching, multiple instances, and deployment with configuration management systems.
-
 ## CLI
 
 The standalone `occupied` CLI validates, exports, previews, and renames typed step IDs without importing Home Assistant or executing device services:
