@@ -36,7 +36,7 @@ Optional **Run condition** settings let each controller run only when an entity 
 
 Press **Enforce expected state now** on the controller’s Home Assistant device to repair state drift immediately. It reapplies known light, switch, and cover targets, including previously yielded entities, while respecting permission, pause, and the run condition. It works independently of the startup-enforcement switch and skips the startup delay.
 
-HA supplies timezone/location, and its controls or automations determine management permission and pause. There are no routine containers or managed-light lists. Initial planned state stays Unknown until an explicit action establishes intent. Gentle handover reconciles known light state; manual control yields an entity until the next activation or an explicit enforcement button press. Generic services and scenes remain opaque.
+HA supplies timezone/location, and its controls or automations determine management permission and pause. There are no routine containers or managed-light lists. Initial planned state stays Unknown until an explicit action establishes intent. Gentle handover reconciles known light state; manual control yields an entity until its next scheduled action, the next activation, or an explicit enforcement button press. Generic services and scenes remain opaque.
 
 GUI storage, YAML snapshots, and authoritative managed files share the same schema. Invalid managed-file updates retain the last valid program. Multiple controllers have independent plans, queues, permissions, and sources.
 

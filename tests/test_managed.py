@@ -151,7 +151,11 @@ async def test_invalid_initial_file_never_uses_gui_cache(
     }
     engine = await load(hass, file_entry)
     assert engine.enabled and not engine.active and not engine.configuration_ready
-    assert engine.status == "waiting" and not engine.program.steps and not devices
+    assert engine.status == "error" and not engine.program.steps and not devices
+    assert hass.states.get("sensor.occupied_status").state == "error"
+    assert (
+        "Managed configuration unresolved" in hass.states.get("sensor.occupied_status_reason").state
+    )
     managed_file.write_text(yaml.safe_dump(program_dict))
     assert (await engine.source_manager.async_reload())["valid"]
     assert engine.configuration_ready and engine.program.steps

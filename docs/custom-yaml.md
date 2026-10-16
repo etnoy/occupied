@@ -61,7 +61,7 @@ For covers, 0 is closed and 100 is fully open. Do not specify both state and pos
 
 All actions share one scheduled occurrence and activation time. Calls run in list order. Entity mappings are canonicalized by entity ID, so mapping order is not an execution-order control. Use separate actions in the list when order matters.
 
-A failed call stops the remaining calls in the block. Calls already completed are not rolled back; custom blocks are not retried as a whole. Permission changes stop remaining dispatch. Disabled/unavailable typed targets and manually yielded entities retain their existing skip policies. Results are recorded per call. Scenes and generic services remain opaque: Occupied cannot infer which other entities they affect, and handover does not replay them.
+A failed call stops the remaining calls in the block. Calls already completed are not rolled back; custom blocks are not retried as a whole. Permission changes stop remaining dispatch. Disabled/unavailable typed targets retain their existing skip policies. Each scheduled call reclaims its explicit targets from earlier manual overrides; new overrides during dispatch still cancel affected calls. Results are recorded per call. Scenes and generic services remain opaque: Occupied cannot infer which other entities they affect, and handover does not replay them.
 
 Custom YAML supports the existing `action`, `entities`, and optional `data` fields. Use entity lists for existing services and an entity mapping for `set_state`. Targets belong in `entities`, not in service data. Templates, delays, conditions, loops, parallel blocks, and nested action lists are not supported. Blocks support at most 100 actions and 1000 declared targets/calls; the existing planner budget also applies.
 
@@ -124,7 +124,7 @@ The targets are shuffled once per transition. For `N` entities and period `W`, e
 
 An individual light's `transition` setting remains its brightness-fade duration after its tick. Staggering never passes its options to HA services.
 
-In an ordered list, the following action starts after the stagger period ends. Combined periods in one block cannot exceed 30 minutes. A custom-block failure stops future ticks and later actions; unavailable/disabled/manually yielded targets consume their tick without changing the remaining times. Unrelated events run between ticks. A newer direct intent for an entity cancels its pending older ticks, so an older action cannot undo a newer intent.
+In an ordered list, the following action starts after the stagger period ends. Combined periods in one block cannot exceed 30 minutes. A custom-block failure stops future ticks and later actions; unavailable/disabled targets consume their tick without changing the remaining times. Unrelated events run between ticks. A newer direct intent for an entity cancels its pending older ticks, so an older action cannot undo a newer intent.
 
 Timing and related-step anchors still refer to the original scheduled start, not the final tick. Add the period to a related-step offset to run after completion. Overnight ticks appear on their actual calendar date. Random start-block periods must total less than `min_duration`; any end-block period reserves space inside the enclosing window. Infeasible windows produce validation/planning errors rather than shorten the period.
 

@@ -20,6 +20,10 @@ class OccupiedEntity(Entity):
             model="Entity controller",
         )
 
+    @property
+    def available(self) -> bool:
+        return not self.engine.closed
+
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(
             async_dispatcher_connect(self.hass, self.engine.signal, self.async_write_ha_state)

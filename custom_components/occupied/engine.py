@@ -224,19 +224,13 @@ class OccupiedEngine:
             await self._reevaluate_locked()
 
     async def _reevaluate_locked(self) -> None:
+        if self.closed:
+            return
         passed, reason = self._effective_gate()
         if not passed:
             self._invalidate()
             await self._end_remote()
-            self.status = (
-                "disabled"
-                if not self.enabled
-                else "paused"
-                if self.paused
-                else "waiting"
-                if not self.started
-                else "inactive"
-            )
+            self.status = "disabled" if not self.enabled else "paused" if self.paused else "waiting"
             self.reason = reason
         elif not self.active:
             self._begin_session()
@@ -318,7 +312,7 @@ class OccupiedEngine:
                 return
             if self.active and not self._queue:
                 self.status, self.reason = (
-                    "complete",
+                    "active",
                     "Caller-proof schedule completed; waiting for next activation",
                 )
             self._arm_timer()
@@ -465,5 +459,5 @@ class OccupiedEngine:
             await self.live_preview.finish_stop_locked()
             if cleanup:
                 await self._end_remote()
-            self.status, self.reason = "inactive", "Integration unloaded"
+            self.reason = "Integration unloaded"
             self._notify()

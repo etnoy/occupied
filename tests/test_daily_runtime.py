@@ -203,7 +203,7 @@ async def test_cover_future_only_activation_never_reconciles_historical_targets(
 
 
 @pytest.mark.parametrize("attribute", ["current_position", "current_tilt_position"])
-async def test_cover_attribute_only_outside_changes_yield_until_next_activation(
+async def test_cover_attribute_only_outside_changes_yield_until_next_scheduled_action(
     hass, daily_entry, daily_devices, cover_devices, freezer, attribute
 ):
     engine = await load(hass, daily_entry, freezer)
@@ -220,13 +220,17 @@ async def test_cover_attribute_only_outside_changes_yield_until_next_activation(
     await hass.async_block_till_done()
     assert "cover.blind" in engine._yielded
     await advance(hass, freezer, 60)
-    assert [call.service for call in cover_devices] == ["set_cover_position"]
-    await engine.async_set_enabled(False)
-    await engine.async_set_enabled(True)
     assert "cover.blind" not in engine._yielded
-    assert [call.service for call in cover_devices] == ["set_cover_position"]
+    assert [call.service for call in cover_devices] == [
+        "set_cover_position",
+        "set_cover_tilt_position",
+    ]
     await advance(hass, freezer, 180)
-    assert [call.service for call in cover_devices] == ["set_cover_position", "stop_cover"]
+    assert [call.service for call in cover_devices] == [
+        "set_cover_position",
+        "set_cover_tilt_position",
+        "stop_cover",
+    ]
 
 
 async def test_cover_calls_preserve_native_fields_and_controller_stop_adds_no_movement(
@@ -286,20 +290,110 @@ async def test_late_activation_reconciles_known_state_without_replaying_generic_
     assert engine._handover
 
 
-async def test_manual_control_yields_until_new_activation(
+@pytest.mark.parametrize("custom", [False, True])
+@pytest.mark.parametrize("restart", [False, True])
+async def test_next_scheduled_action_reclaims_manual_override(
+    hass, daily_entry, daily_devices, freezer, custom, restart
+):
+    if custom:
+        step = daily_entry.data["program"]["steps"]["off"]
+        step["actions"] = [{"action": step.pop("action"), "entities": step.pop("entities")}]
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 60)
+    attrs = dict(hass.states.get("light.proof").attributes)
+    hass.states.async_set("light.proof", "off", attrs)
+    await hass.async_block_till_done()
+    hass.states.async_set("light.proof", "on", attrs)
+    await hass.async_block_till_done()
+    assert "light.proof" in engine._yielded
+    if restart:
+        from custom_components.occupied.engine_daily import DailyEngine
+
+        await engine.async_close(cleanup=False)
+        engine = DailyEngine(hass, daily_entry.entry_id, engine.program)
+        await engine.async_prepare()
+        await engine.async_start()
+        assert "light.proof" in engine._yielded
+    try:
+        await advance(hass, freezer, 239)
+        assert hass.states.get("light.proof").state == "on"
+        assert "light.proof" in engine._yielded
+        await advance(hass, freezer, 1)
+        assert hass.states.get("light.proof").state == "off"
+        assert "light.proof" not in engine._yielded
+        assert [c.service for c in daily_devices if c.domain == "light"] == ["turn_on", "turn_off"]
+        assert any(
+            ":off:" in key and value["status"] == "dispatched"
+            for key, value in engine._journal.items()
+        )
+    finally:
+        if restart:
+            await engine.async_close()
+
+
+async def test_scheduled_action_only_reclaims_its_own_targets(
     hass, daily_entry, daily_devices, freezer
 ):
+    daily_entry.data["program"]["steps"]["second"] = {
+        "timing": {"absolute_time": {"start": "18:10"}},
+        "action": "turn_off",
+        "entities": ["light.second"],
+    }
+    hass.states.async_set("light.second", "off")
     engine = await load(hass, daily_entry, freezer)
     await engine.async_set_enabled(True)
     await advance(hass, freezer, 60)
     hass.states.async_set("light.proof", "off")
+    hass.states.async_set("light.second", "on")
     await hass.async_block_till_done()
-    assert "light.proof" in engine._yielded
+    assert {"light.proof", "light.second"} <= engine._yielded
     await advance(hass, freezer, 240)
-    assert len([c for c in daily_devices if c.domain == "light"]) == 1
-    await engine.async_set_enabled(False)
+    assert "light.proof" not in engine._yielded
+    assert "light.second" in engine._yielded
+    assert hass.states.get("light.second").state == "on"
+    await advance(hass, freezer, 300)
+    assert "light.second" not in engine._yielded
+    assert hass.states.get("light.second").state == "off"
+
+
+@pytest.mark.parametrize("custom", [False, True])
+async def test_new_override_during_scheduled_dispatch_still_cancels_call(
+    hass, daily_entry, daily_devices, freezer, monkeypatch, custom
+):
+    import asyncio
+
+    if custom:
+        step = daily_entry.data["program"]["steps"]["off"]
+        step["actions"] = [{"action": step.pop("action"), "entities": step.pop("entities")}]
+    engine = await load(hass, daily_entry, freezer)
     await engine.async_set_enabled(True)
-    assert not engine._yielded
+    await advance(hass, freezer, 60)
+    persist = engine._persist
+    changed = False
+
+    async def persist_with_override():
+        nonlocal changed
+        result = await persist()
+        if not changed and any(
+            ":off:" in key and value["status"] == "pending"
+            for key, value in engine._journal.items()
+        ):
+            changed = True
+            attrs = dict(hass.states.get("light.proof").attributes)
+            hass.states.async_set("light.proof", "on", attrs | {"brightness": 77})
+            await asyncio.sleep(0)
+        return result
+
+    monkeypatch.setattr(engine, "_persist", persist_with_override)
+    await advance(hass, freezer, 240)
+    assert changed and "light.proof" in engine._yielded
+    assert hass.states.get("light.proof").state == "on"
+    assert [call.service for call in daily_devices if call.domain == "light"] == ["turn_on"]
+    assert any(
+        ":off:" in key and value["status"] == "cancelled_before_dispatch"
+        for key, value in engine._journal.items()
+    )
 
 
 @pytest.mark.parametrize("unresolved", [None, "unknown", "unavailable"])
@@ -353,7 +447,11 @@ async def test_availability_recovery_does_not_clear_real_manual_yield(
     await hass.async_block_till_done()
     assert "light.proof" in engine._yielded
     await advance(hass, freezer, 240)
-    assert [call.service for call in daily_devices if call.domain == "light"] == ["turn_on"]
+    assert "light.proof" not in engine._yielded
+    assert [call.service for call in daily_devices if call.domain == "light"] == [
+        "turn_on",
+        "turn_off",
+    ]
 
 
 async def test_availability_loss_abandons_handover_without_holding_recovered_device(
@@ -564,6 +662,11 @@ async def test_random_activity_dispatch_restart_and_manual_control(
     before = len(daily_devices)
     await advance(hass, freezer, 60)
     assert len(daily_devices) == before
+    assert "light.proof" in restarted._yielded
+    await advance(hass, freezer, 1140)
+    assert len(daily_devices) == before + 1
+    assert "light.proof" not in restarted._yielded
+    assert daily_devices[-1].service == "turn_off"
 
 
 async def test_permission_and_pause_cancel_future_dispatch(
@@ -1356,7 +1459,9 @@ async def test_enforce_now_concurrent_writes_fail_closed_before_dispatch(
     monkeypatch.setattr(engine._store, "async_save", fail_pending)
     await engine.async_enforce_state_now()
     assert not daily_devices and not engine.active and not engine._queue
-    assert engine._storage_failed and engine.status == "inactive"
+    assert engine._storage_failed and engine.status == "error"
+    assert hass.states.get("sensor.occupied_status").state == "error"
+    assert "persistence failed" in hass.states.get("sensor.occupied_status_reason").state
     assert engine.reconciliation["phase"] == "cancelled"
 
 
@@ -1776,10 +1881,21 @@ async def test_run_condition_delay_enforces_all_known_targets(
     register_stagger_switch(hass, daily_devices)
     await engine.async_set_enabled(True)
     assert not engine.active and not daily_devices and not cover_devices
+    assert engine.status == "waiting"
+    status = hass.states.get("sensor.occupied_status")
+    assert status.state == "waiting"
+    assert "run-condition" not in status.attributes["options"]
+    assert status.attributes["reason"] == engine.reason
+    assert "current state disarmed" in status.attributes["reason"]
+    reason = hass.states.get("sensor.occupied_status_reason")
+    assert reason.state == engine.reason
+    assert reason.state.startswith("Waiting for run condition:")
+    assert reason.attributes["friendly_name"] == "Occupied Status reason"
     assert "current state disarmed" in engine.reason
     await set_alarm(hass, "armed_away")
     deadline = engine.activation_deadline
     assert engine.status == "waiting" and engine.active
+    assert hass.states.get("sensor.occupied_status_reason").state == engine.reason
     await advance(hass, freezer, 29)
     assert not daily_devices and not cover_devices
     await set_alarm(hass, "armed_night")
@@ -1816,6 +1932,10 @@ async def test_run_condition_cancels_delay_and_stops_without_any_entity_commands
     await set_alarm(hass, ended_state)
     await advance(hass, freezer, 60)
     assert not engine.active and engine.enabled and not engine._queue
+    assert engine.status == "waiting"
+    assert hass.states.get("sensor.occupied_status_reason").state.startswith(
+        "Waiting for run condition:"
+    )
     assert not daily_devices and not engine._owned and not engine._native_fades
     assert engine.reconciliation["phase"] == "cancelled"
     await set_alarm(hass, "armed_away")
@@ -2121,3 +2241,36 @@ async def test_run_condition_cover_becoming_unavailable_does_not_block_other_ent
     assert [call.service for call in cover_devices] == ["set_cover_position"]
     assert len(daily_devices) == 2 and engine.reconciliation["phase"] == "complete"
     assert engine.reconciliation["results"]["cover.blind"]["calls"] == ["dispatched", "unavailable"]
+
+
+async def test_planning_error_reports_reason_and_recovers(hass, daily_entry, freezer, monkeypatch):
+    from unittest.mock import AsyncMock
+
+    engine = await load(hass, daily_entry, freezer)
+    ensure_plans = engine._ensure_plans
+    monkeypatch.setattr(
+        engine, "_ensure_plans", AsyncMock(side_effect=ValueError("Infeasible plan"))
+    )
+    await engine.async_set_enabled(True)
+    status = hass.states.get("sensor.occupied_status")
+    assert status.state == "error" and not engine.active
+    assert "inactive" not in status.attributes["options"]
+    assert hass.states.get("sensor.occupied_status_reason").state == (
+        "Cannot compile daily plan: Infeasible plan"
+    )
+    monkeypatch.setattr(engine, "_ensure_plans", ensure_plans)
+    await engine.async_reevaluate()
+    assert engine.active and engine.status in {"active", "transitioning"}
+
+
+async def test_closed_daily_controller_entities_are_unavailable(hass, daily_entry, freezer):
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_close()
+    await hass.async_block_till_done()
+    for entity_id in (
+        "sensor.occupied_status",
+        "sensor.occupied_status_reason",
+        "sensor.occupied_next_event",
+        "switch.occupied_enable",
+    ):
+        assert hass.states.get(entity_id).state == "unavailable"

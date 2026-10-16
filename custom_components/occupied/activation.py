@@ -70,7 +70,8 @@ class ActivationGate:
             if current in {STATE_UNKNOWN, STATE_UNAVAILABLE}:
                 current += " (unresolved)"
             reason = (
-                f"Waiting for {config.entity_id}: expected {' or '.join(config.state)}; "
+                f"Waiting for run condition: {config.entity_id}; "
+                f"expected {' or '.join(config.state)}; "
                 f"current state {current}"
             )
         return passed, reason

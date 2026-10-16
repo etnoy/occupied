@@ -1,4 +1,4 @@
-"""Compact status and next-event entities."""
+"""Status, reason, and next-event entities."""
 
 from datetime import datetime
 
@@ -15,7 +15,11 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     async_add_entities(
-        [OccupiedStatusSensor(entry.runtime_data), OccupiedNextEventSensor(entry.runtime_data)]
+        [
+            OccupiedStatusSensor(entry.runtime_data),
+            OccupiedStatusReasonSensor(entry.runtime_data),
+            OccupiedNextEventSensor(entry.runtime_data),
+        ]
     )
 
 
@@ -25,11 +29,10 @@ class OccupiedStatusSensor(OccupiedEntity, SensorEntity):
     _attr_options = [
         "disabled",
         "waiting",
-        "inactive",
+        "error",
         "paused",
         "transitioning",
         "active",
-        "complete",
     ]
     _attr_icon = "mdi:home-clock"
 
@@ -76,6 +79,20 @@ class OccupiedStatusSensor(OccupiedEntity, SensorEntity):
                 else {}
             ),
         }
+
+
+class OccupiedStatusReasonSensor(OccupiedEntity, SensorEntity):
+    _attr_translation_key = "status_reason"
+    _attr_icon = "mdi:information-outline"
+
+    def __init__(self, engine) -> None:
+        super().__init__(engine)
+        self._attr_unique_id = f"{engine.entry_id}_status_reason"
+
+    @property
+    def native_value(self) -> str:
+        # HA limits state strings to 255 characters; Status retains the full reason attribute.
+        return self.engine.reason[:255]
 
 
 class OccupiedNextEventSensor(OccupiedEntity, SensorEntity):

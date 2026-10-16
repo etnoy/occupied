@@ -284,7 +284,7 @@ class DailyEngine:
             except (ProgramError, ValueError) as err:
                 self._invalidate()
                 await self._stop_owned()
-                self.status, self.reason = "inactive", f"Cannot compile daily plan: {err}"
+                self.status, self.reason = "error", f"Cannot compile daily plan: {err}"
                 self.last_error = str(err)
                 self._record("planning", "failed", self.reason)
                 await self._persist()
@@ -468,7 +468,7 @@ class DailyEngine:
             self._storage_failed = True
             self.live_preview.invalidate("Controller persistence failed", interrupted=True)
             self._invalidate()
-            self.status, self.reason = "inactive", "Runtime persistence failed"
+            self.status, self.reason = "error", "Runtime persistence failed"
             self.last_error = str(err)
             self._record("storage", "failed", str(err))
             return False
@@ -573,18 +573,23 @@ class DailyEngine:
                     self._notify()
 
     async def _reevaluate_locked(self):
+        if self.closed:
+            return
         passed, reason = self._effective_gate()
         if not passed:
             self._invalidate()
             if self.started and not self.closed:
                 await self._stop_owned()
-            self.status = (
-                "disabled"
-                if not self.enabled
-                else "paused"
-                if self.paused
-                else ("waiting" if not self.started or "unresolved" in reason else "inactive")
-            )
+            if not self.configuration_ready or self._storage_failed:
+                self.status = "error"
+            elif not self.enabled:
+                self.status = "disabled"
+            elif self.paused:
+                self.status = "paused"
+            elif not self.started or not self.run_condition_status()[0]:
+                self.status = "waiting"
+            else:
+                self.status = "error"
             self.reason = reason
             self._restoring = False
         elif not self.active:
@@ -614,7 +619,7 @@ class DailyEngine:
                 self._arm_timer()
             except (ProgramError, ValueError) as err:
                 self._invalidate()
-                self.status, self.reason = "inactive", f"Cannot compile daily plan: {err}"
+                self.status, self.reason = "error", f"Cannot compile daily plan: {err}"
                 self.last_error = str(err)
                 self._record("planning", "failed", self.reason)
         await self._persist()
@@ -996,7 +1001,7 @@ class DailyEngine:
                     except (ProgramError, ValueError) as err:
                         self._invalidate()
                         self.status, self.reason = (
-                            "inactive",
+                            "error",
                             f"Cannot enforce expected states: {err}",
                         )
                         self.last_error = str(err)
@@ -1010,7 +1015,7 @@ class DailyEngine:
                     except (ProgramError, ValueError) as err:
                         self._invalidate()
                         await self._stop_owned()
-                        self.status, self.reason = "inactive", f"Cannot compile daily plan: {err}"
+                        self.status, self.reason = "error", f"Cannot compile daily plan: {err}"
                         self.last_error = str(err)
                         self._record(event.key, "failed", self.reason)
                 elif event.kind == "handover_done":
@@ -1251,9 +1256,9 @@ class DailyEngine:
             if member.superseded:
                 self._finish(key, "superseded", member.action)
                 continue
-            if set(member.action.targets) & self._yielded:
-                self._finish(key, "yielded", member.action)
-                continue
+            # A new scheduled intent takes control again; retries and handover
+            # keep respecting outside changes made after that intent began.
+            self._yielded.difference_update(member.action.targets)
             if member.action.action in {"light.turn_on", "light.turn_off"} and any(
                 entity in self._handover for entity in member.action.targets
             ):
@@ -1282,9 +1287,9 @@ class DailyEngine:
             await self._execute_custom_group(plan, event, generation)
             return
         action = event.action
-        if set(action.targets) & self._yielded:
-            self._finish(key, "yielded")
+        if generation != self.generation or not self._effective_gate()[0]:
             return
+        self._yielded.difference_update(action.targets)
         if action.action in {"light.turn_on", "light.turn_off"} and any(
             entity in self._handover for entity in action.targets
         ):
@@ -1525,5 +1530,5 @@ class DailyEngine:
             self.active = was_active if not cleanup else False
             await self._persist()
             self.active = False
-            self.status, self.reason = "inactive", "Integration unloaded"
+            self.reason = "Integration unloaded"
             self._notify()

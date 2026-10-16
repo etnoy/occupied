@@ -106,12 +106,14 @@
         "state": {
           "disabled": "Disabled",
           "waiting": "Waiting",
-          "inactive": "Inactive",
+          "error": "Error",
           "paused": "Paused",
           "transitioning": "Transitioning",
-          "active": "Managing",
-          "complete": "Complete"
+          "active": "Active"
         }
+      },
+      "status_reason": {
+        "name": "Status reason"
       },
       "next_event": {
         "name": "Next event"
@@ -121,7 +123,7 @@
   "issues": {
     "managed_file": {
       "title": "Occupied managed configuration could not be loaded",
-      "description": "File: {path}\n\n{error}\n\nCorrect the file and call occupied.reload or wait for change detection. The last valid running program is retained; an invalid initial file remains inactive."
+      "description": "File: {path}\n\n{error}\n\nCorrect the file and call occupied.reload or wait for change detection. The last valid running program is retained; an invalid initial file puts the controller in Error."
     },
     "source_conflict": {
       "title": "Occupied bootstrap conflicts with {name}",

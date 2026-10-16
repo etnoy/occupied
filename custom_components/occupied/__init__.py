@@ -150,7 +150,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> 
             )
             source = await hass.async_add_executor_job(load_yaml, text)
         except ProgramError:
-            # Keep an invalid initial entry loadable, with an inactive engine and Repairs.
+            # Keep an invalid initial entry loadable, with an error status and Repairs.
             pass
     if source is not None:
         from .engine_daily import DailyEngine

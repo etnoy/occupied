@@ -65,7 +65,14 @@ async def test_already_armed_at_startup_drives_services_without_browser(
     await advance(hass, freezer, 1)
     assert devices[-1].domain == "remote"
     assert devices[-1].service == "turn_off"
-    assert engine.status == "complete"
+    assert engine.status == "active"
+    status = hass.states.get("sensor.occupied_status")
+    assert status.state == "active"
+    assert "complete" not in status.attributes["options"]
+    assert status.attributes["reason"] == (
+        "Caller-proof schedule completed; waiting for next activation"
+    )
+    assert hass.states.get("sensor.occupied_status_reason").state == status.attributes["reason"]
     assert engine.next_event is None
     assert all(call.context.id for call in devices)
     assert len(events) == len(devices)
@@ -123,6 +130,7 @@ async def test_start_does_not_bypass_gate(hass, entry, devices, freezer, state):
     )
     assert engine.enabled
     assert not engine.active
+    assert hass.states.get("sensor.occupied_status").state == "waiting"
     await advance(hass, freezer, 200)
     assert not devices
 
@@ -140,7 +148,7 @@ async def test_disarm_cancels_handover_and_stale_callback(
     await advance(hass, freezer, 200)
     await engine._async_dispatch(generation)
     assert len(devices) == 1
-    assert engine.status == "inactive"
+    assert engine.status == "waiting"
 
 
 async def test_disarm_ends_only_owned_remote(hass, entry, devices, saved_permission, freezer):
@@ -282,3 +290,16 @@ async def test_pause_keeps_permission_and_resume_rechecks_gate(
     assert engine.enabled and not engine.paused and not engine.active
     await advance(hass, freezer, 200)
     assert not devices
+
+
+async def test_closed_legacy_controller_entities_are_unavailable(hass, entry):
+    engine = await load(hass, entry)
+    await engine.async_close()
+    await hass.async_block_till_done()
+    for entity_id in (
+        "sensor.occupied_status",
+        "sensor.occupied_status_reason",
+        "sensor.occupied_next_event",
+        "switch.occupied_enable",
+    ):
+        assert hass.states.get(entity_id).state == "unavailable"
