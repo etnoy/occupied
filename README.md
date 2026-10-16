@@ -2,19 +2,116 @@
 
 <img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/occupied.svg" alt="Logo, a smiling occupied toilet sign" height="200">
 
-Occupied manages selected Home Assistant entities using schedules, optional randomness and activation conditions. Use Home Assistant scenes for reusable sets of device states. Create separate controllers for devices with different rules: one can manage window lights each evening, while another manages ceiling lights only when the alarm is armed.
+Burglars look for living spaces that look like nobody's home: make sure yours looks occupied!
 
-It is the spiritual successor of https://github.com/acockburn/occusim
+Occupied is an occupancy simulator for Home Assistant that lets you create schedules for lights, covers, and other entities. Because it has built in support for randomness and an easy-to-use GUI, this is much easier than doing it manually with automations. 
 
-A native Home Assistant occupancy simulator with shared GUI/YAML steps and random events, and deterministic daily planning.
+It is the spiritual successor of [Occusim](https://github.com/acockburn/occusim) but built to be easy to use. 
 
-Create a controller through **Settings → Devices & services → Add integration → Occupied**, then select **Configure**. Permission starts disabled. The editor creates steps with absolute start windows or relative timing, and a light/switch, scene, native entity service action, or Custom YAML block. Titles are optional. All weekdays and enabled state are implicit defaults. Choose **Custom YAML** to edit individual light/switch/cover states or combine actions in one block; switching from simple controls generates the corresponding YAML. See [Custom YAML actions](docs/custom-yaml.md).
+# Use cases
 
-**Staggered action** in **Advanced settings** applies light/switch on or off actions one entity at a time, at evenly spaced ticks in a newly shuffled order—Factorio style. It is off by default; the editable **Time window** defaults to `2m`. You can also set `stagger.period` through [Custom YAML](docs/custom-yaml.md#staggered-action). See the [example](examples/stagger.yaml).
+* Make your home look occupied while you are away by turning lights on and off at varied times, activating scenes, or opening and closing covers.
+* Schedule everyday lighting around sunrise, sunset, or bedtime, with randomized windows instead of the same exact times each day.
+* Run a schedule only when your alarm is armed. You can also save power by having Occupied turn off extra lights or switches, such as those in a windowless bathroom.
 
-Steps also offer **No later than** (`latest_at`) and **Only run before** (`only_before`), using a clock or solar event on the schedule's source date. Cap a sunset step at 18:00, or run at 05:30 only when it is strictly before sunrise plus 90 minutes. Preview explains adjusted and skipped occurrences. See [timing limits](docs/schema.md#step-timing-limits) and the [lighting example](examples/solar-limits.yaml).
+# Installation
 
-Use the separate **Random** tab for repeated activity: choose a start/end window, a number of occurrences with an optional maximum, a duration range, and actions for each occurrence's start and end. The count is fixed unless a maximum is added; ranges choose a count between the inclusive bounds for each window. A zero minimum allows windows with no activity (`count: {min: 0, max: 1}` gives an equal chance of zero or one occurrence); a fixed zero always skips. Zero-occurrence windows also skip dependent random windows, with the choice preserved by seeded sampling. Duration bounds take precedence over the count: events may overlap, but are never shortened below the minimum, and a window that cannot fit one minimum-length event is infeasible when a positive count is sampled. Window starts can follow clock times, steps, solar events, Home Assistant time sources, or another random window’s closing time. Window ends use absolute time or a fixed/ranged duration from the sampled start. End actions reuse the selected entities by default. Random events appear alongside steps in Preview and in YAML exports.
+Install through [HACS](https://hacs.xyz/):
+
+1. Open HACS, select the three-dot menu, and choose **Custom repositories**.
+2. Add `https://github.com/etnoy/occupied` with the category **Integration**.
+3. Find Occupied in HACS and download it, then restart Home Assistant.
+4. Go to **Settings → Devices & services → Add integration → Occupied** and create a controller. Choose GUI storage to get started with the editor.
+5. Select **Configure** on the integration to open the Occupied panel.
+
+New controllers start with permission disabled, so you can create and preview a schedule before enabling it. See the [installation guide](docs/installation.md) for manual installation, upgrades, and troubleshooting.
+
+# Usage
+
+Occupied is based around Steps ("turn this light on at that time") or Random Events ("turn a light on and off twice during the day")
+
+## Create a Step
+
+Open Occupied through the integration's **Configure** control (the cog wheel), then choose **Create your first step** in the **Steps** tab.
+
+1. Choose **Absolute time** to run the action at a specific time ("run at 8 AM"), or have it be a random time within a window ("run between 7:30 AM and 8:30 AM")
+2. Choose **Relative to** to run the action relative to another event, say "run at sunrise" or "run this step after that step". You add a time offset, like "run 30 minutes before dawn" and optionally make it choose a random time, say "run at a random time between 20 and 40 minutes after sunset"
+2. Next, choose an action to run. A simple example is to turn a light on
+4. Click on **Save step**. 
+
+You can now create more steps and have those steps either be absolute in time, or relative to the previous step
+
+For more advanced usage like turning on a light at a specific brigthness, use **Custom YAML** as the action. See [Custom YAML actions](docs/custom-yaml.md).
+
+## Create a Random Event
+
+Random Events manage a light for both on and off, so you can have a kitchen light that turns on and off for a few times during the day.
+
+1. In the Random tab, choose **Create your first random event** and set its start and end window, for example 18:00–23:00. The window can also start relative to a step or solar event, and end after a fixed or random duration.
+2. Set the number of occurrences. Add a maximum to choose a random count within a range, and you can set the minimum to zero so that the event does not happen every day.
+3. Set the minimum and maximum duration of each occurrence, such as 5–15 minutes.
+4. Choose the entities to turn on and off during each window.
+5. Save the random event.
+
+## Preview the timeline
+
+Open **Preview** to see how the entities would be turned on and off. This will be a render of the random events within the ranges you chose before, so navigate back and forth during the days to see how those will be randomized.
+
+## Add a run condition
+
+You probably only want to pretend someone is home when nobody actually is. A run condition lets you do that, say "only run when the alarm is armed" or "only run when my away mode helper is on".
+
+In **Settings → Run condition**, enable **Run only when an entity matches**, pick your entity, and choose the states that should let Occupied run. For an alarm, that could be `armed_away`, or both `armed_away` and `armed_night`.
+
+When the condition stops matching, i.e. when you get home and disarm the alarm, Occupied stops running actions and leaves the lights as they are. 
+
+## Enable the integration
+
+When ready, turn on the controller's **Enable** switch in Home Assistant. You will see the **Status** sensor change to **Active** if Occupied has started managing, and **Next event** will update with when the next action will be taken. If the status says **Waiting**, the **Status reason** sensor will tell you why; likely you have a run condition it is waiting on.
+
+
+# Advanced usages
+
+## Multiple controllers
+
+You can have more than one Occupied controller, each with its own schedule and run condition. For example, one controller can pretend someone is home while you're away, with random lights and a run condition like "only run when the alarm is armed". Another can handle your everyday lights, turning window lights on at sunset and off at sunrise, without a run condition so it runs whether you're home or not.
+
+To add another controller, go to **Settings → Devices & services → Add integration → Occupied** again and give it a different name. You can switch between controllers in the Occupied panel, and each has its own **Enable** switch.
+
+## Factorio-style lights
+
+Enable **Staggered action** under a step's **Advanced settings** to turn lights or switches on or off one at a time in a shuffled order. The **Time window** defaults to `2m`. With four entities over two minutes, actions occur at 30-second intervals, giving the impression of someone walking through the house. See the [staggered-action example](examples/stagger.yaml).
+
+## Enforce state when a run condition starts
+
+Under **Settings → Run condition**, select an entity and its allowed states, then enable **Enforce expected state on start**. For example, use an alarm panel with `armed_away` so Occupied applies the schedule's known light, switch, and cover targets when you leave. **Delay before enforcing state** defaults to `30s`, giving you time to get out of the house before device changes begin.
+
+Use **Extra entities to turn off** for lights and switches outside the schedule, such as bathroom lights. These turn off during startup enforcement. Without enforcement, a matching run condition starts future scheduled actions only. When the condition stops matching, Occupied stops scheduling without changing device states.
+
+You can also press **Enforce expected state** on the controller's Home Assistant device to apply known targets immediately. This requires permission, unpaused scheduling, and a matching run condition if one is configured. See [run conditions](docs/runtime.md#run-condition-and-delayed-state-enforcement) and the [alarm example](examples/alarm.yaml).
+
+## Limit when a step can run
+
+Use the timing controls to combine clock times and solar events:
+
+* **No later than** caps a step's time. For example, turn lights on 90 minutes before sunset, but no later than 18:00.
+* **Only run before** skips a step unless its time is strictly before the selected boundary. For example, turn lights on at 05:30 only if that is before sunrise plus 90 minutes.
+
+Both controls can be combined. Preview explains capped and skipped occurrences. See [timing limits](docs/schema.md#step-timing-limits) and the [lighting example](examples/solar-limits.yaml).
+
+## Try a live preview
+
+In **Preview**, choose a date and select **Start live preview** to test the schedule on real devices. Walk around with your phone and press **Next event** to run each action immediately instead of waiting for its scheduled time. Unsaved drafts can be tested too.
+
+Live preview pauses normal scheduling. **Stop** and **Day complete** leave devices as they are and scheduling paused; choose **Resume scheduling** when you want normal operation again. Configured run conditions must still match during live preview. See [manual live preview](docs/editor.md#manual-live-preview).
+
+# YAML configuration
+
+## Import and export
+
+The GUI and YAML use the same program format. Open **Settings** to edit the YAML directly or load a YAML/JSON file, then choose **Save changes** to validate and apply it. Importing a file this way copies its contents into GUI storage; later changes to the original file do not update the controller. **Download** exports the current editor text.
+
+For example, this program turns a living-room light on between 18:00 and 18:30, then turns it off two hours after the sampled start:
 
 ```yaml
 schema_version: 1
@@ -32,17 +129,22 @@ steps:
     entities: [light.living_room]
 ```
 
-Optional **Run condition** settings let each controller run only when an entity matches one of its allowed states. Check **Enforce expected state on start** in Settings → Run condition to apply known light, switch, and cover targets after a configurable delay (default `30s`). When the condition ends, Occupied stops without sending entity commands. See [run conditions](docs/runtime.md#run-condition-and-delayed-state-enforcement) and the [alarm example](examples/alarm.yaml).
+See the [schema reference](docs/schema.md) and [example programs](examples/house.yaml) for more options.
 
-Press **Enforce expected state** on the controller’s Home Assistant device to repair state drift immediately. It reapplies known light, switch, and cover targets, including previously yielded entities, while respecting permission, pause, and the run condition. It works independently of the startup-enforcement setting and skips the startup delay.
+## Use a managed YAML file
 
-HA supplies timezone/location, and its controls or automations determine management permission and pause. There are no routine containers or managed-light lists. Initial planned state stays Unknown until an explicit action establishes intent. Gentle handover reconciles known light state; manual control yields an entity until its next scheduled action, the next activation, or an explicit enforcement button press. Generic services and scenes remain opaque.
+To keep configuration in a file instead of GUI storage, put a complete Occupied program at `/config/occupied/house.yaml`, then add this to Home Assistant's `configuration.yaml` and restart:
 
-GUI storage, YAML snapshots, and authoritative managed files share the same schema. Invalid managed-file updates retain the last valid program. Multiple controllers have independent plans, queues, permissions, and sources.
+```yaml
+occupied:
+  config_file: occupied/house.yaml
+```
 
-See [installation](docs/installation.md), [editor](docs/editor.md), [schema](docs/schema.md), [runtime](docs/runtime.md), and [managed configuration](docs/managed-configuration.md). Example programs are in [examples](examples/house.yaml).
+The path is relative to Home Assistant's configuration directory. You can also select a managed file when adding the integration. Each controller has its own permission and schedule; named instances support multiple managed files.
 
-See [Occupied and Presence Simulation](docs/presence-simulation-comparison.md) for when to choose authored schemes or history replay, how to use both, and possible additions to Occupied.
+The file remains authoritative, and Occupied never writes to it. Changes are detected automatically; call `occupied.reload` with the controller's `config_entry_id` for an immediate reload. Invalid updates leave the current valid in-memory program running, but an invalid file at startup must be corrected before that controller can run.
+
+You can use the editor to preview and export drafts in managed-file mode. Apply changes by updating the source file and reloading it. See [managed configuration](docs/managed-configuration.md) for source switching, multiple instances, and deployment with Puppet.
 
 The standalone `occupied-config` CLI validates, exports, previews, and renames typed step IDs without importing Home Assistant or executing device services:
 
