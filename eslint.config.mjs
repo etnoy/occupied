@@ -122,6 +122,10 @@ export default typescriptEslint.config([
       "unicorn/no-null": "off",
       "unicorn/no-unnecessary-global-this": "off",
       "unicorn/no-thenable": "off",
+      "unicorn/no-top-level-side-effects": [
+        "error",
+        { allow: { "@playwright/test": ["defineConfig"] } },
+      ],
       "unicorn/no-top-level-assignment-in-function": "off",
       "unicorn/no-unsafe-property-key": "off",
       "unicorn/no-unreadable-for-of-expression": "off",

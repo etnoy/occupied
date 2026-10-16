@@ -27,11 +27,10 @@ function clockSeconds(value: string): number | undefined {
     return undefined;
   }
   const [, hours, minutes, seconds = "0"] = match;
-  if (Number(hours) > 23 || Number(minutes) > 59 || Number(seconds) > 59) {
-    return undefined;
-  }
 
-  return Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
+  return Number(hours) > 23 || Number(minutes) > 59 || Number(seconds) > 59
+    ? undefined
+    : Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
 }
 
 // This is a display estimate, independent of the scheduler's randomized plan.
@@ -113,11 +112,10 @@ export function chronologicalEntries<T extends { id: string }>(
   const stepStart = (id: string, seen: Set<string>): number | undefined => {
     const key = `step:${id}`;
     const step = program.steps?.[id];
-    if (!step || seen.has(key)) {
-      return undefined;
-    }
 
-    return resolve(step.timing, new Set([...seen, key]));
+    return !step || seen.has(key)
+      ? undefined
+      : resolve(step.timing, new Set([...seen, key]));
   };
   const randomEnd = (id: string, seen: Set<string>): number | undefined => {
     const key = `random:${id}`;

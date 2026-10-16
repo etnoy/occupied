@@ -35,10 +35,12 @@
 
   async function save() {
     await submit();
-    if (panel.randomEditor?.errors.days) {
-      advancedTrigger = advancedButton;
-      advancedOpen = true;
+    if (!panel.randomEditor?.errors.days) {
+      return;
     }
+
+    advancedTrigger = advancedButton;
+    advancedOpen = true;
   }
 </script>
 

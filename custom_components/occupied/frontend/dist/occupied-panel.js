@@ -1199,10 +1199,11 @@ function parentRandomEvents(program, child2) {
     changed = false;
     for (const [id, event2] of Object.entries(program.random || {})) {
       const parent = event2.start.relative_to?.random;
-      if (parent && blocked.has(parent) && !blocked.has(id)) {
-        blocked.add(id);
-        changed = true;
+      if (!(parent && blocked.has(parent)) || blocked.has(id)) {
+        continue;
       }
+      blocked.add(id);
+      changed = true;
     }
   }
   return Object.entries(program.random || {})
@@ -1220,10 +1221,11 @@ function errorMessage(error) {
   if (error instanceof Error) {
     return error.message;
   }
-  if (typeof error === "object" && error !== null && "message" in error) {
-    return String(error.message);
-  }
-  return String(error);
+  return String(
+    typeof error === "object" && error !== null && "message" in error
+      ? error.message
+      : error,
+  );
 }
 function isValueChangedEvent(event2) {
   return (
@@ -8970,10 +8972,11 @@ function applyStagger(form, settings) {
     return;
   }
   source2.stagger = { ...settings };
-  if (form.kind === "custom") {
-    form.customYaml = actionYaml(source2);
-    form.customAccepted = form.customYaml;
+  if (form.kind !== "custom") {
+    return;
   }
+  form.customYaml = actionYaml(source2);
+  form.customAccepted = form.customYaml;
 }
 
 // custom_components/occupied/frontend/src/lib/models/step-model.ts
@@ -11718,10 +11721,7 @@ function EntitiesEditor($$anchor, $$props) {
     if (get(form).kind === "scene") {
       return ["scene"];
     }
-    if (get(form).kind === "cover") {
-      return ["cover"];
-    }
-    return ["light", "switch"];
+    return get(form).kind === "cover" ? ["cover"] : ["light", "switch"];
   });
   var div = root_17();
   var h4 = child(div);
@@ -12384,10 +12384,9 @@ function clockSeconds(value) {
     return void 0;
   }
   const [, hours, minutes2, seconds = "0"] = match;
-  if (Number(hours) > 23 || Number(minutes2) > 59 || Number(seconds) > 59) {
-    return void 0;
-  }
-  return Number(hours) * 3600 + Number(minutes2) * 60 + Number(seconds);
+  return Number(hours) > 23 || Number(minutes2) > 59 || Number(seconds) > 59
+    ? void 0
+    : Number(hours) * 3600 + Number(minutes2) * 60 + Number(seconds);
 }
 function chronologicalEntries(entries, program, collection, hass) {
   const sourceSeconds = (value) => {
@@ -12458,10 +12457,9 @@ function chronologicalEntries(entries, program, collection, hass) {
   const stepStart = (id, seen2) => {
     const key2 = `step:${id}`;
     const step = program.steps?.[id];
-    if (!step || seen2.has(key2)) {
-      return void 0;
-    }
-    return resolve(step.timing, /* @__PURE__ */ new Set([...seen2, key2]));
+    return !step || seen2.has(key2)
+      ? void 0
+      : resolve(step.timing, /* @__PURE__ */ new Set([...seen2, key2]));
   };
   const randomEnd = (id, seen2) => {
     const key2 = `random:${id}`;
@@ -13798,19 +13796,20 @@ function SettingsView($$anchor, $$props) {
   let autoExportStarted = false;
   user_effect(() => {
     void $$props.revision;
-    if (!autoExportStarted && !panel().busy) {
-      let cancelled = false;
-      queueMicrotask(() => {
-        if (cancelled) {
-          return;
-        }
-        autoExportStarted = true;
-        void panel().exportYaml();
-      });
-      return () => {
-        cancelled = true;
-      };
+    if (autoExportStarted || panel().busy) {
+      return;
     }
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) {
+        return;
+      }
+      autoExportStarted = true;
+      void panel().exportYaml();
+    });
+    return () => {
+      cancelled = true;
+    };
   });
   var fragment = root_112();
   var node = first_child(fragment);
@@ -13904,15 +13903,16 @@ function SettingsView($$anchor, $$props) {
   );
   delegated("change", input, async (event2) => {
     const file = event2.currentTarget.files?.[0];
-    if (file) {
-      const epoch = panel().epoch;
-      const yaml = await file.text();
-      if (epoch !== panel().epoch) {
-        return;
-      }
-      panel().yaml = yaml;
-      panel().flush();
+    if (!file) {
+      return;
     }
+    const epoch = panel().epoch;
+    const yaml = await file.text();
+    if (epoch !== panel().epoch) {
+      return;
+    }
+    panel().yaml = yaml;
+    panel().flush();
   });
   event("value-changed", ha_code_editor, (event2) => {
     if (
@@ -14004,10 +14004,9 @@ function createRandomEditorContext(panel) {
               .map(([field, message]) => [field.slice(prefix.length), message]),
           );
         }
-        if (options && (key2 === "showEndTime" || key2 === "showEndOffset")) {
-          return options[key2];
-        }
-        return Reflect.get(target, key2);
+        return options && (key2 === "showEndTime" || key2 === "showEndOffset")
+          ? options[key2]
+          : Reflect.get(target, key2);
       },
       set(target, key2, value) {
         if (options && (key2 === "showEndTime" || key2 === "showEndOffset")) {
@@ -16913,16 +16912,13 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
         selected.service === "cover.set_cover_position"
           ? selected.position
           : selected.tiltPosition;
-      if (
-        t(description).includes("{position}") &&
+      return t(description).includes("{position}") &&
         (!position.trim() ||
           !Number.isSafeInteger(Number(position)) ||
           Number(position) < 0 ||
           Number(position) > 100)
-      ) {
-        return "";
-      }
-      return say(description, { entities, position });
+        ? ""
+        : say(description, { entities, position });
     }
     if (selected.kind === "service") {
       return selected.service.trim()
@@ -16998,10 +16994,11 @@ function RandomEventEditor($$anchor, $$props) {
   );
   async function save2() {
     await get(submit)();
-    if ($$props.panel.randomEditor?.errors.days) {
-      set2(advancedTrigger, advancedButton, true);
-      set2(advancedOpen, true);
+    if (!$$props.panel.randomEditor?.errors.days) {
+      return;
     }
+    set2(advancedTrigger, advancedButton, true);
+    set2(advancedOpen, true);
   }
   var section = root_216();
   var div = child(section);
@@ -18455,13 +18452,10 @@ var OccupiedPanel = class extends HTMLElement {
     return this.stepEditor || this.randomEditor;
   }
   get hasEditorChanges() {
-    if (this.stepEditor) {
-      return hasStepChanges(this.stepEditor);
-    }
-    return (
-      this.hasRunConditionChanges ||
-      (this.randomEditor ? hasRandomChanges(this.randomEditor) : false)
-    );
+    return this.stepEditor
+      ? hasStepChanges(this.stepEditor)
+      : this.hasRunConditionChanges ||
+          (!!this.randomEditor && hasRandomChanges(this.randomEditor));
   }
   pendingStepExit = null;
   selectedStep = null;
@@ -18528,13 +18522,14 @@ var OccupiedPanel = class extends HTMLElement {
     }
     await this.save(candidate);
     if (
-      !this.dirty &&
-      !this.error &&
-      this.issues.every((issue) => issue.severity !== "error")
+      this.dirty ||
+      this.error ||
+      this.issues.some((issue) => issue.severity === "error")
     ) {
-      this.openRunCondition();
-      await this.exportYaml();
+      return;
     }
+    this.openRunCondition();
+    await this.exportYaml();
   }
   get liveRunning() {
     return liveRunning(this.liveSession);
@@ -19282,10 +19277,11 @@ var OccupiedPanel = class extends HTMLElement {
         return;
       }
       this.showIssues(result);
-      if (result.valid && this.yaml === yaml) {
-        this.yaml = result.yaml;
-        this.yamlSaved = result.yaml;
+      if (!result.valid || this.yaml !== yaml) {
+        return;
       }
+      this.yaml = result.yaml;
+      this.yamlSaved = result.yaml;
     });
   }
 };
@@ -19333,10 +19329,7 @@ function editorField(tail, form) {
     if (has("start_offset")) {
       return "startOffset";
     }
-    if (has("end_offset")) {
-      return "endOffset";
-    }
-    return "anchor";
+    return has("end_offset") ? "endOffset" : "anchor";
   }
   return "name";
 }

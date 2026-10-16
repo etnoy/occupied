@@ -91,10 +91,11 @@ export function parentRandomEvents(program, child) {
     changed = false;
     for (const [id, event] of Object.entries(program.random || {})) {
       const parent = event.start.relative_to?.random;
-      if (parent && blocked.has(parent) && !blocked.has(id)) {
-        blocked.add(id);
-        changed = true;
+      if (!(parent && blocked.has(parent)) || blocked.has(id)) {
+        continue;
       }
+      blocked.add(id);
+      changed = true;
     }
   }
   return Object.entries(program.random || {})
