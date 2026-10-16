@@ -1,0 +1,49 @@
+.github/dependabot.yml
+  s_a4d16be4a91535::t_3b8ec7e679d933 1-37
+.github/workflows/check.yml
+  s_a4d16be4a91535::t_908d9d7a4e3edc 8-9,14-17,21,47-58,64,87,94,105,134-221
+.github/workflows/docs.yml
+  s_a4d16be4a91535::t_badf31a99e8aa7 1-46
+.github/workflows/release.yml
+  s_a4d16be4a91535::t_36fe265678c0fc 10-13,16-19,25
+.github/workflows/security.yml
+  s_a4d16be4a91535::t_afe5e5f2440092 1-47
+.gitignore
+  s_a4d16be4a91535::t_3f51bb2087eb15 16-20
+MANIFEST.in
+  s_a4d16be4a91535::t_bb9c6153e3f3fd 11
+README.md
+  s_a4d16be4a91535::t_26ea49819ba612 31
+docs/releasing.md
+  s_a4d16be4a91535::t_e64393074faa14 23,54-95
+eslint.config.mjs
+  s_a4d16be4a91535::t_e9ece251caeb5e 16,162-166
+package.json
+  s_a4d16be4a91535::t_ee4985674252a5 9,12-13,15-16,20
+pnpm-lock.yaml
+  s_a4d16be4a91535::t_31139c481c19d4 18-20,305-309,815-824,1188-1191,1714-1719
+tests/browser/occupied.spec.ts
+  s_a4d16be4a91535::t_f66af922c26544 1-66
+tests/browser/playwright.config.ts
+  s_a4d16be4a91535::t_796caecd178135 1-33
+tests/browser/serve.py
+  s_a4d16be4a91535::t_b589f1bc2ec6fe 1-66
+tsconfig.json
+  s_a4d16be4a91535::t_4dfd4f8433c216 28-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b005d8d51bb22ed552bd46ac776fe4f44c97f831",
+  "prompts": {},
+  "sessions": {
+    "s_a4d16be4a91535": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14478-e45d-71c0-b5cb-9d6b6096b2e3",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
