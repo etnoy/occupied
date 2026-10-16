@@ -1,0 +1,19 @@
+docs/schema.md
+  s_f4659a75e93fd1::t_3edd84990f1f6e 76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "70fac6f0b20411800a902dcc1b40ec6ae6538c6a",
+  "prompts": {},
+  "sessions": {
+    "s_f4659a75e93fd1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec5949cfdffeX2oAzoHi6dVZIK",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
