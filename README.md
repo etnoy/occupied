@@ -199,6 +199,9 @@ Node development dependencies with `pnpm install --frozen-lockfile --ignore-scri
 Home Assistant itself depends on the `uv` Python package, so pip installs it inside
 the virtual environment even though these development commands use mise and pip.
 
+CI tests Home Assistant 2026.10.0 and 2026.10.1 with matching test fixtures.
+The minimum supported Home Assistant version is 2026.10.0.
+
 For the locked environment used by CI, install [uv](https://docs.astral.sh/uv/) and run:
 
 ```sh
