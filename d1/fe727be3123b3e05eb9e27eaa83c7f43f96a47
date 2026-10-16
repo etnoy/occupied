@@ -1,0 +1,19 @@
+.github/workflows/docs.yml
+  s_a4d16be4a91535::t_92e481b4802a65 28-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d1fe727be3123b3e05eb9e27eaa83c7f43f96a47",
+  "prompts": {},
+  "sessions": {
+    "s_a4d16be4a91535": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14478-e45d-71c0-b5cb-9d6b6096b2e3",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
