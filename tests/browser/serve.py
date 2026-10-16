@@ -59,8 +59,8 @@ template:
 # Use HA's complete runtime: its frontend imports optional integrations that the
 # unit-test lock intentionally does not install. Pin the multi-architecture image.
 image = (
-    "ghcr.io/home-assistant/home-assistant:2026.9.4@"
-    "sha256:3e6710a7ab2a61311d9d899b719f6c3657791c63e8f4942cec4ebc42401d6b76"
+    "ghcr.io/home-assistant/home-assistant:2026.10.1@"
+    "sha256:130241f28d01fa80dfa3b44f7d89781c188d8642ecab9024f079f19f9f82baa0"
 )
 container = f"occupied-browser-{uuid4().hex[:12]}"
 command = [

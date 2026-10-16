@@ -96,11 +96,10 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
               .map(([field, message]) => [field.slice(prefix.length), message]),
           ) as FieldErrors;
         }
-        if (options && (key === "showEndTime" || key === "showEndOffset")) {
-          return options[key];
-        }
 
-        return Reflect.get(target, key);
+        return options && (key === "showEndTime" || key === "showEndOffset")
+          ? options[key]
+          : Reflect.get(target, key);
       },
       set(target, key, value) {
         if (options && (key === "showEndTime" || key === "showEndOffset")) {

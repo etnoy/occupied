@@ -6,10 +6,11 @@ export function errorMessage(error) {
   if (error instanceof Error) {
     return error.message;
   }
-  if (typeof error === "object" && error !== null && "message" in error) {
-    return String(error.message);
-  }
-  return String(error);
+  return String(
+    typeof error === "object" && error !== null && "message" in error
+      ? error.message
+      : error,
+  );
 }
 export function isValueChangedEvent(event) {
   return (

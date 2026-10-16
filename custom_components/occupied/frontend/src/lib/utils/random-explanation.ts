@@ -202,17 +202,14 @@ export function randomExplanation(
         selected.service === "cover.set_cover_position"
           ? selected.position
           : selected.tiltPosition;
-      if (
-        t(description).includes("{position}") &&
+
+      return t(description).includes("{position}") &&
         (!position.trim() ||
           !Number.isSafeInteger(Number(position)) ||
           Number(position) < 0 ||
           Number(position) > 100)
-      ) {
-        return "";
-      }
-
-      return say(description, { entities, position });
+        ? ""
+        : say(description, { entities, position });
     }
     if (selected.kind === "service") {
       return selected.service.trim()

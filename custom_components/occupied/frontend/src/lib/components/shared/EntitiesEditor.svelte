@@ -22,11 +22,8 @@
     if (form.kind === "scene") {
       return ["scene"];
     }
-    if (form.kind === "cover") {
-      return ["cover"];
-    }
 
-    return ["light", "switch"];
+    return form.kind === "cover" ? ["cover"] : ["light", "switch"];
   });
 </script>
 

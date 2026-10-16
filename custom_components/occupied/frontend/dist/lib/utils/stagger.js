@@ -59,8 +59,9 @@ export function applyStagger(form, settings) {
     return;
   }
   source.stagger = { ...settings };
-  if (form.kind === "custom") {
-    form.customYaml = actionYaml(source);
-    form.customAccepted = form.customYaml;
+  if (form.kind !== "custom") {
+    return;
   }
+  form.customYaml = actionYaml(source);
+  form.customAccepted = form.customYaml;
 }
