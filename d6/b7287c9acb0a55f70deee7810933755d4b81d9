@@ -1,0 +1,97 @@
+.github/workflows/check.yml
+  s_d7f1a2da04a2ec::t_7d851b512d247c 25,27,37,40,43,68,91,98,109,144,168
+README.md
+  s_d7f1a2da04a2ec::t_5cbc37a32a46e5 202-204
+hacs.json
+  s_d7f1a2da04a2ec::t_33e1c7b86965a7 3
+pyproject.toml
+  s_d7f1a2da04a2ec::t_e869cb1ea26eec 9,32,39-40
+tests/browser/serve.py
+  s_d7f1a2da04a2ec::t_6f5e1ffaf3cad0 62-63
+uv.lock
+  s_d7f1a2da04a2ec::t_5783d90cbb5399 2,71,82-166,583-596,786-850,863,868-908,1220,1222,1224,1229,1281,1283,1350-1358,1394,1399,1401,1437-1448,1539-1547,1649-1736,1793,1800-1801,1805,1903-1935,1949,1951,1953,1958-2030,2132,2140,2142,2147,2152-2183,2188,2197,2199,2213,2215,2217,2321,2326-2335,2337,2397-2421,2463,2480,2497,2499,2516,2521,2523,2577,2582,2584,2733-2745,2832,2838,2840-2854,2890,2895,2897,2909-2962,2965,2970-2979,2981,3052,3054,3056,3079-3100,3253,3260-3330,3335,3340-3373
+.github/workflows/docs.yml
+  s_81c547a49aa581::t_a01d82b4603683 19
+.github/workflows/release.yml
+  s_81c547a49aa581::t_8f37f3c0e2b1a3 29
+.github/workflows/security.yml
+  s_81c547a49aa581::t_1d629d9d815bd5 28,42
+custom_components/occupied/frontend/dist/lib/controllers/random-editor-controller.js
+  s_81c547a49aa581::t_056b6996afd6a8 79-81
+custom_components/occupied/frontend/dist/lib/models/model.js
+  s_81c547a49aa581::t_0cacca26948d35 94-95,97-98
+custom_components/occupied/frontend/dist/lib/utils/activity-order.js
+  s_81c547a49aa581::t_91c90fc67674a7 26-28,102-104
+custom_components/occupied/frontend/dist/lib/utils/random-explanation.js
+  s_81c547a49aa581::t_cf0bb2b973a907 195,200-201
+custom_components/occupied/frontend/dist/lib/utils/stagger.js
+  s_81c547a49aa581::t_fdead190958e8f 62-63,65-66
+custom_components/occupied/frontend/dist/lib/utils/util.js
+  s_81c547a49aa581::t_ec2ab6df402ecb 9-13
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_81c547a49aa581::t_3912f87becc354 1202-1203,1205-1206,1224-1228,8975-8976,8978-8979,11724,12387-12389,12460-12462,13799-13800,13802-13812,13906-13912,13914-13915,14007-14009,16915,16920-16921,16997-16998,17000-17001,18455-18458,18525-18527,18529,18531-18532,19280-19281,19283-19284,19332
+custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
+  s_81c547a49aa581::t_4eab79c70ee879 38-39,41-43
+custom_components/occupied/frontend/src/lib/components/settings/SettingsView.svelte
+  s_81c547a49aa581::t_38cb700dc50b33 24-25,27-40,61-67,69-70
+custom_components/occupied/frontend/src/lib/components/shared/EntitiesEditor.svelte
+  s_81c547a49aa581::t_b033b22b805b34 26
+custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts
+  s_81c547a49aa581::t_d8d7414dc5ba5c 100-102
+custom_components/occupied/frontend/src/lib/models/model.ts
+  s_81c547a49aa581::t_e67574a4dcde52 118-119,121-123
+custom_components/occupied/frontend/src/lib/utils/activity-order.ts
+  s_81c547a49aa581::t_75ae3168c63662 31-33,116-118
+custom_components/occupied/frontend/src/lib/utils/random-explanation.ts
+  s_81c547a49aa581::t_99e12894a4ed65 205-206,211-212
+custom_components/occupied/frontend/src/lib/utils/stagger.ts
+  s_81c547a49aa581::t_067c05a4b08c28 70-71,73-75
+custom_components/occupied/frontend/src/lib/utils/util.ts
+  s_81c547a49aa581::t_fde67ee4585c58 21-25
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_81c547a49aa581::t_583afe3f075974 77-80,154-156,158,160-162,993-994,996-998,1050
+eslint.config.mjs
+  s_81c547a49aa581::t_c5740e24f7c6a8 125-128
+package.json
+  s_81c547a49aa581::t_ab40279fca8018 28
+pnpm-lock.yaml
+  s_81c547a49aa581::t_1b0804c465913e 43-44,343-345,355-357,476-478,513-515,519-522,530-532,583-584,588-591,794-856,892-893,1314-1317,1324-1325,1470-1471,1496-1499,1502-1503,1508-1511,1580,1593,1596-1597,1605-1608,1799-1801,1803-1819,1821-1931,1964-1966
+scripts/ha-2026.10.0.overrides
+  s_9d7a62b7b5784d::t_13c12d96701b3f 1-3
+scripts/requirements-ha-2026.10.0.txt
+  s_9d7a62b7b5784d::t_4119c4ec8a7a1d 2,25-186,513-516,873,877,880-1001,1008-1054,1542-1550,1552,1587-1590,1607-1609,1709-1712,1872-1875,2054-2091,2251,2253-2254,2349-2379,2387-2389,2391-2529,2657-2659,2663-2783,2785-2787,2792-2797,2886-2888,2892-2897,2912,2934-2964,2979-2981,2983,2989-2991,3013-3015,3250-3253,3294-3352,3368-3370,3376-3451,3453-3456,3465-3468,3536-3538,3546,3555-3574,3786-3924,3929-3998
+tests/frontend/src/instances.test.ts
+  s_81c547a49aa581::t_44f10e8a8b7a8b 171-174
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d6b7287c9acb0a55f70deee7810933755d4b81d9",
+  "prompts": {},
+  "sessions": {
+    "s_81c547a49aa581": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a146cf-f4b0-7832-90d0-c179378c693e",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_9d7a62b7b5784d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a146d0-1564-7960-8a9b-3eaf70d60b77",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_d7f1a2da04a2ec": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_eb92e8b22ffe7oUv7b2y4ZIq6w",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
