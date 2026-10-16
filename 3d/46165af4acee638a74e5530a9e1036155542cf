@@ -1,0 +1,47 @@
+README.md
+  s_61ba8f4f377f85::t_e5c49d712d9e02 7,13,43-44,48-52,64-67,72-75,82,101,105,107-111,122-126,130,134-137,142,161,224
+docs/custom-yaml.md
+  s_61ba8f4f377f85::t_50cc2e13a2d354 3,5,7-63,71-74,80-82,91-149,151-183,185-192,194,196-209,211-237,241-242,252-253,255-256,259,261,263,265,267,269,271-331,335,353-377,380,382,384,386,388,390,392,394,396,398,400
+docs/schema.md
+  s_61ba8f4f377f85::t_1822a0b712d8b9 63
+examples/alarm.yaml
+  s_61ba8f4f377f85::t_f40b15866d89a5 4-7,13-14,16-18,21-22,24-26
+examples/custom.yaml
+  s_61ba8f4f377f85::t_0743288923d38b 7-8,12,14,17,20,26-27,30-31,34-37
+examples/house.yaml
+  s_61ba8f4f377f85::t_9ffb081b2c8ee7 6-11,13-15,17-19,22-27,29-32,34-36,39-44,46-47,49-50,54-57,59-63,67-69,71-75
+examples/random.yaml
+  s_61ba8f4f377f85::t_ecdb176481842f 6-15,20-22,25-27
+examples/solar-limits.yaml
+  s_61ba8f4f377f85::t_ecf94cf864a487 8-10,12-13,16-22,26-27,29-31,34-63
+tests/fixtures/programs/scheduling-edge-cases.yaml
+  s_61ba8f4f377f85::t_9f09fdca64e6cf 19,34,42
+tests/frontend/src/custom-actions.test.ts
+  s_61ba8f4f377f85::t_96daf6da904b64 34,39-41,59-60,63-65
+tests/frontend/src/instances.test.ts
+  s_61ba8f4f377f85::t_ee03a88305abe7 745
+tests/frontend/src/run-condition.test.ts
+  s_61ba8f4f377f85::t_9e76964643008e 27
+tests/test_daily_runtime.py
+  s_61ba8f4f377f85::t_419001242bcbcf 1214,1226,1231,1649,1750,2083
+tests/test_models.py
+  s_61ba8f4f377f85::t_9ab5daa1647a90 245
+tests/test_timing_limits.py
+  s_61ba8f4f377f85::t_ae347f9a14d81c 343-349,354-367
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "3d46165af4acee638a74e5530a9e1036155542cf",
+  "prompts": {},
+  "sessions": {
+    "s_61ba8f4f377f85": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14486-5f2a-77b3-af0b-8c4c6f9a7329",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
