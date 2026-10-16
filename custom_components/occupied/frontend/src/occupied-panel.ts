@@ -74,14 +74,10 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   get hasEditorChanges() {
-    if (this.stepEditor) {
-      return hasStepChanges(this.stepEditor);
-    }
-
-    return (
-      this.hasRunConditionChanges ||
-      (this.randomEditor ? hasRandomChanges(this.randomEditor) : false)
-    );
+    return this.stepEditor
+      ? hasStepChanges(this.stepEditor)
+      : this.hasRunConditionChanges ||
+          (!!this.randomEditor && hasRandomChanges(this.randomEditor));
   }
 
   pendingStepExit: (() => void) | null = null;
@@ -155,13 +151,15 @@ export class OccupiedPanel extends HTMLElement {
     }
     await this.save(candidate);
     if (
-      !this.dirty &&
-      !this.error &&
-      this.issues.every((issue) => issue.severity !== "error")
+      this.dirty ||
+      this.error ||
+      this.issues.some((issue) => issue.severity === "error")
     ) {
-      this.openRunCondition();
-      await this.exportYaml();
+      return;
     }
+
+    this.openRunCondition();
+    await this.exportYaml();
   }
 
   get liveRunning() {
@@ -992,10 +990,12 @@ export class OccupiedPanel extends HTMLElement {
         return;
       }
       this.showIssues(result);
-      if (result.valid && this.yaml === yaml) {
-        this.yaml = result.yaml;
-        this.yamlSaved = result.yaml;
+      if (!result.valid || this.yaml !== yaml) {
+        return;
       }
+
+      this.yaml = result.yaml;
+      this.yamlSaved = result.yaml;
     });
   }
 }
@@ -1046,11 +1046,8 @@ function editorField(tail: Path, form: Pick<StepForm, "kind">): string {
     if (has("start_offset")) {
       return "startOffset";
     }
-    if (has("end_offset")) {
-      return "endOffset";
-    }
 
-    return "anchor";
+    return has("end_offset") ? "endOffset" : "anchor";
   }
 
   return "name";

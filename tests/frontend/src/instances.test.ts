@@ -168,14 +168,11 @@ async function fixture() {
       if (message.type === "occupied/preview" && previewOverride) {
         return (await previewOverride()) as T;
       }
-      if (
-        String(message.type).startsWith("occupied/live_preview/") &&
-        liveOverride
-      ) {
-        return (await liveOverride(message)) as T;
-      }
 
-      return responses[String(message.type)] as T;
+      return String(message.type).startsWith("occupied/live_preview/") &&
+        liveOverride
+        ? ((await liveOverride(message)) as T)
+        : (responses[String(message.type)] as T);
     },
     connection: {
       addEventListener: (event, callback) => {

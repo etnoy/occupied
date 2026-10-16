@@ -23,10 +23,9 @@ function clockSeconds(value) {
     return undefined;
   }
   const [, hours, minutes, seconds = "0"] = match;
-  if (Number(hours) > 23 || Number(minutes) > 59 || Number(seconds) > 59) {
-    return undefined;
-  }
-  return Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
+  return Number(hours) > 23 || Number(minutes) > 59 || Number(seconds) > 59
+    ? undefined
+    : Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
 }
 // This is a display estimate, independent of the scheduler's randomized plan.
 // Keep signed offsets while resolving dependencies; wrap only the final result.
@@ -100,10 +99,9 @@ export function chronologicalEntries(entries, program, collection, hass) {
   const stepStart = (id, seen) => {
     const key = `step:${id}`;
     const step = program.steps?.[id];
-    if (!step || seen.has(key)) {
-      return undefined;
-    }
-    return resolve(step.timing, new Set([...seen, key]));
+    return !step || seen.has(key)
+      ? undefined
+      : resolve(step.timing, new Set([...seen, key]));
   };
   const randomEnd = (id, seen) => {
     const key = `random:${id}`;

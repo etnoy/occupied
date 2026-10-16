@@ -21,22 +21,23 @@
 
   $effect(() => {
     void revision;
-    if (!autoExportStarted && !panel.busy) {
-      // Export flushes controller updates synchronously. Start it after this
-      // render batch, and cancel if the view disappears or becomes busy first.
-      let cancelled = false;
-      queueMicrotask(() => {
-        if (cancelled) {
-          return;
-        }
-        autoExportStarted = true;
-        void panel.exportYaml();
-      });
-
-      return () => {
-        cancelled = true;
-      };
+    if (autoExportStarted || panel.busy) {
+      return;
     }
+    // Export flushes controller updates synchronously. Start it after this
+    // render batch, and cancel if the view disappears or becomes busy first.
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) {
+        return;
+      }
+      autoExportStarted = true;
+      void panel.exportYaml();
+    });
+
+    return () => {
+      cancelled = true;
+    };
   });
 </script>
 
@@ -57,15 +58,16 @@
     aria-label={t("choose_configuration_file")}
     onchange={async (event: Event) => {
       const file = (event.currentTarget as HTMLInputElement).files?.[0];
-      if (file) {
-        const epoch = panel.epoch;
-        const yaml = await file.text();
-        if (epoch !== panel.epoch) {
-          return;
-        }
-        panel.yaml = yaml;
-        panel.flush();
+      if (!file) {
+        return;
       }
+      const epoch = panel.epoch;
+      const yaml = await file.text();
+      if (epoch !== panel.epoch) {
+        return;
+      }
+      panel.yaml = yaml;
+      panel.flush();
     }}
   />
   <ha-code-editor

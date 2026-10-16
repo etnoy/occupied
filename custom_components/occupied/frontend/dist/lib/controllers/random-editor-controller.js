@@ -76,10 +76,9 @@ export function createRandomEditorContext(panel) {
               .map(([field, message]) => [field.slice(prefix.length), message]),
           );
         }
-        if (options && (key === "showEndTime" || key === "showEndOffset")) {
-          return options[key];
-        }
-        return Reflect.get(target, key);
+        return options && (key === "showEndTime" || key === "showEndOffset")
+          ? options[key]
+          : Reflect.get(target, key);
       },
       set(target, key, value) {
         if (options && (key === "showEndTime" || key === "showEndOffset")) {
