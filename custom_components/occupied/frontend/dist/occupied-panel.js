@@ -326,6 +326,7 @@ var en = {
   schedule_empty_hint: "No steps are scheduled for this date.",
   planned_device_states: "Planned device states",
   loading_graph: "Loading graph\u2026",
+  preview_now: "Now",
   on_label: "On",
   unknown: "Unknown",
   open: "Open",
@@ -860,6 +861,7 @@ var sv = {
   schedule_empty_hint: "Inga steg \xE4r schemalagda detta datum.",
   planned_device_states: "Planerade enhetstillst\xE5nd",
   loading_graph: "Laddar diagram\u2026",
+  preview_now: "Nu",
   on_label: "P\xE5",
   unknown: "Ok\xE4nt",
   open: "\xD6ppet",
@@ -13534,6 +13536,88 @@ function SettingsView($$anchor, $$props) {
 }
 delegate(["change", "click"]);
 
+// custom_components/occupied/frontend/src/lib/actions/timeline-now.ts
+function timelineNow(node, label) {
+  const chart = node;
+  const generate = chart._generateData;
+  if (typeof generate !== "function") {
+    return;
+  }
+  let text2 = label;
+  const markerId = "occupied-now";
+  const refresh = () => {
+    if (!chart._chartData) {
+      return;
+    }
+    const color =
+      getComputedStyle(node).getPropertyValue("--primary-text-color").trim() ||
+      "#333";
+    chart._chartData = [
+      ...chart._chartData.filter((series) => series.id !== markerId),
+      {
+        id: markerId,
+        type: "custom",
+        silent: true,
+        animation: false,
+        z: 10,
+        tooltip: { show: false },
+        encode: { x: 0 },
+        data: [[Date.now()]],
+        renderItem: (params, api) => {
+          const { x, y, width, height } = params.coordSys;
+          const position = api.coord([api.value(0), 0])[0];
+          if (position < x || position > x + width) {
+            return null;
+          }
+          const alignRight = position > x + width - 40;
+          return {
+            type: "group",
+            children: [
+              {
+                type: "line",
+                shape: { x1: position, x2: position, y1: y, y2: y + height },
+                style: { stroke: color, lineWidth: 2, lineDash: [4, 3] },
+              },
+              {
+                type: "text",
+                style: {
+                  x: position + (alignRight ? -4 : 4),
+                  y: y + 2,
+                  text: text2,
+                  fill: color,
+                  fontSize: 12,
+                  fontWeight: "bold",
+                  align: alignRight ? "right" : "left",
+                  verticalAlign: "top",
+                },
+              },
+            ],
+          };
+        },
+      },
+    ];
+  };
+  chart._generateData = () => {
+    generate.call(chart);
+    refresh();
+  };
+  refresh();
+  const timer = globalThis.setInterval(refresh, 3e4);
+  return {
+    update(next2) {
+      text2 = next2;
+      refresh();
+    },
+    destroy() {
+      globalThis.clearInterval(timer);
+      chart._generateData = generate;
+      chart._chartData = chart._chartData?.filter(
+        (series) => series.id !== markerId,
+      );
+    },
+  };
+}
+
 // custom_components/occupied/frontend/src/lib/actions/timeline-tooltip.ts
 function timelineTooltip(node, data) {
   const chart = node;
@@ -13956,6 +14040,11 @@ function PreviewStateGraph($$anchor, $$props) {
         state_history_chart_timeline,
         ($$node, $$action_arg) => timelineTooltip?.($$node, $$action_arg),
         () => get(data),
+      );
+      action(
+        state_history_chart_timeline,
+        ($$node, $$action_arg) => timelineNow?.($$node, $$action_arg),
+        () => $$props.t("preview_now"),
       );
       action(
         state_history_chart_timeline,

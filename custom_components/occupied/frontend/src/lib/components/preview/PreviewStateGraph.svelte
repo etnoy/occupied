@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { HomeAssistant, Plan, Program, Translate } from "../../types.js";
+  import { timelineNow } from "../../actions/timeline-now.js";
   import { timelineTooltip } from "../../actions/timeline-tooltip.js";
   import { properties } from "../../actions/dom.js";
   import { loadHaHistoryChart } from "../../services/ha-controls.js";
@@ -92,6 +93,7 @@
     hidden={data.length === 0}
     aria-label={t("planned_device_states")}
     use:timelineTooltip={data}
+    use:timelineNow={t("preview_now")}
     use:properties={{
       hass: chartHass,
       data,
