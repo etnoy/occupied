@@ -52,10 +52,7 @@
 
   function input(event: Event) {
     const control = event.currentTarget as
-      | HTMLInputElement
-      | HTMLSelectElement
-      | HTMLTextAreaElement
-      | HaSelector;
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HaSelector;
     if (nativeTime) {
       if (!isValueChangedEvent(event)) {
         return;

@@ -132,8 +132,7 @@ async function fixture() {
     | ((message: Record<string, unknown>) => Promise<LivePreviewResponse>)
     | undefined;
   let programOverride:
-      | ((entry: string) => Promise<ProgramDocument>)
-      | undefined,
+      ((entry: string) => Promise<ProgramDocument>) | undefined,
     previewOverride: (() => Promise<PreviewResult>) | undefined;
   const messages: Record<string, unknown>[] = [];
   const preview: PreviewResult = {
