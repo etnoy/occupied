@@ -18,6 +18,7 @@ class PlanningContext:
     longitude: float | None = None
     elevation: float = 0
     time_sources: dict[str, dict[str, str | None]] = field(default_factory=dict)
+    time_source_latches: dict[str, dict[str, dict[str, str]]] = field(default_factory=dict)
 
 
 def resolve_local(naive: datetime, zone: ZoneInfo) -> tuple[datetime, str | None]:
@@ -138,7 +139,9 @@ class SimulationDay:
         )
 
     def entity_bounds(self, spec: RelativeTo, path: ModelPath) -> tuple[datetime, datetime] | None:
-        source = self.context.time_sources.get(spec.entity, {})
+        source = self.context.time_sources.get(
+            spec.entity, {}
+        ) | self.context.time_source_latches.get(self.date.isoformat(), {}).get(spec.entity, {})
         value = source.get(spec.attribute or "state")
         anchor = None
         try:
