@@ -1,0 +1,19 @@
+docs/maintenance.md
+  s_3df37cff510e73::t_bf936f9b083cb1 7,33-34,89-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f995824bc252630dcfe144ae491d4eb07d1abe21",
+  "prompts": {},
+  "sessions": {
+    "s_3df37cff510e73": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14a28-1af6-70a2-bd42-029b8914a348",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
