@@ -35,6 +35,7 @@ class Lane:
     python: str
     image: str
     constraints_sha256: str = ""
+    python_min: str = ""
 
     @property
     def stem(self):
@@ -88,12 +89,22 @@ def pins(text):
     return result
 
 
-def table(lanes):
+def table(lanes, policy):
     lines = [TABLE_START, "| Home Assistant tested | Python tested | Lane |", "| --- | --- | --- |"]
     for lane in ha_lanes(lanes):
         lines.append(f"| {lane.homeassistant} | {lane.python} | {lane.role} |")
     floor_python = selected(lanes, "python-floor")
     lines.append(f"| {floor_python.homeassistant} | {floor_python.python} | Python floor |")
+    lines.extend(
+        [
+            "",
+            "| Standalone Python tested | Lane |",
+            "| --- | --- |",
+            f"| {policy['python_floor']} | floor |",
+            f"| {policy['python_latest']} | latest |",
+            f"| {policy['python_next']} | experimental |",
+        ]
+    )
     return "\n".join([*lines, TABLE_END])
 
 
@@ -118,14 +129,25 @@ def check(root=ROOT):
     python_floor = selected(lanes, "python-floor")
     if replace(python_floor, id=newest.id, role="newest", python=newest.python) != newest:
         raise ValueError("Python floor must use the newest HA environment")
-    if python_floor.python != policy["python_floor"] or newest.python != policy["python_latest"]:
+    if python_floor.python != newest.python_min or newest.python != policy["python_latest"]:
         raise ValueError("Pinned Python versions disagree with the matrix policy")
+    if policy["python_floor"] != str(min(Version(lane.python_min) for lane in actual)):
+        raise ValueError("Standalone Python floor must equal the oldest HA Python requirement")
+    if any(Version(lane.python) < Version(lane.python_min) for lane in actual):
+        raise ValueError("HA interpreters must satisfy their minimum Python requirements")
+    mise = tomllib.loads((root / "mise.toml").read_text())
+    if mise["tools"]["python"] != policy["python_latest"]:
+        raise ValueError("mise.toml Python must match the matrix's latest Python")
     hacs = json.loads((root / "hacs.json").read_text())
     if hacs["homeassistant"] != floor.homeassistant:
         raise ValueError("hacs.json must declare the HA floor lane")
-    project = tomllib.loads((root / "pyproject.toml").read_text())["project"]
+    metadata = tomllib.loads((root / "pyproject.toml").read_text())
+    project = metadata["project"]
     if project["requires-python"] != f">={policy['python_floor']}":
         raise ValueError("requires-python must equal the lowest supported Python")
+    dev_python = metadata.get("tool", {}).get("uv", {}).get("dependency-groups", {}).get("dev", {})
+    if dev_python.get("requires-python") != f">={newest.python_min}":
+        raise ValueError("Dev group Python must equal the newest HA Python requirement")
     locked = {
         p["name"]: p["version"] for p in tomllib.loads((root / "uv.lock").read_text())["package"]
     }
@@ -137,7 +159,7 @@ def check(root=ROOT):
         if locked.get(package) != version:
             raise ValueError(f"uv.lock {package} must match the newest lane")
     readme = (root / "README.md").read_text()
-    if table(lanes) not in readme:
+    if table(lanes, policy) not in readme:
         raise ValueError("README compatibility table differs from the matrix")
     manifest = json.loads((root / "custom_components/occupied/manifest.json").read_text())
     runtime_requirements = [Requirement(r) for r in project["dependencies"]]
@@ -267,6 +289,17 @@ def overrides(lane, security=None):
     ) + "".join(f"{name}=={version}\n" for name, version in sorted((security or {}).items()))
 
 
+def with_dev_python(source, minimum):
+    """Keep the newest dev environment independent of the published CLI floor."""
+    value = f'dev = {{requires-python = ">={minimum}"}}'
+    if "[tool.uv.dependency-groups]" not in source:
+        return source + f"\n[tool.uv.dependency-groups]\n{value}\n"
+    source, count = re.subn(r'(?m)^dev = \{requires-python = "[^"]+"\}$', value, source)
+    if count != 1:
+        raise ValueError("Expected one dev Python requirement in pyproject.toml")
+    return source
+
+
 def compile_lanes(root=ROOT):
     policy, lanes = load(root)
     directory = root / "scripts/requirements"
@@ -290,13 +323,18 @@ def compile_lanes(root=ROOT):
         override_file.write_text(overrides(lane, security))
         requirement_file = path.with_suffix(".txt")
         expected.update((override_file.name, requirement_file.name))
-        with tempfile.TemporaryDirectory(prefix="occupied-constraints-") as temporary:
+        # Historical compiler inputs retain their interpreter floor and
+        # apply only the security repairs explicitly recorded in the policy.
+        with tempfile.TemporaryDirectory(prefix="occupied-compile-") as temporary:
+            project = Path(temporary) / "pyproject.toml"
+            project.write_text(
+                with_dev_python((root / "pyproject.toml").read_text(), lane.python_min)
+            )
             effective = Path(temporary) / path.name
             effective.write_text(patched_constraints(path.read_text(), security))
-            _compile_lane(root, lane, override_file, effective, requirement_file)
-            source = requirement_file.read_text().replace(
-                str(effective), str(path.relative_to(root))
-            )
+            _compile_lane(root, lane, project, override_file, effective, requirement_file)
+            source = requirement_file.read_text().replace(str(project), "pyproject.toml")
+            source = source.replace(str(effective), str(path.relative_to(root)))
         provenance = security_header(security) + "\n" if security else ""
         requirement_file.write_text(
             lane.header
@@ -309,15 +347,15 @@ def compile_lanes(root=ROOT):
             path.unlink()
 
 
-def _compile_lane(root, lane, override_file, constraints, requirement_file):
+def _compile_lane(root, lane, project, override_file, constraints, requirement_file):
     run(
         [
             uv(),
             "pip",
             "compile",
-            "pyproject.toml",
+            project,
             "--group",
-            "dev",
+            f"{project}:dev",
             "--overrides",
             override_file.relative_to(root),
             "--constraint",
@@ -471,6 +509,25 @@ def requires_python(version):
     return match[1]
 
 
+@cache
+def latest_python(minimum):
+    """Use stable CPython release tags within the HA-required interpreter family."""
+    floor = Version(minimum)
+    family = f"{floor.major}.{floor.minor}"
+    refs = json.loads(
+        fetch_text(f"https://api.github.com/repos/python/cpython/git/matching-refs/tags/v{family}.")
+    )
+    versions = [
+        Version(ref["ref"].removeprefix("refs/tags/v"))
+        for ref in refs
+        if re.fullmatch(rf"refs/tags/v{re.escape(family)}\.\d+", ref["ref"])
+    ]
+    stable = [version for version in versions if version >= floor]
+    if not stable:
+        raise ValueError(f"No stable CPython release satisfies HA's Python floor {minimum}")
+    return str(max(stable))
+
+
 def next_release(root=ROOT):
     from datetime import UTC, datetime
 
@@ -497,11 +554,7 @@ def next_release(root=ROOT):
         return result
     version = str(candidate)
     requirement = requires_python(version)
-    python = (
-        policy["python_latest"]
-        if Version(requirement) <= Version(policy["python_latest"])
-        else requirement
-    )
+    python = latest_python(requirement)
     constraint_text = fetch_text(
         f"https://raw.githubusercontent.com/home-assistant/core/{version}/homeassistant/package_constraints.txt"
     )
@@ -568,7 +621,7 @@ def update_claims(root=ROOT):
     path.write_text(json.dumps(data, indent=2) + "\n")
     path = root / "README.md"
     source = path.read_text()
-    rendered = table(lanes)
+    rendered = table(lanes, policy)
     if TABLE_START in source:
         start, end = source.index(TABLE_START), source.index(TABLE_END) + len(TABLE_END)
         source = source[:start] + rendered + source[end:]
@@ -591,7 +644,7 @@ def update_claims(root=ROOT):
     ):
         source = re.sub(rf'"{name}==[^\"]+"', f'"{name}=={version}"', source)
     source = re.sub(
-        r'requires-python = "[^"]+"', f'requires-python = ">={policy["python_floor"]}"', source
+        r'(?m)^requires-python = "[^"]+"', f'requires-python = ">={policy["python_floor"]}"', source
     )
     original = tomllib.loads(source)["project"]
     floor_pins = pins(constraints_path(root, floor).read_text())
@@ -600,11 +653,19 @@ def update_claims(root=ROOT):
         if name in floor_pins:
             updated = re.sub(r">=[^,]+", f">={floor_pins[name]}", raw)
             source = source.replace(json.dumps(raw), json.dumps(updated))
-    path.write_text(source)
+    path.write_text(with_dev_python(source, newest.python_min))
     path = root / "custom_components/occupied/manifest.json"
     manifest = json.loads(path.read_text())
     manifest["requirements"] = [f"pydantic>={floor_pins['pydantic']}"]
     path.write_text(json.dumps(manifest, indent=2) + "\n")
+    path = root / "mise.toml"
+    source = path.read_text()
+    source, count = re.subn(
+        r'(?m)^python = "[^"]+"$', f'python = "{policy["python_latest"]}"', source
+    )
+    if count != 1:
+        raise ValueError("Expected one pinned Python interpreter in mise.toml")
+    path.write_text(source)
 
 
 def roll(minor, root=ROOT):
@@ -640,11 +701,7 @@ def roll(minor, root=ROOT):
         )
         constraint_files[version] = text
         minimum = requires_python(version)
-        python = (
-            policy["python_latest"]
-            if Version(policy["python_latest"]) >= Version(minimum)
-            else minimum
-        )
+        python = latest_python(minimum)
         role = "floor" if offset == 0 else "newest" if serial == target else "window"
         lanes.append(
             Lane(
@@ -656,14 +713,17 @@ def roll(minor, root=ROOT):
                 python,
                 image_digest(version),
                 hashlib.sha256(text.encode()).hexdigest(),
+                minimum,
             )
         )
     policy["python_floor"] = str(
         min(Version(requires_python(lane.homeassistant)) for lane in lanes)
     )
     policy["python_latest"] = lanes[-1].python
+    latest = Version(policy["python_latest"])
+    policy["python_next"] = f"{latest.major}.{latest.minor + 1}"
     lanes.append(
-        replace(lanes[-1], id="python-floor", role="python-floor", python=policy["python_floor"])
+        replace(lanes[-1], id="python-floor", role="python-floor", python=lanes[-1].python_min)
     )
     lanes.append(Lane("next", "next", "auto", "auto", "auto", "auto", "auto"))
     write_matrix(policy, lanes, root)
