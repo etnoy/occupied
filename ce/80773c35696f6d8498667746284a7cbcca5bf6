@@ -1,0 +1,23 @@
+.github/dependabot.yml
+  s_5efedd126094d0::t_e558dd58df46ac 33
+README.md
+  s_5efedd126094d0::t_ba2ac84823d3c5 243-244
+docs/maintenance.md
+  s_5efedd126094d0::t_e70d22455b1f52 1-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ce80773c35696f6d8498667746284a7cbcca5bf6",
+  "prompts": {},
+  "sessions": {
+    "s_5efedd126094d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1494a-0c3c-7fa2-b887-3b33c1eb7d43",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
