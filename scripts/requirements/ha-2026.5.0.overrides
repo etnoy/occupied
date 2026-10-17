@@ -2,3 +2,4 @@ homeassistant==2026.5.0
 pytest-homeassistant-custom-component==0.13.329
 home-assistant-frontend==20260429.3
 anyio==4.14.2
+pyjwt==2.15.1
