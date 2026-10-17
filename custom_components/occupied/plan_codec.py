@@ -6,6 +6,10 @@ from .planner import PLANNER_VERSION, DailyPlan, PlanEvent, ResolvedAction
 from .validation import Issue
 
 
+class PlannerVersionChanged(ValueError):
+    """A saved cache belongs to a different planner and must be rebuilt."""
+
+
 def instant(value: str) -> datetime:
     result = datetime.fromisoformat(value)
     if result.tzinfo is None:
@@ -50,6 +54,11 @@ def events_from_data(items):
 
 def plan_from_data(data):
     if data["planner_version"] != PLANNER_VERSION:
+        if type(data["planner_version"]) is int:
+            raise PlannerVersionChanged(
+                f"Saved planner version {data['planner_version']} differs from "
+                f"{PLANNER_VERSION}; rebuilding plans"
+            )
         raise ValueError("Unsupported saved planner version")
     # The shape check rejects obsolete caches without changing version numbers.
     events = events_from_data(data["events"])
