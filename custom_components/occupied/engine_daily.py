@@ -464,7 +464,7 @@ class DailyEngine:
             if self.activation_deadline
             else None,
             "reconciliation": self.reconciliation,
-            "context": self._context_identity(),
+            "context": self._saved_context,
             "plans": [p.to_dict() for p in self._plans.values()],
             "journal": self._journal,
             "yielded": sorted(self._yielded),
@@ -591,6 +591,9 @@ class DailyEngine:
         elif not self.active:
             self.active = True
             self.generation += 1
+            if not self._restoring or self.program.run_condition is not None:
+                self._handover.clear()
+                self._native_fades.clear()
             if not self._restoring:
                 self.session += 1
                 self._yielded.clear()
@@ -817,7 +820,10 @@ class DailyEngine:
                 continue
             if light_matches(self.hass, entity, target):
                 if previous and entity in self._native_fades and deadline > now:
-                    self._handover[entity] = previous
+                    self._handover[entity] = previous | {
+                        "deadline": deadline.isoformat(),
+                        "target": target.to_dict(),
+                    }
                     self._push(
                         deadline,
                         "handover_done",
