@@ -72,7 +72,8 @@ async def test_bundled_asset_is_served_without_household_data(
     asset_url = f"{module_url.rsplit('/', 1)[0]}/{asset}"
     response = await client.get(asset_url)
     assert response.status == 200
-    assert "max-age" not in response.headers.get("Cache-Control", "")
+    assert "max-age=" in response.headers.get("Cache-Control", "")
+    assert "public" in response.headers.get("Cache-Control", "")
     source = await response.text()
     if asset == "occupied-panel.js":
         assert 'customElements.define("occupied-panel"' in source

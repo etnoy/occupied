@@ -38,7 +38,7 @@ async def _async_register_panel(hass, entry_id, data):
     registered_paths = data.setdefault("static_registered_paths", set())
     if asset_url not in registered_paths:
         await hass.http.async_register_static_paths(
-            [StaticPathConfig(asset_url, str(frontend_path), False)]
+            [StaticPathConfig(asset_url, str(frontend_path), True)]
         )
         # HA's static-route API has no unregister operation. Keep each
         # configuration-free, content-versioned asset route for panel reloads.
@@ -47,9 +47,8 @@ async def _async_register_panel(hass, entry_id, data):
         hass,
         frontend_url_path=DOMAIN,
         webcomponent_name="occupied-panel",
-        # The HA URL and common reverse proxies cache JavaScript by URL, even
-        # when the integration serves it without cache headers. A content hash
-        # keeps the entry module and all of its relative imports on one bundle.
+        # A content hash keeps the entry module and relative imports on one
+        # bundle, with a new URL whenever any shipped asset changes.
         module_url=f"{asset_url}/occupied-panel.js",
         require_admin=True,
         config_panel_domain=DOMAIN,
