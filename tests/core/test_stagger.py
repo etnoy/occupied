@@ -7,12 +7,12 @@ import pytest
 from custom_components.occupied.custom_actions import parse_action_yaml
 from custom_components.occupied.file_config import export_yaml, load_yaml
 from custom_components.occupied.lighting import project_lighting
+from custom_components.occupied.plan_codec import plan_from_data
 from custom_components.occupied.planner import (
     generate_plan,
     occurrence_groups,
     preview_calendar_dates,
 )
-from custom_components.occupied.storage import plan_from_data
 from custom_components.occupied.time_utils import PlanningContext
 from custom_components.occupied.validation import ProgramError, behavior_hash, validate_program
 

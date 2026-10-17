@@ -12,7 +12,7 @@ from custom_components.occupied.planner import generate_plan
 from custom_components.occupied.time_utils import PlanningContext
 from custom_components.occupied.validation import behavior_hash
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.parametrize("path", sorted((ROOT / "examples").glob("*.yaml")), ids=lambda p: p.name)

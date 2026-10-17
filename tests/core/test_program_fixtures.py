@@ -17,7 +17,7 @@ from custom_components.occupied.planner import generate_plan
 from custom_components.occupied.time_utils import PlanningContext
 from custom_components.occupied.validation import behavior_hash, program_data
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / "tests" / "fixtures" / "programs"
 EDITOR_ROUNDTRIPS = """
 import { readFileSync } from 'node:fs';

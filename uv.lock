@@ -1786,6 +1786,13 @@ dev = [
     { name = "pytest-socket" },
     { name = "ruff" },
 ]
+test-core = [
+    { name = "freezegun" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-socket" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1805,6 +1812,13 @@ dev = [
     { name = "pytest-homeassistant-custom-component", specifier = "==0.13.372" },
     { name = "pytest-socket", specifier = ">=0.7,<1" },
     { name = "ruff", specifier = ">=0.14,<1" },
+]
+test-core = [
+    { name = "freezegun", specifier = ">=1.5,<2" },
+    { name = "pytest", specifier = ">=9,<10" },
+    { name = "pytest-asyncio", specifier = ">=1.2,<2" },
+    { name = "pytest-cov", specifier = ">=7,<8" },
+    { name = "pytest-socket", specifier = ">=0.7,<1" },
 ]
 
 [[package]]

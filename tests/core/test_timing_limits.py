@@ -12,13 +12,13 @@ from astral.sun import sunrise, sunset
 from custom_components.occupied.file_config import export_yaml, load_yaml, read_program
 from custom_components.occupied.lighting import project_lighting
 from custom_components.occupied.models import Program
+from custom_components.occupied.plan_codec import plan_from_data
 from custom_components.occupied.planner import (
     generate_plan,
     preview_calendar_dates,
     resolve_actions,
 )
 from custom_components.occupied.runtime_planning import runtime_dates
-from custom_components.occupied.storage import plan_from_data
 from custom_components.occupied.time_utils import PlanningContext
 from custom_components.occupied.validation import (
     ProgramError,
@@ -322,7 +322,7 @@ def test_signed_cap_horizon_and_calendar_slices_keep_source_weekday(monkeypatch)
 
 
 def test_existing_hash_and_seeded_schedule_are_unchanged():
-    p = read_program(Path(__file__).parents[1] / "examples/house.yaml")
+    p = read_program(Path(__file__).parents[2] / "examples/house.yaml")
     assert behavior_hash(p) == "077401cc3d95cdd5c16bb9ea9b16b267f7d30d3e64c99e4918faceb8df4d45e4"
     result = generate_plan(
         p, DAY, "solar-regression", context=PlanningContext("Europe/Stockholm", 59.3, 18.1)
@@ -337,7 +337,7 @@ def test_existing_hash_and_seeded_schedule_are_unchanged():
 
 
 def test_lighting_example_preserves_exact_scene_targets_and_brightness():
-    p = read_program(Path(__file__).parents[1] / "examples/solar-limits.yaml")
+    p = read_program(Path(__file__).parents[2] / "examples/solar-limits.yaml")
     bedroom = resolve_actions(p.steps["sunset_bedroom_lights"])
     assert {a.targets[0] for a in bedroom} == {
         "switch.bedroom_lamp",
