@@ -214,8 +214,8 @@ def test_calendar_preview_includes_distant_signed_source_dates(program_dict):
 
 @pytest.mark.parametrize("day", [date(2026, 10, 14), date(2026, 3, 29), date(2026, 10, 25)])
 def test_calendar_preview_preserves_overnight_chart_context_without_executing_it(day):
+    from custom_components.occupied.plan_codec import plan_from_data
     from custom_components.occupied.planner import preview_calendar_dates
-    from custom_components.occupied.storage import plan_from_data
 
     program = validate_program(
         {

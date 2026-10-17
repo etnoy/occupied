@@ -344,7 +344,7 @@ async def test_gui_export_and_yaml_source_normalize_and_preview_identically(
     assert await hass.config_entries.async_setup(editor_entry.entry_id)
     engine = editor_entry.runtime_data
     before = engine.snapshot()
-    path = Path(__file__).parent / "fixtures" / "programs" / fixture_name
+    path = Path(__file__).parents[1] / "fixtures" / "programs" / fixture_name
     source = await hass.async_add_executor_job(path.read_text)
     data = program_data(load_program(source))
     client = await hass_ws_client(hass)
@@ -472,7 +472,7 @@ async def test_yaml_editor_save_validates_before_persisting(
     assert not devices
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 BUILD_STEP = """
 import { readFileSync } from 'node:fs';
 import { buildStep, stepEditor, stepEntries } from

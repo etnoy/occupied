@@ -12,9 +12,9 @@ from custom_components.occupied.models import (
     max_plan_events,
     projectable_lights,
 )
+from custom_components.occupied.plan_codec import plan_from_data
 from custom_components.occupied.planner import generate_plan, preview_calendar_dates, preview_dates
 from custom_components.occupied.runtime_planning import runtime_dates
-from custom_components.occupied.storage import plan_from_data
 from custom_components.occupied.time_sources import source_entities
 from custom_components.occupied.time_utils import PlanningContext
 from custom_components.occupied.validation import (

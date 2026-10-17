@@ -189,7 +189,7 @@ mise format
 ```
 
 `mise test` runs pytest and accepts
-additional arguments, for example `mise test tests/test_planner.py`. The setup commands
+additional arguments, for example `mise test tests/core/test_planner.py`. The setup commands
 install the dependencies declared in `pyproject.toml`; pip does not reproduce the
 exact dependency versions in `uv.lock`.
 `mise lint` runs Ruff, ESLint on TypeScript sources and Svelte scripts/templates, and strict TypeScript/Svelte type
@@ -201,6 +201,15 @@ the virtual environment even though these development commands use mise and pip.
 
 CI tests Home Assistant 2026.10.0 and 2026.10.1 with matching test fixtures.
 The minimum supported Home Assistant version is 2026.10.0.
+
+The Python tests are split into `tests/core` (planner, codecs, CLI, and examples) and
+`tests/ha` (integration, storage, services, and lifecycle). To run the core suite
+without installing Home Assistant:
+
+```sh
+uv sync --no-dev --group test-core
+uv run --no-dev --group test-core pytest tests/core
+```
 
 For the locked environment used by CI, install [uv](https://docs.astral.sh/uv/) and run:
 
