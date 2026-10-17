@@ -558,6 +558,62 @@ void test("failed controller discovery waits for Retry across HA updates", async
   }
 });
 
+for (const raw of ["# Original comment\nschema_version: 99\n", ""]) {
+  void test(`invalid stored YAML is preserved for recovery (${JSON.stringify(raw)})`, async () => {
+    const f = await fixture();
+    try {
+      f.documents.main = {
+        ...f.documents.main,
+        recovery_yaml: raw,
+        revision: "invalid:original",
+        configuration_source: { mode: "gui", status: "error" },
+      };
+      await f.panel.reloadSaved();
+      const exports = f.messages.filter(
+        (m) => m.type === "occupied/export",
+      ).length;
+      await f.panel.exportYaml();
+      assert.equal(f.panel.yaml, raw);
+      assert.equal(f.panel.yamlSaved, raw);
+      assert.equal(f.panel.yamlRevision, "invalid:original");
+      assert.equal(
+        f.messages.filter((m) => m.type === "occupied/export").length,
+        exports,
+      );
+      assert.match(f.panel.notices(), /Stored program is invalid/);
+      assert.doesNotMatch(f.panel.notices(), /File error/);
+      f.panel.yaml = "schema_version: 1\nname: Repaired\n";
+      await f.panel.exportYaml();
+      assert.equal(f.panel.yaml, "schema_version: 1\nname: Repaired\n");
+      const original = f.panel._hass.callWS;
+      let save: Record<string, unknown> | undefined;
+      f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+        if (message.type === "occupied/save") {
+          save = message;
+
+          return Promise.resolve({
+            valid: true,
+            ...f.documents.main,
+            recovery_yaml: null,
+            revision: "repaired",
+            program: { schema_version: 1, name: "Repaired" },
+            configuration_source: { mode: "gui", status: "ok" },
+          } as T);
+        }
+
+        return original<T>(message);
+      };
+      await f.panel.saveYaml();
+      assert.equal(save?.expected_revision, "invalid:original");
+      assert.equal(save?.program, "schema_version: 1\nname: Repaired\n");
+      assert.equal(f.panel.document.recovery_yaml, null);
+      assert.equal(f.panel.notices(), "");
+    } finally {
+      f.restore();
+    }
+  });
+}
+
 function liveSession(): LivePreviewSession {
   return {
     id: "live",
