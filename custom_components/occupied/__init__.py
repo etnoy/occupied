@@ -106,7 +106,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     bootstrap = hass.data[DOMAIN]["bootstrap"] = config.get(DOMAIN)
     entries = hass.config_entries.async_entries(DOMAIN)
-    ir.async_delete_issue(hass, DOMAIN, "source_conflict")
     ir.async_delete_issue(hass, DOMAIN, "ambiguous_bootstrap")
     for entry in entries:
         check_bootstrap(hass, entry, bootstrap)
