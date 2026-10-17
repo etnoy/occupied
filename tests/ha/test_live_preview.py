@@ -389,6 +389,38 @@ async def test_native_timeout_is_uncertain_without_retry(live_engine, live_progr
     assert not live_calls and not live_engine._queue
 
 
+async def test_timed_out_preview_wait_does_not_cancel_native_service(
+    live_engine, live_program, live_calls
+):
+    live_program["steps"] = {"slow": live_program["steps"]["morning"] | {"entities": ["light.a"]}}
+    release, finished = asyncio.Event(), asyncio.Event()
+    cancelled = False
+
+    async def slow(call):
+        nonlocal cancelled
+        live_calls.append(call)
+        try:
+            await release.wait()
+        except asyncio.CancelledError:
+            cancelled = True
+            raise
+        finished.set()
+
+    live_engine.hass.services.async_register("light", "turn_on", slow)
+    await start(live_engine, live_program)
+    try:
+        with patch("custom_components.occupied.actions.SERVICE_TIMEOUT", 0.02):
+            result = await next_event(live_engine)
+        assert {outcome["status"] for outcome in result["session"]["outcomes"].values()} == {
+            "uncertain"
+        }
+        assert not cancelled and not finished.is_set()
+    finally:
+        release.set()
+        await live_engine.hass.async_block_till_done()
+    assert finished.is_set() and len(live_calls) == 1
+
+
 async def test_admin_websocket_start_and_next_are_idempotent(
     live_engine, live_program, live_calls, hass_ws_client
 ):

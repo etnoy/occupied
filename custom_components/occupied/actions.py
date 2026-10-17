@@ -1,6 +1,7 @@
 """Capability-aware HA service preparation and conservative observations."""
 
 import asyncio
+import logging
 
 from homeassistant.components.light import LightEntityFeature
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
@@ -8,20 +9,75 @@ from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE, STATE_UN
 from .lighting import LightState
 
 SERVICE_TIMEOUT = 10
+_LOGGER = logging.getLogger(__name__)
+
+
+class ServiceWaitTimeout(TimeoutError):
+    """The caller stopped waiting while the native handler may still be running."""
 
 
 async def dispatch_service(hass, action, context, *, data=None):
     """Await native handlers with a bound; callers own authorization and journaling."""
     domain, service = action.action.split(".")
     data = service_payload(hass, action) if data is None else data
-    async with asyncio.timeout(SERVICE_TIMEOUT):
-        await hass.services.async_call(
-            domain,
-            service,
-            data,
-            blocking=True,
-            context=context,
-        )
+
+    async def call_native():
+        try:
+            await hass.services.async_call(domain, service, data, blocking=True, context=context)
+        except Exception as error:
+            # Python 3.14's shield logs late exceptions itself. Return the
+            # failure so our waiter or completion callback can handle it once.
+            return error
+        return None
+
+    task = hass.async_create_task(
+        call_native(),
+        name=f"Occupied service {action.action}",
+    )
+
+    def completed(call_task):
+        target = ", ".join(action.targets)
+        if call_task.cancelled():
+            _LOGGER.warning(
+                "Occupied service %s for %s (context %s) was cancelled "
+                "after its caller stopped waiting",
+                action.action,
+                target,
+                context.id,
+            )
+        elif (error := call_task.result()) is not None:
+            _LOGGER.warning(
+                "Occupied service %s for %s (context %s) failed "
+                "after its caller stopped waiting: %s: %s",
+                action.action,
+                target,
+                context.id,
+                type(error).__name__,
+                error,
+            )
+        else:
+            _LOGGER.info(
+                "Occupied service %s for %s (context %s) completed "
+                "after its caller stopped waiting",
+                action.action,
+                target,
+                context.id,
+            )
+
+    try:
+        failure = await asyncio.wait_for(asyncio.shield(task), SERVICE_TIMEOUT)
+    except TimeoutError as error:
+        task.add_done_callback(completed)
+        raise ServiceWaitTimeout(
+            f"Service handler did not finish within {SERVICE_TIMEOUT:g}s; completion is uncertain"
+        ) from error
+    except asyncio.CancelledError:
+        task.add_done_callback(completed)
+        raise
+    if failure is not None:
+        # Keep native failures, including their own TimeoutError, distinct from
+        # the bound on how long Occupied waits for an unfinished handler.
+        raise failure
     return data
 
 
