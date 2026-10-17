@@ -14,6 +14,14 @@ from .validation import Issue, ModelPath, ProgramError, program_data, validate_p
 MAX_FILE_BYTES = 1_048_576
 
 
+def _public_yaml(path: Path) -> bool:
+    return (
+        path.suffix.lower() in {".yaml", ".yml"}
+        and path.name.lower() not in {"secrets.yaml", "secrets.yml"}
+        and not any(part.startswith(".") for part in path.parts)
+    )
+
+
 def managed_path(config_dir: str, relative: str) -> Path:
     """Resolve on every read so replaced symlinks cannot escape the config directory."""
     root = Path(config_dir).resolve()
@@ -22,6 +30,15 @@ def managed_path(config_dir: str, relative: str) -> Path:
         raise ProgramError(
             [Issue("file_path", "Choose a relative path under the HA config directory")]
         )
+    if not _public_yaml(path):
+        raise ProgramError(
+            [
+                Issue(
+                    "file_path",
+                    "Choose a public .yaml or .yml program file, excluding secrets.yaml",
+                )
+            ]
+        )
     try:
         resolved = (root / path).resolve()
     except (OSError, RuntimeError, ValueError) as err:
@@ -29,6 +46,10 @@ def managed_path(config_dir: str, relative: str) -> Path:
     if not resolved.is_relative_to(root) or resolved == root:
         raise ProgramError(
             [Issue("file_path", "The managed file must remain under the HA config directory")]
+        )
+    if not _public_yaml(resolved.relative_to(root)):
+        raise ProgramError(
+            [Issue("file_path", "The managed file must resolve to a public YAML program file")]
         )
     return resolved
 
