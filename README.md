@@ -252,6 +252,14 @@ hashed requirements with `uv run python scripts/ha_matrix.py compile`, and disco
 new releases with `uv run python scripts/ha_matrix.py next`. See the
 [monthly rollover runbook](docs/maintenance.md) for the review and release procedure.
 
+For runtime changes, also run
+`uv run python scripts/ha_matrix.py test --lane floor -- tests/ha/runtime_soak.py`
+and repeat with `--lane newest`. This opt-in soak dispatches every example and
+program fixture for 60 days across each Stockholm DST transition, using virtual
+services and timers firing one millisecond late. It checks that scheduling remains
+active and does not drop previously unhandled events as historical. Startup
+history and already completed entries pruned from the bounded journal are expected.
+
 Historical test environments retain the original HA constraints and their recorded
 SHA-256 digests. The matrix records one security repair: AnyIO versions below
 4.14.2 are replaced by 4.14.2 for [GHSA-82r6-8w77-94w6](https://github.com/advisories/GHSA-82r6-8w77-94w6).
