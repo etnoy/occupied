@@ -1,0 +1,31 @@
+.github/workflows/ha-next.yml
+  s_222e1586b2d36c::t_0207355a616111 1-165
+docs/maintenance.md
+  s_222e1586b2d36c::t_b9ef2e1c5bebf1 73-94
+scripts/ha_matrix.py
+  s_222e1586b2d36c::t_9879cd8d72036d 542,550-552
+scripts/ha_next.py
+  s_222e1586b2d36c::t_505e79d6fc57d3 1-126
+scripts/report_ha_compat.py
+  s_222e1586b2d36c::t_ef9ed38b2001c6 1-91
+tests/core/test_ha_matrix.py
+  s_222e1586b2d36c::t_fd3fc6656ff34b 257-277
+tests/core/test_ha_next.py
+  s_222e1586b2d36c::t_1e6e63a7cbc935 1-181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0f296a567fef9e050ad170acc2564b8cf1d585b7",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
