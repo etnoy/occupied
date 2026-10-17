@@ -220,6 +220,15 @@ or replace `floor` with a tested HA version; `--lane all` runs all six. Rebuild
 hashed requirements with `uv run python scripts/ha_matrix.py compile`, and discover
 new releases with `uv run python scripts/ha_matrix.py next`.
 
+Historical test environments retain the original HA constraints and their recorded
+SHA-256 digests. The matrix records one security repair: AnyIO versions below
+4.14.2 are replaced by 4.14.2 for [GHSA-82r6-8w77-94w6](https://github.com/advisories/GHSA-82r6-8w77-94w6).
+The compiler removes only that vulnerable constraint from its temporary input,
+records the replacement in each affected override/header, and keeps all other HA
+pins. These are test environments; Occupied does not declare AnyIO as a runtime
+requirement. Dependency review, installed-package checks and the full HA suites
+remain enabled.
+
 The Python tests are split into `tests/core` (planner, codecs, CLI, and examples) and
 `tests/ha` (integration, storage, services, and lifecycle). To run the core suite
 without installing Home Assistant:

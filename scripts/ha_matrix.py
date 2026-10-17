@@ -169,6 +169,12 @@ def check(root=ROOT):
             if source.splitlines()[0] != lane.header or "--hash=sha256:" not in source:
                 raise ValueError(f"{lane.id}: requirements header or hashes differ")
             resolved = pins(source)
+            security = security_pins(policy, lane_pins)
+            for package, version in security.items():
+                if resolved.get(package) != version:
+                    raise ValueError(f"{lane.id}: security override requires {package}=={version}")
+            if security and security_header(security) not in source.splitlines()[:3]:
+                raise ValueError(f"{lane.id}: security override provenance is missing")
             for package, version in (
                 ("homeassistant", lane.homeassistant),
                 ("pytest-homeassistant-custom-component", lane.phcc),
@@ -182,7 +188,7 @@ def check(root=ROOT):
                     raise ValueError(
                         f"{lane.id}: hashed runtime {name} differs from HA's constraint"
                     )
-            if override_file.read_text() != overrides(lane):
+            if override_file.read_text() != overrides(lane, security):
                 raise ValueError(f"{lane.id}: overrides differ from the matrix")
     pydantic_requirement = next(
         (r for r in integration_requirements if canonicalize_name(r.name) == "pydantic"), None
@@ -231,16 +237,38 @@ def fetch_text(url):
         return response.read().decode()
 
 
-def overrides(lane):
+def security_pins(policy, constrained):
+    return {
+        canonicalize_name(name): version
+        for name, version in policy.get("security_overrides", {}).items()
+        if canonicalize_name(name) in constrained
+        and Version(constrained[canonicalize_name(name)]) < Version(version)
+    }
+
+
+def security_header(security):
+    pins = ", ".join(f"{name}=={version}" for name, version in sorted(security.items()))
+    return f"# Security overrides: {pins}; see README compatibility tooling notes"
+
+
+def patched_constraints(source, security):
+    """Preserve every official pin except explicitly recorded security repairs."""
+    return (
+        "\n".join(line for line in source.splitlines() if not (set(pins(line)) & security.keys()))
+        + "\n"
+    )
+
+
+def overrides(lane, security=None):
     return (
         f"homeassistant=={lane.homeassistant}\n"
         f"pytest-homeassistant-custom-component=={lane.phcc}\n"
         f"home-assistant-frontend=={lane.frontend}\n"
-    )
+    ) + "".join(f"{name}=={version}\n" for name, version in sorted((security or {}).items()))
 
 
 def compile_lanes(root=ROOT):
-    _, lanes = load(root)
+    policy, lanes = load(root)
     directory = root / "scripts/requirements"
     directory.mkdir(exist_ok=True)
     expected = set()
@@ -258,40 +286,53 @@ def compile_lanes(root=ROOT):
         if lane.role == "newest":
             continue
         override_file = path.with_suffix(".overrides")
-        override_file.write_text(overrides(lane))
+        security = security_pins(policy, pins(path.read_text()))
+        override_file.write_text(overrides(lane, security))
         requirement_file = path.with_suffix(".txt")
         expected.update((override_file.name, requirement_file.name))
-        run(
-            [
-                uv(),
-                "pip",
-                "compile",
-                "pyproject.toml",
-                "--group",
-                "dev",
-                "--overrides",
-                override_file.relative_to(root),
-                "--constraint",
-                path.relative_to(root),
-                "--python-version",
-                lane.python,
-                "--universal",
-                "--generate-hashes",
-                "--no-header",
-                "--output-file",
-                requirement_file.relative_to(root),
-            ],
-            root,
-            stdout=subprocess.DEVNULL,
-        )
+        with tempfile.TemporaryDirectory(prefix="occupied-constraints-") as temporary:
+            effective = Path(temporary) / path.name
+            effective.write_text(patched_constraints(path.read_text(), security))
+            _compile_lane(root, lane, override_file, effective, requirement_file)
+            source = requirement_file.read_text().replace(
+                str(effective), str(path.relative_to(root))
+            )
+        provenance = security_header(security) + "\n" if security else ""
         requirement_file.write_text(
             lane.header
             + "\n# Regenerate: python scripts/ha_matrix.py compile\n"
-            + requirement_file.read_text()
+            + provenance
+            + source
         )
     for path in directory.glob("ha-*"):
         if path.name not in expected and path.suffix in {".txt", ".constraints", ".overrides"}:
             path.unlink()
+
+
+def _compile_lane(root, lane, override_file, constraints, requirement_file):
+    run(
+        [
+            uv(),
+            "pip",
+            "compile",
+            "pyproject.toml",
+            "--group",
+            "dev",
+            "--overrides",
+            override_file.relative_to(root),
+            "--constraint",
+            constraints,
+            "--python-version",
+            lane.python,
+            "--universal",
+            "--generate-hashes",
+            "--no-header",
+            "--output-file",
+            requirement_file.relative_to(root),
+        ],
+        root,
+        stdout=subprocess.DEVNULL,
+    )
 
 
 def github_matrix(kind="ha", root=ROOT):
@@ -507,7 +548,11 @@ def write_matrix(policy, lanes, root=ROOT):
         "[policy]",
     ]
     for key, value in policy.items():
-        lines.append(f"{key} = {json.dumps(value)}")
+        if isinstance(value, dict):
+            rendered = ", ".join(f"{json.dumps(k)} = {json.dumps(v)}" for k, v in value.items())
+            lines.append(f"{key} = {{{rendered}}}")
+        else:
+            lines.append(f"{key} = {json.dumps(value)}")
     for lane in lanes:
         lines.extend(["", "[[lanes]]"])
         lines.extend(f"{key} = {json.dumps(value)}" for key, value in asdict(lane).items())

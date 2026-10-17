@@ -307,3 +307,84 @@ def test_roll_advances_window_and_updates_generated_claims(monkeypatch, matrix_r
     assert matrix.table(lanes) in (matrix_repo / "README.md").read_text()
     assert compiled == [matrix_repo]
     assert any("pydantic==2.13.4" in command for command in commands)
+
+
+@pytest.fixture
+def security_matrix_repo(matrix_repo):
+    import hashlib
+    from dataclasses import replace
+
+    policy, lanes = matrix.load(matrix_repo)
+    updated = []
+    for lane in lanes:
+        if lane.role not in {"floor", "window", "newest"}:
+            updated.append(lane)
+            continue
+        path = matrix.constraints_path(matrix_repo, lane)
+        path.write_text(path.read_text() + "anyio==4.13.0\n")
+        updated_lane = replace(
+            lane, constraints_sha256=hashlib.sha256(path.read_bytes()).hexdigest()
+        )
+        updated.append(updated_lane)
+        if lane.role != "newest":
+            path.with_suffix(".txt").write_text(
+                updated_lane.header
+                + "\n"
+                + path.with_suffix(".txt").read_text().split("\n", 1)[1]
+                + "anyio==4.13.0\n    --hash=sha256:"
+                + "c" * 64
+                + "\n"
+            )
+    newest = matrix.selected(updated, "newest")
+    updated = [
+        replace(newest, id="python-floor", role="python-floor", python=policy["python_floor"])
+        if lane.role == "python-floor"
+        else lane
+        for lane in updated
+    ]
+    matrix.write_matrix(policy, updated, matrix_repo)
+    path = matrix_repo / "scripts/ha_matrix.toml"
+    path.write_text(
+        path.read_text().replace(
+            'uv = "0.13.1"', 'uv = "0.13.1"\nsecurity_overrides = {anyio = "4.14.2"}'
+        )
+    )
+    return matrix_repo
+
+
+def test_vulnerable_historical_fixture_pin_is_rejected(security_matrix_repo):
+    with pytest.raises(ValueError, match="security override"):
+        matrix.check(security_matrix_repo)
+
+
+def test_patched_fixture_preserves_official_constraints_and_roundtrips_policy(security_matrix_repo):
+    policy, lanes = matrix.load(security_matrix_repo)
+    original = {
+        path.name: path.read_bytes()
+        for path in (security_matrix_repo / "scripts/requirements").glob("*.constraints")
+    }
+    for lane in matrix.ha_lanes(lanes):
+        if lane.role == "newest":
+            continue
+        path = matrix.constraints_path(security_matrix_repo, lane)
+        security = matrix.security_pins(policy, matrix.pins(path.read_text()))
+        path.with_suffix(".overrides").write_text(matrix.overrides(lane, security))
+        path.with_suffix(".txt").write_text(
+            lane.header
+            + "\n"
+            + matrix.security_header(security)
+            + "\n"
+            + matrix.overrides(lane, security)
+            + matrix.patched_constraints(path.read_text(), security)
+            + "    --hash=sha256:"
+            + "c" * 64
+            + "\n"
+        )
+    assert matrix.check(security_matrix_repo)["lanes"] == 6
+    matrix.write_matrix(policy, lanes, security_matrix_repo)
+    assert matrix.load(security_matrix_repo)[0]["security_overrides"] == {"anyio": "4.14.2"}
+    assert original == {
+        path.name: path.read_bytes()
+        for path in (security_matrix_repo / "scripts/requirements").glob("*.constraints")
+    }
+    assert matrix.security_pins(policy, {"anyio": "4.15.1"}) == {}
