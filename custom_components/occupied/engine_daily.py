@@ -322,6 +322,8 @@ class DailyEngine:
 
     async def _async_reconfigure(self):
         async with self._lock:
+            if self.closed:
+                return
             await self._cancel_native_fades()
             self._plans.clear()
             self._restoring = True
