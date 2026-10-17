@@ -27,6 +27,21 @@ def config():
 
 
 @pytest.fixture
+def controller_entity_id(hass):
+    """Resolve controls by stable identity independently of device names."""
+    from homeassistant.helpers import entity_registry as er
+
+    def find(entry, key, domain="sensor"):
+        entity_id = er.async_get(hass).async_get_entity_id(
+            domain, DOMAIN, f"{entry.entry_id}_{key}"
+        )
+        assert entity_id is not None
+        return entity_id
+
+    return find
+
+
+@pytest.fixture
 def entry(hass, config):
     entry = MockConfigEntry(domain=DOMAIN, unique_id=DOMAIN, title="House", data=config)
     entry.add_to_hass(hass)

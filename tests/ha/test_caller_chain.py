@@ -26,7 +26,7 @@ async def load(hass, entry, *, running=True):
 
 
 async def test_already_armed_at_startup_drives_services_without_browser(
-    hass, entry, devices, saved_permission, freezer
+    controller_entity_id, hass, entry, devices, saved_permission, freezer
 ):
     from custom_components.occupied.const import EVENT_ACTION
 
@@ -66,13 +66,16 @@ async def test_already_armed_at_startup_drives_services_without_browser(
     assert devices[-1].domain == "remote"
     assert devices[-1].service == "turn_off"
     assert engine.status == "active"
-    status = hass.states.get("sensor.occupied_status")
+    status = hass.states.get(controller_entity_id(entry, "status"))
     assert status.state == "active"
     assert "complete" not in status.attributes["options"]
     assert status.attributes["reason"] == (
         "Caller-proof schedule completed; waiting for next activation"
     )
-    assert hass.states.get("sensor.occupied_status_reason").state == status.attributes["reason"]
+    assert (
+        hass.states.get(controller_entity_id(entry, "status_reason")).state
+        == status.attributes["reason"]
+    )
     assert engine.next_event is None
     assert all(call.context.id for call in devices)
     assert len(events) == len(devices)
@@ -97,14 +100,14 @@ async def test_allowed_states_do_not_restart_session(
 
 
 async def test_permission_switch_persists_and_rearming_cannot_undo_stop(
-    hass, entry, devices, freezer
+    controller_entity_id, hass, entry, devices, freezer
 ):
     engine = await load(hass, entry)
     assert not engine.enabled
     switch = next(
         state.entity_id
         for state in hass.states.async_all("switch")
-        if state.entity_id.startswith("switch.occupied")
+        if state.entity_id == controller_entity_id(entry, "enabled", "switch")
     )
     await hass.services.async_call("switch", "turn_on", {"entity_id": switch}, blocking=True)
     assert engine.active
@@ -122,7 +125,9 @@ async def test_permission_switch_persists_and_rearming_cannot_undo_stop(
 
 
 @pytest.mark.parametrize("state", ["disarmed", "unknown", "unavailable", "Armed"])
-async def test_start_does_not_bypass_gate(hass, entry, devices, freezer, state):
+async def test_start_does_not_bypass_gate(
+    controller_entity_id, hass, entry, devices, freezer, state
+):
     hass.states.async_set("sensor.alarm", state)
     engine = await load(hass, entry)
     await hass.services.async_call(
@@ -130,7 +135,7 @@ async def test_start_does_not_bypass_gate(hass, entry, devices, freezer, state):
     )
     assert engine.enabled
     assert not engine.active
-    assert hass.states.get("sensor.occupied_status").state == "waiting"
+    assert hass.states.get(controller_entity_id(entry, "status")).state == "waiting"
     await advance(hass, freezer, 200)
     assert not devices
 
@@ -292,14 +297,14 @@ async def test_pause_keeps_permission_and_resume_rechecks_gate(
     assert not devices
 
 
-async def test_closed_legacy_controller_entities_are_unavailable(hass, entry):
+async def test_closed_legacy_controller_entities_are_unavailable(controller_entity_id, hass, entry):
     engine = await load(hass, entry)
     await engine.async_close()
     await hass.async_block_till_done()
     for entity_id in (
-        "sensor.occupied_status",
-        "sensor.occupied_status_reason",
-        "sensor.occupied_next_event",
-        "switch.occupied_enable",
+        controller_entity_id(entry, "status"),
+        controller_entity_id(entry, "status_reason"),
+        controller_entity_id(entry, "next_event"),
+        controller_entity_id(entry, "enabled", "switch"),
     ):
         assert hass.states.get(entity_id).state == "unavailable"

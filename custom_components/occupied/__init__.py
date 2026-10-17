@@ -189,6 +189,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> 
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: OccupiedConfigEntry) -> None:
+    from homeassistant.helpers import device_registry as dr
+
+    from .compat import controller_device
+
+    if device := controller_device(hass, entry.entry_id):
+        if device.name != entry.title:
+            dr.async_get(hass).async_update_device(device.id, name=entry.title)
     if not hasattr(entry.runtime_data, "async_replace_program"):
         await hass.config_entries.async_reload(entry.entry_id)
 

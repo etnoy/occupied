@@ -1,5 +1,6 @@
 """Shared event-driven entity state."""
 
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, Entity
 
@@ -13,9 +14,11 @@ class OccupiedEntity(Entity):
 
     def __init__(self, engine: OccupiedEngine) -> None:
         self.engine = engine
+        entry = engine.hass.config_entries.async_get_entry(engine.entry_id)
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, engine.entry_id)},
-            name="Occupied",
+            name=entry.title if entry is not None else engine.config["name"],
+            entry_type=dr.DeviceEntryType.SERVICE,
             manufacturer="Occupied",
             model="Entity controller",
         )
