@@ -14307,6 +14307,11 @@ async function loadHaControls() {
     config.routerOptions.routes.automation.load(),
     config.routerOptions.routes.integrations.load(),
   ]);
+  if (!customElements.get("ha-top-app-bar-fixed")) {
+    await resolver
+      ._getRoutes([{ url_path: "history", component_name: "history" }])
+      .routes.history.load();
+  }
   await Promise.all([
     customElements.whenDefined("ha-selector"),
     customElements.whenDefined("ha-generic-picker"),

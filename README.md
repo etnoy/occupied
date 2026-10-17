@@ -18,6 +18,44 @@ Occupied is the spiritual successor of [Occusim](https://github.com/acockburn/oc
 * Schedule everyday lighting around sunrise, sunset, or bedtime, with randomized windows instead of the same exact times each day.
 * Run a schedule only when your alarm is armed. You can also save power by having Occupied turn off extra lights or switches, such as those in a windowless bathroom.
 
+# Compatibility
+
+Occupied supports the six most recent monthly Home Assistant releases: the current
+minor and the five before it. The table lists the exact releases tested in CI.
+The oldest minor is tested from its `.0` release; the other lanes use the newest
+patch with published matching test fixtures.
+
+At each monthly rollover, one PR adds the new minor and drops the oldest. That PR
+updates the HACS minimum, dependency floors, tested container images, and this
+table together. Every release includes its supported HA range in the release
+notes. Upgrade Home Assistant before installing an Occupied release whose floor
+is newer than your HA version.
+
+Integration Python versions follow each supported HA release. The standalone CLI
+has its own floor and experimental next-Python lane, described below.
+
+<!-- ha-matrix:start -->
+| Home Assistant tested | Python tested | Lane |
+| --- | --- | --- |
+| 2026.5.0 | 3.14.8 | floor |
+| 2026.6.4 | 3.14.8 | window |
+| 2026.7.4 | 3.14.8 | window |
+| 2026.8.3 | 3.14.8 | window |
+| 2026.9.4 | 3.14.8 | window |
+| 2026.10.2 | 3.14.8 | newest |
+| 2026.10.2 | 3.14.2 | Python floor |
+<!-- ha-matrix:end -->
+
+CI also runs the standalone core suite and all CLI examples on Python 3.14.2 and
+3.14.8, without Home Assistant. Python 3.15 is an experimental canary until both
+its tests and a fresh wheels-only dependency resolution pass. Missing published
+wheels are reported in the CI summary; test failures and unexpected resolver errors
+still fail that experimental job. The Python-floor HA
+lane skips one recorder-harness test on CPython versions before 3.14.4; all other
+tests are required. Browser smoke tests use isolated, digest-pinned floor and
+newest HA containers. Set `HA_IMAGE` to a matrix image to reproduce either lane
+with `pnpm run test:browser`.
+
 # Installation
 
 Install through [HACS](https://hacs.xyz/):
@@ -199,8 +237,33 @@ Node development dependencies with `pnpm install --frozen-lockfile --ignore-scri
 Home Assistant itself depends on the `uv` Python package, so pip installs it inside
 the virtual environment even though these development commands use mise and pip.
 
-CI tests Home Assistant 2026.10.0 and 2026.10.1 with matching test fixtures.
-The minimum supported Home Assistant version is 2026.10.0.
+The environments are defined in `scripts/ha_matrix.toml`. Validate metadata and
+generated files with `uv run python scripts/ha_matrix.py check`. Reproduce a
+supported environment with `uv run python scripts/ha_matrix.py test --lane floor`
+or replace `floor` with a tested HA version; `--lane all` runs all six. Rebuild
+hashed requirements with `uv run python scripts/ha_matrix.py compile`, and discover
+new releases with `uv run python scripts/ha_matrix.py next`.
+
+Historical test environments retain the original HA constraints and their recorded
+SHA-256 digests. The matrix records one security repair: AnyIO versions below
+4.14.2 are replaced by 4.14.2 for [GHSA-82r6-8w77-94w6](https://github.com/advisories/GHSA-82r6-8w77-94w6).
+The compiler removes only that vulnerable constraint from its temporary input,
+records the replacement in each affected override/header, and keeps all other HA
+pins. The dependency review workflow allows the reported PyJWT advisories only
+for the isolated historical test fixtures; their official PyJWT pins remain
+unchanged to satisfy each HA release's exact requirements. These are test
+environments; Occupied does not declare AnyIO or PyJWT as runtime requirements.
+The same narrow advisory-ID exception applies to the reported cryptography
+advisories; official HA pins are preserved. Installed-package checks and the
+full HA suites remain enabled.
+
+The historical Home Assistant fixtures also retain releases affected by
+[GHSA-5hxg-r395-fqxx](https://github.com/advisories/GHSA-5hxg-r395-fqxx),
+[GHSA-wx4m-69m9-gx3m](https://github.com/advisories/GHSA-wx4m-69m9-gx3m), and
+[GHSA-x84v-g949-293w](https://github.com/advisories/GHSA-x84v-g949-293w). The
+dependency-review allowlist is limited to those advisory IDs for the historical
+compatibility matrix; all other high- and critical-severity findings continue to
+fail CI.
 
 The Python tests are split into `tests/core` (planner, codecs, CLI, and examples) and
 `tests/ha` (integration, storage, services, and lifecycle). To run the core suite

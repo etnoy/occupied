@@ -24,3 +24,42 @@ def test_release_notes_inputs_exist():
             source = command[command.index("--notes-file") + 1]
             source = source.replace("${RELEASE_TAG#v}", manifest["version"])
             assert (ROOT / source).is_file(), f"Release notes input is missing: {source}"
+
+
+def test_release_notes_include_matrix_compatibility():
+    workflow = yaml.safe_load((ROOT / ".github/workflows/release.yml").read_text())
+    publish = workflow["jobs"]["publish"]["steps"]
+    commands = [
+        shlex.split(line.strip())
+        for step in publish
+        for line in step.get("run", "").splitlines()
+        if line.strip().startswith("gh release create ")
+    ]
+    assert commands and all("--notes" in command for command in commands), (
+        "Every release must prepend compatibility notes generated from the HA matrix"
+    )
+    assert any("scripts/release_notes.py" in step.get("run", "") for step in publish)
+    for step in publish:
+        if "gh release create " in step.get("run", ""):
+            assert "COMPATIBILITY_NOTES" in step["env"]
+            for line in step["run"].splitlines():
+                if "gh release create " in line:
+                    command = shlex.split(line)
+                    assert command[command.index("--notes") + 1] == "$COMPATIBILITY_NOTES"
+
+
+def test_compatibility_notes_follow_the_matrix(tmp_path):
+    from scripts.release_notes import compatibility_notes
+
+    directory = tmp_path / "scripts"
+    directory.mkdir()
+    (directory / "ha_matrix.toml").write_text(
+        '[policy]\npython_floor = "3.15.2"\npython_next = "3.16"\n'
+        '[[lanes]]\nrole = "floor"\nhomeassistant = "2027.6.0"\n'
+        '[[lanes]]\nrole = "newest"\nhomeassistant = "2027.11.3"\n'
+    )
+    assert compatibility_notes(tmp_path) == (
+        "Supports Home Assistant 2027.6.0–2027.11.x. "
+        "The standalone CLI requires Python 3.15.2 or newer; "
+        "Python 3.16 support is experimental."
+    )

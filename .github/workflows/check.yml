@@ -16,13 +16,53 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      ha: ${{ steps.matrix.outputs.ha }}
+      python-floor: ${{ steps.matrix.outputs.python-floor }}
+      core: ${{ steps.matrix.outputs.core }}
+      core-next: ${{ steps.matrix.outputs.core-next }}
+      browser: ${{ steps.matrix.outputs.browser }}
+      uv: ${{ steps.policy.outputs.uv }}
+      python: ${{ steps.policy.outputs.python }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: policy
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import tomllib
+          from pathlib import Path
+          policy = tomllib.loads(Path("scripts/ha_matrix.toml").read_text())["policy"]
+          print("uv=" + policy["uv"])
+          print("python=" + policy["python_latest"])
+          PY
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: ${{ steps.policy.outputs.uv }}
+          python-version: ${{ steps.policy.outputs.python }}
+      - run: uv sync --locked --no-dev --group test-core
+      - id: matrix
+        run: |
+          uv run --no-dev --group test-core python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from scripts.ha_matrix import github_matrix
+          for kind in ("ha", "python-floor", "browser"):
+              print(kind + "=" + json.dumps(github_matrix(kind)))
+          core = github_matrix("core")["include"]
+          print("core=" + json.dumps({"include": [row for row in core if not row["experimental"]]}))
+          print("core-next=" + json.dumps({"include": [row for row in core if row["experimental"]]}))
+          PY
+
   python:
+    name: Python (HA ${{ matrix.homeassistant }})
+    needs: matrix
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false
-      matrix:
-        homeassistant: ["2026.10.0", "2026.10.1"]
+      matrix: ${{ fromJSON(needs.matrix.outputs.ha) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -30,36 +70,156 @@ jobs:
           node-version: "24"
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.12.23"
-          python-version: "3.14.8"
+          version: ${{ matrix.uv }}
+          python-version: ${{ matrix.python }}
           enable-cache: true
-      - name: Install locked baseline
-        if: matrix.homeassistant == '2026.10.1'
+      - name: Install locked newest HA
+        if: matrix.role == 'newest'
         run: uv sync --locked
-      - name: Install locked minimum HA
-        if: matrix.homeassistant == '2026.10.0'
+      - name: Install hashed HA lane
+        if: matrix.role != 'newest'
+        env:
+          REQUIREMENTS: ${{ matrix.requirements }}
         run: |
-          uv venv --python 3.14.8
-          uv pip sync --require-hashes scripts/requirements-ha-2026.10.0.txt
+          uv venv
+          uv pip sync --require-hashes "$REQUIREMENTS"
           uv pip install --no-deps -e .
       - name: Verify installed dependency constraints
         run: uv pip check
-      - run: .venv/bin/ruff check custom_components tests scripts
-      - run: .venv/bin/ruff format --check custom_components tests scripts
-      - run: .venv/bin/pytest --cov=custom_components.occupied --cov-fail-under=88 --cov-report=term-missing --cov-report=xml --cov-report=html --junitxml=test-results/python.xml
+      - if: matrix.role == 'newest'
+        run: .venv/bin/ruff check custom_components tests scripts
+      - if: matrix.role == 'newest'
+        run: .venv/bin/ruff format --check custom_components tests scripts
+      - name: Test newest HA with coverage
+        if: matrix.role == 'newest'
+        run: .venv/bin/pytest --cov=custom_components.occupied --cov-fail-under=88 --cov-report=term-missing --cov-report=xml --cov-report=html --junitxml=test-results/python.xml
+      - name: Test supported HA lane
+        if: matrix.role != 'newest'
+        run: .venv/bin/pytest --junitxml=test-results/python.xml
       - name: Upload Python coverage and test results
         if: ${{ always() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: python-results-${{ matrix.homeassistant }}
+          name: python-results-${{ matrix.id }}
           path: |
             coverage.xml
             htmlcov/
             test-results/python.xml
           if-no-files-found: ignore
           retention-days: 7
-      - run: .venv/bin/python scripts/check_release.py
-      - run: .venv/bin/occupied validate examples/house.yaml --date 2026-10-06 --days 7 --seed release --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
+      - if: matrix.role == 'newest'
+        run: .venv/bin/python scripts/check_release.py
+      - if: matrix.role == 'newest'
+        run: .venv/bin/python scripts/ha_matrix.py check
+
+  python-floor:
+    name: Python floor (${{ matrix.python }})
+    needs: matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix: ${{ fromJSON(needs.matrix.outputs.python-floor) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: ${{ matrix.uv }}
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv pip check
+      - run: .venv/bin/pytest --junitxml=test-results/python-floor.xml
+      - if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: python-results-floor
+          path: test-results/python-floor.xml
+          if-no-files-found: ignore
+          retention-days: 7
+
+  core:
+    name: Standalone core (Python ${{ matrix.python }})
+    needs: matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.core) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: ${{ needs.matrix.outputs.uv }}
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+      - name: Resolve standalone ranges without Home Assistant
+        run: |
+          uv venv
+          uv pip install -e . --group test-core
+          uv pip check
+          .venv/bin/python -c 'import importlib.util; assert importlib.util.find_spec("homeassistant") is None'
+      - run: .venv/bin/pytest tests/core --junitxml=test-results/core.xml
+      - name: Validate all example programs through the standalone CLI
+        run: |
+          for program in examples/*.yaml; do
+            .venv/bin/occupied validate "$program" --date 2026-10-13 --days 7 --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
+          done
+      - if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: core-results-${{ matrix.python }}
+          path: test-results/core.xml
+          if-no-files-found: ignore
+          retention-days: 7
+
+  core-next:
+    name: Standalone core (Python ${{ matrix.python }})
+    needs: matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.core-next) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: ${{ needs.matrix.outputs.uv }}
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+      - name: Resolve standalone ranges without Home Assistant
+        run: |
+          uv venv
+          uv pip install -e . --group test-core
+          uv pip check
+          .venv/bin/python -c 'import importlib.util; assert importlib.util.find_spec("homeassistant") is None'
+      - run: .venv/bin/pytest tests/core --junitxml=test-results/core.xml
+      - name: Validate all example programs through the standalone CLI
+        run: |
+          for program in examples/*.yaml; do
+            .venv/bin/occupied validate "$program" --date 2026-10-13 --days 7 --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
+          done
+      - if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: core-results-${{ matrix.python }}
+          path: test-results/core.xml
+          if-no-files-found: ignore
+          retention-days: 7
+      # Keep this canary outside the required ci aggregate until tests AND wheels pass.
+      - name: Report next-Python wheel readiness
+        id: wheels
+        run: .venv/bin/python scripts/check_core_wheels.py "${{ matrix.python }}"
 
   frontend:
     runs-on: ubuntu-latest
@@ -102,22 +262,22 @@ jobs:
           comment: "false"
 
   package:
-    needs: [python, frontend, hassfest, hacs]
+    needs: [matrix, python, frontend, hassfest, hacs]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
-          version: "0.12.23"
-          python-version: "3.14.8"
+          version: ${{ needs.matrix.outputs.uv }}
+          python-version: ${{ needs.matrix.outputs.python }}
       - run: uv sync --no-dev --locked
       - run: uv build --out-dir dist
       - run: .venv/bin/python scripts/build_release.py
       - run: .venv/bin/python scripts/check_artifacts.py dist
       - name: Verify standalone CLI wheel outside the checkout
         run: |
-          uv venv /tmp/occupied-cli --python 3.14.8
+          uv venv /tmp/occupied-cli --python "${{ needs.matrix.outputs.python }}"
           uv pip install --python /tmp/occupied-cli/bin/python dist/occupied-*-py3-none-any.whl
           cd /tmp
           /tmp/occupied-cli/bin/python -c 'import sys; from custom_components.occupied.cli import main; assert "homeassistant" not in sys.modules'
@@ -161,9 +321,15 @@ jobs:
     uses: ./.github/workflows/security.yml
 
   browser:
-    needs: package
+    name: Browser (HA ${{ matrix.homeassistant }})
+    needs: [matrix, package]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.browser) }}
+    env:
+      HA_IMAGE: ${{ matrix.image }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -184,7 +350,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: browser-results
+          name: browser-results-${{ matrix.id }}
           include-hidden-files: true
           path: |
             playwright-report/
@@ -198,7 +364,10 @@ jobs:
     if: ${{ always() }}
     needs:
       [
+        matrix,
         python,
+        python-floor,
+        core,
         frontend,
         hassfest,
         hacs,

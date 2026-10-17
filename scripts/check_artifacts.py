@@ -4,6 +4,7 @@ import hashlib
 import json
 import sys
 import tarfile
+import tomllib
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -51,8 +52,23 @@ with tarfile.open(directory / f"occupied-{version}.tar.gz") as source:
         "tests/fixtures/programs/gui-house.yaml",
         "tests/fixtures/programs/scheduling-edge-cases.yaml",
         "scripts/check_artifacts.py",
+        "scripts/ha_matrix.py",
+        "scripts/ha_matrix.toml",
+        "scripts/release_notes.py",
     ):
         assert f"occupied-{version}/{relative}" in source.getnames()
+    matrix_file = source.extractfile(f"occupied-{version}/scripts/ha_matrix.toml")
+    assert matrix_file is not None
+    matrix = tomllib.loads(matrix_file.read().decode())
+    for lane in matrix["lanes"]:
+        if lane["role"] not in {"floor", "window", "newest"}:
+            continue
+        suffixes = (
+            ("constraints",) if lane["role"] == "newest" else ("constraints", "overrides", "txt")
+        )
+        for suffix in suffixes:
+            relative = f"scripts/requirements/ha-{lane['homeassistant']}.{suffix}"
+            assert f"occupied-{version}/{relative}" in source.getnames()
 checksums = (directory / "SHA256SUMS").read_text().splitlines()
 assert {line.split("  ", 1)[1] for line in checksums} == {
     "occupied.zip",

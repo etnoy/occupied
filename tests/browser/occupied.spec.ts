@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectedHaShellError } from "../frontend/src/ha-shell-errors.js";
 
 test("create a controller, save a step, and preview the installed release", async ({
   page,
@@ -6,7 +7,11 @@ test("create a controller, save a step, and preview the installed release", asyn
 }) => {
   // Capture errors throughout HA setup and the installed panel, including reload.
   const errors: string[] = [];
+  let panelStarted = false;
   page.on("pageerror", (error) => {
+    if (expectedHaShellError(error, panelStarted)) {
+      return;
+    }
     errors.push(error.message);
   });
 
@@ -44,7 +49,16 @@ test("create a controller, save a step, and preview the installed release", asyn
   );
 
   await page.goto("/config/integrations/dashboard");
-  await page.getByRole("button", { name: "Confirm", exact: true }).click();
+  // Newer HA frontends ask for confirmation before opening settings.
+  const confirm = page.getByRole("button", { name: "Confirm", exact: true });
+  const addIntegration = page.getByRole("button", {
+    name: "Add integration",
+    exact: true,
+  });
+  await expect(confirm.or(addIntegration).first()).toBeVisible();
+  if (await confirm.isVisible()) {
+    await confirm.click();
+  }
   await page.goto("/config/integrations/dashboard/add?domain=occupied");
   await page.getByRole("button", { name: "OK", exact: true }).click();
   await page
@@ -55,6 +69,7 @@ test("create a controller, save a step, and preview the installed release", asyn
     .getByRole("button", { name: "Skip and finish", exact: true })
     .click();
 
+  panelStarted = true;
   await page.goto("/occupied");
   const panel = page.locator("occupied-panel");
   await expect(

@@ -2,7 +2,7 @@ include LICENSE README.md hacs.json uv.lock package.json pnpm-lock.yaml pnpm-wor
 recursive-include docs *.md
 recursive-include examples *.yaml
 recursive-include media *.svg *.png
-recursive-include scripts *.py *.txt *.overrides *.ts *.mjs
+recursive-include scripts *.py *.txt *.overrides *.ts *.mjs *.toml *.constraints
 recursive-include tests *.py *.ts
 recursive-include tests/fixtures *.yaml *.md
 recursive-include .github/workflows *.yml

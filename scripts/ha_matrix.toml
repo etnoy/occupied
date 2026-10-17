@@ -1,0 +1,90 @@
+# Maintained with python scripts/ha_matrix.py roll <year.month>
+format = 1
+
+[policy]
+window = 6
+python_floor = "3.14.2"
+python_latest = "3.14.8"
+python_next = "3.15"
+uv = "0.13.1"
+security_overrides = { anyio = "4.14.2" }
+
+[[lanes]]
+id = "ha-2026.5.0"
+role = "floor"
+homeassistant = "2026.5.0"
+phcc = "0.13.329"
+frontend = "20260429.3"
+python = "3.14.8"
+image = "ghcr.io/home-assistant/home-assistant:2026.5.0@sha256:8edcb16cff8158e87a3a2b48b3bcca05c30dcea0212eb6a2fe940b6d52ed216a"
+constraints_sha256 = "66fca3ea4e53cd761c106e58811674a000b5bce772fd9ea8a006bd92f9371d19"
+
+[[lanes]]
+id = "ha-2026.6.4"
+role = "window"
+homeassistant = "2026.6.4"
+phcc = "0.13.340"
+frontend = "20260527.7"
+python = "3.14.8"
+image = "ghcr.io/home-assistant/home-assistant:2026.6.4@sha256:adb3341e31e03e0048e60d8c1cf952e118a381ae258bb921d3da12a3b27bf0c2"
+constraints_sha256 = "fbd4fb4bbbb564889a67455dcefa1977e876f2c64150974d64a3f20baeb05f51"
+
+[[lanes]]
+id = "ha-2026.7.4"
+role = "window"
+homeassistant = "2026.7.4"
+phcc = "0.13.348"
+frontend = "20260624.6"
+python = "3.14.8"
+image = "ghcr.io/home-assistant/home-assistant:2026.7.4@sha256:5a531753cea96444200158fc2b0ac7ccd739291ec50414877b396de6e0bb29b3"
+constraints_sha256 = "3ec2148f62c7d953407b593b2d6448c89f34eac2be468b97987caf55561983c1"
+
+[[lanes]]
+id = "ha-2026.8.3"
+role = "window"
+homeassistant = "2026.8.3"
+phcc = "0.13.357"
+frontend = "20260729.7"
+python = "3.14.8"
+image = "ghcr.io/home-assistant/home-assistant:2026.8.3@sha256:14931c6b13756317849f46da1d01b45937a1150db66c081cfe529d48215943fe"
+constraints_sha256 = "94db4ee9d7731452e9479e96e72777454ccf69c0ec6a5a0742da330eaa7b7a42"
+
+[[lanes]]
+id = "ha-2026.9.4"
+role = "window"
+homeassistant = "2026.9.4"
+phcc = "0.13.367"
+frontend = "20260826.7"
+python = "3.14.8"
+image = "ghcr.io/home-assistant/home-assistant:2026.9.4@sha256:3e6710a7ab2a61311d9d899b719f6c3657791c63e8f4942cec4ebc42401d6b76"
+constraints_sha256 = "962c9ccaf398e0b92b10ac9f765ac0f17e22238adc4e768deebc051ee8b60651"
+
+[[lanes]]
+id = "ha-2026.10.2"
+role = "newest"
+homeassistant = "2026.10.2"
+phcc = "0.13.373"
+frontend = "20260930.4"
+python = "3.14.8"
+image = "ghcr.io/home-assistant/home-assistant:2026.10.2@sha256:33afb0659d786213264c2211f8d91c5fe87461c56eba6a3a546eb05fc71e89f4"
+constraints_sha256 = "7baa9a8f39ddeb9c5bb60a1036f6d5e33f4b84267f151f53cc2b95ef031a21b5"
+
+[[lanes]]
+id = "python-floor"
+role = "python-floor"
+homeassistant = "2026.10.2"
+phcc = "0.13.373"
+frontend = "20260930.4"
+python = "3.14.2"
+image = "ghcr.io/home-assistant/home-assistant:2026.10.2@sha256:33afb0659d786213264c2211f8d91c5fe87461c56eba6a3a546eb05fc71e89f4"
+constraints_sha256 = "7baa9a8f39ddeb9c5bb60a1036f6d5e33f4b84267f151f53cc2b95ef031a21b5"
+
+[[lanes]]
+id = "next"
+role = "next"
+homeassistant = "auto"
+phcc = "auto"
+frontend = "auto"
+python = "auto"
+image = "auto"
+constraints_sha256 = ""
