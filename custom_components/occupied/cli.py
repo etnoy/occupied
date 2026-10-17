@@ -18,6 +18,25 @@ from .validation import (
 )
 
 
+class ArgumentParser(argparse.ArgumentParser):
+    """Reserve status 2 for invalid or infeasible programs."""
+
+    def error(self, message):
+        self.print_usage(sys.stderr)
+        self.exit(1, f"{self.prog}: error: {message}\n")
+
+
+def _failure_status(issues):
+    return (
+        1
+        if any(
+            issue["code"] in {"file_read", "timezone_context", "location_context"}
+            for issue in issues
+        )
+        else 2
+    )
+
+
 def _context_options(parser):
     parser.add_argument("--timezone", help="Timezone context for offline previews")
     parser.add_argument("--latitude", type=float)
@@ -30,7 +49,7 @@ def _date(value):
 
 
 def parser() -> argparse.ArgumentParser:
-    root = argparse.ArgumentParser(
+    root = ArgumentParser(
         prog="occupied",
         description=(
             "Validate and preview Occupied's schema without Home Assistant or device calls."
@@ -167,11 +186,20 @@ def main(argv: list[str] | None = None) -> int:
                                 f"error: {plan['simulation_date']} "
                                 f"{issue['path']}: {issue['message']}"
                             )
-        return 0 if result["valid"] else 2
+        if result["valid"]:
+            return 0
+        return _failure_status(
+            issue
+            for plan in result.get("plans", [])
+            for issue in plan["issues"]
+            if issue["severity"] == "error"
+        )
     except (ProgramError, OSError, ValueError) as err:
         if isinstance(err, ProgramError):
             issues = [issue.to_dict() for issue in err.issues]
+            status = _failure_status(issues)
         else:
+            status = 1
             issues = [
                 {
                     "code": "input",
@@ -189,7 +217,7 @@ def main(argv: list[str] | None = None) -> int:
                 file = getattr(args, "file", args.command)
                 location = f"{file}:{issue['line']}" if issue.get("line") else str(file)
                 print(f"{location} {issue['path']}: {issue['message']}", file=sys.stderr)
-        return 2
+        return status
 
 
 if __name__ == "__main__":
