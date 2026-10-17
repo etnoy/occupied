@@ -7,6 +7,13 @@ test("create a controller, save a step, and preview the installed release", asyn
   // Capture errors throughout HA setup and the installed panel, including reload.
   const errors: string[] = [];
   page.on("pageerror", (error) => {
+    // Older HA shells report cancelled navigation animations as unhandled rejections.
+    if (
+      error.name === "AbortError" &&
+      error.message === "Transition was skipped. New ViewTransition started"
+    ) {
+      return;
+    }
     errors.push(error.message);
   });
 
@@ -44,7 +51,16 @@ test("create a controller, save a step, and preview the installed release", asyn
   );
 
   await page.goto("/config/integrations/dashboard");
-  await page.getByRole("button", { name: "Confirm", exact: true }).click();
+  // Newer HA frontends ask for confirmation before opening settings.
+  const confirm = page.getByRole("button", { name: "Confirm", exact: true });
+  const addIntegration = page.getByRole("button", {
+    name: "Add integration",
+    exact: true,
+  });
+  await expect(confirm.or(addIntegration).first()).toBeVisible();
+  if (await confirm.isVisible()) {
+    await confirm.click();
+  }
   await page.goto("/config/integrations/dashboard/add?domain=occupied");
   await page.getByRole("button", { name: "OK", exact: true }).click();
   await page

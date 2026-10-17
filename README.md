@@ -213,6 +213,14 @@ the virtual environment even though these development commands use mise and pip.
 | 2026.10.2 | 3.14.2 | Python floor |
 <!-- ha-matrix:end -->
 
+CI also runs the standalone core suite and all CLI examples on Python 3.14.2 and
+3.14.8, without Home Assistant. Python 3.15 is an experimental canary until both
+its tests and a fresh wheels-only dependency resolution pass. The Python-floor HA
+lane skips one recorder-harness test on CPython versions before 3.14.4; all other
+tests are required. Browser smoke tests use isolated, digest-pinned floor and
+newest HA containers. Set `HA_IMAGE` to a matrix image to reproduce either lane
+with `pnpm run test:browser`.
+
 The environments are defined in `scripts/ha_matrix.toml`. Validate metadata and
 generated files with `uv run python scripts/ha_matrix.py check`. Reproduce a
 supported environment with `uv run python scripts/ha_matrix.py test --lane floor`
