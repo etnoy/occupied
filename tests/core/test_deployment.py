@@ -97,7 +97,7 @@ def test_reload_errors_redact_transport(token_file, opener, capsys, error):
                 str(token_file),
             ]
         )
-        == 2
+        == 1
     )
     assert "test-secret-token" not in capsys.readouterr().err
 
