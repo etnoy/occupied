@@ -216,6 +216,10 @@ occupied export examples/house.yaml
 occupied rename-id examples/house.yaml step wake_up morning
 ```
 
+Exit status is `0` for success, `1` for usage, missing or invalid preview context,
+file I/O or transport failures, and `2` for an invalid program or infeasible plan.
+For `reload`, an unsuccessful managed-file validation also returns `2`.
+
 # Development
 
 Use [mise](https://mise.jdx.dev/) with Python's built-in virtual environment and pip; uv is optional:
