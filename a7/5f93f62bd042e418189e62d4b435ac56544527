@@ -1,0 +1,41 @@
+scripts/requirements/ha-2026.5.0.overrides
+  s_f43524462b82c4::t_36e9dd9e93eaf0 5
+scripts/requirements/ha-2026.5.0.txt
+  s_f43524462b82c4::t_7042a60ccc9092 3,2667-2669,2671
+scripts/requirements/ha-2026.6.4.overrides
+  s_f43524462b82c4::t_140bdc10ecdc02 5
+scripts/requirements/ha-2026.6.4.txt
+  s_f43524462b82c4::t_caee4ec1501d1b 3,2591-2593,2595
+scripts/requirements/ha-2026.7.4.overrides
+  s_f43524462b82c4::t_f5794a3729f036 5
+scripts/requirements/ha-2026.7.4.txt
+  s_f43524462b82c4::t_07eaa57392669f 3,2542-2544,2546
+scripts/requirements/ha-2026.8.3.overrides
+  s_f43524462b82c4::t_a9138c22fc3b74 5
+scripts/requirements/ha-2026.8.3.txt
+  s_f43524462b82c4::t_502451ea0da2bc 3,2530-2532,2534
+scripts/requirements/ha-2026.9.4.overrides
+  s_f43524462b82c4::t_0737c93cc43dd7 5
+scripts/requirements/ha-2026.9.4.txt
+  s_f43524462b82c4::t_a9cbfe82e700ce 3,2626-2628,2630
+README.md
+  s_f43524462b82c4::t_a7d0489abcf32e 248-256
+scripts/ha_matrix.toml
+  s_f43524462b82c4::t_42581d48520427 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a75f93f62bd042e418189e62d4b435ac56544527",
+  "prompts": {},
+  "sessions": {
+    "s_f43524462b82c4": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "7ab88de8-ebb5-42ee-9771-7200c96b0218",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
