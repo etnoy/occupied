@@ -1,0 +1,31 @@
+custom_components/occupied/__init__.py
+  s_222e1586b2d36c::t_104addc4c42867 192-198
+custom_components/occupied/entity.py
+  s_222e1586b2d36c::t_ca5fca6ff9f276 3,17,20-21
+tests/ha/conftest.py
+  s_222e1586b2d36c::t_33a896167c5ecd 29-43
+tests/ha/test_caller_chain.py
+  s_222e1586b2d36c::t_4e98cb53150882 29,69,75-78,103,110,128-130,138,300,305-308
+tests/ha/test_daily_runtime.py
+  s_222e1586b2d36c::t_ca11e8e6ccbeb5 1440,1460-1464,1854,1867,1872,1875,1880-1882,1901,1921,2231-2233,2242,2245,2253-2255,2260-2263
+tests/ha/test_device_names.py
+  s_222e1586b2d36c::t_d9c3417363ef10 1-59
+tests/ha/test_managed.py
+  s_222e1586b2d36c::t_03d0b4e45c6e52 144,155,157-158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0e17e37694623952442f7b06f02884c8833e6c46",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
