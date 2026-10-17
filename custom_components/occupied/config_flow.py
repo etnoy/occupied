@@ -95,48 +95,39 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_import(self, user_input):
-        from .file_config import load_program
-        from .validation import ProgramError, program_data
-
-        if isinstance(user_input, dict) and "config_file" in user_input:
-            from .bootstrap import check_bootstrap, existing_entry, unique_id
-
-            identity = unique_id(user_input)
-            await self.async_set_unique_id(identity)
-            if entry := existing_entry(self.hass, user_input):
-                if "id" in user_input and entry.unique_id != identity:
-                    self.hass.config_entries.async_update_entry(entry, unique_id=identity)
-                config = {"instances": [user_input]} if "id" in user_input else user_input
-                check_bootstrap(self.hass, entry, config)
-                return self.async_abort(reason="already_configured")
-            if "id" not in user_input and self._async_current_entries():
-                from homeassistant.helpers import issue_registry as ir
-
-                ir.async_create_issue(
-                    self.hass,
-                    DOMAIN,
-                    "ambiguous_bootstrap",
-                    is_fixable=False,
-                    severity=ir.IssueSeverity.ERROR,
-                    translation_key="ambiguous_bootstrap",
-                )
-                return self.async_abort(reason="ambiguous_instance")
-            self._abort_if_unique_id_configured()
-            return self.async_create_entry(
-                title=user_input.get("id", "House"),
-                data={
-                    "name": user_input.get("id", "House"),
-                    "source": "file",
-                    "config_file": user_input["config_file"],
-                },
-            )
-        await self.async_set_unique_id(uuid4().hex)
-        try:
-            program = await self.hass.async_add_executor_job(load_program, user_input)
-        except ProgramError:
+        """Import managed-file bootstrap declarations."""
+        if not isinstance(user_input, dict) or "config_file" not in user_input:
             return self.async_abort(reason="invalid_program")
+        from .bootstrap import check_bootstrap, existing_entry, unique_id
+
+        identity = unique_id(user_input)
+        await self.async_set_unique_id(identity)
+        if entry := existing_entry(self.hass, user_input):
+            if "id" in user_input and entry.unique_id != identity:
+                self.hass.config_entries.async_update_entry(entry, unique_id=identity)
+            config = {"instances": [user_input]} if "id" in user_input else user_input
+            check_bootstrap(self.hass, entry, config)
+            return self.async_abort(reason="already_configured")
+        if "id" not in user_input and self._async_current_entries():
+            from homeassistant.helpers import issue_registry as ir
+
+            ir.async_create_issue(
+                self.hass,
+                DOMAIN,
+                "ambiguous_bootstrap",
+                is_fixable=False,
+                severity=ir.IssueSeverity.ERROR,
+                translation_key="ambiguous_bootstrap",
+            )
+            return self.async_abort(reason="ambiguous_instance")
+        self._abort_if_unique_id_configured()
         return self.async_create_entry(
-            title=program.name, data={"name": program.name, "program": program_data(program)}
+            title=user_input.get("id", "House"),
+            data={
+                "name": user_input.get("id", "House"),
+                "source": "file",
+                "config_file": user_input["config_file"],
+            },
         )
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
