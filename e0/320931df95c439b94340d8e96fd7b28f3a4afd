@@ -1,0 +1,27 @@
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_222e1586b2d36c::t_dc5b4717614c75 13920,18578,18773,19024,19244-19246,19248,19255,19258-19260,19287,19292,19306,19322-19324,19331-19336,19341
+custom_components/occupied/frontend/src/lib/components/settings/SettingsView.svelte
+  s_222e1586b2d36c::t_49423ac2c12b8a 96
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_222e1586b2d36c::t_70ceae32e1bd9a 171,389,664,906-907,909,918,921-923,959,964,979,996-998,1006-1011,1017
+tests/browser/occupied.spec.ts
+  s_222e1586b2d36c::t_fe21f33738f2fc 3-4,156-220
+tests/frontend/src/instances.test.ts
+  s_222e1586b2d36c::t_76ff33102fc4fe 162-166,1054-1152,1177,1226
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "e0320931df95c439b94340d8e96fd7b28f3a4afd",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
