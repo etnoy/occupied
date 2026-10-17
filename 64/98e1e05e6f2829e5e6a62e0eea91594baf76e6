@@ -1,0 +1,23 @@
+tests/browser/occupied.spec.ts
+  s_222e1586b2d36c::t_9c6cc8b6f64801 2,10,12,72
+tests/frontend/src/ha-shell-errors.test.ts
+  s_222e1586b2d36c::t_86d6f666a35d2b 1-41
+tests/frontend/src/ha-shell-errors.ts
+  s_222e1586b2d36c::t_d090279efe8b30 1-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "6498e1e05e6f2829e5e6a62e0eea91594baf76e6",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
