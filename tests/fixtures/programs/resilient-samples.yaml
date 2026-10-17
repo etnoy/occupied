@@ -1,4 +1,4 @@
-# Regression fixture: some sampled evening windows are too short for one occurrence.
+# Regression fixture: disjoint boundary ranges can still sample a too-short window.
 schema_version: 1
 name: Resilient random samples
 steps:
@@ -13,11 +13,11 @@ random:
     start:
       absolute_time:
         start: '18:00'
-        end: '20:00'
+        end: '19:30'
     end:
       absolute_time:
-        start: '19:00'
-        end: '21:00'
+        start: '19:30'
+        end: '20:00'
     min_duration: 30m
     max_duration: 45m
     count: 1
