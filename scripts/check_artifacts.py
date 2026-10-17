@@ -54,6 +54,7 @@ with tarfile.open(directory / f"occupied-{version}.tar.gz") as source:
         "scripts/check_artifacts.py",
         "scripts/ha_matrix.py",
         "scripts/ha_matrix.toml",
+        "scripts/release_notes.py",
     ):
         assert f"occupied-{version}/{relative}" in source.getnames()
     matrix_file = source.extractfile(f"occupied-{version}/scripts/ha_matrix.toml")
