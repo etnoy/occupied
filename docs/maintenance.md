@@ -70,6 +70,28 @@ release workflow derives its compatibility notes from the reviewed matrix.
 
 ## Between monthly rollovers
 
+The **Next Home Assistant canary** runs daily at 04:17 UTC and can be started
+manually from GitHub Actions. It runs outside required PR checks. Discovery picks
+the newest beta/RC ahead of the supported matrix, or an untested stable patch.
+The HA tests use an isolated, freshly resolved environment on the candidate's
+required Python family; the browser uses the same HA tag in a disposable container.
+These dynamic probes do not change the supported window or committed pins.
+
+If no matching test fixture has been published, the Python probe uses the newest
+supported fixture with its strict HA bound overridden. Its logs explicitly mark
+this as a fallback and include the expected dependency-check mismatch; treat that
+result as an early compatibility signal. A matching fixture requires a clean
+dependency check. Artifacts retain discovery, constraints, resolved requirements,
+JUnit, browser traces and HA logs for diagnosis.
+
+A failure opens or updates one `ha-compat` issue with the failing jobs and workflow
+link. Only its report job can write issues. Maintainer notes outside the managed
+comment markers are preserved. Review and close the issue after the fix; healthy
+runs leave it unchanged. A separate freshness check fails when a stable patch with
+a published fixture has been available for more than 14 days, even if a newer
+beta is also being probed. Backend and browser probes still run when freshness
+fails. If discovery finds no newer release, both probes are skipped.
+
 Use `ha_matrix.py next` and the daily compatibility report to find newer stable
 patches and pre-releases. A stable patch is eligible for the newest tested lane
 once its matching fixture is published. Change that lane's HA, fixture, frontend,

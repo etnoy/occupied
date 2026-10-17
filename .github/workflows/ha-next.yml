@@ -1,0 +1,165 @@
+name: Next Home Assistant canary
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: next-home-assistant
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      candidate: ${{ steps.next.outputs.candidate }}
+      available: ${{ steps.next.outputs.available }}
+      python: ${{ steps.next.outputs.python }}
+      image: ${{ steps.next.outputs.image }}
+      uv: ${{ steps.policy.outputs.uv }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: policy
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import tomllib
+          from pathlib import Path
+          policy = tomllib.loads(Path("scripts/ha_matrix.toml").read_text())["policy"]
+          print("uv=" + policy["uv"])
+          print("python=" + policy["python_latest"])
+          PY
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: ${{ steps.policy.outputs.uv }}
+          python-version: ${{ steps.policy.outputs.python }}
+      - run: uv sync --locked --no-dev --group test-core
+      - id: next
+        name: Discover candidate and stable patch lag
+        run: |
+          mkdir -p test-results/ha-next
+          .venv/bin/python scripts/ha_matrix.py next > test-results/ha-next/candidate.json
+          .venv/bin/python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          candidate = json.loads(Path("test-results/ha-next/candidate.json").read_text())
+          print("candidate=" + json.dumps(candidate))
+          print("available=" + str(candidate["available"]).lower())
+          print("python=" + candidate.get("python", ""))
+          print("image=" + candidate.get("image", ""))
+          PY
+      - if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: next-ha-discovery
+          path: test-results/ha-next/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  freshness:
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CANDIDATE_METADATA: ${{ needs.discover.outputs.candidate }}
+    steps:
+      - name: Require review of eligible stable patches within 14 days
+        run: |
+          python3 - <<'PY'
+          import json, os
+          candidate = json.loads(os.environ["CANDIDATE_METADATA"])
+          lag = candidate["stable_lag_days"]
+          print(f"Stable patch lag: {lag} days")
+          if candidate["stale"]:
+              raise SystemExit("Newest supported lane is over 14 days behind an eligible stable patch")
+          PY
+
+  python-next:
+    needs: discover
+    if: needs.discover.outputs.available == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CANDIDATE_METADATA: ${{ needs.discover.outputs.candidate }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: ${{ needs.discover.outputs.uv }}
+          python-version: ${{ needs.discover.outputs.python }}
+      - name: Bootstrap on the candidate's interpreter without the current HA lock
+        run: |
+          uv venv
+          uv pip install --group test-core
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          directory = Path("test-results/ha-next")
+          directory.mkdir(parents=True, exist_ok=True)
+          (directory / "candidate.json").write_text(os.environ["CANDIDATE_METADATA"])
+          PY
+      - run: .venv/bin/python -m scripts.ha_next test-results/ha-next/candidate.json
+      - if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: next-ha-python
+          path: test-results/ha-next/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  browser-next:
+    needs: discover
+    if: needs.discover.outputs.available == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      HA_IMAGE: ${{ needs.discover.outputs.image }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: "11.25.0"
+          cache: true
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Package the integration's committed frontend
+        run: python3 -c 'from pathlib import Path; from scripts.build_release import build; build(Path("dist"))'
+      - run: pnpm run test:browser
+      - if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: next-ha-browser
+          include-hidden-files: true
+          path: |
+            playwright-report/
+            test-results/browser/
+            .browser-artifacts/*.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  report:
+    needs: [discover, freshness, python-next, browser-next]
+    if: ${{ always() && !cancelled() && contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CANDIDATE_METADATA: ${{ needs.discover.outputs.candidate }}
+      JOB_RESULTS: ${{ toJSON(needs) }}
+      WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python3 -m scripts.report_ha_compat
