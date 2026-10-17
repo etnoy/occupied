@@ -1,0 +1,21 @@
+custom_components/occupied/__init__.py
+  s_222e1586b2d36c::t_2b85a23befa575 51,57-62
+tests/ha/test_engine_resolution.py
+  s_222e1586b2d36c::t_587d5df9973c6e 1-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "951d64f255065aeb6efa55a6b9757b417cbf147e",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
