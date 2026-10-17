@@ -1,9 +1,9 @@
 """Readable device activity for successfully handled Occupied service calls."""
 
 from homeassistant.core import callback
-from homeassistant.helpers import device_registry as dr
 
-from .const import DOMAIN, EVENT_ACTION
+from .compat import controller_device
+from .const import EVENT_ACTION
 
 
 def _action_message(action, target, data):
@@ -42,9 +42,7 @@ def _action_message(action, target, data):
 @callback
 def async_log_action(engine, action, targets, data, context):
     """Attribute each target to the controller device and the service context."""
-    device = dr.async_get(engine.hass).async_get_device_by_identifier(
-        (DOMAIN, engine.entry_id), engine.entry_id
-    )
+    device = controller_device(engine.hass, engine.entry_id)
     for entity_id in targets:
         state = engine.hass.states.get(entity_id)
         name = state.attributes.get("friendly_name") if state else None
