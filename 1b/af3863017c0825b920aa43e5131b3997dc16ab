@@ -1,0 +1,56 @@
+custom_components/occupied/frontend/dist/lib/services/ha-controls.js
+  s_222e1586b2d36c::t_482be74fe6cfc3 24-30
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_222e1586b2d36c::t_45ebcf499f6d6e 14310-14314
+custom_components/occupied/frontend/src/lib/services/ha-controls.ts
+  s_222e1586b2d36c::t_3b45611dd2f4c9 36-42
+tests/frontend/src/ha-controls.test.ts
+  s_222e1586b2d36c::t_d7e15bbefbf223 1-110
+.github/workflows/check.yml
+  s_222e1586b2d36c::t_f2dc0acfc2a241 24-27,51-55,115-223,280,324-325,328-332,353,369-370
+tests/browser/occupied.spec.ts
+  s_222e1586b2d36c::t_ec0c0b62cc6907 10-16,54-63
+tests/browser/serve.py
+  s_222e1586b2d36c::t_b43b77796a0a41 4,9,63-65
+tests/ha/test_daily_runtime.py
+  s_222e1586b2d36c::t_4584454124fee1 3,684-687
+.github/workflows/release.yml
+  s_222e1586b2d36c::t_ee69764a9ccad7 46-48,53,56,58
+README.md
+  s_222e1586b2d36c::t_b32442908e10f4 21-56
+  s_5efedd126094d0::t_ba2ac84823d3c5 243-244
+scripts/check_artifacts.py
+  s_222e1586b2d36c::t_908e2caf731b61 57
+scripts/release_notes.py
+  s_222e1586b2d36c::t_1047b7301f34a5 1-23
+tests/core/test_release_workflow.py
+  s_222e1586b2d36c::t_7b434c90d53ecc 27-65
+.github/dependabot.yml
+  s_5efedd126094d0::t_e558dd58df46ac 33
+docs/maintenance.md
+  s_5efedd126094d0::t_e70d22455b1f52 1-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "1baf3863017c0825b920aa43e5131b3997dc16ab",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_5efedd126094d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1494a-0c3c-7fa2-b887-3b33c1eb7d43",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
