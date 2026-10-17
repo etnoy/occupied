@@ -1,0 +1,29 @@
+custom_components/occupied/anchor_latches.py
+  s_e4e7f426a55ea1::t_ccef1ba7e25946 1-113
+custom_components/occupied/engine_daily.py
+  s_e4e7f426a55ea1::t_da1fbaf115edc2 42,126,140-142,152-171,191-192,319-320,409,505-507,527,552
+custom_components/occupied/time_utils.py
+  s_e4e7f426a55ea1::t_71fb73ead2ef4c 21,142-144
+tests/core/test_anchor_latches.py
+  s_e4e7f426a55ea1::t_ae1a7f0ec53103 1-57
+tests/ha/test_anchor_latches.py
+  s_e4e7f426a55ea1::t_3ffcb66d4c5a5b 1-151
+tests/ha/test_daily_requeue.py
+  s_e4e7f426a55ea1::t_7ef14478a5e14c 96-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "620c387a3254c804ab6f0c6ab49bd122a1ea7f10",
+  "prompts": {},
+  "sessions": {
+    "s_e4e7f426a55ea1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14bb7-675c-73a2-9533-1059a0af7113",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
