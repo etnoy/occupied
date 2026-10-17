@@ -253,6 +253,14 @@ pins. These are test environments; Occupied does not declare AnyIO as a runtime
 requirement. Dependency review, installed-package checks and the full HA suites
 remain enabled.
 
+The historical Home Assistant fixtures also retain releases affected by
+[GHSA-5hxg-r395-fqxx](https://github.com/advisories/GHSA-5hxg-r395-fqxx),
+[GHSA-wx4m-69m9-gx3m](https://github.com/advisories/GHSA-wx4m-69m9-gx3m), and
+[GHSA-x84v-g949-293w](https://github.com/advisories/GHSA-x84v-g949-293w). The
+dependency-review allowlist is limited to those advisory IDs for the historical
+compatibility matrix; all other high- and critical-severity findings continue to
+fail CI.
+
 The Python tests are split into `tests/core` (planner, codecs, CLI, and examples) and
 `tests/ha` (integration, storage, services, and lifecycle). To run the core suite
 without installing Home Assistant:
