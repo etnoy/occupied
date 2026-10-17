@@ -137,9 +137,7 @@ class SimulationDay:
             seconds=spec.latest_offset
         )
 
-    def entity_bounds(
-        self, spec: RelativeTo, path: ModelPath
-    ) -> tuple[datetime, datetime, datetime | None] | None:
+    def entity_bounds(self, spec: RelativeTo, path: ModelPath) -> tuple[datetime, datetime] | None:
         source = self.context.time_sources.get(spec.entity, {})
         value = source.get(spec.attribute or "state")
         anchor = None
