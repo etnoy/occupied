@@ -199,8 +199,26 @@ Node development dependencies with `pnpm install --frozen-lockfile --ignore-scri
 Home Assistant itself depends on the `uv` Python package, so pip installs it inside
 the virtual environment even though these development commands use mise and pip.
 
-CI tests Home Assistant 2026.10.0 and 2026.10.1 with matching test fixtures.
-The minimum supported Home Assistant version is 2026.10.0.
+## Compatibility
+
+<!-- ha-matrix:start -->
+| Home Assistant tested | Python tested | Lane |
+| --- | --- | --- |
+| 2026.5.0 | 3.14.8 | floor |
+| 2026.6.4 | 3.14.8 | window |
+| 2026.7.4 | 3.14.8 | window |
+| 2026.8.3 | 3.14.8 | window |
+| 2026.9.4 | 3.14.8 | window |
+| 2026.10.2 | 3.14.8 | newest |
+| 2026.10.2 | 3.14.2 | Python floor |
+<!-- ha-matrix:end -->
+
+The environments are defined in `scripts/ha_matrix.toml`. Validate metadata and
+generated files with `uv run python scripts/ha_matrix.py check`. Reproduce a
+supported environment with `uv run python scripts/ha_matrix.py test --lane floor`
+or replace `floor` with a tested HA version; `--lane all` runs all six. Rebuild
+hashed requirements with `uv run python scripts/ha_matrix.py compile`, and discover
+new releases with `uv run python scripts/ha_matrix.py next`.
 
 The Python tests are split into `tests/core` (planner, codecs, CLI, and examples) and
 `tests/ha` (integration, storage, services, and lifecycle). To run the core suite

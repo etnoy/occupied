@@ -1,0 +1,309 @@
+"""Support claims, reproducible environments, and rollover must move together."""
+
+import json
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+import pytest
+from packaging.version import Version
+
+from scripts import ha_matrix as matrix
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+@pytest.fixture
+def matrix_repo(tmp_path):
+    """Fixed synthetic history keeps drift/rollover cases independent of live pins."""
+    import hashlib
+
+    policy = {
+        "window": 6,
+        "python_floor": "3.14.2",
+        "python_latest": "3.14.8",
+        "python_next": "3.15",
+        "uv": "0.13.1",
+    }
+    rows = [
+        ("2026.5.0", "0.13.329", "20260429.3", "2.13.2"),
+        ("2026.6.4", "0.13.340", "20260527.7", "2.13.4"),
+        ("2026.7.4", "0.13.348", "20260624.6", "2.13.4"),
+        ("2026.8.3", "0.13.357", "20260729.7", "2.13.4"),
+        ("2026.9.4", "0.13.367", "20260826.7", "2.13.4"),
+        ("2026.10.1", "0.13.372", "20260930.3", "2.13.5"),
+    ]
+    directory = tmp_path / "scripts/requirements"
+    directory.mkdir(parents=True)
+    lanes = []
+    for index, (ha, phcc, frontend, pydantic) in enumerate(rows):
+        role = "floor" if index == 0 else "newest" if index == 5 else "window"
+        constraints = (
+            f"pydantic=={pydantic}\nPyYAML==6.0.3\nastral==2.2\n"
+            f"home-assistant-frontend=={frontend}\n"
+        )
+        lane = matrix.Lane(
+            f"ha-{ha}",
+            role,
+            ha,
+            phcc,
+            frontend,
+            "3.14.8",
+            f"ghcr.io/home-assistant/home-assistant:{ha}@sha256:" + "a" * 64,
+            hashlib.sha256(constraints.encode()).hexdigest(),
+        )
+        lanes.append(lane)
+        path = directory / f"{lane.stem}.constraints"
+        path.write_text(constraints)
+        if role != "newest":
+            path.with_suffix(".overrides").write_text(matrix.overrides(lane))
+            path.with_suffix(".txt").write_text(
+                lane.header
+                + "\n"
+                + matrix.overrides(lane)
+                + constraints
+                + "    --hash=sha256:"
+                + "b" * 64
+                + "\n"
+            )
+    from dataclasses import replace
+
+    lanes.append(replace(lanes[-1], id="python-floor", role="python-floor", python="3.14.2"))
+    lanes.append(matrix.Lane("next", "next", "auto", "auto", "auto", "auto", "auto"))
+    matrix.write_matrix(policy, lanes, tmp_path)
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "occupied"\nversion = "0.0.0"\n'
+        'requires-python = ">=3.14.2"\n'
+        'dependencies = ["pydantic>=2.13.2,<3", "PyYAML>=6.0.3,<7", "astral>=2.2,<3"]\n'
+        '[dependency-groups]\ndev = ["homeassistant==2026.10.1", '
+        '"pytest-homeassistant-custom-component==0.13.372", '
+        '"home-assistant-frontend==20260930.3"]\n'
+    )
+    versions = {
+        "homeassistant": "2026.10.1",
+        "pytest-homeassistant-custom-component": "0.13.372",
+        "home-assistant-frontend": "20260930.3",
+        "pydantic": "2.13.5",
+        "pyyaml": "6.0.3",
+        "astral": "2.2",
+    }
+    (tmp_path / "uv.lock").write_text(
+        "\n".join(
+            f'[[package]]\nname = "{name}"\nversion = "{version}"'
+            for name, version in versions.items()
+        )
+    )
+    (tmp_path / "hacs.json").write_text(json.dumps({"homeassistant": "2026.5.0"}))
+    (tmp_path / "README.md").write_text(matrix.table(lanes))
+    integration = tmp_path / "custom_components/occupied"
+    integration.mkdir(parents=True)
+    (integration / "manifest.json").write_text(json.dumps({"requirements": ["pydantic>=2.13.2"]}))
+    (integration / "compat.py").write_text("# remove_when_floor: 2026.8.0\n")
+    return tmp_path
+
+
+def edit(root, name, before, after):
+    path = root / name
+    source = path.read_text()
+    assert before in source
+    path.write_text(source.replace(before, after))
+
+
+def test_supported_matrix_is_consistent():
+    assert matrix.check(ROOT)["lanes"] == 6
+
+
+@pytest.mark.parametrize(
+    "path,before,after,message",
+    [
+        ("hacs.json", "2026.5.0", "2026.10.0", "hacs.json"),
+        ("README.md", "| 2026.5.0 |", "| 2026.5.1 |", "README"),
+        (
+            "pyproject.toml",
+            'requires-python = ">=3.14.2"',
+            'requires-python = ">=3.14.8"',
+            "requires-python",
+        ),
+        ("pyproject.toml", "pydantic>=2.13.2,<3", "pydantic>=2.13.5,<3", "excludes HA"),
+        ("pyproject.toml", "PyYAML>=6.0.3,<7", "PyYAML>=6.0.2,<7", "Runtime floor"),
+        (
+            "custom_components/occupied/manifest.json",
+            "pydantic>=2.13.2",
+            "pydantic>=2.13.2,<2.14",
+            "only the HA-floor",
+        ),
+        (
+            "uv.lock",
+            'name = "homeassistant"\nversion = "2026.10.1"',
+            'name = "homeassistant"\nversion = "2026.10.2"',
+            "uv.lock homeassistant",
+        ),
+        (
+            "uv.lock",
+            'name = "pydantic"\nversion = "2.13.5"',
+            'name = "pydantic"\nversion = "2.14.1"',
+            "uv.lock pydantic",
+        ),
+    ],
+)
+def test_claim_and_runtime_drift_is_rejected(matrix_repo, path, before, after, message):
+    edit(matrix_repo, path, before, after)
+    with pytest.raises(ValueError, match=message):
+        matrix.check(matrix_repo)
+
+
+def test_missing_lane_file_is_rejected(matrix_repo):
+    (matrix_repo / "scripts/requirements/ha-2026.5.0.txt").unlink()
+    with pytest.raises(FileNotFoundError):
+        matrix.check(matrix_repo)
+
+
+def test_stale_lane_file_is_rejected(matrix_repo):
+    (matrix_repo / "scripts/requirements/ha-2026.4.0.txt").write_text("obsolete")
+    with pytest.raises(ValueError, match="Stale HA lane"):
+        matrix.check(matrix_repo)
+
+
+def test_constraint_tampering_is_rejected(matrix_repo):
+    path = matrix_repo / "scripts/requirements/ha-2026.5.0.constraints"
+    path.write_text(path.read_text() + "\n# changed\n")
+    with pytest.raises(ValueError, match="constraints digest"):
+        matrix.check(matrix_repo)
+
+
+def test_outdated_requirements_header_is_rejected(matrix_repo):
+    path = matrix_repo / "scripts/requirements/ha-2026.5.0.txt"
+    path.write_text("# obsolete lane metadata\n" + path.read_text())
+    with pytest.raises(ValueError, match="header or hashes"):
+        matrix.check(matrix_repo)
+
+
+def test_hashed_runtime_pin_drift_is_rejected(matrix_repo):
+    edit(
+        matrix_repo, "scripts/requirements/ha-2026.5.0.txt", "pydantic==2.13.2", "pydantic==2.13.5"
+    )
+    with pytest.raises(ValueError, match="hashed runtime pydantic"):
+        matrix.check(matrix_repo)
+
+
+def test_expired_compatibility_shim_is_rejected(matrix_repo):
+    (matrix_repo / "custom_components/occupied/expired.py").write_text(
+        "# remove_when_floor: 2026.5.0\n"
+    )
+    with pytest.raises(ValueError, match="Remove expired compatibility shim"):
+        matrix.check(matrix_repo)
+
+
+def test_github_matrices_cover_ha_browser_and_python_roles(matrix_repo):
+    ha = matrix.github_matrix(root=matrix_repo)["include"]
+    assert len(ha) == 6
+    assert ha[0]["role"] == "floor" and ha[-1]["role"] == "newest"
+    browser = matrix.github_matrix("browser", matrix_repo)["include"]
+    assert [row["role"] for row in browser] == ["floor", "newest"]
+    assert all("@sha256:" in row["image"] for row in browser)
+    python_floor = matrix.github_matrix("python-floor", matrix_repo)["include"]
+    assert python_floor[0]["python"] == "3.14.2"
+    core = matrix.github_matrix("core", matrix_repo)["include"]
+    assert [(row["python"], row["experimental"]) for row in core] == [
+        ("3.14.2", False),
+        ("3.14.8", False),
+        ("3.15", True),
+    ]
+
+
+def test_next_prefers_prerelease_and_detects_overdue_stable_patch(monkeypatch, matrix_repo):
+    monkeypatch.setattr(
+        matrix,
+        "published_versions",
+        lambda _: [Version("2026.11.0b0"), Version("2026.10.3"), Version("2026.10.1")],
+    )
+    monkeypatch.setattr(
+        matrix, "matching_phcc", lambda version: "0.13.375" if version == "2026.10.3" else None
+    )
+    monkeypatch.setattr(matrix, "requires_python", lambda _: "3.14.2")
+    monkeypatch.setattr(matrix, "fetch_text", lambda _: "home-assistant-frontend==20261015.1\n")
+    published = (datetime.now(UTC) - timedelta(days=20)).isoformat()
+    monkeypatch.setattr(
+        matrix,
+        "package_json",
+        lambda *args: {"urls": [{"upload_time_iso_8601": published, "yanked": False}]},
+    )
+    candidate = matrix.next_release(matrix_repo)
+    assert candidate["homeassistant"] == "2026.11.0b0"
+    assert candidate["phcc"] is None
+    assert candidate["fallback_phcc"] == "0.13.372"
+    assert candidate["stale"] and candidate["stable_lag_days"] >= 20
+
+
+def test_next_falls_back_to_stable_without_matching_fixture(monkeypatch, matrix_repo):
+    monkeypatch.setattr(matrix, "published_versions", lambda _: [Version("2026.10.2")])
+    monkeypatch.setattr(matrix, "matching_phcc", lambda _: None)
+    monkeypatch.setattr(matrix, "requires_python", lambda _: "3.14.2")
+    monkeypatch.setattr(matrix, "fetch_text", lambda _: "home-assistant-frontend==20260930.4\n")
+    candidate = matrix.next_release(matrix_repo)
+    assert candidate["available"] and candidate["homeassistant"] == "2026.10.2"
+    assert candidate["phcc"] is None and not candidate["stale"]
+
+
+def test_next_has_no_work_when_matrix_is_current(monkeypatch, matrix_repo):
+    monkeypatch.setattr(matrix, "published_versions", lambda _: [Version("2026.10.1")])
+    assert matrix.next_release(matrix_repo) == {
+        "available": False,
+        "stable_lag_days": 0,
+        "stale": False,
+    }
+
+
+@pytest.mark.parametrize("minor", ["2026.10", "2026-11", "2026.13"])
+def test_roll_rejects_invalid_or_nonadvancing_minor(minor, matrix_repo):
+    with pytest.raises(ValueError):
+        matrix.roll(minor, matrix_repo)
+
+
+def test_roll_requires_matching_fixture_before_changing_files(monkeypatch, matrix_repo):
+    before = (matrix_repo / "scripts/ha_matrix.toml").read_bytes()
+    monkeypatch.setattr(matrix, "published_versions", lambda _: [Version("2026.6.0")])
+    monkeypatch.setattr(matrix, "matching_phcc", lambda _: None)
+    with pytest.raises(ValueError, match="no published matching test fixture"):
+        matrix.roll("2026.11", matrix_repo)
+    assert (matrix_repo / "scripts/ha_matrix.toml").read_bytes() == before
+
+
+def test_roll_advances_window_and_updates_generated_claims(monkeypatch, matrix_repo):
+    versions = [
+        "2026.11.0",
+        "2026.10.2",
+        "2026.9.4",
+        "2026.8.3",
+        "2026.7.4",
+        "2026.6.4",
+        "2026.6.0",
+    ]
+    monkeypatch.setattr(matrix, "published_versions", lambda _: list(map(Version, versions)))
+    monkeypatch.setattr(matrix, "matching_phcc", lambda v: f"0.13.{400 + Version(v).minor}")
+    monkeypatch.setattr(matrix, "requires_python", lambda _: "3.14.2")
+    monkeypatch.setattr(
+        matrix,
+        "image_digest",
+        lambda v: f"ghcr.io/home-assistant/home-assistant:{v}@sha256:" + "a" * 64,
+    )
+    constraints = (
+        "pydantic==2.13.4\nPyYAML==6.0.3\nastral==2.2\nhome-assistant-frontend==20261030.1\n"
+    )
+    monkeypatch.setattr(matrix, "fetch_text", lambda _: constraints)
+    commands = []
+    monkeypatch.setattr(matrix, "run", lambda command, *args, **kwargs: commands.append(command))
+    compiled = []
+    monkeypatch.setattr(matrix, "compile_lanes", lambda root: compiled.append(root))
+    monkeypatch.setattr(matrix, "check", lambda root: {"lanes": 6})
+    assert matrix.roll("2026.11", matrix_repo) == {"lanes": 6}
+    _, lanes = matrix.load(matrix_repo)
+    ha = matrix.ha_lanes(lanes)
+    assert ha[0].homeassistant == "2026.6.0" and ha[0].role == "floor"
+    assert ha[-1].homeassistant == "2026.11.0" and ha[-1].role == "newest"
+    assert ha[-2].homeassistant == "2026.10.2"
+    assert len(ha) == 6 and all(not lane.homeassistant.startswith("2026.5") for lane in ha)
+    assert json.loads((matrix_repo / "hacs.json").read_text())["homeassistant"] == "2026.6.0"
+    assert "pydantic>=2.13.4,<3" in (matrix_repo / "pyproject.toml").read_text()
+    assert matrix.table(lanes) in (matrix_repo / "README.md").read_text()
+    assert compiled == [matrix_repo]
+    assert any("pydantic==2.13.4" in command for command in commands)
