@@ -1,0 +1,19 @@
+README.md
+  s_f43524462b82c4::t_42b04d97cb78ad 256-263
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "048c3a9b3c8122709e9202621695ee956a92f993",
+  "prompts": {},
+  "sessions": {
+    "s_f43524462b82c4": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "7ab88de8-ebb5-42ee-9771-7200c96b0218",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
