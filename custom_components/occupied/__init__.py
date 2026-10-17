@@ -48,12 +48,18 @@ CONFIG_SCHEMA = _config_schema
 
 def resolve_engine(hass: HomeAssistant, entry_id: str) -> OccupiedEngine | DailyEngine:
     """Reject ambiguous, missing, unloaded, and foreign integration entries."""
+    from homeassistant.config_entries import ConfigEntryState
     from homeassistant.exceptions import HomeAssistantError
 
     from .const import DOMAIN
 
     entry = hass.config_entries.async_get_entry(entry_id)
-    if entry is None or entry.domain != DOMAIN or not hasattr(entry, "runtime_data"):
+    if (
+        entry is None
+        or entry.domain != DOMAIN
+        or entry.state is not ConfigEntryState.LOADED
+        or not hasattr(entry, "runtime_data")
+    ):
         raise HomeAssistantError("Occupied config entry is not loaded")
     engine = entry.runtime_data
     if engine.closed:
