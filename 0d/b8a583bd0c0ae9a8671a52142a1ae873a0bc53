@@ -1,0 +1,29 @@
+custom_components/occupied/engine_daily.py
+  s_222e1586b2d36c::t_a44174d9433d76 280,438,440-441,636-644,1447
+tests/ha/test_qualification_reconfigure.py
+  s_8f5fb9480a79f2::t_cf84af0d7a26e2 1-111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0db8a583bd0c0ae9a8671a52142a1ae873a0bc53",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_8f5fb9480a79f2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14b66-c5ba-78b1-889f-c3d50b021d54",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
