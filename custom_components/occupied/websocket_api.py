@@ -8,6 +8,21 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 
+from .const import DOMAIN
+
+
+@callback
+def _send_error(connection, message_id, code, error):
+    """Retain HA translation metadata when adapting exceptions to our API."""
+    metadata = {}
+    if isinstance(error, HomeAssistantError) and error.translation_key:
+        metadata = {
+            "translation_domain": error.translation_domain,
+            "translation_key": error.translation_key,
+            "translation_placeholders": error.translation_placeholders,
+        }
+    connection.send_error(message_id, code, str(error), **metadata)
+
 
 @callback
 def async_register_websocket(hass: HomeAssistant) -> None:
@@ -95,7 +110,7 @@ async def websocket_status(
     try:
         engine = resolve_engine(hass, msg["config_entry_id"])
     except HomeAssistantError as err:
-        connection.send_error(msg["id"], "not_loaded", str(err))
+        _send_error(connection, msg["id"], "not_loaded", err)
         return
     connection.send_result(msg["id"], engine.snapshot())
 
@@ -107,7 +122,7 @@ async def _draft_operation(hass, connection, msg, operation, *args):
     try:
         resolve_engine(hass, msg["config_entry_id"])
     except HomeAssistantError as err:
-        connection.send_error(msg["id"], "not_loaded", str(err))
+        _send_error(connection, msg["id"], "not_loaded", err)
         return
     try:
         result = await hass.async_add_executor_job(partial(operation, msg["program"], *args))
@@ -227,7 +242,9 @@ async def _apply_program(hass, connection, msg, *, editor_save=False):
             if getattr(engine, "source_manager", None) and engine.source_manager.mode == "file":
                 raise HomeAssistantError(
                     "The managed file is authoritative. Export your draft "
-                    "or explicitly switch to GUI storage."
+                    "or explicitly switch to GUI storage.",
+                    translation_domain=DOMAIN,
+                    translation_key="managed_file_authoritative",
                 )
             expected = msg.get("expected_revision")
             if expected is not None and expected != current_revision(engine):
@@ -247,10 +264,19 @@ async def _apply_program(hass, connection, msg, *, editor_save=False):
                 await candidate.async_prepare()
                 await candidate._ensure_plans()
                 if candidate._storage_failed:
-                    raise HomeAssistantError(candidate.last_error)
+                    raise HomeAssistantError(
+                        candidate.last_error,
+                        translation_domain=DOMAIN,
+                        translation_key="program_start_failed",
+                        translation_placeholders={"error": str(candidate.last_error)},
+                    )
                 await program_store(hass, engine.entry_id).async_save(program_data(program))
                 if not await hass.config_entries.async_reload(engine.entry_id):
-                    raise HomeAssistantError("Could not load the saved daily program")
+                    raise HomeAssistantError(
+                        "Could not load the saved daily program",
+                        translation_domain=DOMAIN,
+                        translation_key="saved_program_unavailable",
+                    )
             engine = resolve_engine(hass, msg["config_entry_id"])
             async_sync_program_name(hass, engine.entry_id, engine.program.name)
             connection.send_result(
@@ -262,9 +288,9 @@ async def _apply_program(hass, connection, msg, *, editor_save=False):
             msg["id"], {"valid": False, "issues": [i.to_dict() for i in err.issues]}
         )
     except RevisionConflict as err:
-        connection.send_error(msg["id"], "revision_conflict", str(err))
+        _send_error(connection, msg["id"], "revision_conflict", err)
     except (HomeAssistantError, ValueError, vol.Invalid) as err:
-        connection.send_error(msg["id"], "apply_failed", str(err))
+        _send_error(connection, msg["id"], "apply_failed", err)
 
 
 _ENTRY_SCHEMA = {vol.Required("config_entry_id"): str}
@@ -303,9 +329,9 @@ async def _live_operation(hass, connection, msg, operation):
             result = manager.response(user_id, frozen=True)
         connection.send_result(msg["id"], result)
     except LivePreviewError as err:
-        connection.send_error(msg["id"], err.code, str(err))
+        _send_error(connection, msg["id"], err.code, err)
     except (HomeAssistantError, ProgramError, ValueError) as err:
-        connection.send_error(msg["id"], "live_preview_failed", str(err))
+        _send_error(connection, msg["id"], "live_preview_failed", err)
 
 
 @websocket_api.websocket_command(
@@ -385,20 +411,26 @@ async def websocket_source(hass, connection, msg):
         manager = getattr(engine, "source_manager", None)
         if manager is None:
             raise HomeAssistantError(
-                "Apply the daily starter program before selecting a managed file"
+                "Apply the daily starter program before selecting a managed file",
+                translation_domain=DOMAIN,
+                translation_key="daily_program_required",
             )
         if msg["source"] == "file" and not msg.get("config_file"):
-            raise HomeAssistantError("Choose a relative managed-file path")
+            raise HomeAssistantError(
+                "Choose a relative managed-file path",
+                translation_domain=DOMAIN,
+                translation_key="managed_path_required",
+            )
         await manager.async_select(msg["source"], msg.get("config_file"), msg["expected_revision"])
         connection.send_result(msg["id"], {"valid": True, **program_document(engine)})
     except RevisionConflict as err:
-        connection.send_error(msg["id"], "revision_conflict", str(err))
+        _send_error(connection, msg["id"], "revision_conflict", err)
     except ProgramError as err:
         connection.send_result(
             msg["id"], {"valid": False, "issues": [i.to_dict() for i in err.issues]}
         )
     except HomeAssistantError as err:
-        connection.send_error(msg["id"], "source_failed", str(err))
+        _send_error(connection, msg["id"], "source_failed", err)
 
 
 @websocket_api.websocket_command({**_ENTRY_SCHEMA, vol.Required("type"): "occupied/reload"})
@@ -411,10 +443,14 @@ async def websocket_reload(hass, connection, msg):
         engine = resolve_engine(hass, msg["config_entry_id"])
         manager = getattr(engine, "source_manager", None)
         if manager is None:
-            raise HomeAssistantError("Select a managed file before reloading")
+            raise HomeAssistantError(
+                "Select a managed file before reloading",
+                translation_domain=DOMAIN,
+                translation_key="select_managed_file",
+            )
         connection.send_result(msg["id"], await manager.async_reload())
     except HomeAssistantError as err:
-        connection.send_error(msg["id"], "reload_failed", str(err))
+        _send_error(connection, msg["id"], "reload_failed", err)
 
 
 @websocket_api.websocket_command({**_ENTRY_SCHEMA, vol.Required("type"): "occupied/program"})
@@ -427,7 +463,7 @@ async def websocket_program(hass, connection, msg):
     try:
         result = program_document(resolve_engine(hass, msg["config_entry_id"]))
     except HomeAssistantError as err:
-        connection.send_error(msg["id"], "not_loaded", str(err))
+        _send_error(connection, msg["id"], "not_loaded", err)
         return
     connection.send_result(msg["id"], result)
 
@@ -442,7 +478,7 @@ async def websocket_catalog(hass, connection, msg):
     try:
         resolve_engine(hass, msg["config_entry_id"])
     except HomeAssistantError as err:
-        connection.send_error(msg["id"], "not_loaded", str(err))
+        _send_error(connection, msg["id"], "not_loaded", err)
         return
     connection.send_result(msg["id"], await async_catalog(hass))
 
@@ -473,7 +509,7 @@ async def websocket_editor_validate(hass, connection, msg):
     except ProgramError as err:
         result = {"valid": False, "issues": [i.to_dict() for i in err.issues]}
     except HomeAssistantError as err:
-        connection.send_error(msg["id"], "not_loaded", str(err))
+        _send_error(connection, msg["id"], "not_loaded", err)
         return
     connection.send_result(msg["id"], result)
 
@@ -508,7 +544,7 @@ async def websocket_timeline(hass, connection, msg):
         day = date.fromisoformat(msg["date"]) if "date" in msg else None
         result = timeline_document(resolve_engine(hass, msg["config_entry_id"]), day)
     except (HomeAssistantError, ValueError) as err:
-        connection.send_error(msg["id"], "timeline_failed", str(err))
+        _send_error(connection, msg["id"], "timeline_failed", err)
         return
     connection.send_result(msg["id"], result)
 
@@ -524,7 +560,7 @@ def websocket_subscribe(hass, connection, msg):
     try:
         engine = resolve_engine(hass, msg["config_entry_id"])
     except HomeAssistantError as err:
-        connection.send_error(msg["id"], "not_loaded", str(err))
+        _send_error(connection, msg["id"], "not_loaded", err)
         return
 
     @callback
@@ -556,7 +592,7 @@ async def websocket_diagnostics(hass, connection, msg):
     try:
         engine = resolve_engine(hass, msg["config_entry_id"])
     except HomeAssistantError as err:
-        connection.send_error(msg["id"], "not_loaded", str(err))
+        _send_error(connection, msg["id"], "not_loaded", err)
         return
     connection.send_result(
         msg["id"], diagnostics_data(engine, include_sensitive=msg["include_sensitive"])
@@ -586,4 +622,4 @@ async def websocket_action_yaml(hass, connection, msg):
             msg["id"], {"valid": False, "issues": [i.to_dict() for i in err.issues]}
         )
     except HomeAssistantError as err:
-        connection.send_error(msg["id"], "not_loaded", str(err))
+        _send_error(connection, msg["id"], "not_loaded", err)

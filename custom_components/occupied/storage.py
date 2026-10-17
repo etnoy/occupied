@@ -3,6 +3,7 @@
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.storage import Store
 
+from .const import DOMAIN
 from .plan_codec import action_from_data as action_from_data
 from .plan_codec import events_from_data as events_from_data
 from .plan_codec import instant as instant
@@ -23,7 +24,12 @@ class DurableStore(Store):
         self._write_failure = None
         await super().async_save(data)
         if self._write_failure:
-            raise HomeAssistantError(f"Cannot persist Occupied state: {self._write_failure}")
+            raise HomeAssistantError(
+                f"Cannot persist Occupied state: {self._write_failure}",
+                translation_domain=DOMAIN,
+                translation_key="persist_failed",
+                translation_placeholders={"error": str(self._write_failure)},
+            )
 
 
 def program_store(hass, entry_id):

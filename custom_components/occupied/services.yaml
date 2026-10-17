@@ -1,49 +1,34 @@
 start:
-  name: Start managing
-  description: Allow this controller to manage its entities when activation conditions are met.
   fields:
     config_entry_id:
-      name: Controller
       required: true
       selector:
         config_entry:
           integration: occupied
 stop:
-  name: Stop managing
-  description: Stop managing entities, cancel lighting convergence, and apply configured owned activity cleanup.
   fields:
     config_entry_id:
-      name: Controller
       required: true
       selector:
         config_entry:
           integration: occupied
 pause:
-  name: Pause management
-  description: Pause entity management while keeping the controller enabled.
   fields:
     config_entry_id:
-      name: Controller
       required: true
       selector:
         config_entry:
           integration: occupied
 resume:
-  name: Resume management
-  description: Resume entity management when activation conditions are met.
   fields:
     config_entry_id:
-      name: Controller
       required: true
       selector:
         config_entry:
           integration: occupied
 reload:
-  name: Reload managed file
-  description: Validate and atomically reload the selected managed file. Invalid updates retain the last valid program.
   fields:
     config_entry_id:
-      name: Controller
       required: true
       selector:
         config_entry:

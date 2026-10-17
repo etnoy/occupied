@@ -1,0 +1,105 @@
+{
+  "services": {
+    "start": {
+      "name": "Starta styrning",
+      "description": "Låt den här styrenheten styra sina enheter när aktiveringsvillkoren är uppfyllda.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Styrenhet"
+        }
+      }
+    },
+    "stop": {
+      "name": "Stoppa styrning",
+      "description": "Stoppa styrningen, avbryt ljusövergångar och avsluta ägda aktiviteter enligt inställningarna.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Styrenhet"
+        }
+      }
+    },
+    "pause": {
+      "name": "Pausa styrning",
+      "description": "Pausa styrningen utan att inaktivera styrenheten.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Styrenhet"
+        }
+      }
+    },
+    "resume": {
+      "name": "Återuppta styrning",
+      "description": "Återuppta styrningen när aktiveringsvillkoren är uppfyllda.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Styrenhet"
+        }
+      }
+    },
+    "reload": {
+      "name": "Läs in hanterad fil igen",
+      "description": "Validera och läs in den valda hanterade filen. Vid ogiltiga ändringar behålls det senast giltiga programmet.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Styrenhet"
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "entry_not_loaded": {
+      "message": "Occupieds konfigurationspost är inte inläst"
+    },
+    "entry_unloaded": {
+      "message": "Occupieds konfigurationspost är inte längre inläst"
+    },
+    "select_managed_file": {
+      "message": "Välj en hanterad fil innan du läser in igen"
+    },
+    "managed_validation_failed": {
+      "message": "Valideringen av den hanterade filen misslyckades; se Occupieds konfiguration och Reparationer"
+    },
+    "invalid_program": {
+      "message": "Ogiltigt Occupied-program: {error}"
+    },
+    "invalid_configuration": {
+      "message": "Ogiltig Occupied-konfiguration: {error}"
+    },
+    "persist_failed": {
+      "message": "Kan inte spara Occupieds tillstånd: {error}"
+    },
+    "unloaded": {
+      "message": "Occupied är inte längre inläst"
+    },
+    "valid_file_required": {
+      "message": "Läs in en giltig fil innan du kopierar programmet till gränssnittets lagring"
+    },
+    "managed_file_authoritative": {
+      "message": "Den hanterade filen är styrande. Exportera utkastet eller byt uttryckligen till gränssnittets lagring."
+    },
+    "program_start_failed": {
+      "message": "{error}"
+    },
+    "saved_program_unavailable": {
+      "message": "Kunde inte läsa in det sparade dagsprogrammet"
+    },
+    "daily_program_required": {
+      "message": "Tillämpa startprogrammet för dagsprogram innan du väljer en hanterad fil"
+    },
+    "managed_path_required": {
+      "message": "Välj en relativ sökväg till den hanterade filen"
+    },
+    "journal_limit": {
+      "message": "Körningsjournalen överskrider sin storleksgräns"
+    },
+    "enforce_unavailable": {
+      "message": "Kan inte tillämpa förväntade tillstånd: {reason}"
+    },
+    "enforce_controller_changed": {
+      "message": "Kan inte tillämpa förväntade tillstånd: styrenheten har ändrats"
+    },
+    "unloaded_before_save": {
+      "message": "Occupied är inte längre inläst; uppdatera innan du sparar"
+    }
+  }
+}
