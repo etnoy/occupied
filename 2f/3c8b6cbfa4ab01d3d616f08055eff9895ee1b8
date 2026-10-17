@@ -1,0 +1,23 @@
+.github/dependabot.yml
+  s_222e1586b2d36c::t_75fe9c7b2d3834 19-21
+package.json
+  s_222e1586b2d36c::t_861af4e2228160 22
+pnpm-lock.yaml
+  s_222e1586b2d36c::t_e34faed7f604f9 25-26,358-359,1076-1077,1326,1328,2131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2f3c8b6cbfa4ab01d3d616f08055eff9895ee1b8",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
