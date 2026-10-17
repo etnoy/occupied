@@ -47,7 +47,7 @@ def starter_program(config):
 
 def current_revision(engine):
     if hasattr(engine, "program"):
-        return program_revision(engine.program)
+        return getattr(engine, "source_revision", None) or program_revision(engine.program)
     return "proof:" + hashlib.sha256(json.dumps(engine.config, sort_keys=True).encode()).hexdigest()
 
 
@@ -56,6 +56,9 @@ def program_document(engine):
     context = planning_context(engine.hass)
     return {
         "program": program_data(program),
+        "recovery_yaml": engine.source_manager.recovery["yaml"]
+        if getattr(engine, "source_manager", None) and engine.source_manager.recovery
+        else None,
         "warnings": [issue.to_dict() for issue in validation_warnings(program)],
         "revision": current_revision(engine),
         "behavior_hash": behavior_hash(program),

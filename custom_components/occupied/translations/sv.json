@@ -102,6 +102,12 @@
       "message": "Occupied är inte längre inläst; uppdatera innan du sparar"
     }
   },
+  "issues": {
+    "invalid_program": {
+      "title": "Occupied kunde inte läsa det sparade programmet",
+      "description": "Styrenhet: {name}\n\n{error}\n\nOriginalprogrammet är bevarat och styrningen är stoppad. Öppna Inställningar i Occupied, rätta bevarad YAML och spara ett giltigt program för att återuppta styrningen."
+    }
+  },
   "config": {
     "step": {
       "create": {

@@ -127,6 +127,12 @@ class DailyEngine:
         self.source_manager = None
 
     @property
+    def source_revision(self):
+        return (self.source_manager.recovery_revision if self.source_manager else None) or revision(
+            self.program
+        )
+
+    @property
     def next_event(self):
         return self._queue[0].at if self._queue else None
 
@@ -331,6 +337,9 @@ class DailyEngine:
 
     def _effective_gate(self):
         if not self.configuration_ready:
+            if self.source_manager and self.source_manager.recovery is not None:
+                self.live_preview.invalidate("Stored configuration unresolved", interrupted=True)
+                return False, "Stored configuration unresolved; correct it in Occupied Settings"
             self.live_preview.invalidate("Managed configuration unresolved", interrupted=True)
             return False, "Managed configuration unresolved; correct the file and reload"
         if self._storage_failed:
@@ -1460,7 +1469,7 @@ class DailyEngine:
                     translation_domain=DOMAIN,
                     translation_key="unloaded_before_save",
                 )
-            if expected_revision is not None and expected_revision != revision(self.program):
+            if expected_revision is not None and expected_revision != self.source_revision:
                 raise RevisionConflict(
                     "The program changed. Reload the saved program before saving."
                 )
@@ -1473,6 +1482,8 @@ class DailyEngine:
             if same_schedule and same_policy:
                 self.program = program
                 self.config["name"] = program.name
+                if self.source_manager:
+                    self.source_manager.clear_recovery()
                 if not was_ready and self.started:
                     await self._reevaluate_locked()
                 else:
@@ -1483,6 +1494,8 @@ class DailyEngine:
             if self.started:
                 await self._cancel_native_fades()
             self.program, self.gate = program, gate
+            if self.source_manager:
+                self.source_manager.clear_recovery()
             self.enforce_state_on_start = bool(
                 program.run_condition and program.run_condition.enforce_state_on_start
             )
@@ -1574,7 +1587,7 @@ class DailyEngine:
             "reconciliation": self._reconciliation_snapshot(),
             "yielded": sorted(self._yielded),
             "last_error": self.last_error,
-            "source_revision": revision(self.program),
+            "source_revision": self.source_revision,
             "behavior_hash": behavior_hash(self.program),
             "journal_count": len(self._journal),
             "outcomes": list(self.outcomes),

@@ -253,6 +253,7 @@ export interface ConfigurationSource {
 }
 
 export interface ProgramDocument {
+  recovery_yaml?: string | null;
   program: Program;
   warnings?: Issue[];
   revision: string;

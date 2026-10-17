@@ -1,6 +1,8 @@
 // Generated from custom_components/occupied/frontend/src/occupied-panel.ts by pnpm run build. Do not edit.
 // custom_components/occupied/frontend/src/lib/i18n/translations.ts
 var en = {
+  stored_program_invalid_hint:
+    "Stored program is invalid. Correct the preserved YAML in Settings and save to resume management.",
   chronological_order: "Chronological",
   manual_order: "Manual order",
   reset_chronological_order: "Reset to chronological",
@@ -523,6 +525,8 @@ var en = {
   off_label: "Off",
 };
 var sv = {
+  stored_program_invalid_hint:
+    "Det sparade programmet \xE4r ogiltigt. R\xE4tta bevarad YAML i Inst\xE4llningar och spara f\xF6r att \xE5teruppta styrningen.",
   chronological_order: "Kronologisk ordning",
   manual_order: "Manuell ordning",
   reset_chronological_order: "\xC5terst\xE4ll kronologisk ordning",
@@ -19050,8 +19054,12 @@ var OccupiedPanel = class extends HTMLElement {
     const programNotice = this.stale ? t("draft_revision_conflict_hint") : "";
     return [
       programNotice,
+      this.document?.recovery_yaml == null
+        ? ""
+        : t("stored_program_invalid_hint"),
       this.document?.source === "file" ? t("managed_file_export_hint") : "",
-      this.document?.configuration_source?.status === "error"
+      this.document?.source === "file" &&
+      this.document.configuration_source?.status === "error"
         ? t("managed_file_error")
         : "",
     ]
@@ -19357,7 +19365,13 @@ var OccupiedPanel = class extends HTMLElement {
     });
   }
   exportYaml() {
-    if (this.yamlDirty) {
+    if (this.yamlDirty || this.busy) {
+      return;
+    }
+    if (this.document?.recovery_yaml != null) {
+      this.yaml = this.yamlSaved = this.document.recovery_yaml;
+      this.yamlRevision = this.document.revision;
+      this.flush();
       return;
     }
     const yaml = this.yaml,

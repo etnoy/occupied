@@ -87,7 +87,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     async def control(call: ServiceCall):
-        if call.context.user_id:
+        if call.service == "reload" and call.context.user_id:
             user = await hass.auth.async_get_user(call.context.user_id)
             if user is None or not user.is_admin:
                 raise Unauthorized()
@@ -158,11 +158,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> 
     from .bootstrap import check_bootstrap
 
     check_bootstrap(hass, entry, hass.data[DOMAIN].get("bootstrap"))
-    source = (
-        {"schema_version": 1, "name": entry.data.get("name", "House")}
-        if managed
-        else await program_store(hass, entry.entry_id).async_load() or entry.data.get("program")
-    )
+    if managed:
+        source = {"schema_version": 1, "name": entry.data.get("name", "House")}
+    else:
+        source = await program_store(hass, entry.entry_id).async_load()
+        if source is None:
+            source = entry.data.get("program")
+    recovery = None
     if managed:
         from .file_config import load_yaml, read_managed
 
@@ -174,20 +176,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> 
         except ProgramError:
             # Keep an invalid initial entry loadable, with an error status and Repairs.
             pass
-    if source is not None:
+    if managed or source is not None or "program" in entry.data:
         from .engine_daily import DailyEngine
 
         try:
             program = await hass.async_add_executor_job(validate_program, source)
         except ProgramError as err:
-            raise ConfigEntryError(
-                f"Invalid Occupied program: {err}",
-                translation_domain=DOMAIN,
-                translation_key="invalid_program",
-                translation_placeholders={"error": str(err)},
-            ) from err
+            if managed:
+                raise ConfigEntryError(
+                    f"Invalid Occupied program: {err}",
+                    translation_domain=DOMAIN,
+                    translation_key="invalid_program",
+                    translation_placeholders={"error": str(err)},
+                ) from err
+            from .stored_recovery import stored_program_recovery
+
+            recovery = await hass.async_add_executor_job(
+                stored_program_recovery, source, err.issues
+            )
+            program = await hass.async_add_executor_job(
+                validate_program, {"schema_version": 1, "name": entry.title or "Occupied"}
+            )
         engine = entry.runtime_data = DailyEngine(hass, entry.entry_id, program)
-        engine.configuration_ready = not managed
+        engine.configuration_ready = not managed and recovery is None
     else:
         try:
             config = validate_input(dict(entry.options or entry.data))
@@ -205,7 +216,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> 
         if hasattr(engine, "async_replace_program"):
             from .managed import SourceManager
 
-            await SourceManager(hass, entry, engine).async_start()
+            await SourceManager(hass, entry, engine, recovery=recovery).async_start()
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
         forwarded = True
         await async_register_panel(hass, entry.entry_id)
@@ -255,4 +266,5 @@ async def async_remove_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) ->
         await DurableStore(hass, 1, f"{DOMAIN}.{entry.entry_id}.{suffix}").async_remove()
     ir.async_delete_issue(hass, DOMAIN, f"managed_file_{entry.entry_id}")
     ir.async_delete_issue(hass, DOMAIN, f"source_conflict_{entry.entry_id}")
+    ir.async_delete_issue(hass, DOMAIN, f"invalid_program_{entry.entry_id}")
     hass.data.get(DOMAIN, {}).get("editor_locks", {}).pop(entry.entry_id, None)

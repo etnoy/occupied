@@ -138,6 +138,10 @@
     "ambiguous_bootstrap": {
       "title": "Occupied bootstrap needs a controller identity",
       "description": "Several Occupied controllers exist, so the legacy config_file declaration cannot identify the intended controller. Configure named entries under instances in configuration.yaml, with a stable id for each controller. Existing controllers have been retained."
+    },
+    "invalid_program": {
+      "title": "Occupied stored program could not be loaded",
+      "description": "Controller: {name}\n\n{error}\n\nThe original program is preserved and management is stopped. Open Occupied Settings, correct the preserved YAML, and save a valid program to resume management."
     }
   },
   "services": {
