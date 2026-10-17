@@ -107,5 +107,43 @@
       "title": "Occupied kunde inte läsa det sparade programmet",
       "description": "Styrenhet: {name}\n\n{error}\n\nOriginalprogrammet är bevarat och styrningen är stoppad. Öppna Inställningar i Occupied, rätta bevarad YAML och spara ett giltigt program för att återuppta styrningen."
     }
+  },
+  "config": {
+    "step": {
+      "create": {
+        "title": "Namnge din styrenhet",
+        "description": "Välj ett unikt namn för den här styrenheten.",
+        "data": {
+          "name": "Styrenhetens namn"
+        }
+      },
+      "user": {
+        "title": "Lägg till en Occupied-styrenhet",
+        "menu_options": {
+          "create": "Skapa i gränssnittet",
+          "yaml": "Importera YAML",
+          "file": "Använd en hanterad fil"
+        }
+      },
+      "yaml": {
+        "title": "Importera Occupied-YAML",
+        "description": "Importera en kopia av programmet. Källfilen övervakas eller ändras inte.",
+        "data": {
+          "program": "Occupied-YAML"
+        }
+      },
+      "file": {
+        "title": "Använd en hanterad fil",
+        "description": "Välj YAML under Home Assistants konfigurationskatalog. Filen är styrande, skrivskyddad och övervakas efter ändringar.",
+        "data": {
+          "config_file": "Relativ konfigurationssökväg"
+        }
+      }
+    },
+    "error": {
+      "file_already_managed": "En annan Occupied-styrenhet hanterar redan den här filen.",
+      "name_required": "Ange styrenhetens namn.",
+      "name_already_exists": "En annan Occupied-styrenhet använder redan det här namnet. Välj ett annat namn."
+    }
   }
 }

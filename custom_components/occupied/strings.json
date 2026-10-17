@@ -6,10 +6,11 @@
     },
     "step": {
       "user": {
-        "title": "Name your controller",
-        "description": "Choose a distinct name for this controller.",
-        "data": {
-          "name": "Controller name"
+        "title": "Add an Occupied controller",
+        "menu_options": {
+          "create": "Create in the UI",
+          "yaml": "Import YAML",
+          "file": "Use a managed file"
         }
       },
       "proof": {
@@ -43,6 +44,13 @@
         "data": {
           "config_file": "Relative configuration path"
         }
+      },
+      "create": {
+        "title": "Name your controller",
+        "description": "Choose a distinct name for this controller.",
+        "data": {
+          "name": "Controller name"
+        }
       }
     },
     "error": {
@@ -50,7 +58,8 @@
       "name_already_exists": "Another Occupied controller already uses this name. Choose a different name.",
       "invalid_config": "Check the selected entities, allowed states, activity name, and duration bounds.",
       "invalid_program": "The YAML is not a valid Occupied program. Validate it with the Occupied CLI to see field and line details.",
-      "invalid_file": "Cannot load this file. Check the relative path, read permissions, and Occupied YAML; use the CLI for detailed validation."
+      "invalid_file": "Cannot load this file. Check the relative path, read permissions, and Occupied YAML; use the CLI for detailed validation.",
+      "file_already_managed": "Another Occupied controller already manages this file."
     },
     "abort": {
       "already_configured": "This Occupied controller is already configured.",
