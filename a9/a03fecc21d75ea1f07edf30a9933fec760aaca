@@ -1,0 +1,55 @@
+custom_components/occupied/__init__.py
+  s_222e1586b2d36c::t_472fd1ba18205e 161-167,179,185-199,201,219,269
+custom_components/occupied/editor.py
+  s_222e1586b2d36c::t_6c46cb7359a4fb 50,59-61
+custom_components/occupied/engine_daily.py
+  s_e4e7f426a55ea1::t_4c0b02131ee469 129-134,340-342,1472,1485-1486,1497-1498,1590
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_222e1586b2d36c::t_9ab2ab9e4d38cd 4-5,529-530
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_222e1586b2d36c::t_e9b2fe15602481 4-5,528-529,19021-19023,19025-19026,19332-19338
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_222e1586b2d36c::t_70f2c30dd5238f 3-4,531-532
+custom_components/occupied/frontend/src/lib/types.ts
+  s_e4e7f426a55ea1::t_d2251528f3ba6a 256
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_222e1586b2d36c::t_0faec0848d10e4 656-658,660-661,1002-1009
+custom_components/occupied/managed.py
+  s_222e1586b2d36c::t_74e947c0eaefd2 28,32-33,35,44-55,191-206
+custom_components/occupied/stored_recovery.py
+  s_222e1586b2d36c::t_90e2e313d153de 1-18
+custom_components/occupied/strings.json
+  s_e4e7f426a55ea1::t_d9a0ae2646914d 132-135
+custom_components/occupied/translations/en.json
+  s_e4e7f426a55ea1::t_b87c86e6a72fd9 132-135
+custom_components/occupied/translations/sv.json
+  s_e4e7f426a55ea1::t_a908142737fda2 104-109
+tests/frontend/src/instances.test.ts
+  s_222e1586b2d36c::t_68727bca04c070 450-505
+tests/ha/test_stored_program_recovery.py
+  s_222e1586b2d36c::t_df80c760f99c39 1-124
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a9a03fecc21d75ea1f07edf30a9933fec760aaca",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_e4e7f426a55ea1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14bb7-675c-73a2-9533-1059a0af7113",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
