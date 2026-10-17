@@ -1,0 +1,47 @@
+custom_components/occupied/__init__.py
+  s_222e1586b2d36c::t_018c32d8c0b98f 90,161-167,179,185-199,201,219,269
+custom_components/occupied/editor.py
+  s_222e1586b2d36c::t_5812d63c9faf24 50,59-61
+custom_components/occupied/engine_daily.py
+  s_222e1586b2d36c::t_c4de4ced1d7e4a 129-134,340-342,1472,1485-1486,1497-1498,1590
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_222e1586b2d36c::t_787216b788fbe5 4-5,529-530
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_222e1586b2d36c::t_1d1f5419d92988 4-5,528-529,19057-19059,19061-19062,19368-19374
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_222e1586b2d36c::t_e6cf3928d6f942 3-4,531-532
+custom_components/occupied/frontend/src/lib/types.ts
+  s_222e1586b2d36c::t_a91e95e01645a4 256
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_222e1586b2d36c::t_f3ff7d424c1479 694-696,698-699,1040-1047
+custom_components/occupied/managed.py
+  s_222e1586b2d36c::t_cd4a1ebbbb94ef 28,32-33,35,44-55,191-206
+custom_components/occupied/stored_recovery.py
+  s_222e1586b2d36c::t_07ea50d7659a78 1-18
+custom_components/occupied/strings.json
+  s_222e1586b2d36c::t_21b4427f7f3c24 141-144
+custom_components/occupied/translations/en.json
+  s_222e1586b2d36c::t_09ba1a330f1ce5 141-144
+tests/frontend/src/instances.test.ts
+  s_222e1586b2d36c::t_b6c6cbe86531f2 561-616
+tests/ha/test_controller_service_users.py
+  s_222e1586b2d36c::t_9fe261437a0775 1-31
+tests/ha/test_stored_program_recovery.py
+  s_222e1586b2d36c::t_05a5d5d3456f4a 1-124
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0873adb8f606fec150dc96d740d1fd8a569f01c3",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
