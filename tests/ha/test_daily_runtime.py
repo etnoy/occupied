@@ -726,6 +726,18 @@ async def test_device_activity_includes_successful_actions_and_survives_reload(
     assert forwarded == [event]
     processor = EventProcessor(hass, event_types, device_ids=[device.id])
     await async_wait_recording_done(hass)
+    from homeassistant.components.recorder.history import get_last_state_changes
+    from homeassistant.helpers import entity_registry as er
+
+    status_id = er.async_get(hass).async_get_entity_id(
+        "sensor", "occupied", f"{daily_entry.entry_id}_status"
+    )
+    details = {"reconciliation", "run_condition", "session", "last_error"}
+    assert details <= hass.states.get(status_id).attributes.keys()
+    recorded = await hass.async_add_executor_job(get_last_state_changes, hass, 1, status_id)
+    attributes = recorded[status_id][-1].attributes
+    assert details.isdisjoint(attributes)
+    assert "reason" in attributes and "handover_targets" in attributes
     history = await hass.async_add_executor_job(
         processor.get_events,
         dt_util.utcnow() - timedelta(minutes=1),

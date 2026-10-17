@@ -24,6 +24,7 @@ async def async_setup_entry(
 
 
 class OccupiedStatusSensor(OccupiedEntity, SensorEntity):
+    _unrecorded_attributes = frozenset({"reconciliation", "run_condition", "session", "last_error"})
     _attr_translation_key = "status"
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = [
