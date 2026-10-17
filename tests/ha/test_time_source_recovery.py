@@ -61,7 +61,7 @@ async def test_fixed_source_recovers_an_enabled_controller(
     assert engine.next_event is not None and engine._cancel_timer is not None
 
 
-async def test_actual_timestamp_window_recovers_when_original_source_is_restored(hass, freezer):
+async def test_actual_timestamp_window_replans_when_original_source_is_restored(hass, freezer):
     freezer.move_to("2026-10-13T06:00:00+00:00")
     await hass.config.async_set_time_zone("UTC")
     hass.set_state(CoreState.running)
@@ -92,7 +92,12 @@ async def test_actual_timestamp_window_recovers_when_original_source_is_restored
         assert engine.active
         hass.states.async_set("sensor.window_end", "2026-10-13T17:00:00+00:00", attributes)
         await hass.async_block_till_done()
-        assert engine.status == "error" and not engine.active
+        assert engine.status == "active" and engine.active
+        assert any(
+            issue.code == "random_window" and issue.severity == "warning"
+            for plan in engine._plans.values()
+            for issue in plan.issues
+        )
         hass.states.async_set("sensor.window_end", "2026-10-13T21:00:00+00:00", attributes)
         await hass.async_block_till_done()
         assert engine.active and engine.status == "active" and engine._cancel_timer is not None
