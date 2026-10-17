@@ -30,7 +30,7 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
-    # The supported HA matrix and its two hashed environments move together.
+    # The supported HA matrix and its generated environments move together.
     ignore:
       - dependency-name: homeassistant
       - dependency-name: pytest-homeassistant-custom-component

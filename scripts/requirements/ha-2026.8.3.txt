@@ -1,4 +1,4 @@
-# Occupied lane: ha-2026.8.3; metadata-sha256=719d220aa185f8f422e756c56459ddab47d5a2a1b3c265186bbac7e92715106c
+# Occupied lane: ha-2026.8.3; metadata-sha256=d702043db0867aaded26d239c05eeb98ac30d7a07ca32d4f367a1cfa134ac741
 # Regenerate: python scripts/ha_matrix.py compile
 # Security overrides: anyio==4.14.2; see README compatibility tooling notes
 acme==5.4.0 \

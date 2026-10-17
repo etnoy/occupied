@@ -44,13 +44,20 @@ has its own floor and experimental next-Python lane, described below.
 | 2026.9.4 | 3.14.8 | window |
 | 2026.10.2 | 3.14.8 | newest |
 | 2026.10.2 | 3.14.2 | Python floor |
+
+| Standalone Python tested | Lane |
+| --- | --- |
+| 3.14.2 | floor |
+| 3.14.8 | latest |
+| 3.15 | experimental |
 <!-- ha-matrix:end -->
 
-CI also runs the standalone core suite and all CLI examples on Python 3.14.2 and
-3.14.8, without Home Assistant. Python 3.15 is an experimental canary until both
-its tests and a fresh wheels-only dependency resolution pass. Missing published
-wheels are reported in the CI summary; test failures and unexpected resolver errors
-still fail that experimental job. The Python-floor HA
+CI also runs the standalone core suite and all CLI examples on the floor and
+latest Python patches listed above, without Home Assistant. The experimental
+standalone lane remains nonblocking until both its tests and a fresh wheels-only
+dependency resolution pass. Missing published wheels are reported in the CI
+summary; test failures and unexpected resolver errors still fail that experimental
+job. The Python-floor HA
 lane skips one recorder-harness test on CPython versions before 3.14.4; all other
 tests are required. Browser smoke tests use isolated, digest-pinned floor and
 newest HA containers. Set `HA_IMAGE` to a matrix image to reproduce either lane
@@ -242,7 +249,8 @@ generated files with `uv run python scripts/ha_matrix.py check`. Reproduce a
 supported environment with `uv run python scripts/ha_matrix.py test --lane floor`
 or replace `floor` with a tested HA version; `--lane all` runs all six. Rebuild
 hashed requirements with `uv run python scripts/ha_matrix.py compile`, and discover
-new releases with `uv run python scripts/ha_matrix.py next`.
+new releases with `uv run python scripts/ha_matrix.py next`. See the
+[monthly rollover runbook](docs/maintenance.md) for the review and release procedure.
 
 Historical test environments retain the original HA constraints and their recorded
 SHA-256 digests. The matrix records one security repair: AnyIO versions below
