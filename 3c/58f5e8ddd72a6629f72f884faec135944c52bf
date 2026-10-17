@@ -1,0 +1,37 @@
+.github/workflows/release.yml
+  s_fc70a0945c1da9::t_5dd1d71086e512 52,54
+custom_components/occupied/manifest.json
+  s_fc70a0945c1da9::t_f15971912236cd 21
+docs/schema.md
+  s_fc70a0945c1da9::t_4d624e064eac62 31,59
+pyproject.toml
+  s_fc70a0945c1da9::t_33a5f17a66f33e 3
+tests/core/test_release_workflow.py
+  s_222e1586b2d36c::t_764a8bcea30346 1-26
+uv.lock
+  s_222e1586b2d36c::t_aa7be2b6c485df 1769
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "3c58f5e8ddd72a6629f72f884faec135944c52bf",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_fc70a0945c1da9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-5c75-74a0-8430-ba3ce8b51845",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
