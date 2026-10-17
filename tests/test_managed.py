@@ -442,3 +442,39 @@ async def test_custom_actions_survive_authority_switches_and_restart(
         "file", "occupied/house.yaml", program_revision(engine.program)
     )
     assert program_data(engine.program) == expected
+
+
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "secrets.yaml",
+        "occupied/secrets.yaml",
+        ".storage/auth.yaml",
+        ".private.yaml",
+        "occupied/.private/house.yaml",
+        "home-assistant.log",
+        "program.txt",
+    ],
+)
+def test_managed_file_rejects_sensitive_paths(tmp_path, relative):
+    from custom_components.occupied.file_config import managed_path
+
+    with pytest.raises(ProgramError) as raised:
+        managed_path(str(tmp_path), relative)
+    assert raised.value.issues[0].code == "file_path"
+
+
+def test_managed_file_symlink_cannot_reach_sensitive_yaml(tmp_path):
+    from custom_components.occupied.file_config import managed_path
+
+    (tmp_path / "secrets.yaml").write_text("token: secret")
+    (tmp_path / "house.yaml").symlink_to(tmp_path / "secrets.yaml")
+    with pytest.raises(ProgramError):
+        managed_path(str(tmp_path), "house.yaml")
+
+
+def test_managed_file_accepts_public_yaml_extensions(tmp_path):
+    from custom_components.occupied.file_config import managed_path
+
+    for relative in ("occupied/house.yaml", "occupied/house.yml"):
+        assert managed_path(str(tmp_path), relative) == tmp_path / relative
