@@ -1,0 +1,21 @@
+custom_components/occupied/sensor.py
+  s_222e1586b2d36c::t_549b8c032a8bd1 27
+tests/ha/test_daily_runtime.py
+  s_222e1586b2d36c::t_4e6201568859f4 729-740
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "1ecb36cfcacfe195ab2749b6686e2d5efdc7c2e0",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
