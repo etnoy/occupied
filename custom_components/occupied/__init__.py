@@ -169,6 +169,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> 
         except vol.Invalid as err:
             raise ConfigEntryError(f"Invalid Occupied configuration: {err}") from err
         engine = entry.runtime_data = OccupiedEngine(hass, entry.entry_id, config)
+    forwarded = False
     try:
         await engine.async_prepare()
         if hasattr(engine, "async_replace_program"):
@@ -176,12 +177,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> 
 
             await SourceManager(hass, entry, engine).async_start()
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        forwarded = True
         await async_register_panel(hass, entry.entry_id)
         await engine.async_start()
     except Exception:
         await engine.async_close()
         async_remove_panel(hass, entry.entry_id)
-        await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+        if forwarded:
+            await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
         raise
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     return True
