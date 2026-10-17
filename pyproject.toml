@@ -49,6 +49,7 @@ asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-q --import-mode=importlib --disable-socket --allow-unix-socket"
+filterwarnings = ["error::DeprecationWarning:custom_components[.]occupied"]
 
 [tool.ruff]
 target-version = "py314"
