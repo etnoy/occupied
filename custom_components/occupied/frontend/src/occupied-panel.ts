@@ -689,8 +689,12 @@ export class OccupiedPanel extends HTMLElement {
 
     return [
       programNotice,
+      this.document?.recovery_yaml == null
+        ? ""
+        : t("stored_program_invalid_hint"),
       this.document?.source === "file" ? t("managed_file_export_hint") : "",
-      this.document?.configuration_source?.status === "error"
+      this.document?.source === "file" &&
+      this.document.configuration_source?.status === "error"
         ? t("managed_file_error")
         : "",
     ]
@@ -1031,7 +1035,14 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   exportYaml() {
-    if (this.yamlDirty) {
+    if (this.yamlDirty || this.busy) {
+      return;
+    }
+    if (this.document?.recovery_yaml != null) {
+      this.yaml = this.yamlSaved = this.document.recovery_yaml;
+      this.yamlRevision = this.document.revision;
+      this.flush();
+
       return;
     }
     const yaml = this.yaml,
