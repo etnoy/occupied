@@ -87,7 +87,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     async def control(call: ServiceCall):
-        if call.context.user_id:
+        if call.service == "reload" and call.context.user_id:
             user = await hass.auth.async_get_user(call.context.user_id)
             if user is None or not user.is_admin:
                 raise Unauthorized()
