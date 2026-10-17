@@ -421,7 +421,10 @@ export const en = {
   delete_step: "Delete step",
   used_by: "Used by",
   delete_dependents_hint: "Change those relationships before deleting.",
-  delete_step_hint: "This step will be removed when you save changes.",
+  delete_step_hint:
+    "This step will be deleted and your program saved immediately.",
+  delete_step_file_hint:
+    "This step will be removed from your draft. Export the YAML to update the managed file.",
   weekdays: "Weekdays",
   previous: "Previous",
   next: "Next",
@@ -959,7 +962,9 @@ export const sv: Partial<Record<TranslationKey, string>> = {
   delete_step: "Radera steg",
   used_by: "Används av",
   delete_dependents_hint: "Ändra dessa relationer innan du raderar steget.",
-  delete_step_hint: "Steget tas bort när du sparar ändringarna.",
+  delete_step_hint: "Steget tas bort och programmet sparas direkt.",
+  delete_step_file_hint:
+    "Steget tas bort från utkastet. Exportera YAML för att uppdatera den hanterade filen.",
   weekdays: "Veckodagar",
   previous: "Föregående",
   next: "Nästa",

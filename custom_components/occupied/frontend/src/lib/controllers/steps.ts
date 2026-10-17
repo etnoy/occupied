@@ -1,7 +1,46 @@
 import type { OccupiedPanel } from "../../occupied-panel.js";
 import type { StepEntry, Translate } from "../types.js";
-import { stepEditor } from "../models/step-model.js";
+import {
+  dependentNames,
+  stepEditor,
+  stepEntries,
+} from "../models/step-model.js";
+import { copy, removeStep } from "../models/model.js";
 import { focusEditor } from "./step-editor-controller.js";
+
+export async function deleteStep(panel: OccupiedPanel, id: string) {
+  if (
+    !panel.document ||
+    panel.busy ||
+    panel.stale ||
+    dependentNames(panel.draft, id).length > 0
+  ) {
+    return false;
+  }
+  const entry = stepEntries(panel.draft, panel.catalog, panel.t).find(
+    (step) => step.id === id,
+  );
+  if (!entry) {
+    return true;
+  }
+  const candidate = copy(panel.draft);
+  removeStep(candidate, entry.path);
+  if (panel.document.source === "file") {
+    panel.selectedStep = null;
+    panel.stepEditor = null;
+    panel.change([], candidate, true);
+
+    return true;
+  }
+  if (await panel.save(candidate)) {
+    panel.selectedStep = null;
+    panel.stepEditor = null;
+
+    return true;
+  }
+
+  return false;
+}
 
 export function startStep(
   panel: OccupiedPanel,

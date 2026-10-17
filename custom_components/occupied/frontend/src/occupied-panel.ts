@@ -667,7 +667,7 @@ export class OccupiedPanel extends HTMLElement {
     this.runConditionForm = null;
     this.runConditionOriginal = null;
     this.runConditionErrors = {};
-    this.dirty = !!this.document.needs_apply;
+    this.dirty = false;
     this.version++;
     this.validatedVersion = -1;
     this.issues = [];
@@ -881,9 +881,10 @@ export class OccupiedPanel extends HTMLElement {
             )
             ?.focus({ preventScroll: true });
         }
-      } else {
-        this.dirty = true;
+
+        return true;
       }
+      this.dirty = true;
     });
   }
 
