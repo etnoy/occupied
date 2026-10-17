@@ -1,0 +1,33 @@
+scripts/requirements/ha-2026.5.0.txt
+  s_f43524462b82c4::t_ad5dcfb4cf2b6c 3,958,2668-2670,2672
+scripts/requirements/ha-2026.6.4.txt
+  s_f43524462b82c4::t_64b2ab9a128380 3,926,2592-2594,2596
+scripts/requirements/ha-2026.7.4.txt
+  s_f43524462b82c4::t_008da9bf417af7 3,877,2543-2545,2547
+scripts/requirements/ha-2026.8.3.txt
+  s_f43524462b82c4::t_c8d72fee7a4cf5 3,865,2531-2533,2535
+scripts/requirements/ha-2026.9.4.txt
+  s_f43524462b82c4::t_fc20f950ea478d 3,955,2627-2629,2631
+.github/workflows/security.yml
+  s_f43524462b82c4::t_d358da727cd158 47
+README.md
+  s_f43524462b82c4::t_0881f926485853 248-256
+scripts/ha_matrix.toml
+  s_f43524462b82c4::t_238882330e9104 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "76522a45e02761438cb65a46b4ea3a48fcff2c58",
+  "prompts": {},
+  "sessions": {
+    "s_f43524462b82c4": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "7ab88de8-ebb5-42ee-9771-7200c96b0218",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
