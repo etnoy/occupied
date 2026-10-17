@@ -23,7 +23,7 @@ from .validation import (
     validate_program,
 )
 
-PLANNER_VERSION = 12
+PLANNER_VERSION = 13
 
 
 class RandomStreams:
@@ -303,26 +303,58 @@ def supersede_ticks(events):
     return tuple(sorted(result, key=lambda event: event.order_key))
 
 
-def random_window_issues(program, event, simulation_date, context, path):
+def recurring_boundary(timing, context):
+    source = timing.relative_to
+    return bool(
+        timing.absolute_time
+        or (
+            source
+            and (
+                source.sun
+                or (
+                    source.entity
+                    and context.time_sources.get(source.entity, {}).get("kind") == "time"
+                )
+            )
+        )
+    )
+
+
+def random_window_issues(
+    program, event, simulation_date, context, path, times=None, random_ends=None
+):
     """Check unsampled, independent bounds without treating an anchor sample as structural."""
     if not event.max_count:
         return ()
     if duration := event.end.duration:
         minimum, maximum = duration.min, duration.latest_duration
-    elif event.start.absolute_time and event.end.absolute_time:
-        # Use a separate diagnostic sink: sampling reports DST adjustments once.
+    else:
         day = SimulationDay(program, simulation_date, context, [])
-        start_low, start_high = day.clock_bounds(event.start.absolute_time, path + ("start",))
-        end_low, end_high = day.clock_bounds(event.end.absolute_time, path + ("end",))
-        if end_high < start_low:
+        start = timing_bounds(day, event.start, times or {}, path + ("start",), random_ends)
+        end = timing_bounds(day, event.end, times or {}, path + ("end",))
+        if start is None or end is None:
+            return ()
+        start_low, start_high = start
+        end_low, end_high = end
+        if end_high < start_low and recurring_boundary(event.end, context):
             tomorrow = SimulationDay(program, simulation_date + timedelta(days=1), context, [])
-            end_low, end_high = tomorrow.clock_bounds(event.end.absolute_time, path + ("end",))
+            end = timing_bounds(tomorrow, event.end, times or {}, path + ("end",))
+            if end is None:
+                return ()
+            end_low, end_high = end
+        if end_low < start_high and end_high >= start_low:
+            return (
+                Issue(
+                    "random_window_overlap",
+                    "Start and end windows must not overlap",
+                    path + ("end",),
+                ),
+            )
+        # Preserve recoverable sampling skips for movable timestamp/step sources.
+        if not (event.start.absolute_time and event.end.absolute_time):
+            return ()
         minimum = (end_low - start_high).total_seconds()
         maximum = (end_high - start_low).total_seconds()
-    else:
-        # Step/random anchors may themselves be sampled. Dynamic source values
-        # can move, so a failed resolved sample remains a recoverable skip.
-        return ()
     required = event.min_duration + event.off.stagger_span
     if maximum <= 0:
         return (Issue("random_window", "Window end must be after its start", path + ("end",)),)
@@ -393,7 +425,9 @@ def generate_plan(
                 )
             )
             continue
-        bounds_issues = random_window_issues(program, event, simulation_date, context, path)
+        bounds_issues = random_window_issues(
+            program, event, simulation_date, context, path, times, random_ends
+        )
         issues.extend(bounds_issues)
         if any(issue.severity == "error" for issue in bounds_issues):
             continue
@@ -430,18 +464,19 @@ def generate_plan(
             )
         if end is None:
             continue
-        source = event.end.relative_to
-        recurring_end = event.end.absolute_time or (
-            source
-            and (
-                source.sun
-                or (
-                    source.entity
-                    and context.time_sources.get(source.entity, {}).get("kind") == "time"
-                )
-            )
+        bounds_day = SimulationDay(program, simulation_date, context, [])
+        start_bounds = timing_bounds(bounds_day, event.start, times, path + ("start",), random_ends)
+        end_bounds = (
+            None
+            if event.end.duration
+            else timing_bounds(bounds_day, event.end, times, path + ("end",))
         )
-        if end < start and recurring_end:
+        if (
+            start_bounds
+            and end_bounds
+            and end_bounds[1] < start_bounds[0]
+            and recurring_boundary(event.end, context)
+        ):
             next_day = SimulationDay(program, simulation_date + timedelta(days=1), context, issues)
             end = sample_timing(
                 next_day, event.end, times, path + ("end",), streams.rng("random", key, "end")
@@ -567,7 +602,7 @@ def apply_step_limits(day, timing, candidate, path):
     return adjusted
 
 
-def sample_timing(day, timing, times, path, rng, random_ends=None):
+def timing_bounds(day, timing, times, path, random_ends=None):
     source = timing.relative_to
     if source and source.step:
         if source.step not in times:
@@ -608,6 +643,11 @@ def sample_timing(day, timing, times, path, rng, random_ends=None):
         )
     else:
         bounds = day.clock_bounds(timing.absolute_time, path + ("absolute_time",))
+    return bounds
+
+
+def sample_timing(day, timing, times, path, rng, random_ends=None):
+    bounds = timing_bounds(day, timing, times, path, random_ends)
     if bounds is None:
         return None
     low, high = bounds

@@ -204,6 +204,16 @@ def validate_light_data(data: Mapping, action: str = "turn_on") -> str | None:
     return None
 
 
+def _clock_window_bounds(value):
+    def seconds(text):
+        parts = [int(part) for part in text.split(":")]
+        return parts[0] * 3600 + parts[1] * 60 + (parts[2] if len(parts) > 2 else 0)
+
+    low = seconds(value.start)
+    high = seconds(value.end or value.start)
+    return low, high + (86400 if high < low else 0)
+
+
 def validate_program(data: Program | Mapping[str, Any]) -> Program:
     try:
         program = data if isinstance(data, Program) else Program.model_validate(data)
@@ -216,6 +226,20 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
         issues.append(
             Issue("program_size", "A program supports at most 5000 steps and random events")
         )
+    for key, event in program.random.items():
+        if event.start.absolute_time and event.end.absolute_time:
+            start_low, start_high = _clock_window_bounds(event.start.absolute_time)
+            end_low, end_high = _clock_window_bounds(event.end.absolute_time)
+            if end_high < start_low:
+                end_low, end_high = end_low + 86400, end_high + 86400
+            if end_low < start_high and end_high >= start_low:
+                issues.append(
+                    Issue(
+                        "random_window_overlap",
+                        "Start and end windows must not overlap",
+                        ("random", key, "end"),
+                    )
+                )
     for path, timing in program_timings(program, enabled_only=False):
         random_end = path[0] == "random" and path[-1] == "end"
         random_start = path[0] == "random" and path[-1] == "start"
