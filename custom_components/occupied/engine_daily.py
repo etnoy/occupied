@@ -277,7 +277,7 @@ class DailyEngine:
     @callback
     def _config_changed(self, _):
         if self._saved_context != self._context_identity():
-            self._invalidate()
+            self._invalidate(preserve_activation=True)
             self.hass.async_create_task(self._async_reconfigure())
 
     async def _async_time_sources_changed(self):
@@ -435,9 +435,10 @@ class DailyEngine:
             self._notify()
 
     @callback
-    def _invalidate(self):
+    def _invalidate(self, *, preserve_activation=False):
         self.active = False
-        self.activation_deadline = None
+        if not preserve_activation:
+            self.activation_deadline = None
         if self.reconciliation["phase"] in {"waiting", "applying"}:
             self.reconciliation["phase"] = "cancelled"
         self.generation += 1
@@ -632,10 +633,15 @@ class DailyEngine:
                     await self._reevaluate_locked()
                     return
                 config = self.program.run_condition
-                if config and self.enforce_state_on_start and not self._restoring:
-                    self.activation_deadline = dt_util.utcnow() + timedelta(
-                        seconds=config.start_delay
-                    )
+                if (
+                    config
+                    and self.enforce_state_on_start
+                    and (not self._restoring or self.activation_deadline is not None)
+                ):
+                    if not self._restoring or self.activation_deadline is None:
+                        self.activation_deadline = dt_util.utcnow() + timedelta(
+                            seconds=config.start_delay
+                        )
                     self.reconciliation = {"phase": "waiting", "results": {}}
                     self._push(self.activation_deadline, "activation", f"activation:{self.session}")
                 else:
@@ -1438,7 +1444,7 @@ class DailyEngine:
                     await self._persist()
                     self._notify()
                 return
-            self._invalidate()
+            self._invalidate(preserve_activation=same_policy)
             if self.started:
                 await self._cancel_native_fades()
             self.program, self.gate = program, gate
