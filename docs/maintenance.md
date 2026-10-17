@@ -4,7 +4,7 @@ The supported window contains the current monthly Home Assistant release and the
 five before it. `scripts/ha_matrix.toml` owns release/fixture/frontend pins,
 interpreters, container digests, and roles. The newest environment uses `uv.lock`;
 older environments use generated, hashed requirements and the official constraints
-from their HA tags. The oldest minor always starts at `.0`.
+from their HA tags, with explicitly recorded security repairs. The oldest minor always starts at `.0`.
 
 ## Monthly rollover
 
@@ -30,8 +30,8 @@ An unpublished fixture or image is a reason to wait. If resolution fails, keep t
 changes on this branch and resolve the conflict before publishing the PR.
 
 Read the generated diff. Check that exactly six consecutive minors remain, that
-all hashes and digests correspond to the selected releases, and that no stale lane
-files remain. Remove every compatibility shim whose `remove_when_floor` has been
+all hashes and digests correspond to the selected releases, that recorded security
+repairs remain applied, and that no stale lane files remain. Remove every compatibility shim whose `remove_when_floor` has been
 reached; the matrix check fails until this is done. Fix newly exposed deprecations
 instead of weakening the tripwire. Bring historical-fixture security advisories to
 review explicitly; keep dependency review enabled.
@@ -86,3 +86,10 @@ HA environment pins and excludes generated lane files. Keep these exclusions:
 bumping one transitive pin in a hashed HA environment can violate the constraints
 of the HA release being tested. Regenerate lane requirements with `ha_matrix.py
 compile`; never edit package hashes by hand.
+
+Security repairs are declared in `policy.security_overrides`. The compiler keeps
+the original official constraints immutable, applies only the recorded replacement
+to temporary compiler input, and records it in generated override/header files.
+Dependency review stays enabled. A vulnerability in the historical HA release
+itself requires an explicit support-policy decision; do not hide it with a blanket
+advisory allowlist.
