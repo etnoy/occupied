@@ -1,0 +1,21 @@
+custom_components/occupied/live_preview.py
+  s_222e1586b2d36c::t_d3b9a64e4a512a 27,99-100,104-105,301
+tests/ha/test_live_preview.py
+  s_222e1586b2d36c::t_4baaa0660e9776 100-146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "682e008272bc88c143b4dcfbba5a1f3a44b76301",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
