@@ -1,0 +1,33 @@
+custom_components/occupied/engine_daily.py
+  s_222e1586b2d36c::t_3206cb29fb1a47 107,307,449-468,618-620,653,681-687,1074-1075,1088-1089,1478
+custom_components/occupied/planner.py
+  s_222e1586b2d36c::t_b4e3bc0bdfcc1f 26,306-348,396-399,454-459,467,469
+docs/schema.md
+  s_222e1586b2d36c::t_3d7e527a617005 129-137,158,160
+tests/core/test_random.py
+  s_222e1586b2d36c::t_f49eaba435868a 341,348,350-352
+tests/core/test_random_sample_recovery.py
+  s_222e1586b2d36c::t_46b011a36fcad9 1-98
+tests/fixtures/programs/resilient-samples.yaml
+  s_222e1586b2d36c::t_c29e92e761b961 1-29
+tests/ha/test_planning_recovery.py
+  s_222e1586b2d36c::t_2d52298f8c0c8c 1-211
+tests/ha/test_time_source_recovery.py
+  s_222e1586b2d36c::t_e97ba6cec1d286 64,95-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "fbab6bf812e3d9dafbce0653a16354a7fec2b203",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
