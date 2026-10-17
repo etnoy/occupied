@@ -387,6 +387,66 @@ void test("a loaded proof document awaiting migration is not an unsaved user edi
   }
 });
 
+for (const viewChange of ["YAML", "run condition"]) {
+  void test(`tab navigation preserves the managed-file draft when discarding ${viewChange}`, async () => {
+    const f = await fixture();
+    try {
+      f.route("guest");
+      await settle();
+      assert.equal(f.panel.document.source, "file");
+      f.panel.change(["steps", "draft_step"], {
+        action: "turn_on",
+        entities: ["light.test"],
+        timing: { absolute_time: { start: "18:00" } },
+      });
+      const draft = structuredClone(f.panel.draft);
+      const version = f.panel.version;
+      f.panel.navigate("settings");
+      f.panel.openRunCondition();
+      f.panel.yaml = f.panel.yamlSaved = "schema_version: 1\nname: guest\n";
+      if (viewChange === "YAML") {
+        f.panel.yaml += "# Unsaved YAML\n";
+      } else {
+        f.panel.runConditionForm!.enabled = true;
+      }
+      f.panel.runConditionErrors = { entityId: "Unfinished form" };
+      f.accept();
+      f.panel.navigate("steps");
+      assert.equal(f.panel.tab, "steps");
+      assert.deepEqual(f.panel.draft, draft);
+      assert.equal(f.panel.dirty, true);
+      assert.equal(f.panel.version, version);
+      assert.deepEqual(f.panel.saved.steps, {});
+      assert.equal(f.panel.yaml, f.panel.yamlSaved);
+      assert.equal(f.panel.runConditionForm, null);
+      assert.equal(f.panel.runConditionOriginal, null);
+      assert.deepEqual(f.panel.runConditionErrors, {});
+      assert.equal(f.confirmations, 1);
+    } finally {
+      f.restore();
+    }
+  });
+}
+
+void test("cancelling tab navigation keeps view edits and the managed-file draft", async () => {
+  const f = await fixture();
+  try {
+    f.route("guest");
+    await settle();
+    f.panel.change(["name"], "Draft name");
+    f.panel.navigate("settings");
+    f.panel.yaml = "# Pending YAML";
+    f.panel.navigate("steps");
+    assert.equal(f.panel.tab, "settings");
+    assert.equal(f.panel.draft.name, "Draft name");
+    assert.equal(f.panel.dirty, true);
+    assert.equal(f.panel.yaml, "# Pending YAML");
+    assert.equal(f.confirmations, 1);
+  } finally {
+    f.restore();
+  }
+});
+
 function liveSession(): LivePreviewSession {
   return {
     id: "live",
