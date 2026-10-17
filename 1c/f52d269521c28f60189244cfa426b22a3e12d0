@@ -1,0 +1,19 @@
+.gitignore
+  s_fc70a0945c1da9::t_f681a68a8b3768 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "1cf52d269521c28f60189244cfa426b22a3e12d0",
+  "prompts": {},
+  "sessions": {
+    "s_fc70a0945c1da9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-5c75-74a0-8430-ba3ce8b51845",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
