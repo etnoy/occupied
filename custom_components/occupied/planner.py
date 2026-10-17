@@ -23,7 +23,7 @@ from .validation import (
     validate_program,
 )
 
-PLANNER_VERSION = 11
+PLANNER_VERSION = 12
 
 
 class RandomStreams:
@@ -303,6 +303,49 @@ def supersede_ticks(events):
     return tuple(sorted(result, key=lambda event: event.order_key))
 
 
+def random_window_issues(program, event, simulation_date, context, path):
+    """Check unsampled, independent bounds without treating an anchor sample as structural."""
+    if not event.max_count:
+        return ()
+    if duration := event.end.duration:
+        minimum, maximum = duration.min, duration.latest_duration
+    elif event.start.absolute_time and event.end.absolute_time:
+        # Use a separate diagnostic sink: sampling reports DST adjustments once.
+        day = SimulationDay(program, simulation_date, context, [])
+        start_low, start_high = day.clock_bounds(event.start.absolute_time, path + ("start",))
+        end_low, end_high = day.clock_bounds(event.end.absolute_time, path + ("end",))
+        if end_high < start_low:
+            tomorrow = SimulationDay(program, simulation_date + timedelta(days=1), context, [])
+            end_low, end_high = tomorrow.clock_bounds(event.end.absolute_time, path + ("end",))
+        minimum = (end_low - start_high).total_seconds()
+        maximum = (end_high - start_low).total_seconds()
+    else:
+        # Step/random anchors may themselves be sampled. Dynamic source values
+        # can move, so a failed resolved sample remains a recoverable skip.
+        return ()
+    required = event.min_duration + event.off.stagger_span
+    if maximum <= 0:
+        return (Issue("random_window", "Window end must be after its start", path + ("end",)),)
+    if required > maximum:
+        return (
+            Issue(
+                "random_window",
+                "Minimum duration does not fit inside this window",
+                path + ("min_duration",),
+            ),
+        )
+    if required > minimum:
+        return (
+            Issue(
+                "random_window_risk",
+                "Some window samples are too short and will be skipped",
+                path + ("min_duration",),
+                "warning",
+            ),
+        )
+    return ()
+
+
 def generate_plan(
     program: Program, simulation_date: date, seed, *, context=None, source_revision=None
 ):
@@ -349,6 +392,10 @@ def generate_plan(
                     "info",
                 )
             )
+            continue
+        bounds_issues = random_window_issues(program, event, simulation_date, context, path)
+        issues.extend(bounds_issues)
+        if any(issue.severity == "error" for issue in bounds_issues):
             continue
         count = streams.rng("random", key, "count").randint(event.min_count, event.max_count)
         if count == 0:
@@ -404,7 +451,12 @@ def generate_plan(
         span = (end - start).total_seconds()
         if span <= 0:
             issues.append(
-                Issue("random_window", "Window end must be after its start", path + ("end",))
+                Issue(
+                    "random_window",
+                    "Sampled window end is not after its start; item skipped",
+                    path + ("end",),
+                    "warning",
+                )
             )
             continue
         end_span = event.off.stagger_span
@@ -412,8 +464,9 @@ def generate_plan(
             issues.append(
                 Issue(
                     "random_window",
-                    "Minimum duration does not fit inside this window",
+                    "Minimum duration does not fit inside the sampled window; item skipped",
                     path + ("min_duration",),
+                    "warning",
                 )
             )
             continue
