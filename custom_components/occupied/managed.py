@@ -25,13 +25,14 @@ def source_lock(hass, entry_id):
 class SourceManager:
     """Retain the last valid in-memory program on errors; never write a source file."""
 
-    def __init__(self, hass, entry, engine):
+    def __init__(self, hass, entry, engine, *, recovery=None):
         self.hass, self.entry, self.engine = hass, entry, engine
         self.mode = entry.data.get("source", "gui")
         self.path = entry.data.get("config_file") if self.mode == "file" else None
-        self.status = "unresolved" if self.mode == "file" else "ready"
+        self.recovery = recovery
+        self.status = "error" if recovery else "unresolved" if self.mode == "file" else "ready"
         self.observed_hash = self.applied_hash = None
-        self.issues = []
+        self.issues = recovery["issues"] if recovery else []
         self._fingerprint = None
         self._watched_source = self.mode, self.path
         self._unsubscribe = self._debounce = None
@@ -39,6 +40,18 @@ class SourceManager:
         self.closed = False
         engine.source_manager = self
         engine._unsubs.append(self.close)
+
+    @property
+    def recovery_revision(self):
+        return self.recovery["revision"] if self.recovery else None
+
+    def clear_recovery(self):
+        if self.recovery is None:
+            return
+        self.recovery = None
+        self.issues = []
+        self.status = "ready"
+        ir.async_delete_issue(self.hass, DOMAIN, f"invalid_program_{self.entry.entry_id}")
 
     def snapshot(self):
         return {
@@ -175,6 +188,22 @@ class SourceManager:
     async def async_start(self):
         if self.mode == "file":
             await self.async_reload()
+        issue_id = f"invalid_program_{self.entry.entry_id}"
+        if self.recovery:
+            ir.async_create_issue(
+                self.hass,
+                DOMAIN,
+                issue_id,
+                is_fixable=False,
+                severity=ir.IssueSeverity.ERROR,
+                translation_key="invalid_program",
+                translation_placeholders={
+                    "name": self.entry.title,
+                    "error": self.issues[0]["message"],
+                },
+            )
+        else:
+            ir.async_delete_issue(self.hass, DOMAIN, issue_id)
         self._watch()
 
     def _watch(self):

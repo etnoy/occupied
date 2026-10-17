@@ -1,6 +1,8 @@
 // Generated from custom_components/occupied/frontend/src/lib/i18n/translations.ts by pnpm run build. Do not edit.
 // Keep UI wording here; call sites use stable, descriptive shorthand keys.
 export const en = {
+  stored_program_invalid_hint:
+    "Stored program is invalid. Correct the preserved YAML in Settings and save to resume management.",
   chronological_order: "Chronological",
   manual_order: "Manual order",
   reset_chronological_order: "Reset to chronological",
@@ -524,6 +526,8 @@ export const en = {
 };
 // Missing translations fall back to English.
 export const sv = {
+  stored_program_invalid_hint:
+    "Det sparade programmet är ogiltigt. Rätta bevarad YAML i Inställningar och spara för att återuppta styrningen.",
   chronological_order: "Kronologisk ordning",
   manual_order: "Manuell ordning",
   reset_chronological_order: "Återställ kronologisk ordning",
