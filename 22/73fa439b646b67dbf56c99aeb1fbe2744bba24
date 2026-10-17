@@ -1,0 +1,29 @@
+custom_components/occupied/engine_daily.py
+  s_222e1586b2d36c::t_6988b06ae394c3 324-325
+tests/ha/test_closed_reconfigure.py
+  s_8f5fb9480a79f2::t_ba08fccd9e7e86 1-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2273fa439b646b67dbf56c99aeb1fbe2744bba24",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_8f5fb9480a79f2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14b66-c5ba-78b1-889f-c3d50b021d54",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
