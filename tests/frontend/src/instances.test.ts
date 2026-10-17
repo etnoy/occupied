@@ -773,6 +773,64 @@ void test("late live status from another controller cannot replace the current s
   }
 });
 
+for (const operation of ["next", "stop"] as const) {
+  void test(`unloading during live ${operation} resets controls and ignores the old response`, async () => {
+    const f = await fixture();
+    try {
+      const session = liveSession();
+      let resolve!: (value: LivePreviewResponse) => void;
+      let held = true;
+      f.setLiveOverride((message) =>
+        held && message.type === `occupied/live_preview/${operation}`
+          ? new Promise((done) => {
+              resolve = done;
+            })
+          : Promise.resolve({
+              session: { ...session, cursor: 1 },
+              can_advance: true,
+              plan: f.preview.plans[0],
+              program: f.panel.draft,
+            }),
+      );
+      f.panel.liveSession = session;
+      f.panel.liveReady = f.panel.liveCanAdvance = true;
+      const pending =
+        operation === "next"
+          ? f.panel.nextLiveEvent()
+          : f.panel.stopLivePreview();
+      assert.equal(
+        operation === "next" ? f.panel.liveBusy : f.panel.liveStopping,
+        true,
+      );
+      const update = f.subscriptions.get("occupied/instances_subscribe:all")!;
+      f.instances[0].loaded = false;
+      update(f.instances);
+      await settle();
+      assert.equal(f.panel.liveBusy, false);
+      assert.equal(f.panel.liveStopping, false);
+      held = false;
+      f.instances[0].loaded = true;
+      update(f.instances);
+      await settle();
+      assert.equal(f.panel.liveReady, true);
+      assert.equal(f.panel.liveSession?.cursor, 1);
+      resolve({ session: { ...session, cursor: 99 }, can_advance: false });
+      await pending;
+      assert.equal(f.panel.liveSession?.cursor, 1);
+      assert.equal(f.panel.liveBusy, false);
+      assert.equal(f.panel.liveStopping, false);
+      await f.panel.nextLiveEvent();
+      assert.equal(
+        f.messages.filter((m) => m.type === "occupied/live_preview/next")
+          .length,
+        operation === "next" ? 2 : 1,
+      );
+    } finally {
+      f.restore();
+    }
+  });
+}
+
 void test("disconnecting during an advance cannot leave recovered controls permanently busy", async () => {
   const f = await fixture();
   try {

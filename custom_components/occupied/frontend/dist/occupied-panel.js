@@ -18679,10 +18679,8 @@ var OccupiedPanel = class extends HTMLElement {
       this.component = void 0;
     }
     this.shadowRoot.replaceChildren();
-    this.epoch++;
-    this.busy = this.liveBusy = this.liveStopping = false;
+    this._invalidateRequests();
     this._loadedEntry = null;
-    this._loading = false;
     this._disposeSubscription();
     this._disposeInstances();
     this._instancesReady = false;
@@ -18717,9 +18715,8 @@ var OccupiedPanel = class extends HTMLElement {
         this.instances = instances;
         this.flush();
         if (!this.selectedInstance?.loaded && this._loadedEntry) {
-          this.epoch++;
+          this._invalidateRequests();
           this._loadedEntry = null;
-          this._loading = this.busy = false;
           this._disposeSubscription();
         }
         void this._load();
@@ -18738,8 +18735,12 @@ var OccupiedPanel = class extends HTMLElement {
       globalThis.confirm(this.t("instance_switch_confirm"))
     );
   }
-  _resetInstance(entry) {
+  _invalidateRequests() {
     this.epoch++;
+    this._loading = this.busy = this.liveBusy = this.liveStopping = false;
+  }
+  _resetInstance(entry) {
+    this._invalidateRequests();
     this._disposeSubscription();
     this._loadedEntry = null;
     this._failedEntry = null;
@@ -18756,8 +18757,6 @@ var OccupiedPanel = class extends HTMLElement {
       validatedVersion: -1,
       issues: [],
       error: "",
-      busy: false,
-      _loading: false,
       tab: "steps",
       stepEditor: null,
       randomEditor: null,
@@ -18771,8 +18770,6 @@ var OccupiedPanel = class extends HTMLElement {
       liveProgram: void 0,
       liveVisible: false,
       liveReady: false,
-      liveBusy: false,
-      liveStopping: false,
       liveCanAdvance: false,
       schedulingPaused: false,
       runtimeSnapshot: {},
