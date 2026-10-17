@@ -1,0 +1,27 @@
+.github/workflows/check.yml
+  s_222e1586b2d36c::t_f2dc0acfc2a241 24-27,51-55,115-223,280,324-325,328-332,353,369-370
+README.md
+  s_222e1586b2d36c::t_8ff3c66f1a1cc6 216-223
+tests/browser/occupied.spec.ts
+  s_222e1586b2d36c::t_ec0c0b62cc6907 10-16,54-63
+tests/browser/serve.py
+  s_222e1586b2d36c::t_b43b77796a0a41 4,9,63-65
+tests/ha/test_daily_runtime.py
+  s_222e1586b2d36c::t_4584454124fee1 3,684-687
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "13d334a406dd27f1ffbca2e47a08f5149d08fb42",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
