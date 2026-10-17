@@ -29,6 +29,7 @@ from homeassistant.helpers.start import async_at_started
 from homeassistant.util import dt as dt_util
 
 from .actions import (
+    ServiceWaitTimeout,
     dispatch_service,
     light_capabilities,
     light_matches,
@@ -1218,6 +1219,11 @@ class DailyEngine:
             return False
         try:
             await dispatch_service(self.hass, action, context, data=data)
+        except ServiceWaitTimeout as err:
+            self.last_error = f"{action.action} for {', '.join(action.targets)}: {err}"
+            self._finish(key, "uncertain", action, self.last_error)
+            await self._persist()
+            return False
         except Exception as err:
             self.last_error = (
                 f"{action.action} for {', '.join(action.targets)}: {type(err).__name__}: {err}"
@@ -1476,6 +1482,7 @@ class DailyEngine:
             "service_missing",
             "handover_skipped",
             "random_window_skipped",
+            "uncertain",
         }:
             _LOGGER.warning(
                 "Occupied %s (%s), event %s: %s: %s",

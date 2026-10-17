@@ -177,6 +177,11 @@ A qualified `domain.service`, such as `light.turn_on`, `cover.set_cover_position
 
 The **Custom YAML** action choice accepts one action mapping or an ordered list. It generates equivalent YAML from the current simple controls, supports scene-style individual light/switch/cover settings through `set_state`, and saves the block under `actions`. All members share one sampled time and execute in list order; a failed call stops remaining calls without rollback or whole-block retry. Related steps still model actions with separate scheduled times; random events pair start/end phases. See [Custom YAML actions](custom-yaml.md) for syntax, supported fields, conversion, and validation rules. There are no routine containers, inherited defaults, probability, stagger, weighted targets, or configurable sampling distributions.
 
+Occupied waits up to 10 seconds for a native service handler. If the wait expires,
+the outcome is `uncertain` and that call is never retried. The handler keeps running;
+its final completion or failure is logged. Ordered custom blocks stop after an
+uncertain call, just as they do after a failed call.
+
 ## Projection and runtime
 
 Controlled entities are derived from enabled steps and both actions of enabled random events. Only direct typed light intents participate in handover. Default handover state starts Unknown for each local date until a scheduled action establishes intent; activation leaves unknown state alone. An explicit midnight step can establish an initial state. Explicit state enforcement, both on startup and through the enforcement button, also considers known targets from the preceding local calendar day, preserving overnight intent without replaying historical actions. Scenes/services remain opaque and do not supply inferred baselines.
