@@ -10,6 +10,7 @@ from homeassistant.helpers.event import async_call_later, async_track_time_inter
 
 from .bootstrap import check_bootstrap
 from .const import DOMAIN
+from .entry_metadata import async_sync_program_name
 from .file_config import file_fingerprint, load_yaml, read_managed
 from .validation import ProgramError, RevisionConflict, program_revision
 
@@ -100,6 +101,7 @@ class SourceManager:
                 if changed:
                     await self.engine.async_replace_program(program, persist_program=False)
                 self.applied_hash = self.observed_hash
+                async_sync_program_name(self.hass, self.entry.entry_id, program.name)
                 self._report([])
             except (ProgramError, HomeAssistantError) as err:
                 issues = (

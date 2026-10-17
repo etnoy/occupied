@@ -214,6 +214,7 @@ async def _apply_program(hass, connection, msg, *, editor_save=False):
     from . import resolve_engine
     from .editor import current_revision, installed_issues, program_document
     from .engine_daily import DailyEngine
+    from .entry_metadata import async_sync_program_name
     from .file_config import load_program
     from .managed import source_lock
     from .storage import program_store
@@ -251,6 +252,7 @@ async def _apply_program(hass, connection, msg, *, editor_save=False):
                 if not await hass.config_entries.async_reload(engine.entry_id):
                     raise HomeAssistantError("Could not load the saved daily program")
             engine = resolve_engine(hass, msg["config_entry_id"])
+            async_sync_program_name(hass, engine.entry_id, engine.program.name)
             connection.send_result(
                 msg["id"],
                 {"valid": True, **program_document(engine)},
