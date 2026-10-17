@@ -1794,6 +1794,9 @@ test-core = [
     { name = "pytest-socket" },
 ]
 
+[package.group-requires-python]
+dev = ">=3.14.2"
+
 [package.metadata]
 requires-dist = [
     { name = "astral", specifier = ">=2.2,<3" },
@@ -1803,15 +1806,15 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "freezegun", specifier = ">=1.5,<2" },
-    { name = "home-assistant-frontend", specifier = "==20260930.4" },
-    { name = "homeassistant", specifier = "==2026.10.2" },
-    { name = "pytest", specifier = ">=9,<10" },
-    { name = "pytest-asyncio", specifier = ">=1.2,<2" },
-    { name = "pytest-cov", specifier = ">=7,<8" },
-    { name = "pytest-homeassistant-custom-component", specifier = "==0.13.373" },
-    { name = "pytest-socket", specifier = ">=0.7,<1" },
-    { name = "ruff", specifier = ">=0.14,<1" },
+    { name = "freezegun", marker = "python_full_version >= '3.14.2'", specifier = ">=1.5,<2" },
+    { name = "home-assistant-frontend", marker = "python_full_version >= '3.14.2'", specifier = "==20260930.4" },
+    { name = "homeassistant", marker = "python_full_version >= '3.14.2'", specifier = "==2026.10.2" },
+    { name = "pytest", marker = "python_full_version >= '3.14.2'", specifier = ">=9,<10" },
+    { name = "pytest-asyncio", marker = "python_full_version >= '3.14.2'", specifier = ">=1.2,<2" },
+    { name = "pytest-cov", marker = "python_full_version >= '3.14.2'", specifier = ">=7,<8" },
+    { name = "pytest-homeassistant-custom-component", marker = "python_full_version >= '3.14.2'", specifier = "==0.13.373" },
+    { name = "pytest-socket", marker = "python_full_version >= '3.14.2'", specifier = ">=0.7,<1" },
+    { name = "ruff", marker = "python_full_version >= '3.14.2'", specifier = ">=0.14,<1" },
 ]
 test-core = [
     { name = "freezegun", specifier = ">=1.5,<2" },

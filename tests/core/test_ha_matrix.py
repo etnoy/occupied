@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.fixture
-def matrix_repo(tmp_path):
+def matrix_repo(tmp_path, monkeypatch):
     """Fixed synthetic history keeps drift/rollover cases independent of live pins."""
     import hashlib
 
@@ -32,6 +32,8 @@ def matrix_repo(tmp_path):
         ("2026.9.4", "0.13.367", "20260826.7", "2.13.4"),
         ("2026.10.1", "0.13.372", "20260930.3", "2.13.5"),
     ]
+    monkeypatch.setattr(matrix, "latest_python", lambda _: "3.14.8")
+    (tmp_path / "mise.toml").write_text('[tools]\npython = "3.14.8"\n')
     directory = tmp_path / "scripts/requirements"
     directory.mkdir(parents=True)
     lanes = []
@@ -50,6 +52,7 @@ def matrix_repo(tmp_path):
             "3.14.8",
             f"ghcr.io/home-assistant/home-assistant:{ha}@sha256:" + "a" * 64,
             hashlib.sha256(constraints.encode()).hexdigest(),
+            python_min="3.14.2",
         )
         lanes.append(lane)
         path = directory / f"{lane.stem}.constraints"
@@ -77,6 +80,7 @@ def matrix_repo(tmp_path):
         '[dependency-groups]\ndev = ["homeassistant==2026.10.1", '
         '"pytest-homeassistant-custom-component==0.13.372", '
         '"home-assistant-frontend==20260930.3"]\n'
+        '[tool.uv.dependency-groups]\ndev = {requires-python = ">=3.14.2"}\n'
     )
     versions = {
         "homeassistant": "2026.10.1",
@@ -93,7 +97,7 @@ def matrix_repo(tmp_path):
         )
     )
     (tmp_path / "hacs.json").write_text(json.dumps({"homeassistant": "2026.5.0"}))
-    (tmp_path / "README.md").write_text(matrix.table(lanes))
+    (tmp_path / "README.md").write_text(matrix.table(lanes, policy))
     integration = tmp_path / "custom_components/occupied"
     integration.mkdir(parents=True)
     (integration / "manifest.json").write_text(json.dumps({"requirements": ["pydantic>=2.13.2"]}))
@@ -125,6 +129,12 @@ def test_supported_matrix_is_consistent():
         ),
         ("pyproject.toml", "pydantic>=2.13.2,<3", "pydantic>=2.13.5,<3", "excludes HA"),
         ("pyproject.toml", "PyYAML>=6.0.3,<7", "PyYAML>=6.0.2,<7", "Runtime floor"),
+        (
+            "pyproject.toml",
+            'dev = {requires-python = ">=3.14.2"}',
+            'dev = {requires-python = ">=3.15.2"}',
+            "Dev group Python",
+        ),
         (
             "custom_components/occupied/manifest.json",
             "pydantic>=2.13.2",
@@ -268,7 +278,8 @@ def test_roll_requires_matching_fixture_before_changing_files(monkeypatch, matri
     assert (matrix_repo / "scripts/ha_matrix.toml").read_bytes() == before
 
 
-def test_roll_advances_window_and_updates_generated_claims(monkeypatch, matrix_repo):
+@pytest.mark.parametrize("python_change", ["patch", "mixed", "floor"])
+def test_roll_advances_window_and_updates_generated_claims(monkeypatch, matrix_repo, python_change):
     versions = [
         "2026.11.0",
         "2026.10.2",
@@ -280,7 +291,18 @@ def test_roll_advances_window_and_updates_generated_claims(monkeypatch, matrix_r
     ]
     monkeypatch.setattr(matrix, "published_versions", lambda _: list(map(Version, versions)))
     monkeypatch.setattr(matrix, "matching_phcc", lambda v: f"0.13.{400 + Version(v).minor}")
-    monkeypatch.setattr(matrix, "requires_python", lambda _: "3.14.2")
+    monkeypatch.setattr(
+        matrix,
+        "requires_python",
+        lambda version: (
+            "3.15.2"
+            if python_change == "floor" or (python_change == "mixed" and version == "2026.11.0")
+            else "3.14.2"
+        ),
+    )
+    monkeypatch.setattr(
+        matrix, "latest_python", lambda minimum: "3.15.3" if minimum == "3.15.2" else "3.14.9"
+    )
     monkeypatch.setattr(
         matrix,
         "image_digest",
@@ -296,7 +318,7 @@ def test_roll_advances_window_and_updates_generated_claims(monkeypatch, matrix_r
     monkeypatch.setattr(matrix, "compile_lanes", lambda root: compiled.append(root))
     monkeypatch.setattr(matrix, "check", lambda root: {"lanes": 6})
     assert matrix.roll("2026.11", matrix_repo) == {"lanes": 6}
-    _, lanes = matrix.load(matrix_repo)
+    policy, lanes = matrix.load(matrix_repo)
     ha = matrix.ha_lanes(lanes)
     assert ha[0].homeassistant == "2026.6.0" and ha[0].role == "floor"
     assert ha[-1].homeassistant == "2026.11.0" and ha[-1].role == "newest"
@@ -304,7 +326,21 @@ def test_roll_advances_window_and_updates_generated_claims(monkeypatch, matrix_r
     assert len(ha) == 6 and all(not lane.homeassistant.startswith("2026.5") for lane in ha)
     assert json.loads((matrix_repo / "hacs.json").read_text())["homeassistant"] == "2026.6.0"
     assert "pydantic>=2.13.4,<3" in (matrix_repo / "pyproject.toml").read_text()
-    assert matrix.table(lanes) in (matrix_repo / "README.md").read_text()
+    assert matrix.table(lanes, policy) in (matrix_repo / "README.md").read_text()
+    latest = "3.14.9" if python_change == "patch" else "3.15.3"
+    assert policy["python_latest"] == latest
+    assert policy["python_floor"] == ("3.15.2" if python_change == "floor" else "3.14.2")
+    assert policy["python_next"] == ("3.15" if python_change == "patch" else "3.16")
+    assert matrix.selected(lanes, "python-floor").python == (
+        "3.14.2" if python_change == "patch" else "3.15.2"
+    )
+    assert f'python = "{latest}"' in (matrix_repo / "mise.toml").read_text()
+    assert (
+        f'requires-python = ">={policy["python_floor"]}"'
+        in (matrix_repo / "pyproject.toml").read_text()
+    )
+    if python_change == "mixed":
+        assert ha[0].python == "3.14.9" and ha[-1].python == "3.15.3"
     assert compiled == [matrix_repo]
     assert any("pydantic==2.13.4" in command for command in commands)
 
@@ -388,3 +424,71 @@ def test_patched_fixture_preserves_official_constraints_and_roundtrips_policy(se
         for path in (security_matrix_repo / "scripts/requirements").glob("*.constraints")
     }
     assert matrix.security_pins(policy, {"anyio": "4.15.1"}) == {}
+
+
+def test_mise_python_must_match_the_matrix_policy(matrix_repo):
+    (matrix_repo / "mise.toml").write_text('[tools]\npython = "3.14.7"\n')
+    with pytest.raises(ValueError, match="mise.toml Python"):
+        matrix.check(matrix_repo)
+
+
+def test_latest_python_uses_stable_tags_in_the_required_family(monkeypatch):
+    requests = []
+
+    def releases(url):
+        requests.append(url)
+        return json.dumps(
+            [{"ref": "refs/tags/v3.14." + suffix} for suffix in ("2", "8", "9", "10rc1")]
+            + [{"ref": "refs/tags/v3.15.0"}]
+        )
+
+    matrix.latest_python.cache_clear()
+    monkeypatch.setattr(matrix, "fetch_text", releases)
+    try:
+        assert matrix.latest_python("3.14.2") == "3.14.9"
+        assert requests == [
+            "https://api.github.com/repos/python/cpython/git/matching-refs/tags/v3.14."
+        ]
+        with pytest.raises(ValueError, match="No stable CPython release"):
+            matrix.latest_python("3.14.10")
+    finally:
+        matrix.latest_python.cache_clear()
+
+
+def test_next_switches_to_the_new_ha_python_family(monkeypatch, matrix_repo):
+    monkeypatch.setattr(matrix, "published_versions", lambda _: [Version("2026.11.0b0")])
+    monkeypatch.setattr(matrix, "matching_phcc", lambda _: "0.13.380")
+    monkeypatch.setattr(matrix, "requires_python", lambda _: "3.15.2")
+    monkeypatch.setattr(matrix, "latest_python", lambda minimum: "3.15.3")
+    monkeypatch.setattr(matrix, "fetch_text", lambda _: "home-assistant-frontend==20261015.1\n")
+    candidate = matrix.next_release(matrix_repo)
+    assert candidate["python"] == "3.15.3" and candidate["requires_python"] == "3.15.2"
+
+
+def test_historical_compile_uses_its_own_python_floor(monkeypatch, matrix_repo):
+    import tomllib
+
+    edit(
+        matrix_repo,
+        "pyproject.toml",
+        'dev = {requires-python = ">=3.14.2"}',
+        'dev = {requires-python = ">=3.15.2"}',
+    )
+    compiled = []
+
+    def compiler(command, root, **kwargs):
+        project = Path(command[3])
+        metadata = tomllib.loads(project.read_text())
+        assert metadata["tool"]["uv"]["dependency-groups"]["dev"]["requires-python"] == ">=3.14.2"
+        output = root / command[command.index("--output-file") + 1]
+        output.write_text(f"pytest==9.1.1\n    # via occupied ({project}:dev)\n")
+        compiled.append(output)
+
+    monkeypatch.setattr(matrix, "run", compiler)
+    matrix.compile_lanes(matrix_repo)
+    assert len(compiled) == 5
+    before = {path.name: path.read_bytes() for path in compiled}
+    assert all("pyproject.toml:dev" in path.read_text() for path in compiled)
+    assert all("occupied-compile-" not in path.read_text() for path in compiled)
+    matrix.compile_lanes(matrix_repo)
+    assert before == {path.name: path.read_bytes() for path in compiled}

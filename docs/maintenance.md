@@ -93,3 +93,33 @@ to temporary compiler input, and records it in generated override/header files.
 Dependency review stays enabled. A vulnerability in the historical HA release
 itself requires an explicit support-policy decision; do not hide it with a blanket
 advisory allowlist.
+
+
+## Python maintenance
+
+At rollover, the tool reads stable tags from the official CPython repository and
+selects the latest patch in each lane's HA-required major/minor family. It updates
+`mise.toml` and matrix policy together; CI reads its pins from that policy. The
+matrix check rejects a stale mise interpreter. The standalone floor remains the
+lowest requirement in the complete HA window, even when the newest lanes have
+moved to a newer Python family. It rises only after the last older lane leaves.
+The HA Python-floor job uses the newest HA release's own minimum, and its dev
+dependency group has a separate Python bound. Historical requirements compile
+against their recorded lane minimum, keeping the older environments reproducible.
+
+The next-HA probe chooses the latest stable patch in the Python family required
+by that candidate, including a newly required family. A rollover also advances
+the experimental standalone lane to the Python minor after the newest required
+family. Confirm that the pinned uv release can install the selected interpreters
+before publishing the rollover PR.
+
+Promote an experimental standalone Python only after both its tests and a fresh
+wheels-only dependency resolution pass on CI. Move it into the required aggregate,
+remove its experimental allowance, add the matching Python classifier, and update
+the experimental release-note wording in that reviewed change.
+
+Every October, revisit the six-release window using fresh
+[Home Assistant analytics](https://analytics.home-assistant.io/). Record the data
+retrieval date, install shares by minor, interpreter/API boundaries, and CI cost
+in a review PR. Discuss any support-window change before changing the policy;
+analytics coverage alone does not change compatibility automatically.
