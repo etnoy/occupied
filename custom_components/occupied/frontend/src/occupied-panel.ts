@@ -179,9 +179,12 @@ export class OccupiedPanel extends HTMLElement {
   instances: InstanceDocument[] = [];
   selectedEntry: string | null = null;
   private _instancesReady = false;
+  private _instancesFailed = false;
+  private _instancesRequest?: Promise<boolean>;
   private _instancesEpoch = 0;
   private _panel?: PanelConfig;
   private _loadedEntry: string | null = null;
+  private _failedEntry: string | null = null;
   private updates = writable(0);
   private updateRevision = 0;
   private component?: ReturnType<typeof mount>;
@@ -307,6 +310,9 @@ export class OccupiedPanel extends HTMLElement {
 
   private _disposeInstances() {
     this._instancesEpoch++;
+    this._instancesRequest = undefined;
+    this._instancesFailed = false;
+    this._failedEntry = null;
     this.instanceSubscription.dispose();
   }
 
@@ -350,6 +356,7 @@ export class OccupiedPanel extends HTMLElement {
     this._invalidateRequests();
     this._disposeSubscription();
     this._loadedEntry = null;
+    this._failedEntry = null;
     this.selectedEntry = entry;
     Object.assign(this, {
       draft: undefined,
@@ -461,29 +468,55 @@ export class OccupiedPanel extends HTMLElement {
     }
   }
 
+  private async _loadInstances() {
+    if (this._instancesReady) {
+      return true;
+    }
+    if (this._instancesFailed) {
+      return false;
+    }
+    if (!this._instancesRequest) {
+      const epoch = this._instancesEpoch;
+      this._instancesRequest = (async () => {
+        try {
+          const instances = await this._hass.callWS<InstanceDocument[]>({
+            type: "occupied/instances",
+          });
+          if (epoch !== this._instancesEpoch || !this.isConnected) {
+            return false;
+          }
+          this.instances = instances;
+          this._instancesReady = true;
+          this.error = "";
+          void this._subscribeInstances();
+
+          return true;
+        } catch (error) {
+          if (epoch === this._instancesEpoch) {
+            this._instancesFailed = true;
+            this.fail(error);
+          }
+
+          return false;
+        }
+      })();
+    }
+    const request = this._instancesRequest;
+    try {
+      return await request;
+    } finally {
+      if (this._instancesRequest === request) {
+        this._instancesRequest = undefined;
+      }
+    }
+  }
+
   private async _load() {
     if (!this.isConnected || !this._hass || !this._panel) {
       return;
     }
-    if (!this._instancesReady) {
-      const epoch = this._instancesEpoch;
-      try {
-        const instances = await this._hass.callWS<InstanceDocument[]>({
-          type: "occupied/instances",
-        });
-        if (epoch !== this._instancesEpoch || !this.isConnected) {
-          return;
-        }
-        this.instances = instances;
-        this._instancesReady = true;
-        void this._subscribeInstances();
-      } catch (error) {
-        if (epoch === this._instancesEpoch) {
-          this.fail(error);
-        }
-
-        return;
-      }
+    if (!this._instancesReady && !(await this._loadInstances())) {
+      return;
     }
     const entry =
       new URLSearchParams(location.search).get("config_entry") ||
@@ -509,6 +542,7 @@ export class OccupiedPanel extends HTMLElement {
     if (
       !this.selectedInstance?.loaded ||
       this._loading ||
+      this._failedEntry === entry ||
       this._loadedEntry === entry
     ) {
       return;
@@ -542,12 +576,14 @@ export class OccupiedPanel extends HTMLElement {
         this.resetDraft();
       }
       this.catalog = catalog;
+      this._failedEntry = null;
       this.error = "";
       this.renderView();
       void this._subscribe();
     } catch (error) {
       if (epoch === this.epoch) {
         this._loadedEntry = null;
+        this._failedEntry = entry;
         this.fail(error);
       }
     } finally {
@@ -641,6 +677,8 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   retry() {
+    this._failedEntry = null;
+    this._instancesFailed = false;
     this._instancesReady = false;
     void this._load();
   }

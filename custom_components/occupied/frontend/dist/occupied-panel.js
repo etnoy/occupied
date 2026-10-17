@@ -18584,9 +18584,12 @@ var OccupiedPanel = class extends HTMLElement {
   instances = [];
   selectedEntry = null;
   _instancesReady = false;
+  _instancesFailed = false;
+  _instancesRequest;
   _instancesEpoch = 0;
   _panel;
   _loadedEntry = null;
+  _failedEntry = null;
   updates = writable(0);
   updateRevision = 0;
   component;
@@ -18695,6 +18698,9 @@ var OccupiedPanel = class extends HTMLElement {
   };
   _disposeInstances() {
     this._instancesEpoch++;
+    this._instancesRequest = void 0;
+    this._instancesFailed = false;
+    this._failedEntry = null;
     this.instanceSubscription.dispose();
   }
   _subscribeInstances() {
@@ -18733,6 +18739,7 @@ var OccupiedPanel = class extends HTMLElement {
     this._invalidateRequests();
     this._disposeSubscription();
     this._loadedEntry = null;
+    this._failedEntry = null;
     this.selectedEntry = entry;
     Object.assign(this, {
       draft: void 0,
@@ -18837,28 +18844,52 @@ var OccupiedPanel = class extends HTMLElement {
       void this.reloadSaved();
     }
   }
+  async _loadInstances() {
+    if (this._instancesReady) {
+      return true;
+    }
+    if (this._instancesFailed) {
+      return false;
+    }
+    if (!this._instancesRequest) {
+      const epoch = this._instancesEpoch;
+      this._instancesRequest = (async () => {
+        try {
+          const instances = await this._hass.callWS({
+            type: "occupied/instances",
+          });
+          if (epoch !== this._instancesEpoch || !this.isConnected) {
+            return false;
+          }
+          this.instances = instances;
+          this._instancesReady = true;
+          this.error = "";
+          void this._subscribeInstances();
+          return true;
+        } catch (error) {
+          if (epoch === this._instancesEpoch) {
+            this._instancesFailed = true;
+            this.fail(error);
+          }
+          return false;
+        }
+      })();
+    }
+    const request = this._instancesRequest;
+    try {
+      return await request;
+    } finally {
+      if (this._instancesRequest === request) {
+        this._instancesRequest = void 0;
+      }
+    }
+  }
   async _load() {
     if (!this.isConnected || !this._hass || !this._panel) {
       return;
     }
-    if (!this._instancesReady) {
-      const epoch2 = this._instancesEpoch;
-      try {
-        const instances = await this._hass.callWS({
-          type: "occupied/instances",
-        });
-        if (epoch2 !== this._instancesEpoch || !this.isConnected) {
-          return;
-        }
-        this.instances = instances;
-        this._instancesReady = true;
-        void this._subscribeInstances();
-      } catch (error) {
-        if (epoch2 === this._instancesEpoch) {
-          this.fail(error);
-        }
-        return;
-      }
+    if (!this._instancesReady && !(await this._loadInstances())) {
+      return;
     }
     const entry =
       new URLSearchParams(location.search).get("config_entry") ||
@@ -18882,6 +18913,7 @@ var OccupiedPanel = class extends HTMLElement {
     if (
       !this.selectedInstance?.loaded ||
       this._loading ||
+      this._failedEntry === entry ||
       this._loadedEntry === entry
     ) {
       return;
@@ -18915,12 +18947,14 @@ var OccupiedPanel = class extends HTMLElement {
         this.resetDraft();
       }
       this.catalog = catalog;
+      this._failedEntry = null;
       this.error = "";
       this.renderView();
       void this._subscribe();
     } catch (error) {
       if (epoch === this.epoch) {
         this._loadedEntry = null;
+        this._failedEntry = entry;
         this.fail(error);
       }
     } finally {
@@ -19003,6 +19037,8 @@ var OccupiedPanel = class extends HTMLElement {
     this.renderView();
   }
   retry() {
+    this._failedEntry = null;
+    this._instancesFailed = false;
     this._instancesReady = false;
     void this._load();
   }
