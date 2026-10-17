@@ -75,6 +75,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   }
   await page.goto("/config/integrations/dashboard/add?domain=occupied");
   await page.getByRole("button", { name: "OK", exact: true }).click();
+  await page.getByText("Create in the UI", { exact: true }).click();
   await page
     .getByRole("textbox", { name: "Controller name*", exact: true })
     .fill("Smoke controller");

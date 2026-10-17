@@ -133,25 +133,28 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if self.unique_id is None:
             await self.async_set_unique_id(uuid4().hex)
-        if user_input and user_input.get("method") == "yaml":
-            return await self.async_step_yaml()
-        if user_input and user_input.get("method") == "file":
-            return await self.async_step_file()
+        return self.async_show_menu(step_id="user", menu_options=["create", "yaml", "file"])
+
+    def _name_error(self, name):
+        if not name.strip():
+            return "name_required"
+        if any(
+            name.strip().casefold() == str(entry.data.get("name") or entry.title).strip().casefold()
+            for entry in self._async_current_entries()
+        ):
+            return "name_already_exists"
+        return None
+
+    async def async_step_create(self, user_input=None):
         from .validation import program_data, validate_program
 
         name = (user_input or {}).get("name", "Occupied").strip()
         errors = {}
-        if user_input is not None:
-            if not name:
-                errors["name"] = "name_required"
-            elif any(
-                name.casefold() == str(entry.data.get("name") or entry.title).strip().casefold()
-                for entry in self._async_current_entries()
-            ):
-                errors["name"] = "name_already_exists"
+        if user_input is not None and (error := self._name_error(name)):
+            errors["name"] = error
         if user_input is None or errors:
             return self.async_show_form(
-                step_id="user",
+                step_id="create",
                 errors=errors,
                 data_schema=vol.Schema({vol.Required("name", default=name): str}),
                 last_step=True,
@@ -174,10 +177,13 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except ProgramError:
                 errors["base"] = "invalid_program"
             else:
-                return self.async_create_entry(
-                    title=program.name,
-                    data={"name": program.name, "program": program_data(program)},
-                )
+                if error := self._name_error(program.name):
+                    errors["base"] = error
+                else:
+                    return self.async_create_entry(
+                        title=program.name,
+                        data={"name": program.name, "program": program_data(program)},
+                    )
         return self.async_show_form(
             step_id="yaml",
             errors=errors,
@@ -191,7 +197,7 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_file(self, user_input=None):
-        from .file_config import load_yaml, read_managed
+        from .file_config import load_yaml, managed_path, read_managed
         from .validation import ProgramError
 
         errors = {}
@@ -204,10 +210,32 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except ProgramError:
                 errors["config_file"] = "invalid_file"
             else:
-                return self.async_create_entry(
-                    title=program.name,
-                    data={"name": program.name, "source": "file", **user_input},
-                )
+                entries = tuple(self._async_current_entries())
+
+                def path_in_use():
+                    selected = managed_path(self.hass.config.config_dir, user_input["config_file"])
+                    for entry in entries:
+                        if entry.data.get("source") != "file":
+                            continue
+                        try:
+                            existing = managed_path(
+                                self.hass.config.config_dir, entry.data["config_file"]
+                            )
+                        except ProgramError, KeyError:
+                            continue
+                        if existing == selected:
+                            return True
+                    return False
+
+                if await self.hass.async_add_executor_job(path_in_use):
+                    errors["config_file"] = "file_already_managed"
+                elif error := self._name_error(program.name):
+                    errors["base"] = error
+                else:
+                    return self.async_create_entry(
+                        title=program.name,
+                        data={"name": program.name, "source": "file", **user_input},
+                    )
         return self.async_show_form(
             step_id="file",
             errors=errors,

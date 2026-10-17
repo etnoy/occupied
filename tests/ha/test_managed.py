@@ -314,8 +314,9 @@ async def test_bootstrap_conflict_does_not_override_entry(hass, managed_file, pr
 
 
 async def test_native_file_flow_missing_then_valid(hass, managed_file):
-    result = await hass.config_entries.flow.async_init(
-        "occupied", context={"source": "user"}, data={"method": "file"}
+    result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "file"}
     )
     assert result["step_id"] == "file"
     result = await hass.config_entries.flow.async_configure(
