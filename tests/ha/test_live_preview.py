@@ -97,6 +97,53 @@ async def next_event(engine, request="next", user="owner"):
     )
 
 
+async def test_start_history_does_not_permanently_exhaust_live_preview(
+    live_engine, live_program, live_calls
+):
+    manager = live_engine.live_preview
+    manager.starts = {f"owner:old-{index}": f"session-{index}" for index in range(1024)}
+    result = await start(live_engine, live_program, "new-start")
+    assert result["session"]["state"] == "ready"
+    assert len(manager.starts) <= 64
+    persisted = await manager.store.async_load()
+    assert persisted["starts"] == manager.starts
+    repeated = await start(live_engine, live_program, "new-start")
+    assert repeated["session"]["id"] == result["session"]["id"]
+    with pytest.raises(LivePreviewError) as consumed:
+        await start(live_engine, live_program, "old-1023")
+    assert consumed.value.code == "request_consumed"
+    assert not live_calls
+
+
+async def test_restart_bounds_legacy_start_history_without_a_session(hass, live_engine):
+    manager = live_engine.live_preview
+    manager.starts = {f"owner:old-{index}": f"session-{index}" for index in range(1024)}
+    assert await manager._persist()
+    assert await hass.config_entries.async_reload(live_engine.entry_id)
+    restored = hass.config_entries.async_get_entry(live_engine.entry_id).runtime_data.live_preview
+    assert len(restored.starts) == 64
+    assert "owner:old-1023" in restored.starts and "owner:old-0" not in restored.starts
+    assert (await restored.store.async_load())["starts"] == restored.starts
+
+
+async def test_restart_keeps_current_start_idempotent_when_trimming_old_history(
+    hass, live_engine, live_program, live_calls
+):
+    result = await start(live_engine, live_program, "current")
+    manager = live_engine.live_preview
+    manager.starts = {
+        **{f"owner:old-{index}": f"session-{index}" for index in range(1024)},
+        **manager.starts,
+    }
+    assert await manager._persist()
+    assert await hass.config_entries.async_reload(live_engine.entry_id)
+    engine = hass.config_entries.async_get_entry(live_engine.entry_id).runtime_data
+    assert len(engine.live_preview.starts) <= 64
+    repeated = await start(engine, live_program, "current")
+    assert repeated["session"]["id"] == result["session"]["id"]
+    assert not live_calls
+
+
 async def test_live_preview_uses_capped_plan_and_excludes_gated_custom_actions(
     live_engine, live_program, live_calls
 ):
