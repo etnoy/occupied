@@ -1,0 +1,21 @@
+pyproject.toml
+  s_fc70a0945c1da9::t_06657da996d81e 52
+tests/ha/conftest.py
+  s_fc70a0945c1da9::t_f7019e7eba5377 75-87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f2162101a2f87c192efadd05f8d8c74e9b34fa3d",
+  "prompts": {},
+  "sessions": {
+    "s_fc70a0945c1da9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-5c75-74a0-8430-ba3ce8b51845",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
