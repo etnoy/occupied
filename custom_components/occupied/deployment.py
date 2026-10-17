@@ -1,10 +1,24 @@
 """Optional authenticated reload client; no HA dependency or background process."""
 
 import json
+import logging
+from ipaddress import ip_address
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
+
+_LOGGER = logging.getLogger(__name__)
+
+
+def _private_or_loopback(hostname):
+    if hostname.rstrip(".") == "localhost":
+        return True
+    try:
+        address = ip_address(hostname)
+    except ValueError:
+        return False
+    return address.is_private or address.is_loopback
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -29,6 +43,11 @@ def reload_file(url: str, entry_id: str, token_file: Path, *, timeout: float = 1
     token = token_file.read_text(encoding="utf-8").strip()
     if not token or "\n" in token or "\r" in token:
         raise ValueError("The token file must contain one nonempty access token")
+    if parsed.scheme == "http" and not _private_or_loopback(parsed.hostname):
+        _LOGGER.warning(
+            "Home Assistant reload uses HTTP to a public or unresolved host; "
+            "use HTTPS to protect the access token"
+        )
     request = Request(
         url.rstrip("/") + "/api/services/occupied/reload?return_response",
         data=json.dumps({"config_entry_id": entry_id}).encode(),
