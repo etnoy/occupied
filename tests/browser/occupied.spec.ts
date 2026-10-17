@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectedHaShellError } from "../frontend/src/ha-shell-errors.js";
 
 test("create a controller, save a step, and preview the installed release", async ({
   page,
@@ -6,12 +7,9 @@ test("create a controller, save a step, and preview the installed release", asyn
 }) => {
   // Capture errors throughout HA setup and the installed panel, including reload.
   const errors: string[] = [];
+  let panelStarted = false;
   page.on("pageerror", (error) => {
-    // Older HA shells report cancelled navigation animations as unhandled rejections.
-    if (
-      error.name === "AbortError" &&
-      error.message === "Transition was skipped. New ViewTransition started"
-    ) {
+    if (expectedHaShellError(error, panelStarted)) {
       return;
     }
     errors.push(error.message);
@@ -71,6 +69,7 @@ test("create a controller, save a step, and preview the installed release", asyn
     .getByRole("button", { name: "Skip and finish", exact: true })
     .click();
 
+  panelStarted = true;
   await page.goto("/occupied");
   const panel = page.locator("occupied-panel");
   await expect(
