@@ -1,0 +1,21 @@
+.github/workflows/check.yml
+  s_fc70a0945c1da9::t_8d2c2f8255ee0e 31,110,130,169
+.github/workflows/release.yml
+  s_fc70a0945c1da9::t_fa578564b51564 30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "e968f6cf19520f419a13e7154d2758446937bfbc",
+  "prompts": {},
+  "sessions": {
+    "s_fc70a0945c1da9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-5c75-74a0-8430-ba3ce8b51845",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
