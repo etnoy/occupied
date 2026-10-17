@@ -1,0 +1,27 @@
+.github/workflows/release.yml
+  s_222e1586b2d36c::t_ee69764a9ccad7 46-48,53,56,58
+README.md
+  s_222e1586b2d36c::t_b32442908e10f4 21-56
+scripts/check_artifacts.py
+  s_222e1586b2d36c::t_908e2caf731b61 57
+scripts/release_notes.py
+  s_222e1586b2d36c::t_1047b7301f34a5 1-23
+tests/core/test_release_workflow.py
+  s_222e1586b2d36c::t_7b434c90d53ecc 27-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "77ab9b381abebfe06cb8b97030b9010133acf91e",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
