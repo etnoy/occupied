@@ -1,0 +1,21 @@
+custom_components/occupied/engine_daily.py
+  s_222e1586b2d36c::t_f5bbbabf4fa0da 280-288,294-297
+tests/ha/test_time_source_recovery.py
+  s_222e1586b2d36c::t_a5506bd3fecb7b 1-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "60061d836b7e10430e68883991cc12ddcef71bde",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
