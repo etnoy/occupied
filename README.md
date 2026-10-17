@@ -253,7 +253,9 @@ pins. The dependency review workflow allows the reported PyJWT advisories only
 for the isolated historical test fixtures; their official PyJWT pins remain
 unchanged to satisfy each HA release's exact requirements. These are test
 environments; Occupied does not declare AnyIO or PyJWT as runtime requirements.
-Installed-package checks and the full HA suites remain enabled.
+The same narrow advisory-ID exception applies to the reported cryptography
+advisories; official HA pins are preserved. Installed-package checks and the
+full HA suites remain enabled.
 
 The historical Home Assistant fixtures also retain releases affected by
 [GHSA-5hxg-r395-fqxx](https://github.com/advisories/GHSA-5hxg-r395-fqxx),
