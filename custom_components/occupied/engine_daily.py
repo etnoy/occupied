@@ -406,12 +406,16 @@ class DailyEngine:
         entity = event.data["entity_id"]
         preview_gate = self.live_preview.condition_gate
         if entity in self.gate.entities or (preview_gate and entity in preview_gate.entities):
-            if not self.run_condition_status()[0]:
-                self._invalidate()
-                self._forget_owned()
-            if not self.live_preview.condition_passes():
-                self.live_preview.invalidate("Run condition ended", interrupted=True)
-            self.hass.async_create_task(self._async_condition_changed())
+            old, new = event.data.get("old_state"), event.data.get("new_state")
+            # Daily and live-preview run conditions are state predicates. GPS
+            # and other attribute updates cannot change their result.
+            if old is None or new is None or old.state != new.state:
+                if not self.run_condition_status()[0]:
+                    self._invalidate()
+                    self._forget_owned()
+                if not self.live_preview.condition_passes():
+                    self.live_preview.invalidate("Run condition ended", interrupted=True)
+                self.hass.async_create_task(self._async_condition_changed())
             if entity not in controlled_entities(self.program) | self._time_source_entities:
                 return
         if entity in self._time_source_entities:
