@@ -1,0 +1,25 @@
+custom_components/occupied/entry_metadata.py
+  s_222e1586b2d36c::t_d11cb475f4976f 1-11
+custom_components/occupied/managed.py
+  s_222e1586b2d36c::t_88334d4bf89930 13,104
+custom_components/occupied/websocket_api.py
+  s_222e1586b2d36c::t_901a5475f6c022 217,255
+tests/ha/test_program_names.py
+  s_222e1586b2d36c::t_480a4b7347dfed 1-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "8b26d36a459cea6eac7a0e04f54470d54bda71f2",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
