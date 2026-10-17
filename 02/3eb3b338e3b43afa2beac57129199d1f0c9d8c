@@ -1,0 +1,21 @@
+.github/workflows/security.yml
+  s_f43524462b82c4::t_cdc948f3f95292 47
+README.md
+  s_f43524462b82c4::t_2acb6b6cf3c4d4 256-258
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "023eb3b338e3b43afa2beac57129199d1f0c9d8c",
+  "prompts": {},
+  "sessions": {
+    "s_f43524462b82c4": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "7ab88de8-ebb5-42ee-9771-7200c96b0218",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
