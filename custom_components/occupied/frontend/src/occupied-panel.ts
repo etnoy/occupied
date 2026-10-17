@@ -281,10 +281,8 @@ export class OccupiedPanel extends HTMLElement {
       this.component = undefined;
     }
     this.shadowRoot.replaceChildren();
-    this.epoch++;
-    this.busy = this.liveBusy = this.liveStopping = false;
+    this._invalidateRequests();
     this._loadedEntry = null;
-    this._loading = false;
     this._disposeSubscription();
     this._disposeInstances();
     this._instancesReady = false;
@@ -320,9 +318,8 @@ export class OccupiedPanel extends HTMLElement {
         this.instances = instances;
         this.flush();
         if (!this.selectedInstance?.loaded && this._loadedEntry) {
-          this.epoch++;
+          this._invalidateRequests();
           this._loadedEntry = null;
-          this._loading = this.busy = false;
           this._disposeSubscription();
         }
         void this._load();
@@ -344,8 +341,13 @@ export class OccupiedPanel extends HTMLElement {
     );
   }
 
-  private _resetInstance(entry: string) {
+  private _invalidateRequests() {
     this.epoch++;
+    this._loading = this.busy = this.liveBusy = this.liveStopping = false;
+  }
+
+  private _resetInstance(entry: string) {
+    this._invalidateRequests();
     this._disposeSubscription();
     this._loadedEntry = null;
     this.selectedEntry = entry;
@@ -361,8 +363,6 @@ export class OccupiedPanel extends HTMLElement {
       validatedVersion: -1,
       issues: [],
       error: "",
-      busy: false,
-      _loading: false,
       tab: "steps",
       stepEditor: null,
       randomEditor: null,
@@ -376,8 +376,6 @@ export class OccupiedPanel extends HTMLElement {
       liveProgram: undefined,
       liveVisible: false,
       liveReady: false,
-      liveBusy: false,
-      liveStopping: false,
       liveCanAdvance: false,
       schedulingPaused: false,
       runtimeSnapshot: {},
