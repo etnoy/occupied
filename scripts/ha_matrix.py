@@ -539,7 +539,7 @@ def next_release(root=ROOT):
     stable = [v for v in newer if not v.is_prerelease]
     candidate = next(iter(prereleases or stable), None)
     result = {"available": candidate is not None, "stable_lag_days": 0, "stale": False}
-    for version in stable[:12]:
+    for version in stable:
         if matching_phcc(str(version)):
             files = package_json("homeassistant", str(version))["urls"]
             published = min(
@@ -547,9 +547,10 @@ def next_release(root=ROOT):
                 for f in files
                 if not f.get("yanked")
             )
-            result["stable_lag_days"] = (datetime.now(UTC) - published).days
+            result["stable_lag_days"] = max(
+                result["stable_lag_days"], (datetime.now(UTC) - published).days
+            )
             result["stale"] = result["stable_lag_days"] > 14
-            break
     if candidate is None:
         return result
     version = str(candidate)

@@ -254,6 +254,27 @@ def test_next_falls_back_to_stable_without_matching_fixture(monkeypatch, matrix_
     assert candidate["phcc"] is None and not candidate["stale"]
 
 
+def test_fresh_patch_does_not_reset_an_older_eligible_patch_deadline(monkeypatch, matrix_repo):
+    monkeypatch.setattr(
+        matrix,
+        "published_versions",
+        lambda _: [Version("2026.10.3"), Version("2026.10.2")],
+    )
+    monkeypatch.setattr(matrix, "matching_phcc", lambda _: "0.13.375")
+    monkeypatch.setattr(matrix, "requires_python", lambda _: "3.14.2")
+    monkeypatch.setattr(matrix, "fetch_text", lambda _: "home-assistant-frontend==20260930.4\n")
+
+    def metadata(package, version):
+        days = 1 if version == "2026.10.3" else 20
+        published = (datetime.now(UTC) - timedelta(days=days)).isoformat()
+        return {"urls": [{"upload_time_iso_8601": published, "yanked": False}]}
+
+    monkeypatch.setattr(matrix, "package_json", metadata)
+    candidate = matrix.next_release(matrix_repo)
+    assert candidate["homeassistant"] == "2026.10.3"
+    assert candidate["stale"] and candidate["stable_lag_days"] >= 20
+
+
 def test_next_has_no_work_when_matrix_is_current(monkeypatch, matrix_repo):
     monkeypatch.setattr(matrix, "published_versions", lambda _: [Version("2026.10.1")])
     assert matrix.next_release(matrix_repo) == {
