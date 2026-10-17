@@ -44,4 +44,4 @@ jobs:
         with:
           fail-on-severity: high
           # Exception because early 2026 HA versions cant pin updated packages. Review later in 2026
-          allow-ghsas: GHSA-5hxg-r395-fqxx, GHSA-wx4m-69m9-gx3m, GHSA-x84v-g949-293w
+          allow-ghsas: GHSA-5hxg-r395-fqxx, GHSA-wx4m-69m9-gx3m, GHSA-x84v-g949-293w, GHSA-ffc3-869f-jxw9, GHSA-r6x4-923q-g947, GHSA-p4g4-x82p-q773, GHSA-9v7f-9g4p-ffgj, GHSA-w2cx-738m-mc7w, GHSA-9j54-fg26-wv3r

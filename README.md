@@ -245,15 +245,15 @@ hashed requirements with `uv run python scripts/ha_matrix.py compile`, and disco
 new releases with `uv run python scripts/ha_matrix.py next`.
 
 Historical test environments retain the original HA constraints and their recorded
-SHA-256 digests. The matrix records security repairs for AnyIO and PyJWT in the
-historical environments: AnyIO versions below 4.14.2 are replaced by 4.14.2 for
-[GHSA-82r6-8w77-94w6](https://github.com/advisories/GHSA-82r6-8w77-94w6), and
-PyJWT versions below 2.15.1 are replaced by 2.15.1 for its reported advisories.
-The compiler removes only those vulnerable constraints from its temporary
-input, records replacements in each affected override/header, and keeps all
-other HA pins. These are test environments; Occupied does not declare AnyIO or
-PyJWT as runtime requirements. Dependency review, installed-package checks and
-the full HA suites remain enabled.
+SHA-256 digests. The matrix records one security repair: AnyIO versions below
+4.14.2 are replaced by 4.14.2 for [GHSA-82r6-8w77-94w6](https://github.com/advisories/GHSA-82r6-8w77-94w6).
+The compiler removes only that vulnerable constraint from its temporary input,
+records the replacement in each affected override/header, and keeps all other HA
+pins. The dependency review workflow allows the reported PyJWT advisories only
+for the isolated historical test fixtures; their official PyJWT pins remain
+unchanged to satisfy each HA release's exact requirements. These are test
+environments; Occupied does not declare AnyIO or PyJWT as runtime requirements.
+Installed-package checks and the full HA suites remain enabled.
 
 The historical Home Assistant fixtures also retain releases affected by
 [GHSA-5hxg-r395-fqxx](https://github.com/advisories/GHSA-5hxg-r395-fqxx),
