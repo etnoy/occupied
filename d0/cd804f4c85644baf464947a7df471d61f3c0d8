@@ -1,0 +1,21 @@
+custom_components/occupied/engine.py
+  s_222e1586b2d36c::t_d2d28f2f60c8e8 383
+tests/ha/test_legacy_native_failure.py
+  s_222e1586b2d36c::t_f1ae7b70523e13 1-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d0cd804f4c85644baf464947a7df471d61f3c0d8",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
