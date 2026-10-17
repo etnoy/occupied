@@ -13,7 +13,6 @@ from functools import partial
 
 from homeassistant.const import (
     EVENT_CORE_CONFIG_UPDATE,
-    EVENT_HOMEASSISTANT_STARTED,
     EVENT_HOMEASSISTANT_STOP,
     STATE_UNAVAILABLE,
     STATE_UNKNOWN,
@@ -26,6 +25,7 @@ from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
     async_track_state_change_event,
 )
+from homeassistant.helpers.start import async_at_started
 from homeassistant.util import dt as dt_util
 
 from .actions import (
@@ -104,6 +104,7 @@ class DailyEngine:
         self.live_preview = LivePreviewManager(self)
         self._cancel_timer: Callable | None = None
         self._unsubs = []
+        self._stop_unsub: Callable | None = None
         self._state_unsub = None
         self._contexts = deque(maxlen=1000)
         self._queue: list[RuntimeEvent] = []
@@ -231,9 +232,7 @@ class DailyEngine:
 
     async def async_start(self):
         self._listen_states()
-        self._unsubs.append(
-            self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, self._async_shutdown)
-        )
+        self._stop_unsub = self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, self._shutdown)
         self._unsubs.append(
             self.hass.bus.async_listen(EVENT_CORE_CONFIG_UPDATE, self._config_changed)
         )
@@ -242,9 +241,7 @@ class DailyEngine:
             await self.async_reevaluate()
         else:
             self.status, self.reason = "waiting", "Waiting for Home Assistant startup"
-            self._unsubs.append(
-                self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, self._async_started)
-            )
+            self._unsubs.append(async_at_started(self.hass, self._async_started))
         self._notify()
 
     def _listen_states(self):
@@ -261,6 +258,12 @@ class DailyEngine:
     async def _async_started(self, _):
         self.started = True
         await self.async_reevaluate()
+
+    @callback
+    def _shutdown(self, event):
+        # The one-time listener has already been removed by HA.
+        self._stop_unsub = None
+        self.hass.async_create_task(self._async_shutdown(event))
 
     async def _async_shutdown(self, _):
         await self.async_close(cleanup=False)
@@ -1493,6 +1496,9 @@ class DailyEngine:
         if self._state_unsub:
             self._state_unsub()
             self._state_unsub = None
+        if self._stop_unsub:
+            self._stop_unsub()
+            self._stop_unsub = None
         for unsubscribe in self._unsubs:
             unsubscribe()
         self._unsubs.clear()

@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.const import (
-    EVENT_HOMEASSISTANT_STARTED,
     EVENT_HOMEASSISTANT_STOP,
     STATE_OFF,
     STATE_ON,
@@ -25,6 +24,7 @@ from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
     async_track_state_change_event,
 )
+from homeassistant.helpers.start import async_at_started
 from homeassistant.util import dt as dt_util
 
 from .activation import ActivationGate
@@ -96,6 +96,7 @@ class OccupiedEngine:
         self._sequence = 0
         self._cancel_timer: Callable[[], None] | None = None
         self._unsubs: list[Callable[[], None]] = []
+        self._stop_unsub: Callable[[], None] | None = None
         self._contexts: deque[str] = deque(maxlen=100)
         self._lock = asyncio.Lock()
         from .live_preview import LivePreviewManager
@@ -128,22 +129,25 @@ class OccupiedEngine:
         self._unsubs.append(
             async_track_state_change_event(self.hass, observed, self._target_changed)
         )
-        self._unsubs.append(
-            self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, self._async_shutdown)
-        )
+        self._stop_unsub = self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, self._shutdown)
         if self.hass.is_running:
             self.started = True
             await self.async_reevaluate()
         else:
             self.status, self.reason = "waiting", "Waiting for Home Assistant startup"
-            self._unsubs.append(
-                self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, self._async_started)
-            )
+            self._unsubs.append(async_at_started(self.hass, self._async_started))
             self._notify()
 
-    async def _async_started(self, _: Event) -> None:
+    async def _async_started(self, _: HomeAssistant) -> None:
         self.started = True
         await self.async_reevaluate()
+
+    @callback
+    def _shutdown(self, event: Event) -> None:
+        # HA removes a one-time listener before calling it. Clear its handle
+        # synchronously, before shutdown or an entry unload can close us.
+        self._stop_unsub = None
+        self.hass.async_create_task(self._async_shutdown(event))
 
     async def _async_shutdown(self, _: Event) -> None:
         # Device services may already be unavailable at shutdown. Persisted
@@ -449,9 +453,14 @@ class OccupiedEngine:
         }
 
     async def async_close(self, *, cleanup: bool = True) -> None:
+        if self.closed:
+            return
         self.live_preview.invalidate("Integration unloaded", interrupted=True)
         self.closed = True
         self._invalidate()
+        if self._stop_unsub:
+            self._stop_unsub()
+            self._stop_unsub = None
         for unsub in self._unsubs:
             unsub()
         self._unsubs.clear()
