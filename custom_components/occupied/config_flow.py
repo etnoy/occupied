@@ -1,4 +1,4 @@
-"""Create a GUI/imported controller and retain options for existing proof entries."""
+"""Create independent controllers; edit daily programs in the Occupied panel."""
 
 from typing import Any
 from uuid import uuid4
@@ -6,7 +6,6 @@ from uuid import uuid4
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult
-from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import selector
 
@@ -230,37 +229,4 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(title=data["name"], data=data)
         return self.async_show_form(
             step_id="proof", data_schema=config_schema(user_input or {}), errors=errors
-        )
-
-    @staticmethod
-    @callback
-    def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
-    ) -> config_entries.OptionsFlow:
-        return OccupiedOptionsFlow()
-
-
-class OccupiedOptionsFlow(config_entries.OptionsFlow):
-    """Replace caller-proof settings through a normal entry reload."""
-
-    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        from .storage import program_store
-
-        if (
-            self.config_entry.data.get("source") == "file"
-            or self.config_entry.data.get("program")
-            or await program_store(self.hass, self.config_entry.entry_id).async_load()
-        ):
-            return self.async_abort(reason="daily_program")
-        errors = {}
-        if user_input is not None:
-            try:
-                data = validate_input(user_input)
-            except vol.Invalid:
-                errors["base"] = "invalid_config"
-            else:
-                return self.async_create_entry(title="", data=data)
-        current = self.config_entry.data | self.config_entry.options
-        return self.async_show_form(
-            step_id="init", data_schema=config_schema(current), errors=errors
         )
