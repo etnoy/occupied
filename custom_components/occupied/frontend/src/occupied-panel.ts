@@ -586,7 +586,12 @@ export class OccupiedPanel extends HTMLElement {
       if (!globalThis.confirm(this.t("view_switch_confirm"))) {
         return;
       }
-      this.discardEdits(false);
+      this.yaml = this.yamlSaved;
+      this.runConditionForm = null;
+      this.runConditionOriginal = null;
+      this.runConditionErrors = {};
+      this.error = "";
+      this.issues = [];
     }
     this.tab = tab;
     if (tab === "preview") {
