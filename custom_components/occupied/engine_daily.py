@@ -452,7 +452,7 @@ class DailyEngine:
             if self.activation_deadline
             else None,
             "reconciliation": self.reconciliation,
-            "context": self._context_identity(),
+            "context": self._saved_context,
             "plans": [p.to_dict() for p in self._plans.values()],
             "journal": self._journal,
             "yielded": sorted(self._yielded),
