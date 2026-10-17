@@ -72,3 +72,16 @@ def saved_permission(hass_storage, entry):
         "version": 1,
         "data": {"enabled": True, "paused": False},
     }
+
+
+@pytest.fixture(autouse=True)
+def no_occupied_api_deprecations(caplog):
+    """Catch HA report_usage notices throughout each integration test."""
+    yield
+    notices = [
+        record.getMessage()
+        for phase in ("setup", "call", "teardown")
+        for record in caplog.get_records(phase)
+        if "Detected that custom integration 'occupied'" in record.getMessage()
+    ]
+    assert not notices, "Home Assistant reported a deprecated Occupied API:\n" + "\n".join(notices)
