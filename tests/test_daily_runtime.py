@@ -1706,9 +1706,13 @@ async def test_enforce_now_skips_targets_that_cannot_supply_known_available_inte
 
 
 async def test_enforce_now_respects_new_manual_changes_during_reconciliation(
-    hass, daily_entry, daily_devices, condition_program, freezer
+    hass, daily_entry, daily_devices, condition_program, freezer, monkeypatch
 ):
     import asyncio
+
+    # Keep the second target undispatched until the first handler reports manual control.
+    # Bounded parallel reconciliation has its own concurrency tests.
+    monkeypatch.setattr("custom_components.occupied.engine_daily.ENFORCEMENT_CONCURRENCY", 1)
 
     engine = await load(hass, daily_entry, freezer)
     register_stagger_switch(hass, daily_devices)
