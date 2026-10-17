@@ -688,12 +688,12 @@ async def test_device_activity_includes_successful_actions_and_survives_reload(
         event_forwarder_filtered,
     )
     from homeassistant.components.logbook.processor import EventProcessor
-    from homeassistant.helpers import device_registry as dr
     from homeassistant.setup import async_setup_component
     from pytest_homeassistant_custom_component.components.recorder.common import (
         async_wait_recording_done,
     )
 
+    from custom_components.occupied.compat import controller_device
     from custom_components.occupied.const import EVENT_ACTION
 
     assert await async_setup_component(hass, "logbook", {})
@@ -712,9 +712,7 @@ async def test_device_activity_includes_successful_actions_and_survives_reload(
         "Turned on Desk lamp (light.proof) at 42% brightness (transition: 5s)"
     )
     assert event.context.id == daily_devices[0].context.id
-    device = dr.async_get(hass).async_get_device_by_identifier(
-        ("occupied", daily_entry.entry_id), daily_entry.entry_id
-    )
+    device = controller_device(hass, daily_entry.entry_id)
     assert event.data["device_id"] == device.id
     event_types = async_determine_event_types(hass, None, [device.id])
     assert EVENT_ACTION in event_types
