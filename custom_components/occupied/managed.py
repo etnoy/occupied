@@ -33,6 +33,7 @@ class SourceManager:
         self.observed_hash = self.applied_hash = None
         self.issues = []
         self._fingerprint = None
+        self._watched_source = self.mode, self.path
         self._unsubscribe = self._debounce = None
         self._checking = False
         self.closed = False
@@ -52,6 +53,8 @@ class SourceManager:
         }
 
     def _report(self, issues):
+        if self.closed or self.engine.closed:
+            return
         self.issues = issues
         self.status = "error" if issues else "ready"
         issue_id = f"managed_file_{self.entry.entry_id}"
@@ -167,7 +170,10 @@ class SourceManager:
         if self._debounce:
             self._debounce()
             self._debounce = None
-        self._fingerprint = None
+        source = self.mode, self.path
+        if source != self._watched_source:
+            self._fingerprint = None
+            self._watched_source = source
         if self.mode == "file" and not self.closed:
             self._unsubscribe = async_track_time_interval(self.hass, self._poll, POLL_INTERVAL)
 
@@ -193,7 +199,11 @@ class SourceManager:
     async def _reload_changed(self, _now):
         self._debounce = None
         if not self.closed and self.mode == "file":
-            await self.async_reload()
+            try:
+                await self.async_reload()
+            except HomeAssistantError:
+                if not self.closed and not self.engine.closed:
+                    raise
 
     @callback
     def close(self):
