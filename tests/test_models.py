@@ -322,3 +322,41 @@ def test_extra_off_entities_reject_invalid_values(program_dict, entities):
     }
     with pytest.raises(ProgramError):
         validate_program(program_dict)
+
+
+def test_yaml_alias_expansion_budget_is_enforced_before_construction(monkeypatch):
+    from custom_components.occupied import file_config
+
+    monkeypatch.setattr(file_config, "MAX_YAML_NODES", 100, raising=False)
+    source = (
+        "a: &a [value, value, value, value, value]\n"
+        "b: &b [*a, *a, *a, *a, *a]\n"
+        "c: [*b, *b, *b, *b, *b]\n"
+    )
+    with pytest.raises(ProgramError, match="too many nodes") as raised:
+        load_yaml(source, validator=lambda value: value)
+    assert raised.value.issues[0].code == "yaml_size"
+
+
+def test_deep_yaml_alias_bomb_is_rejected_quickly():
+    from time import monotonic
+
+    source = "a0: &a0 [value]\n"
+    for level in range(1, 8):
+        aliases = ", ".join([f"*a{level - 1}"] * 10)
+        source += f"a{level}: &a{level} [{aliases}]\n"
+    started = monotonic()
+    with pytest.raises(ProgramError, match="too many nodes"):
+        load_yaml(source)
+    assert monotonic() - started < 1
+
+
+def test_bounded_nonrecursive_yaml_aliases_still_load():
+    program = load_yaml(
+        "schema_version: 1\nname: House\nsteps:\n"
+        "  wake:\n    timing: {absolute_time: {start: '18:00'}}\n"
+        "    action: turn_on\n    entities: &lights [light.a, light.b]\n"
+        "  sleep:\n    timing: {absolute_time: {start: '19:00'}}\n"
+        "    action: turn_off\n    entities: *lights\n"
+    )
+    assert program.steps["wake"].entities == program.steps["sleep"].entities
