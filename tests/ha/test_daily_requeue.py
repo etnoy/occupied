@@ -93,7 +93,9 @@ async def test_source_requeue_keeps_an_undispatched_due_event(hass, freezer, que
     engine._cancel_timer()
     engine._cancel_timer = None
     freezer.move_to("2026-10-13T18:01:00.001+00:00")
-    hass.states.async_set("calendar.work", "on", attributes)
+    # Advance the used timestamp to the next occurrence. Calendar on/off alone
+    # no longer changes planning identity; the reached anchor remains latched.
+    hass.states.async_set("calendar.work", "on", {"start_time": "2026-10-14T18:01:00+00:00"})
     await engine._async_time_sources_changed()
     await fire(hass, freezer, dt_util.utcnow() + timedelta(milliseconds=1))
     assert len(calls) == 1

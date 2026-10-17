@@ -39,6 +39,7 @@ from .actions import (
 )
 from .activation import ActivationGate
 from .activity import async_log_action
+from .anchor_latches import AnchorLatches, source_fields
 from .const import DOMAIN, SIGNAL_PREFIX
 from .covers import cover_target
 from .handover import calls_for_target
@@ -122,6 +123,7 @@ class DailyEngine:
         self._native_fades = set()
         self._restoring = False
         self._saved_context = None
+        self._anchor_latches = AnchorLatches()
         self._storage_failed = False
         self.configuration_ready = True
         self.source_manager = None
@@ -141,7 +143,9 @@ class DailyEngine:
         return max((instant(v["deadline"]) for v in self._handover.values()), default=None)
 
     def _context(self):
-        return planning_context(self.hass)
+        return self._anchor_latches.apply(
+            self.program, planning_context(self.hass), dt_util.utcnow()
+        )
 
     def _context_identity(self, context=None):
         context = context or self._context()
@@ -151,8 +155,26 @@ class DailyEngine:
             context.longitude,
             context.elevation,
             {
-                entity: context.time_sources.get(entity)
-                for entity in sorted(source_entities(self.program))
+                entity: {
+                    "kind": context.time_sources.get(entity, {}).get("kind"),
+                    **{
+                        attribute: context.time_sources.get(entity, {}).get(attribute)
+                        for attribute in sorted(attributes)
+                    },
+                    "latched": {
+                        day: overrides
+                        for day, values in context.time_source_latches.items()
+                        if (
+                            overrides := {
+                                attribute: value
+                                for attribute, value in values.get(entity, {}).items()
+                                if attribute in attributes
+                                and value != context.time_sources.get(entity, {}).get(attribute)
+                            }
+                        )
+                    },
+                }
+                for entity, attributes in sorted(source_fields(self.program).items())
             },
         ]
 
@@ -172,6 +194,8 @@ class DailyEngine:
             await self._save_permission()
         await self.live_preview.async_prepare()
         saved = await self._store.async_load() or {}
+        if saved.get("behavior") == behavior_hash(self.program):
+            self._anchor_latches.restore(saved.get("anchor_latches"))
         self._seed = saved.get("seed", self._seed)
         self.session = saved.get("session", 0)
         self._restoring = (
@@ -298,6 +322,8 @@ class DailyEngine:
                 await self._reevaluate_locked()
                 return
             if self._saved_context == self._context_identity():
+                if self._anchor_latches.dirty:
+                    await self._persist()
                 return
             try:
                 await self._ensure_plans()
@@ -389,7 +415,7 @@ class DailyEngine:
             if entity not in controlled_entities(self.program) | self._time_source_entities:
                 return
         if entity in self._time_source_entities:
-            if self._saved_context != self._context_identity():
+            if self._saved_context != self._context_identity() or self._anchor_latches.dirty:
                 self.hass.async_create_task(self._async_time_sources_changed())
             if entity not in controlled_entities(self.program):
                 return
@@ -485,6 +511,9 @@ class DailyEngine:
             return await self._persist_locked()
 
     async def _persist_locked(self):
+        if source_fields(self.program):
+            self._context()
+        latch_version = self._anchor_latches.version
         if len(self._journal) > MAX_JOURNAL:
             candidates = sorted(
                 (value.get("time", ""), key)
@@ -504,6 +533,7 @@ class DailyEngine:
             else None,
             "reconciliation": self.reconciliation,
             "context": self._saved_context,
+            "anchor_latches": self._anchor_latches.snapshot(),
             "plans": [p.to_dict() for p in self._plans.values()],
             "journal": self._journal,
             "yielded": sorted(self._yielded),
@@ -528,6 +558,7 @@ class DailyEngine:
             self.last_error = str(err)
             self._record("storage", "failed", str(err))
             return False
+        self._anchor_latches.persisted_version = latch_version
         return True
 
     async def _save_permission(self):
