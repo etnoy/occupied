@@ -18,7 +18,6 @@ from homeassistant.const import (
     STATE_UNKNOWN,
 )
 from homeassistant.core import Context, Event, HomeAssistant, callback
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
@@ -262,11 +261,13 @@ class OccupiedEngine:
         target = round(255 * self.config[CONF_BRIGHTNESS] / 100)
         self.handover_start_brightness = None
         if light is not None and light.state in {STATE_ON, STATE_OFF}:
-            start = int(light.attributes.get("brightness", 255)) if light.state == STATE_ON else 0
+            start = light.attributes.get("brightness") if light.state == STATE_ON else 0
+            if start is not None:
+                start = int(start)
             self.handover_start_brightness = start
             modes = set(light.attributes.get("supported_color_modes", []))
             dimmable = bool(modes - {"onoff", "unknown"})
-            if dimmable and start != target:
+            if dimmable and start is not None and start != target:
                 count = max(1, math.ceil(duration / STEP_SECONDS))
                 for index in range(1, count + 1):
                     level = round(start + (target - start) * index / count)
@@ -381,7 +382,7 @@ class OccupiedEngine:
                 await self.hass.services.async_call(
                     domain, service, data, blocking=True, context=context
                 )
-        except (HomeAssistantError, TimeoutError) as err:
+        except Exception as err:
             self.last_error = f"{domain}.{service}: {err}"
             self._record(kind, "failed", self.last_error)
             _LOGGER.warning("Occupied dispatch failed: %s", self.last_error)

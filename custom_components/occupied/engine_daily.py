@@ -29,6 +29,7 @@ from homeassistant.helpers.start import async_at_started
 from homeassistant.util import dt as dt_util
 
 from .actions import (
+    ServiceWaitTimeout,
     dispatch_service,
     light_capabilities,
     light_matches,
@@ -277,7 +278,7 @@ class DailyEngine:
     @callback
     def _config_changed(self, _):
         if self._saved_context != self._context_identity():
-            self._invalidate()
+            self._invalidate(preserve_activation=True)
             self.hass.async_create_task(self._async_reconfigure())
 
     async def _async_time_sources_changed(self):
@@ -321,6 +322,8 @@ class DailyEngine:
 
     async def _async_reconfigure(self):
         async with self._lock:
+            if self.closed:
+                return
             await self._cancel_native_fades()
             self._plans.clear()
             self._restoring = True
@@ -435,9 +438,10 @@ class DailyEngine:
             self._notify()
 
     @callback
-    def _invalidate(self):
+    def _invalidate(self, *, preserve_activation=False):
         self.active = False
-        self.activation_deadline = None
+        if not preserve_activation:
+            self.activation_deadline = None
         if self.reconciliation["phase"] in {"waiting", "applying"}:
             self.reconciliation["phase"] = "cancelled"
         self.generation += 1
@@ -632,10 +636,15 @@ class DailyEngine:
                     await self._reevaluate_locked()
                     return
                 config = self.program.run_condition
-                if config and self.enforce_state_on_start and not self._restoring:
-                    self.activation_deadline = dt_util.utcnow() + timedelta(
-                        seconds=config.start_delay
-                    )
+                if (
+                    config
+                    and self.enforce_state_on_start
+                    and (not self._restoring or self.activation_deadline is not None)
+                ):
+                    if not self._restoring or self.activation_deadline is None:
+                        self.activation_deadline = dt_util.utcnow() + timedelta(
+                            seconds=config.start_delay
+                        )
                     self.reconciliation = {"phase": "waiting", "results": {}}
                     self._push(self.activation_deadline, "activation", f"activation:{self.session}")
                 else:
@@ -1218,6 +1227,11 @@ class DailyEngine:
             return False
         try:
             await dispatch_service(self.hass, action, context, data=data)
+        except ServiceWaitTimeout as err:
+            self.last_error = f"{action.action} for {', '.join(action.targets)}: {err}"
+            self._finish(key, "uncertain", action, self.last_error)
+            await self._persist()
+            return False
         except Exception as err:
             self.last_error = (
                 f"{action.action} for {', '.join(action.targets)}: {type(err).__name__}: {err}"
@@ -1438,7 +1452,7 @@ class DailyEngine:
                     await self._persist()
                     self._notify()
                 return
-            self._invalidate()
+            self._invalidate(preserve_activation=same_policy)
             if self.started:
                 await self._cancel_native_fades()
             self.program, self.gate = program, gate
@@ -1476,6 +1490,7 @@ class DailyEngine:
             "service_missing",
             "handover_skipped",
             "random_window_skipped",
+            "uncertain",
         }:
             _LOGGER.warning(
                 "Occupied %s (%s), event %s: %s: %s",
