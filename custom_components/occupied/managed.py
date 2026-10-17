@@ -83,9 +83,15 @@ class SourceManager:
         """Idempotent normalized reload, including raw changes and error recovery."""
         async with source_lock(self.hass, self.entry.entry_id):
             if self.closed or self.engine.closed:
-                raise HomeAssistantError("Occupied is unloaded")
+                raise HomeAssistantError(
+                    "Occupied is unloaded", translation_domain=DOMAIN, translation_key="unloaded"
+                )
             if self.mode != "file":
-                raise HomeAssistantError("Select a managed file before reloading")
+                raise HomeAssistantError(
+                    "Select a managed file before reloading",
+                    translation_domain=DOMAIN,
+                    translation_key="select_managed_file",
+                )
             changed = False
             fingerprint = await self.hass.async_add_executor_job(
                 file_fingerprint, self.hass.config.config_dir, self.path
@@ -97,7 +103,11 @@ class SourceManager:
                 )
                 program = await self.hass.async_add_executor_job(load_yaml, text)
                 if self.closed or self.engine.closed:
-                    raise HomeAssistantError("Occupied is unloaded")
+                    raise HomeAssistantError(
+                        "Occupied is unloaded",
+                        translation_domain=DOMAIN,
+                        translation_key="unloaded",
+                    )
                 changed = not self.engine.configuration_ready or program_revision(
                     program
                 ) != program_revision(self.engine.program)
@@ -132,7 +142,9 @@ class SourceManager:
         """Explicit in-place source change; invalid candidates leave the source intact."""
         async with source_lock(self.hass, self.entry.entry_id):
             if self.closed or self.engine.closed:
-                raise HomeAssistantError("Occupied is unloaded")
+                raise HomeAssistantError(
+                    "Occupied is unloaded", translation_domain=DOMAIN, translation_key="unloaded"
+                )
             if expected_revision != program_revision(self.engine.program):
                 raise RevisionConflict("The program changed. Reload it before changing its source.")
             if mode == "file":
@@ -141,7 +153,9 @@ class SourceManager:
             else:
                 if not self.engine.configuration_ready:
                     raise HomeAssistantError(
-                        "Load a valid file before copying its program to GUI storage"
+                        "Load a valid file before copying its program to GUI storage",
+                        translation_domain=DOMAIN,
+                        translation_key="valid_file_required",
                     )
                 program, digest = self.engine.program, None
                 await self.engine.async_replace_program(program)

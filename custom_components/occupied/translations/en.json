@@ -130,5 +130,108 @@
       "title": "Occupied bootstrap needs a controller identity",
       "description": "Several Occupied controllers exist, so the legacy config_file declaration cannot identify the intended controller. Configure named entries under instances in configuration.yaml, with a stable id for each controller. Existing controllers have been retained."
     }
+  },
+  "services": {
+    "start": {
+      "name": "Start managing",
+      "description": "Allow this controller to manage its entities when activation conditions are met.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Controller"
+        }
+      }
+    },
+    "stop": {
+      "name": "Stop managing",
+      "description": "Stop managing entities, cancel lighting convergence, and apply configured owned activity cleanup.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Controller"
+        }
+      }
+    },
+    "pause": {
+      "name": "Pause management",
+      "description": "Pause entity management while keeping the controller enabled.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Controller"
+        }
+      }
+    },
+    "resume": {
+      "name": "Resume management",
+      "description": "Resume entity management when activation conditions are met.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Controller"
+        }
+      }
+    },
+    "reload": {
+      "name": "Reload managed file",
+      "description": "Validate and atomically reload the selected managed file. Invalid updates retain the last valid program.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Controller"
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "entry_not_loaded": {
+      "message": "Occupied config entry is not loaded"
+    },
+    "entry_unloaded": {
+      "message": "Occupied config entry is unloaded"
+    },
+    "select_managed_file": {
+      "message": "Select a managed file before reloading"
+    },
+    "managed_validation_failed": {
+      "message": "Managed file validation failed; see Occupied Configuration and Repairs"
+    },
+    "invalid_program": {
+      "message": "Invalid Occupied program: {error}"
+    },
+    "invalid_configuration": {
+      "message": "Invalid Occupied configuration: {error}"
+    },
+    "persist_failed": {
+      "message": "Cannot persist Occupied state: {error}"
+    },
+    "unloaded": {
+      "message": "Occupied is unloaded"
+    },
+    "valid_file_required": {
+      "message": "Load a valid file before copying its program to GUI storage"
+    },
+    "daily_program_required": {
+      "message": "Apply the daily starter program before selecting a managed file"
+    },
+    "managed_path_required": {
+      "message": "Choose a relative managed-file path"
+    },
+    "managed_file_authoritative": {
+      "message": "The managed file is authoritative. Export your draft or explicitly switch to GUI storage."
+    },
+    "program_start_failed": {
+      "message": "{error}"
+    },
+    "saved_program_unavailable": {
+      "message": "Could not load the saved daily program"
+    },
+    "journal_limit": {
+      "message": "Execution journal exceeds its bounded runtime limit"
+    },
+    "enforce_unavailable": {
+      "message": "Cannot enforce expected states: {reason}"
+    },
+    "enforce_controller_changed": {
+      "message": "Cannot enforce expected states: controller changed"
+    },
+    "unloaded_before_save": {
+      "message": "Occupied is unloaded; refresh before saving"
+    }
   }
 }

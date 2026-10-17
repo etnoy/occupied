@@ -60,10 +60,18 @@ def resolve_engine(hass: HomeAssistant, entry_id: str) -> OccupiedEngine | Daily
         or entry.state is not ConfigEntryState.LOADED
         or not hasattr(entry, "runtime_data")
     ):
-        raise HomeAssistantError("Occupied config entry is not loaded")
+        raise HomeAssistantError(
+            "Occupied config entry is not loaded",
+            translation_domain=DOMAIN,
+            translation_key="entry_not_loaded",
+        )
     engine = entry.runtime_data
     if engine.closed:
-        raise HomeAssistantError("Occupied config entry is unloaded")
+        raise HomeAssistantError(
+            "Occupied config entry is unloaded",
+            translation_domain=DOMAIN,
+            translation_key="entry_unloaded",
+        )
     return engine
 
 
@@ -87,11 +95,17 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         if call.service == "reload":
             manager = getattr(engine, "source_manager", None)
             if manager is None:
-                raise HomeAssistantError("Select a managed file before reloading")
+                raise HomeAssistantError(
+                    "Select a managed file before reloading",
+                    translation_domain=DOMAIN,
+                    translation_key="select_managed_file",
+                )
             result = await manager.async_reload()
             if not result["valid"] and not call.return_response:
                 raise HomeAssistantError(
-                    "Managed file validation failed; see Occupied Configuration and Repairs"
+                    "Managed file validation failed; see Occupied Configuration and Repairs",
+                    translation_domain=DOMAIN,
+                    translation_key="managed_validation_failed",
                 )
             return result if call.return_response else None
         if call.service in {"start", "stop"}:
@@ -166,14 +180,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) -> 
         try:
             program = await hass.async_add_executor_job(validate_program, source)
         except ProgramError as err:
-            raise ConfigEntryError(f"Invalid Occupied program: {err}") from err
+            raise ConfigEntryError(
+                f"Invalid Occupied program: {err}",
+                translation_domain=DOMAIN,
+                translation_key="invalid_program",
+                translation_placeholders={"error": str(err)},
+            ) from err
         engine = entry.runtime_data = DailyEngine(hass, entry.entry_id, program)
         engine.configuration_ready = not managed
     else:
         try:
             config = validate_input(dict(entry.options or entry.data))
         except vol.Invalid as err:
-            raise ConfigEntryError(f"Invalid Occupied configuration: {err}") from err
+            raise ConfigEntryError(
+                f"Invalid Occupied configuration: {err}",
+                translation_domain=DOMAIN,
+                translation_key="invalid_configuration",
+                translation_placeholders={"error": str(err)},
+            ) from err
         engine = entry.runtime_data = OccupiedEngine(hass, entry.entry_id, config)
     forwarded = False
     try:

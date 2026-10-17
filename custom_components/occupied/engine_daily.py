@@ -505,7 +505,11 @@ class DailyEngine:
         }
         try:
             if len(self._journal) > MAX_JOURNAL:
-                raise HomeAssistantError("Execution journal exceeds its bounded runtime limit")
+                raise HomeAssistantError(
+                    "Execution journal exceeds its bounded runtime limit",
+                    translation_domain=DOMAIN,
+                    translation_key="journal_limit",
+                )
             await self._store.async_save(deepcopy(snapshot))
         except HomeAssistantError as err:
             self._storage_failed = True
@@ -558,17 +562,36 @@ class DailyEngine:
         async with self._lock:
             passed, reason = self._effective_gate()
             if not passed:
-                raise HomeAssistantError(f"Cannot enforce expected states: {reason}")
+                raise HomeAssistantError(
+                    f"Cannot enforce expected states: {reason}",
+                    translation_domain=DOMAIN,
+                    translation_key="enforce_unavailable",
+                    translation_placeholders={"reason": str(reason)},
+                )
             generation = self.generation
             try:
                 await self._ensure_plans()
             except (ProgramError, ValueError) as err:
-                raise HomeAssistantError(f"Cannot enforce expected states: {err}") from err
+                raise HomeAssistantError(
+                    f"Cannot enforce expected states: {err}",
+                    translation_domain=DOMAIN,
+                    translation_key="enforce_unavailable",
+                    translation_placeholders={"reason": str(err)},
+                ) from err
             passed, reason = self._effective_gate()
             if not passed:
-                raise HomeAssistantError(f"Cannot enforce expected states: {reason}")
+                raise HomeAssistantError(
+                    f"Cannot enforce expected states: {reason}",
+                    translation_domain=DOMAIN,
+                    translation_key="enforce_unavailable",
+                    translation_placeholders={"reason": str(reason)},
+                )
             if generation != self.generation:
-                raise HomeAssistantError("Cannot enforce expected states: controller changed")
+                raise HomeAssistantError(
+                    "Cannot enforce expected states: controller changed",
+                    translation_domain=DOMAIN,
+                    translation_key="enforce_controller_changed",
+                )
 
             # Replace delayed activation, handover, and retries with current-time intent.
             self._invalidate()
@@ -1432,7 +1455,11 @@ class DailyEngine:
             )
         async with self._lock:
             if self.closed:
-                raise HomeAssistantError("Occupied is unloaded; refresh before saving")
+                raise HomeAssistantError(
+                    "Occupied is unloaded; refresh before saving",
+                    translation_domain=DOMAIN,
+                    translation_key="unloaded_before_save",
+                )
             if expected_revision is not None and expected_revision != revision(self.program):
                 raise RevisionConflict(
                     "The program changed. Reload the saved program before saving."
