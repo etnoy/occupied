@@ -242,7 +242,8 @@ generated files with `uv run python scripts/ha_matrix.py check`. Reproduce a
 supported environment with `uv run python scripts/ha_matrix.py test --lane floor`
 or replace `floor` with a tested HA version; `--lane all` runs all six. Rebuild
 hashed requirements with `uv run python scripts/ha_matrix.py compile`, and discover
-new releases with `uv run python scripts/ha_matrix.py next`.
+new releases with `uv run python scripts/ha_matrix.py next`. See the
+[monthly rollover runbook](docs/maintenance.md) for the review and release procedure.
 
 Historical test environments retain the original HA constraints and their recorded
 SHA-256 digests. The matrix records one security repair: AnyIO versions below
