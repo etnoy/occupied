@@ -159,7 +159,7 @@
     : panel.preview?.plans}
   program={panel.liveVisible && panel.liveProgram
     ? panel.liveProgram
-    : panel.previewProgram}
+    : (panel.previewProgram ?? panel.draft)}
   liveSession={panel.liveVisible ? panel.liveSession : null}
   {t}
   locale={panel._hass.locale}

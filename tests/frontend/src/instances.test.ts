@@ -896,7 +896,87 @@ void test("opening preview automatically loads the current date and regenerates 
     assert.equal(f.panel.preview, f.preview);
     await settle();
     assert.equal(requests().length, 2);
-    assert.equal(f.panel.previewProgram.name, "Updated steps");
+    assert.equal(f.panel.previewProgram?.name, "Updated steps");
+  } finally {
+    f.restore();
+  }
+});
+
+void test("reloading on Preview regenerates the saved program before live start is available", async () => {
+  const f = await fixture();
+  try {
+    const cachedProgram = () => f.panel.previewProgram;
+    f.preview.plan_fingerprint = "old-preview";
+    f.panel.navigate("preview");
+    await settle();
+    const updated = { ...f.documents.main.program, name: "External program" };
+    f.documents.main = {
+      ...f.documents.main,
+      program: updated,
+      revision: "external",
+    };
+    let resolve!: (value: PreviewResult) => void;
+    f.setPreviewOverride(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        }),
+    );
+    await f.panel.reloadSaved();
+    const previews = f.messages.filter(
+      (message) => message.type === "occupied/preview",
+    );
+    assert.equal(previews.length, 2);
+    assert.deepEqual(previews[1].program, updated);
+    assert.equal(f.panel.preview, undefined);
+    assert.equal(cachedProgram(), undefined);
+    await f.panel.startLivePreview();
+    assert.equal(
+      f.messages.filter(
+        (message) => message.type === "occupied/live_preview/start",
+      ).length,
+      0,
+    );
+    resolve({ ...f.preview, plan_fingerprint: "updated-preview" });
+    await settle();
+    assert.equal(cachedProgram()?.name, "External program");
+    await f.panel.startLivePreview();
+    const start = f.messages.find(
+      (message) => message.type === "occupied/live_preview/start",
+    );
+    assert.deepEqual(start?.program, updated);
+    assert.equal(start?.expected_plan_fingerprint, "updated-preview");
+  } finally {
+    f.restore();
+  }
+});
+
+void test("a failed preview refresh cannot start the previous saved program", async () => {
+  const f = await fixture();
+  try {
+    f.preview.plan_fingerprint = "old-preview";
+    f.panel.navigate("preview");
+    await settle();
+    f.documents.main = {
+      ...f.documents.main,
+      program: { ...f.documents.main.program, name: "External program" },
+      revision: "external",
+    };
+    f.setPreviewOverride(() =>
+      Promise.reject(new Error("Preview unavailable")),
+    );
+    await f.panel.reloadSaved();
+    await settle();
+    assert.equal(f.panel.preview, undefined);
+    assert.equal(f.panel.previewProgram, undefined);
+    assert.match(f.panel.error, /Preview unavailable/);
+    await f.panel.startLivePreview();
+    assert.equal(
+      f.messages.filter(
+        (message) => message.type === "occupied/live_preview/start",
+      ).length,
+      0,
+    );
   } finally {
     f.restore();
   }
@@ -922,7 +1002,7 @@ void test("a pending preview cannot replace a draft edited while it loads", asyn
     f.setPreviewOverride(undefined);
     f.panel.navigate("preview");
     await settle();
-    assert.equal(f.panel.previewProgram.name, "New draft");
+    assert.equal(f.panel.previewProgram?.name, "New draft");
   } finally {
     f.restore();
   }
