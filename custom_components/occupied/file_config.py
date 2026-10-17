@@ -12,6 +12,7 @@ from .models import WEEKDAYS, Program
 from .validation import Issue, ModelPath, ProgramError, program_data, validate_program
 
 MAX_FILE_BYTES = 1_048_576
+MAX_YAML_NODES = 100_000
 
 
 def managed_path(config_dir: str, relative: str) -> Path:
@@ -61,8 +62,15 @@ def load_yaml(source: str, *, validator=validate_program):
         raise ProgramError([Issue("file_size", "Configuration must be at most 1 MiB")])
     loader = yaml.SafeLoader(source)
     locations: dict[ModelPath, tuple[int, int]] = {}
+    visited = 0
 
     def inspect(node: Node, path: ModelPath, ancestors: frozenset[int] = frozenset()) -> None:
+        nonlocal visited
+        visited += 1
+        if visited > MAX_YAML_NODES:
+            raise ProgramError(
+                [Issue("yaml_size", "Configuration expands to too many nodes", path)]
+            )
         locations[path] = (node.start_mark.line + 1, node.start_mark.column + 1)
         if id(node) in ancestors:
             raise ProgramError(
