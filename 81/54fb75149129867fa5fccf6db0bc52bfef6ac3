@@ -1,0 +1,107 @@
+custom_components/occupied/frontend/dist/lib/services/ha-controls.js
+  s_222e1586b2d36c::t_482be74fe6cfc3 24-30
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_222e1586b2d36c::t_45ebcf499f6d6e 14310-14314
+custom_components/occupied/frontend/src/lib/services/ha-controls.ts
+  s_222e1586b2d36c::t_3b45611dd2f4c9 36-42
+tests/frontend/src/ha-controls.test.ts
+  s_222e1586b2d36c::t_d7e15bbefbf223 1-110
+.github/workflows/check.yml
+  s_222e1586b2d36c::t_f2dc0acfc2a241 24-27,51-55,115-219,223,280,324-325,328-332,353,369-370
+tests/browser/occupied.spec.ts
+  s_222e1586b2d36c::t_ec0c0b62cc6907 13-14,52-61
+tests/browser/serve.py
+  s_222e1586b2d36c::t_b43b77796a0a41 4,9,63-65
+tests/ha/test_daily_runtime.py
+  s_222e1586b2d36c::t_4584454124fee1 3,684-687
+.github/workflows/release.yml
+  s_222e1586b2d36c::t_ee69764a9ccad7 46-48,53,56,58
+README.md
+  s_222e1586b2d36c::t_b32442908e10f4 21-46,53-54,61-65
+  s_5efedd126094d0::t_ba2ac84823d3c5 252-253
+  s_222e1586b2d36c::t_1c9b279c4fdb3c 47-52,55-57
+scripts/check_artifacts.py
+  s_222e1586b2d36c::t_908e2caf731b61 57
+scripts/release_notes.py
+  s_222e1586b2d36c::t_1047b7301f34a5 1-23
+tests/core/test_release_workflow.py
+  s_222e1586b2d36c::t_7b434c90d53ecc 27-65
+.github/dependabot.yml
+  s_5efedd126094d0::t_e558dd58df46ac 33
+docs/maintenance.md
+  s_5efedd126094d0::t_e70d22455b1f52 1-6,8-32,35-72,95-110
+  s_3df37cff510e73::t_bf936f9b083cb1 7,33-34,111-117
+  s_222e1586b2d36c::t_dc7624e5d81332 111,120-147
+  s_222e1586b2d36c::t_b9ef2e1c5bebf1 73-94
+pyproject.toml
+  s_222e1586b2d36c::t_5c139fda9f647c 60-62
+scripts/ha_matrix.py
+  s_222e1586b2d36c::t_1015317cacefad 38,92,98-107,132,134-140,144-145,148-150,162,292-302,328-332,336,350-361,363-375,512-530,558,625,648,657,662-669,705,717,724-725,727
+  s_222e1586b2d36c::t_9879cd8d72036d 542,550-552
+scripts/ha_matrix.toml
+  s_222e1586b2d36c::t_04b3e3f558338a 21,32,43,54,65,76,87,98
+scripts/requirements/ha-2026.5.0.txt
+  s_222e1586b2d36c::t_83a6b4141dcd3c 1
+scripts/requirements/ha-2026.6.4.txt
+  s_222e1586b2d36c::t_680690ed59d8cb 1
+scripts/requirements/ha-2026.7.4.txt
+  s_222e1586b2d36c::t_d77a2b9d95d17f 1
+scripts/requirements/ha-2026.8.3.txt
+  s_222e1586b2d36c::t_318f21bc670c6b 1
+scripts/requirements/ha-2026.9.4.txt
+  s_222e1586b2d36c::t_d2b94088641a29 1
+tests/core/test_ha_matrix.py
+  s_222e1586b2d36c::t_d98f768aa451f0 16,35-36,55,83,100,132-137,302-303,315-326,342,350-364,367-368,450-515
+  s_222e1586b2d36c::t_fd3fc6656ff34b 257-277
+uv.lock
+  s_222e1586b2d36c::t_fe41e1907e2d38 1797-1799,1809-1817
+.github/workflows/ha-next.yml
+  s_222e1586b2d36c::t_0207355a616111 1-165
+scripts/ha_next.py
+  s_222e1586b2d36c::t_505e79d6fc57d3 1-126
+scripts/report_ha_compat.py
+  s_222e1586b2d36c::t_ef9ed38b2001c6 1-91
+tests/core/test_ha_next.py
+  s_222e1586b2d36c::t_1e6e63a7cbc935 1-181
+custom_components/occupied/engine.py
+  s_222e1586b2d36c::t_f65c34e9acae17 27,99,132,138,141,145-151,456-457,461-463
+custom_components/occupied/engine_daily.py
+  s_222e1586b2d36c::t_f07554181585ce 28,107,236,245,263-268,1527-1529
+  s_222e1586b2d36c::t_b4f140da48ad37 111,297,427,704,706-712,736-744,751,757-769,1022
+tests/ha/test_engine_lifecycle.py
+  s_222e1586b2d36c::t_8850e800b8cfd3 1-79
+tests/ha/test_daily_requeue.py
+  s_222e1586b2d36c::t_f30b44b518cf5c 1-171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "8154fb75149129867fa5fccf6db0bc52bfef6ac3",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_3df37cff510e73": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14a28-1af6-70a2-bd42-029b8914a348",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_5efedd126094d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1494a-0c3c-7fa2-b887-3b33c1eb7d43",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
