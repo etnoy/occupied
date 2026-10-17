@@ -1,0 +1,23 @@
+custom_components/occupied/engine_daily.py
+  s_222e1586b2d36c::t_15dfc6ef172e09 46,202-204,1375-1378
+custom_components/occupied/plan_codec.py
+  s_222e1586b2d36c::t_3f497868361068 9-12,57-61
+tests/ha/test_planner_cache_upgrade.py
+  s_222e1586b2d36c::t_5330bb19054329 1-93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "045d414afbc226cd13c40a196f0803e9349ce03a",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
