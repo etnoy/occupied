@@ -262,11 +262,13 @@ class OccupiedEngine:
         target = round(255 * self.config[CONF_BRIGHTNESS] / 100)
         self.handover_start_brightness = None
         if light is not None and light.state in {STATE_ON, STATE_OFF}:
-            start = int(light.attributes.get("brightness", 255)) if light.state == STATE_ON else 0
+            start = light.attributes.get("brightness") if light.state == STATE_ON else 0
+            if start is not None:
+                start = int(start)
             self.handover_start_brightness = start
             modes = set(light.attributes.get("supported_color_modes", []))
             dimmable = bool(modes - {"onoff", "unknown"})
-            if dimmable and start != target:
+            if dimmable and start is not None and start != target:
                 count = max(1, math.ceil(duration / STEP_SECONDS))
                 for index in range(1, count + 1):
                     level = round(start + (target - start) * index / count)
