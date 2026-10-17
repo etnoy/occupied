@@ -1,0 +1,21 @@
+custom_components/occupied/config_flow.py
+  s_222e1586b2d36c::t_b154b710db3c0d 98-101,103-112,114-120,122-123,125-130
+tests/ha/test_config_flow_import.py
+  s_222e1586b2d36c::t_ac171aa90577a1 1-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "010057fbfbb2a7de422bc05a5c0a1391820081e7",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
