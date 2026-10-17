@@ -67,34 +67,6 @@
       "ambiguous_instance": "Use named controllers in configuration.yaml to identify the controller."
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Occupied caller proof",
-        "description": "Configure the milestone-one deterministic sequence. Permission starts disabled. Leave the activation entity empty for manual control. Each activation gradually brings the selected light to the configured brightness, then runs the light pair and optional remote activity.",
-        "data": {
-          "name": "Controller name",
-          "light_entity": "Proof light",
-          "activation_entity": "Activation entity (optional)",
-          "allowed_states": "Allowed activation states",
-          "remote_entity": "Harmony remote (optional)",
-          "remote_activity": "Remote activity name",
-          "handover_seconds": "Lighting handover duration (seconds)",
-          "brightness_pct": "Target light brightness (%)",
-          "light_delay_seconds": "Light on delay after handover (seconds)",
-          "light_duration_seconds": "Light on duration (seconds)",
-          "remote_delay_seconds": "Remote start delay after handover (seconds)",
-          "remote_duration_seconds": "Remote activity duration (seconds)"
-        }
-      }
-    },
-    "error": {
-      "invalid_config": "Check the selected entities, allowed states, activity name, and duration bounds."
-    },
-    "abort": {
-      "daily_program": "Edit this controller from Occupied under Settings > Devices & services."
-    }
-  },
   "entity": {
     "button": {
       "enforce_state_now": {

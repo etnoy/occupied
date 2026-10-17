@@ -67,25 +67,17 @@ async def test_native_schema_errors_identify_the_field(hass, config, invalid):
     assert set(invalid) <= set(raised.value.schema_errors)
 
 
-async def test_options_can_remove_remote_and_activation_gate(hass, entry, config, devices):
+async def test_legacy_options_are_retired_but_existing_settings_still_load(
+    hass, entry, config, devices
+):
+    hass.config_entries.async_update_entry(entry, options=config | {"brightness_pct": 42})
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    old = entry.runtime_data
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    new = {
-        key: value
-        for key, value in config.items()
-        if key not in {"remote_entity", "activation_entity"}
-    }
-    result = await hass.config_entries.options.async_configure(result["flow_id"], user_input=new)
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    await hass.async_block_till_done()
-    assert old.closed
-    assert "remote_entity" not in entry.runtime_data.config
-    assert not entry.runtime_data.gate.entities
-    await entry.runtime_data.async_set_enabled(True)
-    assert entry.runtime_data.active
-    assert not any(event.kind == "remote_start" for event in entry.runtime_data._queue)
+    assert entry.runtime_data.config["brightness_pct"] == 42
+    assert not entry.supports_options
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    assert entry.runtime_data.config["brightness_pct"] == 42
+    assert not entry.supports_options
 
 
 @pytest.mark.parametrize("name", ["Occupied", "Window lights"])
@@ -113,9 +105,7 @@ async def test_gui_bootstrap_requires_a_name_before_creating_a_disabled_controll
     assert entry.runtime_data.program.name == name
     assert not entry.runtime_data.enabled and not entry.runtime_data.program.steps
     assert not devices
-    options = await hass.config_entries.options.async_init(entry.entry_id)
-    assert options["type"] is FlowResultType.ABORT
-    assert options["reason"] == "daily_program"
+    assert not entry.supports_options
 
 
 async def test_gui_name_conflict_requires_user_to_choose_another_name(hass, devices):
