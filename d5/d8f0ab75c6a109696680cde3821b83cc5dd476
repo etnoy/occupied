@@ -1,0 +1,21 @@
+custom_components/occupied/engine.py
+  s_222e1586b2d36c::t_4c5eefbec129c9 265-267,271
+tests/ha/test_legacy_unknown_brightness.py
+  s_222e1586b2d36c::t_c07af00c9fbde4 1-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d5d8f0ab75c6a109696680cde3821b83cc5dd476",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
