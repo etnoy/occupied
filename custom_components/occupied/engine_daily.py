@@ -43,6 +43,7 @@ from .covers import cover_target
 from .handover import calls_for_target
 from .lighting import LightState, project_lighting
 from .models import Handover, controlled_entities, projectable_lights
+from .plan_codec import PlannerVersionChanged
 from .planner import DailyPlan, PlanEvent, ResolvedAction, preview_dates, supersede_ticks
 from .reconciliation import expected_actions
 from .runtime_planning import MAX_EVENTS, runtime_dates
@@ -200,6 +201,9 @@ class DailyEngine:
                     p.simulation_date: p
                     for p in (plan_from_data(value) for value in saved.get("plans", []))
                 }
+            except PlannerVersionChanged as err:
+                self._plans.clear()
+                self._record("recovery", "plan_version_changed", str(err))
             except (KeyError, TypeError, ValueError) as err:
                 self._plans.clear()
                 self._record("recovery", "invalid_plan", str(err))
@@ -1411,8 +1415,10 @@ class DailyEngine:
                 self._notify()
 
     def _record(self, key, outcome, detail):
-        if outcome in {"failed", "invalid_plan"}:
-            _LOGGER.error(
+        if outcome in {"failed", "invalid_plan", "plan_version_changed"}:
+            level = logging.INFO if outcome == "plan_version_changed" else logging.ERROR
+            _LOGGER.log(
+                level,
                 "Occupied %s (%s), event %s: %s: %s",
                 self.program.name,
                 self.entry_id,
