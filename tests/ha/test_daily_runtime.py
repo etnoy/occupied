@@ -1,5 +1,6 @@
 """Daily steps through real HA timers, storage, services, and state listeners."""
 
+import sys
 from datetime import timedelta
 
 import pytest
@@ -680,6 +681,10 @@ async def test_permission_and_pause_cancel_future_dispatch(
     assert not any(c.domain == "script" for c in daily_devices)
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 14, 4),
+    reason="Recorder annotationlib/create_autospec harness bug before CPython 3.14.4",
+)
 async def test_device_activity_includes_successful_actions_and_survives_reload(
     recorder_mock, hass, daily_entry, daily_devices, freezer, runtime_program
 ):

@@ -1,10 +1,12 @@
 """Serve the release ZIP in an isolated Home Assistant instance for browser tests."""
 
 import json
+import os
 import signal
 import subprocess
 import sys
 import tempfile
+import tomllib
 from pathlib import Path
 from uuid import uuid4
 from zipfile import ZipFile
@@ -58,10 +60,9 @@ template:
 )
 # Use HA's complete runtime: its frontend imports optional integrations that the
 # unit-test lock intentionally does not install. Pin the multi-architecture image.
-image = (
-    "ghcr.io/home-assistant/home-assistant:2026.10.1@"
-    "sha256:130241f28d01fa80dfa3b44f7d89781c188d8642ecab9024f079f19f9f82baa0"
-)
+matrix = tomllib.loads((ROOT / "scripts/ha_matrix.toml").read_text())
+newest = next(lane for lane in matrix["lanes"] if lane["role"] == "newest")
+image = os.environ.get("HA_IMAGE") or newest["image"]
 container = f"occupied-browser-{uuid4().hex[:12]}"
 command = [
     "docker",
