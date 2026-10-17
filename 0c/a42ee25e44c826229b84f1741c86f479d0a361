@@ -1,0 +1,25 @@
+.github/workflows/check.yml
+  s_222e1586b2d36c::t_1f5cc6c4a83c95 220-222
+README.md
+  s_222e1586b2d36c::t_bea5d6d33d6fa3 51-53
+scripts/check_core_wheels.py
+  s_222e1586b2d36c::t_5ba6c7ded6be41 1-57
+tests/core/test_core_wheels.py
+  s_222e1586b2d36c::t_c4489b96c4be55 1-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0ca42ee25e44c826229b84f1741c86f479d0a361",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
