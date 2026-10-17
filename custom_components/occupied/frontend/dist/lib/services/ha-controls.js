@@ -21,6 +21,13 @@ export async function loadHaControls() {
     config.routerOptions.routes.automation.load(),
     config.routerOptions.routes.integrations.load(),
   ]);
+  // Older configuration pages do not import the app bar used by this panel.
+  // The history route registers it alongside the chart we also use.
+  if (!customElements.get("ha-top-app-bar-fixed")) {
+    await resolver
+      ._getRoutes([{ url_path: "history", component_name: "history" }])
+      .routes.history.load();
+  }
   await Promise.all([
     customElements.whenDefined("ha-selector"),
     customElements.whenDefined("ha-generic-picker"),
