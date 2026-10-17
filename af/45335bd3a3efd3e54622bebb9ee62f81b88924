@@ -1,0 +1,23 @@
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_222e1586b2d36c::t_d1bdc8391aa50d 18587-18588,18592,18703-18705,18741,18850-18889,18894-18895,18919,18953,18960,19043-19044
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_222e1586b2d36c::t_a1d94c174f038f 182-183,187,315-317,357,473-475,477-480,482-502,504-511,514-522,547,581,588,682-683
+tests/frontend/src/instances.test.ts
+  s_222e1586b2d36c::t_30472eb94b9c50 450-560
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "af45335bd3a3efd3e54622bebb9ee62f81b88924",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
