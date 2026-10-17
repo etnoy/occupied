@@ -93,6 +93,7 @@
       disabled={panel.busy ||
         panel.stale ||
         panel.document.source === "file" ||
+        !yamlDirty ||
         !panel.yaml ||
         panel.hasRunConditionChanges}
       onclick={() => panel.saveYaml()}

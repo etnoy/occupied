@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { expectedHaShellError } from "../frontend/src/ha-shell-errors.js";
+import type { OccupiedPanel } from "@occupied/occupied-panel.js";
+import type { ProgramDocument } from "@occupied/lib/types.js";
 
-test("create, save, preview and persistently delete a step in the installed release", async ({
+test("create, preview, delete and protect YAML edits in the installed release", async ({
   page,
   request,
 }) => {
@@ -151,5 +153,70 @@ test("create, save, preview and persistently delete a step in the installed rele
   ).toBeVisible();
   expect(saves).toHaveLength(2);
   expect(Object.keys(saves.at(-1)?.steps || {})).toEqual([]);
+
+  await page.reload();
+  await panel.getByRole("button", { name: "Settings", exact: true }).click();
+  const editor = panel.locator("ha-code-editor");
+  const yamlValue = () =>
+    editor.evaluate(
+      (element) => (element as HTMLElement & { value: string }).value,
+    );
+  await expect.poll(yamlValue).toContain("Smoke controller");
+  const yaml = `${await yamlValue()}\n# Local YAML edit\n`;
+  const before = await panel.evaluate((element) => {
+    const controller = element as OccupiedPanel;
+
+    return controller._hass.callWS<ProgramDocument>({
+      type: "occupied/program",
+      config_entry_id: controller.selectedEntry,
+    });
+  });
+  const saveYaml = panel.locator("section.yaml-panel").getByRole("button", {
+    name: "Save changes",
+    exact: true,
+  });
+  await expect(saveYaml).toBeDisabled();
+  await panel.locator('input[type="file"]').setInputFiles({
+    name: "local.yaml",
+    mimeType: "text/yaml",
+    buffer: Buffer.from(yaml),
+  });
+  await expect(saveYaml).toBeEnabled();
+  const external = await panel.evaluate(async (element, revision) => {
+    const controller = element as OccupiedPanel;
+    const document = await controller._hass.callWS<ProgramDocument>({
+      type: "occupied/program",
+      config_entry_id: controller.selectedEntry,
+    });
+
+    return controller._hass.callWS<{ valid: boolean }>({
+      type: "occupied/save",
+      config_entry_id: controller.selectedEntry,
+      expected_revision: revision,
+      program: { ...document.program, name: "Externally changed controller" },
+    });
+  }, before.revision);
+  expect(external.valid).toBe(true);
+  const reload = panel.getByRole("button", {
+    name: "Reload saved program",
+    exact: true,
+  });
+  await expect(reload).toBeVisible();
+  await reload.click();
+  await expect(saveYaml).toBeEnabled();
+  await expect.poll(yamlValue).toBe(yaml);
+  await saveYaml.click();
+  await expect(panel.getByRole("alert")).toContainText("program changed");
+  await expect(reload).toBeVisible();
+  const saved = await panel.evaluate((element) => {
+    const controller = element as OccupiedPanel;
+
+    return controller._hass.callWS<ProgramDocument>({
+      type: "occupied/program",
+      config_entry_id: controller.selectedEntry,
+    });
+  });
+  expect(saved.program.name).toBe("Externally changed controller");
+  await expect.poll(yamlValue).toBe(yaml);
   expect(errors).toEqual([]);
 });
