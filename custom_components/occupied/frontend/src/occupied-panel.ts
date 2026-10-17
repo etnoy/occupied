@@ -83,7 +83,7 @@ export class OccupiedPanel extends HTMLElement {
   pendingStepExit: (() => void) | null = null;
   selectedStep: string | null = null;
   preview?: PreviewResult;
-  previewProgram!: Program;
+  previewProgram?: Program;
   previewDate = "";
   liveSession: LivePreviewSession | null = null;
   livePlan?: Plan;
@@ -703,6 +703,8 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   private adopt(doc: ProgramDocument) {
+    this.preview = undefined;
+    this.previewProgram = undefined;
     this.document = doc;
     this.saved = doc.program;
     this.revision = doc.revision;
@@ -961,10 +963,16 @@ export class OccupiedPanel extends HTMLElement {
       this.stepEditor = null;
       this.randomEditor = null;
       reloaded = true;
-      this.renderView();
     });
-    if (reloaded && epoch === this.epoch && !this.yamlDirty) {
+    if (!(reloaded && epoch === this.epoch)) {
+      return;
+    }
+
+    if (!this.yamlDirty) {
       await this.exportYaml();
+    }
+    if (epoch === this.epoch) {
+      this.renderView();
     }
   }
 

@@ -16100,7 +16100,7 @@ function PreviewView($$anchor, $$props) {
     let $1 = user_derived(() =>
       $$props.panel.liveVisible && $$props.panel.liveProgram
         ? $$props.panel.liveProgram
-        : $$props.panel.previewProgram,
+        : ($$props.panel.previewProgram ?? $$props.panel.draft),
     );
     let $2 = user_derived(() =>
       $$props.panel.liveVisible ? $$props.panel.liveSession : null,
@@ -19064,6 +19064,8 @@ var OccupiedPanel = class extends HTMLElement {
       .join(" \xB7 ");
   }
   adopt(doc) {
+    this.preview = void 0;
+    this.previewProgram = void 0;
     this.document = doc;
     this.saved = doc.program;
     this.revision = doc.revision;
@@ -19299,10 +19301,15 @@ var OccupiedPanel = class extends HTMLElement {
       this.stepEditor = null;
       this.randomEditor = null;
       reloaded = true;
-      this.renderView();
     });
-    if (reloaded && epoch === this.epoch && !this.yamlDirty) {
+    if (!(reloaded && epoch === this.epoch)) {
+      return;
+    }
+    if (!this.yamlDirty) {
       await this.exportYaml();
+    }
+    if (epoch === this.epoch) {
+      this.renderView();
     }
   }
   movePreviewDay(days2) {
