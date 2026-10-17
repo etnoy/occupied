@@ -5,8 +5,8 @@ from uuid import uuid4
 
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import selector
 
@@ -139,7 +139,7 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             title=program.name, data={"name": program.name, "program": program_data(program)}
         )
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if self.unique_id is None:
             await self.async_set_unique_id(uuid4().hex)
         if user_input and user_input.get("method") == "yaml":
@@ -252,7 +252,7 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class OccupiedOptionsFlow(config_entries.OptionsFlow):
     """Replace caller-proof settings through a normal entry reload."""
 
-    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         from .storage import program_store
 
         if (
