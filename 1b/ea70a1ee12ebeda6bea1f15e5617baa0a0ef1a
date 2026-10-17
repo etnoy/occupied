@@ -1,0 +1,41 @@
+README.md
+  s_222e1586b2d36c::t_1c9b279c4fdb3c 47-52,55-58
+docs/maintenance.md
+  s_222e1586b2d36c::t_dc7624e5d81332 89-117
+pyproject.toml
+  s_222e1586b2d36c::t_5c139fda9f647c 60-62
+scripts/ha_matrix.py
+  s_222e1586b2d36c::t_1015317cacefad 38,92,98-107,132,134-140,144-145,148-150,162,264-274,297-305,307,314-339,476-494,521,584,607,616,621-628,664,676,683-684,686
+scripts/ha_matrix.toml
+  s_222e1586b2d36c::t_04b3e3f558338a 20,31,42,53,64,75,86,97
+scripts/requirements/ha-2026.5.0.txt
+  s_222e1586b2d36c::t_83a6b4141dcd3c 1
+scripts/requirements/ha-2026.6.4.txt
+  s_222e1586b2d36c::t_680690ed59d8cb 1
+scripts/requirements/ha-2026.7.4.txt
+  s_222e1586b2d36c::t_d77a2b9d95d17f 1
+scripts/requirements/ha-2026.8.3.txt
+  s_222e1586b2d36c::t_318f21bc670c6b 1
+scripts/requirements/ha-2026.9.4.txt
+  s_222e1586b2d36c::t_d2b94088641a29 1
+tests/core/test_ha_matrix.py
+  s_222e1586b2d36c::t_d98f768aa451f0 16,35-36,55,83,100,132-137,281-282,294-305,321,329-343,346-413
+uv.lock
+  s_222e1586b2d36c::t_fe41e1907e2d38 1797-1799,1809-1817
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "1bea70a1ee12ebeda6bea1f15e5617baa0a0ef1a",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
