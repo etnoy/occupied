@@ -24,7 +24,7 @@ from .time_sources import planning_context
 from .validation import program_data, program_revision
 
 RUNNING = {"ready", "executing", "stopping"}
-MAX_START_REQUESTS = 1024
+MAX_START_REQUESTS = 64
 
 
 class LivePreviewError(HomeAssistantError):
@@ -96,10 +96,13 @@ class LivePreviewManager:
 
     async def async_prepare(self):
         saved = await self.store.async_load() or {}
-        self.starts = saved.get("starts", {})
+        saved_starts = saved.get("starts", {})
+        self.starts = dict(list(saved_starts.items())[-MAX_START_REQUESTS:])
         self.session = saved.get("session")
         self.requests = saved.get("requests", {})
         if not self.session:
+            if len(self.starts) != len(saved_starts):
+                await self._persist()
             return
         try:
             self.program = load_program(saved["program"])
@@ -245,8 +248,6 @@ class LivePreviewManager:
             self._available()
             if self.running:
                 raise LivePreviewError("session_conflict", "A live preview is already running")
-            if len(self.starts) >= MAX_START_REQUESTS:
-                raise LivePreviewError("request_budget", "Live preview start journal is full")
             context = planning_context(self.hass)
             program = await self.hass.async_add_executor_job(load_program, source)
             gate = ActivationGate.for_run_condition(self.hass, program.run_condition)
@@ -297,6 +298,7 @@ class LivePreviewManager:
                     "next_group": self._group_document(self.groups[0]),
                 }
                 self.starts[request_key] = self.session["id"]
+                self.starts = dict(list(self.starts.items())[-MAX_START_REQUESTS:])
                 self.engine.paused = True
                 self.engine._invalidate()
                 try:
