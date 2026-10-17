@@ -1,0 +1,21 @@
+custom_components/occupied/deployment.py
+  s_222e1586b2d36c::t_4608ecd15fd7dd 4-5,11-22,46-50
+tests/core/test_deployment_http_warning.py
+  s_222e1586b2d36c::t_f8550dfc54f64e 1-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "7aefbb87390504b9611aa3f0f07a88b8e3e71f99",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
