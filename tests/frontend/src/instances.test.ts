@@ -447,6 +447,117 @@ void test("cancelling tab navigation keeps view edits and the managed-file draft
   }
 });
 
+for (const failedRequest of ["program", "catalog"]) {
+  void test(`a failed ${failedRequest} load waits for Retry across HA updates`, async () => {
+    const f = await fixture();
+    try {
+      const original = f.panel._hass.callWS.bind(f.panel._hass);
+      let fail = true;
+      let attempts = 0;
+      f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+        if (
+          message.config_entry_id === "guest" &&
+          message.type === `occupied/${failedRequest}`
+        ) {
+          attempts++;
+          if (fail) {
+            return Promise.reject(new Error("Controller load failed"));
+          }
+        }
+
+        return original<T>(message);
+      };
+      f.route("guest");
+      await settle();
+      for (let update = 0; update < 10; update++) {
+        f.panel.hass = f.panel._hass;
+        await settle();
+      }
+      assert.equal(attempts, 1);
+      assert.equal(f.panel._loading, false);
+      assert.equal(f.panel.error, "Controller load failed");
+      f.panel.retry();
+      await settle();
+      assert.equal(attempts, 2);
+      fail = false;
+      f.panel.retry();
+      await settle();
+      assert.equal(attempts, 3);
+      assert.equal(f.panel.draft.name, "guest");
+      assert.equal(f.panel.error, "");
+    } finally {
+      f.restore();
+    }
+  });
+}
+
+void test("in-flight controller discovery is shared across HA updates", async () => {
+  const f = await fixture();
+  const replies: ((instances: InstanceDocument[]) => void)[] = [];
+  try {
+    const original = f.panel._hass.callWS.bind(f.panel._hass);
+    let attempts = 0;
+    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      if (message.type === "occupied/instances") {
+        attempts++;
+
+        return new Promise<T>((resolve) => {
+          replies.push((instances) => resolve(instances as T));
+        });
+      }
+
+      return original<T>(message);
+    };
+    f.panel.hass = {
+      ...f.panel._hass,
+      connection: { ...f.panel._hass.connection },
+    };
+    for (let update = 0; update < 10; update++) {
+      f.panel.hass = f.panel._hass;
+    }
+    assert.equal(attempts, 1);
+  } finally {
+    for (const reply of replies) {
+      reply(f.instances);
+    }
+    await settle();
+    f.restore();
+  }
+});
+
+void test("failed controller discovery waits for Retry across HA updates", async () => {
+  const f = await fixture();
+  try {
+    const original = f.panel._hass.callWS.bind(f.panel._hass);
+    let attempts = 0;
+    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      if (message.type === "occupied/instances") {
+        attempts++;
+
+        return Promise.reject(new Error("Discovery failed"));
+      }
+
+      return original<T>(message);
+    };
+    f.panel.hass = {
+      ...f.panel._hass,
+      connection: { ...f.panel._hass.connection },
+    };
+    await settle();
+    for (let update = 0; update < 10; update++) {
+      f.panel.hass = f.panel._hass;
+      await settle();
+    }
+    assert.equal(attempts, 1);
+    assert.equal(f.panel.error, "Discovery failed");
+    f.panel.retry();
+    await settle();
+    assert.equal(attempts, 2);
+  } finally {
+    f.restore();
+  }
+});
+
 function liveSession(): LivePreviewSession {
   return {
     id: "live",
