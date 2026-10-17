@@ -18,7 +18,6 @@ from homeassistant.const import (
     STATE_UNKNOWN,
 )
 from homeassistant.core import Context, Event, HomeAssistant, callback
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
@@ -381,7 +380,7 @@ class OccupiedEngine:
                 await self.hass.services.async_call(
                     domain, service, data, blocking=True, context=context
                 )
-        except (HomeAssistantError, TimeoutError) as err:
+        except Exception as err:
             self.last_error = f"{domain}.{service}: {err}"
             self._record(kind, "failed", self.last_error)
             _LOGGER.warning("Occupied dispatch failed: %s", self.last_error)
