@@ -28,7 +28,7 @@ Weekdays are `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, and `sun`. A supplied lis
 
 ## Step timing limits
 
-Available in the current `0.1.0` development build with `schema_version: 1`; earlier builds without these fields reject them. Keep exactly one base timing branch and optionally add either or both modifiers:
+Available in the current development build with `schema_version: 1`; earlier builds without these fields reject them. Keep exactly one base timing branch and optionally add either or both modifiers:
 
 ```yaml
 timing:
@@ -56,7 +56,7 @@ See [solar-limits.yaml](../examples/solar-limits.yaml) for both lighting rules w
 
 ## Optional run condition
 
-Available in the current `0.1.0` development build; earlier builds without this field reject it. Omit `run_condition` to retain ordinary activation and light handover.
+Available in the current development build; earlier builds without this field reject it. Omit `run_condition` to retain ordinary activation and light handover.
 
 ```yaml
 run_condition:
