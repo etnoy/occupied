@@ -168,6 +168,7 @@ export class OccupiedPanel extends HTMLElement {
 
   yaml = "";
   yamlSaved = "";
+  yamlRevision = "";
 
   get yamlDirty() {
     return this.yaml !== this.yamlSaved;
@@ -385,6 +386,7 @@ export class OccupiedPanel extends HTMLElement {
       runConditionErrors: {},
       yaml: "",
       yamlSaved: "",
+      yamlRevision: "",
     });
     this.renderView();
   }
@@ -659,6 +661,7 @@ export class OccupiedPanel extends HTMLElement {
     this.document = doc;
     this.saved = doc.program;
     this.revision = doc.revision;
+    this.yamlRevision ||= doc.revision;
     this.stale = false;
   }
 
@@ -900,8 +903,10 @@ export class OccupiedPanel extends HTMLElement {
       return;
     }
     const version = this.version;
+    const epoch = this.epoch;
+    let reloaded = false;
 
-    return this.run(async (epoch) => {
+    await this.run(async (epoch) => {
       const doc = await this.ws("program");
       if (epoch !== this.epoch || version !== this.version) {
         return;
@@ -910,8 +915,12 @@ export class OccupiedPanel extends HTMLElement {
       this.resetDraft();
       this.stepEditor = null;
       this.randomEditor = null;
+      reloaded = true;
       this.renderView();
     });
+    if (reloaded && epoch === this.epoch && !this.yamlDirty) {
+      await this.exportYaml();
+    }
   }
 
   movePreviewDay(days: number) {
@@ -947,12 +956,12 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   saveYaml() {
-    if (this.document?.source === "file" || this.stale) {
+    if (this.document?.source === "file" || this.stale || !this.yamlDirty) {
       return;
     }
     const yaml = this.yaml,
       version = this.version,
-      expected = this.revision;
+      expected = this.yamlRevision;
 
     return this.run(async (epoch) => {
       const result = await this.ws("save", {
@@ -967,6 +976,7 @@ export class OccupiedPanel extends HTMLElement {
       }
       this.adopt({ ...this.document, ...result, needs_apply: false });
       this.yamlSaved = yaml;
+      this.yamlRevision = result.revision;
       this.issues = [];
       if (version === this.version) {
         this.draft = copy(result.program);
@@ -983,7 +993,9 @@ export class OccupiedPanel extends HTMLElement {
     if (this.yamlDirty) {
       return;
     }
-    const yaml = this.yaml;
+    const yaml = this.yaml,
+      revision = this.revision,
+      version = this.version;
 
     return this.run(async (epoch) => {
       const result = await this.ws("export", { program: copy(this.draft) });
@@ -991,12 +1003,18 @@ export class OccupiedPanel extends HTMLElement {
         return;
       }
       this.showIssues(result);
-      if (!result.valid || this.yaml !== yaml) {
+      if (
+        !result.valid ||
+        this.yaml !== yaml ||
+        this.revision !== revision ||
+        this.version !== version
+      ) {
         return;
       }
 
       this.yaml = result.yaml;
       this.yamlSaved = result.yaml;
+      this.yamlRevision = revision;
     });
   }
 }

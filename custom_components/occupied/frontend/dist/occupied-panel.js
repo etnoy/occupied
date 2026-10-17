@@ -13917,6 +13917,7 @@ function SettingsView($$anchor, $$props) {
         panel().busy ||
         panel().stale ||
         panel().document.source === "file" ||
+        !get(yamlDirty) ||
         !panel().yaml ||
         panel().hasRunConditionChanges;
       set_text(text_3, $3);
@@ -18574,6 +18575,7 @@ var OccupiedPanel = class extends HTMLElement {
   }
   yaml = "";
   yamlSaved = "";
+  yamlRevision = "";
   get yamlDirty() {
     return this.yaml !== this.yamlSaved;
   }
@@ -18768,6 +18770,7 @@ var OccupiedPanel = class extends HTMLElement {
       runConditionErrors: {},
       yaml: "",
       yamlSaved: "",
+      yamlRevision: "",
     });
     this.renderView();
   }
@@ -19018,6 +19021,7 @@ var OccupiedPanel = class extends HTMLElement {
     this.document = doc;
     this.saved = doc.program;
     this.revision = doc.revision;
+    this.yamlRevision ||= doc.revision;
     this.stale = false;
   }
   resetDraft() {
@@ -19237,17 +19241,23 @@ var OccupiedPanel = class extends HTMLElement {
       return;
     }
     const version = this.version;
-    return this.run(async (epoch) => {
+    const epoch = this.epoch;
+    let reloaded = false;
+    await this.run(async (epoch2) => {
       const doc = await this.ws("program");
-      if (epoch !== this.epoch || version !== this.version) {
+      if (epoch2 !== this.epoch || version !== this.version) {
         return;
       }
       this.adopt(doc);
       this.resetDraft();
       this.stepEditor = null;
       this.randomEditor = null;
+      reloaded = true;
       this.renderView();
     });
+    if (reloaded && epoch === this.epoch && !this.yamlDirty) {
+      await this.exportYaml();
+    }
   }
   movePreviewDay(days2) {
     return this.previewController.movePreviewDay(days2);
@@ -19274,12 +19284,12 @@ var OccupiedPanel = class extends HTMLElement {
     return this.previewController.refreshPreviewSchedule();
   }
   saveYaml() {
-    if (this.document?.source === "file" || this.stale) {
+    if (this.document?.source === "file" || this.stale || !this.yamlDirty) {
       return;
     }
     const yaml = this.yaml,
       version = this.version,
-      expected = this.revision;
+      expected = this.yamlRevision;
     return this.run(async (epoch) => {
       const result = await this.ws("save", {
         program: yaml,
@@ -19293,6 +19303,7 @@ var OccupiedPanel = class extends HTMLElement {
       }
       this.adopt({ ...this.document, ...result, needs_apply: false });
       this.yamlSaved = yaml;
+      this.yamlRevision = result.revision;
       this.issues = [];
       if (version === this.version) {
         this.draft = copy(result.program);
@@ -19308,18 +19319,26 @@ var OccupiedPanel = class extends HTMLElement {
     if (this.yamlDirty) {
       return;
     }
-    const yaml = this.yaml;
+    const yaml = this.yaml,
+      revision = this.revision,
+      version = this.version;
     return this.run(async (epoch) => {
       const result = await this.ws("export", { program: copy(this.draft) });
       if (epoch !== this.epoch) {
         return;
       }
       this.showIssues(result);
-      if (!result.valid || this.yaml !== yaml) {
+      if (
+        !result.valid ||
+        this.yaml !== yaml ||
+        this.revision !== revision ||
+        this.version !== version
+      ) {
         return;
       }
       this.yaml = result.yaml;
       this.yamlSaved = result.yaml;
+      this.yamlRevision = revision;
     });
   }
 };

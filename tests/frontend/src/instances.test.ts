@@ -159,6 +159,11 @@ async function fixture() {
         "occupied/program": documents[entry],
         "occupied/catalog": { entities: [], services: {} },
         "occupied/preview": preview,
+        "occupied/export": {
+          valid: true,
+          issues: [],
+          yaml: JSON.stringify(message.program),
+        },
         "occupied/live_preview/status": { session: null, can_advance: false },
       };
       if (message.type === "occupied/program" && programOverride) {
@@ -1046,6 +1051,105 @@ void test("managed random edits stay in the draft and can be exported or removed
   }
 });
 
+async function yamlFixture() {
+  const f = await fixture();
+  const requests: Record<string, unknown>[] = [];
+  const original = f.panel._hass.callWS.bind(f.panel._hass);
+  f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+    requests.push(structuredClone(message));
+    if (message.type === "occupied/export") {
+      const program = message.program as ProgramDocument["program"];
+
+      return Promise.resolve({
+        valid: true,
+        issues: [],
+        yaml: `schema_version: 1\nname: ${program.name}\n`,
+      } as T);
+    }
+    if (message.type === "occupied/save") {
+      if (message.expected_revision !== f.documents.main.revision) {
+        return Promise.reject({
+          code: "revision_conflict",
+          message: "Reload first",
+        });
+      }
+      f.documents.main = {
+        ...f.documents.main,
+        program: { schema_version: 1, name: "Local YAML" },
+        revision: "yaml-updated",
+      };
+
+      return Promise.resolve({ valid: true, ...f.documents.main } as T);
+    }
+
+    return original<T>(message);
+  };
+
+  return {
+    ...f,
+    requests,
+    externalSave() {
+      f.documents.main = {
+        ...f.documents.main,
+        revision: "external-save",
+        program: { ...f.documents.main.program, name: "External change" },
+      };
+    },
+  };
+}
+
+void test("reloading a saved program keeps edited YAML tied to its original revision", async () => {
+  const f = await yamlFixture();
+  try {
+    await f.panel.exportYaml();
+    f.panel.yaml = "schema_version: 1\nname: Local YAML\n";
+    f.externalSave();
+    await f.panel.reloadSaved(true);
+    assert.equal(f.panel.revision, "external-save");
+    assert.equal(f.panel.yamlDirty, true);
+    await f.panel.saveYaml();
+    const save = f.requests.find((message) => message.type === "occupied/save");
+    assert.equal(save?.expected_revision, "revision-main");
+    assert.equal(f.documents.main.program.name, "External change");
+    assert.equal(f.panel.stale, true);
+    assert.equal(f.panel.yaml, "schema_version: 1\nname: Local YAML\n");
+  } finally {
+    f.restore();
+  }
+});
+
+void test("reloading a saved program refreshes unedited YAML", async () => {
+  const f = await yamlFixture();
+  try {
+    await f.panel.exportYaml();
+    f.externalSave();
+    await f.panel.reloadSaved();
+    assert.equal(f.panel.yaml, "schema_version: 1\nname: External change\n");
+    assert.equal(f.panel.yamlDirty, false);
+    f.panel.yaml = "schema_version: 1\nname: Local YAML\n";
+    await f.panel.saveYaml();
+    const save = f.requests.find((message) => message.type === "occupied/save");
+    assert.equal(save?.expected_revision, "external-save");
+    assert.equal(f.panel.stale, false);
+  } finally {
+    f.restore();
+  }
+});
+
+void test("unchanged YAML cannot send another save", async () => {
+  const f = await yamlFixture();
+  try {
+    await f.panel.exportYaml();
+    await f.panel.saveYaml();
+    assert.equal(
+      f.requests.filter((message) => message.type === "occupied/save").length,
+      0,
+    );
+  } finally {
+    f.restore();
+  }
+});
+
 void test("saving YAML sends code to the validated save API and adopts the saved program", async () => {
   const f = await fixture();
   try {
@@ -1070,6 +1174,7 @@ void test("saving YAML sends code to the validated save API and adopts the saved
     assert.equal(f.panel.saved.name, "Edited YAML");
     assert.equal(f.panel.draft.name, "Edited YAML");
     assert.equal(f.panel.revision, "yaml-save");
+    assert.equal(f.panel.yamlRevision, "yaml-save");
     assert.equal(f.panel.yaml, code);
     assert.equal(f.panel.yamlDirty, false);
     assert.equal(f.panel.dirty, false);
@@ -1118,6 +1223,7 @@ void test("YAML saves preserve edits made in flight and tab changes do not expor
     await pending;
     assert.equal(f.panel.yaml, "name: Newer");
     assert.equal(f.panel.yamlSaved, "name: Submitted");
+    assert.equal(f.panel.yamlRevision, "new");
     assert.equal(f.panel.yamlDirty, true);
     assert.equal(f.panel.saved.name, "Submitted");
     await f.panel.exportYaml();
