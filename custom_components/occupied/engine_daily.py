@@ -108,6 +108,7 @@ class DailyEngine:
         self._state_unsub = None
         self._contexts = deque(maxlen=1000)
         self._queue: list[RuntimeEvent] = []
+        self._queue_since: datetime | None = None
         self._plans: dict[date, DailyPlan] = {}
         self._seed = secrets.token_hex(16)
         self._journal = {}
@@ -293,7 +294,7 @@ class DailyEngine:
                 retained = [
                     event for event in self._queue if event.kind not in {"plan", "boundary"}
                 ]
-                self._queue_plans()
+                self._queue_plans(since=self._queue_since, preserve_pending=True)
                 queued = {event.key for event in self._queue}
                 self._queue.extend(event for event in retained if event.key not in queued)
                 heapq.heapify(self._queue)
@@ -423,6 +424,7 @@ class DailyEngine:
             self.reconciliation["phase"] = "cancelled"
         self.generation += 1
         self._queue.clear()
+        self._queue_since = None
         if self._cancel_timer:
             self._cancel_timer()
             self._cancel_timer = None
@@ -699,9 +701,15 @@ class DailyEngine:
     def _push(self, at, kind, key, payload=None, order=(20, 1, "", 0), attempt=0):
         heapq.heappush(self._queue, RuntimeEvent(at, order + (key,), key, kind, payload, attempt))
 
-    def _queue_plans(self, *, skip_through=None):
+    def _queue_plans(self, *, skip_through=None, since=None, preserve_pending=False):
         now = dt_util.utcnow()
-        self._queue.clear()
+        cutoff = now if since is None else since
+        pending = {event.key: event for event in self._queue} if preserve_pending else {}
+        # Retries belong to calls already attempted, so their failed journal
+        # entries must not prevent them from surviving a new daily queue.
+        self._queue = [event for event in pending.values() if event.kind == "retry"]
+        heapq.heapify(self._queue)
+        self._queue_since = cutoff
         current = self._plan_at(now)
         queued_groups = set()
         resolved = {
@@ -725,20 +733,40 @@ class DailyEngine:
                         "A newer authored intent cancelled this tick",
                     )
                     continue
-                if event.at < now or (skip_through is not None and event.at <= skip_through):
+                previous = pending.get(key)
+                unchanged = (
+                    previous is not None
+                    and previous.kind == "plan"
+                    and previous.payload[1] == event
+                )
+                if not unchanged and (
+                    event.at < cutoff or (skip_through is not None and event.at <= skip_through)
+                ):
                     # Covers use future-only activation, including position/tilt
                     # targets. Light handover never reconciles past cover calls.
                     self._journal[key] = {
                         "status": "historical_skipped",
                         "date": now.date().isoformat(),
                     }
-                elif event.at < current.end:
+                elif unchanged or event.at < current.end:
                     if event.custom:
                         group = (plan.behavior_hash, event.group_id)
                         if group in queued_groups:
                             continue
                         queued_groups.add(group)
-                    self._push(event.at, "plan", key, (plan, event), event.order_key[1:])
+                    if unchanged:
+                        # Preserve delayed handover/group ordering, while using
+                        # the refreshed plan for its other authored members.
+                        self._push(
+                            previous.at,
+                            "plan",
+                            key,
+                            (plan, event),
+                            event.order_key[1:],
+                            attempt=previous.attempt,
+                        )
+                    else:
+                        self._push(event.at, "plan", key, (plan, event), event.order_key[1:])
         self._push(current.end, "boundary", f"boundary:{current.end}", order=(0, 0, "", 0))
 
     async def _begin_handover(self, *, recover=False):
@@ -991,7 +1019,7 @@ class DailyEngine:
                 elif event.kind == "boundary":
                     try:
                         await self._ensure_plans()
-                        self._queue_plans()
+                        self._queue_plans(since=event.at, preserve_pending=True)
                         if self.program.run_condition is None:
                             await self._begin_handover()
                     except (ProgramError, ValueError) as err:
