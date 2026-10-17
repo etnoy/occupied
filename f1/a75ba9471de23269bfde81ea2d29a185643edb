@@ -1,0 +1,23 @@
+custom_components/occupied/config_flow.py
+  s_e4e7f426a55ea1::t_e51e4d81577054 1
+tests/ha/test_config_flow.py
+  s_e4e7f426a55ea1::t_c25e3a31de5c47 65-68,71-75,98
+tests/ha/test_retired_options.py
+  s_e4e7f426a55ea1::t_6b53a7d35a863d 1-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f1a75ba9471de23269bfde81ea2d29a185643edb",
+  "prompts": {},
+  "sessions": {
+    "s_e4e7f426a55ea1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14bb7-675c-73a2-9533-1059a0af7113",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
