@@ -70,7 +70,7 @@ Install through [HACS](https://hacs.xyz/):
 1. Open HACS, select the three-dot menu, and choose **Custom repositories**.
 2. Add `https://github.com/etnoy/occupied` with the category **Integration**.
 3. Find Occupied in HACS and download it, then restart Home Assistant.
-4. Go to **Settings → Devices & services → Add integration → Occupied** and create a controller. Choose GUI storage to get started with the editor.
+4. Go to **Settings → Devices & services → Add integration → Occupied**. Choose **Create in the UI** to name a controller and start editing, **Import YAML** to copy a program into GUI storage, or **Use a managed file** to watch an authoritative YAML file under the Home Assistant config directory. Controller names and managed files must be unique.
 5. Select **Configure** on the integration to open the Occupied panel.
 
 New controllers start with permission disabled, so you can create and preview a schedule before enabling it.
