@@ -1,0 +1,37 @@
+custom_components/occupied/frontend/dist/lib/controllers/steps.js
+  s_ca19b2eee50fec::t_c9f425a141c269 2-7,9-38
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_ca19b2eee50fec::t_2dbec37c63602f 425-428,963-965
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_ca19b2eee50fec::t_d17e1a4dc8fcbe 425-428,972-974,9592-9621,9717,9719,9768-9775,9806-9807,9820-9828,10187,19028,19223,19225
+custom_components/occupied/frontend/src/lib/components/steps/DeleteStepDialog.svelte
+  s_ca19b2eee50fec::t_3878a34bd0bc8f 5-6,57-61,72-76,78-81
+custom_components/occupied/frontend/src/lib/components/steps/StepActions.svelte
+  s_ca19b2eee50fec::t_3771261254bc02 33
+custom_components/occupied/frontend/src/lib/controllers/steps.ts
+  s_ca19b2eee50fec::t_ceb6497caac9cd 3-8,11-44
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_ca19b2eee50fec::t_e33cd566fe283e 424-427,965-967
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_ca19b2eee50fec::t_5f78ebf46ca324 670,884-885,887
+tests/browser/occupied.spec.ts
+  s_ca19b2eee50fec::t_1c46a365c8fbde 4,10-21,118-120,127-153
+tests/frontend/src/instances.test.ts
+  s_ca19b2eee50fec::t_85046650a84871 12,241-384
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "bcb9b42f5c78331b2eb17da43474706b0403cade",
+  "prompts": {},
+  "sessions": {
+    "s_ca19b2eee50fec": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14b8f-6667-7c13-8fc7-f2688784ab7d",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
