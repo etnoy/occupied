@@ -1,0 +1,33 @@
+scripts/ha_matrix.toml
+  s_222e1586b2d36c::t_58382146f324f0 1-89
+scripts/requirements/ha-2026.10.2.constraints
+  s_222e1586b2d36c::t_6072e85293955e 1-285
+scripts/requirements/ha-2026.5.0.constraints
+  s_222e1586b2d36c::t_4fff3805e0f96f 1-246
+scripts/requirements/ha-2026.6.4.constraints
+  s_222e1586b2d36c::t_e1d79a09d05745 1-258
+scripts/requirements/ha-2026.7.4.constraints
+  s_222e1586b2d36c::t_1201d2b20ec0ac 1-262
+scripts/requirements/ha-2026.8.3.constraints
+  s_222e1586b2d36c::t_cfdff97c47623e 1-271
+scripts/requirements/ha-2026.9.4.constraints
+  s_222e1586b2d36c::t_ddc3617bdd65bc 1-275
+tests/core/test_ha_matrix.py
+  s_222e1586b2d36c::t_3a044d7e5b394f 1-309
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "9e2dcef18f8cd9b2c18320b6f88b80014a4cbed3",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
