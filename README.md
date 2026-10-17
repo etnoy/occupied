@@ -48,7 +48,9 @@ has its own floor and experimental next-Python lane, described below.
 
 CI also runs the standalone core suite and all CLI examples on Python 3.14.2 and
 3.14.8, without Home Assistant. Python 3.15 is an experimental canary until both
-its tests and a fresh wheels-only dependency resolution pass. The Python-floor HA
+its tests and a fresh wheels-only dependency resolution pass. Missing published
+wheels are reported in the CI summary; test failures and unexpected resolver errors
+still fail that experimental job. The Python-floor HA
 lane skips one recorder-harness test on CPython versions before 3.14.4; all other
 tests are required. Browser smoke tests use isolated, digest-pinned floor and
 newest HA containers. Set `HA_IMAGE` to a matrix image to reproduce either lane
