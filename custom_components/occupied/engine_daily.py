@@ -273,12 +273,24 @@ class DailyEngine:
 
     async def _async_time_sources_changed(self):
         async with self._lock:
-            if self.closed or self._saved_context == self._context_identity():
+            if self.closed or not self.enabled:
+                return
+            if not self.active:
+                # An enabled controller may be recovering from a planning error,
+                # or waiting on startup, pause or its run condition. Reevaluate
+                # those gates before compiling and rebuild the queue on recovery.
+                await self._reevaluate_locked()
+                return
+            if self._saved_context == self._context_identity():
                 return
             try:
                 await self._ensure_plans()
             except (ProgramError, ValueError) as err:
                 self._invalidate()
+                # A failed rebuild can leave only part of the cache populated.
+                # Returning a source to its previous good value must still
+                # trigger recovery, rather than matching that obsolete context.
+                self._saved_context = None
                 await self._stop_owned()
                 self.status, self.reason = "error", f"Cannot compile daily plan: {err}"
                 self.last_error = str(err)
