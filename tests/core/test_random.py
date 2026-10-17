@@ -338,24 +338,18 @@ def test_zero_sample_skips_dependent_chains_and_positive_samples_keep_closing_an
     assert outcomes == {False, True}
 
 
-def test_zero_samples_skip_infeasible_windows_but_positive_samples_still_fail(random_program):
+def test_structurally_infeasible_windows_fail_even_when_count_can_sample_zero(random_program):
     event = random_program["random"]["living"]
     event.update(count={"min": 0, "max": 1}, end={"duration": {"min": "1m"}})
-    outcomes = set()
     for seed in range(20):
         plan = planned(random_program, seed=seed)
         assert not plan.events
         assert plan == planned(random_program, seed=seed)
-        outcomes.add(plan.feasible)
+        assert not plan.feasible
         assert len(plan.issues) == 1
-        if plan.feasible:
-            assert plan.issues[0].code == "random_skipped"
-            assert plan.issues[0].severity == "info"
-        else:
-            assert plan.issues[0].code == "random_window"
-            assert plan.issues[0].severity == "error"
-            assert plan.issues[0].path == ("random", "living", "min_duration")
-    assert outcomes == {False, True}
+        assert plan.issues[0].code == "random_window"
+        assert plan.issues[0].severity == "error"
+        assert plan.issues[0].path == ("random", "living", "min_duration")
 
 
 def test_zero_count_windows_and_dependents_do_not_expand_the_runtime_horizon(random_program):

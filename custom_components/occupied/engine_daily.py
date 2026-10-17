@@ -103,6 +103,7 @@ class DailyEngine:
 
         self.live_preview = LivePreviewManager(self)
         self._cancel_timer: Callable | None = None
+        self._cancel_planning_retry: Callable | None = None
         self._unsubs = []
         self._stop_unsub: Callable | None = None
         self._state_unsub = None
@@ -299,6 +300,7 @@ class DailyEngine:
                 self.status, self.reason = "error", f"Cannot compile daily plan: {err}"
                 self.last_error = str(err)
                 self._record("planning", "failed", self.reason)
+                self._schedule_planning_retry()
                 await self._persist()
                 self._notify()
                 return
@@ -440,6 +442,26 @@ class DailyEngine:
         if self._cancel_timer:
             self._cancel_timer()
             self._cancel_timer = None
+        if self._cancel_planning_retry:
+            self._cancel_planning_retry()
+            self._cancel_planning_retry = None
+
+    @callback
+    def _schedule_planning_retry(self):
+        """Reevaluate failed planning at the next local date while permission remains open."""
+        self._saved_context = None
+        if not self._effective_gate()[0]:
+            return
+        tomorrow = dt_util.start_of_local_day(dt_util.now() + timedelta(days=1))
+
+        @callback
+        def retry(_):
+            self._cancel_planning_retry = None
+            self.hass.async_create_task(self.async_reevaluate())
+
+        self._cancel_planning_retry = async_track_point_in_utc_time(
+            self.hass, retry, dt_util.as_utc(tomorrow)
+        )
 
     async def _persist(self):
         async with self._persist_lock:
@@ -589,6 +611,9 @@ class DailyEngine:
             self.reason = reason
             self._restoring = False
         elif not self.active:
+            if self._cancel_planning_retry:
+                self._cancel_planning_retry()
+                self._cancel_planning_retry = None
             self.active = True
             self.generation += 1
             if not self._restoring or self.program.run_condition is not None:
@@ -621,6 +646,7 @@ class DailyEngine:
                 self.status, self.reason = "error", f"Cannot compile daily plan: {err}"
                 self.last_error = str(err)
                 self._record("planning", "failed", self.reason)
+                self._schedule_planning_retry()
         await self._persist()
         self._notify()
 
@@ -648,6 +674,13 @@ class DailyEngine:
                 if not plan.feasible or len(plan.events) > MAX_EVENTS:
                     raise ValueError(f"Infeasible or oversized plan for {plan.simulation_date}")
                 self._plans[plan.simulation_date] = plan
+                for issue in plan.issues:
+                    if issue.code == "random_window" and issue.severity == "warning":
+                        self._record(
+                            f"planning:{plan.simulation_date}:{issue.path}",
+                            "random_window_skipped",
+                            issue.message,
+                        )
         self._plans = {
             day: plan
             for day, plan in self._plans.items()
@@ -1034,6 +1067,8 @@ class DailyEngine:
                         )
                         self.last_error = str(err)
                         self._record(event.key, "failed", self.reason)
+                        self._schedule_planning_retry()
+                        break
                 elif event.kind == "boundary":
                     try:
                         await self._ensure_plans()
@@ -1046,6 +1081,8 @@ class DailyEngine:
                         self.status, self.reason = "error", f"Cannot compile daily plan: {err}"
                         self.last_error = str(err)
                         self._record(event.key, "failed", self.reason)
+                        self._schedule_planning_retry()
+                        break
                 elif event.kind == "handover_done":
                     if data := self._handover.get(event.payload):
                         target = LightState(**data["target"])
@@ -1432,6 +1469,7 @@ class DailyEngine:
             "unavailable",
             "service_missing",
             "handover_skipped",
+            "random_window_skipped",
         }:
             _LOGGER.warning(
                 "Occupied %s (%s), event %s: %s: %s",
