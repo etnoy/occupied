@@ -141,7 +141,7 @@ async def test_invalid_update_retains_live_program_then_recovers(
 
 
 async def test_invalid_initial_file_never_uses_gui_cache(
-    hass, file_entry, managed_file, hass_storage, program_dict, devices
+    controller_entity_id, hass, file_entry, managed_file, hass_storage, program_dict, devices
 ):
     managed_file.write_text("name: [\n")
     hass_storage[f"occupied.{file_entry.entry_id}.program"] = {"version": 1, "data": program_dict}
@@ -152,9 +152,10 @@ async def test_invalid_initial_file_never_uses_gui_cache(
     engine = await load(hass, file_entry)
     assert engine.enabled and not engine.active and not engine.configuration_ready
     assert engine.status == "error" and not engine.program.steps and not devices
-    assert hass.states.get("sensor.occupied_status").state == "error"
+    assert hass.states.get(controller_entity_id(file_entry, "status")).state == "error"
     assert (
-        "Managed configuration unresolved" in hass.states.get("sensor.occupied_status_reason").state
+        "Managed configuration unresolved"
+        in hass.states.get(controller_entity_id(file_entry, "status_reason")).state
     )
     managed_file.write_text(yaml.safe_dump(program_dict))
     assert (await engine.source_manager.async_reload())["valid"]

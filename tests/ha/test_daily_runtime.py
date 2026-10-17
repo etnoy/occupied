@@ -1437,7 +1437,7 @@ async def test_enforce_now_dispatches_independent_targets_without_waiting_or_fad
 
 
 async def test_enforce_now_concurrent_writes_fail_closed_before_dispatch(
-    hass, daily_entry, daily_devices, condition_program, freezer, monkeypatch
+    controller_entity_id, hass, daily_entry, daily_devices, condition_program, freezer, monkeypatch
 ):
     from homeassistant.exceptions import HomeAssistantError
 
@@ -1457,8 +1457,11 @@ async def test_enforce_now_concurrent_writes_fail_closed_before_dispatch(
     await engine.async_enforce_state_now()
     assert not daily_devices and not engine.active and not engine._queue
     assert engine._storage_failed and engine.status == "error"
-    assert hass.states.get("sensor.occupied_status").state == "error"
-    assert "persistence failed" in hass.states.get("sensor.occupied_status_reason").state
+    assert hass.states.get(controller_entity_id(daily_entry, "status")).state == "error"
+    assert (
+        "persistence failed"
+        in hass.states.get(controller_entity_id(daily_entry, "status_reason")).state
+    )
     assert engine.reconciliation["phase"] == "cancelled"
 
 
@@ -1848,6 +1851,7 @@ async def test_unrelated_program_edits_preserve_enforcement_deadline(
 
 
 async def test_run_condition_delay_enforces_all_known_targets(
+    controller_entity_id,
     hass,
     daily_entry,
     daily_devices,
@@ -1860,20 +1864,22 @@ async def test_run_condition_delay_enforces_all_known_targets(
     await engine.async_set_enabled(True)
     assert not engine.active and not daily_devices and not cover_devices
     assert engine.status == "waiting"
-    status = hass.states.get("sensor.occupied_status")
+    status = hass.states.get(controller_entity_id(daily_entry, "status"))
     assert status.state == "waiting"
     assert "run-condition" not in status.attributes["options"]
     assert status.attributes["reason"] == engine.reason
     assert "current state disarmed" in status.attributes["reason"]
-    reason = hass.states.get("sensor.occupied_status_reason")
+    reason = hass.states.get(controller_entity_id(daily_entry, "status_reason"))
     assert reason.state == engine.reason
     assert reason.state.startswith("Waiting for run condition:")
-    assert reason.attributes["friendly_name"] == "Occupied Status reason"
+    assert reason.attributes["friendly_name"] == f"{daily_entry.title} Status reason"
     assert "current state disarmed" in engine.reason
     await set_alarm(hass, "armed_away")
     deadline = engine.activation_deadline
     assert engine.status == "waiting" and engine.active
-    assert hass.states.get("sensor.occupied_status_reason").state == engine.reason
+    assert (
+        hass.states.get(controller_entity_id(daily_entry, "status_reason")).state == engine.reason
+    )
     await advance(hass, freezer, 29)
     assert not daily_devices and not cover_devices
     await set_alarm(hass, "armed_night")
@@ -1892,6 +1898,7 @@ async def test_run_condition_delay_enforces_all_known_targets(
 
 @pytest.mark.parametrize("ended_state", ["disarmed", "unknown", "unavailable", None])
 async def test_run_condition_cancels_delay_and_stops_without_any_entity_commands(
+    controller_entity_id,
     hass,
     daily_entry,
     daily_devices,
@@ -1911,7 +1918,7 @@ async def test_run_condition_cancels_delay_and_stops_without_any_entity_commands
     await advance(hass, freezer, 60)
     assert not engine.active and engine.enabled and not engine._queue
     assert engine.status == "waiting"
-    assert hass.states.get("sensor.occupied_status_reason").state.startswith(
+    assert hass.states.get(controller_entity_id(daily_entry, "status_reason")).state.startswith(
         "Waiting for run condition:"
     )
     assert not daily_devices and not engine._owned and not engine._native_fades
@@ -2221,7 +2228,9 @@ async def test_run_condition_cover_becoming_unavailable_does_not_block_other_ent
     assert engine.reconciliation["results"]["cover.blind"]["calls"] == ["dispatched", "unavailable"]
 
 
-async def test_planning_error_reports_reason_and_recovers(hass, daily_entry, freezer, monkeypatch):
+async def test_planning_error_reports_reason_and_recovers(
+    controller_entity_id, hass, daily_entry, freezer, monkeypatch
+):
     from unittest.mock import AsyncMock
 
     engine = await load(hass, daily_entry, freezer)
@@ -2230,10 +2239,10 @@ async def test_planning_error_reports_reason_and_recovers(hass, daily_entry, fre
         engine, "_ensure_plans", AsyncMock(side_effect=ValueError("Infeasible plan"))
     )
     await engine.async_set_enabled(True)
-    status = hass.states.get("sensor.occupied_status")
+    status = hass.states.get(controller_entity_id(daily_entry, "status"))
     assert status.state == "error" and not engine.active
     assert "inactive" not in status.attributes["options"]
-    assert hass.states.get("sensor.occupied_status_reason").state == (
+    assert hass.states.get(controller_entity_id(daily_entry, "status_reason")).state == (
         "Cannot compile daily plan: Infeasible plan"
     )
     monkeypatch.setattr(engine, "_ensure_plans", ensure_plans)
@@ -2241,15 +2250,17 @@ async def test_planning_error_reports_reason_and_recovers(hass, daily_entry, fre
     assert engine.active and engine.status in {"active", "transitioning"}
 
 
-async def test_closed_daily_controller_entities_are_unavailable(hass, daily_entry, freezer):
+async def test_closed_daily_controller_entities_are_unavailable(
+    controller_entity_id, hass, daily_entry, freezer
+):
     engine = await load(hass, daily_entry, freezer)
     await engine.async_close()
     await hass.async_block_till_done()
     for entity_id in (
-        "sensor.occupied_status",
-        "sensor.occupied_status_reason",
-        "sensor.occupied_next_event",
-        "switch.occupied_enable",
+        controller_entity_id(daily_entry, "status"),
+        controller_entity_id(daily_entry, "status_reason"),
+        controller_entity_id(daily_entry, "next_event"),
+        controller_entity_id(daily_entry, "enabled", "switch"),
     ):
         assert hass.states.get(entity_id).state == "unavailable"
 
