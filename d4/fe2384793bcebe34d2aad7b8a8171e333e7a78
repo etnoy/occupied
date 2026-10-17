@@ -1,0 +1,35 @@
+custom_components/occupied/button.py
+  s_b7fab4cfd2590e::t_4d98faec6fdbb7 6,13
+custom_components/occupied/config_flow.py
+  s_222e1586b2d36c::t_6489f39bbdce1a 8,142,255
+custom_components/occupied/entity.py
+  s_222e1586b2d36c::t_f401d8217b3a6b 3,5
+custom_components/occupied/sensor.py
+  s_b7fab4cfd2590e::t_85c2076a962fb1 8,15
+custom_components/occupied/switch.py
+  s_b7fab4cfd2590e::t_30187b427a5ea8 8,14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d4fe2384793bcebe34d2aad7b8a8171e333e7a78",
+  "prompts": {},
+  "sessions": {
+    "s_222e1586b2d36c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14915-0822-7153-a175-79b78a4c410c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_b7fab4cfd2590e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14b3e-e565-74c1-b89e-b20ba7ffc850",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
