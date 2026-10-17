@@ -1,6 +1,41 @@
 // Generated from custom_components/occupied/frontend/src/lib/controllers/steps.ts by pnpm run build. Do not edit.
-import { stepEditor } from "../models/step-model.js";
+import {
+  dependentNames,
+  stepEditor,
+  stepEntries,
+} from "../models/step-model.js";
+import { copy, removeStep } from "../models/model.js";
 import { focusEditor } from "./step-editor-controller.js";
+export async function deleteStep(panel, id) {
+  if (
+    !panel.document ||
+    panel.busy ||
+    panel.stale ||
+    dependentNames(panel.draft, id).length > 0
+  ) {
+    return false;
+  }
+  const entry = stepEntries(panel.draft, panel.catalog, panel.t).find(
+    (step) => step.id === id,
+  );
+  if (!entry) {
+    return true;
+  }
+  const candidate = copy(panel.draft);
+  removeStep(candidate, entry.path);
+  if (panel.document.source === "file") {
+    panel.selectedStep = null;
+    panel.stepEditor = null;
+    panel.change([], candidate, true);
+    return true;
+  }
+  if (await panel.save(candidate)) {
+    panel.selectedStep = null;
+    panel.stepEditor = null;
+    return true;
+  }
+  return false;
+}
 export function startStep(panel, entry, parent) {
   if (panel.stepEditor) {
     panel.requestStepExit(() => startStep(panel, entry, parent));

@@ -2,9 +2,8 @@
   import type { OccupiedPanel } from "../../../occupied-panel.js";
   import type { StepEntry } from "../../types.js";
   import { reference } from "../../actions/dom.js";
-  import { copy, removeStep } from "../../models/model.js";
-
-  import { stepEntries, dependentNames } from "../../models/step-model.js";
+  import { deleteStep } from "../../controllers/steps.js";
+  import { dependentNames } from "../../models/step-model.js";
 
   import { onMount } from "svelte";
 
@@ -55,7 +54,11 @@
       </p>
     {:else}
       <p class="hint">
-        {t("delete_step_hint")}
+        {t(
+          panel.document.source === "file"
+            ? "delete_step_file_hint"
+            : "delete_step_hint",
+        )}
       </p>
     {/if}
   </div>
@@ -66,22 +69,16 @@
     <button
       type="button"
       class="danger"
-      disabled={dependents.length > 0}
-      onclick={() =>
-        panel.attempt(() => {
-          const current = stepEntries(panel.draft, panel.catalog, panel.t).find(
-            (step) => step.id === entry.id,
-          );
-          if (!current) {
-            return dialog.close();
+      disabled={dependents.length > 0 || panel.busy || panel.stale}
+      onclick={async () => {
+        try {
+          if (await deleteStep(panel, entry.id)) {
+            dialog.close();
           }
-          const next = copy(panel.draft);
-          removeStep(next, current.path);
-          dialog.close();
-          panel.selectedStep = null;
-          panel.stepEditor = null;
-          panel.change([], next, true);
-        })}
+        } catch (error) {
+          panel.fail(error);
+        }
+      }}
     >
       {t("delete_step")}
     </button>

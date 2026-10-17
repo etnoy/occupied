@@ -1,12 +1,24 @@
 import { expect, test } from "@playwright/test";
 import { expectedHaShellError } from "../frontend/src/ha-shell-errors.js";
 
-test("create a controller, save a step, and preview the installed release", async ({
+test("create, save, preview and persistently delete a step in the installed release", async ({
   page,
   request,
 }) => {
   // Capture errors throughout HA setup and the installed panel, including reload.
   const errors: string[] = [];
+  const saves: { steps?: Record<string, unknown> }[] = [];
+  page.on("websocket", (socket) => {
+    socket.on("framesent", ({ payload }) => {
+      const message = JSON.parse(payload.toString()) as {
+        type?: string;
+        program?: { steps?: Record<string, unknown> };
+      };
+      if (message.type === "occupied/save" && message.program) {
+        saves.push(message.program);
+      }
+    });
+  });
   let panelStarted = false;
   page.on("pageerror", (error) => {
     if (expectedHaShellError(error, panelStarted)) {
@@ -104,10 +116,40 @@ test("create a controller, save a step, and preview the installed release", asyn
   await panel.getByRole("button", { name: "Preview", exact: true }).click();
   await expect(panel.locator("state-history-chart-timeline")).toBeVisible();
   await expect(
+    panel.locator("state-history-chart-timeline canvas"),
+  ).toBeVisible();
+  await expect(
     panel.getByRole("cell", { name: "Smoke light", exact: true }),
   ).toBeVisible();
   await expect(
     panel.getByRole("button", { name: "Evening light · step", exact: true }),
   ).toBeVisible();
+  await page.reload();
+  await panel
+    .getByRole("button", { name: "Evening light", exact: true })
+    .click();
+  await panel
+    .getByRole("button", { name: "Step actions", exact: true })
+    .click();
+  await panel
+    .getByRole("menuitem", { name: "Delete step", exact: true })
+    .click();
+  const deletion = panel.getByRole("dialog", {
+    name: "Delete step?",
+    exact: true,
+  });
+  await deletion
+    .getByRole("button", { name: "Delete step", exact: true })
+    .click();
+  await expect(deletion).not.toBeVisible();
+  await expect(
+    panel.getByRole("button", { name: "Create your first step" }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    panel.getByRole("button", { name: "Create your first step" }),
+  ).toBeVisible();
+  expect(saves).toHaveLength(2);
+  expect(Object.keys(saves.at(-1)?.steps || {})).toEqual([]);
   expect(errors).toEqual([]);
 });

@@ -30,7 +30,7 @@
       deleteOpen = false;
       advancedOpen = false;
     });
-    if (trigger.isConnected) {
+    if (trigger?.isConnected) {
       trigger.focus();
     }
   }

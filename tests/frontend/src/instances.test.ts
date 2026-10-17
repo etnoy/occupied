@@ -9,7 +9,7 @@ import type {
   LivePreviewSession,
 } from "@occupied/lib/types.js";
 import { stepEditor, stepEntries } from "@occupied/lib/models/step-model.js";
-import { startStep } from "@occupied/lib/controllers/steps.js";
+import { deleteStep, startStep } from "@occupied/lib/controllers/steps.js";
 import { createStepEditorContext } from "@occupied/lib/controllers/step-editor-controller.js";
 import { randomEntries } from "@occupied/lib/models/random-model.js";
 import {
@@ -237,6 +237,150 @@ async function fixture() {
     },
   };
 }
+
+async function deletionFixture() {
+  const f = await fixture();
+  f.documents.main.program = {
+    schema_version: 1,
+    name: "main",
+    steps: {
+      evening: {
+        name: "Evening",
+        timing: { absolute_time: { start: "18:00" } },
+        action: "turn_on",
+        entities: ["light.test"],
+      },
+    },
+  };
+  await f.panel.reloadSaved(true);
+  f.panel.stepEditor = stepEditor(f.panel.draft, stepEntries(f.panel.draft)[0]);
+  f.panel.selectedStep = "evening";
+
+  return f;
+}
+
+void test("GUI step deletion saves the removed step and adopts the authoritative result", async () => {
+  const f = await deletionFixture();
+  try {
+    const requests: Record<string, unknown>[] = [];
+    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      requests.push(structuredClone(message));
+
+      return Promise.resolve({
+        valid: true,
+        issues: [],
+        program: structuredClone(message.program),
+        revision: "deleted",
+      } as T);
+    };
+    assert.equal(await deleteStep(f.panel, "evening"), true);
+    assert.deepEqual(
+      requests.map((message) => message.type),
+      ["occupied/editor_validate", "occupied/save"],
+    );
+    assert.equal(requests[1].expected_revision, "revision-main");
+    assert.equal(
+      (requests[1].program as ProgramDocument["program"]).steps?.evening,
+      undefined,
+    );
+    assert.equal(f.panel.saved.steps?.evening, undefined);
+    assert.deepEqual(f.panel.draft, f.panel.saved);
+    assert.equal(f.panel.revision, "deleted");
+    assert.equal(f.panel.dirty, false);
+    assert.equal(f.panel.stepEditor, null);
+  } finally {
+    f.restore();
+  }
+});
+
+void test("managed-file step deletion changes only the draft", async () => {
+  const f = await deletionFixture();
+  try {
+    f.panel.document.source = "file";
+    f.panel._hass.callWS = () => {
+      throw new Error("Managed-file deletion must not send a save");
+    };
+    assert.equal(await deleteStep(f.panel, "evening"), true);
+    assert.equal(f.panel.draft.steps?.evening, undefined);
+    assert.ok(f.panel.saved.steps?.evening);
+    assert.equal(f.panel.revision, "revision-main");
+    assert.equal(f.panel.dirty, true);
+    assert.equal(f.panel.stepEditor, null);
+  } finally {
+    f.restore();
+  }
+});
+
+for (const failure of ["validation", "conflict"]) {
+  void test(`failed ${failure} keeps the deletion editor and program intact`, async () => {
+    const f = await deletionFixture();
+    try {
+      const editor = f.panel.stepEditor;
+      f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+        if (failure === "validation") {
+          return Promise.resolve({ valid: false, issues: [] } as T);
+        }
+
+        return message.type === "occupied/save"
+          ? Promise.reject({
+              code: "revision_conflict",
+              message: "Program changed",
+            })
+          : Promise.resolve({ valid: true, issues: [] } as T);
+      };
+      assert.equal(await deleteStep(f.panel, "evening"), false);
+      assert.equal(f.panel.stepEditor, editor);
+      assert.ok(f.panel.draft.steps?.evening);
+      assert.ok(f.panel.saved.steps?.evening);
+      assert.equal(f.panel.busy, false);
+      assert.ok(f.panel.error);
+    } finally {
+      f.restore();
+    }
+  });
+}
+
+for (const guard of ["busy", "stale", "dependent"]) {
+  void test(`${guard} prevents step deletion`, async () => {
+    const f = await deletionFixture();
+    try {
+      if (guard === "dependent") {
+        f.panel.draft.steps!.dependent = {
+          timing: { relative_to: { step: "evening" } },
+          action: "turn_off",
+          entities: ["light.test"],
+        };
+      } else {
+        f.panel[guard as "busy" | "stale"] = true;
+      }
+      f.panel._hass.callWS = () => {
+        throw new Error("Guarded deletion must not save");
+      };
+      assert.equal(await deleteStep(f.panel, "evening"), false);
+      assert.ok(f.panel.draft.steps?.evening);
+      assert.ok(f.panel.stepEditor);
+    } finally {
+      f.restore();
+    }
+  });
+}
+
+void test("a loaded proof document awaiting migration is not an unsaved user edit", async () => {
+  const f = await fixture();
+  try {
+    f.documents.main.needs_apply = true;
+    await f.panel.reloadSaved(true);
+    assert.equal(f.panel.document.needs_apply, true);
+    assert.equal(f.panel.dirty, false);
+    assert.deepEqual(f.panel.draft, f.panel.saved);
+    assert.equal(
+      f.messages.filter((message) => message.type === "occupied/save").length,
+      0,
+    );
+  } finally {
+    f.restore();
+  }
+});
 
 function liveSession(): LivePreviewSession {
   return {

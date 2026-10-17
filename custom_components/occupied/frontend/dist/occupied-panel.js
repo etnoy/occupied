@@ -422,7 +422,10 @@ var en = {
   delete_step: "Delete step",
   used_by: "Used by",
   delete_dependents_hint: "Change those relationships before deleting.",
-  delete_step_hint: "This step will be removed when you save changes.",
+  delete_step_hint:
+    "This step will be deleted and your program saved immediately.",
+  delete_step_file_hint:
+    "This step will be removed from your draft. Export the YAML to update the managed file.",
   weekdays: "Weekdays",
   previous: "Previous",
   next: "Next",
@@ -966,7 +969,9 @@ var sv = {
   delete_step: "Radera steg",
   used_by: "Anv\xE4nds av",
   delete_dependents_hint: "\xC4ndra dessa relationer innan du raderar steget.",
-  delete_step_hint: "Steget tas bort n\xE4r du sparar \xE4ndringarna.",
+  delete_step_hint: "Steget tas bort och programmet sparas direkt.",
+  delete_step_file_hint:
+    "Steget tas bort fr\xE5n utkastet. Exportera YAML f\xF6r att uppdatera den hanterade filen.",
   weekdays: "Veckodagar",
   previous: "F\xF6reg\xE5ende",
   next: "N\xE4sta",
@@ -9584,6 +9589,36 @@ function createStepEditorContext(panel) {
 }
 
 // custom_components/occupied/frontend/src/lib/controllers/steps.ts
+async function deleteStep(panel, id) {
+  if (
+    !panel.document ||
+    panel.busy ||
+    panel.stale ||
+    dependentNames(panel.draft, id).length > 0
+  ) {
+    return false;
+  }
+  const entry = stepEntries(panel.draft, panel.catalog, panel.t).find(
+    (step) => step.id === id,
+  );
+  if (!entry) {
+    return true;
+  }
+  const candidate = copy(panel.draft);
+  removeStep(candidate, entry.path);
+  if (panel.document.source === "file") {
+    panel.selectedStep = null;
+    panel.stepEditor = null;
+    panel.change([], candidate, true);
+    return true;
+  }
+  if (await panel.save(candidate)) {
+    panel.selectedStep = null;
+    panel.stepEditor = null;
+    return true;
+  }
+  return false;
+}
 function startStep(panel, entry, parent) {
   if (panel.stepEditor) {
     panel.requestStepExit(() => startStep(panel, entry, parent));
@@ -9679,10 +9714,9 @@ var root_3 = from_html(
 );
 function DeleteStepDialog($$anchor, $$props) {
   push($$props, true);
-  let panel = prop($$props, "panel", 7);
-  let t = user_derived(() => panel().t);
+  let t = user_derived(() => $$props.panel.t);
   let dependents = user_derived(() =>
-    dependentNames(panel().draft, $$props.entry.id),
+    dependentNames($$props.panel.draft, $$props.entry.id),
   );
   let dialog;
   onMount(() => {
@@ -9731,7 +9765,14 @@ function DeleteStepDialog($$anchor, $$props) {
       var text_5 = only_child(p_3, true);
       template_effect(
         ($0) => set_text(text_5, $0),
-        [() => get(t)("delete_step_hint")],
+        [
+          () =>
+            get(t)(
+              $$props.panel.document.source === "file"
+                ? "delete_step_file_hint"
+                : "delete_step_hint",
+            ),
+        ],
       );
       append($$anchor2, p_3);
     };
@@ -9762,7 +9803,8 @@ function DeleteStepDialog($$anchor, $$props) {
       set_text(text2, $0);
       set_text(text_1, $$props.entry.name);
       set_text(text_6, $1);
-      button_1.disabled = get(dependents).length > 0;
+      button_1.disabled =
+        get(dependents).length > 0 || $$props.panel.busy || $$props.panel.stale;
       set_text(text_7, $2);
     },
     [
@@ -9775,24 +9817,15 @@ function DeleteStepDialog($$anchor, $$props) {
     $$props.onClose?.apply(this, $$args);
   });
   delegated("click", button, () => dialog.close());
-  delegated("click", button_1, () =>
-    panel().attempt(() => {
-      const current = stepEntries(
-        panel().draft,
-        panel().catalog,
-        panel().t,
-      ).find((step) => step.id === $$props.entry.id);
-      if (!current) {
-        return dialog.close();
+  delegated("click", button_1, async () => {
+    try {
+      if (await deleteStep($$props.panel, $$props.entry.id)) {
+        dialog.close();
       }
-      const next2 = copy(panel().draft);
-      removeStep(next2, current.path);
-      dialog.close();
-      panel().selectedStep = null;
-      panel().stepEditor = null;
-      panel().change([], next2, true);
-    }),
-  );
+    } catch (error) {
+      $$props.panel.fail(error);
+    }
+  });
   append($$anchor, dialog_1);
   pop();
 }
@@ -10151,7 +10184,7 @@ function StepActions($$anchor, $$props) {
       set2(deleteOpen, false);
       set2(advancedOpen, false);
     });
-    if (trigger.isConnected) {
+    if (trigger?.isConnected) {
       trigger.focus();
     }
   }
@@ -18992,7 +19025,7 @@ var OccupiedPanel = class extends HTMLElement {
     this.runConditionForm = null;
     this.runConditionOriginal = null;
     this.runConditionErrors = {};
-    this.dirty = !!this.document.needs_apply;
+    this.dirty = false;
     this.version++;
     this.validatedVersion = -1;
     this.issues = [];
@@ -19187,9 +19220,9 @@ var OccupiedPanel = class extends HTMLElement {
             )
             ?.focus({ preventScroll: true });
         }
-      } else {
-        this.dirty = true;
+        return true;
       }
+      this.dirty = true;
     });
   }
   async reloadSaved(discard = false) {
