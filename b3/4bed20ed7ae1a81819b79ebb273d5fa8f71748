@@ -1,0 +1,27 @@
+custom_components/occupied/device_motion.py
+  s_f10ec3bc261be9::t_d872a0da232b4f 1-103
+custom_components/occupied/engine_daily.py
+  s_f10ec3bc261be9::t_eb763a27fe8853 45,129,233-238,282,428,462,466-470,495,500-516,610,1365-1370,1379-1380
+docs/schema.md
+  s_f10ec3bc261be9::t_8c5f8e4575adde 217
+tests/core/test_device_motion.py
+  s_f10ec3bc261be9::t_28646778423a31 1-30
+tests/ha/test_device_motion.py
+  s_f10ec3bc261be9::t_06cc2bf47afd07 1-101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b34bed20ed7ae1a81819b79ebb273d5fa8f71748",
+  "prompts": {},
+  "sessions": {
+    "s_f10ec3bc261be9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-77a0-7d40-9972-b0b8763751f2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
