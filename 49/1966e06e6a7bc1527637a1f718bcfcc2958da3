@@ -1,0 +1,25 @@
+custom_components/occupied/frontend/dist/lib/utils/timeline.js
+  s_78e8d8ff2fc7b0::t_e3536c4e3c2850 5,11
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_78e8d8ff2fc7b0::t_2b8359af0de3f0 14365
+custom_components/occupied/frontend/src/lib/utils/timeline.ts
+  s_78e8d8ff2fc7b0::t_d2411810360f75 6,13
+tests/frontend/src/timeline.test.ts
+  s_78e8d8ff2fc7b0::t_215e8f77669b9a 13,274-287,289-302,453-503
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "491966e06e6a7bc1527637a1f718bcfcc2958da3",
+  "prompts": {},
+  "sessions": {
+    "s_78e8d8ff2fc7b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-1c02-7ac3-b7a0-517a13a126d7",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
