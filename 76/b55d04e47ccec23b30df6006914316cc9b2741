@@ -1,0 +1,31 @@
+custom_components/occupied/actions.py
+  s_f10ec3bc261be9::t_cc52064393e2f3 163-173
+docs/schema.md
+  s_f10ec3bc261be9::t_fbf0afa49f2c91 215-216
+tests/ha/test_light_color_rounding.py
+  s_78e8d8ff2fc7b0::t_51e800eeca7d72 1-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "76b55d04e47ccec23b30df6006914316cc9b2741",
+  "prompts": {},
+  "sessions": {
+    "s_78e8d8ff2fc7b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-1c02-7ac3-b7a0-517a13a126d7",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_f10ec3bc261be9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-77a0-7d40-9972-b0b8763751f2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
