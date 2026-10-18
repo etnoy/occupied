@@ -125,6 +125,11 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
 
   const action = (phase: "on" | "off"): ActionEditorContext => ({
     editor: scopedEditor(`${phase}.`),
+    setErrors: (errors) => {
+      for (const [key, message] of Object.entries(errors)) {
+        editor.errors[`${phase}.${key}`] = message;
+      }
+    },
     form: new Proxy(form[phase], {}),
     t,
     fieldPrefix: `${phase}.`,

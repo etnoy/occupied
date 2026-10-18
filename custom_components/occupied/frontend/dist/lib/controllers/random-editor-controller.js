@@ -100,6 +100,11 @@ export function createRandomEditorContext(panel) {
   });
   const action = (phase) => ({
     editor: scopedEditor(`${phase}.`),
+    setErrors: (errors) => {
+      for (const [key, message] of Object.entries(errors)) {
+        editor.errors[`${phase}.${key}`] = message;
+      }
+    },
     form: new Proxy(form[phase], {}),
     t,
     fieldPrefix: `${phase}.`,

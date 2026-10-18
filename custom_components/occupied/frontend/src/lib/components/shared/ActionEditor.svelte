@@ -40,7 +40,7 @@
       const errors = changeActionKind(form, value, (message) =>
         globalThis.confirm(t(message)),
       );
-      Object.assign(context.editor.errors, errors);
+      context.setErrors(errors);
     }}
     options={{
       hideLabel: true,

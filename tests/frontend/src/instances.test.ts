@@ -11,6 +11,7 @@ import type {
 import { stepEditor, stepEntries } from "@occupied/lib/models/step-model.js";
 import { deleteStep, startStep } from "@occupied/lib/controllers/steps.js";
 import { createStepEditorContext } from "@occupied/lib/controllers/step-editor-controller.js";
+import { changeActionKind } from "@occupied/lib/utils/action-kind.js";
 import { randomEntries } from "@occupied/lib/models/random-model.js";
 import {
   openRandom,
@@ -1289,6 +1290,35 @@ void test("Save step validates and saves new and edited steps, then closes the e
     f.restore();
   }
 });
+
+for (const phase of ["on", "off"] as const) {
+  for (const field of ["service", "data"] as const) {
+    void test(`random ${phase} action conversion displays ${field} errors after rendering`, async () => {
+      const f = await fixture();
+      try {
+        openRandom(f.panel);
+        const editor = f.panel.randomEditor!;
+        const context = createRandomEditorContext(f.panel).action(phase);
+        context.form.kind = "service";
+        context.form.entities = ["switch.proof"];
+        context.form.service = field === "service" ? "" : "switch.turn_on";
+        context.form.data = field === "data" ? "{" : "{}";
+        editor.errors["start.anchor"] = "retained";
+        const errors = changeActionKind(context.form, "custom", () => true);
+        context.setErrors(errors);
+        assert.equal(editor.errors[`${phase}.${field}`], errors[field]);
+        assert.equal(editor.errors["start.anchor"], "retained");
+        context.changed("kind");
+        const rendered = createRandomEditorContext(f.panel).action(phase);
+        assert.equal(rendered.form.kind, "service");
+        assert.ok(rendered.editor.errors[field]);
+        assert.equal(editor.errors[field], undefined);
+      } finally {
+        f.restore();
+      }
+    });
+  }
+}
 
 void test("random creation, editing, and deletion use the guarded save flow", async () => {
   const f = await fixture();

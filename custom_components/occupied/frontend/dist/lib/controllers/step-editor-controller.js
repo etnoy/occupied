@@ -127,6 +127,9 @@ export function createStepEditorContext(panel) {
     refresh,
     changed,
     submit,
+    setErrors: (errors) => {
+      Object.assign(editor.errors, errors);
+    },
     cancel,
   };
 }
