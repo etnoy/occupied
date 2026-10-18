@@ -28,3 +28,25 @@ def test_color_progress_and_reversal(key, initial, middle, target):
     assert progresses(motion, progress, now + timedelta(seconds=10))
     assert not progresses(motion, observed, now + timedelta(seconds=11))
     assert not progresses(motion, progress, now + timedelta(seconds=31))
+
+
+def test_tilt_target_preserves_the_cover_position_state():
+    now = datetime(2026, 10, 13, tzinfo=UTC)
+    observed = {
+        "state": "closed",
+        "attributes": {"current_position": 0, "current_tilt_position": 10},
+    }
+    action = ResolvedAction(
+        "cover.set_cover_tilt_position",
+        ("cover.proof",),
+        {"tilt_position": 70},
+        ("cover.proof",),
+        True,
+    )
+    motion = motion_for(action, observed, now)
+    assert motion["state"] == "closed"
+    assert progresses(
+        motion,
+        {"state": "closed", "attributes": {"current_position": 0, "current_tilt_position": 70}},
+        now + timedelta(seconds=20),
+    )

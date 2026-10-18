@@ -41,7 +41,7 @@ def motion_for(action, observed, now):
         initial = observed["attributes"].get(attribute)
         if initial is None:
             return None
-        state = "closed" if value == 0 and not tilt else "open"
+        state = observed["state"] if tilt else "closed" if value == 0 else "open"
         states = {observed["state"], state, "opening" if value > initial else "closing"}
     else:
         return None
