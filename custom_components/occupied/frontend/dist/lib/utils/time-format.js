@@ -17,34 +17,6 @@ export function shiftScheduleDate(value, days) {
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
 }
-export function calendarMidnight(value, zone) {
-  const target = Date.parse(`${value}T00:00:00Z`);
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: zone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  });
-  let instant = target;
-  for (let attempt = 0; attempt < 4; attempt++) {
-    const parts = Object.fromEntries(
-      formatter.formatToParts(instant).map(({ type, value }) => [type, value]),
-    );
-    const local = Date.parse(
-      `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}Z`,
-    );
-    const correction = target - local;
-    if (correction === 0) {
-      return new Date(instant).toISOString();
-    }
-    instant += correction;
-  }
-  return new Date(instant).toISOString();
-}
 export function formatScheduleDate(value, locale) {
   const weekday = new Intl.DateTimeFormat(locale?.language, {
     weekday: "long",

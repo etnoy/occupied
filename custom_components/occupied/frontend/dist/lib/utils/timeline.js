@@ -2,19 +2,13 @@
 import { managedOffEntities } from "../models/run-condition.js";
 import { translator } from "../i18n/translations.js";
 import { coverActions, coverTarget } from "./cover.js";
-import {
-  calendarMidnight,
-  shiftScheduleDate,
-  formatTimestamp,
-  formatEventTime,
-} from "./time-format.js";
+import { formatTimestamp, formatEventTime } from "./time-format.js";
 export function calendarDayPlan(plans, date) {
   const current = plans.find((plan) => plan.simulation_date === date);
   if (!current) {
     return undefined;
   }
-  const start = calendarMidnight(date, current.timezone);
-  const end = calendarMidnight(shiftScheduleDate(date, 1), current.timezone);
+  const { start, end } = current;
   const within = (time) =>
     Date.parse(time) >= Date.parse(start) && Date.parse(time) < Date.parse(end);
   return {

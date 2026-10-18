@@ -3,20 +3,14 @@ import { translator } from "../i18n/translations.js";
 import type { Program, Translate, Plan, PlannedEvent } from "../types.js";
 import type { HomeAssistantLocale } from "./time-format.js";
 import { coverActions, coverTarget, type CoverPosition } from "./cover.js";
-import {
-  calendarMidnight,
-  shiftScheduleDate,
-  formatTimestamp,
-  formatEventTime,
-} from "./time-format.js";
+import { formatTimestamp, formatEventTime } from "./time-format.js";
 
 export function calendarDayPlan(plans: Plan[], date: string): Plan | undefined {
   const current = plans.find((plan) => plan.simulation_date === date);
   if (!current) {
     return undefined;
   }
-  const start = calendarMidnight(date, current.timezone);
-  const end = calendarMidnight(shiftScheduleDate(date, 1), current.timezone);
+  const { start, end } = current;
   const within = (time: string) =>
     Date.parse(time) >= Date.parse(start) && Date.parse(time) < Date.parse(end);
 
