@@ -1,0 +1,31 @@
+custom_components/occupied/planner.py
+  s_f10ec3bc261be9::t_266ea342759a39 26
+custom_components/occupied/time_utils.py
+  s_78e8d8ff2fc7b0::t_b762e166867768 118-123,132
+tests/core/test_solar_date_line.py
+  s_78e8d8ff2fc7b0::t_f07b34c91dc6a7 1-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "6f50d2048de21ecb95a5de81a1c3c6da71656408",
+  "prompts": {},
+  "sessions": {
+    "s_78e8d8ff2fc7b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-1c02-7ac3-b7a0-517a13a126d7",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_f10ec3bc261be9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-77a0-7d40-9972-b0b8763751f2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
