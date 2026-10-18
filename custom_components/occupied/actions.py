@@ -160,9 +160,17 @@ def light_matches(hass, entity, target):
     for key in ("color_temp_kelvin", "hs_color", "rgb_color"):
         if key in data:
             expected, actual = data[key], getattr(current, key)
-            if isinstance(expected, (list, tuple)):
-                expected = tuple(expected)
-            if expected != actual:
+            if key == "color_temp_kelvin":
+                if actual is None or abs(expected - actual) > expected * 0.01:
+                    return False
+            elif key == "hs_color":
+                if (
+                    actual is None
+                    or abs((expected[0] - actual[0] + 180) % 360 - 180) > 1
+                    or abs(expected[1] - actual[1]) > 1
+                ):
+                    return False
+            elif tuple(expected) != actual:
                 return False
     return True
 
