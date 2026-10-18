@@ -1,0 +1,21 @@
+custom_components/occupied/frontend/src/App.svelte
+  s_78e8d8ff2fc7b0::t_ba92ec720f57bb 138-141
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_78e8d8ff2fc7b0::t_63945ce55bf46b 10-11,547-548
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "1039a6aad37fcea898334b70572f5535b252678d",
+  "prompts": {},
+  "sessions": {
+    "s_78e8d8ff2fc7b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-1c02-7ac3-b7a0-517a13a126d7",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
