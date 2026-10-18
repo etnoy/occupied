@@ -1,0 +1,19 @@
+README.md
+  s_a5f031c4df112c::t_f35254e3c88f9e 7,9,11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "39a5737a6be2062f5e0c5b182c42b982b2a15fad",
+  "prompts": {},
+  "sessions": {
+    "s_a5f031c4df112c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a150f0-70cc-7513-a566-f208de0c5a61",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
