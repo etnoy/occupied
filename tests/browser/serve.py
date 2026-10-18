@@ -6,7 +6,6 @@ import signal
 import subprocess
 import sys
 import tempfile
-import tomllib
 from pathlib import Path
 from uuid import uuid4
 from zipfile import ZipFile
@@ -60,9 +59,13 @@ template:
 )
 # Use HA's complete runtime: its frontend imports optional integrations that the
 # unit-test lock intentionally does not install. Pin the multi-architecture image.
-matrix = tomllib.loads((ROOT / "scripts/ha_matrix.toml").read_text())
-newest = next(lane for lane in matrix["lanes"] if lane["role"] == "newest")
-image = os.environ.get("HA_IMAGE") or newest["image"]
+image = os.environ.get("HA_IMAGE")
+if not image:
+    import yaml
+
+    workflow = yaml.safe_load((ROOT / ".github/workflows/check.yml").read_text())
+    matrix = workflow["jobs"]["matrix"]["strategy"]["matrix"]["include"][0]
+    image = next(lane["image"] for lane in matrix["lanes"] if lane["role"] == "newest")
 container = f"occupied-browser-{uuid4().hex[:12]}"
 command = [
     "docker",

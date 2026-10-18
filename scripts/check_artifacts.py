@@ -4,9 +4,10 @@ import hashlib
 import json
 import sys
 import tarfile
-import tomllib
 from pathlib import Path
 from zipfile import ZipFile
+
+import yaml
 
 directory = Path(sys.argv[1] if len(sys.argv) > 1 else "dist")
 with ZipFile(directory / "occupied.zip") as integration:
@@ -53,13 +54,14 @@ with tarfile.open(directory / f"occupied-{version}.tar.gz") as source:
         "tests/fixtures/programs/scheduling-edge-cases.yaml",
         "scripts/check_artifacts.py",
         "scripts/ha_matrix.py",
-        "scripts/ha_matrix.toml",
+        ".github/workflows/check.yml",
         "scripts/release_notes.py",
     ):
         assert f"occupied-{version}/{relative}" in source.getnames()
-    matrix_file = source.extractfile(f"occupied-{version}/scripts/ha_matrix.toml")
+    matrix_file = source.extractfile(f"occupied-{version}/.github/workflows/check.yml")
     assert matrix_file is not None
-    matrix = tomllib.loads(matrix_file.read().decode())
+    workflow = yaml.safe_load(matrix_file.read())
+    matrix = workflow["jobs"]["matrix"]["strategy"]["matrix"]["include"][0]
     for lane in matrix["lanes"]:
         if lane["role"] not in {"floor", "window", "newest"}:
             continue

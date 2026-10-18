@@ -15,14 +15,32 @@ from dataclasses import asdict, dataclass, replace
 from functools import cache
 from pathlib import Path
 
+import yaml
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 from packaging.version import Version
 
 ROOT = Path(__file__).resolve().parents[1]
 HA_ROLES = {"floor", "window", "newest"}
-TABLE_START = "<!-- ha-matrix:start -->"
-TABLE_END = "<!-- ha-matrix:end -->"
+MATRIX_PATH = Path(".github/workflows/check.yml")
+MATRIX_START = "        # ha-matrix:start\n"
+MATRIX_END = "        # ha-matrix:end\n"
+
+
+class MatrixDumper(yaml.SafeDumper):
+    """Match workflow formatting while rewriting only the matrix block."""
+
+    def increase_indent(self, flow=False, indentless=False):
+        return super().increase_indent(flow, False)
+
+    def represent_str(self, value):
+        node = super().represent_str(value)
+        if not value or self.resolve(yaml.ScalarNode, value, (True, False)) != node.tag:
+            node.style = '"'
+        return node
+
+
+MatrixDumper.add_representer(str, MatrixDumper.represent_str)
 
 
 @dataclass(frozen=True)
@@ -48,7 +66,8 @@ class Lane:
 
 
 def load(root=ROOT):
-    data = tomllib.loads((root / "scripts/ha_matrix.toml").read_text())
+    workflow = yaml.safe_load((root / MATRIX_PATH).read_text())
+    data = workflow["jobs"]["matrix"]["strategy"]["matrix"]["include"][0]
     if data["format"] != 1:
         raise ValueError("Unsupported HA matrix format")
     return data["policy"], [Lane(**lane) for lane in data["lanes"]]
@@ -87,25 +106,6 @@ def pins(text):
         if len(exact) == 1:
             result[canonicalize_name(requirement.name)] = exact[0]
     return result
-
-
-def table(lanes, policy):
-    lines = [TABLE_START, "| Home Assistant tested | Python tested | Lane |", "| --- | --- | --- |"]
-    for lane in ha_lanes(lanes):
-        lines.append(f"| {lane.homeassistant} | {lane.python} | {lane.role} |")
-    floor_python = selected(lanes, "python-floor")
-    lines.append(f"| {floor_python.homeassistant} | {floor_python.python} | Python floor |")
-    lines.extend(
-        [
-            "",
-            "| Standalone Python tested | Lane |",
-            "| --- | --- |",
-            f"| {policy['python_floor']} | floor |",
-            f"| {policy['python_latest']} | latest |",
-            f"| {policy['python_next']} | experimental |",
-        ]
-    )
-    return "\n".join([*lines, TABLE_END])
 
 
 def check(root=ROOT):
@@ -158,9 +158,6 @@ def check(root=ROOT):
     ):
         if locked.get(package) != version:
             raise ValueError(f"uv.lock {package} must match the newest lane")
-    readme = (root / "README.md").read_text()
-    if table(lanes, policy) not in readme:
-        raise ValueError("README compatibility table differs from the matrix")
     manifest = json.loads((root / "custom_components/occupied/manifest.json").read_text())
     runtime_requirements = [Requirement(r) for r in project["dependencies"]]
     integration_requirements = [Requirement(r) for r in manifest["requirements"]]
@@ -594,22 +591,14 @@ def image_digest(version):
 
 
 def write_matrix(policy, lanes, root=ROOT):
-    lines = [
-        "# Maintained with python scripts/ha_matrix.py roll <year.month>",
-        "format = 1",
-        "",
-        "[policy]",
-    ]
-    for key, value in policy.items():
-        if isinstance(value, dict):
-            rendered = ", ".join(f"{json.dumps(k)} = {json.dumps(v)}" for k, v in value.items())
-            lines.append(f"{key} = {{{rendered}}}")
-        else:
-            lines.append(f"{key} = {json.dumps(value)}")
-    for lane in lanes:
-        lines.extend(["", "[[lanes]]"])
-        lines.extend(f"{key} = {json.dumps(value)}" for key, value in asdict(lane).items())
-    (root / "scripts/ha_matrix.toml").write_text("\n".join(lines) + "\n")
+    path = root / MATRIX_PATH
+    source = path.read_text()
+    data = {"format": 1, "policy": policy, "lanes": [asdict(lane) for lane in lanes]}
+    rendered = yaml.dump({"include": [data]}, Dumper=MatrixDumper, sort_keys=False, width=1000)
+    rendered = "".join("        " + line + "\n" for line in rendered.splitlines())
+    start = source.index(MATRIX_START) + len(MATRIX_START)
+    end = source.index(MATRIX_END, start)
+    path.write_text(source[:start] + rendered + source[end:])
 
 
 def update_claims(root=ROOT):
@@ -619,22 +608,6 @@ def update_claims(root=ROOT):
     data = json.loads(path.read_text())
     data["homeassistant"] = floor.homeassistant
     path.write_text(json.dumps(data, indent=2) + "\n")
-    path = root / "README.md"
-    source = path.read_text()
-    rendered = table(lanes, policy)
-    if TABLE_START in source:
-        start, end = source.index(TABLE_START), source.index(TABLE_END) + len(TABLE_END)
-        source = source[:start] + rendered + source[end:]
-    else:
-        source, count = re.subn(
-            r"CI tests Home Assistant [^\n]+\n"
-            r"The minimum supported Home Assistant version is [^\n]+",
-            "## Compatibility\n\n" + rendered,
-            source,
-        )
-        if count != 1:
-            raise ValueError("Add compatibility table markers to README before updating claims")
-    path.write_text(source)
     path = root / "pyproject.toml"
     source = path.read_text()
     for name, version in (

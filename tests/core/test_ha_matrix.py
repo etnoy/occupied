@@ -72,6 +72,11 @@ def matrix_repo(tmp_path, monkeypatch):
 
     lanes.append(replace(lanes[-1], id="python-floor", role="python-floor", python="3.14.2"))
     lanes.append(matrix.Lane("next", "next", "auto", "auto", "auto", "auto", "auto"))
+    workflow = tmp_path / matrix.MATRIX_PATH
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        "jobs:\n  matrix:\n    strategy:\n      matrix:\n" + matrix.MATRIX_START + matrix.MATRIX_END
+    )
     matrix.write_matrix(policy, lanes, tmp_path)
     (tmp_path / "pyproject.toml").write_text(
         '[project]\nname = "occupied"\nversion = "0.0.0"\n'
@@ -97,7 +102,7 @@ def matrix_repo(tmp_path, monkeypatch):
         )
     )
     (tmp_path / "hacs.json").write_text(json.dumps({"homeassistant": "2026.5.0"}))
-    (tmp_path / "README.md").write_text(matrix.table(lanes, policy))
+    (tmp_path / "README.md").write_text("# Occupied\n\nA human-readable introduction.\n")
     integration = tmp_path / "custom_components/occupied"
     integration.mkdir(parents=True)
     (integration / "manifest.json").write_text(json.dumps({"requirements": ["pydantic>=2.13.2"]}))
@@ -116,11 +121,20 @@ def test_supported_matrix_is_consistent():
     assert matrix.check(ROOT)["lanes"] == 6
 
 
+def test_workflow_matrix_roundtrip_preserves_workflow(tmp_path):
+    path = tmp_path / matrix.MATRIX_PATH
+    path.parent.mkdir(parents=True)
+    original = (ROOT / matrix.MATRIX_PATH).read_bytes()
+    path.write_bytes(original)
+    policy, lanes = matrix.load(tmp_path)
+    matrix.write_matrix(policy, lanes, tmp_path)
+    assert path.read_bytes() == original
+
+
 @pytest.mark.parametrize(
     "path,before,after,message",
     [
         ("hacs.json", "2026.5.0", "2026.10.0", "hacs.json"),
-        ("README.md", "| 2026.5.0 |", "| 2026.5.1 |", "README"),
         (
             "pyproject.toml",
             'requires-python = ">=3.14.2"',
@@ -159,6 +173,22 @@ def test_claim_and_runtime_drift_is_rejected(matrix_repo, path, before, after, m
     edit(matrix_repo, path, before, after)
     with pytest.raises(ValueError, match=message):
         matrix.check(matrix_repo)
+
+
+@pytest.mark.parametrize("readme", [None, "# A rewritten introduction\n"])
+def test_matrix_check_and_updates_are_independent_of_readme(matrix_repo, readme):
+    path = matrix_repo / "README.md"
+    if readme is None:
+        path.unlink()
+    else:
+        path.write_text(readme)
+    assert matrix.check(matrix_repo)["lanes"] == 6
+    matrix.update_claims(matrix_repo)
+    assert matrix.check(matrix_repo)["lanes"] == 6
+    if readme is None:
+        assert not path.exists()
+    else:
+        assert path.read_text() == readme
 
 
 def test_missing_lane_file_is_rejected(matrix_repo):
@@ -270,12 +300,12 @@ def test_roll_rejects_invalid_or_nonadvancing_minor(minor, matrix_repo):
 
 
 def test_roll_requires_matching_fixture_before_changing_files(monkeypatch, matrix_repo):
-    before = (matrix_repo / "scripts/ha_matrix.toml").read_bytes()
+    before = (matrix_repo / matrix.MATRIX_PATH).read_bytes()
     monkeypatch.setattr(matrix, "published_versions", lambda _: [Version("2026.6.0")])
     monkeypatch.setattr(matrix, "matching_phcc", lambda _: None)
     with pytest.raises(ValueError, match="no published matching test fixture"):
         matrix.roll("2026.11", matrix_repo)
-    assert (matrix_repo / "scripts/ha_matrix.toml").read_bytes() == before
+    assert (matrix_repo / matrix.MATRIX_PATH).read_bytes() == before
 
 
 @pytest.mark.parametrize("python_change", ["patch", "mixed", "floor"])
@@ -317,7 +347,9 @@ def test_roll_advances_window_and_updates_generated_claims(monkeypatch, matrix_r
     compiled = []
     monkeypatch.setattr(matrix, "compile_lanes", lambda root: compiled.append(root))
     monkeypatch.setattr(matrix, "check", lambda root: {"lanes": 6})
+    readme = (matrix_repo / "README.md").read_bytes()
     assert matrix.roll("2026.11", matrix_repo) == {"lanes": 6}
+    assert (matrix_repo / "README.md").read_bytes() == readme
     policy, lanes = matrix.load(matrix_repo)
     ha = matrix.ha_lanes(lanes)
     assert ha[0].homeassistant == "2026.6.0" and ha[0].role == "floor"
@@ -326,7 +358,6 @@ def test_roll_advances_window_and_updates_generated_claims(monkeypatch, matrix_r
     assert len(ha) == 6 and all(not lane.homeassistant.startswith("2026.5") for lane in ha)
     assert json.loads((matrix_repo / "hacs.json").read_text())["homeassistant"] == "2026.6.0"
     assert "pydantic>=2.13.4,<3" in (matrix_repo / "pyproject.toml").read_text()
-    assert matrix.table(lanes, policy) in (matrix_repo / "README.md").read_text()
     latest = "3.14.9" if python_change == "patch" else "3.15.3"
     assert policy["python_latest"] == latest
     assert policy["python_floor"] == ("3.15.2" if python_change == "floor" else "3.14.2")
@@ -378,13 +409,8 @@ def security_matrix_repo(matrix_repo):
         else lane
         for lane in updated
     ]
+    policy["security_overrides"] = {"anyio": "4.14.2"}
     matrix.write_matrix(policy, updated, matrix_repo)
-    path = matrix_repo / "scripts/ha_matrix.toml"
-    path.write_text(
-        path.read_text().replace(
-            'uv = "0.13.1"', 'uv = "0.13.1"\nsecurity_overrides = {anyio = "4.14.2"}'
-        )
-    )
     return matrix_repo
 
 
