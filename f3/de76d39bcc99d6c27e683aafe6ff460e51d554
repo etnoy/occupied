@@ -1,0 +1,31 @@
+custom_components/occupied/manifest.json
+  s_907cc72ea71813::t_ac1563974b6176 21
+pyproject.toml
+  s_907cc72ea71813::t_a07289034c2813 3
+uv.lock
+  s_894d214b404ece::t_c4604325f0a53e 2,1769,1797-1799
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f3de76d39bcc99d6c27e683aafe6ff460e51d554",
+  "prompts": {},
+  "sessions": {
+    "s_894d214b404ece": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1511a-4f85-7cd2-a223-6da011a6f7d0",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_907cc72ea71813": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1511a-06bf-71d2-a930-ed422ccd899b",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
