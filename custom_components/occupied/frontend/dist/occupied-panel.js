@@ -14363,6 +14363,17 @@ function timelineTooltip(node, data) {
   };
 }
 
+// custom_components/occupied/frontend/src/lib/actions/history-chart.ts
+function historyChartProperties(node, values) {
+  const binding = properties(node, values);
+  return {
+    update: binding.update,
+    destroy() {
+      Object.assign(node, { data: [] });
+    },
+  };
+}
+
 // custom_components/occupied/frontend/src/lib/services/ha-controls.ts
 async function loadHaControls() {
   if (
@@ -14644,7 +14655,7 @@ function groupPreviewEvents(events) {
     ]);
     let group = groups.get(key2);
     if (!group) {
-      group = { event: event2, actions: [] };
+      group = { key: key2, event: event2, actions: [] };
       groups.set(key2, group);
       actionKeys.set(key2, /* @__PURE__ */ new Map());
     }
@@ -14665,7 +14676,12 @@ function groupPreviewEvents(events) {
     if (index2 === void 0) {
       index2 = group.actions.length;
       keys.set(actionKey, index2);
-      group.actions.push({ event: event2, events: [], entities: [] });
+      group.actions.push({
+        key: actionKey,
+        event: event2,
+        events: [],
+        entities: [],
+      });
     }
     const action2 = group.actions[index2];
     action2.events.push(event2);
@@ -14721,10 +14737,20 @@ function PreviewStateGraph($$anchor, $$props) {
         )
       : previewStateHistory($$props.plan, $$props.program, names(), $$props.t),
   );
+  let config = user_derived(() => $$props.hass.config);
+  let locale = user_derived(() => $$props.hass.locale);
+  let zone = user_derived(() => $$props.plan.timezone);
+  let start = user_derived(() => $$props.plan.start);
+  let end = user_derived(() => $$props.plan.end);
+  let startTime = user_derived(() => new Date(get(start)));
+  let endTime = user_derived(() => new Date(get(end)));
   let chartHass = user_derived(() => ({
-    ...$$props.hass,
-    config: { ...$$props.hass.config, time_zone: $$props.plan.timezone },
-    locale: { ...$$props.hass.locale, time_zone: "server" },
+    ...untrack(() => $$props.hass),
+    config: { ...get(config), time_zone: get(zone) },
+    locale: { ...get(locale), time_zone: "server" },
+    get states() {
+      return $$props.hass.states;
+    },
   }));
   onMount(() => {
     let disposed = false;
@@ -14862,13 +14888,14 @@ function PreviewStateGraph($$anchor, $$props) {
       );
       action(
         state_history_chart_timeline,
-        ($$node, $$action_arg) => properties?.($$node, $$action_arg),
+        ($$node, $$action_arg) =>
+          historyChartProperties?.($$node, $$action_arg),
         () => ({
           hass: get(chartHass),
           data: get(data),
           names: names(),
-          startTime: new Date($$props.plan.start),
-          endTime: new Date($$props.plan.end),
+          startTime: get(startTime),
+          endTime: get(endTime),
           showNames: true,
           narrow: get(narrow),
           paddingYAxis: 0,
@@ -15053,9 +15080,11 @@ function Timeline($$anchor, $$props) {
   }
   let page = state(0);
   let hoveredEventTime = state(null);
+  let scheduleDate = user_derived(() => $$props.plan?.simulation_date);
   user_effect(() => {
-    void $$props.plan;
+    void get(scheduleDate);
     set2(hoveredEventTime, null);
+    set2(page, 0);
   });
   let events = user_derived(() => $$props.plan?.events ?? []);
   let groups = user_derived(() => groupPreviewEvents(get(events)));
@@ -15160,24 +15189,24 @@ function Timeline($$anchor, $$props) {
           var node_7 = sibling(thead);
           each(
             node_7,
-            16,
+            17,
             () =>
               get(groups).slice(
                 get(currentPage) * 50,
                 get(currentPage) * 50 + 50,
               ),
-            (group) => group,
+            (group) => group.key,
             ($$anchor4, group) => {
               var tbody = root_11();
               each(
                 tbody,
-                22,
-                () => group.actions,
-                (action2) => action2,
+                23,
+                () => get(group).actions,
+                (action2) => action2.key,
                 ($$anchor5, action2, index2) => {
-                  const event2 = user_derived(() => action2.event);
+                  const event2 = user_derived(() => get(action2).event);
                   const results = user_derived(() =>
-                    action2.events.map((event3) => ({
+                    get(action2).events.map((event3) => ({
                       event: event3,
                       live: eventLiveResult(event3, liveSession()),
                     })),
@@ -15191,7 +15220,7 @@ function Timeline($$anchor, $$props) {
                         ...get(event2),
                         action: {
                           ...get(event2).action,
-                          entities: action2.entities,
+                          entities: get(action2).entities,
                         },
                       },
                       eventLabel(get(event2)),
@@ -15210,7 +15239,11 @@ function Timeline($$anchor, $$props) {
                       var text_4 = sibling(child(td));
                       reset(td);
                       template_effect(() => {
-                        set_attribute2(td, "rowspan", group.actions.length);
+                        set_attribute2(
+                          td,
+                          "rowspan",
+                          get(group).actions.length,
+                        );
                         set_text(text_4, ` ${get(details).time ?? ""}`);
                       });
                       append($$anchor6, td);
@@ -15254,9 +15287,9 @@ function Timeline($$anchor, $$props) {
                       var td_3 = root_74();
                       each(
                         td_3,
-                        21,
+                        23,
                         () => get(results),
-                        (result) => result.event,
+                        (result, resultIndex) => result.event.id || resultIndex,
                         ($$anchor7, result) => {
                           var fragment_2 = comment();
                           var node_11 = first_child(fragment_2);
@@ -15354,7 +15387,7 @@ function Timeline($$anchor, $$props) {
                             set_text(text_11, get(details).source);
                           });
                           delegated("click", button, () =>
-                            $$props.onOpenSource?.(group.event),
+                            $$props.onOpenSource?.(get(group).event),
                           );
                           append($$anchor7, button);
                         };
@@ -15372,7 +15405,11 @@ function Timeline($$anchor, $$props) {
                       }
                       reset(td_4);
                       template_effect(() =>
-                        set_attribute2(td_4, "rowspan", group.actions.length),
+                        set_attribute2(
+                          td_4,
+                          "rowspan",
+                          get(group).actions.length,
+                        ),
                       );
                       append($$anchor6, td_4);
                     };
@@ -15411,11 +15448,11 @@ function Timeline($$anchor, $$props) {
               );
               reset(tbody);
               event("pointerenter", tbody, () =>
-                set2(hoveredEventTime, group.event.time, true),
+                set2(hoveredEventTime, get(group).event.time, true),
               );
               event("pointerleave", tbody, () => set2(hoveredEventTime, null));
               delegated("focusin", tbody, () =>
-                set2(hoveredEventTime, group.event.time, true),
+                set2(hoveredEventTime, get(group).event.time, true),
               );
               delegated("focusout", tbody, () => set2(hoveredEventTime, null));
               append($$anchor4, tbody);
@@ -16073,19 +16110,28 @@ function PreviewView($$anchor, $$props) {
     }, 250);
     return () => globalThis.clearTimeout(timeout);
   });
-  let data = user_derived(() => {
-    void $$props.revision;
-    const t2 = $$props.panel.t;
-    return { t: t2 };
-  });
-  let t = user_derived(() => get(data).t);
+  let t = user_derived(() => $$props.panel.t);
+  let preview = user_derived(() => $$props.panel.preview);
+  let previewDate = user_derived(() => $$props.panel.previewDate);
+  let liveVisible = user_derived(() => $$props.panel.liveVisible);
+  let livePlan = user_derived(() => $$props.panel.livePlan);
+  let liveProgram = user_derived(() => $$props.panel.liveProgram);
+  let previewProgram = user_derived(() => $$props.panel.previewProgram);
+  let draft = user_derived(() => $$props.panel.draft);
+  let schedulePlans = user_derived(() =>
+    get(liveVisible) && get(livePlan) ? [get(livePlan)] : get(preview)?.plans,
+  );
+  let program = user_derived(() =>
+    get(liveVisible) && get(liveProgram)
+      ? get(liveProgram)
+      : (get(previewProgram) ?? get(draft)),
+  );
   let plan = user_derived(() =>
-    $$props.panel.liveVisible && $$props.panel.livePlan
-      ? $$props.panel.livePlan
+    get(liveVisible) && get(livePlan)
+      ? get(livePlan)
       : calendarDayPlan(
-          $$props.panel.preview?.plans || [],
-          $$props.panel.preview?.plans.at(-1)?.simulation_date ||
-            $$props.panel.previewDate,
+          get(preview)?.plans || [],
+          get(preview)?.plans.at(-1)?.simulation_date || get(previewDate),
         ),
   );
   let date = user_derived(
@@ -16120,28 +16166,16 @@ function PreviewView($$anchor, $$props) {
     "M8.59,16.59L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.59Z";
   const refreshIcon =
     "M17.65,6.35C16.2,4.9 14.21,4 12,4C7.58,4 4,7.58 4,12C4,16.42 7.58,20 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18C8.69,18 6,15.31 6,12C6,8.69 8.69,6 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z";
+  let entities = user_derived(() => $$props.panel.catalog.entities);
   let entityNames = user_derived(() =>
     Object.fromEntries(
-      $$props.panel.catalog.entities.map((entity) => [
-        entity.entity_id,
-        entity.name,
-      ]),
+      get(entities).map((entity) => [entity.entity_id, entity.name]),
     ),
   );
   var fragment = root_311();
   var node_2 = first_child(fragment);
   {
     let $0 = user_derived(() =>
-      $$props.panel.liveVisible && $$props.panel.livePlan
-        ? [$$props.panel.livePlan]
-        : $$props.panel.preview?.plans,
-    );
-    let $1 = user_derived(() =>
-      $$props.panel.liveVisible && $$props.panel.liveProgram
-        ? $$props.panel.liveProgram
-        : ($$props.panel.previewProgram ?? $$props.panel.draft),
-    );
-    let $2 = user_derived(() =>
       $$props.panel.liveVisible ? $$props.panel.liveSession : null,
     );
     Timeline(node_2, {
@@ -16149,13 +16183,13 @@ function PreviewView($$anchor, $$props) {
         return get(plan);
       },
       get schedulePlans() {
-        return get($0);
+        return get(schedulePlans);
       },
       get program() {
-        return get($1);
+        return get(program);
       },
       get liveSession() {
-        return get($2);
+        return get($0);
       },
       get t() {
         return get(t);
@@ -17861,12 +17895,22 @@ function App($$anchor, $$props) {
     }
     append($$anchor2, fragment);
   };
+  const methods = {};
   let panel = user_derived(() => {
     void $updates();
     return new Proxy($$props.panel, {
       get(target, key2) {
         const value = Reflect.get(target, key2, target);
-        return typeof value === "function" ? value.bind(target) : value;
+        if (typeof value === "function") {
+          const previous = methods[key2];
+          if (previous?.target === target && previous.value === value) {
+            return previous.bound;
+          }
+          const bound = value.bind(target);
+          methods[key2] = { target, value, bound };
+          return bound;
+        }
+        return value;
       },
     });
   });
@@ -18702,8 +18746,11 @@ var OccupiedPanel = class extends HTMLElement {
       this._hass?.locale?.language !== value?.locale?.language ||
       this._hass?.locale?.time_format !== value?.locale?.time_format;
     const changed = this._hass?.connection !== value?.connection;
+    const languageChanged = this._hass?.language !== value?.language;
     this._hass = value;
-    this.t = translator(value?.language);
+    if (languageChanged) {
+      this.t = translator(value?.language);
+    }
     for (const selector of this.shadowRoot.querySelectorAll(
       "ha-selector,ha-generic-picker",
     )) {

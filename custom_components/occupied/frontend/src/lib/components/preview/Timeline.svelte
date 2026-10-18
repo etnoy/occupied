@@ -68,9 +68,11 @@
   let page = $state(0);
   let hoveredEventTime = $state<string | null>(null);
 
+  let scheduleDate = $derived(plan?.simulation_date);
   $effect(() => {
-    void plan;
+    void scheduleDate;
     hoveredEventTime = null;
+    page = 0;
   });
 
   let events = $derived(plan?.events ?? []);
@@ -112,14 +114,14 @@
                   <th scope="col">{t("source")}</th>
                 </tr>
               </thead>
-              {#each groups.slice(currentPage * 50, currentPage * 50 + 50) as group (group)}
+              {#each groups.slice(currentPage * 50, currentPage * 50 + 50) as group (group.key)}
                 <tbody
                   onpointerenter={() => (hoveredEventTime = group.event.time)}
                   onpointerleave={() => (hoveredEventTime = null)}
                   onfocusin={() => (hoveredEventTime = group.event.time)}
                   onfocusout={() => (hoveredEventTime = null)}
                 >
-                  {#each group.actions as action, index (action)}
+                  {#each group.actions as action, index (action.key)}
                     {@const event = action.event}
                     {@const results = action.events.map((event) => ({
                       event,
@@ -171,7 +173,7 @@
                       </td>
                       {#if liveSession}
                         <td>
-                          {#each results as result (result.event)}
+                          {#each results as result, resultIndex (result.event.id || resultIndex)}
                             {#if result.live?.outcome}
                               <div>
                                 {#if results.length > 1}
