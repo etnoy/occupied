@@ -5,6 +5,7 @@ import heapq
 import json
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
+from datetime import time
 from typing import Any, Literal
 
 from pydantic import ValidationError
@@ -433,8 +434,25 @@ def behavior_hash(program):
     ).hexdigest()
 
 
+def early_cap_warning(path):
+    return Issue(
+        "latest_at_before_start",
+        "The source-date latest_at limit precedes the earliest base time and can move "
+        "this step before its timing window. Check the date and cap.",
+        path + ("latest_at",),
+        "warning",
+    )
+
+
 def validation_warnings(program):
-    return ()
+    return tuple(
+        early_cap_warning(("steps", key, "timing"))
+        for key, step in program.steps.items()
+        if (base := step.timing.absolute_time)
+        and (cap := step.timing.latest_at)
+        and cap.absolute_time
+        and time.fromisoformat(cap.absolute_time.start) < time.fromisoformat(base.start)
+    )
 
 
 def rename_identifier(program, kind, old, new):

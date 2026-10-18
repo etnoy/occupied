@@ -17,10 +17,12 @@ from .validation import (
     Issue,
     ProgramError,
     behavior_hash,
+    early_cap_warning,
     program_revision,
     random_order,
     step_order,
     validate_program,
+    validation_warnings,
 )
 
 PLANNER_VERSION = 13
@@ -387,7 +389,7 @@ def generate_plan(
     if max_plan_events(program) > MAX_EVENTS:
         raise ProgramError([Issue("runtime_budget", "Program exceeds the daily event budget")])
     context = context or PlanningContext()
-    issues, times, events = [], {}, []
+    issues, times, events = list(validation_warnings(program)), {}, []
     day = SimulationDay(program, simulation_date, context, issues)
     streams = RandomStreams(seed)
     for key in step_order(program):
@@ -406,7 +408,12 @@ def generate_plan(
         start = sample_timing(day, step.timing, times, path, streams.rng("step", key, "start"))
         if start is None:
             continue
-        start = apply_step_limits(day, step.timing, start, path)
+        earliest = None
+        if step.timing.latest_at:
+            probe = SimulationDay(program, simulation_date, context, [])
+            if bounds := timing_bounds(probe, step.timing, times, path):
+                earliest = bounds[0]
+        start = apply_step_limits(day, step.timing, start, path, earliest=earliest)
         if start is None:
             continue
         times[key] = start
@@ -551,7 +558,7 @@ def generate_plan(
     )
 
 
-def apply_step_limits(day, timing, candidate, path):
+def apply_step_limits(day, timing, candidate, path, *, earliest=None):
     """Clamp one sample, then filter it, before publishing any anchor or action."""
     resolved = {}
     for key in ("latest_at", "only_before"):
@@ -569,6 +576,15 @@ def apply_step_limits(day, timing, candidate, path):
                 return None
             instant = bounds[0]
         resolved[key] = instant
+    if (
+        earliest is not None
+        and resolved.get("latest_at", earliest) < earliest
+        and not any(
+            issue.code == "latest_at_before_start" and issue.path == path + ("latest_at",)
+            for issue in day.issues
+        )
+    ):
+        day.issues.append(early_cap_warning(path))
     adjusted = min(candidate, resolved.get("latest_at", candidate))
     details = {"candidate": candidate.isoformat(), "adjusted": adjusted.isoformat()}
     if "only_before" in resolved and adjusted >= resolved["only_before"]:
