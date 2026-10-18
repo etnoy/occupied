@@ -22,6 +22,8 @@ import {
 const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
 
 async function fixture() {
+  const originalNow = Date.now;
+  Date.now = () => Date.parse("2026-10-06T12:00:00Z");
   const descriptors = new Map(
     [
       "HTMLElement",
@@ -237,6 +239,7 @@ async function fixture() {
       panel.route = {};
     },
     restore() {
+      Date.now = originalNow;
       for (const [key, descriptor] of descriptors) {
         if (descriptor) {
           Object.defineProperty(globalThis, key, descriptor);
@@ -1016,6 +1019,7 @@ void test("a pending preview cannot replace a draft edited while it loads", asyn
 void test("preview day navigation loads adjacent dates and Today without overlapping requests", async () => {
   const f = await fixture();
   try {
+    Date.now = () => Date.parse("2026-12-31T12:00:00Z");
     f.documents.main.simulation_date = "2026-12-31";
     f.panel.navigate("preview");
     await settle();
@@ -1035,10 +1039,10 @@ void test("preview day navigation loads adjacent dates and Today without overlap
     assert.equal(f.panel.previewDate, "2026-12-31");
     await f.panel.movePreviewDay(-1);
     assert.equal(f.panel.previewDate, "2026-12-30");
-    await f.panel.selectPreviewDate(f.panel.document.simulation_date);
+    await f.panel.selectPreviewDate(f.panel.today);
     assert.equal(f.panel.previewDate, "2026-12-31");
     const count = requests().length;
-    await f.panel.selectPreviewDate(f.panel.document.simulation_date);
+    await f.panel.selectPreviewDate(f.panel.today);
     assert.equal(requests().length, count);
     assert.ok(
       requests().every(
@@ -1050,7 +1054,7 @@ void test("preview day navigation loads adjacent dates and Today without overlap
     assert.equal(f.panel.previewDate, "");
     f.panel.navigate("preview");
     await settle();
-    assert.equal(f.panel.previewDate, "2026-10-06");
+    assert.equal(f.panel.previewDate, "2026-12-31");
   } finally {
     f.restore();
   }
@@ -1797,3 +1801,27 @@ for (const kind of ["step", "random"] as const) {
     }
   });
 }
+
+void test("preview Today follows HA midnight without reloading the saved document", async () => {
+  const f = await fixture();
+  const originalNow = Date.now;
+  try {
+    Date.now = () => Date.parse("2026-10-05T09:59:59Z");
+    f.panel._hass.config = { time_zone: "Pacific/Kiritimati" };
+    f.panel.document.simulation_date = "2026-10-04";
+    f.panel.navigate("preview");
+    await settle();
+    const requests = () =>
+      f.messages.filter((message) => message.type === "occupied/preview");
+    assert.equal(requests().at(-1)?.date, "2026-10-05");
+    Date.now = () => Date.parse("2026-10-05T10:00:00Z");
+    assert.equal(f.panel.today, "2026-10-06");
+    assert.equal(f.panel.previewDate, "2026-10-05");
+    await f.panel.selectPreviewDate(f.panel.today);
+    assert.equal(requests().at(-1)?.date, "2026-10-06");
+    assert.equal(f.panel.document.simulation_date, "2026-10-04");
+  } finally {
+    Date.now = originalNow;
+    f.restore();
+  }
+});

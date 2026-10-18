@@ -37,10 +37,7 @@ export class PreviewController {
     }
 
     return this.selectPreviewDate(
-      shiftScheduleDate(
-        this.panel.previewDate || this.panel.document.simulation_date,
-        days,
-      ),
+      shiftScheduleDate(this.panel.previewDate || this.panel.today, days),
     );
   }
 
@@ -72,7 +69,7 @@ export class PreviewController {
     }
     const version = this.panel.version,
       draft = copy(this.panel.draft),
-      date = this.panel.previewDate || this.panel.document.simulation_date;
+      date = this.panel.previewDate || this.panel.today;
     this.panel.previewDate = date;
 
     return this.panel.run(async (epoch) => {

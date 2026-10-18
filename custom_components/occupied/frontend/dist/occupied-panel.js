@@ -1,4 +1,130 @@
 // Generated from custom_components/occupied/frontend/src/occupied-panel.ts by pnpm run build. Do not edit.
+// custom_components/occupied/frontend/src/lib/utils/time-format.ts
+function scheduleToday(zone, now = new Date(Date.now())) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: zone && zone !== "home_assistant" ? zone : void 0,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    })
+      .formatToParts(now)
+      .map(({ type, value }) => [type, value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+function shiftScheduleDate(value, days2) {
+  const date = /* @__PURE__ */ new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days2);
+  return date.toISOString().slice(0, 10);
+}
+function calendarMidnight(value, zone) {
+  const target = Date.parse(`${value}T00:00:00Z`);
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: zone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+  let instant = target;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const parts = Object.fromEntries(
+      formatter
+        .formatToParts(instant)
+        .map(({ type, value: value2 }) => [type, value2]),
+    );
+    const local = Date.parse(
+      `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}Z`,
+    );
+    const correction = target - local;
+    if (correction === 0) {
+      return new Date(instant).toISOString();
+    }
+    instant += correction;
+  }
+  return new Date(instant).toISOString();
+}
+function formatScheduleDate(value, locale) {
+  const weekday = new Intl.DateTimeFormat(locale?.language, {
+    weekday: "long",
+    timeZone: "UTC",
+  }).format(/* @__PURE__ */ new Date(`${value}T12:00:00Z`));
+  return `${weekday} ${value}`;
+}
+function formatPreviewDate(value, today, locale, t) {
+  const valueTime = Date.parse(`${value}T12:00:00Z`);
+  const todayTime = Date.parse(`${today}T12:00:00Z`);
+  const daysFromToday = Math.round((valueTime - todayTime) / 864e5);
+  const relativeLabels = {
+    [-1]: "yesterday",
+    0: "today",
+    1: "tomorrow",
+  };
+  const relativeLabel = relativeLabels[daysFromToday]
+    ? t(relativeLabels[daysFromToday])
+    : void 0;
+  const dateLabel = formatScheduleDate(value, locale);
+  return relativeLabel ? `${relativeLabel} \xB7 ${dateLabel}` : dateLabel;
+}
+function usesAmPm(locale) {
+  if (!locale) {
+    return false;
+  }
+  if (locale.time_format === "12") {
+    return true;
+  }
+  if (locale.time_format === "24") {
+    return false;
+  }
+  const language = locale.time_format === "language" ? locale.language : void 0;
+  const hourCycle2 = new Intl.DateTimeFormat(language, {
+    hour: "numeric",
+  }).resolvedOptions().hourCycle;
+  return hourCycle2 === "h11" || hourCycle2 === "h12";
+}
+function formatterLocale(locale) {
+  return locale?.language;
+}
+function hourCycle(locale) {
+  return usesAmPm(locale) ? "h12" : "h23";
+}
+function formatClock(value, locale) {
+  const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
+  if (!match) {
+    return value;
+  }
+  const [, hour, minute, second] = match;
+  const date = new Date(
+    Date.UTC(2020, 0, 1, Number(hour), Number(minute), Number(second || 0)),
+  );
+  return new Intl.DateTimeFormat(formatterLocale(locale), {
+    hour: usesAmPm(locale) ? "numeric" : "2-digit",
+    minute: "2-digit",
+    ...(Number(second) && { second: "2-digit" }),
+    hourCycle: hourCycle(locale),
+    timeZone: "UTC",
+  }).format(date);
+}
+function formatTimestamp(value, zone, locale) {
+  return new Intl.DateTimeFormat(formatterLocale(locale), {
+    dateStyle: "short",
+    timeStyle: "medium",
+    hourCycle: hourCycle(locale),
+    timeZone: zone && zone !== "home_assistant" ? zone : void 0,
+  }).format(new Date(value));
+}
+function formatEventTime(value, zone, locale) {
+  return new Intl.DateTimeFormat(formatterLocale(locale), {
+    timeStyle: "medium",
+    hourCycle: hourCycle(locale),
+    timeZone: zone && zone !== "home_assistant" ? zone : void 0,
+  }).format(new Date(value));
+}
+
 // custom_components/occupied/frontend/src/lib/i18n/translations.ts
 var en = {
   offset_example: "30m or 1h",
@@ -1019,119 +1145,6 @@ function translator(language) {
     const translationKey = key2;
     return localized?.[translationKey] ?? en[translationKey];
   };
-}
-
-// custom_components/occupied/frontend/src/lib/utils/time-format.ts
-function shiftScheduleDate(value, days2) {
-  const date = /* @__PURE__ */ new Date(`${value}T12:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days2);
-  return date.toISOString().slice(0, 10);
-}
-function calendarMidnight(value, zone) {
-  const target = Date.parse(`${value}T00:00:00Z`);
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: zone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  });
-  let instant = target;
-  for (let attempt = 0; attempt < 4; attempt++) {
-    const parts = Object.fromEntries(
-      formatter
-        .formatToParts(instant)
-        .map(({ type, value: value2 }) => [type, value2]),
-    );
-    const local = Date.parse(
-      `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}Z`,
-    );
-    const correction = target - local;
-    if (correction === 0) {
-      return new Date(instant).toISOString();
-    }
-    instant += correction;
-  }
-  return new Date(instant).toISOString();
-}
-function formatScheduleDate(value, locale) {
-  const weekday = new Intl.DateTimeFormat(locale?.language, {
-    weekday: "long",
-    timeZone: "UTC",
-  }).format(/* @__PURE__ */ new Date(`${value}T12:00:00Z`));
-  return `${weekday} ${value}`;
-}
-function formatPreviewDate(value, today, locale, t) {
-  const valueTime = Date.parse(`${value}T12:00:00Z`);
-  const todayTime = Date.parse(`${today}T12:00:00Z`);
-  const daysFromToday = Math.round((valueTime - todayTime) / 864e5);
-  const relativeLabels = {
-    [-1]: "yesterday",
-    0: "today",
-    1: "tomorrow",
-  };
-  const relativeLabel = relativeLabels[daysFromToday]
-    ? t(relativeLabels[daysFromToday])
-    : void 0;
-  const dateLabel = formatScheduleDate(value, locale);
-  return relativeLabel ? `${relativeLabel} \xB7 ${dateLabel}` : dateLabel;
-}
-function usesAmPm(locale) {
-  if (!locale) {
-    return false;
-  }
-  if (locale.time_format === "12") {
-    return true;
-  }
-  if (locale.time_format === "24") {
-    return false;
-  }
-  const language = locale.time_format === "language" ? locale.language : void 0;
-  const hourCycle2 = new Intl.DateTimeFormat(language, {
-    hour: "numeric",
-  }).resolvedOptions().hourCycle;
-  return hourCycle2 === "h11" || hourCycle2 === "h12";
-}
-function formatterLocale(locale) {
-  return locale?.language;
-}
-function hourCycle(locale) {
-  return usesAmPm(locale) ? "h12" : "h23";
-}
-function formatClock(value, locale) {
-  const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
-  if (!match) {
-    return value;
-  }
-  const [, hour, minute, second] = match;
-  const date = new Date(
-    Date.UTC(2020, 0, 1, Number(hour), Number(minute), Number(second || 0)),
-  );
-  return new Intl.DateTimeFormat(formatterLocale(locale), {
-    hour: usesAmPm(locale) ? "numeric" : "2-digit",
-    minute: "2-digit",
-    ...(Number(second) && { second: "2-digit" }),
-    hourCycle: hourCycle(locale),
-    timeZone: "UTC",
-  }).format(date);
-}
-function formatTimestamp(value, zone, locale) {
-  return new Intl.DateTimeFormat(formatterLocale(locale), {
-    dateStyle: "short",
-    timeStyle: "medium",
-    hourCycle: hourCycle(locale),
-    timeZone: zone && zone !== "home_assistant" ? zone : void 0,
-  }).format(new Date(value));
-}
-function formatEventTime(value, zone, locale) {
-  return new Intl.DateTimeFormat(formatterLocale(locale), {
-    timeStyle: "medium",
-    hourCycle: hourCycle(locale),
-    timeZone: zone && zone !== "home_assistant" ? zone : void 0,
-  }).format(new Date(value));
 }
 
 // custom_components/occupied/frontend/src/lib/models/model.ts
@@ -3937,6 +3950,12 @@ function flush_eager_effects() {
     }
   }
   eager_effects.clear();
+}
+function update(source2, d = 1) {
+  var value = get(source2);
+  var result = d === 1 ? value++ : value--;
+  set2(source2, value);
+  return result;
 }
 function increment(source2) {
   set2(source2, source2.v + 1);
@@ -16075,14 +16094,14 @@ function PreviewView($$anchor, $$props) {
           $$props.panel.busy ||
           $$props.panel.liveRunning ||
           $$props.panel.liveBusy ||
-          get(date) === $$props.panel.document.simulation_date;
+          get(date) === get(today);
         set_text(text_2, $2);
       },
       [
         () =>
           formatPreviewDate(
             get(date),
-            $$props.panel.document.simulation_date,
+            get(today),
             $$props.panel._hass.locale,
             get(t),
           ),
@@ -16092,12 +16111,24 @@ function PreviewView($$anchor, $$props) {
     );
     delegated("click", ha_icon_button, () => $$props.panel.movePreviewDay(-1));
     delegated("click", button_1, () =>
-      $$props.panel.selectPreviewDate($$props.panel.document.simulation_date),
+      $$props.panel.selectPreviewDate(get(today)),
     );
     delegated("click", ha_icon_button_1, () => $$props.panel.movePreviewDay(1));
     append($$anchor2, div);
   };
   let showLoading = state(false);
+  let clock = state(0);
+  let today = user_derived(() => {
+    void get(clock);
+    void $$props.revision;
+    return $$props.panel.today;
+  });
+  user_effect(() => {
+    const timer = globalThis.setInterval(() => {
+      update(clock);
+    }, 3e4);
+    return () => globalThis.clearInterval(timer);
+  });
   user_effect(() => {
     void $$props.revision;
     if (!$$props.panel.busy) {
@@ -16135,10 +16166,7 @@ function PreviewView($$anchor, $$props) {
         ),
   );
   let date = user_derived(
-    () =>
-      get(plan)?.simulation_date ||
-      $$props.panel.previewDate ||
-      $$props.panel.document.simulation_date,
+    () => get(plan)?.simulation_date || $$props.panel.previewDate || get(today),
   );
   function openSource(event2) {
     if (event2.kind.startsWith("random_")) {
@@ -18289,10 +18317,7 @@ var PreviewController = class {
       return;
     }
     return this.selectPreviewDate(
-      shiftScheduleDate(
-        this.panel.previewDate || this.panel.document.simulation_date,
-        days2,
-      ),
+      shiftScheduleDate(this.panel.previewDate || this.panel.today, days2),
     );
   }
   selectPreviewDate(date) {
@@ -18321,7 +18346,7 @@ var PreviewController = class {
     }
     const version = this.panel.version,
       draft = copy(this.panel.draft),
-      date = this.panel.previewDate || this.panel.document.simulation_date;
+      date = this.panel.previewDate || this.panel.today;
     this.panel.previewDate = date;
     return this.panel.run(async (epoch) => {
       const result = await this.panel.ws("preview", {
@@ -18717,6 +18742,11 @@ var OccupiedPanel = class extends HTMLElement {
   _hass;
   _loading = false;
   instances = [];
+  get today() {
+    return scheduleToday(
+      this._hass?.config?.time_zone || this.document?.timezone,
+    );
+  }
   selectedEntry = null;
   _instancesReady = false;
   _instancesFailed = false;

@@ -1,4 +1,17 @@
 // Generated from custom_components/occupied/frontend/src/lib/utils/time-format.ts by pnpm run build. Do not edit.
+export function scheduleToday(zone, now = new Date(Date.now())) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: zone && zone !== "home_assistant" ? zone : undefined,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    })
+      .formatToParts(now)
+      .map(({ type, value }) => [type, value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
 export function shiftScheduleDate(value, days) {
   const date = new Date(`${value}T12:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);

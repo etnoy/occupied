@@ -2,6 +2,21 @@ import type { HomeAssistant } from "../types.js";
 
 export type HomeAssistantLocale = NonNullable<HomeAssistant["locale"]>;
 
+export function scheduleToday(zone?: string, now = new Date(Date.now())) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: zone && zone !== "home_assistant" ? zone : undefined,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    })
+      .formatToParts(now)
+      .map(({ type, value }) => [type, value]),
+  );
+
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
 export function shiftScheduleDate(value: string, days: number) {
   const date = new Date(`${value}T12:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);

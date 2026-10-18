@@ -17,6 +17,21 @@
     $props();
 
   let showLoading = $state(false);
+  let clock = $state(0);
+
+  let today = $derived.by(() => {
+    void clock;
+    void revision;
+
+    return panel.today;
+  });
+  $effect(() => {
+    const timer = globalThis.setInterval(() => {
+      clock++;
+    }, 30_000);
+
+    return () => globalThis.clearInterval(timer);
+  });
 
   $effect(() => {
     void revision;
@@ -55,11 +70,7 @@
           preview?.plans.at(-1)?.simulation_date || previewDate,
         ),
   );
-  let date = $derived(
-    plan?.simulation_date ||
-      panel.previewDate ||
-      panel.document.simulation_date,
-  );
+  let date = $derived(plan?.simulation_date || panel.previewDate || today);
 
   function openSource(event: PlannedEvent) {
     if (event.kind.startsWith("random_")) {
@@ -98,12 +109,7 @@
   <div class="schedule-heading">
     <div class="schedule-title">
       <h2 aria-live="polite">
-        {formatPreviewDate(
-          date,
-          panel.document.simulation_date,
-          panel._hass.locale,
-          t,
-        )}
+        {formatPreviewDate(date, today, panel._hass.locale, t)}
       </h2>
       {#if !panel.liveRunning}
         <button
@@ -141,9 +147,8 @@
         disabled={panel.busy ||
           panel.liveRunning ||
           panel.liveBusy ||
-          date === panel.document.simulation_date}
-        onclick={() => panel.selectPreviewDate(panel.document.simulation_date)}
-        >{t("today")}</button
+          date === today}
+        onclick={() => panel.selectPreviewDate(today)}>{t("today")}</button
       >
       <!-- HA supplies a keyboard-accessible button inside its shadow root. -->
       <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
