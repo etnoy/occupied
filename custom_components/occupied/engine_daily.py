@@ -46,6 +46,7 @@ from .handover import calls_for_target
 from .lighting import LightState, project_lighting
 from .models import Handover, controlled_entities, projectable_lights
 from .plan_codec import PlannerVersionChanged
+from .plan_persistence import plan_context, plan_fingerprint, restore_plan_fingerprints
 from .planner import DailyPlan, PlanEvent, ResolvedAction, preview_dates, supersede_ticks
 from .reconciliation import expected_actions
 from .runtime_planning import MAX_EVENTS, runtime_dates
@@ -114,6 +115,9 @@ class DailyEngine:
         self._queue: list[RuntimeEvent] = []
         self._queue_since: datetime | None = None
         self._plans: dict[date, DailyPlan] = {}
+        self._plan_contexts = {}
+        self._fingerprinted_plans = None
+        self._plan_fingerprints = []
         self._seed = secrets.token_hex(16)
         self._journal = {}
         self._latest_intents = {}
@@ -224,15 +228,28 @@ class DailyEngine:
             }
             self._handover = saved.get("handover", {})
             self._native_fades = set(saved.get("native_fades", []))
-        if (
-            saved.get("behavior") == behavior_hash(self.program)
-            and self._saved_context == self._context_identity()
-        ):
+        context = self._context()
+        if saved.get("behavior") == behavior_hash(
+            self.program
+        ) and self._saved_context == self._context_identity(context):
             try:
-                self._plans = {
-                    p.simulation_date: p
-                    for p in (plan_from_data(value) for value in saved.get("plans", []))
-                }
+                if "plan_fingerprints" in saved:
+                    records = saved["plan_fingerprints"]
+                    self._plans = await self.hass.async_add_executor_job(
+                        restore_plan_fingerprints, self.program, records
+                    )
+                    self._plan_contexts = {
+                        date.fromisoformat(record["simulation_date"]): record["context"]
+                        for record in records
+                    }
+                else:
+                    # Accept the previous full cache, then migrate on the next save.
+                    self._plans = {
+                        p.simulation_date: p
+                        for p in (plan_from_data(value) for value in saved.get("plans", []))
+                    }
+                    data = plan_context(self.program, context)
+                    self._plan_contexts = dict.fromkeys(self._plans, data)
             except PlannerVersionChanged as err:
                 self._plans.clear()
                 self._record("recovery", "plan_version_changed", str(err))
@@ -510,6 +527,20 @@ class DailyEngine:
             self.hass, retry, dt_util.as_utc(tomorrow)
         )
 
+    def _stored_plan_fingerprints(self):
+        plans = tuple(self._plans.values())
+        cached = self._fingerprinted_plans
+        if (
+            cached is None
+            or len(cached) != len(plans)
+            or any(current is not previous for current, previous in zip(plans, cached, strict=True))
+        ):
+            self._plan_fingerprints = [
+                plan_fingerprint(plan, self._plan_contexts[plan.simulation_date]) for plan in plans
+            ]
+            self._fingerprinted_plans = plans
+        return self._plan_fingerprints
+
     async def _persist(self):
         async with self._persist_lock:
             return await self._persist_locked()
@@ -538,7 +569,7 @@ class DailyEngine:
             "reconciliation": self.reconciliation,
             "context": self._saved_context,
             "anchor_latches": self._anchor_latches.snapshot(),
-            "plans": [p.to_dict() for p in self._plans.values()],
+            "plan_fingerprints": self._stored_plan_fingerprints(),
             "journal": self._journal,
             "yielded": sorted(self._yielded),
             "owned": self._owned,
@@ -750,10 +781,12 @@ class DailyEngine:
             plans = await self.hass.async_add_executor_job(
                 partial(preview_dates, self.program, missing, self._seed, context=context)
             )
+            data = plan_context(self.program, context)
             for plan in plans:
                 if not plan.feasible or len(plan.events) > MAX_EVENTS:
                     raise ValueError(f"Infeasible or oversized plan for {plan.simulation_date}")
                 self._plans[plan.simulation_date] = plan
+                self._plan_contexts[plan.simulation_date] = data
                 for issue in plan.issues:
                     if issue.code == "random_window" and issue.severity == "warning":
                         self._record(
@@ -766,6 +799,7 @@ class DailyEngine:
             for day, plan in self._plans.items()
             if day in dates or any(e.at >= dt_util.utcnow() for e in plan.events)
         }
+        self._plan_contexts = {day: self._plan_contexts[day] for day in self._plans}
         self._saved_context = identity
         cutoff = (today - timedelta(days=2)).isoformat()
         self._journal = {
@@ -799,14 +833,16 @@ class DailyEngine:
         return replace(current, events=tuple(sorted(events, key=lambda e: e.order_key)))
 
     async def _ensure_projection_date(self, at):
-        day = simulation_date_at(self.program, at, self._context())
+        context = self._context()
+        day = simulation_date_at(self.program, at, context)
         if day not in self._plans:
             plans = await self.hass.async_add_executor_job(
-                partial(preview_dates, self.program, [day], self._seed, context=self._context())
+                partial(preview_dates, self.program, [day], self._seed, context=context)
             )
             if not plans[0].feasible:
                 raise ValueError(f"Infeasible handover endpoint plan for {day}")
             self._plans[day] = plans[0]
+            self._plan_contexts[day] = plan_context(self.program, context)
 
     def _key(self, plan, event):
         if event.kind == "step":
@@ -845,8 +881,9 @@ class DailyEngine:
             for e in supersede_ticks(e for plan in self._plans.values() for e in plan.events)
         }
         self._plans = {
-            day: replace(plan, events=tuple(resolved[e.id] for e in plan.events))
+            day: replace(plan, events=events) if events != plan.events else plan
             for day, plan in self._plans.items()
+            for events in [tuple(resolved[event.id] for event in plan.events)]
         }
         for plan in self._plans.values():
             for event in plan.events:

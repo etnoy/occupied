@@ -53,11 +53,11 @@ async def test_obsolete_plans_rebuild_without_replaying_completed_steps(
         await original.async_close(cleanup=False)
         saved = hass_storage["occupied.cache-upgrade.runtime"]["data"]
         if change == "corrupt":
-            saved["plans"][0].pop("events")
+            saved["plan_fingerprints"][0].pop("fingerprint")
         elif change == "malformed_version":
-            saved["plans"][0]["planner_version"] = "invalid"
+            saved["plan_fingerprints"][0]["planner_version"] = "invalid"
         else:
-            for plan in saved["plans"]:
+            for plan in saved["plan_fingerprints"]:
                 plan["planner_version"] = PLANNER_VERSION + (
                     1 if change == "future_version" else -1
                 )

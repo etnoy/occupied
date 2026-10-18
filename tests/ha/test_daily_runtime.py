@@ -903,7 +903,7 @@ async def test_timing_limit_edits_and_obsolete_cache_do_not_replay_completed_ste
         key.replace("live:step:", f"live:{'a' * 64}:"): value
         for key, value in saved["journal"].items()
     }
-    for cached in saved["plans"]:
+    for cached in saved["plan_fingerprints"]:
         cached["planner_version"] = 10
     assert await hass.config_entries.async_setup(daily_entry.entry_id)
     await hass.async_block_till_done()
