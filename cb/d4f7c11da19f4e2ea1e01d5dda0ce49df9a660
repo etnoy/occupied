@@ -1,0 +1,41 @@
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_78e8d8ff2fc7b0::t_b518518fc0ae85 4-9,535-540
+custom_components/occupied/frontend/dist/lib/utils/custom-action.js
+  s_78e8d8ff2fc7b0::t_452fb3c631bd9c 122
+custom_components/occupied/frontend/src/App.svelte
+  s_f10ec3bc261be9::t_e6d6903b477f88 88
+custom_components/occupied/frontend/src/lib/components/shared/TimingBoundaryEditor.svelte
+  s_f10ec3bc261be9::t_80a470e66da479 79
+custom_components/occupied/frontend/src/lib/components/shared/TimingEditor.svelte
+  s_f10ec3bc261be9::t_062a1d40d26aa1 223
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_f10ec3bc261be9::t_3743e1e1419af1 3-9,538-544
+custom_components/occupied/frontend/src/lib/utils/custom-action.ts
+  s_f10ec3bc261be9::t_e2dc25882647ef 142
+tests/frontend/src/custom-actions.test.ts
+  s_f10ec3bc261be9::t_d8cf31e7c41752 1,349-374
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "cbd4f7c11da19f4e2ea1e01d5dda0ce49df9a660",
+  "prompts": {},
+  "sessions": {
+    "s_78e8d8ff2fc7b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-1c02-7ac3-b7a0-517a13a126d7",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_f10ec3bc261be9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-77a0-7d40-9972-b0b8763751f2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
