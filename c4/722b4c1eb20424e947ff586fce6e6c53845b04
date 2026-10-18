@@ -1,0 +1,25 @@
+custom_components/occupied/engine_daily.py
+  s_2c907a3da9f034::t_2d59e2efcb22e7 144-171
+tests/ha/runtime_soak.py
+  s_2c907a3da9f034::t_7a9bf903b3c527 111-113,145
+tests/ha/test_daily_requeue.py
+  s_2c907a3da9f034::t_97e0cde6a7f454 12,61-110,114,187
+tests/ha/test_planning_recovery.py
+  s_2c907a3da9f034::t_903dfe48150433 85-87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c4722b4c1eb20424e947ff586fce6e6c53845b04",
+  "prompts": {},
+  "sessions": {
+    "s_2c907a3da9f034": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15107-3f41-7ea2-8357-d8d1fd5c852c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
