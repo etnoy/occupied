@@ -212,3 +212,5 @@ stagger:
   period: 2m
 ```
  `enabled` is a strict boolean, defaults to false, and `period` defaults to `2m`; durations range from `1s` through `30m`. An `actions` wrapper cannot carry `stagger`; individual members may. The feature supports explicit light/switch on and off targets, including mixed `set_state` mappings. Advanced settings exposes the checkbox and editable time window, defaulting to `2m`. Four targets over two minutes receive ticks at +30/+60/+90/+120 seconds in one freshly shuffled order. See [Custom YAML](custom-yaml.md#staggered-action) for list ordering, random-window rules, and examples. Older releases without staggering support reject the new field.
+
+Runtime plan caches store the seed, per-date planning context, source revision and a verified fingerprint. Plans are regenerated in the executor on restart; their fingerprints must match before reuse. Cached provenance is recomputed only when plans change. Older full-plan caches migrate on save, and incompatible or corrupt caches are rebuilt without replaying completed journal entries. The write-ahead pending/dispatched journal is still saved immediately around every service call.
