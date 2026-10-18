@@ -18,50 +18,9 @@ Occupied is the spiritual successor of [Occusim](https://github.com/acockburn/oc
 * Schedule everyday lighting around sunrise, sunset, or bedtime, with randomized windows instead of the same exact times each day.
 * Run a schedule only when your alarm is armed. You can also save power by having Occupied turn off extra lights or switches, such as those in a windowless bathroom.
 
-# Compatibility
+# Requirements
 
-Occupied supports the six most recent monthly Home Assistant releases: the current
-minor and the five before it. The table lists the exact releases tested in CI.
-The oldest minor is tested from its `.0` release; the other lanes use the newest
-patch with published matching test fixtures.
-
-At each monthly rollover, one PR adds the new minor and drops the oldest. That PR
-updates the HACS minimum, dependency floors, tested container images, and this
-table together. Every release includes its supported HA range in the release
-notes. Upgrade Home Assistant before installing an Occupied release whose floor
-is newer than your HA version.
-
-Integration Python versions follow each supported HA release. The standalone CLI
-has its own floor and experimental next-Python lane, described below.
-
-<!-- ha-matrix:start -->
-| Home Assistant tested | Python tested | Lane |
-| --- | --- | --- |
-| 2026.5.0 | 3.14.8 | floor |
-| 2026.6.4 | 3.14.8 | window |
-| 2026.7.4 | 3.14.8 | window |
-| 2026.8.3 | 3.14.8 | window |
-| 2026.9.4 | 3.14.8 | window |
-| 2026.10.2 | 3.14.8 | newest |
-| 2026.10.2 | 3.14.2 | Python floor |
-
-| Standalone Python tested | Lane |
-| --- | --- |
-| 3.14.2 | floor |
-| 3.14.8 | latest |
-| 3.15 | experimental |
-<!-- ha-matrix:end -->
-
-CI also runs the standalone core suite and all CLI examples on the floor and
-latest Python patches listed above, without Home Assistant. The experimental
-standalone lane remains nonblocking until both its tests and a fresh wheels-only
-dependency resolution pass. Missing published wheels are reported in the CI
-summary; test failures and unexpected resolver errors still fail that experimental
-job. The Python-floor HA
-lane skips one recorder-harness test on CPython versions before 3.14.4; all other
-tests are required. Browser smoke tests use isolated, digest-pinned floor and
-newest HA containers. Set `HA_IMAGE` to a matrix image to reproduce either lane
-with `pnpm run test:browser`.
+Occupied is tested on and supports Home Assistant version 2026.5 or later. Earlier versions might work but are untested.
 
 # Installation
 
