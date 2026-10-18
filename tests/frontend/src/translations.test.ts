@@ -136,3 +136,20 @@ void test("cover summaries interpolate valid positions and omit invalid position
     );
   }
 });
+
+void test("runtime outcomes have readable English labels", () => {
+  for (const language of [undefined, "en", "de"]) {
+    const t = translator(language);
+    for (const [key, label] of Object.entries({
+      entity_disabled: "Entity disabled",
+      service_missing: "Service not registered",
+      dispatched: "Dispatched",
+      failed: "Failed",
+      pending: "Pending",
+      uncertain: "Uncertain",
+      cancelled: "Cancelled",
+    })) {
+      assert.equal(t(key), label);
+    }
+  }
+});
