@@ -251,6 +251,60 @@ async function fixture() {
   };
 }
 
+for (const retryFails of [false, true]) {
+  void test(`failed runtime subscription can retry with loaded draft (${retryFails})`, async () => {
+    const f = await fixture();
+    try {
+      const draft = f.panel.draft;
+      let attempts = 0;
+      const connection = f.panel._hass.connection;
+      f.panel.hass = {
+        ...f.panel._hass,
+        connection: {
+          ...connection,
+          subscribeMessage: (callback, message) => {
+            if (message.type === "occupied/subscribe") {
+              attempts++;
+              if (attempts === 1 || retryFails) {
+                return Promise.reject(new Error("Subscription unavailable"));
+              }
+            }
+
+            return connection.subscribeMessage(callback, message);
+          },
+        },
+      };
+      await settle();
+      assert.equal(attempts, 1);
+      assert.match(f.panel.notices(), /Live updates are unavailable/);
+      assert.equal(f.panel.liveReady, false);
+      for (let update = 0; update < 5; update++) {
+        f.panel.hass = f.panel._hass;
+        await settle();
+      }
+      assert.equal(attempts, 1);
+      f.panel.retry();
+      f.panel.retry();
+      await settle();
+      assert.equal(attempts, 2);
+      assert.equal(f.panel.draft, draft);
+      if (retryFails) {
+        assert.match(f.panel.notices(), /Live updates are unavailable/);
+        assert.equal(f.panel.liveReady, false);
+      } else {
+        assert.doesNotMatch(f.panel.notices(), /Live updates are unavailable/);
+        assert.equal(f.panel.liveReady, true);
+        f.subscriptions.get("occupied/subscribe:main")!({
+          source_revision: "external",
+        });
+        assert.equal(f.panel.stale, true);
+      }
+    } finally {
+      f.restore();
+    }
+  });
+}
+
 async function deletionFixture() {
   const f = await fixture();
   f.documents.main.program = {

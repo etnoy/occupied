@@ -96,6 +96,7 @@ export class OccupiedPanel extends HTMLElement {
   liveCanAdvance = false;
   schedulingPaused = false;
   runtimeSnapshot: RuntimeSnapshot = {};
+  runtimeSubscriptionError = "";
   runConditionForm: RunConditionForm | null = null;
   runConditionOriginal: RunConditionForm | null = null;
   runConditionErrors: Record<string, string> = {};
@@ -213,7 +214,11 @@ export class OccupiedPanel extends HTMLElement {
   );
   private readonly runtimeSubscription = new PanelSubscription<RuntimeSnapshot>(
     () => this.isConnected,
-    (error) => this.fail(error),
+    (error) => {
+      this.runtimeSubscriptionError = this.t(errorMessage(error));
+      this.previewController.invalidate();
+      this.flush();
+    },
   );
   private readonly previewController = new PreviewController(
     this,
@@ -406,6 +411,7 @@ export class OccupiedPanel extends HTMLElement {
       liveCanAdvance: false,
       schedulingPaused: false,
       runtimeSnapshot: {},
+      runtimeSubscriptionError: "",
       runConditionForm: null,
       runConditionOriginal: null,
       runConditionErrors: {},
@@ -441,6 +447,8 @@ export class OccupiedPanel extends HTMLElement {
     ) {
       return;
     }
+    this.runtimeSubscriptionError = "";
+    this.previewController.disconnect();
     this.previewController.connect(this._hass.connection);
     await this.runtimeSubscription.subscribe(
       this._hass.connection,
@@ -448,6 +456,7 @@ export class OccupiedPanel extends HTMLElement {
       (snapshot) => this._onSnapshot(snapshot),
       () => this.recoverLivePreview(),
     );
+    this.flush();
   }
 
   private _onSnapshot(snapshot: RuntimeSnapshot) {
@@ -565,6 +574,14 @@ export class OccupiedPanel extends HTMLElement {
       this._failedEntry === entry ||
       this._loadedEntry === entry
     ) {
+      if (
+        this._loadedEntry === entry &&
+        !this._loading &&
+        !this.runtimeSubscriptionError
+      ) {
+        void this._subscribe();
+      }
+
       return;
     }
     this._loading = true;
@@ -700,6 +717,9 @@ export class OccupiedPanel extends HTMLElement {
     this._failedEntry = null;
     this._instancesFailed = false;
     this._instancesReady = false;
+    if (this._loadedEntry && this.selectedInstance?.loaded) {
+      void this._subscribe();
+    }
     void this._load();
   }
 
@@ -709,6 +729,9 @@ export class OccupiedPanel extends HTMLElement {
 
     return [
       programNotice,
+      this.runtimeSubscriptionError
+        ? t("runtime_subscription_failed_hint")
+        : "",
       this.document?.recovery_yaml == null
         ? ""
         : t("stored_program_invalid_hint"),
