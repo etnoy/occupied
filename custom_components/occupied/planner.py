@@ -23,7 +23,7 @@ from .validation import (
     validate_program,
 )
 
-PLANNER_VERSION = 13
+PLANNER_VERSION = 14
 
 
 class RandomStreams:

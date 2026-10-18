@@ -115,6 +115,12 @@ class SimulationDay:
                     )
                 ]
             )
+        # Astral's calculation date follows longitude rather than civil zone
+        # offsets. Date-line zones can be a full day ahead of solar longitude.
+        offset = datetime.combine(self.date, time(12), self.zone).utcoffset().total_seconds()
+        solar_date = self.date - timedelta(
+            days=round((offset - self.observer.longitude * 240) / 86400)
+        )
         try:
             anchor = {
                 "sunrise": sunrise,
@@ -123,7 +129,7 @@ class SimulationDay:
                 "dusk": dusk,
                 "noon": noon,
                 "midnight": midnight,
-            }[spec.sun](self.observer, date=self.date, tzinfo=self.zone).astimezone(UTC)
+            }[spec.sun](self.observer, date=solar_date, tzinfo=self.zone).astimezone(UTC)
         except ValueError:
             self.issues.append(
                 Issue(
