@@ -135,6 +135,10 @@
     <div id="notice" class="banner" role="status" hidden={!notices}>
       {notices}
     </div>
+    {#if panel.runtimeSubscriptionError}
+      <p class="error" role="alert">{panel.runtimeSubscriptionError}</p>
+      <button type="button" onclick={() => panel.retry()}>{t("retry")}</button>
+    {/if}
     <div id="error" class="error" role="alert" hidden={!panel.error}>
       {panel.error}
     </div>

@@ -7,6 +7,8 @@ export const en = {
   issue_error: "Error",
   issue_warning: "Warning",
   issue_info: "Info",
+  runtime_subscription_failed_hint:
+    "Live updates are unavailable. Retry to restore revision checks and live preview updates.",
   stored_program_invalid_hint:
     "Stored program is invalid. Correct the preserved YAML in Settings and save to resume management.",
   chronological_order: "Chronological",
@@ -538,6 +540,8 @@ export const sv = {
   issue_error: "Fel",
   issue_warning: "Varning",
   issue_info: "Information",
+  runtime_subscription_failed_hint:
+    "Liveuppdateringar är inte tillgängliga. Försök igen för att återställa revisionskontroller och liveförhandsvisning.",
   stored_program_invalid_hint:
     "Det sparade programmet är ogiltigt. Rätta bevarad YAML i Inställningar och spara för att återuppta styrningen.",
   chronological_order: "Kronologisk ordning",
