@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import type { HaSelector, EditorContext } from "../../types.js";
   import { isValueChangedEvent } from "../../utils/util.js";
   import { focusEditor } from "../../controllers/step-editor-controller.js";
@@ -30,7 +30,7 @@
     options = {},
     trailing,
   }: {
-    panel: OccupiedPanel;
+    panel: LoadedOccupiedPanel;
     context: EditorContext;
     key: string;
     label: string;

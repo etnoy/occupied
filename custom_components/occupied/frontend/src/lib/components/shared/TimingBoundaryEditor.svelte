@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import type { EditorContext, TimingEditorContext } from "../../types.js";
   import { solarEvents } from "../../models/step-model.js";
   import EditorField from "./EditorField.svelte";
@@ -9,7 +9,7 @@
     context,
     modifier,
   }: {
-    panel: OccupiedPanel;
+    panel: LoadedOccupiedPanel;
     context: TimingEditorContext;
     modifier: "latestAt" | "onlyBefore";
   } = $props();

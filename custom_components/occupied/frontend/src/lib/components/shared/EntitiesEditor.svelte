@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import type { ActionEditorContext } from "../../types.js";
   import FieldError from "./FieldError.svelte";
   import { properties } from "../../actions/dom.js";
@@ -11,7 +11,7 @@
     context,
     label = "entities_label",
   }: {
-    panel: OccupiedPanel;
+    panel: LoadedOccupiedPanel;
     context: ActionEditorContext;
     label?: string;
   } = $props();

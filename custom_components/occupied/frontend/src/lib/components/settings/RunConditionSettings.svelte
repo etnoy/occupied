@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import { properties } from "../../actions/dom.js";
   import {
     managedOffEntities,
@@ -8,7 +8,7 @@
   import { isValueChangedEvent } from "../../utils/util.js";
   import FieldError from "../shared/FieldError.svelte";
 
-  let { panel, revision }: { panel: OccupiedPanel; revision: number } =
+  let { panel, revision }: { panel: LoadedOccupiedPanel; revision: number } =
     $props();
 
   let data = $derived.by(() => {

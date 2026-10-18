@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { hasProgram } from "./lib/panel-state.js";
   import type { OccupiedPanel } from "./occupied-panel.js";
   import type { Issue, Tab } from "./lib/types.js";
   import { errorMessage } from "./lib/utils/util.js";
@@ -39,7 +40,7 @@
     void revision;
     const showingSteps =
       panel.tab === "steps" &&
-      panel.draft &&
+      hasProgram(panel) &&
       panel.selectedInstance?.loaded &&
       !panel._loading &&
       (!panel.stepEditor || panel.stepEditor.existing);
@@ -166,7 +167,7 @@
             <button type="button" onclick={() => panel.retry()}
               >{t("retry")}</button
             >
-          {:else if panel._loading || !panel.draft}
+          {:else if panel._loading || !hasProgram(panel)}
             {#if panel.error && !panel._loading}
               <button type="button" onclick={() => panel.retry()}
                 >{t("retry")}</button
@@ -189,5 +190,5 @@
     </div>
   </main>
 </ha-top-app-bar-fixed>
-{#if panel.pendingStepExit}
+{#if panel.pendingStepExit && hasProgram(panel)}
   <UnsavedStepDialog {panel} />{/if}

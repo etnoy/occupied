@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import type { StepEntry } from "../../types.js";
   import { reference } from "../../actions/dom.js";
   import { deleteStep } from "../../controllers/steps.js";
@@ -12,7 +12,7 @@
     entry,
     onClose,
   }: {
-    panel: OccupiedPanel;
+    panel: LoadedOccupiedPanel;
     entry: StepEntry;
     onClose: () => void;
   } = $props();

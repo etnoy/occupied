@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, untrack } from "svelte";
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import type { RandomEditorContext } from "../../controllers/random-editor-controller.js";
   import { days } from "../../models/model.js";
   import StaggerSettings from "../shared/StaggerSettings.svelte";
@@ -17,7 +17,7 @@
     context,
     onClose,
   }: {
-    panel: OccupiedPanel;
+    panel: LoadedOccupiedPanel;
     context: RandomEditorContext;
     onClose: () => void;
   } = $props();

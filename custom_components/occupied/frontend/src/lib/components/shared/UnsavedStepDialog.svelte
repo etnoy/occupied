@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import { onMount } from "svelte";
 
-  let { panel }: { panel: OccupiedPanel } = $props();
+  let { panel }: { panel: LoadedOccupiedPanel } = $props();
 
   let t = $derived(panel.t);
 

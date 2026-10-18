@@ -1,6 +1,6 @@
 <script lang="ts">
   import { actionTargets } from "../../utils/custom-action.js";
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import { randomEntries, countSummary } from "../../models/random-model.js";
   import { openRandom } from "../../controllers/random-editor-controller.js";
   import { stepEntries } from "../../models/step-model.js";
@@ -15,7 +15,7 @@
   import ActivityIntro from "../shared/ActivityIntro.svelte";
   import { chronologicalEntries } from "../../utils/activity-order.js";
 
-  let { panel, revision }: { panel: OccupiedPanel; revision: number } =
+  let { panel, revision }: { panel: LoadedOccupiedPanel; revision: number } =
     $props();
 
   let data = $derived.by(() => {

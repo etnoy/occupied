@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import type { ActionEditorContext } from "../../types.js";
   import { properties } from "../../actions/dom.js";
   import { isValueChangedEvent } from "../../utils/util.js";
@@ -17,7 +17,7 @@
     entityLabel = "entities_label",
     hideEntities = false,
   }: {
-    panel: OccupiedPanel;
+    panel: LoadedOccupiedPanel;
     context: ActionEditorContext;
     heading?: string;
     kindLabel?: string;

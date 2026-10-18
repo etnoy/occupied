@@ -96,7 +96,8 @@ async function fixture() {
       get: () => Reflect.get(globalThis.window, key),
     });
   }
-  const { OccupiedPanel } = await import("@occupied/occupied-panel.js");
+  const { OccupiedPanel, hasProgram } =
+    await import("@occupied/occupied-panel.js");
   const panel = new OccupiedPanel();
   const instances: InstanceDocument[] = ["main", "guest"].map((id) => ({
     config_entry_id: id,
@@ -203,6 +204,7 @@ async function fixture() {
   panel.hass = hass;
   panel.panel = {};
   await settle();
+  assert.ok(hasProgram(panel));
 
   return {
     panel,

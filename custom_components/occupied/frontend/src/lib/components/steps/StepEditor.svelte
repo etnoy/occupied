@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
 
   import { stepEntries } from "../../models/step-model.js";
   import StepActions from "./StepActions.svelte";
@@ -10,7 +10,7 @@
   import ActionEditor from "../shared/ActionEditor.svelte";
   import { createStepEditorContext } from "../../controllers/step-editor-controller.js";
 
-  let { panel, revision }: { panel: OccupiedPanel; revision: number } =
+  let { panel, revision }: { panel: LoadedOccupiedPanel; revision: number } =
     $props();
 
   let context = $derived.by(() => {

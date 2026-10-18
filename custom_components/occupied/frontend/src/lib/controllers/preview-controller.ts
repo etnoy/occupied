@@ -32,6 +32,10 @@ export class PreviewController {
   }
 
   movePreviewDay(days: number) {
+    if (!this.panel.document) {
+      return;
+    }
+
     return this.selectPreviewDate(
       shiftScheduleDate(
         this.panel.previewDate || this.panel.document.simulation_date,

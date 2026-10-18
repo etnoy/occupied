@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import type { TimingEditorContext } from "../../types.js";
   import EditorField from "./EditorField.svelte";
   import FieldError from "./FieldError.svelte";
@@ -24,7 +24,7 @@
       ["relative", "relative_to"],
     ],
   }: {
-    panel: OccupiedPanel;
+    panel: LoadedOccupiedPanel;
     context: TimingEditorContext;
     heading?: string;
     clockLabel?: string;
