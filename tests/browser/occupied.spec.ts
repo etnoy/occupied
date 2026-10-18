@@ -116,6 +116,61 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     panel.getByRole("button", { name: "Evening light", exact: true }),
   ).toBeVisible();
+  // A state report rebuilds entry objects while the pointer remains captured.
+  const ids = await panel.evaluate(async (element) => {
+    const controller = element as OccupiedPanel;
+    const first = Object.keys(controller.draft.steps!)[0];
+    await controller.save({
+      ...controller.draft,
+      steps: {
+        ...controller.draft.steps,
+        browser_second: {
+          ...controller.draft.steps![first],
+          name: "Later light",
+          timing: { absolute_time: { start: "23:00" } },
+        },
+      },
+    });
+
+    return [first, "browser_second"];
+  });
+  const handles = panel.locator(".activity-drag-handle");
+  await expect(handles).toHaveCount(2);
+  await expect(handles.first()).toBeEnabled();
+  await handles.first().hover();
+  const first = (await handles.first().boundingBox())!;
+  const last = (await handles.last().boundingBox())!;
+  await page.mouse.move(first.x + first.width / 2, first.y + first.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(last.x + last.width / 2, last.y + last.height + 8, {
+    steps: 8,
+  });
+  await expect(panel.locator(".activity-dragging")).toHaveCount(1);
+  await panel.evaluate((element) => {
+    const controller = element as OccupiedPanel;
+    controller.hass = {
+      ...controller._hass,
+      states: { ...controller._hass.states },
+    };
+    controller.flush();
+  });
+  await page.mouse.up();
+  await expect
+    .poll(() =>
+      panel
+        .locator(".activity-item")
+        .evaluateAll((rows) =>
+          rows.map((row) => (row as HTMLElement).dataset.activityId),
+        ),
+    )
+    .toEqual([ids[1], ids[0]]);
+  await panel.evaluate(async (element) => {
+    const controller = element as OccupiedPanel;
+    const steps = { ...controller.draft.steps };
+    delete steps.browser_second;
+    await controller.save({ ...controller.draft, steps });
+  });
+
   await panel.getByRole("button", { name: "Preview", exact: true }).click();
   await expect(panel.locator("state-history-chart-timeline")).toBeVisible();
   await expect(
@@ -152,7 +207,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     panel.getByRole("button", { name: "Create your first step" }),
   ).toBeVisible();
-  expect(saves).toHaveLength(2);
+  expect(saves).toHaveLength(4);
   expect(Object.keys(saves.at(-1)?.steps || {})).toEqual([]);
 
   await page.reload();

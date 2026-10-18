@@ -12821,7 +12821,9 @@ function ActivityList($$anchor, $$props) {
     const scroller = scrollContainer(handle);
     const initialY = event2.clientY;
     const initialKey = $$props.storageKey;
-    const initialTree = get(tree);
+    const initialParents = get(sorted2).map((entry) =>
+      $$props.parentId?.(entry),
+    );
     const initialIds = get(sorted2).map((entry) => entry.id);
     let clientY = initialY;
     let frame = 0;
@@ -12880,9 +12882,11 @@ function ActivityList($$anchor, $$props) {
         index2 !== null &&
         !disabled() &&
         $$props.storageKey === initialKey &&
-        get(tree) === initialTree &&
         initialIds.every(
-          (item, position) => item === get(sorted2)[position]?.id,
+          (item, position) =>
+            item === get(sorted2)[position]?.id &&
+            initialParents[position] ===
+              $$props.parentId?.(get(sorted2)[position]),
         ) &&
         initialIds.length === get(sorted2).length
       ) {
