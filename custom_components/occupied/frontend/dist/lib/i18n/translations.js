@@ -1,6 +1,12 @@
 // Generated from custom_components/occupied/frontend/src/lib/i18n/translations.ts by pnpm run build. Do not edit.
 // Keep UI wording here; call sites use stable, descriptive shorthand keys.
 export const en = {
+  offset_example: "30m or 1h",
+  signed_offset_example: "-30m or 90m",
+  issue_line: "Line {line}",
+  issue_error: "Error",
+  issue_warning: "Warning",
+  issue_info: "Info",
   stored_program_invalid_hint:
     "Stored program is invalid. Correct the preserved YAML in Settings and save to resume management.",
   chronological_order: "Chronological",
@@ -526,6 +532,12 @@ export const en = {
 };
 // Missing translations fall back to English.
 export const sv = {
+  offset_example: "30m eller 1h",
+  signed_offset_example: "-30m eller 90m",
+  issue_line: "Rad {line}",
+  issue_error: "Fel",
+  issue_warning: "Varning",
+  issue_info: "Information",
   stored_program_invalid_hint:
     "Det sparade programmet är ogiltigt. Rätta bevarad YAML i Inställningar och spara för att återuppta styrningen.",
   chronological_order: "Kronologisk ordning",

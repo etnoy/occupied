@@ -119,7 +119,7 @@ export async function prepareCustomAction(panel, form) {
       result.issues
         .map(
           (issue) =>
-            `${issue.line ? `Line ${issue.line}: ` : ""}${issue.path || ""}: ${issue.message}`,
+            `${issue.line ? `${panel.t("issue_line").replace("{line}", () => String(issue.line))}: ` : ""}${issue.path || ""}: ${issue.message}`,
         )
         .join("\n"),
     );

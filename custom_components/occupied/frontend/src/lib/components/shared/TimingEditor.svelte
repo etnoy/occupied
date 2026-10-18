@@ -220,7 +220,7 @@
       label="start_offset"
       value={time.startOffset}
       update={(value) => (time.startOffset = value)}
-      options={{ placeholder: "30m or 1h" }}
+      options={{ placeholder: context.t("offset_example") }}
     ></EditorField>
     {#if time.endOffset || editor.showEndOffset || editor.errors.endOffset}
       <EditorField
