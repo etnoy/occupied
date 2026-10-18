@@ -178,6 +178,7 @@ export interface EditorContext {
 }
 
 export interface ActionEditorContext extends EditorContext {
+  setErrors: (errors: FieldErrors) => void;
   form: ActionForm;
 }
 

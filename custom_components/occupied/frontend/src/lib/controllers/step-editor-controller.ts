@@ -1,4 +1,5 @@
 import { prepareCustomAction } from "../utils/custom-action.js";
+import type { FieldErrors } from "../types.js";
 import type { OccupiedPanel } from "../../occupied-panel.js";
 import { required, offsetErrors } from "../utils/util.js";
 import { stepEntries, editorErrors, buildStep } from "../models/step-model.js";
@@ -146,6 +147,9 @@ export function createStepEditorContext(panel: OccupiedPanel) {
     refresh,
     changed,
     submit,
+    setErrors: (errors: FieldErrors) => {
+      Object.assign(editor.errors, errors);
+    },
     cancel,
   };
 }

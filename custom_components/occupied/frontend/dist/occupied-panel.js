@@ -9588,6 +9588,9 @@ function createStepEditorContext(panel) {
     refresh,
     changed,
     submit,
+    setErrors: (errors) => {
+      Object.assign(editor.errors, errors);
+    },
     cancel,
   };
 }
@@ -11985,7 +11988,7 @@ function ActionEditor($$anchor, $$props) {
         const errors = changeActionKind(get(form), value, (message) =>
           globalThis.confirm(get(t)(message)),
         );
-        Object.assign($$props.context.editor.errors, errors);
+        $$props.context.setErrors(errors);
       },
       options: {
         hideLabel: true,
@@ -14066,6 +14069,11 @@ function createRandomEditorContext(panel) {
   });
   const action2 = (phase) => ({
     editor: scopedEditor(`${phase}.`),
+    setErrors: (errors) => {
+      for (const [key2, message] of Object.entries(errors)) {
+        editor.errors[`${phase}.${key2}`] = message;
+      }
+    },
     form: new Proxy(form[phase], {}),
     t,
     fieldPrefix: `${phase}.`,
