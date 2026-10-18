@@ -1,0 +1,35 @@
+.github/workflows/check.yml
+  s_161efb67f51ffd::t_fa9e8b9441f977 20-106,115-116,121-122
+.github/workflows/release.yml
+  s_161efb67f51ffd::t_4819f19b182805 46
+docs/maintenance.md
+  s_161efb67f51ffd::t_f5d6f2ce8a358e 4,28-29,54,56-57
+scripts/check_artifacts.py
+  s_161efb67f51ffd::t_1f5bb3c48a9d05 10-11,57,61,63-64
+scripts/ha_matrix.py
+  s_161efb67f51ffd::t_f23f7a3038fab1 18,25-43,69-70,594-601
+scripts/release_notes.py
+  s_161efb67f51ffd::t_05bbc4d94b9a12 1,5-6,11-12
+tests/browser/serve.py
+  s_161efb67f51ffd::t_6277448f97c59d 62-68
+tests/core/test_ha_matrix.py
+  s_161efb67f51ffd::t_54c5b0609a12c0 75-79,105,124-133,178-193,303,308,350,352,412
+tests/core/test_release_workflow.py
+  s_161efb67f51ffd::t_60c4d32b56175b 54-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "59f92bd6142c957a9a7da38721a96ed12ef0d3a4",
+  "prompts": {},
+  "sessions": {
+    "s_161efb67f51ffd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a150e0-7d50-7483-be2a-6920c4ecc8bf",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
