@@ -33,6 +33,7 @@ class OccupiedStatusSensor(OccupiedEntity, SensorEntity):
         "error",
         "paused",
         "transitioning",
+        "staggering",
         "active",
     ]
     _attr_icon = "mdi:home-clock"

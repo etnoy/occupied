@@ -87,6 +87,7 @@
           "error": "Error",
           "paused": "Paused",
           "transitioning": "Transitioning",
+          "staggering": "Staggering",
           "active": "Active"
         }
       },

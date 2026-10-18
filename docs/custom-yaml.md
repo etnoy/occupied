@@ -295,6 +295,8 @@ Staggering supports `turn_on`, `turn_off`, `light.turn_on`, `light.turn_off`, `s
 
 For `N` entities and a period `W`, ticks are `W / N` apart. The first tick occurs after one interval and the last at the period's end. Four targets over `2m` change at +30, +60, +90, and +120 seconds. A single target changes at the endpoint. Each new transition gets a new permutation; an already sampled plan retains its order through preview and restart.
 
+During a staggered action, Status shows **Staggering** and Status reason shows progress such as `Staggering: 3/7 events`. The counter includes processed ticks, including skipped ticks, and returns to the normal status when staggering finishes or stops.
+
 A light's `transition` remains its fade duration after its tick. Stagger options are never passed as Home Assistant service data.
 
 ### Staggering in a list
