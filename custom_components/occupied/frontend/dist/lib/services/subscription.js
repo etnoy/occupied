@@ -15,7 +15,7 @@ export class PanelSubscription {
   }
   dispose() {
     this.epoch++;
-    this.unsubscribe?.();
+    void this.unsubscribe?.().catch(() => {});
     this.unsubscribe = null;
     this.pending = false;
   }
@@ -36,7 +36,7 @@ export class PanelSubscription {
         this.unsubscribe = unsubscribe;
         await onSubscribed?.();
       } else {
-        unsubscribe();
+        void unsubscribe().catch(() => {});
       }
     } catch (error) {
       if (epoch === this.epoch) {

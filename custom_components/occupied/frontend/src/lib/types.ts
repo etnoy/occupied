@@ -442,7 +442,7 @@ export interface HomeAssistant {
     subscribeMessage<T>(
       callback: (snapshot: T) => void,
       message: Record<string, unknown>,
-    ): Promise<() => void>;
+    ): Promise<() => Promise<void>>;
   };
 }
 

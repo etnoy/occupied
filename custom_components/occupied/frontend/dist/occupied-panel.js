@@ -18442,7 +18442,7 @@ var PanelSubscription = class {
   }
   dispose() {
     this.epoch++;
-    this.unsubscribe?.();
+    void this.unsubscribe?.().catch(() => {});
     this.unsubscribe = null;
     this.pending = false;
   }
@@ -18463,7 +18463,7 @@ var PanelSubscription = class {
         this.unsubscribe = unsubscribe;
         await onSubscribed?.();
       } else {
-        unsubscribe();
+        void unsubscribe().catch(() => {});
       }
     } catch (error) {
       if (epoch === this.epoch) {
