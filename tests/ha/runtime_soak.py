@@ -108,8 +108,9 @@ async def test_sixty_days_of_late_timer_dispatch(hass, freezer, path, month, cap
         }
         finished = set()
         ticks = 0
-        while engine.next_event and engine.next_event < end:
-            freezer.move_to(engine.next_event + timedelta(milliseconds=1))
+        # Drive internal refresh timers as well as the user-visible actions.
+        while engine._queue and engine._queue[0].at < end:
+            freezer.move_to(engine._queue[0].at + timedelta(milliseconds=1))
             async_fire_time_changed(hass, dt_util.utcnow())
             await hass.async_block_till_done()
             if (today := dt_util.now().date()) != day:
@@ -141,7 +142,7 @@ async def test_sixty_days_of_late_timer_dispatch(hass, freezer, path, month, cap
             )
             ticks += 1
             assert ticks < 20000, "Timer failed to advance across the soak window"
-        assert engine.active and engine.next_event >= end
+        assert engine.active and engine._queue[0].at >= end
         assert calls, "The soak must exercise registered virtual services"
     finally:
         await engine.async_close()
