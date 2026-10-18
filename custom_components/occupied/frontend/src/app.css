@@ -668,6 +668,7 @@ nav button[aria-current="page"] {
 }
 
 /* Editor dialogs */
+.step-exit-dialog,
 .step-delete-dialog,
 .step-advanced-dialog {
   width: 440px;
@@ -682,6 +683,7 @@ nav button[aria-current="page"] {
   box-shadow: 0 6px 24px #0003;
 }
 
+.step-exit-dialog::backdrop,
 .step-delete-dialog::backdrop,
 .step-advanced-dialog::backdrop {
   background: #0006;
@@ -725,30 +727,6 @@ nav button[aria-current="page"] {
 .step-weekday-option input {
   flex: 0 0 auto;
   accent-color: var(--primary-color, #167b94);
-}
-
-.step-exit-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: #0004;
-}
-
-.step-exit-dialog {
-  position: relative;
-  inset: auto;
-  width: 440px;
-  max-width: 100%;
-  margin: 0;
-  padding: 24px;
-  border: 1px solid var(--divider-color, #d5dce3);
-  border-radius: 12px;
-  background: var(--card-background-color, #fff);
-  color: var(--primary-text-color, #202c37);
-  box-shadow: 0 6px 24px #0003;
 }
 
 .step-exit-dialog h2 {

@@ -112,6 +112,45 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     panel.getByRole("button", { name: "Evening light", exact: true }),
   ).toBeVisible();
 
+  await panel
+    .getByRole("button", { name: "Evening light", exact: true })
+    .click();
+  const editedName = panel.getByRole("textbox", {
+    name: "Step name",
+    exact: true,
+  });
+  await editedName.fill("Unsaved name");
+  await panel.getByRole("button", { name: "Preview", exact: true }).click();
+  const unsaved = panel.getByRole("alertdialog", {
+    name: "Unsaved changes",
+    exact: true,
+  });
+  await expect(unsaved).toBeVisible();
+  expect(await unsaved.evaluate((element) => element.matches(":modal"))).toBe(
+    true,
+  );
+  const keepEditing = unsaved.getByRole("button", {
+    name: "Keep editing",
+    exact: true,
+  });
+  const discard = unsaved.getByRole("button", {
+    name: "Discard changes",
+    exact: true,
+  });
+  await expect(keepEditing).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(discard).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(keepEditing).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(unsaved).not.toBeVisible();
+  await expect(editedName).toHaveValue("Unsaved name");
+  await panel.getByRole("button", { name: "Settings", exact: true }).click();
+  await unsaved
+    .getByRole("button", { name: "Discard changes", exact: true })
+    .click();
+  await expect(unsaved).not.toBeVisible();
+
   await page.reload();
   await expect(
     panel.getByRole("button", { name: "Evening light", exact: true }),
