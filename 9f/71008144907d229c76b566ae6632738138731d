@@ -1,0 +1,23 @@
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_78e8d8ff2fc7b0::t_6591e94f8a0702 12824-12826,12886-12889
+custom_components/occupied/frontend/src/lib/components/shared/ActivityList.svelte
+  s_78e8d8ff2fc7b0::t_a211668f286542 147,207-211
+tests/browser/occupied.spec.ts
+  s_78e8d8ff2fc7b0::t_03cda15905304d 119-173,210
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "9f71008144907d229c76b566ae6632738138731d",
+  "prompts": {},
+  "sessions": {
+    "s_78e8d8ff2fc7b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-1c02-7ac3-b7a0-517a13a126d7",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
