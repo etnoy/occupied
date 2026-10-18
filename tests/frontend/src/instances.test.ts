@@ -197,6 +197,8 @@ async function fixture() {
         return Promise.resolve(() => {
           disposed.push(key);
           subscriptions.delete(key);
+
+          return Promise.resolve();
         });
       },
     },

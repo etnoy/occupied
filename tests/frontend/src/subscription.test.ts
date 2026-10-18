@@ -5,14 +5,14 @@ import type { HomeAssistant } from "@occupied/lib/types.js";
 
 void test("disposing pending subscriptions rejects old snapshots and releases late handles", async () => {
   const callbacks: ((value: unknown) => void)[] = [];
-  const completions: ((unsubscribe: () => void) => void)[] = [];
+  const completions: ((unsubscribe: () => Promise<void>) => void)[] = [];
   const errors: unknown[] = [];
   const values: unknown[] = [];
   const connection: HomeAssistant["connection"] = {
     subscribeMessage: <T>(callback: (value: T) => void) => {
       callbacks.push((value) => callback(value as T));
 
-      return new Promise<() => void>((resolve) => {
+      return new Promise<() => Promise<void>>((resolve) => {
         completions.push(resolve);
       });
     },
@@ -40,6 +40,8 @@ void test("disposing pending subscriptions rejects old snapshots and releases la
   callbacks[1]("current");
   completions[0](() => {
     oldDisposals++;
+
+    return Promise.resolve();
   });
   await first;
   assert.equal(oldDisposals, 1);
@@ -51,6 +53,8 @@ void test("disposing pending subscriptions rejects old snapshots and releases la
   let currentDisposals = 0;
   completions[1](() => {
     currentDisposals++;
+
+    return Promise.resolve();
   });
   await second;
   subscription.dispose();
@@ -75,7 +79,7 @@ void test("a subscription failure can be retried and detached callbacks stay ina
       }
       callback = (value) => onValue(value as T);
 
-      return Promise.resolve(() => {});
+      return Promise.resolve(() => Promise.resolve());
     },
   };
   const subscription = new PanelSubscription<string>(
@@ -97,3 +101,50 @@ void test("a subscription failure can be retried and detached callbacks stay ina
   assert.deepEqual(values, ["connected"]);
   subscription.dispose();
 });
+
+for (const when of ["active", "pending"]) {
+  void test(`rejected ${when} unsubscribe is contained after disposal`, async () => {
+    const errors: unknown[] = [];
+    const unhandled: unknown[] = [];
+    const onRejection = (error: unknown) => {
+      unhandled.push(error);
+    };
+    process.on("unhandledRejection", onRejection);
+    let resolve!: (unsubscribe: () => Promise<void>) => void;
+    let releases = 0;
+    const connection: HomeAssistant["connection"] = {
+      subscribeMessage: () =>
+        new Promise<() => Promise<void>>((done) => {
+          resolve = done;
+        }),
+    };
+    const subscription = new PanelSubscription<unknown>(
+      () => true,
+      (error) => {
+        errors.push(error);
+      },
+    );
+    try {
+      const pending = subscription.subscribe(connection, {}, () => {});
+      if (when === "pending") {
+        subscription.dispose();
+      }
+      resolve(() => {
+        releases++;
+
+        return Promise.reject(new Error("socket already closed"));
+      });
+      await pending;
+      if (when === "active") {
+        subscription.dispose();
+      }
+      await new Promise<void>((done) => setImmediate(done));
+      assert.equal(releases, 1);
+      assert.equal(subscription.active, false);
+      assert.deepEqual(errors, []);
+      assert.deepEqual(unhandled, []);
+    } finally {
+      process.off("unhandledRejection", onRejection);
+    }
+  });
+}

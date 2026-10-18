@@ -4,7 +4,7 @@ import type { HomeAssistant } from "../types.js";
 export class PanelSubscription<T> {
   private epoch = 0;
   private pending = false;
-  private unsubscribe: (() => void) | null = null;
+  private unsubscribe: (() => Promise<void>) | null = null;
 
   constructor(
     private readonly isConnected: () => boolean,
@@ -17,7 +17,7 @@ export class PanelSubscription<T> {
 
   dispose() {
     this.epoch++;
-    this.unsubscribe?.();
+    void this.unsubscribe?.().catch(() => {});
     this.unsubscribe = null;
     this.pending = false;
   }
@@ -44,7 +44,7 @@ export class PanelSubscription<T> {
         this.unsubscribe = unsubscribe;
         await onSubscribed?.();
       } else {
-        unsubscribe();
+        void unsubscribe().catch(() => {});
       }
     } catch (error) {
       if (epoch === this.epoch) {
