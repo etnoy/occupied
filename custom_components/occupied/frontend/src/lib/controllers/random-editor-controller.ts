@@ -1,5 +1,5 @@
 import { prepareCustomAction } from "../utils/custom-action.js";
-import type { OccupiedPanel } from "../../occupied-panel.js";
+import type { LoadedOccupiedPanel } from "../../occupied-panel.js";
 import type {
   RandomEntry,
   EditorContext,
@@ -16,7 +16,7 @@ import {
 } from "../models/random-model.js";
 import { focusEditor } from "./step-editor-controller.js";
 
-export function openRandom(panel: OccupiedPanel, entry?: RandomEntry) {
+export function openRandom(panel: LoadedOccupiedPanel, entry?: RandomEntry) {
   if (panel.busy) {
     return;
   }
@@ -43,7 +43,7 @@ export function openRandom(panel: OccupiedPanel, entry?: RandomEntry) {
   }
 }
 
-export function createRandomEditorContext(panel: OccupiedPanel) {
+export function createRandomEditorContext(panel: LoadedOccupiedPanel) {
   const editor = panel.randomEditor!,
     form = editor.form,
     t = panel.t;
@@ -210,7 +210,7 @@ export function createRandomEditorContext(panel: OccupiedPanel) {
   };
 }
 
-export async function deleteRandom(panel: OccupiedPanel) {
+export async function deleteRandom(panel: LoadedOccupiedPanel) {
   const editor = panel.randomEditor;
   if (!editor || panel.busy) {
     return;

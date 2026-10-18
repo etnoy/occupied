@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import { deleteRandom } from "../../controllers/random-editor-controller.js";
   import { randomReferences } from "../../models/model.js";
   import { randomEntries } from "../../models/random-model.js";
 
-  let { panel, onClose }: { panel: OccupiedPanel; onClose: () => void } =
+  let { panel, onClose }: { panel: LoadedOccupiedPanel; onClose: () => void } =
     $props();
 
   let dialog: HTMLDialogElement;

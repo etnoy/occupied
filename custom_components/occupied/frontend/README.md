@@ -48,3 +48,5 @@ TypeScript modules recursively and mirrors their paths under `dist/`, bundling
 the Svelte UI and CSS into `dist/occupied-panel.js`. Commit generated assets with
 source changes. `pnpm run build:check` verifies them without rewriting files;
 `pnpm test` builds only test output and exercises the committed modules.
+
+Panel program state is optional until loading completes and becomes undefined again on unload or controller switching. Views and editor controllers that need a loaded program use `LoadedOccupiedPanel`, after the `hasProgram` guard checks draft, saved program and document together. Keep the existing epoch checks across asynchronous work: a controller can unload while a request is pending.

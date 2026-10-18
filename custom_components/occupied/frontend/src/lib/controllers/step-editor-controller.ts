@@ -1,6 +1,9 @@
 import { prepareCustomAction } from "../utils/custom-action.js";
 import type { FieldErrors } from "../types.js";
-import type { OccupiedPanel } from "../../occupied-panel.js";
+import type {
+  OccupiedPanel,
+  LoadedOccupiedPanel,
+} from "../../occupied-panel.js";
 import { required, offsetErrors } from "../utils/util.js";
 import { stepEntries, editorErrors, buildStep } from "../models/step-model.js";
 
@@ -21,7 +24,7 @@ export function focusEditor(panel: OccupiedPanel, key?: string) {
   target?.focus();
 }
 
-export function createStepEditorContext(panel: OccupiedPanel) {
+export function createStepEditorContext(panel: LoadedOccupiedPanel) {
   const editor = panel.stepEditor!,
     form = editor.form,
     time = form.timing,

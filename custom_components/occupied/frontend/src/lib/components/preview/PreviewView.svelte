@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
 
   import type { PlannedEvent } from "../../types.js";
   import { openStep } from "../../controllers/steps.js";
@@ -13,7 +13,7 @@
   import { formatPreviewDate } from "../../utils/time-format.js";
   import { calendarDayPlan } from "../../utils/timeline.js";
 
-  let { panel, revision }: { panel: OccupiedPanel; revision: number } =
+  let { panel, revision }: { panel: LoadedOccupiedPanel; revision: number } =
     $props();
 
   let showLoading = $state(false);

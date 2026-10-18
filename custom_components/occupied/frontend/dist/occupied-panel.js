@@ -8725,6 +8725,11 @@ if (typeof window !== "undefined") {
   );
 }
 
+// custom_components/occupied/frontend/src/lib/panel-state.ts
+function hasProgram(panel) {
+  return !!panel.draft && !!panel.saved && !!panel.document;
+}
+
 // custom_components/occupied/frontend/src/lib/utils/cover.ts
 var coverActions = [
   ["cover.open_cover", "open_cover"],
@@ -17813,7 +17818,7 @@ function App($$anchor, $$props) {
     void get(revision);
     const showingSteps =
       get(panel).tab === "steps" &&
-      get(panel).draft &&
+      hasProgram(get(panel)) &&
       get(panel).selectedInstance?.loaded &&
       !get(panel)._loading &&
       (!get(panel).stepEditor || get(panel).stepEditor.existing);
@@ -18028,6 +18033,9 @@ function App($$anchor, $$props) {
               }
               append($$anchor4, fragment_7);
             };
+            var d = user_derived(
+              () => get(panel)._loading || !hasProgram(get(panel)),
+            );
             var consequent_7 = ($$anchor4) => {
               StepEditor($$anchor4, {
                 get panel() {
@@ -18094,8 +18102,7 @@ function App($$anchor, $$props) {
                 !get(panel).selectedInstance?.loaded
               )
                 $$render(consequent_4);
-              else if (get(panel)._loading || !get(panel).draft)
-                $$render(consequent_6, 1);
+              else if (get(d)) $$render(consequent_6, 1);
               else if (get(panel).stepEditor && !get(panel).stepEditor.existing)
                 $$render(consequent_7, 2);
               else if (
@@ -18128,8 +18135,11 @@ function App($$anchor, $$props) {
         },
       });
     };
+    var d_1 = user_derived(
+      () => get(panel).pendingStepExit && hasProgram(get(panel)),
+    );
     if_block(node_10, ($$render) => {
-      if (get(panel).pendingStepExit) $$render(consequent_13);
+      if (get(d_1)) $$render(consequent_13);
     });
   }
   template_effect(
@@ -18174,6 +18184,9 @@ var PreviewController = class {
     this.invalidate();
   }
   movePreviewDay(days2) {
+    if (!this.panel.document) {
+      return;
+    }
     return this.selectPreviewDate(
       shiftScheduleDate(
         this.panel.previewDate || this.panel.document.simulation_date,
@@ -18533,6 +18546,9 @@ var OccupiedPanel = class extends HTMLElement {
     );
   }
   openRunCondition() {
+    if (!this.draft) {
+      return;
+    }
     this.runConditionForm = runConditionForm(this.draft.run_condition);
     this.runConditionOriginal = copy(this.runConditionForm);
     this.runConditionErrors = {};
@@ -18550,7 +18566,13 @@ var OccupiedPanel = class extends HTMLElement {
     this.flush();
   }
   async saveRunCondition() {
-    if (!this.runConditionForm || this.yamlDirty || this.busy) {
+    if (
+      !this.draft ||
+      !this.document ||
+      !this.runConditionForm ||
+      this.yamlDirty ||
+      this.busy
+    ) {
       return;
     }
     this.runConditionErrors = runConditionErrors(this.runConditionForm);
@@ -19491,4 +19513,4 @@ function randomEditorField(tail, form) {
 if (!customElements.get("occupied-panel")) {
   customElements.define("occupied-panel", OccupiedPanel);
 }
-export { OccupiedPanel };
+export { OccupiedPanel, hasProgram };

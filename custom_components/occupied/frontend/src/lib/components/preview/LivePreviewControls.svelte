@@ -1,12 +1,12 @@
 <script lang="ts">
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import {
     lastGroupResult,
     liveSessionStatus,
   } from "../../utils/live-preview.js";
   import { stamp } from "../../utils/timeline.js";
 
-  let { panel }: { panel: OccupiedPanel } = $props();
+  let { panel }: { panel: LoadedOccupiedPanel } = $props();
 
   let t = $derived(panel.t);
   let session = $derived(panel.liveVisible ? panel.liveSession : null);

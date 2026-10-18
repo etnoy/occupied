@@ -1,6 +1,6 @@
 <script lang="ts">
   import { flushSync } from "svelte";
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import type { StepEntry } from "../../types.js";
   import type { StepEditorContext } from "../../controllers/step-editor-controller.js";
   import { startStep } from "../../controllers/steps.js";
@@ -12,7 +12,7 @@
     entry,
     context,
   }: {
-    panel: OccupiedPanel;
+    panel: LoadedOccupiedPanel;
     entry?: StepEntry;
     context?: StepEditorContext;
   } = $props();

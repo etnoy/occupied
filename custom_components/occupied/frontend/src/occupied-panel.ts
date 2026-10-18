@@ -44,9 +44,9 @@ type PanelConfig = { config?: { config_entry_id?: string } };
 export class OccupiedPanel extends HTMLElement {
   declare shadowRoot: ShadowRoot;
 
-  draft!: Program;
-  saved!: Program;
-  document!: ProgramDocument;
+  draft?: Program;
+  saved?: Program;
+  document?: ProgramDocument;
   catalog: Catalog = { entities: [], services: {} };
   revision = "";
   stale = false;
@@ -107,6 +107,9 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   openRunCondition() {
+    if (!this.draft) {
+      return;
+    }
     this.runConditionForm = runConditionForm(this.draft.run_condition);
     this.runConditionOriginal = copy(this.runConditionForm);
     this.runConditionErrors = {};
@@ -126,7 +129,13 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   async saveRunCondition() {
-    if (!this.runConditionForm || this.yamlDirty || this.busy) {
+    if (
+      !this.draft ||
+      !this.document ||
+      !this.runConditionForm ||
+      this.yamlDirty ||
+      this.busy
+    ) {
       return;
     }
     this.runConditionErrors = runConditionErrors(this.runConditionForm);
@@ -1172,3 +1181,7 @@ function randomEditorField(tail: Path, form: RandomForm): string {
 if (!customElements.get("occupied-panel")) {
   customElements.define("occupied-panel", OccupiedPanel);
 }
+
+export { hasProgram } from "./lib/panel-state.js";
+
+export type { LoadedOccupiedPanel } from "./lib/panel-state.js";

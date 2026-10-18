@@ -1,6 +1,6 @@
 <script lang="ts">
   import { flushSync } from "svelte";
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import type { RandomEditorContext } from "../../controllers/random-editor-controller.js";
   import DeleteRandomDialog from "./DeleteRandomDialog.svelte";
   import AdvancedRandomSettings from "./AdvancedRandomSettings.svelte";
@@ -11,7 +11,7 @@
     advancedOpen = $bindable(false),
     advancedTrigger = $bindable(),
   }: {
-    panel: OccupiedPanel;
+    panel: LoadedOccupiedPanel;
     context: RandomEditorContext;
     advancedOpen?: boolean;
     advancedTrigger?: HTMLButtonElement;

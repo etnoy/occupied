@@ -1,4 +1,4 @@
-import type { OccupiedPanel } from "../../occupied-panel.js";
+import type { LoadedOccupiedPanel } from "../../occupied-panel.js";
 import type { StepEntry, Translate } from "../types.js";
 import {
   dependentNames,
@@ -8,7 +8,7 @@ import {
 import { copy, removeStep } from "../models/model.js";
 import { focusEditor } from "./step-editor-controller.js";
 
-export async function deleteStep(panel: OccupiedPanel, id: string) {
+export async function deleteStep(panel: LoadedOccupiedPanel, id: string) {
   if (
     !panel.document ||
     panel.busy ||
@@ -43,7 +43,7 @@ export async function deleteStep(panel: OccupiedPanel, id: string) {
 }
 
 export function startStep(
-  panel: OccupiedPanel,
+  panel: LoadedOccupiedPanel,
   entry?: StepEntry | null,
   parent?: StepEntry,
 ) {
@@ -56,7 +56,7 @@ export function startStep(
 }
 
 function showStep(
-  panel: OccupiedPanel,
+  panel: LoadedOccupiedPanel,
   entry?: StepEntry | null,
   parent?: StepEntry,
 ) {
@@ -71,14 +71,14 @@ function showStep(
   }
 }
 
-function scrollStepEditorIntoView(panel: OccupiedPanel, id: string) {
+function scrollStepEditorIntoView(panel: LoadedOccupiedPanel, id: string) {
   panel.shadowRoot
     .getElementById(`step-editor-${id}`)
     ?.querySelector<HTMLElement>(".step-editor")
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-export function openStep(panel: OccupiedPanel, entry: StepEntry) {
+export function openStep(panel: LoadedOccupiedPanel, entry: StepEntry) {
   if (panel.busy) {
     return;
   }
@@ -98,7 +98,7 @@ export function openStep(panel: OccupiedPanel, entry: StepEntry) {
   showEntry(panel, entry);
 }
 
-function showEntry(panel: OccupiedPanel, entry: StepEntry) {
+function showEntry(panel: LoadedOccupiedPanel, entry: StepEntry) {
   showStep(panel, entry);
 }
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import type { OccupiedPanel } from "../../../occupied-panel.js";
+  import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import { createRandomEditorContext } from "../../controllers/random-editor-controller.js";
   import EditorField from "../shared/EditorField.svelte";
   import TimingEditor from "../shared/TimingEditor.svelte";
@@ -10,7 +10,7 @@
   import { focusEditor } from "../../controllers/step-editor-controller.js";
   import { randomExplanation } from "../../utils/random-explanation.js";
 
-  let { panel, revision }: { panel: OccupiedPanel; revision: number } =
+  let { panel, revision }: { panel: LoadedOccupiedPanel; revision: number } =
     $props();
 
   let context = $derived.by(() => {
