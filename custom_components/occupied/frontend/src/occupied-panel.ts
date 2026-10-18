@@ -19,6 +19,7 @@ import type {
   LivePreviewSession,
   Plan,
 } from "./lib/types.js";
+import { scheduleToday } from "./lib/utils/time-format.js";
 import { errorMessage } from "./lib/utils/util.js";
 import { copy, set } from "./lib/models/model.js";
 import {
@@ -177,6 +178,13 @@ export class OccupiedPanel extends HTMLElement {
   _hass!: HomeAssistant;
   _loading = false;
   instances: InstanceDocument[] = [];
+
+  get today() {
+    return scheduleToday(
+      this._hass?.config?.time_zone || this.document?.timezone,
+    );
+  }
+
   selectedEntry: string | null = null;
   private _instancesReady = false;
   private _instancesFailed = false;
