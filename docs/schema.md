@@ -196,6 +196,8 @@ Permission and pause are HA controls. HA automations can drive permission using 
 
 Standard cover commands provide independent position/tilt targets for preview. A stop clears its affected target because the actual stopped position is unknown. Cover activation is **future only** by default; the **Enforce expected state on start** setting also reconciles known cover axes when a run condition is configured. With the setting off, past calls are skipped, even when preview has a known target. Covers never participate in light handover; historical movement requires explicit startup enforcement. Outside changes to `current_position` or `current_tilt_position` yield the entity until its next scheduled action or the next activation. Controller stop leaves cover movement to the device and does not implicitly send a stop or restore call.
 
+During a dispatched native light transition or cover move, device reports that progress toward the requested brightness, color or position retain controller ownership after HA drops the call context. Reversals, unrelated changes and reports with a user or automation context still yield to manual control. Light tracking ends with its transition; cover tracking ends at the target or after five minutes. Tracking is saved for restart recovery.
+
 ## Validation, export, and identity
 
 Unknown/retired fields, duplicate YAML keys, unsafe tags, recursive aliases, and YAML merge keys are rejected. Errors include model paths such as `steps.evening.timing.absolute_time.start` and YAML source locations.

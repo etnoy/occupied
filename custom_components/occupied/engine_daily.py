@@ -42,6 +42,7 @@ from .activity import async_log_action
 from .anchor_latches import AnchorLatches, source_fields
 from .const import DOMAIN, SIGNAL_PREFIX
 from .covers import cover_target
+from .device_motion import motion_for, progresses
 from .handover import calls_for_target
 from .lighting import LightState, project_lighting
 from .models import Handover, controlled_entities, projectable_lights
@@ -125,6 +126,7 @@ class DailyEngine:
         self._owned = {}
         self._handover = {}
         self._native_fades = set()
+        self._motions = {}
         self._restoring = False
         self._saved_context = None
         self._anchor_latches = AnchorLatches()
@@ -230,6 +232,12 @@ class DailyEngine:
             }
             self._handover = saved.get("handover", {})
             self._native_fades = set(saved.get("native_fades", []))
+            if saved.get("behavior") == behavior_hash(self.program):
+                self._motions = {
+                    entity: motion
+                    for entity, motion in saved.get("motions", {}).items()
+                    if entity in controlled_entities(self.program)
+                }
         context = self._context()
         if saved.get("behavior") == behavior_hash(
             self.program
@@ -273,7 +281,7 @@ class DailyEngine:
                 self._native_fades.discard(entity)
             elif observed != expected:
                 state = self.hass.states.get(entity)
-                if (
+                if self._accept_motion(entity, state.context) or (
                     entity in self._handover
                     and state
                     and (
@@ -419,6 +427,7 @@ class DailyEngine:
         self._handover.clear()
         self._owned.clear()
         self._native_fades.clear()
+        self._motions.clear()
 
     @callback
     def _state_changed(self, event):
@@ -452,10 +461,15 @@ class DailyEngine:
             self._owned.pop(entity, None)
             self._handover.pop(entity, None)
             self._native_fades.discard(entity)
+            self._motions.pop(entity, None)
             if self.active:
                 self.hass.async_create_task(self._async_observation_changed(entity))
             return
-        if event.context.id in self._contexts or event.context.parent_id in self._contexts:
+        if (
+            event.context.id in self._contexts
+            or event.context.parent_id in self._contexts
+            or self._accept_motion(entity, event.context)
+        ):
             if entity in self._owned and (value := self._observe(entity)):
                 self._owned[entity] = value
             return
@@ -480,9 +494,31 @@ class DailyEngine:
         if not self.active:
             return
         self._yielded.add(entity)
+        self._motions.pop(entity, None)
         self._owned.pop(entity, None)
         self._handover.pop(entity, None)
         self.hass.async_create_task(self._async_observation_changed(entity))
+
+    def _accept_motion(self, entity, context):
+        motion = self._motions.get(entity)
+        if motion is None:
+            return False
+        if (
+            context.user_id is None
+            and context.parent_id is None
+            and progresses(motion, self._observe(entity), dt_util.utcnow())
+        ):
+            if (
+                all(
+                    motion["observed"]["attributes"].get(key) == value
+                    for key, value in motion["targets"].items()
+                )
+                and motion["observed"]["state"] == motion["state"]
+            ):
+                self._motions.pop(entity, None)
+            return True
+        self._motions.pop(entity, None)
+        return False
 
     async def _async_condition_changed(self):
         async with self._lock:
@@ -577,6 +613,7 @@ class DailyEngine:
             "owned": self._owned,
             "handover": self._handover,
             "native_fades": sorted(self._native_fades),
+            "motions": self._motions,
             "contexts": list(self._contexts),
         }
         try:
@@ -1350,6 +1387,24 @@ class DailyEngine:
             self._finish(key, "cancelled_before_dispatch", action)
             await self._persist()
             return False
+        for entity in action.targets:
+            previous = self._motions.pop(entity, None)
+            if motion := motion_for(
+                replace(action, data=data), self._observe(entity), dt_util.utcnow()
+            ):
+                if (
+                    action.action.startswith("cover.")
+                    and previous
+                    and instant(previous["deadline"]) > dt_util.utcnow()
+                ):
+                    if (
+                        "current_position" in previous["targets"]
+                        and "current_position" not in motion["targets"]
+                    ):
+                        motion["state"] = previous["state"]
+                    motion["targets"] = previous["targets"] | motion["targets"]
+                    motion["states"] = sorted(set(previous["states"]) | set(motion["states"]))
+                self._motions[entity] = motion
         try:
             await dispatch_service(self.hass, action, context, data=data)
         except ServiceWaitTimeout as err:
@@ -1358,6 +1413,8 @@ class DailyEngine:
             await self._persist()
             return False
         except Exception as err:
+            for entity in action.targets:
+                self._motions.pop(entity, None)
             self.last_error = (
                 f"{action.action} for {', '.join(action.targets)}: {type(err).__name__}: {err}"
             )
