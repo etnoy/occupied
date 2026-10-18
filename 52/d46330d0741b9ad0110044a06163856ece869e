@@ -1,0 +1,33 @@
+custom_components/occupied/planner.py
+  s_f10ec3bc261be9::t_783df3af3bcb0b 20,25,392,411-416,561,579-587
+custom_components/occupied/validation.py
+  s_f10ec3bc261be9::t_c485e17b0936f2 8,437-446,448-455
+docs/schema.md
+  s_78e8d8ff2fc7b0::t_dc6d0199b3ddb6 49-50
+tests/core/test_early_time_caps.py
+  s_f10ec3bc261be9::t_c522d7c9a50722 1-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "52d46330d0741b9ad0110044a06163856ece869e",
+  "prompts": {},
+  "sessions": {
+    "s_78e8d8ff2fc7b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-1c02-7ac3-b7a0-517a13a126d7",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_f10ec3bc261be9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-77a0-7d40-9972-b0b8763751f2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
