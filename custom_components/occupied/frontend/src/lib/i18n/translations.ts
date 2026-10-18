@@ -543,6 +543,51 @@ export const sv: Partial<Record<TranslationKey, string>> = {
   issue_error: "Fel",
   issue_warning: "Varning",
   issue_info: "Information",
+  step_dependents_error:
+    "Steg eller slumpmässiga händelser beror på det här steget. Ändra deras tider först.",
+  managed_file_error:
+    "Filfel: se Inställningar eller Reparationer i Home Assistant",
+  preview_infeasible_error:
+    "Förhandsvisningen innehåller datum som inte kan planeras. Kontrollera problemen i tidslinjen.",
+  duration_error:
+    "Ange en positiv varaktighet inom sju dagar, till exempel 5m eller 1h.",
+  duration_order_error:
+    "Den längsta varaktigheten måste vara minst lika lång som den kortaste.",
+  duration_exceeds_window_error:
+    "Den kortaste varaktigheten ryms inte i tidsfönstret.",
+  window_end_order_error: "Tidsfönstret måste sluta efter att det börjar.",
+  random_changed_error:
+    "Den här slumpmässiga händelsen har ändrats på annat håll. Avbryt och öppna den igen innan du sparar.",
+  custom_yaml_required_error: "Ange en åtgärd eller en lista med åtgärder.",
+  scene_required_error: "Välj en scen i Home Assistant.",
+  entities_required_error: "Välj minst en entitet.",
+  entity_ids_error: "Välj giltiga entitets-ID:n i Home Assistant.",
+  scene_single_error: "Välj en enda scen i Home Assistant.",
+  light_switch_entities_error:
+    "Välj lampor och strömbrytare, eller välj en tjänsteåtgärd.",
+  service_error: "Välj en tjänst med formatet domän.tjänst.",
+  service_data_error: "Tjänstedata måste vara ett JSON-objekt.",
+  start_time_required_error: "Välj en starttid.",
+  end_time_error: "Välj en giltig sluttid eller lämna fältet tomt.",
+  step_reference_error:
+    "Välj ett annat steg utan att skapa ett cirkelberoende.",
+  time_source_required_error:
+    "Välj ett steg eller en tidskälla i Home Assistant.",
+  timing_mode_error: "Välj absolut tid eller relativ tid.",
+  step_changed_error:
+    "Det här steget har ändrats på annat håll. Avbryt och öppna det igen innan du sparar.",
+  custom_yaml_validation_error:
+    "Validera anpassad YAML innan du lägger till den i utkastet.",
+  offset_format_error:
+    "Använd h, m eller s, till exempel 30m, 1h, 1h30m eller -10m.",
+  offset_range_error: "Förskjutningar måste ligga inom sju dagar.",
+  offset_order_error:
+    "Slutets förskjutning måste vara minst lika stor som startens.",
+  retry: "Försök igen",
+  events: "händelser",
+  planned_time: "Planerad tid",
+  source: "Källa",
+  off_label: "Av",
 
   runtime_subscription_failed_hint:
     "Liveuppdateringar är inte tillgängliga. Försök igen för att återställa revisionskontroller och liveförhandsvisning.",

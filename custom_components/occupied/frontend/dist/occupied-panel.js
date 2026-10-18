@@ -635,6 +635,53 @@ var sv = {
   issue_error: "Fel",
   issue_warning: "Varning",
   issue_info: "Information",
+  step_dependents_error:
+    "Steg eller slumpm\xE4ssiga h\xE4ndelser beror p\xE5 det h\xE4r steget. \xC4ndra deras tider f\xF6rst.",
+  managed_file_error:
+    "Filfel: se Inst\xE4llningar eller Reparationer i Home Assistant",
+  preview_infeasible_error:
+    "F\xF6rhandsvisningen inneh\xE5ller datum som inte kan planeras. Kontrollera problemen i tidslinjen.",
+  duration_error:
+    "Ange en positiv varaktighet inom sju dagar, till exempel 5m eller 1h.",
+  duration_order_error:
+    "Den l\xE4ngsta varaktigheten m\xE5ste vara minst lika l\xE5ng som den kortaste.",
+  duration_exceeds_window_error:
+    "Den kortaste varaktigheten ryms inte i tidsf\xF6nstret.",
+  window_end_order_error:
+    "Tidsf\xF6nstret m\xE5ste sluta efter att det b\xF6rjar.",
+  random_changed_error:
+    "Den h\xE4r slumpm\xE4ssiga h\xE4ndelsen har \xE4ndrats p\xE5 annat h\xE5ll. Avbryt och \xF6ppna den igen innan du sparar.",
+  custom_yaml_required_error:
+    "Ange en \xE5tg\xE4rd eller en lista med \xE5tg\xE4rder.",
+  scene_required_error: "V\xE4lj en scen i Home Assistant.",
+  entities_required_error: "V\xE4lj minst en entitet.",
+  entity_ids_error: "V\xE4lj giltiga entitets-ID:n i Home Assistant.",
+  scene_single_error: "V\xE4lj en enda scen i Home Assistant.",
+  light_switch_entities_error:
+    "V\xE4lj lampor och str\xF6mbrytare, eller v\xE4lj en tj\xE4nste\xE5tg\xE4rd.",
+  service_error: "V\xE4lj en tj\xE4nst med formatet dom\xE4n.tj\xE4nst.",
+  service_data_error: "Tj\xE4nstedata m\xE5ste vara ett JSON-objekt.",
+  start_time_required_error: "V\xE4lj en starttid.",
+  end_time_error: "V\xE4lj en giltig sluttid eller l\xE4mna f\xE4ltet tomt.",
+  step_reference_error:
+    "V\xE4lj ett annat steg utan att skapa ett cirkelberoende.",
+  time_source_required_error:
+    "V\xE4lj ett steg eller en tidsk\xE4lla i Home Assistant.",
+  timing_mode_error: "V\xE4lj absolut tid eller relativ tid.",
+  step_changed_error:
+    "Det h\xE4r steget har \xE4ndrats p\xE5 annat h\xE5ll. Avbryt och \xF6ppna det igen innan du sparar.",
+  custom_yaml_validation_error:
+    "Validera anpassad YAML innan du l\xE4gger till den i utkastet.",
+  offset_format_error:
+    "Anv\xE4nd h, m eller s, till exempel 30m, 1h, 1h30m eller -10m.",
+  offset_range_error: "F\xF6rskjutningar m\xE5ste ligga inom sju dagar.",
+  offset_order_error:
+    "Slutets f\xF6rskjutning m\xE5ste vara minst lika stor som startens.",
+  retry: "F\xF6rs\xF6k igen",
+  events: "h\xE4ndelser",
+  planned_time: "Planerad tid",
+  source: "K\xE4lla",
+  off_label: "Av",
   runtime_subscription_failed_hint:
     "Liveuppdateringar \xE4r inte tillg\xE4ngliga. F\xF6rs\xF6k igen f\xF6r att \xE5terst\xE4lla revisionskontroller och livef\xF6rhandsvisning.",
   stored_program_invalid_hint:
