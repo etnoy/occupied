@@ -1,0 +1,23 @@
+.github/dependabot.yml
+  s_3dc9e24925ef16::t_b22403b0e91933 5-7,18-20,34-36
+.github/workflows/pr-title.yml
+  s_3dc9e24925ef16::t_a491db9ba8c487 1-23
+docs/maintenance.md
+  s_3dc9e24925ef16::t_7d022403177daf 66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "49ba6766b08a9763af0b12634492281c6267fd79",
+  "prompts": {},
+  "sessions": {
+    "s_3dc9e24925ef16": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a150da-8c7e-7493-8dc6-6fa02a22fef6",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
