@@ -63,7 +63,7 @@ for lane in matrix["lanes"]:
 PY
 ```
 
-Open one PR named, for example, **Support HA 2026.11, drop 2026.5**. Include the
+Open one PR named, for example, **chore(ha): support HA 2026.11, drop 2026.5**. Include the
 old/new support range, dependency and Python changes, removed shims, and actual
 validation results. Wait for every required CI job and maintainer review. The
 release workflow derives its compatibility notes from the reviewed matrix.

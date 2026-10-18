@@ -222,6 +222,8 @@ For `reload`, an unsuccessful managed-file validation also returns `2`.
 
 # Development
 
+Pull request titles must follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
+
 Use [mise](https://mise.jdx.dev/) with Python's built-in virtual environment and pip; uv is optional:
 
 ```sh
