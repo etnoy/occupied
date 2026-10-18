@@ -104,7 +104,7 @@ timing:
 
 Step sources reference the parent's sampled time, using elapsed UTC offsets, rather than actual service completion. Cycles and missing IDs are errors. Each step's weekdays can be edited independently. A dependent step runs only on source dates selected by both it and its parent. A disabled, unavailable, or unscheduled parent skips dependent occurrences without changing their weekday selections.
 
-Solar sources support sunrise, sunset, dawn, dusk, noon, and midnight. Dawn/dusk are civil twilight. Solar events are calculated for the requested date and location; unavailable events skip the step and its dependents with an explanation.
+Solar sources support sunrise, sunset, dawn, dusk, noon, and midnight. Dawn/dusk are civil twilight. Solar events are calculated for the requested date and location; unavailable events skip the step and its dependents with an explanation. Solar anchors use the requested local schedule date, including civil time zones east of the international date line whose longitudes are west of 180°. Solar midnight follows Astral’s occurrence nearest the date’s 00:00 and can fall shortly before civil midnight.
 
 HA sources support time-bearing datetime helpers, timestamp sensors, and calendars. Calendar sources require `attribute: start_time` or `end_time`. Time-only helpers repeat daily. Dated sources use only the occurrence HA reports and are not projected onto unknown future dates. Missing or unavailable values skip the step with a warning. Offline previews have no HA snapshot. Source changes reschedule future work without replaying completed steps for the same source date.
 
