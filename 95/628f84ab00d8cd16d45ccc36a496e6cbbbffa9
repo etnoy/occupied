@@ -1,0 +1,33 @@
+custom_components/occupied/frontend/dist/lib/controllers/preview-controller.js
+  s_78e8d8ff2fc7b0::t_7a0f0764af49b5 31,60
+custom_components/occupied/frontend/dist/lib/utils/time-format.js
+  s_78e8d8ff2fc7b0::t_f24ef24132524c 2-14
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_78e8d8ff2fc7b0::t_9c2fee11f56e55 2-127,3942-3947,16029,16036,16046,16052-16063,16092,18206,18235,18622-18626
+custom_components/occupied/frontend/src/lib/components/preview/PreviewView.svelte
+  s_78e8d8ff2fc7b0::t_3412933ac8b82c 20-34,66,104,142-143
+custom_components/occupied/frontend/src/lib/controllers/preview-controller.ts
+  s_78e8d8ff2fc7b0::t_2e3630c1ce75ca 36,68
+custom_components/occupied/frontend/src/lib/utils/time-format.ts
+  s_78e8d8ff2fc7b0::t_f65c11ea101741 5-19
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_78e8d8ff2fc7b0::t_8ba0686525ca9c 22,181-187
+tests/frontend/src/instances.test.ts
+  s_78e8d8ff2fc7b0::t_964c28c4dbb649 25-26,238,1018,1038,1041,1053,1800-1823
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "95628f84ab00d8cd16d45ccc36a496e6cbbbffa9",
+  "prompts": {},
+  "sessions": {
+    "s_78e8d8ff2fc7b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-1c02-7ac3-b7a0-517a13a126d7",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
