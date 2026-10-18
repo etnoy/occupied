@@ -1,0 +1,23 @@
+custom_components/occupied/device_motion.py
+  s_f10ec3bc261be9::t_89bf584c3200bc 44
+docs/schema.md
+  s_f10ec3bc261be9::t_8e20a1215dfc75 195-196
+tests/core/test_device_motion.py
+  s_f10ec3bc261be9::t_3e6a6b83538c9a 31-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "5e006386440bf00fca26a6d0a9af07bc1b278635",
+  "prompts": {},
+  "sessions": {
+    "s_f10ec3bc261be9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-77a0-7d40-9972-b0b8763751f2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
