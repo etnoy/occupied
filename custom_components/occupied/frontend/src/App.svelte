@@ -85,7 +85,7 @@
   {@const className = item.severity === "warning" ? "hint" : "error"}
   {@const text = primary
     ? item.message
-    : `${item.severity || "error"} · ${item.path || "$"}: ${item.message}`}
+    : `${t(`issue_${item.severity || "error"}`)} · ${item.path || "$"}: ${item.message}`}
   {#if panel.activeEditor && item.severity !== "warning"}
     <button
       type="button"

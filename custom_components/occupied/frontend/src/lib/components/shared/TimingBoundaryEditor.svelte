@@ -76,6 +76,6 @@
     label="start_offset"
     value={boundary.startOffset}
     update={(value) => (boundary.startOffset = value)}
-    options={{ placeholder: "-30m or 90m" }}
+    options={{ placeholder: context.t("signed_offset_example") }}
   />
 {/if}

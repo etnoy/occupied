@@ -1,6 +1,12 @@
 // Generated from custom_components/occupied/frontend/src/occupied-panel.ts by pnpm run build. Do not edit.
 // custom_components/occupied/frontend/src/lib/i18n/translations.ts
 var en = {
+  offset_example: "30m or 1h",
+  signed_offset_example: "-30m or 90m",
+  issue_line: "Line {line}",
+  issue_error: "Error",
+  issue_warning: "Warning",
+  issue_info: "Info",
   stored_program_invalid_hint:
     "Stored program is invalid. Correct the preserved YAML in Settings and save to resume management.",
   chronological_order: "Chronological",
@@ -525,6 +531,12 @@ var en = {
   off_label: "Off",
 };
 var sv = {
+  offset_example: "30m eller 1h",
+  signed_offset_example: "-30m eller 90m",
+  issue_line: "Rad {line}",
+  issue_error: "Fel",
+  issue_warning: "Varning",
+  issue_info: "Information",
   stored_program_invalid_hint:
     "Det sparade programmet \xE4r ogiltigt. R\xE4tta bevarad YAML i Inst\xE4llningar och spara f\xF6r att \xE5teruppta styrningen.",
   chronological_order: "Kronologisk ordning",
@@ -8908,7 +8920,7 @@ async function prepareCustomAction(panel, form) {
       result.issues
         .map(
           (issue) =>
-            `${issue.line ? `Line ${issue.line}: ` : ""}${issue.path || ""}: ${issue.message}`,
+            `${issue.line ? `${panel.t("issue_line").replace("{line}", () => String(issue.line))}: ` : ""}${issue.path || ""}: ${issue.message}`,
         )
         .join("\n"),
     );
@@ -10916,21 +10928,28 @@ function TimingBoundaryEditor($$anchor, $$props) {
         });
       }
       var node_3 = sibling(node_2, 2);
-      EditorField(node_3, {
-        get panel() {
-          return $$props.panel;
-        },
-        get context() {
-          return get(fields);
-        },
-        key: "startOffset",
-        label: "start_offset",
-        get value() {
-          return get(boundary2).startOffset;
-        },
-        update: (value) => (get(boundary2).startOffset = value),
-        options: { placeholder: "-30m or 90m" },
-      });
+      {
+        let $0 = user_derived(() => ({
+          placeholder: $$props.context.t("signed_offset_example"),
+        }));
+        EditorField(node_3, {
+          get panel() {
+            return $$props.panel;
+          },
+          get context() {
+            return get(fields);
+          },
+          key: "startOffset",
+          label: "start_offset",
+          get value() {
+            return get(boundary2).startOffset;
+          },
+          update: (value) => (get(boundary2).startOffset = value),
+          get options() {
+            return get($0);
+          },
+        });
+      }
       append($$anchor2, fragment_2);
     };
     if_block(node_1, ($$render) => {
@@ -11472,21 +11491,28 @@ function TimingEditor($$anchor, $$props) {
         });
       }
       var node_9 = sibling(node_8, 2);
-      EditorField(node_9, {
-        get panel() {
-          return $$props.panel;
-        },
-        get context() {
-          return $$props.context;
-        },
-        key: "startOffset",
-        label: "start_offset",
-        get value() {
-          return get(time).startOffset;
-        },
-        update: (value) => (get(time).startOffset = value),
-        options: { placeholder: "30m or 1h" },
-      });
+      {
+        let $0 = user_derived(() => ({
+          placeholder: $$props.context.t("offset_example"),
+        }));
+        EditorField(node_9, {
+          get panel() {
+            return $$props.panel;
+          },
+          get context() {
+            return $$props.context;
+          },
+          key: "startOffset",
+          label: "start_offset",
+          get value() {
+            return get(time).startOffset;
+          },
+          update: (value) => (get(time).startOffset = value),
+          get options() {
+            return get($0);
+          },
+        });
+      }
       var node_10 = sibling(node_9, 2);
       {
         var consequent_5 = ($$anchor3) => {
@@ -17767,7 +17793,7 @@ function App($$anchor, $$props) {
     const text2 = user_derived(() =>
       primary2()
         ? item().message
-        : `${item().severity || "error"} \xB7 ${item().path || "$"}: ${item().message}`,
+        : `${get(t)(`issue_${item().severity || "error"}`)} \xB7 ${item().path || "$"}: ${item().message}`,
     );
     var fragment = comment();
     var node_1 = first_child(fragment);

@@ -1,3 +1,4 @@
+import { translator } from "@occupied/lib/i18n/translations.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -344,4 +345,30 @@ void test("advanced settings can update a single custom action without losing li
   assert.ok(form.customYaml?.includes('period: "3m"'));
   form.customYaml += "\n# Unsaved edits";
   assert.equal(supportsStagger(form), false);
+});
+
+void test("Custom YAML issue line prefixes use the panel language", async () => {
+  for (const [language, label] of [
+    ["en", "Line"],
+    ["sv", "Rad"],
+  ]) {
+    const form = actionForm({
+      actions: [{ action: "turn_on", entities: ["light.example"] }],
+    });
+    const panel = {
+      version: 0,
+      activeEditor: null,
+      t: translator(language),
+      ws: () =>
+        Promise.resolve({
+          valid: false,
+          issues: [
+            { line: 3, path: "$.actions[0]", message: "Backend detail" },
+          ],
+        }),
+    } as unknown as OccupiedPanel;
+    await assert.rejects(prepareCustomAction(panel, form), {
+      message: `${label} 3: $.actions[0]: Backend detail`,
+    });
+  }
 });
