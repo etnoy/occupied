@@ -213,8 +213,11 @@ export class OccupiedPanel extends HTMLElement {
       this._hass?.locale?.language !== value?.locale?.language ||
       this._hass?.locale?.time_format !== value?.locale?.time_format;
     const changed = this._hass?.connection !== value?.connection;
+    const languageChanged = this._hass?.language !== value?.language;
     this._hass = value;
-    this.t = translator(value?.language);
+    if (languageChanged) {
+      this.t = translator(value?.language);
+    }
 
     for (const selector of this.shadowRoot.querySelectorAll<
       HaSelector | HaGenericPicker

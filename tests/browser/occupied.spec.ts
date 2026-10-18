@@ -127,6 +127,73 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     panel.getByRole("button", { name: "Evening light · step", exact: true }),
   ).toBeVisible();
+  const source = panel.getByRole("button", {
+    name: "Evening light · step",
+    exact: true,
+  });
+  const sourceNode = (await source.elementHandle())!;
+  const chart = panel.locator("state-history-chart-timeline");
+  const chartInputs = await chart.evaluateHandle((element) => {
+    const timeline = element as HTMLElement & {
+      data: unknown;
+      startTime: Date;
+      endTime: Date;
+    };
+
+    return {
+      data: timeline.data,
+      start: timeline.startTime,
+      end: timeline.endTime,
+    };
+  });
+  await source.focus();
+  await panel.evaluate((element) => {
+    const controller = element as OccupiedPanel;
+    for (let index = 0; index < 10; index++) {
+      controller.hass = {
+        ...controller._hass,
+        states: { ...controller._hass.states },
+      };
+      controller.flush();
+    }
+  });
+  expect(await sourceNode.evaluate((node) => node.isConnected)).toBe(true);
+  await expect(source).toBeFocused();
+  expect(
+    await chart.evaluate((element, before) => {
+      const timeline = element as HTMLElement & {
+        data: unknown;
+        startTime: Date;
+        endTime: Date;
+      };
+
+      return (
+        timeline.data === before.data &&
+        timeline.startTime === before.start &&
+        timeline.endTime === before.end
+      );
+    }, chartInputs),
+  ).toBe(true);
+  await chartInputs.dispose();
+  await panel.evaluate((element) => {
+    const controller = element as OccupiedPanel;
+    const timeline = controller.shadowRoot.querySelector(
+      "state-history-chart-timeline",
+    ) as HTMLElement & { data: unknown[] };
+    timeline.data = [...timeline.data];
+    controller.navigate("steps");
+  });
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        globalThis.requestAnimationFrame(() =>
+          globalThis.requestAnimationFrame(() => resolve()),
+        ),
+      ),
+  );
+  expect(errors).toEqual([]);
+  // End of preview lifecycle regression.
+
   await page.reload();
   await panel
     .getByRole("button", { name: "Evening light", exact: true })

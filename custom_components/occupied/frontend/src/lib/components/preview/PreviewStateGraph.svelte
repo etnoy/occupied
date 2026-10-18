@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import type { HomeAssistant, Plan, Program, Translate } from "../../types.js";
   import { timelineNow, type NowPosition } from "../../actions/timeline-now.js";
   import { timelineTooltip } from "../../actions/timeline-tooltip.js";
-  import { properties } from "../../actions/dom.js";
+  import { historyChartProperties } from "../../actions/history-chart.js";
   import { loadHaHistoryChart } from "../../services/ha-controls.js";
   import {
     calendarStateHistory,
@@ -49,11 +49,21 @@
   );
   // Keep native axis labels/tooltips in the sampled plan's zone, even when
   // HA's display timezone differs. This is a view-only copy of the HA object.
-  let chartHass = $derived({
-    ...hass,
-    config: { ...hass.config, time_zone: plan.timezone },
-    locale: { ...hass.locale, time_zone: "server" },
-  });
+  let config = $derived(hass.config);
+  let locale = $derived(hass.locale);
+  let zone = $derived(plan.timezone);
+  let start = $derived(plan.start);
+  let end = $derived(plan.end);
+  let startTime = $derived(new Date(start));
+  let endTime = $derived(new Date(end));
+  let chartHass = $derived.by(() => ({
+    ...untrack(() => hass),
+    config: { ...config, time_zone: zone },
+    locale: { ...locale, time_zone: "server" },
+    get states() {
+      return hass.states;
+    },
+  }));
 
   onMount(() => {
     let disposed = false;
@@ -120,12 +130,12 @@
         endTime: plan.end,
         onNowPosition: updateNowPosition,
       }}
-      use:properties={{
+      use:historyChartProperties={{
         hass: chartHass,
         data,
         names,
-        startTime: new Date(plan.start),
-        endTime: new Date(plan.end),
+        startTime,
+        endTime,
         showNames: true,
         narrow,
         // Let HA measure the entity names instead of reserving its maximum width.

@@ -265,8 +265,10 @@ export function groupPreviewEvents(events: PlannedEvent[]) {
   const groups = new Map<
     string,
     {
+      key: string;
       event: PlannedEvent;
       actions: {
+        key: string;
         event: PlannedEvent;
         events: PlannedEvent[];
         entities: string[];
@@ -283,7 +285,7 @@ export function groupPreviewEvents(events: PlannedEvent[]) {
     ]);
     let group = groups.get(key);
     if (!group) {
-      group = { event, actions: [] };
+      group = { key, event, actions: [] };
       groups.set(key, group);
       actionKeys.set(key, new Map());
     }
@@ -305,7 +307,7 @@ export function groupPreviewEvents(events: PlannedEvent[]) {
     if (index === undefined) {
       index = group.actions.length;
       keys.set(actionKey, index);
-      group.actions.push({ event, events: [], entities: [] });
+      group.actions.push({ key: actionKey, event, events: [], entities: [] });
     }
     const action = group.actions[index]!;
     action.events.push(event);

@@ -21,6 +21,11 @@
     updates: import("svelte/store").Readable<number>;
   } = $props();
 
+  const methods: Record<
+    PropertyKey,
+    { target: OccupiedPanel; value: unknown; bound: unknown } | undefined
+  > = {};
+
   // A fresh read-through facade makes mutable controller state reactive without
   // proxying Home Assistant's large state object. Bind DOM methods to their host.
   let panel = $derived.by(() => {
@@ -30,7 +35,18 @@
       get(target, key) {
         const value = Reflect.get(target, key, target);
 
-        return typeof value === "function" ? value.bind(target) : value;
+        if (typeof value === "function") {
+          const previous = methods[key];
+          if (previous?.target === target && previous.value === value) {
+            return previous.bound;
+          }
+          const bound = value.bind(target);
+          methods[key] = { target, value, bound };
+
+          return bound;
+        }
+
+        return value;
       },
     });
   });
