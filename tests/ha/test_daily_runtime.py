@@ -1083,20 +1083,29 @@ async def test_stagger_timer_dispatches_one_target_and_interleaves_other_work(
     engine = await load(hass, daily_entry, freezer)
     register_stagger_switch(hass, daily_devices)
     await engine.async_set_enabled(True)
-    await advance(hass, freezer, 89)
+    assert engine.status == "active"
+    await advance(hass, freezer, 60)
+    assert engine.status == "staggering"
+    assert engine.reason == "Staggering: 0/4 events"
+    await advance(hass, freezer, 29)
     assert not daily_devices
     await advance(hass, freezer, 1)
     assert len(daily_devices) == 1
+    assert engine.reason == "Staggering: 1/4 events"
     assert len(daily_devices[0].data["entity_id"]) == 1
     first_target = daily_devices[0].data["entity_id"][0]
     await advance(hass, freezer, 30)
     assert len([c for c in daily_devices if c.domain in {"light", "switch"}]) == 2
     assert len([c for c in daily_devices if c.domain == "script"]) == 1
+    assert engine.reason == "Staggering: 2/4 events"
     await advance(hass, freezer, 30)
     assert len([c for c in daily_devices if c.domain in {"light", "switch"}]) == 3
+    assert engine.reason == "Staggering: 3/4 events"
     await advance(hass, freezer, 30)
     activations = [c for c in daily_devices if c.domain in {"light", "switch"}]
     assert len(activations) == 4
+    assert engine.status == "active"
+    assert engine.reason == "Managing entities"
     assert {c.data["entity_id"][0] for c in activations} == set(targets)
     assert len([c for c in daily_devices if c.domain == "scene"]) == int(custom)
     assert daily_devices[0].data["entity_id"][0] == first_target
@@ -1115,6 +1124,8 @@ async def test_stopping_stagger_cancels_remaining_ticks(hass, daily_entry, daily
     await advance(hass, freezer, 120)
     assert len([c for c in daily_devices if c.domain != "script"]) == 1
     await engine.async_set_enabled(False)
+    assert engine.status == "disabled"
+    assert "Staggering" not in engine.reason
     await advance(hass, freezer, 120)
     assert len([c for c in daily_devices if c.domain != "script"]) == 1
 
@@ -1149,6 +1160,8 @@ async def test_custom_stagger_failure_blocks_future_ticks_and_following_actions(
     await engine.async_set_enabled(True)
     await advance(hass, freezer, 120)
     assert len(failed) == 1
+    assert engine.status == "active"
+    assert "Staggering" not in engine.reason
     await advance(hass, freezer, 60)
     assert len(failed) == 1
     assert not any(c.domain == "scene" for c in daily_devices)
@@ -1194,7 +1207,7 @@ async def test_custom_stagger_waits_for_an_earlier_deferred_action(
 
 @pytest.mark.parametrize("custom", [False, True])
 async def test_staggered_off_dispatches_one_entity_per_tick(
-    hass, daily_entry, daily_devices, freezer, custom
+    hass, daily_entry, daily_devices, freezer, custom, controller_entity_id
 ):
     hass.states.async_set("light.second", "off", {"supported_color_modes": ["brightness"]})
     daily_entry.data["program"]["steps"]["on"]["entities"] = ["light.proof", "light.second"]
@@ -1216,10 +1229,62 @@ async def test_staggered_off_dispatches_one_entity_per_tick(
     assert len(daily_devices) == 2
     await advance(hass, freezer, 299)
     assert not any(c.service == "turn_off" for c in daily_devices)
+    assert engine.status == "staggering"
+    assert engine.reason == "Staggering: 0/2 events"
     await advance(hass, freezer, 1)
     assert sum(c.service == "turn_off" for c in daily_devices) == 1
+    status = hass.states.get(controller_entity_id(daily_entry, "status"))
+    assert status.state == "staggering"
+    assert "staggering" in status.attributes["options"]
+    assert status.attributes["reason"] == "Staggering: 1/2 events"
+    assert hass.states.get(controller_entity_id(daily_entry, "status_reason")).state == (
+        "Staggering: 1/2 events"
+    )
+    assert engine.snapshot()["status"] == "staggering"
+    assert engine.snapshot()["reason"] == "Staggering: 1/2 events"
     await advance(hass, freezer, 60)
     assert sum(c.service == "turn_off" for c in daily_devices) == 2
+    assert engine.status == "active"
+    assert engine.reason == "Managing entities"
+
+
+@pytest.mark.parametrize("clock", ["23:59:00", "23:59:50"])
+async def test_stagger_progress_continues_across_midnight(
+    hass, daily_entry, daily_devices, freezer, clock
+):
+    targets = [f"light.stagger_{index}" for index in range(7)]
+    for entity in targets:
+        hass.states.async_set(entity, "on", {"supported_color_modes": ["onoff"]})
+    hass.states.async_set("input_boolean.away", "on")
+    daily_entry.data["program"]["run_condition"] = {
+        "entity_id": "input_boolean.away",
+        "state": ["on"],
+        "enforce_state_on_start": False,
+    }
+    daily_entry.data["program"]["steps"] = {
+        "off": {
+            "timing": {"absolute_time": {"start": clock}},
+            "action": "turn_off",
+            "entities": targets,
+            "stagger": {"enabled": True, "period": "140s"},
+        }
+    }
+    engine = await load(hass, daily_entry, freezer, "2026-10-13T23:58:00+00:00")
+    await engine.async_set_enabled(True)
+    assert engine.status == "active"
+    await advance(hass, freezer, 60 if clock == "23:59:00" else 110)
+    assert not daily_devices
+    assert engine.status == "staggering"
+    assert engine.reason == "Staggering: 0/7 events"
+    for completed in range(1, 8):
+        await advance(hass, freezer, 20)
+        assert len(daily_devices) == completed
+        if completed < 7:
+            assert engine.status == "staggering"
+            assert engine.reason == f"Staggering: {completed}/7 events"
+        else:
+            assert engine.status == "active"
+            assert engine.reason == "Managing entities"
 
 
 @pytest.fixture

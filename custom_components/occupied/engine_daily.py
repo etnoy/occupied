@@ -376,6 +376,7 @@ class DailyEngine:
                 queued = {event.key for event in self._queue}
                 self._queue.extend(event for event in retained if event.key not in queued)
                 heapq.heapify(self._queue)
+                self._update_active_status()
                 self._arm_timer()
             self._notify()
 
@@ -805,8 +806,39 @@ class DailyEngine:
             self.status = "waiting"
             self.reason = "Run condition met; waiting to enforce expected states"
         else:
+            now = dt_util.utcnow()
+            completed = total = 0
+            for plan, event in self._pending_staggers().values():
+                if event.authored_at > now:
+                    continue
+                members = (
+                    member
+                    for member in plan.occurrences[event.occurrence_id]
+                    if member.configured_index == event.configured_index and member.tick
+                )
+                for member in members:
+                    total += 1
+                    status = self._journal.get(self._key(plan, member), {}).get("status")
+                    completed += bool(status and status != "pending")
+            if total:
+                self.status = "staggering"
+                self.reason = f"Staggering: {completed}/{total} events"
+                return
             self.status = "transitioning" if self._handover else "active"
             self.reason = "Converging projected lighting" if self._handover else "Managing entities"
+
+    def _pending_staggers(self):
+        """Include unfinished actions whose remaining ticks fall after the daily queue boundary."""
+        groups = {}
+        for plan in self._plans.values():
+            for event in plan.events:
+                if (
+                    event.tick
+                    and not event.superseded
+                    and self._key(plan, event) not in self._journal
+                ):
+                    groups[(event.occurrence_id, event.configured_index)] = (plan, event)
+        return groups
 
     async def _ensure_plans(self, *, force=False):
         context = self._context()
@@ -1069,6 +1101,15 @@ class DailyEngine:
         if self.closed or not self._queue or not self.active:
             return
         generation = self.generation
+        now = dt_util.utcnow()
+        next_update = min(
+            [self._queue[0].at]
+            + [
+                event.authored_at
+                for _, event in self._pending_staggers().values()
+                if event.authored_at > now
+            ]
+        )
 
         @callback
         def due(_):
@@ -1076,9 +1117,7 @@ class DailyEngine:
             if generation == self.generation:
                 self.hass.async_create_task(self._async_dispatch(generation))
 
-        self._cancel_timer = async_track_point_in_utc_time(
-            self.hass, due, max(dt_util.utcnow(), self._queue[0].at)
-        )
+        self._cancel_timer = async_track_point_in_utc_time(self.hass, due, max(now, next_update))
 
     def _expected_actions(self, at):
         return expected_actions(
