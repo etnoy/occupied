@@ -109,12 +109,13 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await page.getByText("Smoke light", { exact: true }).click();
   await panel.getByRole("button", { name: "Save step", exact: true }).click();
   await expect(
-    panel.getByRole("button", { name: "Evening light", exact: true }),
+    panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }),
   ).toBeVisible();
 
-  await panel
-    .getByRole("button", { name: "Evening light", exact: true })
-    .click();
+  await expect(panel.locator(".step-row")).toHaveAccessibleName(
+    /Evening light.*Turn on.*Smoke light.*Runs at/,
+  );
+  await panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }).click();
   const editedName = panel.getByRole("textbox", {
     name: "Step name",
     exact: true,
@@ -153,18 +154,22 @@ test("create, preview, delete and protect YAML edits in the installed release", 
 
   await page.reload();
   await expect(
-    panel.getByRole("button", { name: "Evening light", exact: true }),
+    panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }),
   ).toBeVisible();
   // A state report rebuilds entry objects while the pointer remains captured.
   const ids = await panel.evaluate(async (element) => {
     const controller = element as OccupiedPanel;
-    const first = Object.keys(controller.draft.steps!)[0];
+    const draft = controller.draft;
+    if (!draft) {
+      throw new Error("Expected a loaded program before reordering steps");
+    }
+    const first = Object.keys(draft.steps!)[0];
     await controller.save({
-      ...controller.draft,
+      ...draft,
       steps: {
-        ...controller.draft.steps,
+        ...draft.steps,
         browser_second: {
-          ...controller.draft.steps![first],
+          ...draft.steps![first],
           name: "Later light",
           timing: { absolute_time: { start: "23:00" } },
         },
@@ -205,9 +210,15 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     .toEqual([ids[1], ids[0]]);
   await panel.evaluate(async (element) => {
     const controller = element as OccupiedPanel;
-    const steps = { ...controller.draft.steps };
+    const draft = controller.draft;
+    if (!draft) {
+      throw new Error(
+        "Expected a loaded program before removing the test step",
+      );
+    }
+    const steps = { ...draft.steps };
     delete steps.browser_second;
-    await controller.save({ ...controller.draft, steps });
+    await controller.save({ ...draft, steps });
   });
 
   await panel.getByRole("button", { name: "Preview", exact: true }).click();
@@ -289,9 +300,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   // End of preview lifecycle regression.
 
   await page.reload();
-  await panel
-    .getByRole("button", { name: "Evening light", exact: true })
-    .click();
+  await panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }).click();
   await panel
     .getByRole("button", { name: "Step actions", exact: true })
     .click();
