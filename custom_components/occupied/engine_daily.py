@@ -52,7 +52,7 @@ from .reconciliation import expected_actions
 from .runtime_planning import MAX_EVENTS, runtime_dates
 from .storage import DurableStore, instant, plan_from_data, program_store
 from .time_sources import planning_context, source_entities
-from .time_utils import simulation_date_at
+from .time_utils import PlanningContext, simulation_date_at
 from .validation import (
     ProgramError,
     RevisionConflict,
@@ -148,7 +148,9 @@ class DailyEngine:
 
     def _context(self):
         return self._anchor_latches.apply(
-            self.program, planning_context(self.hass), dt_util.utcnow()
+            self.program,
+            planning_context(self.hass, source_entities(self.program)),
+            dt_util.utcnow(),
         )
 
     def _context_identity(self, context=None):
@@ -813,7 +815,7 @@ class DailyEngine:
         await self._persist()
 
     def _plan_at(self, at):
-        day = simulation_date_at(self.program, at, self._context())
+        day = simulation_date_at(self.program, at, PlanningContext(self.hass.config.time_zone))
         return self._plans[day]
 
     def _projection_plan(self, at, *, include_previous_day=False):
@@ -1066,7 +1068,26 @@ class DailyEngine:
         self.reason = "Enforcing expected states now" if immediate else "Enforcing expected states"
         self._notify()
         results = self.reconciliation["results"]
-        targets = self._expected_actions(at)
+        cached = None
+
+        def expected_at(instant):
+            nonlocal cached
+            plans = tuple(self._plans.values())
+            identity = (
+                self.hass.config.time_zone,
+                id(self.program),
+                tuple(id(plan) for plan in plans),
+                frozenset(self._yielded),
+            )
+            if cached is None or cached[0] != identity or not cached[1] <= instant < cached[2]:
+                until = min(
+                    [plan.end for plan in plans if plan.start <= instant < plan.end]
+                    + [event.at for plan in plans for event in plan.events if event.at > instant]
+                )
+                cached = (identity, instant, until, self._expected_actions(instant))
+            return cached[3]
+
+        targets = expected_at(at)
 
         async def reconcile(entity):
             if generation != self.generation or not self._effective_gate()[0]:
@@ -1089,7 +1110,7 @@ class DailyEngine:
                     outcomes.append("unavailable")
                     continue
                 # A preceding service handler can advance time past a newer intent.
-                actions = self._expected_actions(dt_util.utcnow()).get(entity, [])
+                actions = expected_at(dt_util.utcnow()).get(entity, [])
                 action = next((a for a in actions if a.action == original.action), None)
                 if action is None:
                     outcomes.append("superseded")
@@ -1109,7 +1130,7 @@ class DailyEngine:
                     generation,
                     allow_retry=False,
                     still_current=lambda a=action, e=entity: (
-                        a in self._expected_actions(dt_util.utcnow()).get(e, [])
+                        a in expected_at(dt_util.utcnow()).get(e, [])
                     ),
                 )
                 outcomes.append(self._journal.get(key, {}).get("status", "cancelled"))

@@ -15,10 +15,17 @@ SOLAR_EVENTS = {
 }
 
 
-def time_source_snapshot(hass):
+def time_source_snapshot(hass, entities=None):
     """Read on HA's event loop, never from the planner's executor thread."""
     sources = {}
-    for state in hass.states.async_all():
+    states = (
+        hass.states.async_all()
+        if entities is None
+        else (
+            state for entity in sorted(entities) if (state := hass.states.get(entity)) is not None
+        )
+    )
+    for state in states:
         attrs = state.attributes
         if state.domain == "input_datetime" and attrs.get("has_time"):
             kind = "timestamp" if attrs.get("has_date") else "time"
@@ -47,13 +54,13 @@ def time_source_snapshot(hass):
     return sources
 
 
-def planning_context(hass):
+def planning_context(hass, entities=None):
     return PlanningContext(
         hass.config.time_zone,
         hass.config.latitude,
         hass.config.longitude,
         hass.config.elevation,
-        time_sources=time_source_snapshot(hass),
+        time_sources=time_source_snapshot(hass, entities),
     )
 
 
