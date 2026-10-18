@@ -9,6 +9,7 @@ from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.occupied.engine_daily import DailyEngine
+from custom_components.occupied.sensor import OccupiedNextEventSensor
 from custom_components.occupied.validation import validate_program
 
 
@@ -57,9 +58,60 @@ async def fire(hass, freezer, at):
     await hass.async_block_till_done()
 
 
+@pytest.mark.parametrize(
+    "timezone,at,expected",
+    [
+        ("UTC", "2026-10-13T23:59:00+00:00", "2026-10-14T06:00:00+00:00"),
+        ("Europe/Stockholm", "2026-10-13T23:59:00+02:00", "2026-10-14T06:00:00+02:00"),
+        ("Europe/Stockholm", "2026-03-28T23:59:00+01:00", "2026-03-29T06:00:00+02:00"),
+        ("Europe/Stockholm", "2026-10-24T23:59:00+02:00", "2026-10-25T06:00:00+01:00"),
+    ],
+)
+async def test_next_event_skips_daily_refresh(hass, freezer, queue_runtime, timezone, at, expected):
+    start, calls = queue_runtime
+    await hass.config.async_set_time_zone(timezone)
+    engine = await start({"morning": clock_step("06:00")}, at)
+    expected = dt_util.as_utc(dt_util.parse_datetime(expected))
+    sensor = OccupiedNextEventSensor(engine)
+    assert engine._queue[0].kind == "boundary"
+    assert engine._cancel_timer is not None
+    assert sensor.native_value == expected
+    assert engine.snapshot()["next_event"] == expected.isoformat()
+
+    await fire(hass, freezer, engine._queue[0].at + timedelta(milliseconds=1))
+    assert not calls
+    assert engine._queue[0].kind == "plan"
+    assert sensor.native_value == expected
+    await fire(hass, freezer, expected + timedelta(milliseconds=1))
+    assert len(calls) == 1
+    assert sensor.native_value > expected
+    await engine.async_set_enabled(False)
+    assert sensor.native_value is None
+
+
+async def test_next_event_is_empty_when_only_daily_refresh_is_scheduled(
+    hass, freezer, queue_runtime
+):
+    start, calls = queue_runtime
+    engine = await start({"disabled": clock_step("06:00") | {"enabled": False}})
+    assert engine._queue[0].kind == "boundary"
+    assert engine.next_event is None
+    await fire(hass, freezer, engine._queue[0].at + timedelta(milliseconds=1))
+    assert engine.active and not calls
+    assert engine._cancel_timer is not None
+    assert engine.next_event is None
+
+
+async def test_next_event_keeps_actions_before_daily_refresh(queue_runtime):
+    start, _ = queue_runtime
+    engine = await start({"evening": clock_step("23:59:30"), "morning": clock_step("06:00")})
+    assert engine.next_event == dt_util.parse_datetime("2026-10-13T23:59:30+00:00")
+
+
 async def test_midnight_step_runs_when_boundary_timer_is_late(hass, freezer, queue_runtime):
     start, calls = queue_runtime
     engine = await start({"midnight": clock_step("00:00")})
+    assert engine.next_event == dt_util.parse_datetime("2026-10-14T00:00:00+00:00")
     await fire(hass, freezer, "2026-10-14T00:00:00.001+00:00")
     assert len(calls) == 1
     assert engine._journal["live:step:2026-10-14:step:midnight:0"]["status"] == "dispatched"
@@ -132,6 +184,7 @@ async def test_retry_survives_a_midnight_boundary(hass, freezer, queue_runtime):
     engine = await start({"retry": step})
     await fire(hass, freezer, "2026-10-13T23:59:59.001+00:00")
     assert any(event.kind == "retry" for event in engine._queue)
+    assert engine.next_event == next(event.at for event in engine._queue if event.kind == "retry")
     await fire(hass, freezer, "2026-10-14T00:00:00.002+00:00")
     assert len(attempts) == 2
     assert engine._journal["live:step:2026-10-13:step:retry:0"]["status"] == "dispatched"

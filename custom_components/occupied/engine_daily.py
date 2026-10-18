@@ -141,8 +141,34 @@ class DailyEngine:
         )
 
     @property
-    def next_event(self):
-        return self._queue[0].at if self._queue else None
+    def next_event(self) -> datetime | None:
+        """Report scheduled work, keeping daily plan refreshes internal."""
+        if not self._queue:
+            return None
+        next_due = self._queue[0]
+        if next_due.kind != "boundary":
+            return next_due.at
+        boundary = next_due.at
+        next_action = min(
+            (event.at for event in self._queue if event.kind != "boundary"), default=None
+        )
+
+        # Only today's actions are queued. Use the already compiled plans to
+        # show upcoming work beyond midnight without changing timer dispatch.
+        queued = {event.key for event in self._queue}
+        next_planned = min(
+            (
+                event.at
+                for plan in self._plans.values()
+                for event in plan.events
+                if event.at >= boundary
+                and not event.superseded
+                and self._key(plan, event) not in self._journal
+                and self._key(plan, event) not in queued
+            ),
+            default=next_action,
+        )
+        return next_planned if next_action is None else min(next_action, next_planned)
 
     @property
     def handover_deadline(self):

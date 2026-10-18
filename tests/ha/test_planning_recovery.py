@@ -82,8 +82,9 @@ async def test_random_samples_do_not_stop_a_month_of_daily_steps(
     engine = await start("2026-01-01T00:00:00.001+00:00")
     end = dt_util.parse_datetime("2026-02-01T00:00:00+00:00")
     ticks = 0
-    while engine.next_event and engine.next_event < end:
-        await fire(hass, freezer, engine.next_event + timedelta(milliseconds=1))
+    # Drive internal refresh timers as well as the user-visible actions.
+    while engine._queue and engine._queue[0].at < end:
+        await fire(hass, freezer, engine._queue[0].at + timedelta(milliseconds=1))
         assert engine.active and engine.status != "error", engine.reason
         ticks += 1
         assert ticks < 2000
