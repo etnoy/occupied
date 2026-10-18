@@ -501,7 +501,11 @@ class DailyEngine:
         motion = self._motions.get(entity)
         if motion is None:
             return False
-        if context.user_id is None and progresses(motion, self._observe(entity), dt_util.utcnow()):
+        if (
+            context.user_id is None
+            and context.parent_id is None
+            and progresses(motion, self._observe(entity), dt_util.utcnow())
+        ):
             if (
                 all(
                     motion["observed"]["attributes"].get(key) == value
@@ -1363,10 +1367,22 @@ class DailyEngine:
             await self._persist()
             return False
         for entity in action.targets:
-            self._motions.pop(entity, None)
+            previous = self._motions.pop(entity, None)
             if motion := motion_for(
                 replace(action, data=data), self._observe(entity), dt_util.utcnow()
             ):
+                if (
+                    action.action.startswith("cover.")
+                    and previous
+                    and instant(previous["deadline"]) > dt_util.utcnow()
+                ):
+                    if (
+                        "current_position" in previous["targets"]
+                        and "current_position" not in motion["targets"]
+                    ):
+                        motion["state"] = previous["state"]
+                    motion["targets"] = previous["targets"] | motion["targets"]
+                    motion["states"] = sorted(set(previous["states"]) | set(motion["states"]))
                 self._motions[entity] = motion
         try:
             await dispatch_service(self.hass, action, context, data=data)

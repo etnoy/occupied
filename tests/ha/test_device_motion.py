@@ -13,15 +13,21 @@ from custom_components.occupied.planner import ResolvedAction
 from custom_components.occupied.validation import validate_program
 
 
-@pytest.mark.parametrize("domain", ["cover", "light"])
-@pytest.mark.parametrize("ending", ["complete", "restart", "reverse", "user", "expired"])
+@pytest.mark.parametrize("domain", ["cover", "cover_axes", "light"])
+@pytest.mark.parametrize(
+    "ending", ["complete", "restart", "reverse", "user", "automation", "expired"]
+)
 async def test_contextless_motion_reports(hass, freezer, monkeypatch, domain, ending):
     freezer.move_to("2026-10-13T18:00:00+00:00")
     await hass.config.async_set_time_zone("UTC")
     hass.set_state(CoreState.running)
+    multi_axis = domain == "cover_axes"
+    domain = "cover" if multi_axis else domain
     entity = f"{domain}.proof"
     attribute = "brightness" if domain == "light" else "current_position"
     attrs = {attribute: 10}
+    if multi_axis:
+        attrs["current_tilt_position"] = 10
     if domain == "light":
         attrs |= {
             "supported_color_modes": ["brightness"],
@@ -49,6 +55,8 @@ async def test_contextless_motion_reports(hass, freezer, monkeypatch, domain, en
         pass
 
     hass.services.async_register(domain, service, handler)
+    if multi_axis:
+        hass.services.async_register("cover", "set_cover_tilt_position", handler)
     try:
         await engine.async_prepare()
         await engine.async_start()
@@ -61,6 +69,11 @@ async def test_contextless_motion_reports(hass, freezer, monkeypatch, domain, en
             True,
         )
         assert await engine._call(action, "motion-test", engine.generation)
+        if multi_axis:
+            tilt = ResolvedAction(
+                "cover.set_cover_tilt_position", (entity,), {"tilt_position": 70}, (entity,), True
+            )
+            assert await engine._call(tilt, "tilt-test", engine.generation)
         persist = AsyncMock(return_value=True)
         monkeypatch.setattr(engine, "_persist", persist)
         for second in range(2, 22, 2):
@@ -68,7 +81,9 @@ async def test_contextless_motion_reports(hass, freezer, monkeypatch, domain, en
             hass.states.async_set(
                 entity,
                 "on" if domain == "light" else "opening",
-                attrs | {attribute: 10 + second * 3},
+                attrs
+                | {attribute: 10 + second * 3}
+                | ({"current_tilt_position": 10 + second * 2} if multi_axis else {}),
             )
             await hass.async_block_till_done()
             assert entity not in engine._yielded
@@ -91,8 +106,12 @@ async def test_contextless_motion_reports(hass, freezer, monkeypatch, domain, en
         hass.states.async_set(
             entity,
             "on" if domain == "light" else "open",
-            attrs | {attribute: value},
-            context=Context(user_id="outside-user") if ending == "user" else None,
+            attrs | {attribute: value} | ({"current_tilt_position": 70} if multi_axis else {}),
+            context=Context(user_id="outside-user")
+            if ending == "user"
+            else Context(parent_id="outside-automation")
+            if ending == "automation"
+            else None,
         )
         await hass.async_block_till_done()
         assert (entity in engine._yielded) == (ending not in {"complete", "restart"})
