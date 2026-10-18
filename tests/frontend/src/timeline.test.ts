@@ -10,10 +10,7 @@ import {
   groupPreviewEvents,
 } from "@occupied/lib/utils/timeline.js";
 import type { Plan, PlannedEvent, Program } from "@occupied/lib/types.js";
-import {
-  calendarMidnight,
-  shiftScheduleDate,
-} from "@occupied/lib/utils/time-format.js";
+import { shiftScheduleDate } from "@occupied/lib/utils/time-format.js";
 
 void test("schedule navigation shifts calendar days across DST, leap days, and year boundaries", () => {
   for (const [date, offset, expected] of [
@@ -274,19 +271,36 @@ void test("prior state remains visible on days without actions and ignores super
     [["on", Date.parse(time(0))]],
   );
 });
-void test("calendar day bounds follow the plan timezone and 23/25 hour DST days", () => {
-  for (const [date, next, hours] of [
-    ["2026-03-29", "2026-03-30", 23],
-    ["2026-10-25", "2026-10-26", 25],
+void test("calendar day bounds preserve backend 23/25 hour DST days", () => {
+  for (const [date, start, end, hours] of [
+    [
+      "2026-03-29",
+      "2026-03-28T23:00:00+00:00",
+      "2026-03-29T22:00:00+00:00",
+      23,
+    ],
+    [
+      "2026-10-25",
+      "2026-10-24T22:00:00+00:00",
+      "2026-10-25T23:00:00+00:00",
+      25,
+    ],
   ] as const) {
-    const start = calendarMidnight(date, "Europe/Stockholm");
-    const end = calendarMidnight(next, "Europe/Stockholm");
-    assert.equal((Date.parse(end) - Date.parse(start)) / 3_600_000, hours);
+    const current = {
+      ...plan([]),
+      timezone: "Europe/Stockholm",
+      simulation_date: date,
+      start,
+      end,
+    };
+    const slice = calendarDayPlan([current], date)!;
+    assert.equal(slice.start, start);
+    assert.equal(slice.end, end);
+    assert.equal(
+      (Date.parse(slice.end) - Date.parse(slice.start)) / 3_600_000,
+      hours,
+    );
   }
-  assert.equal(
-    calendarMidnight("2026-10-13", "Europe/Stockholm"),
-    "2026-10-12T22:00:00.000Z",
-  );
 });
 
 void test("stagger spans retain their full period across calendar slices and skip superseded projection", () => {
@@ -436,3 +450,54 @@ void test("extra entity rows preserve scheduled targets and show unknown for dis
     ["off"],
   );
 });
+
+for (const [timezone, date, start, end] of [
+  [
+    "America/Santiago",
+    "2026-09-06",
+    "2026-09-06T04:00:00+00:00",
+    "2026-09-07T03:00:00+00:00",
+  ],
+  [
+    "America/Havana",
+    "2026-03-08",
+    "2026-03-08T05:00:00+00:00",
+    "2026-03-09T04:00:00+00:00",
+  ],
+  [
+    "Africa/Cairo",
+    "2026-04-24",
+    "2026-04-23T22:00:00+00:00",
+    "2026-04-24T21:00:00+00:00",
+  ],
+  [
+    "Asia/Beirut",
+    "2026-03-29",
+    "2026-03-28T22:00:00+00:00",
+    "2026-03-29T21:00:00+00:00",
+  ],
+] as const) {
+  void test(`calendar slices use backend bounds at a midnight DST gap in ${timezone}`, () => {
+    const first = { ...event(0, "light.turn_on"), time: start };
+    const prior = {
+      ...event(0, "light.turn_off"),
+      time: new Date(Date.parse(start) - 1).toISOString(),
+    };
+    const following = { ...event(0, "light.turn_off"), time: end };
+    const current = {
+      ...plan([prior, first, following]),
+      timezone,
+      simulation_date: date,
+      start,
+      end,
+    };
+    const slice = calendarDayPlan([current], date)!;
+    assert.equal(Date.parse(slice.start), Date.parse(start));
+    assert.equal(Date.parse(slice.end), Date.parse(end));
+    assert.deepEqual(slice.events, [first]);
+    assert.equal(
+      (Date.parse(slice.end) - Date.parse(slice.start)) / 3_600_000,
+      23,
+    );
+  });
+}
