@@ -1,0 +1,31 @@
+custom_components/occupied/frontend/src/app.css
+  s_f10ec3bc261be9::t_0d6908792f0905 671,686
+custom_components/occupied/frontend/src/lib/components/shared/UnsavedStepDialog.svelte
+  s_78e8d8ff2fc7b0::t_1cf7083a848b5b 10-11,13-30,33-67
+tests/browser/occupied.spec.ts
+  s_78e8d8ff2fc7b0::t_127b2eed7637ca 115-153
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "dbf6d2d56188419e0a572210447eb7ebb491ecb9",
+  "prompts": {},
+  "sessions": {
+    "s_78e8d8ff2fc7b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-1c02-7ac3-b7a0-517a13a126d7",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_f10ec3bc261be9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-77a0-7d40-9972-b0b8763751f2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
