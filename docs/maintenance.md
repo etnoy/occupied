@@ -1,7 +1,7 @@
 # Home Assistant compatibility maintenance
 
 The supported window contains the current monthly Home Assistant release and the
-five before it. `scripts/ha_matrix.toml` owns release/fixture/frontend pins,
+five before it. The `matrix` job in `.github/workflows/check.yml` owns release/fixture/frontend pins,
 interpreters, container digests, and roles. The newest environment uses `uv.lock`;
 older environments use generated, hashed requirements and the official constraints
 from their HA tags, with explicitly recorded security repairs. The oldest minor always starts at `.0`.
@@ -25,7 +25,8 @@ uv run python scripts/ha_matrix.py check
 `roll` discovers the latest patch with matching fixtures in each retained minor,
 pins the new floor at `.0`, records official constraints and container digests,
 updates the newest dev lock, and recompiles the older environments. It updates the
-HACS minimum, README table, runtime dependency floors and Python floor together.
+HACS minimum, runtime dependency floors and Python floor together.
+The README is maintained by hand; matrix checks and rollovers do not read or update it.
 An unpublished fixture or image is a reason to wait. If resolution fails, keep the
 changes on this branch and resolve the conflict before publishing the PR.
 
@@ -50,9 +51,10 @@ building the release artifacts (`uv build` and `uv run python scripts/build_rele
 
 ```sh
 uv run python - <<'PY'
-import os, subprocess, tomllib
+import os, subprocess, yaml
 from pathlib import Path
-matrix = tomllib.loads(Path("scripts/ha_matrix.toml").read_text())
+workflow = yaml.safe_load(Path(".github/workflows/check.yml").read_text())
+matrix = workflow["jobs"]["matrix"]["strategy"]["matrix"]["include"][0]
 for lane in matrix["lanes"]:
     if lane["role"] in {"floor", "newest"}:
         subprocess.run(

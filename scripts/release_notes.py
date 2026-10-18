@@ -1,13 +1,15 @@
-"""Render release compatibility from the matrix using only the standard library."""
+"""Render release compatibility from the matrix."""
 
-import tomllib
 from pathlib import Path
+
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def compatibility_notes(root=ROOT):
-    matrix = tomllib.loads((root / "scripts/ha_matrix.toml").read_text())
+    workflow = yaml.safe_load((root / ".github/workflows/check.yml").read_text())
+    matrix = workflow["jobs"]["matrix"]["strategy"]["matrix"]["include"][0]
     floor = next(lane for lane in matrix["lanes"] if lane["role"] == "floor")
     newest = next(lane for lane in matrix["lanes"] if lane["role"] == "newest")
     newest_minor = ".".join(newest["homeassistant"].split(".")[:2])

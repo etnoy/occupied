@@ -43,6 +43,7 @@ jobs:
           PY
           cd dist
           sha256sum --check SHA256SUMS
+      - run: python -m pip install PyYAML==6.0.3
       - name: Generate compatibility release notes
         id: compatibility
         run: echo "notes=$(python scripts/release_notes.py)" >> "$GITHUB_OUTPUT"

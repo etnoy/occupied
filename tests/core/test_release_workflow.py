@@ -51,12 +51,17 @@ def test_release_notes_include_matrix_compatibility():
 def test_compatibility_notes_follow_the_matrix(tmp_path):
     from scripts.release_notes import compatibility_notes
 
-    directory = tmp_path / "scripts"
-    directory.mkdir()
-    (directory / "ha_matrix.toml").write_text(
-        '[policy]\npython_floor = "3.15.2"\npython_next = "3.16"\n'
-        '[[lanes]]\nrole = "floor"\nhomeassistant = "2027.6.0"\n'
-        '[[lanes]]\nrole = "newest"\nhomeassistant = "2027.11.3"\n'
+    directory = tmp_path / ".github/workflows"
+    directory.mkdir(parents=True)
+    data = {
+        "policy": {"python_floor": "3.15.2", "python_next": "3.16"},
+        "lanes": [
+            {"role": "floor", "homeassistant": "2027.6.0"},
+            {"role": "newest", "homeassistant": "2027.11.3"},
+        ],
+    }
+    (directory / "check.yml").write_text(
+        yaml.safe_dump({"jobs": {"matrix": {"strategy": {"matrix": {"include": [data]}}}}})
     )
     assert compatibility_notes(tmp_path) == (
         "Supports Home Assistant 2027.6.0–2027.11.x. "
