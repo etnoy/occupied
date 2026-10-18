@@ -13235,7 +13235,7 @@ function StepsView($$anchor, $$props) {
           }
           reset(div_1);
           template_effect(
-            ($02, $12, $2) => {
+            ($02, $12) => {
               classes = set_class(div_1, 1, "step-card", null, classes, {
                 "step-disabled": get(stepDisabled),
                 "step-warning": get(warnings).length > 0,
@@ -13245,7 +13245,6 @@ function StepsView($$anchor, $$props) {
               classes_1 = set_class(button_1, 1, "step-row", null, classes_1, {
                 editing: get(editing) && get(warnings).length === 0,
               });
-              set_attribute2(button_1, "aria-label", $02);
               button_1.disabled = $$props.panel.busy;
               set_attribute2(button_1, "aria-expanded", get(expanded));
               set_attribute2(
@@ -13263,15 +13262,11 @@ function StepsView($$anchor, $$props) {
               set_text(text_3, entry().name);
               set_text(
                 text_5,
-                `${$12 ?? ""} \xB7
-                  ${$2 ?? ""}`,
+                `${$02 ?? ""} \xB7
+                  ${$12 ?? ""}`,
               );
             },
             [
-              () =>
-                get(stepDisabled)
-                  ? `${entry().name} \xB7 ${get(t)("disabled")}`
-                  : entry().name,
               () => actionSummary(entry(), get(t)),
               () =>
                 entitySummary(

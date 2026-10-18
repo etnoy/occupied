@@ -109,12 +109,13 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await page.getByText("Smoke light", { exact: true }).click();
   await panel.getByRole("button", { name: "Save step", exact: true }).click();
   await expect(
-    panel.getByRole("button", { name: "Evening light", exact: true }),
+    panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }),
   ).toBeVisible();
 
-  await panel
-    .getByRole("button", { name: "Evening light", exact: true })
-    .click();
+  await expect(panel.locator(".step-row")).toHaveAccessibleName(
+    /Evening light.*Turn on.*Smoke light.*Runs at/,
+  );
+  await panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }).click();
   const editedName = panel.getByRole("textbox", {
     name: "Step name",
     exact: true,
@@ -153,7 +154,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
 
   await page.reload();
   await expect(
-    panel.getByRole("button", { name: "Evening light", exact: true }),
+    panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }),
   ).toBeVisible();
   // A state report rebuilds entry objects while the pointer remains captured.
   const ids = await panel.evaluate(async (element) => {
@@ -299,9 +300,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   // End of preview lifecycle regression.
 
   await page.reload();
-  await panel
-    .getByRole("button", { name: "Evening light", exact: true })
-    .click();
+  await panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }).click();
   await panel
     .getByRole("button", { name: "Step actions", exact: true })
     .click();

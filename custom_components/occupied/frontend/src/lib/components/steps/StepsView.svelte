@@ -89,9 +89,6 @@
               id={`step-card-${entry.id}`}
               class="step-row"
               class:editing={editing && warnings.length === 0}
-              aria-label={stepDisabled
-                ? `${entry.name} · ${t("disabled")}`
-                : entry.name}
               disabled={panel.busy}
               aria-expanded={expanded}
               aria-controls={`step-editor-${entry.id}`}
