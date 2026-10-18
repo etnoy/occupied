@@ -144,7 +144,7 @@
     const scroller = scrollContainer(handle);
     const initialY = event.clientY;
     const initialKey = storageKey;
-    const initialTree = tree;
+    const initialParents = sorted.map((entry) => parentId?.(entry));
     const initialIds = sorted.map((entry) => entry.id);
     let clientY = initialY;
     let frame = 0;
@@ -204,8 +204,11 @@
         index !== null &&
         !disabled &&
         storageKey === initialKey &&
-        tree === initialTree &&
-        initialIds.every((item, position) => item === sorted[position]?.id) &&
+        initialIds.every(
+          (item, position) =>
+            item === sorted[position]?.id &&
+            initialParents[position] === parentId?.(sorted[position]),
+        ) &&
         initialIds.length === sorted.length
       ) {
         void move(id, index, siblings);
