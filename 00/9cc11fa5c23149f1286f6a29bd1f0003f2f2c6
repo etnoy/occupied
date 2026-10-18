@@ -1,0 +1,37 @@
+custom_components/occupied/frontend/dist/lib/services/subscription.js
+  s_78e8d8ff2fc7b0::t_a2ddf41cccaab9 18,39
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_78e8d8ff2fc7b0::t_2d799c5372ea3d 18445,18466
+custom_components/occupied/frontend/src/lib/services/subscription.ts
+  s_f10ec3bc261be9::t_e568d64bd9826b 7,20,47
+custom_components/occupied/frontend/src/lib/types.ts
+  s_f10ec3bc261be9::t_8e4d12cdc30ecf 445
+tests/frontend/src/instances.test.ts
+  s_78e8d8ff2fc7b0::t_b23b7145f445e8 199-200
+tests/frontend/src/subscription.test.ts
+  s_78e8d8ff2fc7b0::t_ebb620ddb5f0ae 8,15,43-44,56-57,82,104-150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "009cc11fa5c23149f1286f6a29bd1f0003f2f2c6",
+  "prompts": {},
+  "sessions": {
+    "s_78e8d8ff2fc7b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-1c02-7ac3-b7a0-517a13a126d7",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_f10ec3bc261be9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-77a0-7d40-9972-b0b8763751f2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
