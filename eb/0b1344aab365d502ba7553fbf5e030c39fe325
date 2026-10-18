@@ -1,0 +1,91 @@
+custom_components/occupied/frontend/README.md
+  s_f10ec3bc261be9::t_a5c4f79a576435 51-52
+custom_components/occupied/frontend/dist/lib/controllers/preview-controller.js
+  s_f10ec3bc261be9::t_0b15cbdf0f9b82 30-32
+custom_components/occupied/frontend/dist/lib/panel-state.js
+  s_f10ec3bc261be9::t_78d1e78f0b2527 1-4
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_f10ec3bc261be9::t_51012578ebff05 8728-8732,17821,18036-18038,18105,18138-18140,18142,18187-18189,18549-18551,18569-18575,19516
+custom_components/occupied/frontend/src/App.svelte
+  s_78e8d8ff2fc7b0::t_8609697ad0d899 2,43,170,193
+custom_components/occupied/frontend/src/lib/components/preview/LivePreviewControls.svelte
+  s_78e8d8ff2fc7b0::t_1f57984f4f75d5 2,9
+custom_components/occupied/frontend/src/lib/components/preview/PreviewView.svelte
+  s_78e8d8ff2fc7b0::t_f275ac0747b58d 2,16
+custom_components/occupied/frontend/src/lib/components/random/AdvancedRandomSettings.svelte
+  s_78e8d8ff2fc7b0::t_f47b542b7c88e6 3,20
+custom_components/occupied/frontend/src/lib/components/random/DeleteRandomDialog.svelte
+  s_78e8d8ff2fc7b0::t_a9c3f6b8234731 3,8
+custom_components/occupied/frontend/src/lib/components/random/RandomActions.svelte
+  s_78e8d8ff2fc7b0::t_cf13cef0c1d58d 3,14
+custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
+  s_78e8d8ff2fc7b0::t_1c255b3ff1d4c0 3,13
+custom_components/occupied/frontend/src/lib/components/random/RandomView.svelte
+  s_78e8d8ff2fc7b0::t_6b8ce656e6e19a 3,18
+custom_components/occupied/frontend/src/lib/components/settings/RunConditionSettings.svelte
+  s_78e8d8ff2fc7b0::t_8b1d72b84dc249 2,11
+custom_components/occupied/frontend/src/lib/components/settings/SettingsView.svelte
+  s_78e8d8ff2fc7b0::t_25a2e048b35882 2,8
+custom_components/occupied/frontend/src/lib/components/shared/ActionEditor.svelte
+  s_78e8d8ff2fc7b0::t_a9dba9f1665bc7 2,20
+custom_components/occupied/frontend/src/lib/components/shared/EditorField.svelte
+  s_78e8d8ff2fc7b0::t_04788036918edf 3,33
+custom_components/occupied/frontend/src/lib/components/shared/EntitiesEditor.svelte
+  s_78e8d8ff2fc7b0::t_ea3006220844be 2,14
+custom_components/occupied/frontend/src/lib/components/shared/TimingBoundaryEditor.svelte
+  s_78e8d8ff2fc7b0::t_d0f022f35801c7 2,12
+custom_components/occupied/frontend/src/lib/components/shared/TimingEditor.svelte
+  s_78e8d8ff2fc7b0::t_3b8b572a95310b 2,27
+custom_components/occupied/frontend/src/lib/components/shared/UnsavedStepDialog.svelte
+  s_78e8d8ff2fc7b0::t_2feee9b25b6046 2,5
+custom_components/occupied/frontend/src/lib/components/steps/AdvancedStepSettings.svelte
+  s_78e8d8ff2fc7b0::t_0b6e440b34c8fd 3,20
+custom_components/occupied/frontend/src/lib/components/steps/DeleteStepDialog.svelte
+  s_78e8d8ff2fc7b0::t_93945b749c6610 2,15
+custom_components/occupied/frontend/src/lib/components/steps/StepActions.svelte
+  s_78e8d8ff2fc7b0::t_27eb70364e2928 3,15
+custom_components/occupied/frontend/src/lib/components/steps/StepEditor.svelte
+  s_78e8d8ff2fc7b0::t_131f5a9bd1b1aa 2,13
+custom_components/occupied/frontend/src/lib/components/steps/StepsView.svelte
+  s_78e8d8ff2fc7b0::t_4ae304b7d60f9c 3,18
+custom_components/occupied/frontend/src/lib/controllers/preview-controller.ts
+  s_78e8d8ff2fc7b0::t_455ab2028f607b 35-38
+custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts
+  s_78e8d8ff2fc7b0::t_24b6e2e7045305 2,19,46,213
+custom_components/occupied/frontend/src/lib/controllers/step-editor-controller.ts
+  s_78e8d8ff2fc7b0::t_12acddb82da76f 3-6,27
+custom_components/occupied/frontend/src/lib/controllers/steps.ts
+  s_78e8d8ff2fc7b0::t_bc91fc3f9a92de 1,11,46,59,74,81,101
+custom_components/occupied/frontend/src/lib/panel-state.ts
+  s_78e8d8ff2fc7b0::t_e96b9f4534a779 1-12
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_78e8d8ff2fc7b0::t_8ca2ec45445d79 47-49,110-112,132-138,1184-1187
+tests/frontend/src/instances.test.ts
+  s_78e8d8ff2fc7b0::t_3bf0ea91601394 99-100,207
+tests/frontend/src/panel-state.test.ts
+  s_78e8d8ff2fc7b0::t_29e6d32d6068c3 1-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "eb0b1344aab365d502ba7553fbf5e030c39fe325",
+  "prompts": {},
+  "sessions": {
+    "s_78e8d8ff2fc7b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-1c02-7ac3-b7a0-517a13a126d7",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_f10ec3bc261be9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-77a0-7d40-9972-b0b8763751f2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
