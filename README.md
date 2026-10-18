@@ -4,11 +4,11 @@
 
 Burglars look for living spaces that look like nobody's home: make sure yours looks occupied!
 
-Occupied is an occupancy simulator for Home Assistant that lets you create schedules for lights, covers, and other entities. But remember the scene in *Home Alone* where Harry knows exactly when each house's lights will come on? Your timers probably shouldn't be that predictable. Therefore, Occupied has built in support for randomness to make your home look lived in.
+Occupied is an occupancy simulator for Home Assistant that lets you create schedules for lights, covers, and other entities. But remember the scene in *Home Alone* where Harry knows exactly when the house lights will come on?
 
-![Harry and Marv predicting the automated timers](https://raw.githubusercontent.com/etnoy/occupied/main/media/homealone.png)
+![Harry and Marv predicting the automated timers](https://raw.githubusercontent.com/etnoy/occupied/main/media/homealone.webp)
 
-Occupied also has an easy-to-use GUI, which makes it much easier to set up than traditional automations.
+Your timers shouldn't be that predictable. Therefore, Occupied has built in support for randomness to make your home look lived in and avoid the water bandits. Occupied also has an easy-to-use GUI, which makes it much easier to set up than traditional automations.
 
 Occupied is the spiritual successor of [Occusim](https://github.com/acockburn/occusim) which is no longer maintained.
 
