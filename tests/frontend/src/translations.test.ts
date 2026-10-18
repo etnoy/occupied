@@ -153,3 +153,24 @@ void test("runtime outcomes have readable English labels", () => {
     }
   }
 });
+
+void test("every locale supplies core preview, retry and validation-error labels", () => {
+  const core = [
+    "off_label",
+    "retry",
+    "events",
+    "source",
+    "planned_time",
+    ...Object.keys(en).filter((key) => key.endsWith("_error")),
+  ];
+  for (const [language, dictionary] of Object.entries({ en, sv })) {
+    for (const key of core) {
+      assert.ok(Object.hasOwn(dictionary, key), `${language}: ${key}`);
+      assert.ok(
+        dictionary[key as TranslationKey]?.trim(),
+        `${language}: ${key}`,
+      );
+    }
+  }
+  assert.equal(translator("sv")("off_label"), "Av");
+});
