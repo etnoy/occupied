@@ -1,0 +1,33 @@
+custom_components/occupied/frontend/dist/lib/controllers/random-editor-controller.js
+  s_f10ec3bc261be9::t_fe6c6a8f2ddad7 103-107
+custom_components/occupied/frontend/dist/lib/controllers/step-editor-controller.js
+  s_f10ec3bc261be9::t_3ec6f1cd851d9e 130-132
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_f10ec3bc261be9::t_11c8d84326b3a3 9591-9593,11991,14072-14076
+custom_components/occupied/frontend/src/lib/components/shared/ActionEditor.svelte
+  s_f10ec3bc261be9::t_b7284b8109ba90 43
+custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts
+  s_f10ec3bc261be9::t_7dccd520589317 128-132
+custom_components/occupied/frontend/src/lib/controllers/step-editor-controller.ts
+  s_f10ec3bc261be9::t_74b83102dae8bb 2,150-152
+custom_components/occupied/frontend/src/lib/types.ts
+  s_f10ec3bc261be9::t_61c274696b2a3b 181
+tests/frontend/src/instances.test.ts
+  s_f10ec3bc261be9::t_6134835827a54c 14,1214-1242
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "19cfe0828b27f5d5b8991682ae2b39e8702123cd",
+  "prompts": {},
+  "sessions": {
+    "s_f10ec3bc261be9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14dd4-77a0-7d40-9972-b0b8763751f2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
