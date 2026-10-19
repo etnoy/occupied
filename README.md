@@ -57,7 +57,7 @@ Open Occupied through the integration's **Configure** control (the cog wheel), t
 
 You can now create more steps and have those steps either be absolute in time, or relative to the previous step
 
-<img src="media/screenshots/create-step.png" alt="Step editor with a randomized dinner time and two kitchen lights" width="1070">
+<img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/create-step.png" alt="Step editor with a randomized dinner time and two kitchen lights" width="1070">
 
 *Dinner lights come on at a different time each evening, within a 30-minute window.*
 
@@ -73,7 +73,7 @@ Random Events manage a light for both on and off, so you can have a kitchen ligh
 4. Choose the entities to turn on and off during each window.
 5. Save the random event.
 
-<img src="media/screenshots/random-event.png" alt="Random event editor with two to four kitchen visits between 20:00 and 22:30, each lasting 5–15 minutes" width="820">
+<img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/random-event.png" alt="Random event editor with two to four kitchen visits between 20:00 and 22:30, each lasting 5–15 minutes" width="820">
 
 *Short kitchen visits add activity between the main steps. Each visit turns the same light on, then off again.*
 
@@ -81,7 +81,7 @@ Random Events manage a light for both on and off, so you can have a kitchen ligh
 
 Open **Preview** to see how the entities would be turned on and off. This will be a render of the random events within the ranges you chose before, so navigate back and forth during the days to see how those will be randomized.
 
-<img src="media/screenshots/timeline.png" alt="Daily timeline showing scheduled lighting and random activity across household lights and switches" width="1072">
+<img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/timeline.png" alt="Daily timeline showing scheduled lighting and random activity across household lights and switches" width="1072">
 
 *Yellow shows when each device is on. Morning routines, random visits, and evening lighting form a different pattern each day.*
 
@@ -118,7 +118,7 @@ There is also a button, **Enforce expected state**, that you can press if you ac
 
 Use **Extra entities to turn off** for lights and switches that Occupied does not manage but you want turned off when away. This is great for that bathroom light you don't want to forget to turn off when you are away, but you don't want it in a Step or Random Event because the bathroom has no windows.
 
-<img src="media/screenshots/run-condition.png" alt="Away mode run condition with state enforcement, a 30-second delay, and extra devices to turn off" width="900">
+<img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/run-condition.png" alt="Away mode run condition with state enforcement, a 30-second delay, and extra devices to turn off" width="900">
 
 *When Away mode turns on, enforce the expected state after 30 seconds and switch off extra devices such as the bathroom light and coffee machine.*
 
@@ -133,7 +133,7 @@ Use the timing controls to combine clock times and solar events:
 
 In **Preview**, select **Start live preview**. This allows you to preview the schedule on real devices, and you click **Next event** to walk through the simulation step by step.
 
-<img src="media/screenshots/live-preview.png" alt="Live preview ready for the next event, showing a dispatched action and the next hallway light change" width="1072">
+<img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/live-preview.png" alt="Live preview ready for the next event, showing a dispatched action and the next hallway light change" width="1072">
 
 *Walk through the schedule one event at a time and see which action will run next.*
 
@@ -143,7 +143,7 @@ In Factorio, a group of lights don't turn on at once when the sun sets, but they
 
 The **Time window** defaults to `2m`, so with four entities over two minutes, actions occur at 30-second intervals.
 
-<img src="media/screenshots/staggered-lights.png" alt="Advanced step settings with staggered actions enabled over a two-minute window" width="480">
+<img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/staggered-lights.png" alt="Advanced step settings with staggered actions enabled over a two-minute window" width="480">
 
 *Spread the welcome-home lights across two minutes, with a different device order each day.*
 
