@@ -1,0 +1,65 @@
+custom_components/occupied/editor.py
+  s_b1619f3f72ecf0::t_4c5866a9ad64d2 97
+custom_components/occupied/frontend/dist/lib/controllers/random-editor-controller.js
+  s_b1619f3f72ecf0::t_1e9dd272adc91b 48
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_b1619f3f72ecf0::t_2bf218b8a09746 4-14,548-558
+custom_components/occupied/frontend/dist/lib/models/random-model.js
+  s_b1619f3f72ecf0::t_c046a6edb36df5 48
+custom_components/occupied/frontend/dist/lib/models/step-model.js
+  s_b1619f3f72ecf0::t_dc2ec6d26d8a28 2,158-168,212,270,461,464-471
+custom_components/occupied/frontend/dist/lib/utils/action-kind.js
+  s_b1619f3f72ecf0::t_49292093f308d5 66-71
+custom_components/occupied/frontend/dist/lib/utils/random-explanation.js
+  s_b1619f3f72ecf0::t_d9e8187bcebc56 203-213
+custom_components/occupied/frontend/dist/lib/utils/remote.js
+  s_b1619f3f72ecf0::t_6a04e223e0632d 1-31
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_b1619f3f72ecf0::t_cb95f3bdf67d71 100-110,643-654,8808-8839,9230-9240,9284,9342,9533,9536-9543,11122,11911-11913,12080-12085,12100-12102,12106-12107,12122,12156,12287-12288,12290-12378,12381,12399,12401,12418,12435,12437,12439,12442,12444-12445,12448-12449,12456,12458-12459,12462,12464,12481,12483,12857-12858,12888,13177,13238,13242,13380,13405,13566-13567,13908,13914,14263,14920-14921,14993,15134,15236-15237,15476,15516,15791-15792,15817,15953,15977,16190,16398,16651,16707,17293-17303,17665,17770,17773,17861,17996,18049-18050,18195,18217
+custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
+  s_b1619f3f72ecf0::t_49ed7776c416e1 202
+custom_components/occupied/frontend/src/lib/components/shared/ActionEditor.svelte
+  s_b1619f3f72ecf0::t_ae7f4ea7df20c2 9,52,107-152
+custom_components/occupied/frontend/src/lib/components/shared/EntitiesEditor.svelte
+  s_b1619f3f72ecf0::t_6f3de4b93bef96 26-28
+custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts
+  s_b1619f3f72ecf0::t_97459477c03eff 62
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_b1619f3f72ecf0::t_78aaf2c0c3722a 3-14,552-563
+custom_components/occupied/frontend/src/lib/models/random-model.ts
+  s_b1619f3f72ecf0::t_f8c4c7090aafe2 67
+custom_components/occupied/frontend/src/lib/models/step-model.ts
+  s_b1619f3f72ecf0::t_6591abe6cb154c 1,193-203,248,311,519,522-529
+custom_components/occupied/frontend/src/lib/types.ts
+  s_b1619f3f72ecf0::t_ef8151bb0d6c9d 117,212
+custom_components/occupied/frontend/src/lib/utils/action-kind.ts
+  s_b1619f3f72ecf0::t_361c7e1d486b33 75-80
+custom_components/occupied/frontend/src/lib/utils/random-explanation.ts
+  s_b1619f3f72ecf0::t_4603e9162cf1cf 214-225
+custom_components/occupied/frontend/src/lib/utils/remote.ts
+  s_b1619f3f72ecf0::t_4592127fd686c3 1-38
+docs/schema.md
+  s_b1619f3f72ecf0::t_057513f1298926 180
+tests/browser/occupied.spec.ts
+  s_b1619f3f72ecf0::t_9c4c9a0fd3cb63 4,435-514
+tests/frontend/src/remotes.test.ts
+  s_b1619f3f72ecf0::t_517aa19f9b8b81 1-108
+tests/ha/test_editor_api.py
+  s_b1619f3f72ecf0::t_ead3ba2981ada3 642-651
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "acbefcc07fe9ef2a9eb0560aef06780183f0a2d0",
+  "prompts": {},
+  "sessions": {
+    "s_b1619f3f72ecf0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1543f-0d19-78d0-b42e-2ae6155ea824",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
