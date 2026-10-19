@@ -1,0 +1,23 @@
+custom_components/occupied/editor.py
+  s_dee5834c1a7fd9::t_733a7e47207a5d 140-181
+docs/schema.md
+  s_dee5834c1a7fd9::t_243e148db61414 182
+tests/ha/test_editor_api.py
+  s_dee5834c1a7fd9::t_e9775dc42f5577 642-719
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ff97849e8becd452b1546d9905118e4d89b57153",
+  "prompts": {},
+  "sessions": {
+    "s_dee5834c1a7fd9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15440-4fa4-7181-9506-12c06daa7037",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
