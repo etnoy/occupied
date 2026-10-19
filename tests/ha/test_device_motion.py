@@ -7,10 +7,82 @@ import pytest
 from homeassistant.components.light import LightEntityFeature
 from homeassistant.core import Context, CoreState
 from homeassistant.util import dt as dt_util
+from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.occupied.engine_daily import DailyEngine
 from custom_components.occupied.planner import ResolvedAction
 from custom_components.occupied.validation import validate_program
+
+
+@pytest.mark.parametrize("acknowledgement", ["occupied", "contextless"])
+@pytest.mark.parametrize("ending", ["off", "reverse", "off_during_downtime"])
+async def test_manual_control_during_fade_on_is_yielded(hass, freezer, acknowledgement, ending):
+    freezer.move_to("2026-10-13T18:00:00+00:00")
+    await hass.config.async_set_time_zone("UTC")
+    hass.set_state(CoreState.running)
+    attrs = {
+        "brightness": 0,
+        "supported_color_modes": ["brightness"],
+        "supported_features": LightEntityFeature.TRANSITION,
+    }
+    hass.states.async_set("light.proof", "off", attrs)
+    calls = []
+
+    async def service(call):
+        calls.append(call)
+        hass.states.async_set(
+            "light.proof",
+            "on",
+            attrs | {"brightness": 60},
+            context=call.context if acknowledgement == "occupied" else None,
+        )
+
+    hass.services.async_register("light", "turn_on", service)
+    program = validate_program(
+        {
+            "schema_version": 1,
+            "name": "Manual fade control",
+            "steps": {
+                "base": {
+                    "timing": {"absolute_time": {"start": "17:00"}},
+                    "action": "light.turn_on",
+                    "entities": ["light.proof"],
+                    "data": {"brightness": 100},
+                }
+            },
+        }
+    )
+    engine = DailyEngine(hass, "fade-manual-control", program)
+    try:
+        await engine.async_prepare()
+        await engine.async_start()
+        await engine.async_set_enabled(True)
+        freezer.move_to("2026-10-13T18:00:00.001+00:00")
+        async_fire_time_changed(hass, dt_util.utcnow())
+        await hass.async_block_till_done()
+        assert len(calls) == 1 and "light.proof" in engine._handover
+        if ending == "off_during_downtime":
+            await engine.async_close(cleanup=False)
+        freezer.move_to("2026-10-13T18:01:00.001+00:00")
+        hass.states.async_set(
+            "light.proof",
+            "on" if ending == "reverse" else "off",
+            attrs | {"brightness": 30 if ending == "reverse" else 0},
+        )
+        await hass.async_block_till_done()
+        if ending == "off_during_downtime":
+            engine = DailyEngine(hass, "fade-manual-control", program)
+            await engine.async_prepare()
+            await engine.async_start()
+            await hass.async_block_till_done()
+        assert "light.proof" in engine._yielded
+        freezer.move_to("2026-10-13T18:11:00.001+00:00")
+        async_fire_time_changed(hass, dt_util.utcnow())
+        await hass.async_block_till_done()
+        assert len(calls) == 1
+        assert hass.states.get("light.proof").state == ("on" if ending == "reverse" else "off")
+    finally:
+        await engine.async_close(cleanup=False)
 
 
 @pytest.mark.parametrize("domain", ["cover", "cover_axes", "light"])

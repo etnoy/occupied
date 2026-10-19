@@ -24,7 +24,7 @@ def motion_for(action, observed, now):
                 targets[key] = data[key]
         if observed["state"] == "off" and "brightness" in targets:
             observed = observed | {"attributes": observed["attributes"] | {"brightness": 0}}
-        states = {observed["state"], state}
+        states = {state} if state == "on" else {observed["state"], state}
     elif action.action.startswith("cover."):
         duration = 300
         service = action.action.split(".")[1]
@@ -59,6 +59,9 @@ def motion_for(action, observed, now):
 
 def progresses(motion, observed, now):
     if observed is None or now > datetime.fromisoformat(motion["deadline"]):
+        return False
+    # Also reject off for persisted motions created before turn_on excluded it.
+    if motion["state"] == "on" and observed["state"] == "off":
         return False
     previous, targets = motion["observed"], motion["targets"]
     if observed["state"] == "off" and "brightness" in targets:
