@@ -1,4 +1,4 @@
-"""Report next-Python wheel readiness without treating missing wheels as a test failure."""
+"""Report next-Python wheel readiness; CI treats this probe as advisory."""
 
 import argparse
 import os
@@ -41,14 +41,14 @@ def check_wheels(version, root=ROOT):
     message = f"Python {version} standalone wheels: {state}."
     if pending:
         message += " This lane remains experimental; its tests and CLI smoke still run."
-        print(f"::notice::{message}")
+        print(f"::warning::{message}")
     if summary := os.environ.get("GITHUB_STEP_SUMMARY"):
         with Path(summary).open("a") as stream:
             stream.write(message + "\n")
     if output := os.environ.get("GITHUB_OUTPUT"):
         with Path(output).open("a") as stream:
             stream.write(f"available={str(available).lower()}\n")
-    return 0 if pending else result.returncode
+    return result.returncode
 
 
 if __name__ == "__main__":
