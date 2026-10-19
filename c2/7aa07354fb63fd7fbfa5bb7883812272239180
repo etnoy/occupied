@@ -1,0 +1,29 @@
+custom_components/occupied/engine_daily.py
+  s_57c4321274169c::t_de68bf2decd835 888-891
+custom_components/occupied/planner.py
+  s_57c4321274169c::t_3e183eef95011f 28,351,353,440-443
+custom_components/occupied/validation.py
+  s_57c4321274169c::t_7a726c151256f2 448,455-514
+docs/schema.md
+  s_57c4321274169c::t_fb556f22cd4459 129
+tests/core/test_random_window_overlap.py
+  s_57c4321274169c::t_23afcd1ac755bc 1,7-8,56,61,63,68,76,78-129
+tests/ha/test_random_window_validation.py
+  s_57c4321274169c::t_72f7741b9890e0 4,6-8,11,13,55-117
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c27aa07354fb63fd7fbfa5bb7883812272239180",
+  "prompts": {},
+  "sessions": {
+    "s_57c4321274169c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15315-93ce-7243-a6bf-3d428cb6f8af",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
