@@ -6,6 +6,7 @@
   import { startStep } from "../../controllers/steps.js";
   import DeleteStepDialog from "./DeleteStepDialog.svelte";
   import AdvancedStepSettings from "./AdvancedStepSettings.svelte";
+  import ActionPreviewDialog from "../shared/ActionPreviewDialog.svelte";
 
   let {
     panel,
@@ -20,6 +21,7 @@
   let menuOpen = $state(false);
   let deleteOpen = $state(false);
   let advancedOpen = $state(false);
+  let previewOpen = $state(false);
   let trigger: HTMLButtonElement;
   let menu: HTMLDivElement;
 
@@ -29,6 +31,7 @@
     flushSync(() => {
       deleteOpen = false;
       advancedOpen = false;
+      previewOpen = false;
     });
     if (trigger?.isConnected) {
       trigger.focus();
@@ -144,6 +147,18 @@
         tabindex="-1"
         disabled={panel.busy}
         onclick={() => {
+          closeMenu(false);
+          flushSync(() => (previewOpen = true));
+        }}
+      >
+        {panel.t("preview")}
+      </button>
+      <button
+        type="button"
+        role="menuitem"
+        tabindex="-1"
+        disabled={panel.busy}
+        onclick={() => {
           closeMenu();
           if (!context) {
             return;
@@ -208,4 +223,11 @@
 {/if}
 {#if advancedOpen && context}
   <AdvancedStepSettings {panel} {context} onClose={closeDialog} />
+{/if}
+{#if previewOpen && context}
+  <ActionPreviewDialog
+    {panel}
+    commands={[{ label: "action", form: context.form }]}
+    onClose={closeDialog}
+  />
 {/if}

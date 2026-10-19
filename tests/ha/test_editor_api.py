@@ -377,6 +377,10 @@ async def test_gui_export_and_yaml_source_normalize_and_preview_identically(
         ("occupied/catalog", {}),
         ("occupied/timeline", {}),
         ("occupied/subscribe", {}),
+        (
+            "occupied/action_preview",
+            {"action": {"action": "turn_on", "entities": ["light.proof"]}, "execute": True},
+        ),
         ("occupied/editor_validate", {"program": {"schema_version": 1, "name": "House"}}),
         (
             "occupied/save",
@@ -793,4 +797,98 @@ async def test_catalog_exposes_remote_activities(hass, editor_entry, devices, ha
     result = (await request(client, "occupied/catalog", editor_entry))["result"]
     remote = next(e for e in result["entities"] if e["entity_id"] == "remote.tv")
     assert remote["activity_list"] == ["TV", "Wii"]
+    assert not devices
+
+
+async def test_action_preview_resolves_unsaved_commands_and_only_dispatches_when_requested(
+    hass, editor_entry, devices, hass_ws_client, hass_storage
+):
+    assert await hass.config_entries.async_setup(editor_entry.entry_id)
+    client = await hass_ws_client(hass)
+    before = program_document(editor_entry.runtime_data)
+    stored = deepcopy(hass_storage)
+    source = {
+        "actions": [
+            {"action": "set_state", "entities": {"light.a": {"state": "on", "brightness": 128}}},
+            {
+                "action": "remote.turn_on",
+                "entities": ["remote.harmony"],
+                "data": {"activity": "TV"},
+            },
+        ]
+    }
+    preview = (await request(client, "occupied/action_preview", editor_entry, action=source))[
+        "result"
+    ]
+    assert preview["valid"] and not preview["outcomes"] and not devices, preview
+    assert preview["calls"] == [
+        {"action": "light.turn_on", "data": {"entity_id": "light.a", "brightness": 128}},
+        {"action": "remote.turn_on", "data": {"entity_id": "remote.harmony", "activity": "TV"}},
+    ]
+    tested = (
+        await request(
+            client, "occupied/action_preview", editor_entry, 2, action=source, execute=True
+        )
+    )["result"]
+    assert tested["calls"] == preview["calls"]
+    assert [outcome["status"] for outcome in tested["outcomes"]] == ["dispatched", "dispatched"]
+    assert [(call.domain, call.service) for call in devices] == [
+        ("light", "turn_on"),
+        ("remote", "turn_on"),
+    ]
+    assert all(call.context.user_id for call in devices)
+    assert program_document(editor_entry.runtime_data) == before
+    assert hass_storage == stored
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        {"action": "light.turn_on", "entities": []},
+        {"action": "remote.missing", "entities": ["remote.harmony"]},
+        {"action": "light.turn_on", "entities": ["light.unavailable"]},
+    ],
+)
+async def test_invalid_action_preview_never_dispatches(
+    hass, editor_entry, devices, hass_ws_client, source
+):
+    assert await hass.config_entries.async_setup(editor_entry.entry_id)
+    client = await hass_ws_client(hass)
+    result = (
+        await request(client, "occupied/action_preview", editor_entry, action=source, execute=True)
+    )["result"]
+    assert not result["valid"] and result["issues"] and not devices
+
+
+@pytest.mark.parametrize("timed_out", [False, True])
+async def test_action_preview_stops_remaining_commands_after_failure(
+    hass, editor_entry, devices, hass_ws_client, monkeypatch, timed_out
+):
+    from custom_components.occupied.actions import ServiceWaitTimeout
+
+    assert await hass.config_entries.async_setup(editor_entry.entry_id)
+    client = await hass_ws_client(hass)
+    dispatch = AsyncMock(
+        side_effect=ServiceWaitTimeout("Still running") if timed_out else ValueError("Failed")
+    )
+    monkeypatch.setattr("custom_components.occupied.action_preview.dispatch_service", dispatch)
+    source = {
+        "actions": [
+            {
+                "action": "remote.turn_on",
+                "entities": ["remote.harmony"],
+                "data": {"activity": "TV"},
+            },
+            {"action": "remote.turn_off", "entities": ["remote.harmony"]},
+        ]
+    }
+    result = (
+        await request(client, "occupied/action_preview", editor_entry, action=source, execute=True)
+    )["result"]
+    assert result["valid"]
+    assert [outcome["status"] for outcome in result["outcomes"]] == [
+        "uncertain" if timed_out else "failed",
+        "skipped",
+    ]
+    dispatch.assert_awaited_once()
     assert not devices

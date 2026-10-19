@@ -409,6 +409,13 @@ export interface LivePreviewResponse {
 }
 
 export interface WebSocketResponses {
+  action_preview: ApiResult<{
+    calls: { action: string; data: Record<string, JsonValue> }[];
+    outcomes: {
+      status: "dispatched" | "failed" | "uncertain" | "skipped";
+      detail?: string;
+    }[];
+  }>;
   instances: InstanceDocument[];
   program: ProgramDocument;
   catalog: Catalog;
