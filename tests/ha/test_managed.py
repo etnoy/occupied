@@ -511,3 +511,42 @@ async def test_reload_closed_during_read_does_not_report_success(
     proceed.set()
     with pytest.raises(HomeAssistantError, match="unloaded"):
         await task
+
+
+async def test_source_switch_cannot_take_another_controllers_file(
+    hass, file_entry, managed_file, hass_ws_client
+):
+    owner = await load(hass, file_entry)
+    other = MockConfigEntry(
+        domain="occupied",
+        title="Other",
+        data={"source": "gui", "name": "Other", "program": {"schema_version": 1, "name": "Other"}},
+    )
+    other.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(other.entry_id)
+    engine = other.runtime_data
+    client = await hass_ws_client(hass)
+    response = await request(
+        client,
+        other,
+        "source",
+        source="file",
+        config_file="occupied/./house.yaml",
+        expected_revision=program_revision(engine.program),
+    )
+    assert not response["success"]
+    assert response["error"]["translation_key"] == "file_already_managed"
+    assert engine.source_manager.mode == "gui"
+    assert engine.program.name == "Other"
+    assert file_entry.runtime_data is owner and not owner.closed
+    # Re-selecting the owner's own file remains allowed.
+    response = await request(
+        client,
+        file_entry,
+        "source",
+        2,
+        source="file",
+        config_file="occupied/house.yaml",
+        expected_revision=program_revision(owner.program),
+    )
+    assert response["success"] and response["result"]["valid"]

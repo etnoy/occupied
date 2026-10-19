@@ -64,7 +64,8 @@
     "abort": {
       "already_configured": "This Occupied controller is already configured.",
       "invalid_program": "The canonical Occupied program is invalid.",
-      "ambiguous_instance": "Use named controllers in configuration.yaml to identify the controller."
+      "ambiguous_instance": "Use named controllers in configuration.yaml to identify the controller.",
+      "file_already_managed": "Another Occupied controller already manages this file."
     }
   },
   "entity": {
@@ -115,6 +116,10 @@
     "invalid_program": {
       "title": "Occupied stored program could not be loaded",
       "description": "Controller: {name}\n\n{error}\n\nThe original program is preserved and management is stopped. Open Occupied Settings, correct the preserved YAML, and save a valid program to resume management."
+    },
+    "duplicate_managed_file": {
+      "title": "File is already managed",
+      "description": "YAML declaration {name} selects {path}, which another Occupied controller already manages. Remove the duplicate declaration or choose another file. The existing controller has not changed."
     }
   },
   "services": {
@@ -218,6 +223,9 @@
     },
     "unloaded_before_save": {
       "message": "Occupied is unloaded; refresh before saving"
+    },
+    "file_already_managed": {
+      "message": "Another Occupied controller already manages this file."
     }
   }
 }

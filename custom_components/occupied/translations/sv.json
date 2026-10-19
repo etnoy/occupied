@@ -100,12 +100,19 @@
     },
     "unloaded_before_save": {
       "message": "Occupied är inte längre inläst; uppdatera innan du sparar"
+    },
+    "file_already_managed": {
+      "message": "En annan Occupied-styrenhet hanterar redan den här filen."
     }
   },
   "issues": {
     "invalid_program": {
       "title": "Occupied kunde inte läsa det sparade programmet",
       "description": "Styrenhet: {name}\n\n{error}\n\nOriginalprogrammet är bevarat och styrningen är stoppad. Öppna Inställningar i Occupied, rätta bevarad YAML och spara ett giltigt program för att återuppta styrningen."
+    },
+    "duplicate_managed_file": {
+      "title": "Filen hanteras redan",
+      "description": "YAML-deklarationen {name} väljer {path}, som redan hanteras av en annan Occupied-styrenhet. Ta bort den dubbla deklarationen eller välj en annan fil. Den befintliga styrenheten har inte ändrats."
     }
   },
   "config": {
@@ -144,6 +151,9 @@
       "file_already_managed": "En annan Occupied-styrenhet hanterar redan den här filen.",
       "name_required": "Ange styrenhetens namn.",
       "name_already_exists": "En annan Occupied-styrenhet använder redan det här namnet. Välj ett annat namn."
+    },
+    "abort": {
+      "file_already_managed": "En annan Occupied-styrenhet hanterar redan den här filen."
     }
   }
 }
