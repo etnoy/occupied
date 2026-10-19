@@ -9215,7 +9215,9 @@ function actionForm(source2) {
               },
         ),
       }),
-    service: source2?.action || "homeassistant.turn_on",
+    service: action2?.includes(".")
+      ? action2
+      : `homeassistant.${action2 === "turn_off" ? "turn_off" : "turn_on"}`,
     data: JSON.stringify(source2?.data || {}, null, 2),
     entities: actionTargets(source2),
     action: action2 === "turn_off" ? "turn_off" : "turn_on",
@@ -12004,6 +12006,9 @@ function changeActionKind(form, value, confirmReplace) {
   }
   if (kind === "entities") {
     form.action = value;
+  }
+  if (kind === "service" && !form.service.includes(".")) {
+    form.service = `homeassistant.${form.action}`;
   }
   if (
     kind === "cover" &&

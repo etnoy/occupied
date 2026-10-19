@@ -227,7 +227,9 @@ export function actionForm(source?: Action): ActionForm {
               },
         ),
       }),
-    service: source?.action || "homeassistant.turn_on",
+    service: action?.includes(".")
+      ? action
+      : `homeassistant.${action === "turn_off" ? "turn_off" : "turn_on"}`,
     data: JSON.stringify(source?.data || {}, null, 2),
     entities: actionTargets(source),
     action: action === "turn_off" ? "turn_off" : "turn_on",
