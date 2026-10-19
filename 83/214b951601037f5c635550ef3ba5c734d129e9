@@ -1,0 +1,35 @@
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_b1619f3f72ecf0::t_4832fe2c9103c2 4-7,544-547
+custom_components/occupied/frontend/dist/lib/utils/services.js
+  s_b1619f3f72ecf0::t_f93bae26d9c8d7 1-62
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_b1619f3f72ecf0::t_a1823c69de97df 100-103,639-642,11965-12027,12102-12103,12107-12115,12130-12135,12278-12353,12355,12361,12364-12365,12368,12386,12422,12429,12445,12449,12468,12473-12591,12597,12964-12965,12968-12969,12995,13261,13278,13284,13345,13349-13351,13354,13357,13414,13454,13487,13512,13539,13613,13673-13678,14015,14021,14048,14054,14064,14090,15051-15052,15124,15265,15367-15372,15607,15632,15643,15647,15696,15728,15922-15927,15948,16084,16108,16124,16136,16151,16167,16179,16239,16321,16529,16782,16838,17886,17889,17892,17949,17977,18112,18165-18167,18171-18173,18311,18333,18358,18415,18454,18476
+custom_components/occupied/frontend/src/lib/components/shared/ActionEditor.svelte
+  s_b1619f3f72ecf0::t_4f4f674ddfab43 9-13,34-39,107-138,140-142,193-226
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_b1619f3f72ecf0::t_761e227223bdca 3-7,548-552
+custom_components/occupied/frontend/src/lib/types.ts
+  s_b1619f3f72ecf0::t_52a92fc8a248dc 221-224
+custom_components/occupied/frontend/src/lib/utils/services.ts
+  s_b1619f3f72ecf0::t_3bd5122c3d5c52 1-77
+tests/browser/occupied.spec.ts
+  s_b1619f3f72ecf0::t_b3f4071e52ca0b 528-578
+tests/frontend/src/services.test.ts
+  s_b1619f3f72ecf0::t_24bcd6bb7c5447 1-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "83214b951601037f5c635550ef3ba5c734d129e9",
+  "prompts": {},
+  "sessions": {
+    "s_b1619f3f72ecf0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1543f-0d19-78d0-b42e-2ae6155ea824",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
