@@ -11,7 +11,7 @@ from homeassistant.helpers.event import async_call_later, async_track_time_inter
 from .bootstrap import check_bootstrap
 from .const import DOMAIN
 from .entry_metadata import async_sync_program_name
-from .file_config import file_fingerprint, load_yaml, read_managed
+from .file_config import file_fingerprint, load_yaml, managed_path, read_managed
 from .validation import ProgramError, RevisionConflict, program_revision
 
 POLL_INTERVAL = timedelta(seconds=5)
@@ -20,6 +20,32 @@ DEBOUNCE_SECONDS = 1
 
 def source_lock(hass, entry_id):
     return hass.data[DOMAIN].setdefault("editor_locks", {}).setdefault(entry_id, asyncio.Lock())
+
+
+async def async_path_in_use(hass, path, *, exclude_entry_id=None):
+    """Resolve current file owners off the event loop, including unloaded entries."""
+    paths = [
+        entry.data.get("config_file")
+        for entry in hass.config_entries.async_entries(DOMAIN)
+        if entry.entry_id != exclude_entry_id and entry.data.get("source") == "file"
+    ]
+    config_dir = hass.config.config_dir
+
+    def check():
+        try:
+            selected = managed_path(config_dir, path)
+        except ProgramError:
+            # Bootstrap keeps invalid paths loadable for the normal Repairs flow.
+            return False
+        for existing in paths:
+            try:
+                if existing is not None and managed_path(config_dir, existing) == selected:
+                    return True
+            except ProgramError:
+                continue
+        return False
+
+    return await hass.async_add_executor_job(check)
 
 
 class SourceManager:
@@ -167,6 +193,12 @@ class SourceManager:
             if expected_revision != self.engine.source_revision:
                 raise RevisionConflict("The program changed. Reload it before changing its source.")
             if mode == "file":
+                if await async_path_in_use(self.hass, path, exclude_entry_id=self.entry.entry_id):
+                    raise HomeAssistantError(
+                        "Another Occupied controller already manages this file.",
+                        translation_domain=DOMAIN,
+                        translation_key="file_already_managed",
+                    )
                 program, digest = await self._candidate(path)
                 await self.engine.async_replace_program(program, persist_program=False)
             else:

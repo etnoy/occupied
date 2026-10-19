@@ -97,9 +97,14 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Import managed-file bootstrap declarations."""
         if not isinstance(user_input, dict) or "config_file" not in user_input:
             return self.async_abort(reason="invalid_program")
+        from homeassistant.helpers import issue_registry as ir
+
         from .bootstrap import check_bootstrap, existing_entry, unique_id
+        from .managed import async_path_in_use
 
         identity = unique_id(user_input)
+        issue_id = f"duplicate_managed_file_{identity}"
+        ir.async_delete_issue(self.hass, DOMAIN, issue_id)
         await self.async_set_unique_id(identity)
         if entry := existing_entry(self.hass, user_input):
             if "id" in user_input and entry.unique_id != identity:
@@ -107,9 +112,21 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             config = {"instances": [user_input]} if "id" in user_input else user_input
             check_bootstrap(self.hass, entry, config)
             return self.async_abort(reason="already_configured")
+        if await async_path_in_use(self.hass, user_input["config_file"]):
+            ir.async_create_issue(
+                self.hass,
+                DOMAIN,
+                issue_id,
+                is_fixable=False,
+                severity=ir.IssueSeverity.ERROR,
+                translation_key="duplicate_managed_file",
+                translation_placeholders={
+                    "name": user_input.get("id", "House"),
+                    "path": user_input["config_file"],
+                },
+            )
+            return self.async_abort(reason="file_already_managed")
         if "id" not in user_input and self._async_current_entries():
-            from homeassistant.helpers import issue_registry as ir
-
             ir.async_create_issue(
                 self.hass,
                 DOMAIN,
@@ -196,7 +213,8 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_file(self, user_input=None):
-        from .file_config import load_yaml, managed_path, read_managed
+        from .file_config import load_yaml, read_managed
+        from .managed import async_path_in_use
         from .validation import ProgramError
 
         errors = {}
@@ -209,24 +227,7 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except ProgramError:
                 errors["config_file"] = "invalid_file"
             else:
-                entries = tuple(self._async_current_entries())
-
-                def path_in_use():
-                    selected = managed_path(self.hass.config.config_dir, user_input["config_file"])
-                    for entry in entries:
-                        if entry.data.get("source") != "file":
-                            continue
-                        try:
-                            existing = managed_path(
-                                self.hass.config.config_dir, entry.data["config_file"]
-                            )
-                        except ProgramError, KeyError:
-                            continue
-                        if existing == selected:
-                            return True
-                    return False
-
-                if await self.hass.async_add_executor_job(path_in_use):
+                if await async_path_in_use(self.hass, user_input["config_file"]):
                     errors["config_file"] = "file_already_managed"
                 elif error := self._name_error(program.name):
                     errors["base"] = error
