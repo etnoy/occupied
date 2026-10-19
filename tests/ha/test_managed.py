@@ -1,5 +1,6 @@
 """Managed-file acceptance through real HA setup, storage, timers, APIs and repairs."""
 
+import asyncio
 import json
 from copy import deepcopy
 from datetime import timedelta
@@ -480,3 +481,33 @@ def test_managed_file_accepts_public_yaml_extensions(tmp_path):
 
     for relative in ("occupied/house.yaml", "occupied/house.yml"):
         assert managed_path(str(tmp_path), relative) == tmp_path / relative
+
+
+@pytest.mark.parametrize("closed", ["manager", "engine"])
+async def test_reload_closed_during_read_does_not_report_success(
+    hass, file_entry, managed_file, monkeypatch, closed
+):
+    from custom_components.occupied import managed
+
+    engine = await load(hass, file_entry)
+    manager = engine.source_manager
+    read = managed.read_managed
+    started, proceed = asyncio.Event(), asyncio.Event()
+    executor = hass.async_add_executor_job
+
+    async def paused_read(target, *args):
+        if target is read:
+            started.set()
+            await proceed.wait()
+        return await executor(target, *args)
+
+    monkeypatch.setattr(hass, "async_add_executor_job", paused_read)
+    task = hass.async_create_task(manager.async_reload())
+    await started.wait()
+    if closed == "manager":
+        manager.close()
+    else:
+        await engine.async_close(cleanup=False)
+    proceed.set()
+    with pytest.raises(HomeAssistantError, match="unloaded"):
+        await task

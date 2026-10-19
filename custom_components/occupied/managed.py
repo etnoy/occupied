@@ -130,6 +130,12 @@ class SourceManager:
                 async_sync_program_name(self.hass, self.entry.entry_id, program.name)
                 self._report([])
             except (ProgramError, HomeAssistantError) as err:
+                if self.closed or self.engine.closed:
+                    raise HomeAssistantError(
+                        "Occupied is unloaded",
+                        translation_domain=DOMAIN,
+                        translation_key="unloaded",
+                    ) from err
                 issues = (
                     [i.to_dict() for i in err.issues]
                     if isinstance(err, ProgramError)
