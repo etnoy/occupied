@@ -68,6 +68,7 @@ _LOGGER = logging.getLogger(__name__)
 DISPATCH_BATCH = 64
 ENFORCEMENT_CONCURRENCY = 32
 MAX_JOURNAL = 50000
+BOUNDARY_GRACE = timedelta(minutes=5)
 
 
 @dataclass(order=True)
@@ -114,7 +115,6 @@ class DailyEngine:
         self._state_unsub = None
         self._contexts = deque(maxlen=1000)
         self._queue: list[RuntimeEvent] = []
-        self._queue_since: datetime | None = None
         self._plans: dict[date, DailyPlan] = {}
         self._plan_contexts = {}
         self._fingerprinted_plans = None
@@ -398,7 +398,7 @@ class DailyEngine:
                 retained = [
                     event for event in self._queue if event.kind not in {"plan", "boundary"}
                 ]
-                self._queue_plans(since=self._queue_since, preserve_pending=True)
+                self._queue_plans(preserve_pending=True)
                 queued = {event.key for event in self._queue}
                 self._queue.extend(event for event in retained if event.key not in queued)
                 heapq.heapify(self._queue)
@@ -567,7 +567,6 @@ class DailyEngine:
             self.reconciliation["phase"] = "cancelled"
         self.generation += 1
         self._queue.clear()
-        self._queue_since = None
         if self._cancel_timer:
             self._cancel_timer()
             self._cancel_timer = None
@@ -967,13 +966,15 @@ class DailyEngine:
 
     def _queue_plans(self, *, skip_through=None, since=None, preserve_pending=False):
         now = dt_util.utcnow()
-        cutoff = now if since is None else since
+        # Only the daily boundary admits newly visible work from just before
+        # now. Source edits always use now; unchanged pending events survive
+        # separately below, including deferred handovers and retries.
+        cutoff = now if since is None else max(since, now - BOUNDARY_GRACE)
         pending = {event.key: event for event in self._queue} if preserve_pending else {}
         # Retries belong to calls already attempted, so their failed journal
         # entries must not prevent them from surviving a new daily queue.
         self._queue = [event for event in pending.values() if event.kind == "retry"]
         heapq.heapify(self._queue)
-        self._queue_since = cutoff
         current = self._plan_at(now)
         queued_groups = set()
         resolved = {

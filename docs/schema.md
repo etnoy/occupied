@@ -169,6 +169,8 @@ Timezone and location come from HA, or CLI context flags (`--timezone`, `--latit
 
 A schedule date begins at local midnight. Weekdays select the source date: a Monday 23:50 step plus 30m runs Tuesday 00:20 as Monday's occurrence. Overnight absolute windows follow the same rule. Internal times are aware UTC. Repeated DST clocks use their first occurrence; nonexistent clocks advance to the first valid instant, with a warning. Calendar days can have 23 or 25 hours.
 
+When the daily boundary timer runs late, newly admitted events have a five-minute grace period. Older events are marked as historically skipped, so resuming a suspended host does not replay an entire morning. Moving a time source into the past never backfills the moved event. Unchanged queued work and retries retain their scheduling continuity.
+
 Live compilation has bounded date and event budgets. Excessively long dependency chains or oversized plans fail explicitly instead of silently dropping work.
 
 ## Actions
