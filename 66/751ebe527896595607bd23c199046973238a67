@@ -1,0 +1,29 @@
+custom_components/occupied/managed.py
+  s_57c4321274169c::t_139015a394cb63 133-138
+tests/ha/test_managed.py
+  s_de9cf288f1595c::t_a7eaaaf16eeb56 3,484-513
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "66751ebe527896595607bd23c199046973238a67",
+  "prompts": {},
+  "sessions": {
+    "s_57c4321274169c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15315-93ce-7243-a6bf-3d428cb6f8af",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_de9cf288f1595c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1534e-ba91-7082-a157-e039c22f6920",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
