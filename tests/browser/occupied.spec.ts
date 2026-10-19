@@ -525,5 +525,56 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   const discarded = await readStoredProgram();
   expect(discarded.schema_version).toBe(1);
   expect(Object.keys(discarded.steps || {})).toEqual([]);
+  // Supply deterministic service descriptions; this exercises help without dispatch.
+  await panel.evaluate((element) => {
+    const controller = element as OccupiedPanel;
+    controller.discardEdits();
+    controller.catalog.services.remote = {
+      turn_on: {
+        name: "Start remote activity",
+        target: { entity: [{ domain: "remote" }] },
+        fields: {
+          activity: {
+            required: true,
+            description: "Activity to start",
+            example: "TV",
+          },
+        },
+      },
+    };
+    controller.tab = "steps";
+    controller.renderView();
+  });
+  await panel
+    .getByRole("button", { name: "Create your first step", exact: true })
+    .click();
+  const serviceEditor = panel.locator(".step-editor");
+  await serviceEditor
+    .locator('[data-builder-field="kind"]')
+    .selectOption("service");
+  const serviceSelector = serviceEditor.locator(
+    '[data-builder-field="service"]',
+  );
+  await serviceSelector.evaluate((element) => {
+    element.dispatchEvent(
+      new CustomEvent("value-changed", {
+        detail: { value: "remote.turn_on" },
+        bubbles: true,
+      }),
+    );
+  });
+  await expect(
+    serviceEditor.getByText("Activity to start", { exact: true }),
+  ).toBeVisible();
+  await expect(serviceEditor.locator("dt")).toHaveText("activity · Required");
+  await serviceEditor
+    .getByRole("button", { name: "Insert example", exact: true })
+    .click();
+  await expect(
+    serviceEditor.locator('[data-builder-field="data"]'),
+  ).toHaveValue('{\n  "activity": "TV"\n}');
+  await expect(
+    serviceEditor.getByRole("button", { name: "Insert example", exact: true }),
+  ).toBeDisabled();
   expect(errors).toEqual([]);
 });
