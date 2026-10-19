@@ -276,40 +276,73 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }),
   ).toBeVisible();
-  // A state report rebuilds entry objects while the pointer remains captured.
-  const ids = await panel.evaluate(async (element) => {
+  // Configuration order wins over start times and old browser preferences.
+  const ids = await panel.evaluate((element) => {
     const controller = element as OccupiedPanel;
     const draft = controller.draft;
     if (!draft) {
-      throw new Error("Expected a loaded program before reordering steps");
+      throw new Error("Expected a loaded program before checking list order");
     }
     const first = Object.keys(draft.steps!)[0];
-    await controller.save({
+    controller.draft = {
       ...draft,
       steps: {
         ...draft.steps,
+        browser_child: {
+          ...draft.steps![first],
+          name: "Dependent light",
+          timing: { relative_to: { step: first, start_offset: "-1h" } },
+        },
         browser_second: {
           ...draft.steps![first],
-          name: "Later light",
-          timing: { absolute_time: { start: "23:00" } },
+          name: "Earlier light",
+          timing: { absolute_time: { start: "05:00" } },
         },
       },
-    });
+      random: {
+        browser_late: {
+          name: "Late window",
+          start: { absolute_time: { start: "22:00" } },
+          end: { duration: { min: "1h" } },
+          on: { action: "turn_on", entities: ["light.smoke_light"] },
+          off: { action: "turn_off", entities: ["light.smoke_light"] },
+        },
+        browser_early: {
+          name: "Early window",
+          start: { absolute_time: { start: "06:00" } },
+          end: { duration: { min: "1h" } },
+          on: { action: "turn_on", entities: ["light.smoke_light"] },
+          off: { action: "turn_off", entities: ["light.smoke_light"] },
+        },
+      },
+    };
+    localStorage.setItem(
+      `occupied:activity-order:${controller.selectedEntry}:steps`,
+      JSON.stringify(["browser_second", first, "browser_child"]),
+    );
+    localStorage.setItem(
+      `occupied:activity-order:${controller.selectedEntry}:random`,
+      JSON.stringify(["browser_early", "browser_late"]),
+    );
+    controller.renderView();
 
-    return [first, "browser_second"];
+    return [first, "browser_child", "browser_second"];
   });
-  const handles = panel.locator(".activity-drag-handle");
-  await expect(handles).toHaveCount(2);
-  await expect(handles.first()).toBeEnabled();
-  await handles.first().hover();
-  const first = (await handles.first().boundingBox())!;
-  const last = (await handles.last().boundingBox())!;
-  await page.mouse.move(first.x + first.width / 2, first.y + first.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(last.x + last.width / 2, last.y + last.height + 8, {
-    steps: 8,
-  });
-  await expect(panel.locator(".activity-dragging")).toHaveCount(1);
+  const stepIds = () =>
+    panel
+      .locator("[data-step-id]")
+      .evaluateAll((rows) =>
+        rows.map((row) => (row as HTMLElement).dataset.stepId),
+      );
+  await expect.poll(stepIds).toEqual(ids);
+  await expect(panel.locator("[data-step-id=browser_child]")).toHaveCSS(
+    "margin-left",
+    "14px",
+  );
+  await expect(panel.getByRole("button", { name: /^Reorder / })).toHaveCount(0);
+  await expect(
+    panel.getByRole("button", { name: "Reset to chronological", exact: true }),
+  ).toHaveCount(0);
   await panel.evaluate((element) => {
     const controller = element as OccupiedPanel;
     controller.hass = {
@@ -318,28 +351,33 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     };
     controller.flush();
   });
-  await page.mouse.up();
+  await expect.poll(stepIds).toEqual(ids);
+  await panel.getByRole("button", { name: "Random", exact: true }).click();
   await expect
     .poll(() =>
       panel
-        .locator(".activity-item")
+        .locator("[data-random-id]")
         .evaluateAll((rows) =>
-          rows.map((row) => (row as HTMLElement).dataset.activityId),
+          rows.map((row) => (row as HTMLElement).dataset.randomId),
         ),
     )
-    .toEqual([ids[1], ids[0]]);
-  await panel.evaluate(async (element) => {
+    .toEqual(["browser_late", "browser_early"]);
+  await expect(panel.getByRole("button", { name: /^Reorder / })).toHaveCount(0);
+  await expect(
+    panel.getByRole("button", { name: "Reset to chronological", exact: true }),
+  ).toHaveCount(0);
+  await panel.evaluate((element) => {
     const controller = element as OccupiedPanel;
-    const draft = controller.draft;
-    if (!draft) {
-      throw new Error(
-        "Expected a loaded program before removing the test step",
+    for (const collection of ["steps", "random"]) {
+      localStorage.removeItem(
+        `occupied:activity-order:${controller.selectedEntry}:${collection}`,
       );
     }
-    const steps = { ...draft.steps };
-    delete steps.browser_second;
-    await controller.save({ ...draft, steps });
   });
+  await page.reload();
+  await expect(
+    panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }),
+  ).toBeVisible();
 
   await panel.getByRole("button", { name: "Preview", exact: true }).click();
   await expect(panel.locator("state-history-chart-timeline")).toBeVisible();
@@ -442,7 +480,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     panel.getByRole("button", { name: "Create your first step" }),
   ).toBeVisible();
-  expect(saves).toHaveLength(4);
+  expect(saves).toHaveLength(2);
   expect(Object.keys(saves.at(-1)?.steps || {})).toEqual([]);
 
   await page.reload();

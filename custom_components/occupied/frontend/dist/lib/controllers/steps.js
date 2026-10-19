@@ -92,3 +92,31 @@ export function actionSummary(entry, t) {
   }
   return entry.action;
 }
+export function stepTree(entries) {
+  const seen = new Set(),
+    ordered = [];
+  const append = (entry, depth) => {
+    if (seen.has(entry.id)) {
+      return;
+    }
+    seen.add(entry.id);
+    ordered.push({ entry, depth });
+    for (const child of entries) {
+      if (child.timing.relative_to?.step === entry.id) {
+        append(child, depth + 1);
+      }
+    }
+  };
+  const isRoot = (step) =>
+    !step.timing.relative_to?.step ||
+    entries.every((parent) => parent.id !== step.timing.relative_to?.step);
+  for (const step of entries) {
+    if (isRoot(step)) {
+      append(step, 0);
+    }
+  }
+  for (const step of entries) {
+    append(step, 0);
+  }
+  return ordered;
+}
