@@ -67,6 +67,8 @@ if not image:
     matrix = workflow["jobs"]["matrix"]["strategy"]["matrix"]["include"][0]
     image = next(lane["image"] for lane in matrix["lanes"] if lane["role"] == "newest")
 container = f"occupied-browser-{uuid4().hex[:12]}"
+# Seed/read recovery storage through this disposable container, not host permissions.
+(artifacts / "active-container").write_text(container)
 command = [
     "docker",
     "run",

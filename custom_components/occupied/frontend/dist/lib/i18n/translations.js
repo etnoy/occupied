@@ -10,7 +10,10 @@ export const en = {
   runtime_subscription_failed_hint:
     "Live updates are unavailable. Retry to restore revision checks and live preview updates.",
   stored_program_invalid_hint:
-    "Stored program is invalid. Correct the preserved YAML in Settings and save to resume management.",
+    "Stored program is invalid and GUI editing is disabled. Repair the preserved YAML in Settings, or explicitly discard the preserved program.",
+  discard_preserved_program: "Discard preserved program",
+  discard_preserved_program_confirm:
+    "Discard the preserved program and start with an empty program? This cannot be undone.",
   chronological_order: "Chronological",
   manual_order: "Manual order",
   reset_chronological_order: "Reset to chronological",
@@ -588,7 +591,10 @@ export const sv = {
   runtime_subscription_failed_hint:
     "Liveuppdateringar är inte tillgängliga. Försök igen för att återställa revisionskontroller och liveförhandsvisning.",
   stored_program_invalid_hint:
-    "Det sparade programmet är ogiltigt. Rätta bevarad YAML i Inställningar och spara för att återuppta styrningen.",
+    "Det sparade programmet är ogiltigt och GUI-redigering är avstängd. Reparera bevarad YAML under Inställningar eller kasta uttryckligen det bevarade programmet.",
+  discard_preserved_program: "Kasta bevarat program",
+  discard_preserved_program_confirm:
+    "Kasta det bevarade programmet och börja med ett tomt program? Detta kan inte ångras.",
   chronological_order: "Kronologisk ordning",
   manual_order: "Manuell ordning",
   reset_chronological_order: "Återställ kronologisk ordning",

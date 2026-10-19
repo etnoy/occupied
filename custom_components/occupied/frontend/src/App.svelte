@@ -148,7 +148,8 @@
           type="button"
           data-tab={id}
           aria-current={panel.tab === id ? "page" : "false"}
-          disabled={!panel.selectedInstance?.loaded}
+          disabled={!panel.selectedInstance?.loaded ||
+            (panel.recovering && id !== "settings")}
           onclick={() => panel.navigate(id)}
         >
           {t(label)}
@@ -192,6 +193,10 @@
               <button type="button" onclick={() => panel.retry()}
                 >{t("retry")}</button
               >{/if}
+          {:else if panel.recovering && panel.tab !== "settings"}
+            <button type="button" onclick={() => panel.navigate("settings")}
+              >{t("settings")}</button
+            >
           {:else if panel.stepEditor && !panel.stepEditor.existing}
             <StepEditor {panel} {revision} />
           {:else if panel.randomEditor && !panel.randomEditor.existing}

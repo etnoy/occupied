@@ -1335,6 +1335,117 @@ void test("a failed entry reload recovers on the next availability transition wi
   }
 });
 
+void test("recovery mode keeps the preserved program safe from GUI edits and saves", async () => {
+  const f = await fixture();
+  try {
+    f.panel.document.recovery_yaml = "schema_version: 99\nname: Preserved\n";
+    const before = structuredClone(f.panel.draft);
+    f.messages.length = 0;
+    f.panel.change(["name"], "Accidental replacement");
+    await f.panel.save();
+    assert.deepEqual(f.panel.draft, before);
+    assert.equal(f.messages.length, 0);
+    assert.equal(f.panel.dirty, false);
+    await f.panel.exportYaml();
+    assert.equal(f.panel.yaml, f.panel.document.recovery_yaml);
+  } finally {
+    f.restore();
+  }
+});
+
+void test("discarding a preserved program requires confirmation and an explicit save flag", async () => {
+  const f = await fixture();
+  try {
+    f.panel.document.recovery_yaml = "schema_version: 99\n";
+    f.panel.revision = "invalid:preserved";
+    f.messages.length = 0;
+    await f.panel.discardRecovery();
+    assert.equal(f.confirmations, 1);
+    assert.equal(f.messages.length, 0);
+    assert.equal(f.panel.recovering, true);
+    const requests: Record<string, unknown>[] = [];
+    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      requests.push(message);
+
+      return Promise.resolve({
+        ...f.panel.document,
+        valid: true,
+        recovery_yaml: null,
+        revision: "discarded",
+      } as T);
+    };
+    f.accept();
+    await f.panel.discardRecovery();
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].discard_recovery, true);
+    assert.equal(requests[0].expected_revision, "invalid:preserved");
+    assert.equal(f.panel.recovering, false);
+    assert.equal(f.panel.revision, "discarded");
+    assert.equal(f.panel.dirty, false);
+    assert.equal(f.panel.yaml, "");
+    assert.equal(f.panel.tab, "steps");
+  } finally {
+    f.restore();
+  }
+});
+
+void test("discard preserves YAML edits made while its request is in flight", async () => {
+  const f = await fixture();
+  try {
+    f.panel.document.recovery_yaml = "schema_version: 99\n";
+    await f.panel.exportYaml();
+    let resolve!: (value: unknown) => void;
+    f.panel._hass.callWS = <T>() =>
+      new Promise<T>((done) => {
+        resolve = (value) => done(value as T);
+      });
+    f.accept();
+    const pending = f.panel.discardRecovery();
+    f.panel.yaml = "schema_version: 1\nname: Newer repair\n";
+    resolve({
+      ...f.panel.document,
+      valid: true,
+      recovery_yaml: null,
+      revision: "discarded",
+    });
+    await pending;
+    assert.equal(f.panel.recovering, false);
+    assert.equal(f.panel.yaml, "schema_version: 1\nname: Newer repair\n");
+    assert.equal(f.panel.yamlDirty, true);
+    assert.equal(f.panel.yamlRevision, "discarded");
+    assert.equal(f.panel.tab, "settings");
+  } finally {
+    f.restore();
+  }
+});
+
+void test("repairing preserved YAML unlocks the GUI without an explicit discard", async () => {
+  const f = await fixture();
+  try {
+    f.panel.document.recovery_yaml = "schema_version: 99\n";
+    await f.panel.exportYaml();
+    f.panel.yaml = "schema_version: 1\nname: Repaired\n";
+    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      assert.equal(message.discard_recovery, undefined);
+      assert.equal(message.program, f.panel.yaml);
+
+      return Promise.resolve({
+        ...f.panel.document,
+        valid: true,
+        recovery_yaml: null,
+        revision: "repaired",
+        program: { schema_version: 1, name: "Repaired" },
+      } as T);
+    };
+    await f.panel.saveYaml();
+    assert.equal(f.panel.recovering, false);
+    assert.equal(f.panel.draft.name, "Repaired");
+    assert.equal(f.panel.yamlDirty, false);
+  } finally {
+    f.restore();
+  }
+});
+
 void test("Save step validates and saves new and edited steps, then closes the editor", async () => {
   const f = await fixture();
   try {
