@@ -106,7 +106,10 @@ var en = {
   runtime_subscription_failed_hint:
     "Live updates are unavailable. Retry to restore revision checks and live preview updates.",
   stored_program_invalid_hint:
-    "Stored program is invalid. Correct the preserved YAML in Settings and save to resume management.",
+    "Stored program is invalid and GUI editing is disabled. Repair the preserved YAML in Settings, or explicitly discard the preserved program.",
+  discard_preserved_program: "Discard preserved program",
+  discard_preserved_program_confirm:
+    "Discard the preserved program and start with an empty program? This cannot be undone.",
   chronological_order: "Chronological",
   manual_order: "Manual order",
   reset_chronological_order: "Reset to chronological",
@@ -685,7 +688,10 @@ var sv = {
   runtime_subscription_failed_hint:
     "Liveuppdateringar \xE4r inte tillg\xE4ngliga. F\xF6rs\xF6k igen f\xF6r att \xE5terst\xE4lla revisionskontroller och livef\xF6rhandsvisning.",
   stored_program_invalid_hint:
-    "Det sparade programmet \xE4r ogiltigt. R\xE4tta bevarad YAML i Inst\xE4llningar och spara f\xF6r att \xE5teruppta styrningen.",
+    "Det sparade programmet \xE4r ogiltigt och GUI-redigering \xE4r avst\xE4ngd. Reparera bevarad YAML under Inst\xE4llningar eller kasta uttryckligen det bevarade programmet.",
+  discard_preserved_program: "Kasta bevarat program",
+  discard_preserved_program_confirm:
+    "Kasta det bevarade programmet och b\xF6rja med ett tomt program? Detta kan inte \xE5ngras.",
   chronological_order: "Kronologisk ordning",
   manual_order: "Manuell ordning",
   reset_chronological_order: "\xC5terst\xE4ll kronologisk ordning",
@@ -13885,8 +13891,9 @@ delegate(["change", "input", "click"]);
 
 // custom_components/occupied/frontend/src/lib/components/settings/SettingsView.svelte
 var root16 = from_html(`<span class="changes svelte-g0xj3p"> </span>`);
-var root_112 = from_html(
-  `<!> <section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <div class="yaml-actions svelte-g0xj3p"><button type="button" class="primary"> </button> <button type="button"> </button> <button type="button" class="download svelte-g0xj3p"> </button></div></section>`,
+var root_112 = from_html(`<button type="button"> </button>`);
+var root_210 = from_html(
+  `<!> <section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <div class="yaml-actions svelte-g0xj3p"><!> <button type="button" class="primary"> </button> <button type="button"> </button> <button type="button" class="download svelte-g0xj3p"> </button></div></section>`,
   3,
 );
 var $$css4 = {
@@ -13921,23 +13928,30 @@ function SettingsView($$anchor, $$props) {
       cancelled = true;
     };
   });
-  var fragment = root_112();
+  var fragment = root_210();
   var node = first_child(fragment);
-  RunConditionSettings(node, {
-    get panel() {
-      return panel();
-    },
-    get revision() {
-      return $$props.revision;
-    },
-  });
+  {
+    var consequent = ($$anchor2) => {
+      RunConditionSettings($$anchor2, {
+        get panel() {
+          return panel();
+        },
+        get revision() {
+          return $$props.revision;
+        },
+      });
+    };
+    if_block(node, ($$render) => {
+      if (!panel().recovering) $$render(consequent);
+    });
+  }
   var section = sibling(node, 2);
   let classes;
   var h2 = child(section);
   var text2 = child(h2);
   var node_1 = sibling(text2);
   {
-    var consequent = ($$anchor2) => {
+    var consequent_1 = ($$anchor2) => {
       var span = root16();
       var text_1 = only_child(span);
       template_effect(
@@ -13947,7 +13961,7 @@ function SettingsView($$anchor, $$props) {
       append($$anchor2, span);
     };
     if_block(node_1, ($$render) => {
-      if (get(yamlDirty)) $$render(consequent);
+      if (get(yamlDirty)) $$render(consequent_1);
     });
   }
   reset(h2);
@@ -13968,12 +13982,31 @@ function SettingsView($$anchor, $$props) {
     () => ({ mode: "yaml", value: panel().yaml, linewrap: true }),
   );
   var div = sibling(ha_code_editor, 2);
-  var button = child(div);
-  var text_3 = only_child(button, true);
-  var button_1 = sibling(button, 2);
+  var node_2 = child(div);
+  {
+    var consequent_2 = ($$anchor2) => {
+      var button = root_112();
+      var text_3 = only_child(button, true);
+      template_effect(
+        ($0) => {
+          button.disabled = panel().busy || panel().stale;
+          set_text(text_3, $0);
+        },
+        [() => get(t)("discard_preserved_program")],
+      );
+      delegated("click", button, () => panel().discardRecovery());
+      append($$anchor2, button);
+    };
+    if_block(node_2, ($$render) => {
+      if (panel().recovering) $$render(consequent_2);
+    });
+  }
+  var button_1 = sibling(node_2, 2);
   var text_4 = only_child(button_1, true);
   var button_2 = sibling(button_1, 2);
   var text_5 = only_child(button_2, true);
+  var button_3 = sibling(button_2, 2);
+  var text_6 = only_child(button_3, true);
   reset(div);
   reset(section);
   template_effect(
@@ -13990,18 +14023,18 @@ function SettingsView($$anchor, $$props) {
       set_text(text_2, $1);
       set_attribute2(input, "aria-label", $2);
       ha_code_editor.dir = ha_code_editor.dir;
-      button.disabled =
+      button_1.disabled =
         panel().busy ||
         panel().stale ||
         panel().document.source === "file" ||
         !get(yamlDirty) ||
         !panel().yaml ||
         panel().hasRunConditionChanges;
-      set_text(text_3, $3);
-      button_1.disabled = panel().busy || !get(yamlDirty);
-      set_text(text_4, $4);
-      button_2.disabled = panel().busy || !panel().yaml;
-      set_text(text_5, $5);
+      set_text(text_4, $3);
+      button_2.disabled = panel().busy || !get(yamlDirty);
+      set_text(text_5, $4);
+      button_3.disabled = panel().busy || !panel().yaml;
+      set_text(text_6, $5);
     },
     [
       () => get(t)("yaml"),
@@ -14035,9 +14068,9 @@ function SettingsView($$anchor, $$props) {
     panel().yaml = event2.detail.value;
     panel().flush();
   });
-  delegated("click", button, () => panel().saveYaml());
-  delegated("click", button_1, () => panel().discardYaml());
-  delegated("click", button_2, () =>
+  delegated("click", button_1, () => panel().saveYaml());
+  delegated("click", button_2, () => panel().discardYaml());
+  delegated("click", button_3, () =>
     download("occupied.yaml", panel().yaml, "text/yaml"),
   );
   append($$anchor, fragment);
@@ -14737,7 +14770,7 @@ var root17 = from_html(`<p class="hint"> </p>`);
 var root_113 = from_html(
   `<span class="now-label svelte-1kps2qf" aria-hidden="true"> </span>`,
 );
-var root_210 = from_html(
+var root_211 = from_html(
   `<div><!> <state-history-chart-timeline></state-history-chart-timeline></div>`,
   2,
 );
@@ -14867,7 +14900,7 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, p_2);
     };
     var consequent_4 = ($$anchor2) => {
-      var div = root_210();
+      var div = root_211();
       let classes;
       var node_3 = child(div);
       {
@@ -15054,7 +15087,7 @@ function lastGroupResult(session) {
 // custom_components/occupied/frontend/src/lib/components/preview/Timeline.svelte
 var root18 = from_html(`<h2> </h2>`);
 var root_114 = from_html(`<th scope="col" class="svelte-1iz1525"> </th>`);
-var root_211 = from_html(
+var root_212 = from_html(
   `<td class="planned-time svelte-1iz1525"><svg class="hover-indicator svelte-1iz1525" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2 8 6 4 10"></path></svg> </td>`,
 );
 var root_39 = from_html(`<span aria-hidden="true"></span>`);
@@ -15273,7 +15306,7 @@ function Timeline($$anchor, $$props) {
                   var node_8 = child(tr_1);
                   {
                     var consequent_3 = ($$anchor6) => {
-                      var td = root_211();
+                      var td = root_212();
                       var text_4 = sibling(child(td));
                       reset(td);
                       template_effect(() => {
@@ -15608,7 +15641,7 @@ var root19 = from_html(
 var root_115 = from_html(
   `<button type="button" class="svelte-jw9j7k"> </button>`,
 );
-var root_212 = from_html(
+var root_213 = from_html(
   `<button type="button" class="primary svelte-jw9j7k"> </button> <!>`,
   1,
 );
@@ -15670,7 +15703,7 @@ function LivePreviewControls($$anchor, $$props) {
         append($$anchor3, fragment);
       };
       var alternate = ($$anchor3) => {
-        var fragment_1 = root_212();
+        var fragment_1 = root_213();
         var button_2 = first_child(fragment_1);
         var text_2 = only_child(button_2, true);
         var node_1 = sibling(button_2, 2);
@@ -16007,7 +16040,7 @@ var root20 = from_html(
   `<button type="button" class="refresh-button svelte-1gez8n9"><svg viewBox="0 0 24 24" aria-hidden="true" class="svelte-1gez8n9"><path></path></svg></button>`,
 );
 var root_117 = from_html(`<span class="hint" role="status"> </span>`);
-var root_213 = from_html(
+var root_214 = from_html(
   `<div class="schedule-heading svelte-1gez8n9"><div class="schedule-title svelte-1gez8n9"><h2 aria-live="polite" class="svelte-1gez8n9"> </h2> <!></div> <!> <div class="day-navigation svelte-1gez8n9" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-1gez8n9"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
   2,
 );
@@ -16020,7 +16053,7 @@ function PreviewView($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css8);
   const dayHeading = ($$anchor2) => {
-    var div = root_213();
+    var div = root_214();
     var div_1 = child(div);
     var h2 = child(div_1);
     var text2 = only_child(h2, true);
@@ -16361,7 +16394,7 @@ delegate(["keydown", "click"]);
 // custom_components/occupied/frontend/src/lib/components/random/DeleteRandomDialog.svelte
 var root22 = from_html(`<li> </li>`);
 var root_118 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
-var root_214 = from_html(
+var root_215 = from_html(
   `<dialog class="step-delete-dialog" aria-labelledby="random-delete-title"><h2 id="random-delete-title"> </h2> <p> </p> <!> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog>`,
 );
 function DeleteRandomDialog($$anchor, $$props) {
@@ -16379,7 +16412,7 @@ function DeleteRandomDialog($$anchor, $$props) {
     dialog.showModal();
     dialog.querySelector("button")?.focus();
   });
-  var dialog_1 = root_214();
+  var dialog_1 = root_215();
   var h2 = child(dialog_1);
   var text2 = only_child(h2, true);
   var p = sibling(h2, 2);
@@ -16471,7 +16504,7 @@ var root23 = from_html(`<button type="button"> </button>`);
 var root_119 = from_html(
   `<label class="step-weekday-option"><input type="checkbox"/><span> </span></label>`,
 );
-var root_215 = from_html(`<h3> </h3> <!>`, 1);
+var root_216 = from_html(`<h3> </h3> <!>`, 1);
 var root_312 = from_html(
   `<dialog class="step-advanced-dialog" aria-labelledby="random-advanced-title" aria-describedby="random-weekdays-description"><h2 id="random-advanced-title"> </h2> <p id="random-weekdays-description" class="hint"> </p> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!> <!> <!> <p class="hint"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
 );
@@ -16623,7 +16656,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment = root_215();
+      var fragment = root_216();
       var h3 = first_child(fragment);
       var text_5 = only_child(h3, true);
       var node_2 = sibling(h3, 2);
@@ -16655,7 +16688,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
   var node_3 = sibling(node_1, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment_1 = root_215();
+      var fragment_1 = root_216();
       var h3_1 = first_child(fragment_1);
       var text_6 = only_child(h3_1, true);
       var node_4 = sibling(h3_1, 2);
@@ -17152,7 +17185,7 @@ var root25 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_121 = from_html(
   `<label class="same-entities svelte-1n39iyr"><input type="checkbox"/> </label>`,
 );
-var root_216 = from_html(
+var root_217 = from_html(
   `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-advanced=""> </button> <!> <h3> </h3> <div class="random-frequency svelte-1n39iyr"><div><!> <!></div> <div><!></div> <!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <p class="hint"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section>`,
 );
 var $$css9 = {
@@ -17194,7 +17227,7 @@ function RandomEventEditor($$anchor, $$props) {
     set2(advancedTrigger, advancedButton, true);
     set2(advancedOpen, true);
   }
-  var section = root_216();
+  var section = root_217();
   var div = child(section);
   var node = child(div);
   {
@@ -17579,7 +17612,7 @@ var root26 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-random=""> </button></section>`,
 );
 var root_124 = from_html(`<span class="step-status-badge"> </span>`);
-var root_217 = from_html(`<span class="step-row-time"> </span>`);
+var root_218 = from_html(`<span class="step-row-time"> </span>`);
 var root_313 = from_html(
   `<div style="--depth:0"><div class="step-card-header"><!> <button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button></div> <div><!></div></div>`,
 );
@@ -17704,7 +17737,7 @@ function RandomView($$anchor, $$props) {
           var node_5 = sibling(span, 2);
           {
             var consequent_2 = ($$anchor4) => {
-              var span_4 = root_217();
+              var span_4 = root_218();
               var text_6 = only_child(span_4);
               template_effect(
                 ($02, $12) =>
@@ -17858,7 +17891,7 @@ delegate(["click"]);
 // custom_components/occupied/frontend/src/App.svelte
 var root27 = from_html(`<button type="button"> </button>`);
 var root_125 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
-var root_218 = from_html(`<p> </p>`);
+var root_219 = from_html(`<p> </p>`);
 var root_314 = from_html(`<header><p class="hint"> </p></header>`);
 var root_410 = from_html(`<p class="banner" role="status"> </p>`);
 var root_59 = from_html(
@@ -17930,7 +17963,7 @@ function App($$anchor, $$props) {
         append($$anchor3, button_1);
       };
       var alternate = ($$anchor3) => {
-        var p = root_218();
+        var p = root_219();
         var text_3 = only_child(p, true);
         template_effect(() => {
           set_class(p, 1, clsx2(get(className)));
@@ -18093,7 +18126,9 @@ function App($$anchor, $$props) {
             "aria-current",
             get(panel).tab === id() ? "page" : "false",
           );
-          button_3.disabled = !get(panel).selectedInstance?.loaded;
+          button_3.disabled =
+            !get(panel).selectedInstance?.loaded ||
+            (get(panel).recovering && id() !== "settings");
           set_text(text_10, $0);
         },
         [() => get(t)(label())],
@@ -18214,6 +18249,18 @@ function App($$anchor, $$props) {
                 (get(panel).error && !get(panel).entryLoaded),
             );
             var consequent_8 = ($$anchor4) => {
+              var button_7 = root27();
+              var text_17 = only_child(button_7, true);
+              template_effect(
+                ($0) => set_text(text_17, $0),
+                [() => get(t)("settings")],
+              );
+              delegated("click", button_7, () =>
+                get(panel).navigate("settings"),
+              );
+              append($$anchor4, button_7);
+            };
+            var consequent_9 = ($$anchor4) => {
               StepEditor($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -18223,7 +18270,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_9 = ($$anchor4) => {
+            var consequent_10 = ($$anchor4) => {
               RandomEventEditor($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -18233,7 +18280,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_10 = ($$anchor4) => {
+            var consequent_11 = ($$anchor4) => {
               StepsView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -18243,7 +18290,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_11 = ($$anchor4) => {
+            var consequent_12 = ($$anchor4) => {
               RandomView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -18253,7 +18300,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_12 = ($$anchor4) => {
+            var consequent_13 = ($$anchor4) => {
               SettingsView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -18263,7 +18310,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_13 = ($$anchor4) => {
+            var consequent_14 = ($$anchor4) => {
               PreviewView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -18280,18 +18327,20 @@ function App($$anchor, $$props) {
               )
                 $$render(consequent_5);
               else if (get(d)) $$render(consequent_7, 1);
-              else if (get(panel).stepEditor && !get(panel).stepEditor.existing)
+              else if (get(panel).recovering && get(panel).tab !== "settings")
                 $$render(consequent_8, 2);
+              else if (get(panel).stepEditor && !get(panel).stepEditor.existing)
+                $$render(consequent_9, 3);
               else if (
                 get(panel).randomEditor &&
                 !get(panel).randomEditor.existing
               )
-                $$render(consequent_9, 3);
-              else if (get(panel).tab === "steps") $$render(consequent_10, 4);
-              else if (get(panel).tab === "random") $$render(consequent_11, 5);
+                $$render(consequent_10, 4);
+              else if (get(panel).tab === "steps") $$render(consequent_11, 5);
+              else if (get(panel).tab === "random") $$render(consequent_12, 6);
               else if (get(panel).tab === "settings")
-                $$render(consequent_12, 6);
-              else if (get(panel).tab === "preview") $$render(consequent_13, 7);
+                $$render(consequent_13, 7);
+              else if (get(panel).tab === "preview") $$render(consequent_14, 8);
             });
           }
           append($$anchor3, fragment_6);
@@ -18305,7 +18354,7 @@ function App($$anchor, $$props) {
   reset(ha_top_app_bar_fixed);
   var node_11 = sibling(ha_top_app_bar_fixed, 2);
   {
-    var consequent_14 = ($$anchor2) => {
+    var consequent_15 = ($$anchor2) => {
       UnsavedStepDialog($$anchor2, {
         get panel() {
           return get(panel);
@@ -18316,7 +18365,7 @@ function App($$anchor, $$props) {
       () => get(panel).pendingStepExit && hasProgram(get(panel)),
     );
     if_block(node_11, ($$render) => {
-      if (get(d_1)) $$render(consequent_14);
+      if (get(d_1)) $$render(consequent_15);
     });
   }
   template_effect(
@@ -19284,6 +19333,9 @@ var OccupiedPanel = class extends HTMLElement {
     }
     void this._load();
   }
+  get recovering() {
+    return this.document?.recovery_yaml != null;
+  }
   notices() {
     const t = this.t;
     const programNotice = this.stale ? t("draft_revision_conflict_hint") : "";
@@ -19338,6 +19390,9 @@ var OccupiedPanel = class extends HTMLElement {
     this.flush();
   }
   change(path, value, rerender = false) {
+    if (this.recovering) {
+      return;
+    }
     if (path.length === 0) {
       this.draft = value;
     } else {
@@ -19445,7 +19500,7 @@ var OccupiedPanel = class extends HTMLElement {
     });
   }
   save(candidate) {
-    if (this.document?.source === "file" || this.stale) {
+    if (this.document?.source === "file" || this.stale || this.recovering) {
       return;
     }
     const version = this.version,
@@ -19576,6 +19631,43 @@ var OccupiedPanel = class extends HTMLElement {
   }
   refreshPreviewSchedule() {
     return this.previewController.refreshPreviewSchedule();
+  }
+  discardRecovery() {
+    const document2 = this.document;
+    if (
+      !document2 ||
+      !this.recovering ||
+      this.stale ||
+      this.busy ||
+      !globalThis.confirm(this.t("discard_preserved_program_confirm"))
+    ) {
+      return;
+    }
+    const yaml = this.yaml;
+    const program = copy(document2.program);
+    const expected = this.revision;
+    return this.run(async (epoch) => {
+      const result = await this.ws("save", {
+        program,
+        expected_revision: expected,
+        discard_recovery: true,
+      });
+      if (epoch !== this.epoch) {
+        return;
+      }
+      if (!result.valid) {
+        return this.showIssues(result);
+      }
+      const hasNewerYaml = this.yaml !== yaml;
+      const newerYaml = hasNewerYaml ? this.yaml : "";
+      this.adopt({ ...this.document, ...result, needs_apply: false });
+      this.resetDraft();
+      this.yamlSaved = "";
+      this.yaml = newerYaml;
+      this.yamlRevision = result.revision;
+      this.tab = hasNewerYaml ? "settings" : "steps";
+      this.renderView();
+    });
   }
   saveYaml() {
     if (this.document?.source === "file" || this.stale || !this.yamlDirty) {

@@ -41,7 +41,9 @@
   });
 </script>
 
-<RunConditionSettings {panel} {revision} />
+{#if !panel.recovering}
+  <RunConditionSettings {panel} {revision} />
+{/if}
 <section class="yaml-panel" class:has-changes={yamlDirty}>
   <h2>
     {t("yaml")}
@@ -87,6 +89,15 @@
     }}
   ></ha-code-editor>
   <div class="yaml-actions">
+    {#if panel.recovering}
+      <button
+        type="button"
+        disabled={panel.busy || panel.stale}
+        onclick={() => panel.discardRecovery()}
+      >
+        {t("discard_preserved_program")}
+      </button>
+    {/if}
     <button
       type="button"
       class="primary"

@@ -1,4 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { execFile } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import { promisify } from "node:util";
 import { expectedHaShellError } from "../frontend/src/ha-shell-errors.js";
 import type { OccupiedPanel } from "@occupied/occupied-panel.js";
 import type { ProgramDocument } from "@occupied/lib/types.js";
@@ -431,5 +434,96 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   });
   expect(saved.program.name).toBe("Externally changed controller");
   await expect.poll(yamlValue).toBe(yaml);
+  await panel.evaluate((element) => (element as OccupiedPanel).discardEdits());
+  const recoveryEntry = await panel.evaluate(
+    (element) => (element as OccupiedPanel).selectedEntry,
+  );
+  const containerName = await readFile(
+    ".browser-artifacts/active-container",
+    "utf8",
+  );
+  const container = containerName.trim();
+  expect(container).toMatch(/^occupied-browser-[a-f0-9]{12}$/);
+  const docker = promisify(execFile);
+  const storageKey = `occupied.${recoveryEntry}.program`;
+  const storagePath = `/config/.storage/${storageKey}`;
+  const readStoredProgram = async () => {
+    const { stdout } = await docker("docker", [
+      "exec",
+      container,
+      "python",
+      "-c",
+      "from pathlib import Path; import sys; print(Path(sys.argv[1]).read_text())",
+      storagePath,
+    ]);
+
+    return JSON.parse(stdout).data;
+  };
+  const preserved = {
+    schema_version: 99,
+    name: "Preserved future program",
+    steps: { future: { opaque: "keep me" } },
+  };
+  const enterRecovery = async () => {
+    await docker("docker", [
+      "exec",
+      container,
+      "python",
+      "-c",
+      "from pathlib import Path; import sys; Path(sys.argv[1]).write_text(sys.argv[2])",
+      storagePath,
+      JSON.stringify({
+        version: 1,
+        minor_version: 1,
+        key: storageKey,
+        data: preserved,
+      }),
+    ]);
+    // Seed recovery from another HA page; open-panel reload is covered by B1.
+    await page.goto("/config/integrations/dashboard");
+    const response = await request.post(
+      `/api/config/config_entries/entry/${recoveryEntry}/reload`,
+      {
+        headers: { Authorization: `Bearer ${tokens.access_token}` },
+      },
+    );
+    expect(response.ok()).toBeTruthy();
+    await page.goto("/occupied");
+    await expect(
+      panel.getByRole("button", { name: "Steps", exact: true }),
+    ).toBeDisabled();
+    await expect(
+      panel.getByRole("button", { name: "Random", exact: true }),
+    ).toBeDisabled();
+    await panel
+      .getByRole("navigation", { name: "Occupied", exact: true })
+      .getByRole("button", { name: "Settings", exact: true })
+      .click();
+    await expect.poll(yamlValue).toContain("schema_version: 99");
+    await expect.poll(yamlValue).toContain("keep me");
+    expect(await readStoredProgram()).toEqual(preserved);
+  };
+  await enterRecovery();
+  await panel.locator('input[type="file"]').setInputFiles({
+    name: "repair.yaml",
+    mimeType: "text/yaml",
+    buffer: Buffer.from("schema_version: 1\nname: Repaired recovery\n"),
+  });
+  await saveYaml.click();
+  await expect(
+    panel.getByRole("button", { name: "Steps", exact: true }),
+  ).toBeEnabled();
+  await expect(panel.locator("#notice")).toBeHidden();
+  await enterRecovery();
+  page.once("dialog", (dialog) => dialog.accept());
+  await panel
+    .getByRole("button", { name: "Discard preserved program", exact: true })
+    .click();
+  await expect(
+    panel.getByRole("button", { name: "Create your first step" }),
+  ).toBeVisible();
+  const discarded = await readStoredProgram();
+  expect(discarded.schema_version).toBe(1);
+  expect(Object.keys(discarded.steps || {})).toEqual([]);
   expect(errors).toEqual([]);
 });

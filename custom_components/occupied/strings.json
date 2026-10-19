@@ -226,6 +226,9 @@
     },
     "file_already_managed": {
       "message": "Another Occupied controller already manages this file."
+    },
+    "preserved_program_requires_repair": {
+      "message": "Repair the preserved YAML in Settings or explicitly discard the preserved program."
     }
   }
 }

@@ -6,6 +6,8 @@ The GUI, JSON API, YAML loader, CLI, and runtime use the same step and random-ev
 
 `schema_version: 1` and `name` are required. The optional `steps` and `random` mappings are keyed by stable IDs. Omitting both creates an empty controller.
 
+If a stored program is invalid, Occupied preserves its original YAML and disables GUI editing. Open Settings to repair and save the YAML, or choose **Discard preserved program** and confirm to start with an empty program. Ordinary GUI/API saves cannot replace the preserved source without an explicit discard.
+
 ```yaml
 schema_version: 1
 name: Occupied

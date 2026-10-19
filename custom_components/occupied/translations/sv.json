@@ -103,6 +103,9 @@
     },
     "file_already_managed": {
       "message": "En annan Occupied-styrenhet hanterar redan den här filen."
+    },
+    "preserved_program_requires_repair": {
+      "message": "Reparera den bevarade YAML-koden under Inställningar eller kasta uttryckligen det bevarade programmet."
     }
   },
   "issues": {

@@ -86,7 +86,7 @@ async def test_invalid_gui_program_can_be_repaired_without_losing_source(
             "id": 2,
             "type": "occupied/save",
             "config_entry_id": entry.entry_id,
-            "program": corrected,
+            "program": yaml.safe_dump(corrected),
             "expected_revision": document["revision"],
         }
     )
@@ -122,6 +122,44 @@ async def test_removing_an_unresolved_controller_removes_its_repair(hass, hass_s
     assert issue_id in ir.async_get(hass).issues
     assert await hass.config_entries.async_remove(entry.entry_id)
     assert issue_id not in ir.async_get(hass).issues
+
+
+@pytest.mark.parametrize("command", ["save", "apply"])
+@pytest.mark.parametrize("discard", [False, True])
+async def test_gui_save_cannot_overwrite_preserved_recovery_without_explicit_discard(
+    hass, hass_storage, hass_ws_client, command, discard
+):
+    source = {
+        "schema_version": 99,
+        "name": "Preserve me",
+        "steps": {"original": {"future": "data"}},
+    }
+    entry = await load_invalid(hass, hass_storage, source, "store")
+    document = program_document(entry.runtime_data)
+    client = await hass_ws_client(hass)
+    await client.send_json(
+        {
+            "id": 1,
+            "type": f"occupied/{command}",
+            "config_entry_id": entry.entry_id,
+            "program": document["program"],
+            "expected_revision": document["revision"],
+            **({"discard_recovery": True} if discard else {}),
+        }
+    )
+    response = await client.receive_json()
+    saved = await program_store(hass, entry.entry_id).async_load()
+    if discard:
+        assert response["success"] and response["result"]["valid"]
+        assert response["result"]["recovery_yaml"] is None
+        assert saved == document["program"]
+        assert entry.runtime_data.configuration_ready
+    else:
+        assert not response["success"]
+        assert response["error"]["translation_key"] == "preserved_program_requires_repair"
+        assert saved == source
+        assert not entry.runtime_data.configuration_ready
+        assert yaml.safe_load(program_document(entry.runtime_data)["recovery_yaml"]) == source
 
 
 @pytest.mark.parametrize("valid", [False, True])

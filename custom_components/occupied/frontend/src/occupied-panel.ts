@@ -731,6 +731,10 @@ export class OccupiedPanel extends HTMLElement {
     void this._load();
   }
 
+  get recovering() {
+    return this.document?.recovery_yaml != null;
+  }
+
   notices() {
     const t = this.t;
     const programNotice = this.stale ? t("draft_revision_conflict_hint") : "";
@@ -791,6 +795,9 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   change(path: Path, value: unknown, rerender = false) {
+    if (this.recovering) {
+      return;
+    }
     if (path.length === 0) {
       this.draft = value as Program;
     } else {
@@ -910,7 +917,7 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   save(candidate?: Program) {
-    if (this.document?.source === "file" || this.stale) {
+    if (this.document?.source === "file" || this.stale || this.recovering) {
       return;
     }
     const version = this.version,
@@ -1057,6 +1064,45 @@ export class OccupiedPanel extends HTMLElement {
 
   refreshPreviewSchedule() {
     return this.previewController.refreshPreviewSchedule();
+  }
+
+  discardRecovery() {
+    const document = this.document;
+    if (
+      !document ||
+      !this.recovering ||
+      this.stale ||
+      this.busy ||
+      !globalThis.confirm(this.t("discard_preserved_program_confirm"))
+    ) {
+      return;
+    }
+    const yaml = this.yaml;
+    const program = copy(document.program);
+    const expected = this.revision;
+
+    return this.run(async (epoch) => {
+      const result = await this.ws("save", {
+        program,
+        expected_revision: expected,
+        discard_recovery: true,
+      });
+      if (epoch !== this.epoch) {
+        return;
+      }
+      if (!result.valid) {
+        return this.showIssues(result);
+      }
+      const hasNewerYaml = this.yaml !== yaml;
+      const newerYaml = hasNewerYaml ? this.yaml : "";
+      this.adopt({ ...this.document, ...result, needs_apply: false });
+      this.resetDraft();
+      this.yamlSaved = "";
+      this.yaml = newerYaml;
+      this.yamlRevision = result.revision;
+      this.tab = hasNewerYaml ? "settings" : "steps";
+      this.renderView();
+    });
   }
 
   saveYaml() {

@@ -217,6 +217,7 @@ async def websocket_rename_id(
         **_DRAFT_SCHEMA,
         vol.Required("type"): "occupied/apply",
         vol.Optional("expected_revision"): str,
+        vol.Optional("discard_recovery", default=False): bool,
     }
 )
 @websocket_api.require_admin
@@ -250,6 +251,19 @@ async def _apply_program(hass, connection, msg, *, editor_save=False):
             if expected is not None and expected != current_revision(engine):
                 raise RevisionConflict(
                     "The program changed. Reload the saved program before saving."
+                )
+            manager = getattr(engine, "source_manager", None)
+            if (
+                manager is not None
+                and manager.recovery
+                and not isinstance(msg["program"], str)
+                and not msg.get("discard_recovery", False)
+            ):
+                raise HomeAssistantError(
+                    "Repair the preserved YAML in Settings or explicitly discard "
+                    "the preserved program.",
+                    translation_domain=DOMAIN,
+                    translation_key="preserved_program_requires_repair",
                 )
             if editor_save:
                 errors = [
@@ -519,6 +533,7 @@ async def websocket_editor_validate(hass, connection, msg):
         **_DRAFT_SCHEMA,
         vol.Required("type"): "occupied/save",
         vol.Required("expected_revision"): str,
+        vol.Optional("discard_recovery", default=False): bool,
     }
 )
 @websocket_api.require_admin
