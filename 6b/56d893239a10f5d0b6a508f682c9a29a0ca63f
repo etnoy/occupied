@@ -1,0 +1,25 @@
+custom_components/occupied/plan_persistence.py
+  s_57c4321274169c::t_e7e12ad385cba6 3,12-13,41,71-80
+docs/schema.md
+  s_57c4321274169c::t_da8cc54e80086c 222
+tests/core/test_plan_persistence.py
+  s_57c4321274169c::t_af21a016dbe244 6-7,18-19,48-49
+tests/ha/test_planner_cache_upgrade.py
+  s_57c4321274169c::t_e82e3f3f174abe 16,59-60,67,73,80-81,84-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "6b56d893239a10f5d0b6a508f682c9a29a0ca63f",
+  "prompts": {},
+  "sessions": {
+    "s_57c4321274169c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15315-93ce-7243-a6bf-3d428cb6f8af",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
