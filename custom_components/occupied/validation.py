@@ -445,14 +445,73 @@ def early_cap_warning(path):
 
 
 def validation_warnings(program):
-    return tuple(
+    warnings = [
         early_cap_warning(("steps", key, "timing"))
         for key, step in program.steps.items()
         if (base := step.timing.absolute_time)
         and (cap := step.timing.latest_at)
         and cap.absolute_time
         and time.fromisoformat(cap.absolute_time.start) < time.fromisoformat(base.start)
-    )
+    ]
+    if not program.random:
+        return tuple(warnings)
+
+    # Conservative source-date ranges expose overlap risk before an editor has
+    # a dated solar/entity snapshot or a sampled parent step.
+    def bounds(timing, steps, random_ends):
+        if timing.absolute_time:
+            return _clock_window_bounds(timing.absolute_time)
+        source = timing.relative_to
+        low, high = (
+            steps[source.step]
+            if source.step
+            else random_ends[source.random]
+            if source.random
+            else (0, 86400)
+        )
+        return low + source.start_offset, high + source.latest_offset
+
+    steps, random_ends = {}, {}
+    for key in step_order(program):
+        timing = program.steps[key].timing
+        low, high = bounds(timing, steps, random_ends)
+        if cap := timing.latest_at:
+            if cap.absolute_time:
+                clock = time.fromisoformat(cap.absolute_time.start)
+                cap_low = cap_high = clock.hour * 3600 + clock.minute * 60 + clock.second
+            else:
+                cap_low = cap.relative_to.start_offset
+                cap_high = 86400 + cap_low
+            low, high = min(low, cap_low), min(high, cap_high)
+        steps[key] = low, high
+    for key in random_order(program):
+        event = program.random[key]
+        start_low, start_high = bounds(event.start, steps, random_ends)
+        if event.end.duration:
+            random_ends[key] = (
+                start_low + event.end.duration.min,
+                start_high + event.end.duration.latest_duration,
+            )
+            continue
+        end_low, end_high = bounds(event.end, steps, random_ends)
+        random_ends[key] = end_low, end_high + 86400
+        if (
+            event.enabled
+            and event.max_count
+            and not (event.start.absolute_time and event.end.absolute_time)
+            and end_low < start_high
+            and end_high >= start_low
+        ):
+            warnings.append(
+                Issue(
+                    "random_window_overlap_risk",
+                    "Dynamic start and end ranges can overlap; "
+                    "overlapping dates skip this random item",
+                    ("random", key, "end"),
+                    "warning",
+                )
+            )
+    return tuple(warnings)
 
 
 def rename_identifier(program, kind, old, new):

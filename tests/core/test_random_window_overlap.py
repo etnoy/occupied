@@ -1,10 +1,11 @@
-"""Overlapping boundary ranges are invalid; wholly earlier ends are overnight."""
+"""Fixed overlaps are invalid; dynamic overlaps skip only their dated random item."""
 
 from datetime import date, timedelta
 
 import pytest
 
-from custom_components.occupied.planner import generate_plan
+from custom_components.occupied.planner import generate_plan, preview_dates
+from custom_components.occupied.preview import validate_draft
 from custom_components.occupied.time_utils import PlanningContext, SimulationDay
 from custom_components.occupied.validation import ProgramError, validate_program
 
@@ -52,19 +53,19 @@ def test_overlapping_clock_ranges_are_hard_validation_errors(start, end):
     )
 
 
-def test_solar_overlap_is_rejected_independently_of_the_sample():
+def test_solar_overlap_is_skipped_independently_of_the_sample():
     source = validate_program(program(clock("20:00", "22:00"), {"relative_to": {"sun": "sunset"}}))
     day = date(2026, 5, 10)
     for seed in range(20):
         plan = generate_plan(source, day, seed, context=CTX)
-        assert not plan.feasible and not plan.events
+        assert plan.feasible and not plan.events
         assert any(
-            issue.code == "random_window_overlap" and issue.severity == "error"
+            issue.code == "random_window_overlap" and issue.severity == "warning"
             for issue in plan.issues
         )
 
 
-def test_time_helper_overlap_is_a_hard_error():
+def test_time_helper_overlap_is_a_warning_skip():
     source = validate_program(
         program(clock("22:00", "23:30"), {"relative_to": {"entity": "input_datetime.closing"}})
     )
@@ -72,9 +73,60 @@ def test_time_helper_overlap_is_a_hard_error():
         "UTC", time_sources={"input_datetime.closing": {"kind": "time", "state": "23:15:00"}}
     )
     plan = generate_plan(source, date(2026, 10, 13), 0, context=context)
-    assert not plan.feasible
+    assert plan.feasible and not plan.events
     assert any(
-        issue.code == "random_window_overlap" and issue.severity == "error" for issue in plan.issues
+        issue.code == "random_window_overlap" and issue.severity == "warning"
+        for issue in plan.issues
+    )
+
+
+def anchored_program(solar=False):
+    candidate = program(
+        {"relative_to": {"sun": "sunset", "end_offset": "2h"}}
+        if solar
+        else {"relative_to": {"step": "dinner", "end_offset": "1h"}},
+        clock("23:00") if solar else clock("22:00", "23:00"),
+    )
+    candidate["steps"] = {
+        "morning": {"timing": clock("07:00"), "action": "turn_on", "entities": ["switch.morning"]},
+        "dinner": {
+            "timing": clock("18:00", "21:30"),
+            "action": "turn_on",
+            "entities": ["switch.dinner"],
+        },
+    }
+    return candidate
+
+
+def test_sampled_parent_overlap_never_blocks_the_rest_of_the_plan():
+    candidate = anchored_program()
+    assert any(
+        issue["code"] == "random_window_overlap_risk"
+        for issue in validate_draft(candidate)["issues"]
+    )
+    source = validate_program(candidate)
+    skipped = 0
+    dates = [date(2026, 10, 1) + timedelta(days=day) for day in range(31)]
+    for plan in preview_dates(source, dates, 0, context=CTX):
+        assert plan.feasible
+        assert any(event.source_id == "morning" for event in plan.events)
+        if any(issue.code == "random_window_overlap" for issue in plan.issues):
+            skipped += 1
+            assert not any(event.source_id == "evening" for event in plan.events)
+    assert 0 < skipped < 31
+
+
+def test_midsummer_solar_overlap_keeps_unrelated_steps():
+    source = validate_program(anchored_program(solar=True))
+    october = generate_plan(source, date(2026, 10, 13), 0, context=CTX)
+    summer = generate_plan(source, date(2027, 6, 21), 0, context=CTX)
+    assert october.feasible and summer.feasible
+    assert any(event.source_id == "evening" for event in october.events)
+    assert any(event.source_id == "morning" for event in summer.events)
+    assert not any(event.source_id == "evening" for event in summer.events)
+    assert any(
+        issue.code == "random_window_overlap" and issue.severity == "warning"
+        for issue in summer.issues
     )
 
 
