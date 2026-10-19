@@ -140,9 +140,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await panel
     .getByRole("textbox", { name: "Step name", exact: true })
     .fill("Evening light");
-  await panel
-    .getByRole("radio", { name: "Absolute time", exact: true })
-    .check();
+  await panel.getByRole("radio", { name: "Time of day", exact: true }).check();
   // Interact with HA's real time and entity selectors through their native inputs.
   const clock = panel.locator('[data-builder-field="start"]');
   await clock.locator('input[name="hours"]').fill("7");

@@ -9,16 +9,13 @@
   let {
     panel,
     context,
-    advancedOpen = $bindable(false),
-    advancedTrigger = $bindable(),
   }: {
     panel: LoadedOccupiedPanel;
     context: RandomEditorContext;
-    advancedOpen?: boolean;
-    advancedTrigger?: HTMLButtonElement;
   } = $props();
 
   let menuOpen = $state(false);
+  let advancedOpen = $state(false);
   let deleteOpen = $state(false);
   let previewOpen = $state(false);
   let trigger: HTMLButtonElement;
@@ -27,15 +24,13 @@
   let menuId = $derived(`random-actions-${context.editor.id}`);
 
   function closeDialog() {
-    const focusTarget =
-      advancedOpen && advancedTrigger ? advancedTrigger : trigger;
     flushSync(() => {
       deleteOpen = false;
       advancedOpen = false;
       previewOpen = false;
     });
-    if (focusTarget.isConnected) {
-      focusTarget.focus();
+    if (trigger.isConnected) {
+      trigger.focus();
     }
   }
 
@@ -161,6 +156,18 @@
       }}
     >
       {panel.t(context.form.enabled ? "disable" : "enable")}
+    </button>
+    <button
+      type="button"
+      role="menuitem"
+      tabindex="-1"
+      disabled={panel.busy}
+      onclick={() => {
+        closeMenu(false);
+        flushSync(() => (advancedOpen = true));
+      }}
+    >
+      {panel.t("advanced_settings")}
     </button>
     {#if context.editor.existing}
       <div role="separator"></div>
