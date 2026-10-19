@@ -1,0 +1,23 @@
+custom_components/occupied/websocket_api.py
+  s_57c4321274169c::t_94c725ad185c4c 168-172,175-187,190-195,197,201
+docs/schema.md
+  s_57c4321274169c::t_9a67e9e0287ef5 51-52
+tests/ha/test_anchor_latches.py
+  s_57c4321274169c::t_427accdb146305 12-16,219-263
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a216ffeefad0b5e628659600dd971ca7ba0785a0",
+  "prompts": {},
+  "sessions": {
+    "s_57c4321274169c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15315-93ce-7243-a6bf-3d428cb6f8af",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
