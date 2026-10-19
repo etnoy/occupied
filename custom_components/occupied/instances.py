@@ -1,5 +1,7 @@
 """Admin instance discovery and declared device overlap warnings."""
 
+from homeassistant.config_entries import ConfigEntryState
+
 from .const import DOMAIN
 
 INSTANCE_SIGNAL = "occupied_instances_changed"
@@ -24,7 +26,7 @@ def instance_documents(hass):
     targets = {}
     for entry in hass.config_entries.async_entries(DOMAIN):
         engine = getattr(entry, "runtime_data", None)
-        loaded = engine is not None and not engine.closed
+        loaded = entry.state is ConfigEntryState.LOADED and engine is not None and not engine.closed
         manager = getattr(engine, "source_manager", None) if loaded else None
         documents.append(
             {

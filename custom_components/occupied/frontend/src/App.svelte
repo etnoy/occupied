@@ -187,7 +187,7 @@
             <button type="button" onclick={() => panel.retry()}
               >{t("retry")}</button
             >
-          {:else if panel._loading || !hasProgram(panel)}
+          {:else if panel._loading || !hasProgram(panel) || (panel.error && !panel.entryLoaded)}
             {#if panel.error && !panel._loading}
               <button type="button" onclick={() => panel.retry()}
                 >{t("retry")}</button

@@ -57,8 +57,14 @@ async def _async_register_panel(hass, entry_id, data):
 
 
 @callback
-def async_remove_panel(hass: HomeAssistant, entry_id: str) -> None:
+def async_remove_panel(hass: HomeAssistant, entry_id: str, *, removing=False) -> None:
     entries = hass.data.get(DOMAIN, {}).get("panel_entries", set())
     entries.discard(entry_id)
-    if not entries and DOMAIN in hass.data.get(frontend.DATA_PANELS, {}):
+    # Unregistering during a reload makes HA navigate away and destroy drafts.
+    # Keep discovery/retry available until the last configured entry is removed.
+    configured = any(
+        not removing or entry.entry_id != entry_id
+        for entry in hass.config_entries.async_entries(DOMAIN)
+    )
+    if not entries and not configured and DOMAIN in hass.data.get(frontend.DATA_PANELS, {}):
         frontend.async_remove_panel(hass, DOMAIN)

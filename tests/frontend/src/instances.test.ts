@@ -1297,6 +1297,44 @@ void test("unloaded selections remain discoverable and recover without losing dr
   }
 });
 
+void test("a failed entry reload recovers on the next availability transition with its draft", async () => {
+  const f = await fixture();
+  try {
+    f.panel.change(["name"], "Pending draft");
+    let fail = true;
+    f.setProgramOverride((entry) => {
+      return fail
+        ? Promise.reject(new Error("Controller is not loaded"))
+        : Promise.resolve(f.documents[entry]);
+    });
+    const update = f.subscriptions.get("occupied/instances_subscribe:all")!;
+    const available = (loaded: boolean) =>
+      update(
+        f.instances.map((instance) =>
+          instance.config_entry_id === "main"
+            ? { ...instance, loaded }
+            : { ...instance },
+        ),
+      );
+    available(false);
+    await settle();
+    available(true);
+    await settle();
+    assert.equal(f.panel.error, "Controller is not loaded");
+    assert.equal(f.panel.draft.name, "Pending draft");
+    available(false);
+    await settle();
+    fail = false;
+    available(true);
+    await settle();
+    assert.equal(f.panel.error, "");
+    assert.equal(f.panel.draft.name, "Pending draft");
+    assert.equal(f.panel.dirty, true);
+  } finally {
+    f.restore();
+  }
+});
+
 void test("Save step validates and saves new and edited steps, then closes the editor", async () => {
   const f = await fixture();
   try {

@@ -90,6 +90,48 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     panel.getByRole("button", { name: "Create your first step" }),
   ).toBeVisible();
+  const entryId = await panel.evaluate((element) => {
+    const controller = element as OccupiedPanel;
+    controller.change(["name"], "Pending reload draft");
+    const callWS = controller._hass.callWS.bind(controller._hass);
+    let failOnce = true;
+    controller._hass.callWS = <T>(message: Record<string, unknown>) => {
+      if (failOnce && message.type === "occupied/program") {
+        failOnce = false;
+
+        return Promise.reject(new Error("Simulated controller load failure"));
+      }
+
+      return callWS<T>(message);
+    };
+
+    return controller.selectedEntry;
+  });
+  const reloadEntry = () =>
+    request.post(`/api/config/config_entries/entry/${entryId}/reload`, {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    });
+  const failedReload = await reloadEntry();
+  expect(failedReload.ok()).toBeTruthy();
+  await expect(panel.locator("#error")).toHaveText(
+    "Simulated controller load failure",
+  );
+  await expect(
+    panel.getByRole("button", { name: "Retry", exact: true }),
+  ).toBeVisible();
+  await panel.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect(panel.locator("#error")).toBeHidden();
+  expect(
+    await panel.evaluate((element) => (element as OccupiedPanel).draft?.name),
+  ).toBe("Pending reload draft");
+  await panel.evaluate((element) => (element as OccupiedPanel).discardEdits());
+  const recoveredReload = await reloadEntry();
+  expect(recoveredReload.ok()).toBeTruthy();
+  await expect
+    .poll(() =>
+      panel.evaluate((element) => (element as OccupiedPanel).entryLoaded),
+    )
+    .toBe(true);
   await panel.getByRole("button", { name: "Create your first step" }).click();
   await panel
     .getByRole("textbox", { name: "Step name", exact: true })

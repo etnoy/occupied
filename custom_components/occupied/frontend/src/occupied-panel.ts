@@ -282,6 +282,10 @@ export class OccupiedPanel extends HTMLElement {
     );
   }
 
+  get entryLoaded() {
+    return this._loadedEntry === this.selectedEntry;
+  }
+
   connectedCallback() {
     if (!this.component) {
       const style = document.createElement("style");
@@ -346,7 +350,11 @@ export class OccupiedPanel extends HTMLElement {
       this._hass.connection,
       { type: "occupied/instances_subscribe" },
       (instances) => {
+        const wasLoaded = this.selectedInstance?.loaded;
         this.instances = instances;
+        if (!wasLoaded && this.selectedInstance?.loaded) {
+          this._failedEntry = null;
+        }
         this.flush();
         if (!this.selectedInstance?.loaded && this._loadedEntry) {
           this._invalidateRequests();

@@ -260,8 +260,10 @@ async def async_remove_entry(hass: HomeAssistant, entry: OccupiedConfigEntry) ->
     from homeassistant.helpers import issue_registry as ir
 
     from .const import DOMAIN
+    from .panel import async_remove_panel
     from .storage import DurableStore
 
+    async_remove_panel(hass, entry.entry_id, removing=True)
     for suffix in ("program", "permission", "runtime", "live_preview"):
         await DurableStore(hass, 1, f"{DOMAIN}.{entry.entry_id}.{suffix}").async_remove()
     ir.async_delete_issue(hass, DOMAIN, f"managed_file_{entry.entry_id}")

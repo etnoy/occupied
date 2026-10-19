@@ -33,6 +33,8 @@ async def test_panel_and_status_then_browser_closure(
     await hass.async_block_till_done()
     assert any(call.domain == "remote" and call.service == "turn_on" for call in devices)
     assert await hass.config_entries.async_unload(entry.entry_id)
+    assert "occupied" in hass.data[DATA_PANELS]
+    assert await hass.config_entries.async_remove(entry.entry_id)
     assert "occupied" not in hass.data[DATA_PANELS]
 
 
