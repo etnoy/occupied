@@ -34,6 +34,14 @@ Install through [HACS](https://hacs.xyz/):
 
 New controllers start with permission disabled, so you can create and preview a schedule before enabling it.
 
+## Manual installation
+
+1. Download **occupied.zip** from the [release you want to install](https://github.com/etnoy/occupied/releases).
+2. Create `custom_components/occupied` inside your Home Assistant configuration directory (the directory containing `configuration.yaml`). Extract the ZIP's contents directly into that folder. For example, `manifest.json` must end up at `custom_components/occupied/manifest.json`, with `frontend/dist` alongside it. The ZIP does not include the enclosing `occupied` folder.
+3. Restart Home Assistant, then add **Occupied** under **Settings → Devices & services → Add integration**. Select **Configure** to open its panel.
+
+To update a manual installation, replace the files in `custom_components/occupied` with the new ZIP's contents and restart Home Assistant. Your controller settings and programs remain in Home Assistant storage; managed YAML files remain at the paths you chose.
+
 # Usage
 
 Occupied is based around Steps ("turn this light on at that time") or Random Events ("turn a light on and off twice during the day")
