@@ -1,0 +1,25 @@
+.github/workflows/release.yml
+  s_57c4321274169c::t_204bf1879697c0 15-28,30,38,70,72
+docs/maintenance.md
+  s_57c4321274169c::t_3fa8404e7ac891 131-163
+scripts/release_preflight.py
+  s_57c4321274169c::t_f35ff352cc3a2d 1-44
+tests/core/test_release_preflight.py
+  s_57c4321274169c::t_d911d2ecb7592a 1-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "62a0a6529125cf380203132cfbea80659b2d8d5f",
+  "prompts": {},
+  "sessions": {
+    "s_57c4321274169c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15315-93ce-7243-a6bf-3d428cb6f8af",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
