@@ -2028,3 +2028,24 @@ void test("preview Today follows HA midnight without reloading the saved documen
     f.restore();
   }
 });
+
+void test("shared service entities follow edits and clear when a phase changes kind", async () => {
+  const f = await fixture();
+  try {
+    openRandom(f.panel);
+    const form = f.panel.randomEditor!.form;
+    form.on.kind = form.off.kind = "service";
+    form.on.service = "remote.turn_on";
+    form.off.service = "remote.turn_off";
+    form.on.entities = ["remote.tv"];
+    form.sameEntities = true;
+    createRandomEditorContext(f.panel).changed("on.entities");
+    assert.equal(form.sameEntities, true);
+    assert.deepEqual(form.off.entities, ["remote.tv"]);
+    form.off.kind = "scene";
+    createRandomEditorContext(f.panel).changed("off.kind");
+    assert.equal(form.sameEntities, false);
+  } finally {
+    f.restore();
+  }
+});

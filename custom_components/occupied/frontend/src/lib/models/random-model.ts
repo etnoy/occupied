@@ -6,6 +6,7 @@ import type {
   RandomEvent,
   FieldErrors,
   Catalog,
+  ActionForm,
 } from "../types.js";
 import { actionTargetSummary } from "../utils/custom-action.js";
 import { copy, days, identifier } from "./model.js";
@@ -17,6 +18,12 @@ import {
   formTiming,
 } from "./step-model.js";
 import { timingForm, durationSeconds } from "../utils/util.js";
+
+export function canShareEntities(on: ActionForm, off: ActionForm): boolean {
+  return (
+    on.kind === off.kind && ["entities", "cover", "service"].includes(on.kind)
+  );
+}
 
 export function countBounds(count: RandomEvent["count"]) {
   return typeof count === "object"
@@ -64,8 +71,7 @@ export function randomEditor(
     on,
     off,
     sameEntities:
-      ["entities", "cover"].includes(on.kind) &&
-      on.kind === off.kind &&
+      canShareEntities(on, off) &&
       JSON.stringify([...on.entities].sort()) ===
         JSON.stringify([...off.entities].sort()),
   };

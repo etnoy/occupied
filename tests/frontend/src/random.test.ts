@@ -377,3 +377,25 @@ void test("independent end targets are preserved and random IDs stay stable thro
   delete next.random![editor.id];
   assert.throws(() => buildRandom(next, reopened), /random_changed_error/);
 });
+
+void test("service phases with equal entities share the start selection", () => {
+  const p = program();
+  p.random = {
+    tv: {
+      start: { absolute_time: { start: "18:00" } },
+      end: { absolute_time: { start: "23:00" } },
+      on: { action: "remote.turn_on", entities: ["remote.tv"] },
+      off: { action: "remote.turn_off", entities: ["remote.tv"] },
+    },
+  };
+  const editor = randomEditor(p, randomEntries(p)[0]);
+  assert.equal(editor.form.sameEntities, true);
+  editor.form.on.entities = ["remote.other"];
+  assert.deepEqual(buildRandom(p, editor).random!.tv.off.entities, [
+    "remote.other",
+  ]);
+  p.random.tv.off.entities = ["remote.other"];
+  assert.equal(randomEditor(p, randomEntries(p)[0]).form.sameEntities, false);
+  p.random.tv.off = { action: "scene.turn_on", entities: ["scene.end"] };
+  assert.equal(randomEditor(p, randomEntries(p)[0]).form.sameEntities, false);
+});

@@ -10,6 +10,7 @@ import type {
 } from "../types.js";
 import { copy, randomReferences } from "../models/model.js";
 import {
+  canShareEntities,
   randomEditor,
   randomErrors,
   buildRandom,
@@ -58,10 +59,7 @@ export function createRandomEditorContext(panel: LoadedOccupiedPanel) {
   };
 
   const changed = (key: string) => {
-    if (
-      !["entities", "cover"].includes(form.on.kind) ||
-      form.on.kind !== form.off.kind
-    ) {
+    if (!canShareEntities(form.on, form.off)) {
       form.sameEntities = false;
     }
 

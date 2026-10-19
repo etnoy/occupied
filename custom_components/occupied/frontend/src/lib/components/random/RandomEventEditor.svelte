@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { canShareEntities } from "../../models/random-model.js";
   import { untrack } from "svelte";
   import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import { createRandomEditorContext } from "../../controllers/random-editor-controller.js";
@@ -199,7 +200,7 @@
         entityLabel="end_entities"
         hideEntities={form.sameEntities}
       />
-      {#if ["entities", "cover"].includes(form.on.kind) && form.on.kind === form.off.kind}
+      {#if canShareEntities(form.on, form.off)}
         <label class="same-entities">
           <input
             type="checkbox"
