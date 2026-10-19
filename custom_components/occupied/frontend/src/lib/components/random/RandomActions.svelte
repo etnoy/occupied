@@ -4,6 +4,7 @@
   import type { RandomEditorContext } from "../../controllers/random-editor-controller.js";
   import DeleteRandomDialog from "./DeleteRandomDialog.svelte";
   import AdvancedRandomSettings from "./AdvancedRandomSettings.svelte";
+  import ActionPreviewDialog from "../shared/ActionPreviewDialog.svelte";
 
   let {
     panel,
@@ -19,6 +20,7 @@
 
   let menuOpen = $state(false);
   let deleteOpen = $state(false);
+  let previewOpen = $state(false);
   let trigger: HTMLButtonElement;
   let menu: HTMLDivElement;
 
@@ -30,6 +32,7 @@
     flushSync(() => {
       deleteOpen = false;
       advancedOpen = false;
+      previewOpen = false;
     });
     if (focusTarget.isConnected) {
       focusTarget.focus();
@@ -140,6 +143,18 @@
       tabindex="-1"
       disabled={panel.busy}
       onclick={() => {
+        closeMenu(false);
+        flushSync(() => (previewOpen = true));
+      }}
+    >
+      {panel.t("preview")}
+    </button>
+    <button
+      type="button"
+      role="menuitem"
+      tabindex="-1"
+      disabled={panel.busy}
+      onclick={() => {
         closeMenu();
         context.form.enabled = !context.form.enabled;
         context.changed("enabled");
@@ -170,4 +185,19 @@
 {/if}
 {#if advancedOpen}
   <AdvancedRandomSettings {panel} {context} onClose={closeDialog} />
+{/if}
+{#if previewOpen}
+  <ActionPreviewDialog
+    {panel}
+    commands={[
+      { label: "when_event_starts", form: context.form.on },
+      {
+        label: "when_event_ends",
+        form: context.form.sameEntities
+          ? { ...context.form.off, entities: [...context.form.on.entities] }
+          : context.form.off,
+      },
+    ]}
+    onClose={closeDialog}
+  />
 {/if}

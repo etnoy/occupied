@@ -40,6 +40,7 @@ def async_register_websocket(hass: HomeAssistant) -> None:
         websocket_catalog,
         websocket_editor_validate,
         websocket_action_yaml,
+        websocket_action_preview,
         websocket_save,
         websocket_timeline,
         websocket_subscribe,
@@ -331,6 +332,35 @@ async def _apply_program(hass, connection, msg, *, editor_save=False):
 
 
 _ENTRY_SCHEMA = {vol.Required("config_entry_id"): str}
+
+
+@websocket_api.websocket_command(
+    {
+        **_ENTRY_SCHEMA,
+        vol.Required("type"): "occupied/action_preview",
+        vol.Required("action"): dict,
+        vol.Optional("execute", default=False): bool,
+    }
+)
+@websocket_api.require_admin
+@websocket_api.async_response
+async def websocket_action_preview(hass, connection, msg):
+    from . import resolve_engine
+    from .action_preview import async_preview_action
+    from .validation import ProgramError
+
+    try:
+        resolve_engine(hass, msg["config_entry_id"])
+        result = await async_preview_action(
+            hass, msg["action"], execute=msg["execute"], user_id=connection.user.id
+        )
+    except ProgramError as err:
+        result = {"valid": False, "issues": [issue.to_dict() for issue in err.issues]}
+    except HomeAssistantError as err:
+        _send_error(connection, msg["id"], "action_preview_failed", err)
+        return
+    connection.send_result(msg["id"], result)
+
 
 _REQUEST_ID = vol.All(str, vol.Length(min=1, max=128))
 

@@ -153,6 +153,29 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     .getByRole("listitem")
     .click();
   await page.getByText("Smoke light", { exact: true }).click();
+  await panel
+    .getByRole("button", { name: "Step actions", exact: true })
+    .click();
+  await panel.getByRole("menuitem", { name: "Preview", exact: true }).click();
+  const actionPreview = panel.getByRole("dialog", {
+    name: "Preview",
+    exact: true,
+  });
+  await expect(actionPreview).toContainText("light.turn_on");
+  await expect(actionPreview).toContainText("light.smoke_light");
+  expect(saves).toHaveLength(0);
+  await actionPreview
+    .getByRole("button", { name: "Test action: Action", exact: true })
+    .click();
+  await expect(actionPreview.getByRole("status")).toHaveText(
+    "Command completed.",
+  );
+  await actionPreview
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
+  await expect(
+    panel.getByRole("button", { name: "Step actions", exact: true }),
+  ).toBeFocused();
   await panel.getByRole("button", { name: "Save step", exact: true }).click();
   await expect(
     panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }),
@@ -161,6 +184,57 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(panel.locator(".step-row")).toHaveAccessibleName(
     /Evening light.*Turn on.*Smoke light.*Runs at/,
   );
+  await panel.getByRole("button", { name: "Random", exact: true }).click();
+  await panel.locator("[data-create-random]").click();
+  await panel.evaluate((element) => {
+    const controller = element as OccupiedPanel;
+    const form = controller.randomEditor!.form;
+    form.on.entities = ["light.smoke_light"];
+    form.off.entities = [];
+    form.sameEntities = true;
+    controller.flush();
+  });
+  const savedCount = saves.length;
+  await panel.locator("[data-random-actions]").click();
+  await panel.getByRole("menuitem", { name: "Preview", exact: true }).click();
+  const randomPreview = panel.getByRole("dialog", {
+    name: "Preview",
+    exact: true,
+  });
+  await expect(randomPreview.locator("pre")).toHaveCount(2);
+  await expect(randomPreview.locator("pre").first()).toContainText(
+    "light.turn_on",
+  );
+  await expect(randomPreview.locator("pre").last()).toContainText(
+    "light.turn_off",
+  );
+  await expect(randomPreview.locator("pre").last()).toContainText(
+    "light.smoke_light",
+  );
+  await randomPreview
+    .getByRole("button", {
+      name: "Test action: When event starts",
+      exact: true,
+    })
+    .click();
+  await expect(randomPreview.getByRole("status")).toHaveText(
+    "Command completed.",
+  );
+  await randomPreview
+    .getByRole("button", { name: "Test action: When event ends", exact: true })
+    .click();
+  await expect(randomPreview.getByRole("status")).toHaveCount(2);
+  expect(saves).toHaveLength(savedCount);
+  await randomPreview
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
+  await expect(panel.locator("[data-random-actions]")).toBeFocused();
+  await panel.evaluate((element) => {
+    const controller = element as OccupiedPanel;
+    controller.randomEditor = null;
+    controller.tab = "steps";
+    controller.renderView();
+  });
   await panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }).click();
   const editedName = panel.getByRole("textbox", {
     name: "Step name",

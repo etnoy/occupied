@@ -1,6 +1,15 @@
 // Generated from custom_components/occupied/frontend/src/lib/i18n/translations.ts by pnpm run build. Do not edit.
 // Keep UI wording here; call sites use stable, descriptive shorthand keys.
 export const en = {
+  action_preview_hint:
+    "Test the current actions without saving. Testing changes real devices immediately, without schedule or stagger delays. Changes stay in effect after closing.",
+  test_action: "Test action",
+  action_test_dispatched: "Command completed.",
+  action_test_failed: "Command failed.",
+  action_test_uncertain: "Command timed out and may still complete.",
+  action_test_skipped: "Skipped because an earlier command did not complete.",
+  close: "Close",
+  loading: "Loading…",
   service_fields: "Service fields",
   required_field: "Required",
   field_example: "Example",
@@ -552,6 +561,17 @@ export const en = {
 };
 // Missing translations fall back to English.
 export const sv = {
+  action_preview_hint:
+    "Testa de aktuella åtgärderna utan att spara. Testet styr riktiga enheter direkt, utan schema- eller förskjutningsfördröjningar. Ändringarna kvarstår när du stänger.",
+  test_action: "Testa åtgärd",
+  action_test_dispatched: "Kommandot slutfördes.",
+  action_test_failed: "Kommandot misslyckades.",
+  action_test_uncertain:
+    "Kommandot tog för lång tid och kan fortfarande slutföras.",
+  action_test_skipped:
+    "Hoppades över eftersom ett tidigare kommando inte slutfördes.",
+  close: "Stäng",
+  loading: "Laddar…",
   service_fields: "Tjänstefält",
   required_field: "Obligatoriskt",
   field_example: "Exempel",
