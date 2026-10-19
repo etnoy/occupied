@@ -358,7 +358,6 @@ var en = {
   times_per_window: "times per window",
   minimum_duration: "Minimum duration",
   maximum_duration: "Maximum duration",
-  duration_hint: "Use durations like 5m, 30s, or 1h.",
   when_event_starts: "When event starts",
   when_event_ends: "When event ends",
   random_days_hint: "Choose which days this random event should run.",
@@ -988,7 +987,6 @@ var sv = {
   times_per_window: "g\xE5nger per tidsf\xF6nster",
   minimum_duration: "Minsta varaktighet",
   maximum_duration: "L\xE4ngsta varaktighet",
-  duration_hint: "Ange varaktigheter som 5m, 30s eller 1h.",
   when_event_starts: "N\xE4r h\xE4ndelsen b\xF6rjar",
   when_event_ends: "N\xE4r h\xE4ndelsen slutar",
   random_days_hint:
@@ -18064,7 +18062,7 @@ var root_124 = from_html(
   `<label class="same-entities svelte-1n39iyr"><input type="checkbox"/> </label>`,
 );
 var root_218 = from_html(
-  `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-advanced=""> </button> <!> <h3> </h3> <div class="random-frequency svelte-1n39iyr"><div><!> <!></div> <div><!></div> <!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <p class="hint"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section>`,
+  `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-advanced=""> </button> <!> <h3> </h3> <div class="random-frequency svelte-1n39iyr"><div><!> <!></div> <div><!></div> <!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section>`,
 );
 var $$css11 = {
   hash: "svelte-1n39iyr",
@@ -18326,9 +18324,7 @@ function RandomEventEditor($$anchor, $$props) {
   reset(div_2);
   var p_1 = sibling(div_2, 2);
   var text_5 = only_child(p_1, true);
-  var p_2 = sibling(p_1, 2);
-  var text_6 = only_child(p_2, true);
-  var div_5 = sibling(p_2, 2);
+  var div_5 = sibling(p_1, 2);
   var node_9 = child(div_5);
   {
     let $0 = user_derived(() => get(context).action("on"));
@@ -18369,12 +18365,12 @@ function RandomEventEditor($$anchor, $$props) {
       var label = root_124();
       var input = child(label);
       remove_input_defaults(input);
-      var text_7 = sibling(input, 1, true);
+      var text_6 = sibling(input, 1, true);
       reset(label);
       template_effect(
         ($0) => {
           set_checked(input, get(form).sameEntities);
-          set_text(text_7, $0);
+          set_text(text_6, $0);
         },
         [() => get(t)("use_the_same_entities")],
       );
@@ -18393,7 +18389,7 @@ function RandomEventEditor($$anchor, $$props) {
   reset(div_5);
   var div_7 = sibling(div_5, 2);
   var button_3 = child(div_7);
-  var text_8 = only_child(button_3, true);
+  var text_7 = only_child(button_3, true);
   var node_12 = sibling(button_3, 2);
   RandomActions(node_12, {
     get panel() {
@@ -18416,11 +18412,11 @@ function RandomEventEditor($$anchor, $$props) {
     },
   });
   var button_4 = sibling(node_12, 2);
-  var text_9 = only_child(button_4, true);
+  var text_8 = only_child(button_4, true);
   reset(div_7);
   reset(section);
   template_effect(
-    ($0, $1, $2, $3, $4, $5, $6) => {
+    ($0, $1, $2, $3, $4, $5) => {
       set_text(text2, $0);
       classes = set_class(
         button,
@@ -18440,11 +18436,10 @@ function RandomEventEditor($$anchor, $$props) {
       set_text(text_1, $1);
       set_text(text_2, $2);
       set_text(text_5, $3);
-      set_text(text_6, $4);
       button_3.disabled = $$props.panel.busy;
-      set_text(text_8, $5);
+      set_text(text_7, $4);
       button_4.disabled = $$props.panel.busy || $$props.panel.stale;
-      set_text(text_9, $6);
+      set_text(text_8, $5);
     },
     [
       () => get(t)("random_create_hint"),
@@ -18458,7 +18453,6 @@ function RandomEventEditor($$anchor, $$props) {
           get(t),
           $$props.panel._hass.locale,
         ),
-      () => get(t)("duration_hint"),
       () => get(t)("cancel"),
       () =>
         get(t)(
