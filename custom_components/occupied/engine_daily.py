@@ -1384,7 +1384,9 @@ class DailyEngine:
         previous = self._journal.get(key, {}).get("status")
         if previous == "dispatched":
             return True
-        if previous in {"uncertain", "historical_skipped"}:
+        if previous in {"uncertain", "historical_skipped"} or (
+            previous == "failed" and self._journal[key].get("late_result")
+        ):
             return False
         # Even cleanup calls must never touch devices after the run condition ends.
         if not self.run_condition_status()[0]:
@@ -1475,7 +1477,16 @@ class DailyEngine:
                     motion["states"] = sorted(set(previous["states"]) | set(motion["states"]))
                 self._motions[entity] = motion
         try:
-            await dispatch_service(self.hass, action, context, data=data)
+            await dispatch_service(
+                self.hass,
+                action,
+                context,
+                data=data,
+                on_late_result=lambda error: self.hass.async_create_task(
+                    self._late_result(key, context, action, data, error),
+                    name="Occupied late service result",
+                ),
+            )
         except ServiceWaitTimeout as err:
             self.last_error = f"{action.action} for {', '.join(action.targets)}: {err}"
             self._finish(key, "uncertain", action, self.last_error)
@@ -1510,6 +1521,29 @@ class DailyEngine:
         self._finish(key, "dispatched", action)
         await self._persist()
         return True
+
+    async def _late_result(self, key, context, action, data, error):
+        async with self._lock:
+            entry = self._journal.get(key)
+            if (
+                self.closed
+                or not entry
+                or entry.get("status") != "uncertain"
+                or entry.get("context") != context.id
+                or entry.get("revision") != revision(self.program)
+            ):
+                return
+            detail = (
+                f"{type(error).__name__}: {error}"
+                if error is not None
+                else "Completed after Occupied stopped waiting"
+            )
+            entry["late_result"] = True
+            self._finish(key, "failed" if error is not None else "dispatched", action, detail)
+            if error is None:
+                async_log_action(self, action.action, action.targets, data, context)
+            await self._persist()
+            self._notify()
 
     def _finish(self, key, outcome, action=None, detail=""):
         entry = self._journal.setdefault(key, {"date": dt_util.utcnow().date().isoformat()})

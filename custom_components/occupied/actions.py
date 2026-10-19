@@ -16,7 +16,7 @@ class ServiceWaitTimeout(TimeoutError):
     """The caller stopped waiting while the native handler may still be running."""
 
 
-async def dispatch_service(hass, action, context, *, data=None):
+async def dispatch_service(hass, action, context, *, data=None, on_late_result=None):
     """Await native handlers with a bound; callers own authorization and journaling."""
     domain, service = action.action.split(".")
     data = service_payload(hass, action) if data is None else data
@@ -37,6 +37,7 @@ async def dispatch_service(hass, action, context, *, data=None):
 
     def completed(call_task):
         target = ", ".join(action.targets)
+        error = asyncio.CancelledError() if call_task.cancelled() else call_task.result()
         if call_task.cancelled():
             _LOGGER.warning(
                 "Occupied service %s for %s (context %s) was cancelled "
@@ -45,7 +46,7 @@ async def dispatch_service(hass, action, context, *, data=None):
                 target,
                 context.id,
             )
-        elif (error := call_task.result()) is not None:
+        elif error is not None:
             _LOGGER.warning(
                 "Occupied service %s for %s (context %s) failed "
                 "after its caller stopped waiting: %s: %s",
@@ -63,6 +64,9 @@ async def dispatch_service(hass, action, context, *, data=None):
                 target,
                 context.id,
             )
+
+        if on_late_result is not None:
+            on_late_result(error)
 
     try:
         failure = await asyncio.wait_for(asyncio.shield(task), SERVICE_TIMEOUT)
