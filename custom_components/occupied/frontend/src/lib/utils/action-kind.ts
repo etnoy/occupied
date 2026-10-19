@@ -72,6 +72,9 @@ export function changeActionKind(
   if (kind === "entities") {
     form.action = value;
   }
+  if (kind === "service" && !form.service.includes(".")) {
+    form.service = `homeassistant.${form.action}`;
+  }
   if (
     kind === "cover" &&
     coverActions.every(([action]) => action !== form.service)
