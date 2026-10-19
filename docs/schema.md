@@ -198,6 +198,8 @@ Standard cover commands provide independent position/tilt targets for preview. A
 
 During a dispatched native light transition or cover move, device reports that progress toward the requested brightness, color or position retain controller ownership after HA drops the call context. Reversals, unrelated changes and reports with a user or automation context still yield to manual control. Light tracking ends with its transition; cover tracking ends at the target or after five minutes. Tracking is saved for restart recovery.
 
+Reports with Occupied's own context update the tracked progress too. An off report during a fade-on yields the light, including after a restart, so handover completion respects the manual off.
+
 ## Validation, export, and identity
 
 Unknown/retired fields, duplicate YAML keys, unsafe tags, recursive aliases, and YAML merge keys are rejected. Errors include model paths such as `steps.evening.timing.absolute_time.start` and YAML source locations.

@@ -493,9 +493,9 @@ class DailyEngine:
                 self.hass.async_create_task(self._async_observation_changed(entity))
             return
         if (
-            event.context.id in self._contexts
+            self._accept_motion(entity, event.context)
+            or event.context.id in self._contexts
             or event.context.parent_id in self._contexts
-            or self._accept_motion(entity, event.context)
         ):
             if entity in self._owned and (value := self._observe(entity)):
                 self._owned[entity] = value
@@ -531,10 +531,10 @@ class DailyEngine:
         if motion is None:
             return False
         if (
-            context.user_id is None
-            and context.parent_id is None
-            and progresses(motion, self._observe(entity), dt_util.utcnow())
-        ):
+            context.id in self._contexts
+            or context.parent_id in self._contexts
+            or (context.user_id is None and context.parent_id is None)
+        ) and progresses(motion, self._observe(entity), dt_util.utcnow()):
             if (
                 all(
                     motion["observed"]["attributes"].get(key) == value

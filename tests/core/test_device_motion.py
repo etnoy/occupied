@@ -8,6 +8,23 @@ from custom_components.occupied.device_motion import motion_for, progresses
 from custom_components.occupied.planner import ResolvedAction
 
 
+@pytest.mark.parametrize("restored_legacy_states", [False, True])
+def test_turn_on_motion_never_accepts_an_off_report(restored_legacy_states):
+    now = datetime(2026, 10, 13, tzinfo=UTC)
+    observed = {"state": "off", "attributes": {"brightness": 0}}
+    action = ResolvedAction(
+        "light.turn_on",
+        ("light.proof",),
+        {"brightness": 100, "transition": 30},
+        ("light.proof",),
+        True,
+    )
+    motion = motion_for(action, observed, now)
+    if restored_legacy_states:
+        motion["states"] = ["off", "on"]
+    assert not progresses(motion, observed, now + timedelta(seconds=5))
+
+
 @pytest.mark.parametrize(
     "key,initial,middle,target",
     [
