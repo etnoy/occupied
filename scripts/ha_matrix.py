@@ -82,7 +82,7 @@ def ha_lanes(lanes):
 
 def selected(lanes, name):
     found = [lane for lane in lanes if name in {lane.id, lane.role, lane.homeassistant}]
-    if name not in {"python-floor", "next"}:
+    if name != "python-floor":
         found = [lane for lane in found if lane.role in HA_ROLES]
     if len(found) != 1:
         raise ValueError(f"Choose a unique HA lane: {name}")
@@ -124,7 +124,7 @@ def check(root=ROOT):
         raise ValueError("HA matrix must cover consecutive monthly releases")
     if Version(floor.homeassistant).micro != 0:
         raise ValueError("The oldest HA minor must be tested from its .0 floor")
-    if any(lane.role not in HA_ROLES | {"python-floor", "next"} for lane in lanes):
+    if any(lane.role not in HA_ROLES | {"python-floor"} for lane in lanes):
         raise ValueError("Unknown HA matrix lane role")
     python_floor = selected(lanes, "python-floor")
     if replace(python_floor, id=newest.id, role="newest", python=newest.python) != newest:
@@ -413,8 +413,6 @@ def test_lane(name, pytest_args=(), root=ROOT):
             test_lane(lane.id, pytest_args, root)
         return
     lane = selected(lanes, name)
-    if lane.role == "next":
-        raise ValueError("Use the next-lane workflow for dynamic pre-release environments")
     with tempfile.TemporaryDirectory(prefix=f"occupied-{lane.id}-") as temporary:
         directory = Path(temporary)
         interpreter = (
@@ -698,7 +696,6 @@ def roll(minor, root=ROOT):
     lanes.append(
         replace(lanes[-1], id="python-floor", role="python-floor", python=lanes[-1].python_min)
     )
-    lanes.append(Lane("next", "next", "auto", "auto", "auto", "auto", "auto"))
     write_matrix(policy, lanes, root)
     directory = root / "scripts/requirements"
     directory.mkdir(exist_ok=True)

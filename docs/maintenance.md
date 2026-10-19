@@ -72,8 +72,9 @@ release workflow derives its compatibility notes from the reviewed matrix.
 
 ## Between monthly rollovers
 
-Use `ha_matrix.py next` and the daily compatibility report to find newer stable
-patches and pre-releases. A stable patch is eligible for the newest tested lane
+Use `ha_matrix.py next` to discover published stable patches and pre-releases.
+This is release information only: beta testing has no supported lane or workflow,
+and no compatibility report runs automatically. A stable patch is eligible for the newest tested lane
 once its matching fixture is published. Change that lane's HA, fixture, frontend,
 constraints hash and browser image together, including the duplicate Python-floor
 metadata. Refresh generated support claims with
@@ -112,8 +113,8 @@ The HA Python-floor job uses the newest HA release's own minimum, and its dev
 dependency group has a separate Python bound. Historical requirements compile
 against their recorded lane minimum, keeping the older environments reproducible.
 
-The next-HA probe chooses the latest stable patch in the Python family required
-by that candidate, including a newly required family. A rollover also advances
+Release discovery reports the latest stable Python patch in a candidate's required
+family; it does not create a beta test environment. A rollover also advances
 the experimental standalone lane to the Python minor after the newest required
 family. Confirm that the pinned uv release can install the selected interpreters
 before publishing the rollover PR.
