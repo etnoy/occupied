@@ -1,0 +1,39 @@
+custom_components/occupied/__init__.py
+  s_57c4321274169c::t_201be623f8427a 263,266
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_57c4321274169c::t_d51e1d37e8183b 18211-18214,18873-18875,18935,18937-18939
+custom_components/occupied/frontend/src/App.svelte
+  s_57c4321274169c::t_ecf66fdd73ec76 190
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_57c4321274169c::t_ec794d3cf7c9a9 285-288,353,355-357
+custom_components/occupied/instances.py
+  s_57c4321274169c::t_e993e9e8e164a7 3-4,29
+custom_components/occupied/panel.py
+  s_57c4321274169c::t_6531b5f0e04036 60,63-69
+tests/browser/occupied.spec.ts
+  s_57c4321274169c::t_1f87572ff85981 93-134
+tests/frontend/src/instances.test.ts
+  s_57c4321274169c::t_2adc542f9ac963 1300-1337
+tests/ha/test_caller_chain.py
+  s_57c4321274169c::t_25c4066ef3af8b 223,228-229
+tests/ha/test_instances.py
+  s_57c4321274169c::t_373fdf8cb17e05 18,80-107,226-227
+tests/ha/test_panel.py
+  s_57c4321274169c::t_7e4792b857edeb 36-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "7951fb86ac16808de734a1a96d58fc2a5d7273ac",
+  "prompts": {},
+  "sessions": {
+    "s_57c4321274169c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15315-93ce-7243-a6bf-3d428cb6f8af",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
