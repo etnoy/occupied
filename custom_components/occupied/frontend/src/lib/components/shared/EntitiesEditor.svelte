@@ -23,7 +23,9 @@
       return ["scene"];
     }
 
-    return form.kind === "cover" ? ["cover"] : ["light", "switch"];
+    return ["cover", "remote"].includes(form.kind)
+      ? [form.kind]
+      : ["light", "switch"];
   });
 </script>
 

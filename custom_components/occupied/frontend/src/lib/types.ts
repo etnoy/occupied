@@ -114,6 +114,7 @@ export interface ActionForm {
   action: string;
   position: string;
   tiltPosition: string;
+  activity: string;
 }
 
 export interface StepForm extends ActionForm {
@@ -208,6 +209,7 @@ export interface Catalog {
     area?: string | null;
     domain?: string;
     state?: string;
+    activity_list?: string[];
     dimmable?: boolean;
     transition?: boolean;
   }[];

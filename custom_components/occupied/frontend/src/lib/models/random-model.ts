@@ -21,7 +21,8 @@ import { timingForm, durationSeconds } from "../utils/util.js";
 
 export function canShareEntities(on: ActionForm, off: ActionForm): boolean {
   return (
-    on.kind === off.kind && ["entities", "cover", "service"].includes(on.kind)
+    on.kind === off.kind &&
+    ["entities", "cover", "service", "remote"].includes(on.kind)
   );
 }
 

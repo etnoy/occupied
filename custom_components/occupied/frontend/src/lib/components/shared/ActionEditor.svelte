@@ -11,6 +11,7 @@
     serviceExample,
     emptyServiceData,
   } from "../../utils/services.js";
+  import { remoteActivities } from "../../utils/remote.js";
   import { coverActions } from "../../utils/cover.js";
   import { changeActionKind } from "../../utils/action-kind.js";
 
@@ -59,6 +60,7 @@
         ["turn_on", "turn_on_lights_switches"],
         ["turn_off", "turn_off_lights_switches"],
         ["cover", "control_covers"],
+        ["remote", "remote_activity_action"],
         ["service", "entity_service_action"],
         ["scene", "activate_home_assistant_scene"],
         ["custom", "custom_yaml"],
@@ -140,6 +142,52 @@
       fieldPrefix={context.fieldPrefix || ""}
       errors={{ ...context.editor.errors }}
     />
+  {/if}
+  {#if form.kind === "remote"}
+    <EditorField
+      {panel}
+      {context}
+      key="service"
+      label="remote_command"
+      value={form.service}
+      update={(value) => (form.service = value)}
+      options={{
+        choices: [
+          ["remote.turn_on", "start_activity"],
+          ["remote.turn_off", "turn_off"],
+        ],
+        render: true,
+      }}
+    />
+    {#if form.service === "remote.turn_on"}
+      <ha-selector
+        data-builder-field={`${context.fieldPrefix || ""}activity`}
+        aria-label={t("remote_activity")}
+        use:properties={{
+          hass: panel._hass,
+          label: t("remote_activity"),
+          selector: {
+            select: {
+              options: remoteActivities(panel.catalog, form.entities),
+              custom_value: true,
+            },
+          },
+          value: form.activity,
+        }}
+        onvalue-changed={(event: Event) => {
+          if (
+            !isValueChangedEvent(event) ||
+            (event.detail.value != null &&
+              typeof event.detail.value !== "string")
+          ) {
+            return;
+          }
+          form.activity = event.detail.value || "";
+          context.changed("activity");
+        }}
+      ></ha-selector>
+      <p class="hint">{t("remote_default_activity_hint")}</p>
+    {/if}
   {/if}
   {#if form.kind === "cover"}
     <EditorField

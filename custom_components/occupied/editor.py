@@ -94,6 +94,7 @@ async def async_catalog(hass):
                 "transition": transition,
                 "color_modes": list(state.attributes.get("supported_color_modes", [])),
                 "options": list(state.attributes.get("options", [])),
+                "activity_list": list(state.attributes.get("activity_list", [])),
             }
         )
     return {

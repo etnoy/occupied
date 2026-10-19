@@ -101,6 +101,17 @@ var en = {
   required_field: "Required",
   field_example: "Example",
   insert_service_example: "Insert example",
+  remote_activity_action: "Remote activity",
+  remote_command: "Remote command",
+  start_activity: "Start activity",
+  remote_activity: "Activity",
+  remote_default_activity_hint:
+    "Leave empty to use the default or last activity.",
+  remote_entities_error: "Choose remote entities.",
+  remote_command_error: "Choose Start activity or Turn off.",
+  action_remote_activity_summary: "start activity {activity} on {entities}",
+  action_remote_default_summary:
+    "start the default or last activity on {entities}",
   offset_example: "30m or 1h",
   signed_offset_example: "-30m or 90m",
   issue_line: "Line {line}",
@@ -640,6 +651,18 @@ var sv = {
   required_field: "Obligatoriskt",
   field_example: "Exempel",
   insert_service_example: "Infoga exempel",
+  remote_activity_action: "Fj\xE4rrkontrollsaktivitet",
+  remote_command: "Fj\xE4rrkontrollskommando",
+  start_activity: "Starta aktivitet",
+  remote_activity: "Aktivitet",
+  remote_default_activity_hint:
+    "L\xE4mna tomt f\xF6r att anv\xE4nda standardaktiviteten eller den senaste aktiviteten.",
+  remote_entities_error: "V\xE4lj fj\xE4rrkontrollsentiteter.",
+  remote_command_error: "V\xE4lj Starta aktivitet eller Sl\xE5 av.",
+  action_remote_activity_summary:
+    "starta aktiviteten {activity} p\xE5 {entities}",
+  action_remote_default_summary:
+    "starta standardaktiviteten eller den senaste aktiviteten p\xE5 {entities}",
   offset_example: "30m eller 1h",
   signed_offset_example: "-30m eller 90m",
   issue_line: "Rad {line}",
@@ -8796,6 +8819,38 @@ function hasProgram(panel) {
   return !!panel.draft && !!panel.saved && !!panel.document;
 }
 
+// custom_components/occupied/frontend/src/lib/utils/remote.ts
+function remoteActivities(catalog, entities) {
+  if (entities.length === 0 || !catalog) {
+    return [];
+  }
+  const lists = entities.map(
+    (id) =>
+      catalog.entities.find((entity) => entity.entity_id === id)
+        ?.activity_list || [],
+  );
+  return [...new Set(lists[0])]
+    .filter((name) =>
+      lists.every((list) =>
+        list.some((item) => item.toLowerCase() === name.toLowerCase()),
+      ),
+    )
+    .sort((a, b) => a.localeCompare(b));
+}
+function remoteErrors(form) {
+  if (form.kind !== "remote") {
+    return {};
+  }
+  const errors = {};
+  if (form.entities.some((entity) => !entity.startsWith("remote."))) {
+    errors.entities = "remote_entities_error";
+  }
+  if (!["remote.turn_on", "remote.turn_off"].includes(form.service)) {
+    errors.service = "remote_command_error";
+  }
+  return errors;
+}
+
 // custom_components/occupied/frontend/src/lib/utils/cover.ts
 var coverActions = [
   ["cover.open_cover", "open_cover"],
@@ -9186,6 +9241,17 @@ function actionForm(source2) {
     actionTargets(source2).every((entity) => entity.startsWith("cover."))
   ) {
     kind = "cover";
+  } else if (
+    source2 &&
+    ["remote.turn_on", "remote.turn_off"].includes(action2 || "") &&
+    actionTargets(source2).every((entity) => entity.startsWith("remote.")) &&
+    Object.keys(source2.data || {}).every(
+      (key2) => key2 === "activity" && action2 === "remote.turn_on",
+    ) &&
+    (source2.data?.activity === void 0 ||
+      typeof source2.data.activity === "string")
+  ) {
+    kind = "remote";
   } else if (action2?.includes(".")) {
     kind = "service";
   }
@@ -9231,6 +9297,7 @@ function actionForm(source2) {
     action: action2 === "turn_off" ? "turn_off" : "turn_on",
     position: String(source2?.data?.position ?? ""),
     tiltPosition: String(source2?.data?.tilt_position ?? ""),
+    activity: String(source2?.data?.activity ?? ""),
   };
 }
 function hasStepChanges(editor) {
@@ -9288,6 +9355,7 @@ function actionErrors(form) {
   ) {
     errors.service = "service_error";
   }
+  Object.assign(errors, remoteErrors(form));
   if (form.kind === "cover") {
     if (form.entities.some((entity) => !entity.startsWith("cover."))) {
       errors.entities = "cover_entities_error";
@@ -9478,8 +9546,16 @@ function buildAction(form) {
   let action2 = form.action;
   if (form.kind === "scene") {
     action2 = "scene.turn_on";
-  } else if (form.kind === "service" || form.kind === "cover") {
+  } else if (["service", "cover", "remote"].includes(form.kind)) {
     action2 = form.service;
+  }
+  if (form.kind === "remote") {
+    return {
+      action: action2,
+      entities: sorted(form.entities),
+      ...(action2 === "remote.turn_on" &&
+        form.activity && { data: { activity: form.activity } }),
+    };
   }
   if (form.kind === "cover") {
     const field = coverField(action2);
@@ -11025,7 +11101,8 @@ function TimingBoundaryEditor($$anchor, $$props) {
 // custom_components/occupied/frontend/src/lib/models/random-model.ts
 function canShareEntities(on2, off) {
   return (
-    on2.kind === off.kind && ["entities", "cover", "service"].includes(on2.kind)
+    on2.kind === off.kind &&
+    ["entities", "cover", "service", "remote"].includes(on2.kind)
   );
 }
 function countBounds(count) {
@@ -11852,7 +11929,9 @@ function EntitiesEditor($$anchor, $$props) {
     if (get(form).kind === "scene") {
       return ["scene"];
     }
-    return get(form).kind === "cover" ? ["cover"] : ["light", "switch"];
+    return ["cover", "remote"].includes(get(form).kind)
+      ? [get(form).kind]
+      : ["light", "switch"];
   });
   var div = root_17();
   var h4 = child(div);
@@ -12086,6 +12165,12 @@ function changeActionKind(form, value, confirmReplace) {
     form.service = `homeassistant.${form.action}`;
   }
   if (
+    kind === "remote" &&
+    !["remote.turn_on", "remote.turn_off"].includes(form.service)
+  ) {
+    form.service = `remote.${form.action === "turn_off" ? "turn_off" : "turn_on"}`;
+  }
+  if (
     kind === "cover" &&
     coverActions.every(([action2]) => action2 !== form.service)
   ) {
@@ -12100,6 +12185,7 @@ function acceptedEntities(kind, entities) {
   const domains = {
     entities: ["light", "switch"],
     cover: ["cover"],
+    remote: ["remote"],
     scene: ["scene"],
   };
   const accepted = entities.filter((entity) =>
@@ -12114,19 +12200,21 @@ var root11 = from_html(
   3,
 );
 var root_18 = from_html(`<ha-selector></ha-selector> <!>`, 3);
-var root_26 = from_html(
+var root_26 = from_html(`<ha-selector></ha-selector> <p class="hint"> </p>`, 3);
+var root_35 = from_html(`<!> <!>`, 1);
+var root_43 = from_html(
   `<!> <!> <p class="hint"> </p> <p class="hint"> </p>`,
   1,
 );
-var root_35 = from_html(`<p> </p>`);
-var root_43 = from_html(`<p> <code> </code></p>`);
-var root_53 = from_html(`<dt><code> </code> </dt> <dd><!> <!></dd>`, 1);
-var root_63 = from_html(`<button type="button"> </button>`);
-var root_72 = from_html(
+var root_53 = from_html(`<p> </p>`);
+var root_63 = from_html(`<p> <code> </code></p>`);
+var root_72 = from_html(`<dt><code> </code> </dt> <dd><!> <!></dd>`, 1);
+var root_8 = from_html(`<button type="button"> </button>`);
+var root_9 = from_html(
   `<div class="service-fields"><h4> </h4> <dl></dl> <!></div>`,
 );
-var root_8 = from_html(
-  `<div data-editor-section="action"><h3> </h3> <!> <!> <!> <!> <!> <!> <!></div>`,
+var root_10 = from_html(
+  `<div data-editor-section="action"><h3> </h3> <!> <!> <!> <!> <!> <!> <!> <!></div>`,
 );
 var $$css2 = {
   hash: "svelte-10b0fum",
@@ -12146,7 +12234,7 @@ function ActionEditor($$anchor, $$props) {
     return $$props.panel.catalog.services[domain]?.[service];
   });
   let example = user_derived(() => serviceExample(get(serviceDescription)));
-  var div = root_8();
+  var div = root_10();
   var h3 = child(div);
   var text2 = only_child(h3, true);
   var node = sibling(h3, 2);
@@ -12180,6 +12268,7 @@ function ActionEditor($$anchor, $$props) {
           ["turn_on", "turn_on_lights_switches"],
           ["turn_off", "turn_off_lights_switches"],
           ["cover", "control_covers"],
+          ["remote", "remote_activity_action"],
           ["service", "entity_service_action"],
           ["scene", "activate_home_assistant_scene"],
           ["custom", "custom_yaml"],
@@ -12374,12 +12463,101 @@ function ActionEditor($$anchor, $$props) {
   }
   var node_6 = sibling(node_4, 2);
   {
-    var consequent_5 = ($$anchor2) => {
-      var fragment_3 = root_26();
+    var consequent_4 = ($$anchor2) => {
+      var fragment_3 = root_35();
       var node_7 = first_child(fragment_3);
+      EditorField(node_7, {
+        get panel() {
+          return $$props.panel;
+        },
+        get context() {
+          return $$props.context;
+        },
+        key: "service",
+        label: "remote_command",
+        get value() {
+          return get(form).service;
+        },
+        update: (value) => (get(form).service = value),
+        options: {
+          choices: [
+            ["remote.turn_on", "start_activity"],
+            ["remote.turn_off", "turn_off"],
+          ],
+          render: true,
+        },
+      });
+      var node_8 = sibling(node_7, 2);
+      {
+        var consequent_3 = ($$anchor3) => {
+          var fragment_4 = root_26();
+          var ha_selector_1 = first_child(fragment_4);
+          template_effect(() =>
+            set_custom_element_data(
+              ha_selector_1,
+              "data-builder-field",
+              `${$$props.context.fieldPrefix || ""}activity`,
+            ),
+          );
+          template_effect(
+            ($0) => set_custom_element_data(ha_selector_1, "aria-label", $0),
+            [() => get(t)("remote_activity")],
+          );
+          action(
+            ha_selector_1,
+            ($$node, $$action_arg) => properties?.($$node, $$action_arg),
+            () => ({
+              hass: $$props.panel._hass,
+              label: get(t)("remote_activity"),
+              selector: {
+                select: {
+                  options: remoteActivities(
+                    $$props.panel.catalog,
+                    get(form).entities,
+                  ),
+                  custom_value: true,
+                },
+              },
+              value: get(form).activity,
+            }),
+          );
+          var p_1 = sibling(ha_selector_1, 2);
+          var text_2 = only_child(p_1, true);
+          template_effect(
+            ($0) => set_text(text_2, $0),
+            [() => get(t)("remote_default_activity_hint")],
+          );
+          event("value-changed", ha_selector_1, (event2) => {
+            if (
+              !isValueChangedEvent(event2) ||
+              (event2.detail.value != null &&
+                typeof event2.detail.value !== "string")
+            ) {
+              return;
+            }
+            get(form).activity = event2.detail.value || "";
+            $$props.context.changed("activity");
+          });
+          append($$anchor3, fragment_4);
+        };
+        if_block(node_8, ($$render) => {
+          if (get(form).service === "remote.turn_on") $$render(consequent_3);
+        });
+      }
+      append($$anchor2, fragment_3);
+    };
+    if_block(node_6, ($$render) => {
+      if (get(form).kind === "remote") $$render(consequent_4);
+    });
+  }
+  var node_9 = sibling(node_6, 2);
+  {
+    var consequent_7 = ($$anchor2) => {
+      var fragment_5 = root_43();
+      var node_10 = first_child(fragment_5);
       {
         let $0 = user_derived(() => ({ choices: coverActions, render: true }));
-        EditorField(node_7, {
+        EditorField(node_10, {
           get panel() {
             return $$props.panel;
           },
@@ -12397,9 +12575,9 @@ function ActionEditor($$anchor, $$props) {
           },
         });
       }
-      var node_8 = sibling(node_7, 2);
+      var node_11 = sibling(node_10, 2);
       {
-        var consequent_3 = ($$anchor3) => {
+        var consequent_5 = ($$anchor3) => {
           EditorField($$anchor3, {
             get panel() {
               return $$props.panel;
@@ -12416,7 +12594,7 @@ function ActionEditor($$anchor, $$props) {
             options: { type: "number", min: 0, max: 100, step: 1 },
           });
         };
-        var consequent_4 = ($$anchor3) => {
+        var consequent_6 = ($$anchor3) => {
           EditorField($$anchor3, {
             get panel() {
               return $$props.panel;
@@ -12433,36 +12611,36 @@ function ActionEditor($$anchor, $$props) {
             options: { type: "number", min: 0, max: 100, step: 1 },
           });
         };
-        if_block(node_8, ($$render) => {
+        if_block(node_11, ($$render) => {
           if (get(form).service === "cover.set_cover_position")
-            $$render(consequent_3);
+            $$render(consequent_5);
           else if (get(form).service === "cover.set_cover_tilt_position")
-            $$render(consequent_4, 1);
+            $$render(consequent_6, 1);
         });
       }
-      var p_1 = sibling(node_8, 2);
-      var text_2 = only_child(p_1, true);
-      var p_2 = sibling(p_1, 2);
+      var p_2 = sibling(node_11, 2);
       var text_3 = only_child(p_2, true);
+      var p_3 = sibling(p_2, 2);
+      var text_4 = only_child(p_3, true);
       template_effect(
         ($0, $1) => {
-          set_text(text_2, $0);
-          set_text(text_3, $1);
+          set_text(text_3, $0);
+          set_text(text_4, $1);
         },
         [
           () => get(t)("cover_position_hint"),
           () => get(t)("cover_schedule_hint"),
         ],
       );
-      append($$anchor2, fragment_3);
+      append($$anchor2, fragment_5);
     };
-    if_block(node_6, ($$render) => {
-      if (get(form).kind === "cover") $$render(consequent_5);
+    if_block(node_9, ($$render) => {
+      if (get(form).kind === "cover") $$render(consequent_7);
     });
   }
-  var node_9 = sibling(node_6, 2);
+  var node_12 = sibling(node_9, 2);
   {
-    var consequent_6 = ($$anchor2) => {
+    var consequent_8 = ($$anchor2) => {
       EditorField($$anchor2, {
         get panel() {
           return $$props.panel;
@@ -12479,17 +12657,17 @@ function ActionEditor($$anchor, $$props) {
         options: { multiline: true },
       });
     };
-    if_block(node_9, ($$render) => {
+    if_block(node_12, ($$render) => {
       if (get(form).kind === "scene" || get(form).kind === "service")
-        $$render(consequent_6);
+        $$render(consequent_8);
     });
   }
-  var node_10 = sibling(node_9, 2);
+  var node_13 = sibling(node_12, 2);
   {
-    var consequent_10 = ($$anchor2) => {
-      var div_1 = root_72();
+    var consequent_12 = ($$anchor2) => {
+      var div_1 = root_9();
       var h4 = child(div_1);
-      var text_4 = only_child(h4, true);
+      var text_5 = only_child(h4, true);
       var dl = sibling(h4, 2);
       each(
         dl,
@@ -12500,73 +12678,73 @@ function ActionEditor($$anchor, $$props) {
           var $$array = user_derived(() => to_array(get($$item), 2));
           let key2 = () => get($$array)[0];
           let field = () => get($$array)[1];
-          var fragment_7 = root_53();
-          var dt = first_child(fragment_7);
+          var fragment_9 = root_72();
+          var dt = first_child(fragment_9);
           var code = child(dt);
-          var text_5 = only_child(code, true);
-          var text_6 = sibling(code, 1, true);
+          var text_6 = only_child(code, true);
+          var text_7 = sibling(code, 1, true);
           reset(dt);
           var dd = sibling(dt, 2);
-          var node_11 = child(dd);
+          var node_14 = child(dd);
           {
-            var consequent_7 = ($$anchor4) => {
-              var p_3 = root_35();
-              var text_7 = only_child(p_3, true);
-              template_effect(() => set_text(text_7, field().description));
-              append($$anchor4, p_3);
+            var consequent_9 = ($$anchor4) => {
+              var p_4 = root_53();
+              var text_8 = only_child(p_4, true);
+              template_effect(() => set_text(text_8, field().description));
+              append($$anchor4, p_4);
             };
-            if_block(node_11, ($$render) => {
-              if (field().description) $$render(consequent_7);
+            if_block(node_14, ($$render) => {
+              if (field().description) $$render(consequent_9);
             });
           }
-          var node_12 = sibling(node_11, 2);
+          var node_15 = sibling(node_14, 2);
           {
-            var consequent_8 = ($$anchor4) => {
-              var p_4 = root_43();
-              var text_8 = child(p_4);
-              var code_1 = sibling(text_8);
-              var text_9 = only_child(code_1, true);
-              reset(p_4);
+            var consequent_10 = ($$anchor4) => {
+              var p_5 = root_63();
+              var text_9 = child(p_5);
+              var code_1 = sibling(text_9);
+              var text_10 = only_child(code_1, true);
+              reset(p_5);
               template_effect(
                 ($0, $1) => {
-                  set_text(text_8, `${$0 ?? ""}: `);
-                  set_text(text_9, $1);
+                  set_text(text_9, `${$0 ?? ""}: `);
+                  set_text(text_10, $1);
                 },
                 [
                   () => get(t)("field_example"),
                   () => JSON.stringify(field().example),
                 ],
               );
-              append($$anchor4, p_4);
+              append($$anchor4, p_5);
             };
-            if_block(node_12, ($$render) => {
-              if (field().example !== void 0) $$render(consequent_8);
+            if_block(node_15, ($$render) => {
+              if (field().example !== void 0) $$render(consequent_10);
             });
           }
           reset(dd);
           template_effect(
             ($0) => {
-              set_text(text_5, key2());
-              set_text(text_6, $0);
+              set_text(text_6, key2());
+              set_text(text_7, $0);
             },
             [
               () =>
                 field().required ? ` \xB7 ${get(t)("required_field")}` : "",
             ],
           );
-          append($$anchor3, fragment_7);
+          append($$anchor3, fragment_9);
         },
       );
       reset(dl);
-      var node_13 = sibling(dl, 2);
+      var node_16 = sibling(dl, 2);
       {
-        var consequent_9 = ($$anchor3) => {
-          var button = root_63();
-          var text_10 = only_child(button, true);
+        var consequent_11 = ($$anchor3) => {
+          var button = root_8();
+          var text_11 = only_child(button, true);
           template_effect(
             ($0, $1) => {
               button.disabled = $0;
-              set_text(text_10, $1);
+              set_text(text_11, $1);
             },
             [
               () => !emptyServiceData(get(form).data),
@@ -12583,13 +12761,13 @@ function ActionEditor($$anchor, $$props) {
           append($$anchor3, button);
         };
         var d = user_derived(() => Object.keys(get(example)).length > 0);
-        if_block(node_13, ($$render) => {
-          if (get(d)) $$render(consequent_9);
+        if_block(node_16, ($$render) => {
+          if (get(d)) $$render(consequent_11);
         });
       }
       reset(div_1);
       template_effect(
-        ($0) => set_text(text_4, $0),
+        ($0) => set_text(text_5, $0),
         [() => get(t)("service_fields")],
       );
       append($$anchor2, div_1);
@@ -12599,8 +12777,8 @@ function ActionEditor($$anchor, $$props) {
         get(form).kind === "service" &&
         Object.keys(get(serviceDescription)?.fields || {}).length > 0,
     );
-    if_block(node_10, ($$render) => {
-      if (get(d_1)) $$render(consequent_10);
+    if_block(node_13, ($$render) => {
+      if (get(d_1)) $$render(consequent_12);
     });
   }
   reset(div);
@@ -13692,7 +13870,7 @@ var root_74 = from_html(`<li> </li>`);
 var root_83 = from_html(
   `<details><summary> </summary> <!> <ul></ul></details>`,
 );
-var root_9 = from_html(
+var root_92 = from_html(
   `<section><h2> </h2> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <!> <!> <div class="actions svelte-111t7iy"><button type="button" class="primary"> </button> <button type="button"> </button></div> <!> <!></section>`,
 );
 var $$css3 = {
@@ -13761,7 +13939,7 @@ function RunConditionSettings($$anchor, $$props) {
   var node = first_child(fragment);
   {
     var consequent_7 = ($$anchor2) => {
-      var section = root_9();
+      var section = root_92();
       var h2 = child(section);
       var text2 = only_child(h2, true);
       var label = sibling(h2, 2);
@@ -15386,8 +15564,8 @@ var root_75 = from_html(`<td class="svelte-1iz1525"></td>`);
 var root_84 = from_html(
   `<button type="button" class="text-button source-link svelte-1iz1525"> </button>`,
 );
-var root_92 = from_html(`<td class="svelte-1iz1525"><!></td>`);
-var root_10 = from_html(
+var root_93 = from_html(`<td class="svelte-1iz1525"><!></td>`);
+var root_102 = from_html(
   `<tr><!><td class="svelte-1iz1525"> </td><td class="svelte-1iz1525"><span class="event-action svelte-1iz1525"><!> </span></td><!><!></tr>`,
 );
 var root_11 = from_html(`<tbody class="svelte-1iz1525"></tbody>`);
@@ -15589,7 +15767,7 @@ function Timeline($$anchor, $$props) {
                       entityNames(),
                     ),
                   );
-                  var tr_1 = root_10();
+                  var tr_1 = root_102();
                   let classes;
                   var node_8 = child(tr_1);
                   {
@@ -15735,7 +15913,7 @@ function Timeline($$anchor, $$props) {
                   var node_13 = sibling(node_10);
                   {
                     var consequent_10 = ($$anchor6) => {
-                      var td_4 = root_92();
+                      var td_4 = root_93();
                       var node_14 = child(td_4);
                       {
                         var consequent_9 = ($$anchor7) => {
@@ -15942,11 +16120,11 @@ var root_85 = from_html(
   `<p class="svelte-jw9j7k"><strong> </strong></p> <!>`,
   1,
 );
-var root_93 = from_html(
+var root_94 = from_html(
   `<div role="status" aria-live="polite" aria-atomic="true"><strong> </strong> <p class="svelte-jw9j7k"> </p> <!> <!></div> <!> <!> <!> <!> <!>`,
   1,
 );
-var root_102 = from_html(`<p role="status" class="hint svelte-jw9j7k"> </p>`);
+var root_103 = from_html(`<p role="status" class="hint svelte-jw9j7k"> </p>`);
 var root_116 = from_html(
   `<section class="live-card svelte-jw9j7k"><h2 class="svelte-jw9j7k"> </h2> <!> <!></section>`,
 );
@@ -16086,7 +16264,7 @@ function LivePreviewControls($$anchor, $$props) {
       var node_4 = sibling(h2, 2);
       {
         var consequent_10 = ($$anchor3) => {
-          var fragment_4 = root_93();
+          var fragment_4 = root_94();
           var div_1 = first_child(fragment_4);
           var strong = child(div_1);
           var text_5 = only_child(strong, true);
@@ -16283,7 +16461,7 @@ function LivePreviewControls($$anchor, $$props) {
       var node_14 = sibling(node_4, 2);
       {
         var consequent_11 = ($$anchor3) => {
-          var p_9 = root_102();
+          var p_9 = root_103();
           var text_16 = only_child(p_9, true);
           template_effect(
             ($0) => set_text(text_16, $0),
@@ -17435,6 +17613,17 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
         ? ""
         : say(description, { entities, position });
     }
+    if (selected.kind === "remote") {
+      if (selected.service === "remote.turn_off") {
+        return say("action_turn_off_summary", { entities });
+      }
+      return selected.activity
+        ? say("action_remote_activity_summary", {
+            activity: selected.activity,
+            entities,
+          })
+        : say("action_remote_default_summary", { entities });
+    }
     if (selected.kind === "service") {
       return selected.service.trim()
         ? say("action_service_summary", {
@@ -18185,7 +18374,7 @@ var root_510 = from_html(
 var root_69 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_77 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
 var root_86 = from_html(`<p> </p> <button type="button"> </button>`, 1);
-var root_94 = from_html(
+var root_95 = from_html(
   `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><!> <!> <!> <div id="notice" class="banner" role="status"> </div> <!> <div id="error" class="error" role="alert"> </div> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
   3,
 );
@@ -18311,7 +18500,7 @@ function App($$anchor, $$props) {
     ["preview", "preview"],
     ["settings", "settings"],
   ];
-  var fragment_1 = root_94();
+  var fragment_1 = root_95();
   var ha_top_app_bar_fixed = first_child(fragment_1);
   set_custom_element_data(ha_top_app_bar_fixed, "back-button", true);
   template_effect(

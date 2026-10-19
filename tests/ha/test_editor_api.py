@@ -784,3 +784,13 @@ async def test_remote_activity_warning_is_advisory_and_never_calls_services(
     )["result"]
     assert saved["valid"]
     assert not calls and not devices
+
+
+async def test_catalog_exposes_remote_activities(hass, editor_entry, devices, hass_ws_client):
+    assert await hass.config_entries.async_setup(editor_entry.entry_id)
+    hass.states.async_set("remote.tv", "off", {"activity_list": ["TV", "Wii"]})
+    client = await hass_ws_client(hass)
+    result = (await request(client, "occupied/catalog", editor_entry))["result"]
+    remote = next(e for e in result["entities"] if e["entity_id"] == "remote.tv")
+    assert remote["activity_list"] == ["TV", "Wii"]
+    assert not devices

@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { expectedHaShellError } from "../frontend/src/ha-shell-errors.js";
 import type { OccupiedPanel } from "@occupied/occupied-panel.js";
+import type { Catalog, HaSelector } from "@occupied/lib/types.js";
 import type { ProgramDocument } from "@occupied/lib/types.js";
 
 test("create, preview, delete and protect YAML edits in the installed release", async ({
@@ -576,5 +577,85 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     serviceEditor.getByRole("button", { name: "Insert example", exact: true }),
   ).toBeDisabled();
+  await page.reload();
+  await expect(
+    panel.getByRole("button", { name: "Create your first step", exact: true }),
+  ).toBeVisible();
+  // Disposable state only: this editor smoke test never dispatches a device call.
+  const remoteState = await request.post("/api/states/remote.service_smoke", {
+    headers: { Authorization: `Bearer ${tokens.access_token}` },
+    data: {
+      state: "off",
+      attributes: {
+        friendly_name: "Smoke remote",
+        activity_list: ["TV", "Wii"],
+      },
+    },
+  });
+  expect(remoteState.ok()).toBeTruthy();
+  await panel.evaluate(async (element) => {
+    const controller = element as OccupiedPanel;
+    controller.discardEdits();
+    controller.catalog = (await controller.ws("catalog")) as Catalog;
+    controller.tab = "random";
+    controller.renderView();
+  });
+  await panel.locator("[data-create-random]").click();
+  const random = panel.locator(".random-editor");
+  await random.locator('[data-builder-field="on.kind"]').selectOption("remote");
+  await random
+    .locator('[data-builder-field="off.kind"]')
+    .selectOption("remote");
+  await expect(random.locator('[data-builder-field="on.service"]')).toHaveValue(
+    "remote.turn_on",
+  );
+  await expect(
+    random.locator('[data-builder-field="off.service"]'),
+  ).toHaveValue("remote.turn_off");
+  await random
+    .locator('[data-builder-field="on.entities"]')
+    .evaluate((element) => {
+      element.dispatchEvent(
+        new CustomEvent("value-changed", {
+          detail: { value: ["remote.service_smoke"] },
+          bubbles: true,
+        }),
+      );
+    });
+  await random.getByRole("checkbox", { name: "Use the same entities" }).check();
+  await expect
+    .poll(() =>
+      random
+        .locator('[data-builder-field="on.activity"]')
+        .evaluate((element) => (element as HaSelector).selector),
+    )
+    .toMatchObject({ select: { options: ["TV", "Wii"], custom_value: true } });
+  await random
+    .locator('[data-builder-field="on.activity"]')
+    .evaluate((element) => {
+      element.dispatchEvent(
+        new CustomEvent("value-changed", {
+          detail: { value: "TV" },
+          bubbles: true,
+        }),
+      );
+    });
+  await random
+    .getByRole("button", { name: "Save random event", exact: true })
+    .click();
+  await expect(random).toHaveCount(0);
+  const remoteProgram = await panel.evaluate(
+    (element) => (element as OccupiedPanel).saved,
+  );
+  const remoteEvent = Object.values(remoteProgram!.random!)[0];
+  expect(remoteEvent.on).toMatchObject({
+    action: "remote.turn_on",
+    entities: ["remote.service_smoke"],
+    data: { activity: "TV" },
+  });
+  expect(remoteEvent.off).toMatchObject({
+    action: "remote.turn_off",
+    entities: ["remote.service_smoke"],
+  });
   expect(errors).toEqual([]);
 });

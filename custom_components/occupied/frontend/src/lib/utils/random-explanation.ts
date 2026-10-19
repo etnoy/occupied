@@ -211,6 +211,18 @@ export function randomExplanation(
         ? ""
         : say(description, { entities, position });
     }
+    if (selected.kind === "remote") {
+      if (selected.service === "remote.turn_off") {
+        return say("action_turn_off_summary", { entities });
+      }
+
+      return selected.activity
+        ? say("action_remote_activity_summary", {
+            activity: selected.activity,
+            entities,
+          })
+        : say("action_remote_default_summary", { entities });
+    }
     if (selected.kind === "service") {
       return selected.service.trim()
         ? say("action_service_summary", {
