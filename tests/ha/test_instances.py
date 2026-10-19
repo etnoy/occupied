@@ -15,6 +15,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.occupied import CONFIG_SCHEMA
 from custom_components.occupied.bootstrap import async_bootstrap, check_bootstrap
+from custom_components.occupied.engine_daily import DailyEngine
 from custom_components.occupied.instances import instance_documents
 from custom_components.occupied.managed import source_lock
 from custom_components.occupied.validation import program_revision
@@ -74,6 +75,34 @@ async def setup_pair(hass, households, sources=("file", "file")):
     )
     await hass.async_block_till_done()
     return entries
+
+
+async def test_instance_discovery_does_not_advertise_setup_runtime_as_loaded(hass, households):
+    observed = []
+    start = DailyEngine.async_start
+
+    async def inspect_setup(engine):
+        await start(engine)
+        observed.extend(
+            document
+            for document in instance_documents(hass)
+            if document["config_entry_id"] == engine.entry_id
+        )
+
+    with patch.object(DailyEngine, "async_start", inspect_setup):
+        await setup_pair(hass, households)
+    assert observed and all(item["state"] == "setup_in_progress" for item in observed)
+    assert all(not item["loaded"] for item in observed)
+    assert all(item["loaded"] for item in instance_documents(hass))
+
+
+async def test_last_entry_reload_retains_the_registered_panel(hass, households):
+    main, guest = await setup_pair(hass, households)
+    assert await hass.config_entries.async_remove(guest.entry_id)
+    panel = hass.data[DATA_PANELS]["occupied"]
+    assert await hass.config_entries.async_reload(main.entry_id)
+    await hass.async_block_till_done()
+    assert hass.data[DATA_PANELS]["occupied"] is panel
 
 
 async def ws(client, kind, identifier=1, **data):
@@ -194,6 +223,8 @@ async def test_removing_one_entry_keeps_other_panel_stores_and_source(
     assert any(key.startswith(f"occupied.{guest.entry_id}.") for key in hass_storage)
     assert (tmp_path / "occupied" / "main.yaml").exists()
     assert await hass.config_entries.async_unload(guest.entry_id)
+    assert "occupied" in hass.data[DATA_PANELS]
+    assert await hass.config_entries.async_remove(guest.entry_id)
     assert "occupied" not in hass.data[DATA_PANELS]
 
 

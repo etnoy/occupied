@@ -18208,7 +18208,10 @@ function App($$anchor, $$props) {
               append($$anchor4, fragment_8);
             };
             var d = user_derived(
-              () => get(panel)._loading || !hasProgram(get(panel)),
+              () =>
+                get(panel)._loading ||
+                !hasProgram(get(panel)) ||
+                (get(panel).error && !get(panel).entryLoaded),
             );
             var consequent_8 = ($$anchor4) => {
               StepEditor($$anchor4, {
@@ -18867,6 +18870,9 @@ var OccupiedPanel = class extends HTMLElement {
       (item) => item.config_entry_id === this.selectedEntry,
     );
   }
+  get entryLoaded() {
+    return this._loadedEntry === this.selectedEntry;
+  }
   connectedCallback() {
     if (!this.component) {
       const style = document.createElement("style");
@@ -18926,7 +18932,11 @@ var OccupiedPanel = class extends HTMLElement {
       this._hass.connection,
       { type: "occupied/instances_subscribe" },
       (instances) => {
+        const wasLoaded = this.selectedInstance?.loaded;
         this.instances = instances;
+        if (!wasLoaded && this.selectedInstance?.loaded) {
+          this._failedEntry = null;
+        }
         this.flush();
         if (!this.selectedInstance?.loaded && this._loadedEntry) {
           this._invalidateRequests();

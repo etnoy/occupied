@@ -220,11 +220,13 @@ async def test_reload_and_unload_remove_work_and_owned_activity(
     assert len(devices) == count
     assert not engine._unsubs
     assert engine._cancel_timer is None
-    assert "occupied" not in hass.data.get("frontend_panels", {})
+    assert "occupied" in hass.data.get("frontend_panels", {})
     with pytest.raises(HomeAssistantError):
         await hass.services.async_call(
             "occupied", "start", {"config_entry_id": entry.entry_id}, blocking=True
         )
+    assert await hass.config_entries.async_remove(entry.entry_id)
+    assert "occupied" not in hass.data.get("frontend_panels", {})
 
 
 async def test_disarm_during_device_call_blocks_later_light_calls(
