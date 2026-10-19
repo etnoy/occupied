@@ -1,0 +1,21 @@
+custom_components/occupied/managed.py
+  s_57c4321274169c::t_05074d472fca38 161
+tests/ha/test_stored_program_recovery.py
+  s_57c4321274169c::t_1887ebe8b7f81b 125-173
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f744b7dbc75bf14cdb795176a48a24a52c4d153d",
+  "prompts": {},
+  "sessions": {
+    "s_57c4321274169c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15315-93ce-7243-a6bf-3d428cb6f8af",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
