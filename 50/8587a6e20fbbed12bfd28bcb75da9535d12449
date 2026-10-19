@@ -1,0 +1,31 @@
+custom_components/occupied/config_flow.py
+  s_57c4321274169c::t_e04d50e56f0780 100-101,103,106-107,115-128,216-217,230
+custom_components/occupied/managed.py
+  s_57c4321274169c::t_65691a0fae0cbc 14,25-50,190-195
+custom_components/occupied/strings.json
+  s_57c4321274169c::t_3e4a908ce2de0e 67-68,119-122,226-228
+custom_components/occupied/translations/en.json
+  s_57c4321274169c::t_5180d430d52bec 67-68,119-122,226-228
+custom_components/occupied/translations/sv.json
+  s_57c4321274169c::t_97733d5b5b98cf 103-105,112-115,154-156
+tests/ha/test_config_flow_import.py
+  s_57c4321274169c::t_840f79fdcf8d59 13-42
+tests/ha/test_managed.py
+  s_57c4321274169c::t_d7d3dca9ce1a7b 483-521
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "508587a6e20fbbed12bfd28bcb75da9535d12449",
+  "prompts": {},
+  "sessions": {
+    "s_57c4321274169c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15315-93ce-7243-a6bf-3d428cb6f8af",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
