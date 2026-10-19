@@ -52,6 +52,9 @@ def households(hass, tmp_path, freezer):
 
 
 async def setup_pair(hass, households, sources=("file", "file")):
+    # Register the component before entries exist; first component setup also
+    # schedules existing entries and can race the explicit concurrent setup below.
+    assert await async_setup_component(hass, "occupied", {})
     entries = []
     for name, source in zip(("main", "guest"), sources, strict=True):
         entry = MockConfigEntry(
