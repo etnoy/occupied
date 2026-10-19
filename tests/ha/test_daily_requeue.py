@@ -168,6 +168,51 @@ async def test_source_change_does_not_backfill_before_activation(hass, freezer, 
     assert engine._journal["live:step:2026-10-13:step:source:0"]["status"] == "historical_skipped"
 
 
+@pytest.mark.parametrize("after_boundary", [False, True])
+async def test_moving_source_into_past_is_independent_of_queue_history(
+    hass, freezer, queue_runtime, after_boundary
+):
+    start, calls = queue_runtime
+    attributes = {"has_time": True, "has_date": False}
+    hass.states.async_set("input_datetime.clock", "15:00:00", attributes)
+    step = clock_step("15:00")
+    step["timing"] = {"relative_to": {"entity": "input_datetime.clock"}}
+    engine = await start(
+        {"source": step},
+        "2026-10-12T23:59:00+00:00" if after_boundary else "2026-10-13T12:00:00+00:00",
+    )
+    if after_boundary:
+        await fire(hass, freezer, "2026-10-13T00:00:00.001+00:00")
+    freezer.move_to("2026-10-13T14:00:00.001+00:00")
+    hass.states.async_set("input_datetime.clock", "10:00:00", attributes)
+    await hass.async_block_till_done()
+    await fire(hass, freezer, dt_util.utcnow() + timedelta(milliseconds=1))
+    assert not calls
+    assert engine._journal["live:step:2026-10-13:step:source:0"]["status"] == "historical_skipped"
+
+
+async def test_hours_late_boundary_only_admits_work_within_five_minute_grace(
+    hass, freezer, queue_runtime
+):
+    start, calls = queue_runtime
+    engine = await start(
+        {
+            "midnight": clock_step("00:00"),
+            "early": clock_step("00:01"),
+            "recent": clock_step("02:59"),
+            "future": clock_step("06:00"),
+        }
+    )
+    await fire(hass, freezer, "2026-10-14T03:00:00.001+00:00")
+    assert len(calls) == 1
+    for key in ("midnight", "early"):
+        assert (
+            engine._journal[f"live:step:2026-10-14:step:{key}:0"]["status"] == "historical_skipped"
+        )
+    assert engine._journal["live:step:2026-10-14:step:recent:0"]["status"] == "dispatched"
+    assert engine.next_event == dt_util.parse_datetime("2026-10-14T06:00:00+00:00")
+
+
 async def test_retry_survives_a_midnight_boundary(hass, freezer, queue_runtime):
     start, _ = queue_runtime
     attempts = []
