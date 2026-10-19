@@ -261,7 +261,6 @@ jobs:
     needs: matrix
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.matrix.outputs.core-next) }}
@@ -294,9 +293,10 @@ jobs:
           path: test-results/core.xml
           if-no-files-found: ignore
           retention-days: 7
-      # Keep this canary outside the required ci aggregate until tests AND wheels pass.
+      # Functional tests are required; missing wheels do not block source installs.
       - name: Report next-Python wheel readiness
         id: wheels
+        continue-on-error: true
         run: .venv/bin/python scripts/check_core_wheels.py "${{ matrix.python }}"
 
   frontend:
@@ -446,6 +446,7 @@ jobs:
         python,
         python-floor,
         core,
+        core-next,
         frontend,
         hassfest,
         hacs,

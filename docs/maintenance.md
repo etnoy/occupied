@@ -118,10 +118,13 @@ the experimental standalone lane to the Python minor after the newest required
 family. Confirm that the pinned uv release can install the selected interpreters
 before publishing the rollover PR.
 
-Promote an experimental standalone Python only after both its tests and a fresh
-wheels-only dependency resolution pass on CI. Move it into the required aggregate,
-remove its experimental allowance, add the matching Python classifier, and update
-the experimental release-note wording in that reviewed change.
+Standalone tests and CLI smoke checks on Python 3.15 are required by the `ci`
+aggregate. The separate wheels-only dependency probe is advisory: a missing wheel
+can still allow installation from source. Support remains labeled experimental
+until both the functional checks and a fresh wheels-only resolution pass on CI.
+Update that support label and release-note wording in a reviewed change when
+promoting the experimental Python family; keep its functional tests required.
+The rollover rewrites only the matrix data, preserving these required job checks.
 
 Every October, revisit the six-release window using fresh
 [Home Assistant analytics](https://analytics.home-assistant.io/). Record the data
