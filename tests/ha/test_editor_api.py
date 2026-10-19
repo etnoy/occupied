@@ -639,3 +639,81 @@ async def test_custom_yaml_parse_save_and_export_preserve_actions(
     )["result"]
     assert not invalid["valid"] and invalid["issues"][0]["line"] == 3
     assert not devices
+
+
+@pytest.mark.parametrize(
+    ("service", "targets", "data", "code", "inner"),
+    [
+        ("turn_on", ["remote.tv"], {"activity": "TV"}, None, None),
+        ("turn_on", ["remote.tv"], {"activty": "TV"}, "service_data", "remote.turn_on"),
+        ("turn_on", ["remote.tv", "light.a"], {"activity": "TV"}, "service_data", "light.turn_on"),
+        ("turn_off", ["remote.tv"], {"activty": "TV"}, "service_data", "remote.turn_off"),
+        ("toggle", ["remote.tv"], {"activty": "TV"}, "service_data", "remote.toggle"),
+        ("turn_on", ["sensor.room"], {}, "service_unsupported_entities", "sensor.room"),
+        ("turn_on", ["homeassistant.room"], {}, None, None),
+    ],
+)
+async def test_generic_turn_schema_checks_each_target_without_dispatch(
+    hass, editor_entry, devices, program_dict, hass_ws_client, service, targets, data, code, inner
+):
+    from homeassistant.setup import async_setup_component
+
+    assert await async_setup_component(hass, "homeassistant", {})
+    assert await hass.config_entries.async_setup(editor_entry.entry_id)
+    calls = []
+
+    async def handle(call):
+        calls.append(call)
+
+    for name in ("turn_on", "turn_off", "toggle"):
+        hass.services.async_register(
+            "remote",
+            name,
+            handle,
+            schema=vol.Schema(
+                {vol.Required("entity_id"): cv.entity_ids, vol.Optional("activity"): str}
+            ),
+        )
+    hass.services.async_register(
+        "light",
+        "turn_on",
+        handle,
+        schema=vol.Schema({vol.Required("entity_id"): cv.entity_ids}),
+    )
+    for entity in targets:
+        hass.states.async_set(entity, "off")
+    changed = deepcopy(program_dict)
+    changed["steps"]["wake"].update(action=f"homeassistant.{service}", entities=targets, data=data)
+    client = await hass_ws_client(hass)
+    engine = editor_entry.runtime_data
+    before = program_document(engine)
+    validated = (await request(client, "occupied/editor_validate", editor_entry, program=changed))[
+        "result"
+    ]
+    saved = (
+        await request(
+            client,
+            "occupied/save",
+            editor_entry,
+            2,
+            program=changed,
+            expected_revision=before["revision"],
+        )
+    )["result"]
+    assert validated["valid"] == saved["valid"] == (code != "service_data")
+    if code == "service_data":
+        assert validated["issues"] == saved["issues"]
+    if code:
+        issue = next(i for i in validated["issues"] if i["code"] == code)
+        assert inner in issue["message"]
+        assert issue["severity"] == ("error" if code == "service_data" else "warning")
+        assert issue["model_path"] == [
+            "steps",
+            "wake",
+            "data" if code == "service_data" else "entities",
+        ]
+    else:
+        assert not validated["issues"]
+    if code == "service_data":
+        assert program_document(engine) == before
+    assert not calls and not devices

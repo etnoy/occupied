@@ -137,6 +137,48 @@ def installed_issues(hass, program):
                     registered.schema(service_payload(hass, action))
             except vol.Invalid as err:
                 issues.append(Issue("service_data", f"{action.action}: {err}", path + ("data",)))
+                continue
+            issues.extend(_generic_turn_issues(registry, path, action))
+    return issues
+
+
+def _generic_turn_issues(registry, path, action):
+    """Check the per-domain calls made by HA's generic turn services."""
+    if action.action not in {
+        "homeassistant.turn_on",
+        "homeassistant.turn_off",
+        "homeassistant.toggle",
+    }:
+        return []
+    service = action.action.split(".")[1]
+    targets = {}
+    for entity in sorted(action.targets):
+        domain = entity.split(".")[0]
+        if domain != "homeassistant":
+            targets.setdefault(domain, []).append(entity)
+    issues = []
+    for domain, entities in targets.items():
+        registered = registry.get(domain, {}).get(service)
+        if registered is None:
+            issues.append(
+                Issue(
+                    "service_unsupported_entities",
+                    f"{action.action} does nothing for {', '.join(entities)}",
+                    path + ("entities",),
+                    "warning",
+                )
+            )
+        elif registered.schema is not None:
+            try:
+                registered.schema({**action.data, "entity_id": entities})
+            except vol.Invalid as err:
+                issues.append(
+                    Issue(
+                        "service_data",
+                        f"{action.action} → {domain}.{service}: {err}",
+                        path + ("data",),
+                    )
+                )
     return issues
 
 
