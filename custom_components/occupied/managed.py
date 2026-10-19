@@ -158,7 +158,7 @@ class SourceManager:
                 raise HomeAssistantError(
                     "Occupied is unloaded", translation_domain=DOMAIN, translation_key="unloaded"
                 )
-            if expected_revision != program_revision(self.engine.program):
+            if expected_revision != self.engine.source_revision:
                 raise RevisionConflict("The program changed. Reload it before changing its source.")
             if mode == "file":
                 program, digest = await self._candidate(path)

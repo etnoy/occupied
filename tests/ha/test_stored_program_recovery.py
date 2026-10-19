@@ -122,3 +122,52 @@ async def test_removing_an_unresolved_controller_removes_its_repair(hass, hass_s
     assert issue_id in ir.async_get(hass).issues
     assert await hass.config_entries.async_remove(entry.entry_id)
     assert issue_id not in ir.async_get(hass).issues
+
+
+@pytest.mark.parametrize("valid", [False, True])
+async def test_recovery_can_select_managed_file_using_advertised_revision(
+    hass, hass_storage, hass_ws_client, tmp_path, valid
+):
+    hass.config.config_dir = str(tmp_path)
+    directory = tmp_path / "occupied"
+    directory.mkdir()
+    path = directory / "recovered.yaml"
+    candidate = {"schema_version": 1 if valid else 99, "name": "Recovered file"}
+    path.write_text(yaml.safe_dump(candidate))
+    preserved = {"schema_version": 99, "name": "Preserved"}
+    entry = await load_invalid(hass, hass_storage, preserved, "store")
+    document = program_document(entry.runtime_data)
+    client = await hass_ws_client(hass)
+    await client.send_json(
+        {
+            "id": 1,
+            "type": "occupied/source",
+            "config_entry_id": entry.entry_id,
+            "source": "file",
+            "config_file": "occupied/recovered.yaml",
+            "expected_revision": document["revision"],
+        }
+    )
+    response = await client.receive_json()
+    assert response["success"]
+    assert response["result"]["valid"] is valid
+    if valid:
+        assert response["result"]["source"] == "file"
+        assert response["result"]["program"]["name"] == "Recovered file"
+        assert response["result"]["recovery_yaml"] is None
+        assert entry.runtime_data.configuration_ready
+    else:
+        assert program_document(entry.runtime_data)["revision"] == document["revision"]
+        assert entry.runtime_data.source_manager.mode == "gui"
+    assert (await program_store(hass, entry.entry_id).async_load()) == preserved
+    await client.send_json(
+        {
+            "id": 2,
+            "type": "occupied/source",
+            "config_entry_id": entry.entry_id,
+            "source": "file",
+            "config_file": "occupied/recovered.yaml",
+            "expected_revision": "invalid:stale",
+        }
+    )
+    assert (await client.receive_json())["error"]["code"] == "revision_conflict"
