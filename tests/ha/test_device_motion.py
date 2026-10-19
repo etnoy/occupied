@@ -190,3 +190,64 @@ async def test_contextless_motion_reports(hass, freezer, monkeypatch, domain, en
         assert persist.await_count == (0 if ending in {"complete", "restart"} else 1)
     finally:
         await engine.async_close(cleanup=False)
+
+
+@pytest.mark.parametrize(
+    "key,target,reported,mode",
+    [
+        ("brightness_pct", 33, 85, "brightness"),
+        ("rgb_color", [30, 40, 50], [31, 39, 51], "rgb"),
+        ("hs_color", [0, 60], [359.5, 60.5], "hs"),
+        ("color_temp_kelvin", 4000, 4035, "color_temp"),
+    ],
+)
+async def test_rounded_light_endpoint_completes_owned_motion(
+    hass, freezer, key, target, reported, mode
+):
+    freezer.move_to("2026-10-13T18:00:00+00:00")
+    hass.set_state(CoreState.running)
+    await hass.config.async_set_time_zone("UTC")
+    attribute = "brightness" if key == "brightness_pct" else key
+    initial = 20 if isinstance(reported, (int, float)) else [10] * len(reported)
+    attrs = {
+        attribute: initial,
+        "supported_color_modes": [mode],
+        "supported_features": LightEntityFeature.TRANSITION,
+    }
+    hass.states.async_set("light.proof", "on", attrs)
+    hass.services.async_register("light", "turn_on", AsyncMock())
+    program = validate_program(
+        {
+            "schema_version": 1,
+            "name": "Rounded endpoint",
+            "steps": {
+                "later": {
+                    "timing": {"absolute_time": {"start": "23:00"}},
+                    "action": "light.turn_on",
+                    "entities": ["light.proof"],
+                    "data": {key: target},
+                }
+            },
+        }
+    )
+    engine = DailyEngine(hass, "rounded-motion", program)
+    try:
+        await engine.async_prepare()
+        await engine.async_start()
+        await engine.async_set_enabled(True)
+        action = ResolvedAction(
+            "light.turn_on",
+            ("light.proof",),
+            {key: target, "transition": 30},
+            ("light.proof",),
+            True,
+        )
+        assert await engine._call(action, "rounded-endpoint", engine.generation)
+        assert "light.proof" in engine._motions
+        freezer.move_to("2026-10-13T18:00:10.001+00:00")
+        hass.states.async_set("light.proof", "on", attrs | {attribute: reported})
+        await hass.async_block_till_done()
+        assert "light.proof" not in engine._yielded
+        assert "light.proof" not in engine._motions
+    finally:
+        await engine.async_close(cleanup=False)

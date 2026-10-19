@@ -6,6 +6,7 @@ import logging
 from homeassistant.components.light import LightEntityFeature
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 
+from .light_tolerances import attribute_matches
 from .lighting import LightState
 
 SERVICE_TIMEOUT = 10
@@ -152,27 +153,11 @@ def light_matches(hass, entity, target):
     data.pop("state")
     action = ResolvedAction("light.turn_on", (entity,), data, (entity,), True)
     data = service_payload(hass, action)
-    if "brightness_pct" in data and (
-        current.brightness_pct is None
-        or abs(current.brightness_pct - data["brightness_pct"]) > 100 / 255
-    ):
-        return False
-    for key in ("color_temp_kelvin", "hs_color", "rgb_color"):
-        if key in data:
-            expected, actual = data[key], getattr(current, key)
-            if key == "color_temp_kelvin":
-                if actual is None or abs(expected - actual) > expected * 0.01:
-                    return False
-            elif key == "hs_color":
-                if (
-                    actual is None
-                    or abs((expected[0] - actual[0] + 180) % 360 - 180) > 1
-                    or abs(expected[1] - actual[1]) > 1
-                ):
-                    return False
-            elif tuple(expected) != actual:
-                return False
-    return True
+    return all(
+        attribute_matches(key, getattr(current, key), data[key])
+        for key in ("brightness_pct", "color_temp_kelvin", "hs_color", "rgb_color")
+        if key in data
+    )
 
 
 def service_payload(hass, action):

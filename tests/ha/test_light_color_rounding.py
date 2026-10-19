@@ -22,7 +22,8 @@ from custom_components.occupied.lighting import LightState
         ("hs_color", (120, 50), (120, 51.1), False),
         ("hs_color", (120, 50), None, False),
         ("rgb_color", (20, 30, 40), (20, 30, 40), True),
-        ("rgb_color", (20, 30, 40), (21, 30, 40), False),
+        ("rgb_color", (20, 30, 40), (21, 29, 41), True),
+        ("rgb_color", (20, 30, 40), (22, 30, 40), False),
     ],
 )
 async def test_light_color_reports_match_within_tolerance(hass, key, target, actual, matches):

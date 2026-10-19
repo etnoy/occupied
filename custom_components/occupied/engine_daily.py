@@ -42,6 +42,7 @@ from .activity import async_log_action
 from .anchor_latches import AnchorLatches, source_fields
 from .const import DOMAIN, SIGNAL_PREFIX
 from .covers import cover_target
+from .device_motion import complete as motion_complete
 from .device_motion import motion_for, progresses
 from .handover import calls_for_target
 from .lighting import LightState, project_lighting
@@ -535,13 +536,7 @@ class DailyEngine:
             or context.parent_id in self._contexts
             or (context.user_id is None and context.parent_id is None)
         ) and progresses(motion, self._observe(entity), dt_util.utcnow()):
-            if (
-                all(
-                    motion["observed"]["attributes"].get(key) == value
-                    for key, value in motion["targets"].items()
-                )
-                and motion["observed"]["state"] == motion["state"]
-            ):
+            if motion_complete(motion):
                 self._motions.pop(entity, None)
             return True
         self._motions.pop(entity, None)
