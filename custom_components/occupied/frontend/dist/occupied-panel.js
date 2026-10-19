@@ -134,15 +134,6 @@ var en = {
   discard_preserved_program: "Discard preserved program",
   discard_preserved_program_confirm:
     "Discard the preserved program and start with an empty program? This cannot be undone.",
-  chronological_order: "Chronological",
-  manual_order: "Manual order",
-  reset_chronological_order: "Reset to chronological",
-  chronological_order_hint:
-    "Ordered by start time. Solar times are estimated when unavailable; unresolved times appear last.",
-  reorder_activity: "Reorder {name}",
-  reorder_activity_hint:
-    "Drag to reorder, or use the arrow keys to move up and down.",
-  activity_moved: "{name} moved to position {position} of {total}.",
   run_condition_count_checked: "Checked",
   run_condition_count_applied: "Applied",
   run_condition_count_already_matching: "Already matching",
@@ -743,15 +734,6 @@ var sv = {
   discard_preserved_program: "Kasta bevarat program",
   discard_preserved_program_confirm:
     "Kasta det bevarade programmet och b\xF6rja med ett tomt program? Detta kan inte \xE5ngras.",
-  chronological_order: "Kronologisk ordning",
-  manual_order: "Manuell ordning",
-  reset_chronological_order: "\xC5terst\xE4ll kronologisk ordning",
-  chronological_order_hint:
-    "Sorterat efter starttid. Soltider uppskattas n\xE4r de saknas; ok\xE4nda tider visas sist.",
-  reorder_activity: "\xC4ndra ordning f\xF6r {name}",
-  reorder_activity_hint:
-    "Dra f\xF6r att \xE4ndra ordning, eller anv\xE4nd piltangenterna f\xF6r att flytta upp och ned.",
-  activity_moved: "{name} flyttades till plats {position} av {total}.",
   run_condition_count_checked: "Kontrollerade",
   run_condition_count_applied: "Till\xE4mpade",
   run_condition_count_already_matching: "Matchar redan",
@@ -1478,18 +1460,18 @@ function scheduleDaySuffix(selected, t) {
   if (selected.length === 0) {
     return ` ${t("on_no_days")}`;
   }
-  if (days.every((day2) => selected.includes(day2))) {
+  if (days.every((day) => selected.includes(day))) {
     return "";
   }
   if (
     selected.length === 5 &&
-    days.slice(0, 5).every((day2) => selected.includes(day2))
+    days.slice(0, 5).every((day) => selected.includes(day))
   ) {
     return ` ${t("on_weekdays")}`;
   }
   if (
     selected.length === 2 &&
-    days.slice(5).every((day2) => selected.includes(day2))
+    days.slice(5).every((day) => selected.includes(day))
   ) {
     return ` ${t("on_weekends")}`;
   }
@@ -1502,7 +1484,7 @@ function scheduleDaySuffix(selected, t) {
     sat: "saturdays",
     sun: "sundays",
   };
-  const dayNames = selected.map((day2) => t(weekdayNames[day2] || day2));
+  const dayNames = selected.map((day) => t(weekdayNames[day] || day));
   const lastDay = dayNames.pop();
   const dayList =
     dayNames.length > 0
@@ -1791,7 +1773,7 @@ function managedOffEntities(program, entities) {
 
 // custom_components/occupied/frontend/src/app.css
 var app_default =
-  '/* Shared element defaults */\np,\nli {\n  overflow-wrap: anywhere;\n}\n\n:host {\n  display: block;\n  min-height: 100%;\n  background: var(--primary-background-color, #f4f5f8);\n  color: var(--primary-text-color, #202c37);\n  font:\n    15px/1.5 system-ui,\n    sans-serif;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nmain {\n  max-width: 1200px;\n  margin: auto;\n  padding: 24px;\n}\n\nh1 {\n  margin: 0;\n  font-size: 28px;\n}\n\nh2 {\n  font-size: 21px;\n  margin: 0 0 12px;\n}\n\nh3 {\n  font-size: 17px;\n}\n\np {\n  margin: 8px 0;\n}\n\nsmall,\n.hint {\n  color: var(--secondary-text-color, #596773);\n}\n\nheader {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  flex-wrap: wrap;\n}\n\nnav,\n.row,\n.toolbar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\nnav {\n  margin: 18px 0;\n}\n\nnav button[aria-current="page"] {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nsection {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  padding: 20px;\n  margin: 16px 0;\n  min-width: 0;\n}\n\nsection section {\n  border-radius: 8px;\n}\n\ndetails {\n  padding: 12px 0;\n}\n\nsummary {\n  cursor: pointer;\n  font-weight: 600;\n}\n\nbutton,\ninput,\nselect,\ntextarea {\n  font: inherit;\n  color: inherit;\n}\n\nbutton {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #bdc9d2);\n  padding: 8px 14px;\n  border-radius: 8px;\n  cursor: pointer;\n  min-height: 42px;\n}\n\nbutton.primary {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nbutton:disabled {\n  opacity: 0.5;\n  cursor: default;\n}\n\nbutton:focus-visible,\ninput:focus-visible,\nselect:focus-visible,\ntextarea:focus-visible,\nsummary:focus-visible,\na:focus-visible,\n[tabindex]:focus-visible {\n  outline: 3px solid var(--primary-color, #167b94);\n  outline-offset: 2px;\n}\n\n.field {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  margin: 12px 0;\n  max-width: 700px;\n}\n\nlabel {\n  font-weight: 500;\n}\n\ninput:not([type="checkbox"]),\nselect,\ntextarea {\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 6px;\n  background: var(--card-background-color, #fff);\n  padding: 9px;\n  min-width: 0;\n  max-width: 100%;\n}\n\n.field input,\n.field select,\n.field textarea {\n  width: 100%;\n}\n\ntextarea {\n  resize: vertical;\n}\n\n.field textarea {\n  font:\n    14px/1.5 ui-monospace,\n    monospace;\n}\n\ninput[type="checkbox"] {\n  width: 20px;\n  height: 20px;\n  vertical-align: middle;\n}\n\nfieldset {\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 8px;\n  margin: 12px 0;\n  min-width: 0;\n}\n\n.banner {\n  padding: 12px 16px;\n  border-radius: 8px;\n  background: var(--secondary-background-color, #e3eef2);\n  margin: 12px 0;\n  overflow-wrap: anywhere;\n}\n\n.banner.unsaved {\n  border: 1px solid var(--warning-color, #e69500);\n  border-left-width: 4px;\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #e69500) 18%,\n    var(--card-background-color, #fff)\n  );\n  color: var(--primary-text-color, #202c37);\n  font-weight: 600;\n}\n\n.error,\n[aria-invalid="true"] {\n  color: var(--error-color, #b3261e);\n}\n\n[aria-invalid="true"] {\n  border-color: var(--error-color, #b3261e);\n}\n\n[hidden] {\n  display: none !important;\n}\n\n.toolbar {\n  position: sticky;\n  top: 0;\n  padding: 12px 0;\n  background: var(--primary-background-color, #f4f5f8);\n  z-index: 2;\n}\n\n.table-wrap {\n  overflow: auto;\n}\n\ntable {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 13px;\n}\n\nth,\ntd {\n  padding: 9px;\n  text-align: left;\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  max-width: 300px;\n  overflow-wrap: anywhere;\n}\n\nth {\n  white-space: nowrap;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 14px;\n  }\n\n  section {\n    padding: 14px;\n  }\n\n  nav {\n    gap: 5px;\n  }\n\n  nav button {\n    padding: 7px 10px;\n  }\n\n  .row input {\n    width: 100%;\n  }\n}\n\n/* Panel shell overrides: keep these after the shared defaults. */\nmain {\n  max-width: 1120px;\n  padding: 32px;\n}\n\nheader {\n  margin-bottom: 24px;\n}\n\nheader h1 {\n  font-size: 24px;\n  letter-spacing: -0.7px;\n}\n\nheader p {\n  margin: 2px 0;\n  font-size: 13px;\n}\n\nnav {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  gap: 24px;\n  margin: 16px 0 32px;\n}\n\nnav button,\nnav button[aria-current="page"] {\n  border: 0;\n  border-radius: 0;\n  border-bottom: 3px solid transparent;\n  background: transparent;\n  padding: 10px 0;\n  color: var(--secondary-text-color, #596773);\n}\n\nnav button[aria-current="page"] {\n  border-bottom-color: var(--primary-color, #167b94);\n  color: var(--primary-color, #167b94);\n  font-weight: 650;\n}\n\n.field-label-row {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: baseline;\n  gap: 4px 12px;\n}\n\n.field-label-row .text-button {\n  min-height: 24px;\n  padding: 0;\n  border: 0;\n  font-size: 13px;\n}\n\n.text-button {\n  border-color: transparent;\n  background: transparent;\n  color: var(--primary-color, #167b94);\n  padding-left: 4px;\n  padding-right: 4px;\n}\n\n.page-heading {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 24px;\n  margin: 24px 0;\n}\n\n.page-heading h2 {\n  font-size: 30px;\n  letter-spacing: -0.8px;\n  margin: 0;\n}\n\n.page-heading .hint {\n  max-width: 500px;\n}\n\n/* Step lists and empty states */\n.activity-intro {\n  border-left: 3px solid var(--primary-color, #167b94);\n  padding: 4px 0 4px 16px;\n  margin: 0 0 24px;\n}\n\n.activity-intro h2 {\n  font-size: 16px;\n  font-weight: 600;\n  margin: 0 0 4px;\n}\n\n.activity-intro p {\n  max-width: 68ch;\n  margin: 0;\n  font-size: 14px;\n  line-height: 1.6;\n}\n\n.step-empty {\n  text-align: center;\n  padding: 60px 32px;\n  border-style: dashed;\n}\n\n.step-empty h2 {\n  font-size: 25px;\n  letter-spacing: -0.5px;\n}\n\n.step-empty p {\n  max-width: 490px;\n  margin: 12px auto 24px;\n}\n\n.empty-steps {\n  font-size: 13px;\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-list {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  margin: 0 0 20px;\n  min-width: 0;\n}\n\n.activity-list-actions {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 12px;\n}\n\n.activity-reset-order {\n  margin-left: auto;\n}\n\n.activity-item {\n  position: relative;\n  display: grid;\n  grid-template-columns: minmax(0, 1fr);\n  gap: 10px;\n  min-width: 0;\n}\n\n.activity-children {\n  display: flex;\n  flex-direction: column;\n  grid-column: 1 / -1;\n  gap: 10px;\n  margin-left: 14px;\n}\n\n.activity-drag-handle {\n  display: grid;\n  place-items: center;\n  width: 32px;\n  min-height: 44px;\n  margin: 4px 6px;\n  padding: 0;\n  border: 0;\n  background: transparent;\n  color: var(--secondary-text-color, #596773);\n  cursor: grab;\n  touch-action: none;\n  user-select: none;\n}\n\n.activity-drag-handle:active {\n  cursor: grabbing;\n}\n\n.activity-drag-handle:focus-visible {\n  outline: 2px solid var(--primary-color, #03a9f4);\n  outline-offset: 2px;\n}\n\n.activity-dragging .step-card {\n  opacity: 0.45;\n}\n\n.activity-drop-before::before,\n.activity-drop-after::after {\n  content: "";\n  position: absolute;\n  left: 0;\n  right: 0;\n  height: 3px;\n  border-radius: 2px;\n  background: var(--primary-color, #03a9f4);\n  pointer-events: none;\n}\n\n.activity-drop-before::before {\n  top: -6px;\n}\n\n.activity-drop-after::after {\n  bottom: -6px;\n}\n\n.visually-hidden {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip-path: inset(50%);\n  white-space: nowrap;\n  border: 0;\n}\n\n.step-card {\n  width: calc(100% - var(--depth) * 14px);\n  margin-left: calc(var(--depth) * 14px);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  overflow: hidden;\n}\n\n.step-card-header {\n  display: grid;\n  grid-template-columns: 44px minmax(0, 1fr);\n  align-items: center;\n}\n\n.step-card-header:has(.step-row[aria-expanded="true"]) {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n}\n\n.step-card.step-disabled {\n  border-style: dashed;\n}\n\n.step-card.step-warning {\n  border-color: var(--warning-color, #ffa600);\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 10%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-card.step-warning .step-row:not(:disabled):hover {\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 18%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-row-warning {\n  display: flex;\n  align-items: flex-start;\n  gap: 8px;\n  color: var(--warning-color, #ffa600);\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-warning ha-icon {\n  --mdc-icon-size: 20px;\n  flex-shrink: 0;\n}\n\n.step-warning-message {\n  display: block;\n}\n\n.step-card.step-disabled .step-row {\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-row {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);\n  align-items: center;\n  gap: 14px;\n  text-align: left;\n  width: 100%;\n  padding: 20px;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  color: inherit;\n}\n\n.step-row:disabled {\n  opacity: 1;\n  cursor: default;\n}\n\n.step-row.editing {\n  grid-template-columns: minmax(0, 1fr);\n}\n\n.step-row:not(:disabled):hover {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-card .step-editor {\n  margin: 0;\n}\n\n.step-editor-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n/* Editor action menus */\n.step-actions-menu {\n  position: fixed;\n  inset: auto;\n  width: 240px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  margin: 0;\n  padding: 6px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 10px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-actions-menu button {\n  display: block;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  text-align: left;\n}\n\n.step-actions-menu button:hover,\n.step-actions-menu button:focus-visible {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-actions-menu [role="separator"] {\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  margin: 6px 8px;\n}\n\n.step-row-content {\n  display: flex;\n  min-width: 0;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.step-row-heading {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.step-status-badge {\n  padding: 2px 8px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 999px;\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--secondary-text-color, #596773);\n  font-size: 11px;\n  font-weight: 500;\n  line-height: 1.5;\n  white-space: nowrap;\n}\n\n.step-row strong {\n  font-size: 16px;\n  font-weight: 650;\n  overflow-wrap: anywhere;\n}\n\n.step-row-content .hint {\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-time {\n  text-align: right;\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n/* Editor dialogs */\n.step-exit-dialog,\n.step-delete-dialog,\n.step-advanced-dialog {\n  width: 440px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-exit-dialog::backdrop,\n.step-delete-dialog::backdrop,\n.step-advanced-dialog::backdrop {\n  background: #0006;\n}\n\n.step-weekdays {\n  padding: 12px;\n}\n\n.step-weekday-presets {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-bottom: 16px;\n}\n\n.step-weekday-presets button {\n  padding: 6px 10px;\n}\n\n.step-weekday-presets button[aria-pressed="true"] {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.step-weekday-options {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.step-weekday-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  min-height: 42px;\n  cursor: pointer;\n}\n\n.step-weekday-option input {\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-exit-dialog h2 {\n  margin-top: 0;\n}\n\n.step-delete-actions {\n  display: flex;\n  justify-content: flex-end;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n.danger {\n  color: var(--error-color, #b3261e);\n}\n\n.icon-button {\n  display: inline-grid;\n  place-items: center;\n  width: 42px;\n  padding: 8px;\n}\n\n.icon-button svg {\n  width: 20px;\n  height: 20px;\n  fill: currentColor;\n}\n\n.step-editor {\n  max-width: none;\n  margin: 0 auto 32px;\n  padding: 32px;\n}\n\n.step-editor h3 {\n  font-size: 23px;\n  font-weight: 600;\n  letter-spacing: -0.5px;\n  margin: 28px 0 8px;\n}\n\n.entity-native-selector {\n  display: block;\n  width: 100%;\n}\n\n.builder-footer {\n  display: flex;\n  gap: 10px;\n  align-items: center;\n  flex-wrap: wrap;\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  padding-top: 22px;\n  margin-top: 28px;\n}\n\n.builder-footer .step-editor-actions {\n  margin-top: 0;\n}\n\n.builder-footer > button:first-child {\n  margin-right: auto;\n}\n\n.step-editor details {\n  padding: 8px 0;\n}\n\n.step-editor .field {\n  margin: 18px 0;\n}\n\n.source-picker {\n  position: relative;\n}\n\n.source-picker ha-generic-picker {\n  display: block;\n  width: 100%;\n}\n\n.step-editor .error {\n  font-size: 13px;\n}\n\n.timing-options {\n  border: 0;\n  padding: 0;\n  margin: 18px 0;\n}\n\n.timing-option-row {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.timing-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 10px 12px;\n  min-height: 44px;\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 8px;\n  cursor: pointer;\n}\n\n.timing-option:has(input:checked) {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.timing-options input[type="radio"] {\n  width: 18px;\n  height: 18px;\n  padding: 0;\n  margin: 0;\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-editor .step-name-editor .field {\n  max-width: none;\n  margin: 20px 0 28px;\n}\n\n.step-editor .step-name-editor label {\n  font-weight: 600;\n}\n\n.step-editor .step-name-editor input {\n  font-family: inherit;\n  font-size: 22px;\n  font-weight: 600;\n  line-height: 1.4;\n  padding: 14px;\n}\n\n.step-editor .editor-sections {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 28px;\n}\n\n.step-editor .editor-sections > div {\n  min-width: 0;\n}\n\n.step-editor h3 {\n  margin: 16px 0 8px;\n  font-size: 20px;\n}\n\n.step-editor h4 {\n  margin: 14px 0 8px;\n  font-size: 16px;\n  font-weight: 600;\n}\n\n.step-editor .field {\n  margin: 14px 0;\n}\n\n@media (max-width: 900px) {\n  .step-editor .editor-sections {\n    grid-template-columns: 1fr;\n    gap: 20px;\n  }\n\n  .step-editor .editor-sections > div + div {\n    border-top: 1px solid var(--divider-color, #d5dce3);\n    padding-top: 12px;\n  }\n}\n\n#issues:empty {\n  display: none;\n}\n\n#issues button {\n  margin: 0 6px 8px 0;\n  text-align: left;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 18px 14px;\n  }\n\n  header {\n    gap: 10px;\n    margin-bottom: 8px;\n  }\n\n  nav {\n    margin-bottom: 24px;\n  }\n\n  .page-heading {\n    align-items: flex-start;\n    flex-direction: column;\n    gap: 12px;\n  }\n\n  .page-heading h2 {\n    font-size: 27px;\n  }\n\n  .step-row {\n    padding: 14px;\n    gap: 10px;\n    grid-template-columns: minmax(0, 1fr);\n  }\n\n  .step-row-time {\n    text-align: left;\n  }\n\n  .step-editor {\n    padding: 20px 16px;\n  }\n\n  .builder-footer {\n    gap: 6px;\n  }\n\n  .builder-footer button {\n    padding: 8px 12px;\n  }\n\n  .step-empty {\n    padding: 36px 20px;\n  }\n\n  .empty-steps {\n    line-height: 2;\n  }\n}\n';
+  '/* Shared element defaults */\np,\nli {\n  overflow-wrap: anywhere;\n}\n\n:host {\n  display: block;\n  min-height: 100%;\n  background: var(--primary-background-color, #f4f5f8);\n  color: var(--primary-text-color, #202c37);\n  font:\n    15px/1.5 system-ui,\n    sans-serif;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nmain {\n  max-width: 1200px;\n  margin: auto;\n  padding: 24px;\n}\n\nh1 {\n  margin: 0;\n  font-size: 28px;\n}\n\nh2 {\n  font-size: 21px;\n  margin: 0 0 12px;\n}\n\nh3 {\n  font-size: 17px;\n}\n\np {\n  margin: 8px 0;\n}\n\nsmall,\n.hint {\n  color: var(--secondary-text-color, #596773);\n}\n\nheader {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  flex-wrap: wrap;\n}\n\nnav,\n.row,\n.toolbar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\nnav {\n  margin: 18px 0;\n}\n\nnav button[aria-current="page"] {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nsection {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  padding: 20px;\n  margin: 16px 0;\n  min-width: 0;\n}\n\nsection section {\n  border-radius: 8px;\n}\n\ndetails {\n  padding: 12px 0;\n}\n\nsummary {\n  cursor: pointer;\n  font-weight: 600;\n}\n\nbutton,\ninput,\nselect,\ntextarea {\n  font: inherit;\n  color: inherit;\n}\n\nbutton {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #bdc9d2);\n  padding: 8px 14px;\n  border-radius: 8px;\n  cursor: pointer;\n  min-height: 42px;\n}\n\nbutton.primary {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nbutton:disabled {\n  opacity: 0.5;\n  cursor: default;\n}\n\nbutton:focus-visible,\ninput:focus-visible,\nselect:focus-visible,\ntextarea:focus-visible,\nsummary:focus-visible,\na:focus-visible,\n[tabindex]:focus-visible {\n  outline: 3px solid var(--primary-color, #167b94);\n  outline-offset: 2px;\n}\n\n.field {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  margin: 12px 0;\n  max-width: 700px;\n}\n\nlabel {\n  font-weight: 500;\n}\n\ninput:not([type="checkbox"]),\nselect,\ntextarea {\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 6px;\n  background: var(--card-background-color, #fff);\n  padding: 9px;\n  min-width: 0;\n  max-width: 100%;\n}\n\n.field input,\n.field select,\n.field textarea {\n  width: 100%;\n}\n\ntextarea {\n  resize: vertical;\n}\n\n.field textarea {\n  font:\n    14px/1.5 ui-monospace,\n    monospace;\n}\n\ninput[type="checkbox"] {\n  width: 20px;\n  height: 20px;\n  vertical-align: middle;\n}\n\nfieldset {\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 8px;\n  margin: 12px 0;\n  min-width: 0;\n}\n\n.banner {\n  padding: 12px 16px;\n  border-radius: 8px;\n  background: var(--secondary-background-color, #e3eef2);\n  margin: 12px 0;\n  overflow-wrap: anywhere;\n}\n\n.banner.unsaved {\n  border: 1px solid var(--warning-color, #e69500);\n  border-left-width: 4px;\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #e69500) 18%,\n    var(--card-background-color, #fff)\n  );\n  color: var(--primary-text-color, #202c37);\n  font-weight: 600;\n}\n\n.error,\n[aria-invalid="true"] {\n  color: var(--error-color, #b3261e);\n}\n\n[aria-invalid="true"] {\n  border-color: var(--error-color, #b3261e);\n}\n\n[hidden] {\n  display: none !important;\n}\n\n.toolbar {\n  position: sticky;\n  top: 0;\n  padding: 12px 0;\n  background: var(--primary-background-color, #f4f5f8);\n  z-index: 2;\n}\n\n.table-wrap {\n  overflow: auto;\n}\n\ntable {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 13px;\n}\n\nth,\ntd {\n  padding: 9px;\n  text-align: left;\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  max-width: 300px;\n  overflow-wrap: anywhere;\n}\n\nth {\n  white-space: nowrap;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 14px;\n  }\n\n  section {\n    padding: 14px;\n  }\n\n  nav {\n    gap: 5px;\n  }\n\n  nav button {\n    padding: 7px 10px;\n  }\n\n  .row input {\n    width: 100%;\n  }\n}\n\n/* Panel shell overrides: keep these after the shared defaults. */\nmain {\n  max-width: 1120px;\n  padding: 32px;\n}\n\nheader {\n  margin-bottom: 24px;\n}\n\nheader h1 {\n  font-size: 24px;\n  letter-spacing: -0.7px;\n}\n\nheader p {\n  margin: 2px 0;\n  font-size: 13px;\n}\n\nnav {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  gap: 24px;\n  margin: 16px 0 32px;\n}\n\nnav button,\nnav button[aria-current="page"] {\n  border: 0;\n  border-radius: 0;\n  border-bottom: 3px solid transparent;\n  background: transparent;\n  padding: 10px 0;\n  color: var(--secondary-text-color, #596773);\n}\n\nnav button[aria-current="page"] {\n  border-bottom-color: var(--primary-color, #167b94);\n  color: var(--primary-color, #167b94);\n  font-weight: 650;\n}\n\n.field-label-row {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: baseline;\n  gap: 4px 12px;\n}\n\n.field-label-row .text-button {\n  min-height: 24px;\n  padding: 0;\n  border: 0;\n  font-size: 13px;\n}\n\n.text-button {\n  border-color: transparent;\n  background: transparent;\n  color: var(--primary-color, #167b94);\n  padding-left: 4px;\n  padding-right: 4px;\n}\n\n.page-heading {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 24px;\n  margin: 24px 0;\n}\n\n.page-heading h2 {\n  font-size: 30px;\n  letter-spacing: -0.8px;\n  margin: 0;\n}\n\n.page-heading .hint {\n  max-width: 500px;\n}\n\n/* Step lists and empty states */\n.activity-intro {\n  border-left: 3px solid var(--primary-color, #167b94);\n  padding: 4px 0 4px 16px;\n  margin: 0 0 24px;\n}\n\n.activity-intro h2 {\n  font-size: 16px;\n  font-weight: 600;\n  margin: 0 0 4px;\n}\n\n.activity-intro p {\n  max-width: 68ch;\n  margin: 0;\n  font-size: 14px;\n  line-height: 1.6;\n}\n\n.step-empty {\n  text-align: center;\n  padding: 60px 32px;\n  border-style: dashed;\n}\n\n.step-empty h2 {\n  font-size: 25px;\n  letter-spacing: -0.5px;\n}\n\n.step-empty p {\n  max-width: 490px;\n  margin: 12px auto 24px;\n}\n\n.empty-steps {\n  font-size: 13px;\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-list {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  margin: 0 0 20px;\n  min-width: 0;\n}\n\n.step-card {\n  width: calc(100% - var(--depth) * 14px);\n  margin-left: calc(var(--depth) * 14px);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  overflow: hidden;\n}\n\n.step-row[aria-expanded="true"] {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n}\n\n.step-card.step-disabled {\n  border-style: dashed;\n}\n\n.step-card.step-warning {\n  border-color: var(--warning-color, #ffa600);\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 10%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-card.step-warning .step-row:not(:disabled):hover {\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 18%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-row-warning {\n  display: flex;\n  align-items: flex-start;\n  gap: 8px;\n  color: var(--warning-color, #ffa600);\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-warning ha-icon {\n  --mdc-icon-size: 20px;\n  flex-shrink: 0;\n}\n\n.step-warning-message {\n  display: block;\n}\n\n.step-card.step-disabled .step-row {\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-row {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);\n  align-items: center;\n  gap: 14px;\n  text-align: left;\n  width: 100%;\n  padding: 20px;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  color: inherit;\n}\n\n.step-row:disabled {\n  opacity: 1;\n  cursor: default;\n}\n\n.step-row.editing {\n  grid-template-columns: minmax(0, 1fr);\n}\n\n.step-row:not(:disabled):hover {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-card .step-editor {\n  margin: 0;\n}\n\n.step-editor-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n/* Editor action menus */\n.step-actions-menu {\n  position: fixed;\n  inset: auto;\n  width: 240px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  margin: 0;\n  padding: 6px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 10px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-actions-menu button {\n  display: block;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  text-align: left;\n}\n\n.step-actions-menu button:hover,\n.step-actions-menu button:focus-visible {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-actions-menu [role="separator"] {\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  margin: 6px 8px;\n}\n\n.step-row-content {\n  display: flex;\n  min-width: 0;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.step-row-heading {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.step-status-badge {\n  padding: 2px 8px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 999px;\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--secondary-text-color, #596773);\n  font-size: 11px;\n  font-weight: 500;\n  line-height: 1.5;\n  white-space: nowrap;\n}\n\n.step-row strong {\n  font-size: 16px;\n  font-weight: 650;\n  overflow-wrap: anywhere;\n}\n\n.step-row-content .hint {\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-time {\n  text-align: right;\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n/* Editor dialogs */\n.step-exit-dialog,\n.step-delete-dialog,\n.step-advanced-dialog {\n  width: 440px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-exit-dialog::backdrop,\n.step-delete-dialog::backdrop,\n.step-advanced-dialog::backdrop {\n  background: #0006;\n}\n\n.step-weekdays {\n  padding: 12px;\n}\n\n.step-weekday-presets {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-bottom: 16px;\n}\n\n.step-weekday-presets button {\n  padding: 6px 10px;\n}\n\n.step-weekday-presets button[aria-pressed="true"] {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.step-weekday-options {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.step-weekday-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  min-height: 42px;\n  cursor: pointer;\n}\n\n.step-weekday-option input {\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-exit-dialog h2 {\n  margin-top: 0;\n}\n\n.step-delete-actions {\n  display: flex;\n  justify-content: flex-end;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n.danger {\n  color: var(--error-color, #b3261e);\n}\n\n.icon-button {\n  display: inline-grid;\n  place-items: center;\n  width: 42px;\n  padding: 8px;\n}\n\n.icon-button svg {\n  width: 20px;\n  height: 20px;\n  fill: currentColor;\n}\n\n.step-editor {\n  max-width: none;\n  margin: 0 auto 32px;\n  padding: 32px;\n}\n\n.step-editor h3 {\n  font-size: 23px;\n  font-weight: 600;\n  letter-spacing: -0.5px;\n  margin: 28px 0 8px;\n}\n\n.entity-native-selector {\n  display: block;\n  width: 100%;\n}\n\n.builder-footer {\n  display: flex;\n  gap: 10px;\n  align-items: center;\n  flex-wrap: wrap;\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  padding-top: 22px;\n  margin-top: 28px;\n}\n\n.builder-footer .step-editor-actions {\n  margin-top: 0;\n}\n\n.builder-footer > button:first-child {\n  margin-right: auto;\n}\n\n.step-editor details {\n  padding: 8px 0;\n}\n\n.step-editor .field {\n  margin: 18px 0;\n}\n\n.source-picker {\n  position: relative;\n}\n\n.source-picker ha-generic-picker {\n  display: block;\n  width: 100%;\n}\n\n.step-editor .error {\n  font-size: 13px;\n}\n\n.timing-options {\n  border: 0;\n  padding: 0;\n  margin: 18px 0;\n}\n\n.timing-option-row {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.timing-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 10px 12px;\n  min-height: 44px;\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 8px;\n  cursor: pointer;\n}\n\n.timing-option:has(input:checked) {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.timing-options input[type="radio"] {\n  width: 18px;\n  height: 18px;\n  padding: 0;\n  margin: 0;\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-editor .step-name-editor .field {\n  max-width: none;\n  margin: 20px 0 28px;\n}\n\n.step-editor .step-name-editor label {\n  font-weight: 600;\n}\n\n.step-editor .step-name-editor input {\n  font-family: inherit;\n  font-size: 22px;\n  font-weight: 600;\n  line-height: 1.4;\n  padding: 14px;\n}\n\n.step-editor .editor-sections {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 28px;\n}\n\n.step-editor .editor-sections > div {\n  min-width: 0;\n}\n\n.step-editor h3 {\n  margin: 16px 0 8px;\n  font-size: 20px;\n}\n\n.step-editor h4 {\n  margin: 14px 0 8px;\n  font-size: 16px;\n  font-weight: 600;\n}\n\n.step-editor .field {\n  margin: 14px 0;\n}\n\n@media (max-width: 900px) {\n  .step-editor .editor-sections {\n    grid-template-columns: 1fr;\n    gap: 20px;\n  }\n\n  .step-editor .editor-sections > div + div {\n    border-top: 1px solid var(--divider-color, #d5dce3);\n    padding-top: 12px;\n  }\n}\n\n#issues:empty {\n  display: none;\n}\n\n#issues button {\n  margin: 0 6px 8px 0;\n  text-align: left;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 18px 14px;\n  }\n\n  header {\n    gap: 10px;\n    margin-bottom: 8px;\n  }\n\n  nav {\n    margin-bottom: 24px;\n  }\n\n  .page-heading {\n    align-items: flex-start;\n    flex-direction: column;\n    gap: 12px;\n  }\n\n  .page-heading h2 {\n    font-size: 27px;\n  }\n\n  .step-row {\n    padding: 14px;\n    gap: 10px;\n    grid-template-columns: minmax(0, 1fr);\n  }\n\n  .step-row-time {\n    text-align: left;\n  }\n\n  .step-editor {\n    padding: 20px 16px;\n  }\n\n  .builder-footer {\n    gap: 6px;\n  }\n\n  .builder-footer button {\n    padding: 8px 12px;\n  }\n\n  .step-empty {\n    padding: 36px 20px;\n  }\n\n  .empty-steps {\n    line-height: 2;\n  }\n}\n';
 
 // node_modules/.pnpm/esm-env@1.2.2/node_modules/esm-env/dev-fallback.js
 var node_env = globalThis.process?.env?.NODE_ENV;
@@ -5413,16 +5395,6 @@ function update_effect(effect2) {
     }
   }
 }
-async function tick() {
-  if (async_mode_flag) {
-    return new Promise((f) => {
-      requestAnimationFrame(() => f());
-      setTimeout(() => f());
-    });
-  }
-  await Promise.resolve();
-  flushSync();
-}
 function get(signal) {
   var flags2 = signal.f;
   var is_derived = (flags2 & DERIVED) !== 0;
@@ -6014,20 +5986,6 @@ function append(anchor, dom) {
     /** @type {Node} */
     dom,
   );
-}
-function props_id() {
-  if (
-    hydrating &&
-    hydrate_node &&
-    hydrate_node.nodeType === COMMENT_NODE &&
-    hydrate_node.textContent?.startsWith(`$`)
-  ) {
-    const id = hydrate_node.textContent.substring(1);
-    hydrate_next();
-    return id;
-  }
-  (window.__svelte ??= {}).uid ??= 1;
-  return `c${window.__svelte.uid++}`;
 }
 
 // node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/reactivity/create-subscriber.js
@@ -8811,12 +8769,6 @@ function onMount(fn) {
     });
   }
 }
-function onDestroy(fn) {
-  if (component_context === null) {
-    lifecycle_outside_component("onDestroy");
-  }
-  onMount(() => () => untrack(fn));
-}
 function init_update_callbacks(context) {
   var l =
     /** @type {ComponentContextLegacy} */
@@ -9851,6 +9803,34 @@ function actionSummary(entry, t) {
   }
   return entry.action;
 }
+function stepTree(entries) {
+  const seen2 = /* @__PURE__ */ new Set(),
+    ordered = [];
+  const append2 = (entry, depth) => {
+    if (seen2.has(entry.id)) {
+      return;
+    }
+    seen2.add(entry.id);
+    ordered.push({ entry, depth });
+    for (const child2 of entries) {
+      if (child2.timing.relative_to?.step === entry.id) {
+        append2(child2, depth + 1);
+      }
+    }
+  };
+  const isRoot = (step) =>
+    !step.timing.relative_to?.step ||
+    entries.every((parent) => parent.id !== step.timing.relative_to?.step);
+  for (const step of entries) {
+    if (isRoot(step)) {
+      append2(step, 0);
+    }
+  }
+  for (const step of entries) {
+    append2(step, 0);
+  }
+  return ordered;
+}
 
 // custom_components/occupied/frontend/src/lib/actions/dom.ts
 function properties(node, values) {
@@ -10192,7 +10172,7 @@ function AdvancedStepSettings($$anchor, $$props) {
         [
           () =>
             get(selectedDays).length === selection().length &&
-            selection().every((day2) => get(selectedDays).includes(day2)),
+            selection().every((day) => get(selectedDays).includes(day)),
           () => get(t)(label()),
         ],
       );
@@ -10208,8 +10188,8 @@ function AdvancedStepSettings($$anchor, $$props) {
     div_1,
     22,
     () => days,
-    (day2) => day2,
-    ($$anchor2, day2, index2) => {
+    (day) => day,
+    ($$anchor2, day, index2) => {
       var label_1 = root_13();
       var input = child(label_1);
       remove_input_defaults(input);
@@ -10218,12 +10198,12 @@ function AdvancedStepSettings($$anchor, $$props) {
       reset(label_1);
       template_effect(
         ($0, $1) => {
-          set_value(input, day2);
+          set_value(input, day);
           set_checked(input, $0);
           set_text(text_4, $1);
         },
         [
-          () => get(selectedDays).includes(day2),
+          () => get(selectedDays).includes(day),
           () => get(t)(weekdayNames[get(index2)]),
         ],
       );
@@ -10232,9 +10212,7 @@ function AdvancedStepSettings($$anchor, $$props) {
         set2(
           selectedDays,
           days.filter((candidate) =>
-            candidate === day2
-              ? checked
-              : get(selectedDays).includes(candidate),
+            candidate === day ? checked : get(selectedDays).includes(candidate),
           ),
           true,
         );
@@ -13305,570 +13283,6 @@ function StepEditor($$anchor, $$props) {
 }
 delegate(["click"]);
 
-// custom_components/occupied/frontend/src/lib/utils/activity-order.ts
-var day = 86400;
-var solarDefaults = {
-  dawn: 5 * 3600,
-  sunrise: 6 * 3600,
-  noon: 12 * 3600,
-  sunset: 18 * 3600,
-  dusk: 19 * 3600,
-  midnight: 0,
-};
-var solarAttributes = {
-  dawn: "next_dawn",
-  sunrise: "next_rising",
-  noon: "next_noon",
-  sunset: "next_setting",
-  dusk: "next_dusk",
-  midnight: "next_midnight",
-};
-function clockSeconds(value) {
-  const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
-  if (!match) {
-    return void 0;
-  }
-  const [, hours, minutes2, seconds = "0"] = match;
-  return Number(hours) > 23 || Number(minutes2) > 59 || Number(seconds) > 59
-    ? void 0
-    : Number(hours) * 3600 + Number(minutes2) * 60 + Number(seconds);
-}
-function chronologicalEntries(entries, program, collection, hass) {
-  const sourceSeconds = (value) => {
-    if (typeof value !== "string") {
-      return void 0;
-    }
-    const clock = clockSeconds(value);
-    if (clock !== void 0) {
-      return clock;
-    }
-    const local = /^\d{4}-\d{2}-\d{2}[ T](\d{2}:\d{2}(?::\d{2})?)$/.exec(value);
-    if (local) {
-      return clockSeconds(local[1]);
-    }
-    const timestamp = Date.parse(value);
-    if (!Number.isFinite(timestamp)) {
-      return void 0;
-    }
-    const parts = new Intl.DateTimeFormat("en-GB", {
-      timeZone: hass?.config?.time_zone || "UTC",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hourCycle: "h23",
-    }).format(new Date(timestamp));
-    return clockSeconds(parts);
-  };
-  const resolve = (timing, seen2) => {
-    let start;
-    if (timing.absolute_time) {
-      start = clockSeconds(timing.absolute_time.start);
-    } else if (timing.relative_to) {
-      const relative = timing.relative_to;
-      let anchor;
-      if (relative.step) {
-        anchor = stepStart(relative.step, seen2);
-      } else if (relative.random) {
-        anchor = randomEnd(relative.random, seen2);
-      } else if (relative.sun) {
-        anchor =
-          sourceSeconds(
-            hass?.states?.["sun.sun"]?.attributes[
-              solarAttributes[relative.sun]
-            ],
-          ) ?? solarDefaults[relative.sun];
-      } else if (relative.entity) {
-        const entity = hass?.states?.[relative.entity];
-        anchor = sourceSeconds(
-          relative.attribute
-            ? entity?.attributes[relative.attribute]
-            : entity?.state,
-        );
-      }
-      if (anchor !== void 0) {
-        const offset = relative.start_offset;
-        start =
-          anchor + durationSeconds(!offset || offset === "0" ? "0s" : offset);
-      }
-    }
-    if (start !== void 0 && timing.latest_at) {
-      const latest = resolve(timing.latest_at, seen2);
-      if (latest !== void 0) {
-        start = Math.min(start, latest);
-      }
-    }
-    return start !== void 0 && Number.isFinite(start) ? start : void 0;
-  };
-  const stepStart = (id, seen2) => {
-    const key2 = `step:${id}`;
-    const step = program.steps?.[id];
-    return !step || seen2.has(key2)
-      ? void 0
-      : resolve(step.timing, /* @__PURE__ */ new Set([...seen2, key2]));
-  };
-  const randomEnd = (id, seen2) => {
-    const key2 = `random:${id}`;
-    const event2 = program.random?.[id];
-    if (!event2 || seen2.has(key2)) {
-      return void 0;
-    }
-    const path = /* @__PURE__ */ new Set([...seen2, key2]);
-    const start = resolve(event2.start, path);
-    if (event2.end.duration) {
-      return start === void 0
-        ? void 0
-        : start + durationSeconds(event2.end.duration.min);
-    }
-    const end = resolve(event2.end, path);
-    return end !== void 0 && start !== void 0 && end <= start ? end + day : end;
-  };
-  const times = new Map(
-    entries.map(({ id }) => {
-      const time =
-        collection === "steps"
-          ? stepStart(id, /* @__PURE__ */ new Set())
-          : resolve(
-              program.random?.[id]?.start || {},
-              /* @__PURE__ */ new Set([`random:${id}`]),
-            );
-      return [id, time === void 0 ? Infinity : ((time % day) + day) % day];
-    }),
-  );
-  return [...entries].sort((a, b) => times.get(a.id) - times.get(b.id));
-}
-function applyActivityOrder(entries, order) {
-  if (!order) {
-    return entries;
-  }
-  const positions = new Map(order.map((id, index2) => [id, index2]));
-  return [...entries].sort(
-    (a, b) =>
-      (positions.get(a.id) ?? Infinity) - (positions.get(b.id) ?? Infinity),
-  );
-}
-function activityTree(entries, parentId) {
-  const nodes = new Map(
-    entries.map((entry) => [entry.id, { entry, children: [] }]),
-  );
-  const parents = new Map(
-    entries.map((entry) => [entry.id, parentId?.(entry)]),
-  );
-  const roots = [];
-  for (const entry of entries) {
-    const seen2 = /* @__PURE__ */ new Set([entry.id]);
-    let ancestor = parents.get(entry.id);
-    while (ancestor && nodes.has(ancestor) && !seen2.has(ancestor)) {
-      seen2.add(ancestor);
-      ancestor = parents.get(ancestor);
-    }
-    const parent =
-      ancestor && seen2.has(ancestor)
-        ? void 0
-        : nodes.get(parents.get(entry.id) || "");
-    (parent?.children || roots).push(nodes.get(entry.id));
-  }
-  return roots;
-}
-function moveActivityInTree(nodes, id, index2) {
-  const siblings = nodes.map((node) => node.entry.id);
-  const order = moveActivity(siblings, id, index2);
-  const byId = new Map(nodes.map((node) => [node.entry.id, node]));
-  return order.flatMap((key2) => [
-    key2,
-    ...moveActivityInTree(byId.get(key2).children, id, index2),
-  ]);
-}
-function moveActivity(order, id, index2) {
-  if (!order.includes(id)) {
-    return order;
-  }
-  const next2 = order.filter((item) => item !== id);
-  next2.splice(Math.max(0, Math.min(index2, next2.length)), 0, id);
-  return next2;
-}
-function readActivityOrder(key2) {
-  try {
-    const value = JSON.parse(localStorage.getItem(key2) || "null");
-    return Array.isArray(value) && value.every((id) => typeof id === "string")
-      ? [...new Set(value)]
-      : null;
-  } catch {
-    return null;
-  }
-}
-function writeActivityOrder(key2, order) {
-  try {
-    if (order) {
-      localStorage.setItem(key2, JSON.stringify(order));
-    } else {
-      localStorage.removeItem(key2);
-    }
-  } catch {}
-}
-
-// custom_components/occupied/frontend/src/lib/components/shared/ActivityList.svelte
-var root_110 = from_html(
-  `<button type="button" class="activity-drag-handle"><ha-icon></ha-icon></button>`,
-  2,
-);
-var root_28 = from_html(`<div class="activity-children"><!></div>`);
-var root_38 = from_html(`<div><!> <!></div>`);
-var root_45 = from_html(
-  `<button type="button" class="activity-reset-order"> </button>`,
-);
-var root_55 = from_html(`<div class="activity-list-actions"><!> <!></div>`);
-var root_64 = from_html(
-  `<span class="visually-hidden"> </span> <div class="visually-hidden" role="status" aria-live="polite"> </div> <div class="step-list"><!></div> <!>`,
-  1,
-);
-function ActivityList($$anchor, $$props) {
-  const instructionsId = props_id();
-  push($$props, true);
-  const group = ($$anchor2, nodes = noop) => {
-    const remaining = user_derived(() =>
-      nodes().filter((node) => node.entry.id !== get(dragging)),
-    );
-    var fragment = comment();
-    var node_1 = first_child(fragment);
-    each(
-      node_1,
-      17,
-      nodes,
-      (node) => node.entry.id,
-      ($$anchor3, node) => {
-        const entry = user_derived(() => get(node).entry);
-        const remainingIndex = user_derived(() =>
-          get(remaining).findIndex((item) => item.entry.id === get(entry).id),
-        );
-        const activeGroup = user_derived(() =>
-          nodes().some((item) => item.entry.id === get(dragging)),
-        );
-        var div = root_38();
-        let classes;
-        {
-          const dragHandle = ($$anchor4) => {
-            var button = root_110();
-            var ha_icon = child(button);
-            set_custom_element_data(ha_icon, "icon", "mdi:drag");
-            set_custom_element_data(ha_icon, "aria-hidden", "true");
-            reset(button);
-            template_effect(
-              ($0, $1) => {
-                set_attribute2(button, "aria-label", $0);
-                set_attribute2(button, "aria-describedby", instructionsId);
-                set_attribute2(button, "title", $1);
-                button.disabled = disabled() || nodes().length < 2;
-              },
-              [
-                () =>
-                  $$props
-                    .t("reorder_activity")
-                    .replace("{name}", () => get(entry2).name),
-                () => $$props.t("reorder_activity_hint"),
-              ],
-            );
-            delegated("pointerdown", button, (event2) =>
-              startDrag(event2, get(entry2).id, nodes()),
-            );
-            delegated("keydown", button, (event2) =>
-              keydown(event2, get(entry2).id, nodes()),
-            );
-            append($$anchor4, button);
-          };
-          const entry2 = user_derived(() => get(node).entry);
-          const remainingIndex2 = user_derived(() =>
-            get(remaining).findIndex(
-              (item) => item.entry.id === get(entry2).id,
-            ),
-          );
-          const activeGroup2 = user_derived(() =>
-            nodes().some((item) => item.entry.id === get(dragging)),
-          );
-          var node_2 = child(div);
-          snippet(
-            node_2,
-            () => $$props.children,
-            () => get(entry2),
-            () => dragHandle,
-          );
-          var node_3 = sibling(node_2, 2);
-          {
-            var consequent = ($$anchor4) => {
-              var div_1 = root_28();
-              var node_4 = child(div_1);
-              group(node_4, () => get(node).children);
-              reset(div_1);
-              append($$anchor4, div_1);
-            };
-            if_block(node_3, ($$render) => {
-              if (get(node).children.length) $$render(consequent);
-            });
-          }
-          reset(div);
-        }
-        template_effect(() => {
-          classes = set_class(div, 1, "activity-item", null, classes, {
-            "activity-dragging": get(dragging) === get(entry).id,
-            "activity-drop-before":
-              get(activeGroup) &&
-              get(dragging) !== get(entry).id &&
-              get(target) === get(remainingIndex),
-            "activity-drop-after":
-              get(activeGroup) &&
-              get(dragging) !== get(entry).id &&
-              get(remainingIndex) === get(remaining).length - 1 &&
-              get(target) === nodes().length - 1,
-          });
-          set_attribute2(div, "data-activity-id", get(entry).id);
-        });
-        append($$anchor3, div);
-      },
-    );
-    append($$anchor2, fragment);
-  };
-  let disabled = prop($$props, "disabled", 3, false);
-  let preference = state(null);
-  let order = user_derived(() =>
-    get(preference)?.key === $$props.storageKey
-      ? get(preference).order
-      : readActivityOrder($$props.storageKey),
-  );
-  let sorted2 = user_derived(() =>
-    applyActivityOrder($$props.entries, get(order)),
-  );
-  let tree = user_derived(() => activityTree(get(sorted2), $$props.parentId));
-  let list;
-  let dragging = state(null);
-  let target = state(null);
-  let announcement = state("");
-  let cancelDrag = null;
-  onDestroy(() => cancelDrag?.());
-  function save2(next2) {
-    set2(preference, { key: $$props.storageKey, order: next2 }, true);
-    writeActivityOrder($$props.storageKey, next2);
-  }
-  async function move2(id, index2, siblings) {
-    const next2 = moveActivityInTree(get(tree), id, index2);
-    const current = moveActivityInTree(get(tree), "", 0);
-    if (next2.every((item, position) => item === current[position])) {
-      return;
-    }
-    save2(next2);
-    const entry = $$props.entries.find((item) => item.id === id);
-    set2(
-      announcement,
-      $$props
-        .t("activity_moved")
-        .replace("{name}", () => entry.name)
-        .replace("{position}", () =>
-          String(Math.max(0, Math.min(index2, siblings.length - 1)) + 1),
-        )
-        .replace("{total}", () => String(siblings.length)),
-      true,
-    );
-    await tick();
-    const row = [...list.querySelectorAll(".activity-item")].find(
-      (item) => item.dataset.activityId === id,
-    );
-    row?.querySelector(".activity-drag-handle")?.focus({ preventScroll: true });
-  }
-  function keydown(event2, id, siblings) {
-    if (event2.key === "Escape" && cancelDrag) {
-      event2.preventDefault();
-      cancelDrag();
-      return;
-    }
-    if (cancelDrag) {
-      return;
-    }
-    const index2 = siblings.findIndex((node) => node.entry.id === id);
-    const targets = {
-      ArrowUp: index2 - 1,
-      ArrowDown: index2 + 1,
-      Home: 0,
-      End: siblings.length - 1,
-    };
-    if (disabled() || targets[event2.key] === void 0) {
-      return;
-    }
-    event2.preventDefault();
-    void move2(id, targets[event2.key], siblings);
-  }
-  function scrollContainer(element2) {
-    let current = element2;
-    while (current) {
-      if (
-        current.scrollHeight > current.clientHeight &&
-        /auto|scroll/.test(getComputedStyle(current).overflowY)
-      ) {
-        return current;
-      }
-      const root30 = current.getRootNode();
-      current =
-        current.assignedSlot ||
-        current.parentElement ||
-        (root30 instanceof ShadowRoot ? root30.host : null);
-    }
-    return document.scrollingElement;
-  }
-  function startDrag(event2, id, siblings) {
-    if (
-      disabled() ||
-      siblings.length < 2 ||
-      event2.button !== 0 ||
-      !event2.isPrimary
-    ) {
-      return;
-    }
-    cancelDrag?.();
-    const handle = event2.currentTarget;
-    const group2 = handle.closest(".activity-item").parentElement;
-    const scroller = scrollContainer(handle);
-    const initialY = event2.clientY;
-    const initialKey = $$props.storageKey;
-    const initialParents = get(sorted2).map((entry) =>
-      $$props.parentId?.(entry),
-    );
-    const initialIds = get(sorted2).map((entry) => entry.id);
-    let clientY = initialY;
-    let frame = 0;
-    handle.setPointerCapture(event2.pointerId);
-    const updateTarget = () => {
-      const rows = [
-        ...group2.querySelectorAll(":scope > .activity-item"),
-      ].filter((row) => row.dataset.activityId !== id);
-      const index2 = rows.findIndex((row) => {
-        const rect = row.getBoundingClientRect();
-        return clientY < rect.top + rect.height / 2;
-      });
-      set2(target, index2 === -1 ? rows.length : index2, true);
-    };
-    const autoScroll = () => {
-      const rect = scroller.getBoundingClientRect();
-      const top = Math.max(0, rect.top);
-      const bottom = Math.min(window.innerHeight, rect.bottom);
-      if (clientY < top + 48) {
-        scroller.scrollTop -= 12;
-      } else if (clientY > bottom - 48) {
-        scroller.scrollTop += 12;
-      }
-      updateTarget();
-      frame = requestAnimationFrame(autoScroll);
-    };
-    const update2 = (pointer) => {
-      if (pointer.pointerId !== event2.pointerId) {
-        return;
-      }
-      clientY = pointer.clientY;
-      if (!get(dragging) && Math.abs(clientY - initialY) < 6) {
-        return;
-      }
-      set2(dragging, id, true);
-      updateTarget();
-      if (!frame) {
-        frame = requestAnimationFrame(autoScroll);
-      }
-    };
-    const finish = (commit) => {
-      const index2 = get(target);
-      cancelAnimationFrame(frame);
-      cancelDrag = null;
-      set2(dragging, null);
-      set2(target, null);
-      handle.removeEventListener("pointermove", update2);
-      handle.removeEventListener("pointerup", stop);
-      handle.removeEventListener("pointercancel", stop);
-      handle.removeEventListener("lostpointercapture", stop);
-      if (handle.hasPointerCapture(event2.pointerId)) {
-        handle.releasePointerCapture(event2.pointerId);
-      }
-      if (
-        commit &&
-        index2 !== null &&
-        !disabled() &&
-        $$props.storageKey === initialKey &&
-        initialIds.every(
-          (item, position) =>
-            item === get(sorted2)[position]?.id &&
-            initialParents[position] ===
-              $$props.parentId?.(get(sorted2)[position]),
-        ) &&
-        initialIds.length === get(sorted2).length
-      ) {
-        void move2(id, index2, siblings);
-      }
-    };
-    const stop = (pointer) => {
-      if (pointer.pointerId === event2.pointerId) {
-        finish(pointer.type === "pointerup" && get(dragging) === id);
-      }
-    };
-    cancelDrag = () => finish(false);
-    handle.addEventListener("pointermove", update2);
-    handle.addEventListener("pointerup", stop);
-    handle.addEventListener("pointercancel", stop);
-    handle.addEventListener("lostpointercapture", stop);
-  }
-  var fragment_1 = root_64();
-  var span = first_child(fragment_1);
-  var text2 = only_child(span, true);
-  var div_2 = sibling(span, 2);
-  var text_1 = only_child(div_2, true);
-  var div_3 = sibling(div_2, 2);
-  var node_5 = child(div_3);
-  group(node_5, () => get(tree));
-  reset(div_3);
-  bind_this(
-    div_3,
-    ($$value) => (list = $$value),
-    () => list,
-  );
-  var node_6 = sibling(div_3, 2);
-  {
-    var consequent_2 = ($$anchor2) => {
-      var div_4 = root_55();
-      var node_7 = child(div_4);
-      snippet(node_7, () => $$props.createAction ?? noop);
-      var node_8 = sibling(node_7, 2);
-      {
-        var consequent_1 = ($$anchor3) => {
-          var button_1 = root_45();
-          var text_2 = only_child(button_1, true);
-          template_effect(
-            ($0) => {
-              button_1.disabled = disabled();
-              set_text(text_2, $0);
-            },
-            [() => $$props.t("reset_chronological_order")],
-          );
-          delegated("click", button_1, () => save2(null));
-          append($$anchor3, button_1);
-        };
-        if_block(node_8, ($$render) => {
-          if (get(order)) $$render(consequent_1);
-        });
-      }
-      reset(div_4);
-      append($$anchor2, div_4);
-    };
-    if_block(node_6, ($$render) => {
-      if ($$props.createAction || get(order)) $$render(consequent_2);
-    });
-  }
-  template_effect(
-    ($0) => {
-      set_attribute2(span, "id", instructionsId);
-      set_text(text2, $0);
-      set_text(text_1, get(announcement));
-      set_attribute2(div_3, "aria-label", $$props.label);
-    },
-    [() => $$props.t("reorder_activity_hint")],
-  );
-  append($$anchor, fragment_1);
-  pop();
-}
-delegate(["pointerdown", "keydown", "click"]);
-
 // custom_components/occupied/frontend/src/lib/components/shared/ActivityIntro.svelte
 var root15 = from_html(
   `<div class="activity-intro"><h2> </h2> <p class="hint"> </p></div>`,
@@ -13891,21 +13305,21 @@ function ActivityIntro($$anchor, $$props) {
 var root16 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-step=""> </button></section>`,
 );
-var root_111 = from_html(`<span class="step-status-badge"> </span>`);
-var root_29 = from_html(`<span class="step-warning-message"> </span>`);
-var root_39 = from_html(
+var root_110 = from_html(`<span class="step-status-badge"> </span>`);
+var root_28 = from_html(`<span class="step-warning-message"> </span>`);
+var root_38 = from_html(
   `<span class="step-row-warning"><ha-icon></ha-icon> <span></span></span>`,
   2,
 );
-var root_46 = from_html(`<span class="step-row-time"> </span>`);
-var root_56 = from_html(`<div><!></div>`);
-var root_65 = from_html(
-  `<div style="--depth:0"><div class="step-card-header"><!> <button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong> <!></span> <span class="hint"> </span></span> <!></button></div> <!></div>`,
+var root_45 = from_html(`<span class="step-row-time"> </span>`);
+var root_55 = from_html(`<div><!></div>`);
+var root_64 = from_html(
+  `<div><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong> <!></span> <span class="hint"> </span></span> <!></button> <!></div>`,
 );
 var root_73 = from_html(
-  `<button type="button" class="primary" data-create-step=""> </button>`,
+  `<!> <div class="step-layout"><div class="step-list"></div></div> <button type="button" class="primary" data-create-step=""> </button>`,
+  1,
 );
-var root_82 = from_html(`<!> <div class="step-layout"><!></div>`, 1);
 function StepsView($$anchor, $$props) {
   push($$props, true);
   let data = user_derived(() => {
@@ -13918,12 +13332,6 @@ function StepsView($$anchor, $$props) {
     return {
       t: $$props.panel.t,
       entries: entries2,
-      ordered: chronologicalEntries(
-        entries2,
-        $$props.panel.draft,
-        "steps",
-        $$props.panel._hass,
-      ),
       issues: $$props.panel
         .visibleIssues()
         .map((issue) => ({ issue, stepId: warningStepId(issue, entries2) })),
@@ -13931,7 +13339,6 @@ function StepsView($$anchor, $$props) {
   });
   let t = user_derived(() => get(data).t),
     entries = user_derived(() => get(data).entries),
-    ordered = user_derived(() => get(data).ordered),
     issues = user_derived(() => get(data).issues);
   var fragment = comment();
   var node = first_child(fragment);
@@ -13962,7 +13369,7 @@ function StepsView($$anchor, $$props) {
       append($$anchor2, section);
     };
     var alternate = ($$anchor2) => {
-      var fragment_1 = root_82();
+      var fragment_1 = root_73();
       var node_1 = first_child(fragment_1);
       {
         let $0 = user_derived(() => get(t)("scheduled_activity"));
@@ -13977,9 +13384,15 @@ function StepsView($$anchor, $$props) {
         });
       }
       var div = sibling(node_1, 2);
-      var node_2 = child(div);
-      {
-        const children = ($$anchor3, entry = noop, dragHandle = noop) => {
+      var div_1 = child(div);
+      each(
+        div_1,
+        21,
+        () => stepTree(get(entries)),
+        ({ entry, depth }) => entry.id,
+        ($$anchor3, $$item) => {
+          let entry = () => get($$item).entry;
+          let depth = () => get($$item).depth;
           const warnings = user_derived(() =>
             get(issues)
               .filter(({ stepId }) => stepId === entry().id)
@@ -14002,29 +13415,26 @@ function StepsView($$anchor, $$props) {
               (!$$props.panel.stepEditor &&
                 $$props.panel.selectedStep === entry().id),
           );
-          var div_1 = root_65();
+          var div_2 = root_64();
           let classes;
-          var div_2 = child(div_1);
-          var node_3 = child(div_2);
-          snippet(node_3, dragHandle);
-          var button_1 = sibling(node_3, 2);
+          var button_1 = child(div_2);
           let classes_1;
           var span = child(button_1);
           var span_1 = child(span);
           var strong = child(span_1);
           var text_3 = only_child(strong, true);
-          var node_4 = sibling(strong, 2);
+          var node_2 = sibling(strong, 2);
           {
             var consequent_1 = ($$anchor4) => {
-              var span_2 = root_111();
+              var span_2 = root_110();
               var text_4 = only_child(span_2, true);
               template_effect(
-                ($02) => set_text(text_4, $02),
+                ($0) => set_text(text_4, $0),
                 [() => get(t)("disabled")],
               );
               append($$anchor4, span_2);
             };
-            if_block(node_4, ($$render) => {
+            if_block(node_2, ($$render) => {
               if (get(stepDisabled)) $$render(consequent_1);
             });
           }
@@ -14032,10 +13442,10 @@ function StepsView($$anchor, $$props) {
           var span_3 = sibling(span_1, 2);
           var text_5 = only_child(span_3);
           reset(span);
-          var node_5 = sibling(span, 2);
+          var node_3 = sibling(span, 2);
           {
             var consequent_2 = ($$anchor4) => {
-              var span_4 = root_39();
+              var span_4 = root_38();
               var ha_icon = child(span_4);
               set_custom_element_data(ha_icon, "icon", "mdi:alert-outline");
               set_custom_element_data(ha_icon, "aria-hidden", "true");
@@ -14046,7 +13456,7 @@ function StepsView($$anchor, $$props) {
                 () => get(warnings),
                 (warning) => warning,
                 ($$anchor5, warning) => {
-                  var span_6 = root_29();
+                  var span_6 = root_28();
                   var text_6 = only_child(span_6, true);
                   template_effect(() => set_text(text_6, warning.message));
                   append($$anchor5, span_6);
@@ -14060,10 +13470,10 @@ function StepsView($$anchor, $$props) {
               append($$anchor4, span_4);
             };
             var consequent_3 = ($$anchor4) => {
-              var span_7 = root_46();
+              var span_7 = root_45();
               var text_7 = only_child(span_7, true);
               template_effect(
-                ($02) => set_text(text_7, $02),
+                ($0) => set_text(text_7, $0),
                 [
                   () =>
                     timingSummary(
@@ -14077,18 +13487,17 @@ function StepsView($$anchor, $$props) {
               );
               append($$anchor4, span_7);
             };
-            if_block(node_5, ($$render) => {
+            if_block(node_3, ($$render) => {
               if (get(warnings).length) $$render(consequent_2);
               else if (!get(editing)) $$render(consequent_3, 1);
             });
           }
           reset(button_1);
-          reset(div_2);
-          var node_6 = sibling(div_2, 2);
+          var node_4 = sibling(button_1, 2);
           {
             var consequent_5 = ($$anchor4) => {
-              var div_3 = root_56();
-              var node_7 = child(div_3);
+              var div_3 = root_55();
+              var node_5 = child(div_3);
               {
                 var consequent_4 = ($$anchor5) => {
                   StepEditor($$anchor5, {
@@ -14100,7 +13509,7 @@ function StepsView($$anchor, $$props) {
                     },
                   });
                 };
-                if_block(node_7, ($$render) => {
+                if_block(node_5, ($$render) => {
                   if ($$props.panel.stepEditor) $$render(consequent_4);
                 });
               }
@@ -14110,18 +13519,19 @@ function StepsView($$anchor, $$props) {
               );
               append($$anchor4, div_3);
             };
-            if_block(node_6, ($$render) => {
+            if_block(node_4, ($$render) => {
               if (get(expanded)) $$render(consequent_5);
             });
           }
-          reset(div_1);
+          reset(div_2);
           template_effect(
-            ($02, $12) => {
-              classes = set_class(div_1, 1, "step-card", null, classes, {
+            ($0, $1, $2) => {
+              classes = set_class(div_2, 1, "step-card", null, classes, {
                 "step-disabled": get(stepDisabled),
                 "step-warning": get(warnings).length > 0,
               });
-              set_attribute2(div_1, "data-step-id", entry().id);
+              set_attribute2(div_2, "data-step-id", entry().id);
+              set_style(div_2, $0);
               set_attribute2(button_1, "id", `step-card-${entry().id}`);
               classes_1 = set_class(button_1, 1, "step-row", null, classes_1, {
                 editing: get(editing) && get(warnings).length === 0,
@@ -14143,11 +13553,12 @@ function StepsView($$anchor, $$props) {
               set_text(text_3, entry().name);
               set_text(
                 text_5,
-                `${$02 ?? ""} \xB7
-                  ${$12 ?? ""}`,
+                `${$1 ?? ""} \xB7
+                ${$2 ?? ""}`,
               );
             },
             [
+              () => `--depth:${Math.min(depth(), 3)}`,
               () => actionSummary(entry(), get(t)),
               () =>
                 entitySummary(
@@ -14158,48 +13569,22 @@ function StepsView($$anchor, $$props) {
             ],
           );
           delegated("click", button_1, () => openStep($$props.panel, entry()));
-          append($$anchor3, div_1);
-        };
-        const createAction = ($$anchor3) => {
-          var button_2 = root_73();
-          var text_8 = only_child(button_2, true);
-          template_effect(
-            ($02) => {
-              button_2.disabled = $$props.panel.busy;
-              set_text(text_8, $02);
-            },
-            [() => get(t)("create_step")],
-          );
-          delegated("click", button_2, () => startStep($$props.panel));
-          append($$anchor3, button_2);
-        };
-        let $0 = user_derived(
-          () => `occupied:activity-order:${$$props.panel.selectedEntry}:steps`,
-        );
-        let $1 = user_derived(() => get(t)("steps"));
-        ActivityList(node_2, {
-          get entries() {
-            return get(ordered);
-          },
-          parentId: (entry) => entry.timing.relative_to?.step,
-          get storageKey() {
-            return get($0);
-          },
-          get label() {
-            return get($1);
-          },
-          get disabled() {
-            return $$props.panel.busy;
-          },
-          get t() {
-            return get(t);
-          },
-          children,
-          createAction,
-          $$slots: { default: true, createAction: true },
-        });
-      }
+          append($$anchor3, div_2);
+        },
+      );
+      reset(div_1);
       reset(div);
+      var button_2 = sibling(div, 2);
+      var text_8 = only_child(button_2, true);
+      template_effect(
+        ($0, $1) => {
+          set_attribute2(div_1, "aria-label", $0);
+          button_2.disabled = $$props.panel.busy;
+          set_text(text_8, $1);
+        },
+        [() => get(t)("steps"), () => get(t)("create_step")],
+      );
+      delegated("click", button_2, () => startStep($$props.panel));
       append($$anchor2, fragment_1);
     };
     if_block(node, ($$render) => {
@@ -14216,17 +13601,17 @@ delegate(["click"]);
 var root17 = from_html(
   `<p class="managed-warning svelte-111t7iy" role="alert"> </p>`,
 );
-var root_112 = from_html(
+var root_111 = from_html(
   `<fieldset class="svelte-111t7iy"><legend> </legend> <label for="run-condition-entity" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label for="run-condition-states" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <p class="hint"> </p> <label for="run-condition-delay" class="svelte-111t7iy"> </label> <input id="run-condition-delay" type="text"/> <!> <p class="hint"> </p> <label for="run-condition-offEntities" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <p class="hint"> </p> <!></fieldset>`,
   2,
 );
-var root_210 = from_html(`<p class="hint"> </p>`);
-var root_310 = from_html(`<p> </p>`);
-var root_47 = from_html(`<p role="status"> </p> <!>`, 1);
-var root_57 = from_html(`<span> </span>`);
-var root_66 = from_html(`<p class="counts svelte-111t7iy"></p>`);
+var root_29 = from_html(`<p class="hint"> </p>`);
+var root_39 = from_html(`<p> </p>`);
+var root_46 = from_html(`<p role="status"> </p> <!>`, 1);
+var root_56 = from_html(`<span> </span>`);
+var root_65 = from_html(`<p class="counts svelte-111t7iy"></p>`);
 var root_74 = from_html(`<li> </li>`);
-var root_83 = from_html(
+var root_82 = from_html(
   `<details><summary> </summary> <!> <ul></ul></details>`,
 );
 var root_92 = from_html(
@@ -14309,7 +13694,7 @@ function RunConditionSettings($$anchor, $$props) {
       var node_1 = sibling(label, 2);
       {
         var consequent_1 = ($$anchor3) => {
-          var fieldset = root_112();
+          var fieldset = root_111();
           var legend = child(fieldset);
           var text_2 = only_child(legend, true);
           var label_1 = sibling(legend, 2);
@@ -14542,7 +13927,7 @@ function RunConditionSettings($$anchor, $$props) {
       var node_7 = sibling(node_1, 2);
       {
         var consequent_2 = ($$anchor3) => {
-          var p_4 = root_210();
+          var p_4 = root_29();
           var text_12 = only_child(p_4, true);
           template_effect(
             ($0) => set_text(text_12, $0),
@@ -14563,13 +13948,13 @@ function RunConditionSettings($$anchor, $$props) {
       var node_8 = sibling(div, 2);
       {
         var consequent_4 = ($$anchor3) => {
-          var fragment_1 = root_47();
+          var fragment_1 = root_46();
           var p_5 = first_child(fragment_1);
           var text_15 = only_child(p_5, true);
           var node_9 = sibling(p_5, 2);
           {
             var consequent_3 = ($$anchor4) => {
-              var p_6 = root_310();
+              var p_6 = root_39();
               var text_16 = only_child(p_6, true);
               template_effect(
                 ($0) => set_text(text_16, $0),
@@ -14596,13 +13981,13 @@ function RunConditionSettings($$anchor, $$props) {
       var node_10 = sibling(node_8, 2);
       {
         var consequent_6 = ($$anchor3) => {
-          var details = root_83();
+          var details = root_82();
           var summary = child(details);
           var text_17 = only_child(summary);
           var node_11 = sibling(summary, 2);
           {
             var consequent_5 = ($$anchor4) => {
-              var p_7 = root_66();
+              var p_7 = root_65();
               each(
                 p_7,
                 21,
@@ -14612,7 +13997,7 @@ function RunConditionSettings($$anchor, $$props) {
                   var $$array = user_derived(() => to_array(get($$item), 2));
                   let kind = () => get($$array)[0];
                   let count = () => get($$array)[1];
-                  var span = root_57();
+                  var span = root_56();
                   var text_18 = only_child(span);
                   template_effect(
                     ($0) => set_text(text_18, `${$0 ?? ""}: ${count() ?? ""}`),
@@ -14719,8 +14104,8 @@ delegate(["change", "input", "click"]);
 
 // custom_components/occupied/frontend/src/lib/components/settings/SettingsView.svelte
 var root18 = from_html(`<span class="changes svelte-g0xj3p"> </span>`);
-var root_113 = from_html(`<button type="button"> </button>`);
-var root_211 = from_html(
+var root_112 = from_html(`<button type="button"> </button>`);
+var root_210 = from_html(
   `<!> <section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <div class="yaml-actions svelte-g0xj3p"><!> <button type="button" class="primary"> </button> <button type="button"> </button> <button type="button" class="download svelte-g0xj3p"> </button></div></section>`,
   3,
 );
@@ -14756,7 +14141,7 @@ function SettingsView($$anchor, $$props) {
       cancelled = true;
     };
   });
-  var fragment = root_211();
+  var fragment = root_210();
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
@@ -14813,7 +14198,7 @@ function SettingsView($$anchor, $$props) {
   var node_2 = child(div);
   {
     var consequent_2 = ($$anchor2) => {
-      var button = root_113();
+      var button = root_112();
       var text_3 = only_child(button, true);
       template_effect(
         ($0) => {
@@ -15476,20 +14861,20 @@ function previewStateHistory(plan, program, names = {}, t = translator()) {
 }
 function calendarStateHistory(
   plans,
-  day2,
+  day,
   program,
   names = {},
   t = translator(),
 ) {
-  const start = Date.parse(day2.start),
-    end = Date.parse(day2.end);
+  const start = Date.parse(day.start),
+    end = Date.parse(day.end);
   const events = plans
     .flatMap((plan) => plan.events)
     .filter(
       (event2) =>
         Date.parse(event2.time) >= start && Date.parse(event2.time) < end,
     );
-  return previewStateHistory({ ...day2, events }, program, names, t);
+  return previewStateHistory({ ...day, events }, program, names, t);
 }
 function stamp(value, zone, locale) {
   if (!value) {
@@ -15592,15 +14977,15 @@ function groupPreviewEvents(events) {
 
 // custom_components/occupied/frontend/src/lib/components/preview/PreviewStateGraph.svelte
 var root19 = from_html(`<p class="hint"> </p>`);
-var root_114 = from_html(
+var root_113 = from_html(
   `<span class="now-label svelte-1kps2qf" aria-hidden="true"> </span>`,
 );
-var root_212 = from_html(
+var root_211 = from_html(
   `<div><!> <state-history-chart-timeline></state-history-chart-timeline></div>`,
   2,
 );
-var root_311 = from_html(`<p role="status"> </p>`);
-var root_48 = from_html(`<!> <!> <!>`, 1);
+var root_310 = from_html(`<p role="status"> </p>`);
+var root_47 = from_html(`<!> <!> <!>`, 1);
 var $$css7 = {
   hash: "svelte-1kps2qf",
   code: ".preview-graph.svelte-1kps2qf {position:relative;padding-top:18px;}.preview-graph.empty.svelte-1kps2qf {display:none;}.now-label.svelte-1kps2qf {position:absolute;top:0;color:var(--secondary-text-color, #727272);font-size:12px;line-height:16px;transform:translateX(-50%);pointer-events:none;}state-history-chart-timeline.svelte-1kps2qf {display:block;width:100%;}state-history-chart-timeline[hidden].svelte-1kps2qf {display:none;}",
@@ -15672,7 +15057,7 @@ function PreviewStateGraph($$anchor, $$props) {
       media.removeEventListener("change", updateNarrow);
     };
   });
-  var fragment = root_48();
+  var fragment = root_47();
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
@@ -15725,12 +15110,12 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, p_2);
     };
     var consequent_4 = ($$anchor2) => {
-      var div = root_212();
+      var div = root_211();
       let classes;
       var node_3 = child(div);
       {
         var consequent_3 = ($$anchor3) => {
-          var span = root_114();
+          var span = root_113();
           let styles;
           var text_3 = only_child(span, true);
           template_effect(
@@ -15813,7 +15198,7 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, div);
     };
     var consequent_5 = ($$anchor2) => {
-      var p_3 = root_311();
+      var p_3 = root_310();
       var text_4 = only_child(p_3, true);
       template_effect(
         ($0) => set_text(text_4, $0),
@@ -15911,16 +15296,16 @@ function lastGroupResult(session) {
 
 // custom_components/occupied/frontend/src/lib/components/preview/Timeline.svelte
 var root20 = from_html(`<h2> </h2>`);
-var root_115 = from_html(`<th scope="col" class="svelte-1iz1525"> </th>`);
-var root_213 = from_html(
+var root_114 = from_html(`<th scope="col" class="svelte-1iz1525"> </th>`);
+var root_212 = from_html(
   `<td class="planned-time svelte-1iz1525"><svg class="hover-indicator svelte-1iz1525" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2 8 6 4 10"></path></svg> </td>`,
 );
-var root_312 = from_html(`<span aria-hidden="true"></span>`);
-var root_49 = from_html(`<span> </span>`);
-var root_58 = from_html(`<div><!> <span> </span> <div> </div></div>`);
-var root_67 = from_html(`<div> </div>`);
+var root_311 = from_html(`<span aria-hidden="true"></span>`);
+var root_48 = from_html(`<span> </span>`);
+var root_57 = from_html(`<div><!> <span> </span> <div> </div></div>`);
+var root_66 = from_html(`<div> </div>`);
 var root_75 = from_html(`<td class="svelte-1iz1525"></td>`);
-var root_84 = from_html(
+var root_83 = from_html(
   `<button type="button" class="text-button source-link svelte-1iz1525"> </button>`,
 );
 var root_93 = from_html(`<td class="svelte-1iz1525"><!></td>`);
@@ -16057,7 +15442,7 @@ function Timeline($$anchor, $$props) {
             () => ["planned_time", "targets", "action"],
             (label) => label,
             ($$anchor4, label) => {
-              var th = root_115();
+              var th = root_114();
               var text_1 = only_child(th, true);
               template_effect(($0) => set_text(text_1, $0), [() => t()(label)]);
               append($$anchor4, th);
@@ -16066,7 +15451,7 @@ function Timeline($$anchor, $$props) {
           var node_6 = sibling(node_5);
           {
             var consequent_2 = ($$anchor4) => {
-              var th_1 = root_115();
+              var th_1 = root_114();
               var text_2 = only_child(th_1, true);
               template_effect(
                 ($0) => set_text(text_2, $0),
@@ -16131,7 +15516,7 @@ function Timeline($$anchor, $$props) {
                   var node_8 = child(tr_1);
                   {
                     var consequent_3 = ($$anchor6) => {
-                      var td = root_213();
+                      var td = root_212();
                       var text_4 = sibling(child(td));
                       reset(td);
                       template_effect(() => {
@@ -16155,7 +15540,7 @@ function Timeline($$anchor, $$props) {
                   var node_9 = child(span);
                   {
                     var consequent_4 = ($$anchor6) => {
-                      var span_1 = root_312();
+                      var span_1 = root_311();
                       let classes_1;
                       template_effect(
                         () =>
@@ -16191,11 +15576,11 @@ function Timeline($$anchor, $$props) {
                           var node_11 = first_child(fragment_2);
                           {
                             var consequent_6 = ($$anchor8) => {
-                              var div_3 = root_58();
+                              var div_3 = root_57();
                               var node_12 = child(div_3);
                               {
                                 var consequent_5 = ($$anchor9) => {
-                                  var span_2 = root_49();
+                                  var span_2 = root_48();
                                   var text_7 = only_child(span_2);
                                   template_effect(
                                     ($0) => set_text(text_7, `${$0 ?? ""}:`),
@@ -16244,7 +15629,7 @@ function Timeline($$anchor, $$props) {
                               append($$anchor8, div_3);
                             };
                             var consequent_7 = ($$anchor8) => {
-                              var div_5 = root_67();
+                              var div_5 = root_66();
                               var text_10 = only_child(div_5, true);
                               template_effect(
                                 ($0) => set_text(text_10, $0),
@@ -16276,7 +15661,7 @@ function Timeline($$anchor, $$props) {
                       var node_14 = child(td_4);
                       {
                         var consequent_9 = ($$anchor7) => {
-                          var button = root_84();
+                          var button = root_83();
                           var text_11 = only_child(button, true);
                           template_effect(() => {
                             button.disabled = loading();
@@ -16463,19 +15848,19 @@ var root21 = from_html(
   `<button type="button" class="primary svelte-jw9j7k"> </button> <button type="button" class="svelte-jw9j7k"> </button>`,
   1,
 );
-var root_116 = from_html(
+var root_115 = from_html(
   `<button type="button" class="svelte-jw9j7k"> </button>`,
 );
-var root_214 = from_html(
+var root_213 = from_html(
   `<button type="button" class="primary svelte-jw9j7k"> </button> <!>`,
   1,
 );
-var root_313 = from_html(`<div class="live-actions svelte-jw9j7k"><!></div>`);
-var root_410 = from_html(`<p class="svelte-jw9j7k"> </p>`);
-var root_59 = from_html(`<p class="error svelte-jw9j7k"> </p>`);
-var root_68 = from_html(`<p class="hint svelte-jw9j7k"> </p>`);
+var root_312 = from_html(`<div class="live-actions svelte-jw9j7k"><!></div>`);
+var root_49 = from_html(`<p class="svelte-jw9j7k"> </p>`);
+var root_58 = from_html(`<p class="error svelte-jw9j7k"> </p>`);
+var root_67 = from_html(`<p class="hint svelte-jw9j7k"> </p>`);
 var root_76 = from_html(`<p class="call svelte-jw9j7k"> <!></p>`);
-var root_85 = from_html(
+var root_84 = from_html(
   `<p class="svelte-jw9j7k"><strong> </strong></p> <!>`,
   1,
 );
@@ -16484,7 +15869,7 @@ var root_94 = from_html(
   1,
 );
 var root_103 = from_html(`<p role="status" class="hint svelte-jw9j7k"> </p>`);
-var root_117 = from_html(
+var root_116 = from_html(
   `<section class="live-card svelte-jw9j7k"><h2 class="svelte-jw9j7k"> </h2> <!> <!></section>`,
 );
 var root_123 = from_html(`<!> <!> <!>`, 1);
@@ -16496,7 +15881,7 @@ function LivePreviewControls($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css9);
   const actionControls = ($$anchor2) => {
-    var div = root_313();
+    var div = root_312();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
@@ -16528,13 +15913,13 @@ function LivePreviewControls($$anchor, $$props) {
         append($$anchor3, fragment);
       };
       var alternate = ($$anchor3) => {
-        var fragment_1 = root_214();
+        var fragment_1 = root_213();
         var button_2 = first_child(fragment_1);
         var text_2 = only_child(button_2, true);
         var node_1 = sibling(button_2, 2);
         {
           var consequent_1 = ($$anchor4) => {
-            var button_3 = root_116();
+            var button_3 = root_115();
             var text_3 = only_child(button_3, true);
             template_effect(
               ($0) => {
@@ -16617,7 +16002,7 @@ function LivePreviewControls($$anchor, $$props) {
   var node_3 = sibling(node_2, 2);
   {
     var consequent_12 = ($$anchor2) => {
-      var section = root_117();
+      var section = root_116();
       var h2 = child(section);
       var text_4 = only_child(h2, true);
       var node_4 = sibling(h2, 2);
@@ -16632,7 +16017,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_5 = sibling(p, 2);
           {
             var consequent_3 = ($$anchor4) => {
-              var p_1 = root_410();
+              var p_1 = root_49();
               var text_7 = only_child(p_1);
               template_effect(
                 ($0, $1) => set_text(text_7, `${$0 ?? ""}: ${$1 ?? ""}`),
@@ -16656,7 +16041,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_6 = sibling(node_5, 2);
           {
             var consequent_4 = ($$anchor4) => {
-              var p_2 = root_410();
+              var p_2 = root_49();
               var text_8 = only_child(p_2);
               template_effect(
                 ($0, $1) => set_text(text_8, `${$0 ?? ""}: ${$1 ?? ""}`),
@@ -16672,7 +16057,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_7 = sibling(div_1, 2);
           {
             var consequent_5 = ($$anchor4) => {
-              var p_3 = root_59();
+              var p_3 = root_58();
               var text_9 = only_child(p_3, true);
               template_effect(() => set_text(text_9, get(session).detail));
               append($$anchor4, p_3);
@@ -16684,7 +16069,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_8 = sibling(node_7, 2);
           {
             var consequent_6 = ($$anchor4) => {
-              var p_4 = root_68();
+              var p_4 = root_67();
               var text_10 = only_child(p_4, true);
               template_effect(
                 ($0) => set_text(text_10, $0),
@@ -16699,7 +16084,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_9 = sibling(node_8, 2);
           {
             var consequent_7 = ($$anchor4) => {
-              var p_5 = root_68();
+              var p_5 = root_67();
               var text_11 = only_child(p_5, true);
               template_effect(
                 ($0) => set_text(text_11, $0),
@@ -16715,7 +16100,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_10 = sibling(node_9, 2);
           {
             var consequent_9 = ($$anchor4) => {
-              var fragment_5 = root_85();
+              var fragment_5 = root_84();
               var p_6 = first_child(fragment_5);
               var strong_1 = child(p_6);
               var text_12 = only_child(strong_1);
@@ -16787,7 +16172,7 @@ function LivePreviewControls($$anchor, $$props) {
               ),
             (outcome) => outcome,
             ($$anchor4, outcome) => {
-              var p_8 = root_59();
+              var p_8 = root_58();
               var text_15 = only_child(p_8);
               template_effect(() =>
                 set_text(
@@ -16864,12 +16249,12 @@ delegate(["click"]);
 var root22 = from_html(
   `<button type="button" class="refresh-button svelte-1gez8n9"><svg viewBox="0 0 24 24" aria-hidden="true" class="svelte-1gez8n9"><path></path></svg></button>`,
 );
-var root_118 = from_html(`<span class="hint" role="status"> </span>`);
-var root_215 = from_html(
+var root_117 = from_html(`<span class="hint" role="status"> </span>`);
+var root_214 = from_html(
   `<div class="schedule-heading svelte-1gez8n9"><div class="schedule-title svelte-1gez8n9"><h2 aria-live="polite" class="svelte-1gez8n9"> </h2> <!></div> <!> <div class="day-navigation svelte-1gez8n9" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-1gez8n9"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
   2,
 );
-var root_314 = from_html(`<!> <!>`, 1);
+var root_313 = from_html(`<!> <!>`, 1);
 var $$css10 = {
   hash: "svelte-1gez8n9",
   code: ".schedule-heading.svelte-1gez8n9 {display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-bottom:20px;}h2.svelte-1gez8n9 {margin:0;line-height:1.25;}.schedule-title.svelte-1gez8n9 {display:flex;align-items:center;gap:8px;}.refresh-button.svelte-1gez8n9 {display:grid;place-items:center;flex:0 0 36px;width:36px;min-height:36px;padding:0;border:0;border-radius:50%;background:transparent;}.refresh-button.svelte-1gez8n9:hover:not(:disabled) {background:var(--secondary-background-color, #eee);}.refresh-button.svelte-1gez8n9 svg:where(.svelte-1gez8n9) {width:24px;height:24px;fill:currentColor;}.day-navigation.svelte-1gez8n9 {display:flex;align-items:center;gap:4px;margin-left:auto;}.day-navigation.svelte-1gez8n9 button:where(.svelte-1gez8n9) {margin:0;}",
@@ -16878,7 +16263,7 @@ function PreviewView($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css10);
   const dayHeading = ($$anchor2) => {
-    var div = root_215();
+    var div = root_214();
     var div_1 = child(div);
     var h2 = child(div_1);
     var text2 = only_child(h2, true);
@@ -16912,7 +16297,7 @@ function PreviewView($$anchor, $$props) {
     var node_1 = sibling(div_1, 2);
     {
       var consequent_1 = ($$anchor3) => {
-        var span = root_118();
+        var span = root_117();
         var text_1 = only_child(span, true);
         template_effect(
           ($0) => set_text(text_1, $0),
@@ -17077,7 +16462,7 @@ function PreviewView($$anchor, $$props) {
       get(entities).map((entity) => [entity.entity_id, entity.name]),
     ),
   );
-  var fragment = root_314();
+  var fragment = root_313();
   var node_2 = first_child(fragment);
   {
     let $0 = user_derived(() =>
@@ -17218,8 +16603,8 @@ delegate(["keydown", "click"]);
 
 // custom_components/occupied/frontend/src/lib/components/random/DeleteRandomDialog.svelte
 var root24 = from_html(`<li> </li>`);
-var root_119 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
-var root_216 = from_html(
+var root_118 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
+var root_215 = from_html(
   `<dialog class="step-delete-dialog" aria-labelledby="random-delete-title"><h2 id="random-delete-title"> </h2> <p> </p> <!> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog>`,
 );
 function DeleteRandomDialog($$anchor, $$props) {
@@ -17237,7 +16622,7 @@ function DeleteRandomDialog($$anchor, $$props) {
     dialog.showModal();
     dialog.querySelector("button")?.focus();
   });
-  var dialog_1 = root_216();
+  var dialog_1 = root_215();
   var h2 = child(dialog_1);
   var text2 = only_child(h2, true);
   var p = sibling(h2, 2);
@@ -17245,7 +16630,7 @@ function DeleteRandomDialog($$anchor, $$props) {
   var node = sibling(p, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment = root_119();
+      var fragment = root_118();
       var p_1 = first_child(fragment);
       var text_2 = only_child(p_1);
       var ul = sibling(p_1, 2);
@@ -17326,11 +16711,11 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/random/AdvancedRandomSettings.svelte
 var root25 = from_html(`<button type="button"> </button>`);
-var root_120 = from_html(
+var root_119 = from_html(
   `<label class="step-weekday-option"><input type="checkbox"/><span> </span></label>`,
 );
-var root_217 = from_html(`<h3> </h3> <!>`, 1);
-var root_315 = from_html(
+var root_216 = from_html(`<h3> </h3> <!>`, 1);
+var root_314 = from_html(
   `<dialog class="step-advanced-dialog" aria-labelledby="random-advanced-title" aria-describedby="random-weekdays-description"><h2 id="random-advanced-title"> </h2> <p id="random-weekdays-description" class="hint"> </p> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!> <!> <!> <p class="hint"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
 );
 function AdvancedRandomSettings($$anchor, $$props) {
@@ -17386,7 +16771,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
     }
     dialog.close();
   }
-  var dialog_1 = root_315();
+  var dialog_1 = root_314();
   var h2 = child(dialog_1);
   var text2 = only_child(h2, true);
   var p = sibling(h2, 2);
@@ -17414,7 +16799,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
         [
           () =>
             get(selectedDays).length === selection().length &&
-            selection().every((day2) => get(selectedDays).includes(day2)),
+            selection().every((day) => get(selectedDays).includes(day)),
           () => get(t)(label()),
         ],
       );
@@ -17430,9 +16815,9 @@ function AdvancedRandomSettings($$anchor, $$props) {
     div_1,
     22,
     () => days,
-    (day2) => day2,
-    ($$anchor2, day2, index2) => {
-      var label_1 = root_120();
+    (day) => day,
+    ($$anchor2, day, index2) => {
+      var label_1 = root_119();
       var input = child(label_1);
       remove_input_defaults(input);
       var span = sibling(input);
@@ -17444,7 +16829,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
           set_text(text_4, $1);
         },
         [
-          () => get(selectedDays).includes(day2),
+          () => get(selectedDays).includes(day),
           () => get(t)(weekdays[get(index2)]),
         ],
       );
@@ -17453,9 +16838,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
         set2(
           selectedDays,
           days.filter((candidate) =>
-            candidate === day2
-              ? checked
-              : get(selectedDays).includes(candidate),
+            candidate === day ? checked : get(selectedDays).includes(candidate),
           ),
           true,
         );
@@ -17481,7 +16864,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment = root_217();
+      var fragment = root_216();
       var h3 = first_child(fragment);
       var text_5 = only_child(h3, true);
       var node_2 = sibling(h3, 2);
@@ -17513,7 +16896,7 @@ function AdvancedRandomSettings($$anchor, $$props) {
   var node_3 = sibling(node_1, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment_1 = root_217();
+      var fragment_1 = root_216();
       var h3_1 = first_child(fragment_1);
       var text_6 = only_child(h3_1, true);
       var node_4 = sibling(h3_1, 2);
@@ -17597,7 +16980,7 @@ var root26 = from_html(
   `<div role="separator"></div> <button type="button" role="menuitem" tabindex="-1" class="danger"> </button>`,
   1,
 );
-var root_121 = from_html(
+var root_120 = from_html(
   `<div class="step-editor-actions"><button type="button" class="icon-button" aria-haspopup="menu" data-random-actions=""><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"></path></svg></button> <div class="step-actions-menu" popover="auto" role="menu" tabindex="-1"><button type="button" role="menuitem" tabindex="-1"> </button> <button type="button" role="menuitem" tabindex="-1"> </button> <!></div></div> <!> <!> <!>`,
   1,
 );
@@ -17671,7 +17054,7 @@ function RandomActions($$anchor, $$props) {
       closeMenu();
     }
   }
-  var fragment = root_121();
+  var fragment = root_120();
   event("resize", $window, positionMenu);
   event("scroll", $window, positionMenu);
   var div = first_child(fragment);
@@ -17860,7 +17243,7 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
     locale,
   });
   let windowSeconds;
-  const clockSeconds2 = (value) =>
+  const clockSeconds = (value) =>
     /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)
       ? value
           .split(":")
@@ -17877,7 +17260,7 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
     !form.end.end
   ) {
     const difference =
-      clockSeconds2(form.end.start) - clockSeconds2(form.start.start);
+      clockSeconds(form.end.start) - clockSeconds(form.start.start);
     if (Number.isFinite(difference)) {
       windowSeconds = difference < 0 ? difference + 86400 : difference;
       if (difference < 0) {
@@ -18060,10 +17443,10 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
 
 // custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
 var root27 = from_html(`<button type="button" class="text-button"> </button>`);
-var root_124 = from_html(
+var root_121 = from_html(
   `<label class="same-entities svelte-1n39iyr"><input type="checkbox"/> </label>`,
 );
-var root_218 = from_html(
+var root_217 = from_html(
   `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-advanced=""> </button> <!> <h3> </h3> <div class="random-frequency svelte-1n39iyr"><div><!> <!></div> <div><!></div> <!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <p class="hint"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section>`,
 );
 var $$css11 = {
@@ -18105,7 +17488,7 @@ function RandomEventEditor($$anchor, $$props) {
     set2(advancedTrigger, advancedButton, true);
     set2(advancedOpen, true);
   }
-  var section = root_218();
+  var section = root_217();
   var div = child(section);
   var node = child(div);
   {
@@ -18366,7 +17749,7 @@ function RandomEventEditor($$anchor, $$props) {
   var node_11 = sibling(node_10, 2);
   {
     var consequent_2 = ($$anchor2) => {
-      var label = root_124();
+      var label = root_121();
       var input = child(label);
       remove_input_defaults(input);
       var text_7 = sibling(input, 1, true);
@@ -18485,27 +17868,22 @@ delegate(["click", "change"]);
 var root28 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-random=""> </button></section>`,
 );
-var root_125 = from_html(`<span class="step-status-badge"> </span>`);
-var root_219 = from_html(`<span class="step-row-time"> </span>`);
-var root_316 = from_html(
-  `<div style="--depth:0"><div class="step-card-header"><!> <button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button></div> <div><!></div></div>`,
+var root_124 = from_html(`<span class="step-status-badge"> </span>`);
+var root_218 = from_html(`<span class="step-row-time"> </span>`);
+var root_315 = from_html(
+  `<div style="--depth:0"><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button> <div><!></div></div>`,
 );
-var root_411 = from_html(
-  `<button type="button" class="primary" data-create-random=""> </button>`,
+var root_410 = from_html(
+  `<!> <div class="step-list"></div> <button type="button" class="primary" data-create-random=""> </button>`,
+  1,
 );
-var root_510 = from_html(`<!> <!>`, 1);
 function RandomView($$anchor, $$props) {
   push($$props, true);
   let data = user_derived(() => {
     void $$props.revision;
     return {
       t: $$props.panel.t,
-      entries: chronologicalEntries(
-        randomEntries($$props.panel.draft, $$props.panel.catalog),
-        $$props.panel.draft,
-        "random",
-        $$props.panel._hass,
-      ),
+      entries: randomEntries($$props.panel.draft, $$props.panel.catalog),
       steps: [
         ...stepEntries(
           $$props.panel.draft,
@@ -18550,7 +17928,7 @@ function RandomView($$anchor, $$props) {
       append($$anchor2, section);
     };
     var alternate = ($$anchor2) => {
-      var fragment_1 = root_510();
+      var fragment_1 = root_410();
       var node_1 = first_child(fragment_1);
       {
         let $0 = user_derived(() => get(t)("random_activity"));
@@ -18564,43 +17942,44 @@ function RandomView($$anchor, $$props) {
           },
         });
       }
-      var node_2 = sibling(node_1, 2);
-      {
-        const children = ($$anchor3, entry = noop, dragHandle = noop) => {
+      var div = sibling(node_1, 2);
+      each(
+        div,
+        21,
+        () => get(entries),
+        (entry) => entry.id,
+        ($$anchor3, entry) => {
           const editing = user_derived(
             () =>
               $$props.panel.randomEditor?.existing &&
-              $$props.panel.randomEditor.id === entry().id,
+              $$props.panel.randomEditor.id === get(entry).id,
           );
           const disabled = user_derived(
             () =>
               (get(editing)
                 ? $$props.panel.randomEditor?.form.enabled
-                : entry().enabled) === false,
+                : get(entry).enabled) === false,
           );
-          var div = root_316();
+          var div_1 = root_315();
           let classes;
-          var div_1 = child(div);
-          var node_3 = child(div_1);
-          snippet(node_3, dragHandle);
-          var button_1 = sibling(node_3, 2);
+          var button_1 = child(div_1);
           let classes_1;
           var span = child(button_1);
           var span_1 = child(span);
           var strong = child(span_1);
           var text_3 = only_child(strong, true);
-          var node_4 = sibling(strong);
+          var node_2 = sibling(strong);
           {
             var consequent_1 = ($$anchor4) => {
-              var span_2 = root_125();
+              var span_2 = root_124();
               var text_4 = only_child(span_2, true);
               template_effect(
-                ($02) => set_text(text_4, $02),
+                ($0) => set_text(text_4, $0),
                 [() => get(t)("disabled")],
               );
               append($$anchor4, span_2);
             };
-            if_block(node_4, ($$render) => {
+            if_block(node_2, ($$render) => {
               if (get(disabled)) $$render(consequent_1);
             });
           }
@@ -18608,18 +17987,17 @@ function RandomView($$anchor, $$props) {
           var span_3 = sibling(span_1, 2);
           var text_5 = only_child(span_3);
           reset(span);
-          var node_5 = sibling(span, 2);
+          var node_3 = sibling(span, 2);
           {
             var consequent_2 = ($$anchor4) => {
-              var span_4 = root_219();
+              var span_4 = root_218();
               var text_6 = only_child(span_4);
               template_effect(
-                ($02, $12) =>
-                  set_text(text_6, `${$02 ?? ""} \u2192 ${$12 ?? ""}`),
+                ($0, $1) => set_text(text_6, `${$0 ?? ""} \u2192 ${$1 ?? ""}`),
                 [
                   () =>
                     timingSummary(
-                      { timing: entry().start },
+                      { timing: get(entry).start },
                       get(steps),
                       get(t),
                       $$props.panel.catalog.time_sources,
@@ -18627,7 +18005,7 @@ function RandomView($$anchor, $$props) {
                     ),
                   () =>
                     timingExplanation(
-                      timingForm(entry().end),
+                      timingForm(get(entry).end),
                       get(steps),
                       get(t),
                       $$props.panel.catalog.time_sources,
@@ -18641,14 +18019,13 @@ function RandomView($$anchor, $$props) {
               );
               append($$anchor4, span_4);
             };
-            if_block(node_5, ($$render) => {
+            if_block(node_3, ($$render) => {
               if (!get(editing)) $$render(consequent_2);
             });
           }
           reset(button_1);
-          reset(div_1);
-          var div_2 = sibling(div_1, 2);
-          var node_6 = child(div_2);
+          var div_2 = sibling(button_1, 2);
+          var node_4 = child(div_2);
           {
             var consequent_3 = ($$anchor4) => {
               RandomEventEditor($$anchor4, {
@@ -18660,96 +18037,71 @@ function RandomView($$anchor, $$props) {
                 },
               });
             };
-            if_block(node_6, ($$render) => {
+            if_block(node_4, ($$render) => {
               if (get(editing)) $$render(consequent_3);
             });
           }
           reset(div_2);
-          reset(div);
+          reset(div_1);
           template_effect(
-            ($02, $12, $2, $3) => {
-              classes = set_class(div, 1, "step-card", null, classes, {
+            ($0, $1, $2, $3) => {
+              classes = set_class(div_1, 1, "step-card", null, classes, {
                 "step-disabled": get(disabled),
               });
-              set_attribute2(div, "data-random-id", entry().id);
-              set_attribute2(button_1, "id", `random-card-${entry().id}`);
+              set_attribute2(div_1, "data-random-id", get(entry).id);
+              set_attribute2(button_1, "id", `random-card-${get(entry).id}`);
               classes_1 = set_class(button_1, 1, "step-row", null, classes_1, {
                 editing: get(editing),
               });
-              set_attribute2(button_1, "aria-label", $02);
+              set_attribute2(button_1, "aria-label", $0);
               set_attribute2(button_1, "aria-expanded", get(editing));
               set_attribute2(
                 button_1,
                 "aria-controls",
-                `random-editor-${entry().id}`,
+                `random-editor-${get(entry).id}`,
               );
               button_1.disabled = $$props.panel.busy;
-              set_text(text_3, entry().name);
+              set_text(text_3, get(entry).name);
               set_text(
                 text_5,
-                `${$12 ?? ""}
-                ${$2 ?? ""} \xB7 ${(entry().min_duration || "5m") ?? ""}\u2013${(entry().max_duration || "15m") ?? ""} \xB7 ${$3 ?? ""}`,
+                `${$1 ?? ""}
+              ${$2 ?? ""} \xB7 ${(get(entry).min_duration || "5m") ?? ""}\u2013${(get(entry).max_duration || "15m") ?? ""} \xB7 ${$3 ?? ""}`,
               );
-              set_attribute2(div_2, "id", `random-editor-${entry().id}`);
+              set_attribute2(div_2, "id", `random-editor-${get(entry).id}`);
             },
             [
               () =>
                 get(disabled)
-                  ? `${entry().name} \xB7 ${get(t)("disabled")}`
-                  : entry().name,
-              () => countSummary(entry().count),
+                  ? `${get(entry).name} \xB7 ${get(t)("disabled")}`
+                  : get(entry).name,
+              () => countSummary(get(entry).count),
               () => get(t)("times_per_window"),
               () =>
                 entitySummary(
                   $$props.panel.catalog,
-                  actionTargets(entry().on),
+                  actionTargets(get(entry).on),
                   get(t),
                 ),
             ],
           );
           delegated("click", button_1, () =>
-            openRandom($$props.panel, entry()),
+            openRandom($$props.panel, get(entry)),
           );
-          append($$anchor3, div);
-        };
-        const createAction = ($$anchor3) => {
-          var button_2 = root_411();
-          var text_7 = only_child(button_2, true);
-          template_effect(
-            ($02) => {
-              button_2.disabled = $$props.panel.busy;
-              set_text(text_7, $02);
-            },
-            [() => get(t)("create_random_event")],
-          );
-          delegated("click", button_2, () => openRandom($$props.panel));
-          append($$anchor3, button_2);
-        };
-        let $0 = user_derived(
-          () => `occupied:activity-order:${$$props.panel.selectedEntry}:random`,
-        );
-        let $1 = user_derived(() => get(t)("random_events"));
-        ActivityList(node_2, {
-          get entries() {
-            return get(entries);
-          },
-          get storageKey() {
-            return get($0);
-          },
-          get label() {
-            return get($1);
-          },
-          get disabled() {
-            return $$props.panel.busy;
-          },
-          get t() {
-            return get(t);
-          },
-          children,
-          createAction,
-          $$slots: { default: true, createAction: true },
-        });
-      }
+          append($$anchor3, div_1);
+        },
+      );
+      reset(div);
+      var button_2 = sibling(div, 2);
+      var text_7 = only_child(button_2, true);
+      template_effect(
+        ($0, $1) => {
+          set_attribute2(div, "aria-label", $0);
+          button_2.disabled = $$props.panel.busy;
+          set_text(text_7, $1);
+        },
+        [() => get(t)("random_events"), () => get(t)("create_random_event")],
+      );
+      delegated("click", button_2, () => openRandom($$props.panel));
       append($$anchor2, fragment_1);
     };
     if_block(node, ($$render) => {
@@ -18764,17 +18116,17 @@ delegate(["click"]);
 
 // custom_components/occupied/frontend/src/App.svelte
 var root29 = from_html(`<button type="button"> </button>`);
-var root_126 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
-var root_220 = from_html(`<p> </p>`);
-var root_317 = from_html(`<header><p class="hint"> </p></header>`);
-var root_412 = from_html(`<p class="banner" role="status"> </p>`);
-var root_511 = from_html(
+var root_125 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
+var root_219 = from_html(`<p> </p>`);
+var root_316 = from_html(`<header><p class="hint"> </p></header>`);
+var root_411 = from_html(`<p class="banner" role="status"> </p>`);
+var root_59 = from_html(
   `<p class="error" role="alert"> </p> <button type="button"> </button>`,
   1,
 );
-var root_69 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_68 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_77 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
-var root_86 = from_html(`<p> </p> <button type="button"> </button>`, 1);
+var root_85 = from_html(`<p> </p> <button type="button"> </button>`, 1);
 var root_95 = from_html(
   `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><!> <!> <!> <div id="notice" class="banner" role="status"> </div> <!> <div id="error" class="error" role="alert"> </div> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
   3,
@@ -18784,7 +18136,7 @@ function App($$anchor, $$props) {
   const $updates = () => store_get($$props.updates, "$updates", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   const toolbar = ($$anchor2) => {
-    var div = root_126();
+    var div = root_125();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
@@ -18837,7 +18189,7 @@ function App($$anchor, $$props) {
         append($$anchor3, button_1);
       };
       var alternate = ($$anchor3) => {
-        var p = root_220();
+        var p = root_219();
         var text_3 = only_child(p, true);
         template_effect(() => {
           set_class(p, 1, clsx2(get(className)));
@@ -18912,7 +18264,7 @@ function App($$anchor, $$props) {
   var node_2 = child(main);
   {
     var consequent_2 = ($$anchor2) => {
-      var header = root_317();
+      var header = root_316();
       var p_1 = child(header);
       var text_4 = only_child(p_1, true);
       reset(header);
@@ -18934,7 +18286,7 @@ function App($$anchor, $$props) {
     () => get(panel).selectedInstance?.overlaps || [],
     (overlap) => overlap.config_entry_id,
     ($$anchor2, overlap) => {
-      var p_2 = root_412();
+      var p_2 = root_411();
       var text_5 = only_child(p_2);
       template_effect(
         ($0, $1, $2) =>
@@ -18959,7 +18311,7 @@ function App($$anchor, $$props) {
   var node_5 = sibling(div_1, 2);
   {
     var consequent_3 = ($$anchor2) => {
-      var fragment_2 = root_511();
+      var fragment_2 = root_59();
       var p_3 = first_child(fragment_2);
       var text_7 = only_child(p_3, true);
       var button_2 = sibling(p_3, 2);
@@ -19016,7 +18368,7 @@ function App($$anchor, $$props) {
   var node_6 = child(div_3);
   {
     var consequent_4 = ($$anchor2) => {
-      var button_4 = root_69();
+      var button_4 = root_68();
       var text_11 = only_child(button_4, true);
       template_effect(
         ($0) => set_text(text_11, $0),
@@ -19077,7 +18429,7 @@ function App($$anchor, $$props) {
           var node_9 = first_child(fragment_6);
           {
             var consequent_5 = ($$anchor4) => {
-              var fragment_7 = root_86();
+              var fragment_7 = root_85();
               var p_6 = first_child(fragment_7);
               var text_14 = only_child(p_6, true);
               var button_5 = sibling(p_6, 2);
