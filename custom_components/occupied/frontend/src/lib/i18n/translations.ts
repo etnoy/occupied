@@ -39,15 +39,6 @@ export const en = {
   discard_preserved_program: "Discard preserved program",
   discard_preserved_program_confirm:
     "Discard the preserved program and start with an empty program? This cannot be undone.",
-  chronological_order: "Chronological",
-  manual_order: "Manual order",
-  reset_chronological_order: "Reset to chronological",
-  chronological_order_hint:
-    "Ordered by start time. Solar times are estimated when unavailable; unresolved times appear last.",
-  reorder_activity: "Reorder {name}",
-  reorder_activity_hint:
-    "Drag to reorder, or use the arrow keys to move up and down.",
-  activity_moved: "{name} moved to position {position} of {total}.",
   run_condition_count_checked: "Checked",
   run_condition_count_applied: "Applied",
   run_condition_count_already_matching: "Already matching",
@@ -275,7 +266,6 @@ export const en = {
   times_per_window: "times per active period",
   minimum_duration: "Minimum duration",
   maximum_duration: "Maximum duration",
-  duration_hint: "Use durations like 5m, 30s, or 1h.",
   when_event_starts: "When event starts",
   when_event_ends: "When event ends",
   random_days_hint: "Choose which days this random event should run.",
@@ -663,15 +653,6 @@ export const sv: Partial<Record<TranslationKey, string>> = {
   discard_preserved_program: "Kasta bevarat program",
   discard_preserved_program_confirm:
     "Kasta det bevarade programmet och börja med ett tomt program? Detta kan inte ångras.",
-  chronological_order: "Kronologisk ordning",
-  manual_order: "Manuell ordning",
-  reset_chronological_order: "Återställ kronologisk ordning",
-  chronological_order_hint:
-    "Sorterat efter starttid. Soltider uppskattas när de saknas; okända tider visas sist.",
-  reorder_activity: "Ändra ordning för {name}",
-  reorder_activity_hint:
-    "Dra för att ändra ordning, eller använd piltangenterna för att flytta upp och ned.",
-  activity_moved: "{name} flyttades till plats {position} av {total}.",
   run_condition_count_checked: "Kontrollerade",
   run_condition_count_applied: "Tillämpade",
   run_condition_count_already_matching: "Matchar redan",
@@ -911,7 +892,6 @@ export const sv: Partial<Record<TranslationKey, string>> = {
   times_per_window: "gånger per aktiv period",
   minimum_duration: "Minsta varaktighet",
   maximum_duration: "Längsta varaktighet",
-  duration_hint: "Ange varaktigheter som 5m, 30s eller 1h.",
   when_event_starts: "När händelsen börjar",
   when_event_ends: "När händelsen slutar",
   random_days_hint: "Välj vilka dagar den slumpmässiga händelsen ska köras.",
