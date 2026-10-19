@@ -189,8 +189,11 @@ The **Custom YAML** action choice accepts one action mapping or an ordered list.
 
 Occupied waits up to 10 seconds for a native service handler. If the wait expires,
 the outcome is `uncertain` and that call is never retried. The handler keeps running;
-its final completion or failure is logged. Ordered custom blocks stop after an
-uncertain call, just as they do after a failed call.
+when it finishes, the matching journal or live-preview outcome becomes `dispatched`
+or `failed`. Late success writes the logbook entry with the original call context.
+Closed controllers, replaced programs, and replaced preview sessions ignore stale
+completion results. Calls are never replayed, including after restart. Ordered
+custom blocks stop after an uncertain call and stay stopped when it later succeeds.
 
 ## Projection and runtime
 

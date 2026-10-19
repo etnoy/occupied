@@ -8,6 +8,7 @@ from homeassistant.core import Context, CoreState
 from homeassistant.exceptions import HomeAssistantError
 
 from custom_components.occupied import actions
+from custom_components.occupied.const import EVENT_ACTION
 from custom_components.occupied.engine_daily import DailyEngine
 from custom_components.occupied.planner import ResolvedAction
 from custom_components.occupied.validation import validate_program
@@ -104,22 +105,43 @@ async def runtime_engine(hass):
         await engine.async_close(cleanup=False)
 
 
+@pytest.mark.parametrize("failure", [False, True])
 async def test_runtime_wait_timeout_is_uncertain_and_never_retried(
-    hass, slow_service, runtime_engine
+    hass, slow_service, runtime_engine, failure
 ):
     _, release, finished, state = slow_service
     engine = runtime_engine
+    state["fail"] = failure
+    logs = []
+    hass.bus.async_listen(EVENT_ACTION, logs.append)
     try:
         action = ResolvedAction("switch.turn_on", ("switch.clock",), {}, ("switch.clock",), True)
         assert not await engine._call(action, "slow-runtime", engine.generation)
         assert engine._journal["slow-runtime"]["status"] == "uncertain"
         assert not any(event.kind == "retry" for event in engine._queue)
         assert not state["cancelled"]
+        context_id = engine._journal["slow-runtime"]["context"]
         release.set()
         await hass.async_block_till_done()
         assert finished.is_set() and state["calls"] == 1
-        assert engine._journal["slow-runtime"]["status"] == "uncertain"
-        assert not await engine._call(action, "slow-runtime", engine.generation)
+        assert engine._journal["slow-runtime"]["status"] == ("failed" if failure else "dispatched")
+        assert len(logs) == (0 if failure else 1)
+        if logs:
+            assert logs[0].context.id == context_id
+        saved = await engine._store.async_load()
+        assert saved["journal"]["slow-runtime"]["status"] == ("failed" if failure else "dispatched")
+        assert await engine._call(action, "slow-runtime", engine.generation) == (not failure)
+        restored = DailyEngine(hass, engine.entry_id, engine.program)
+        try:
+            await restored.async_prepare()
+            assert restored._journal["slow-runtime"]["status"] == (
+                "failed" if failure else "dispatched"
+            )
+            assert await restored._call(action, "slow-runtime", restored.generation) == (
+                not failure
+            )
+        finally:
+            await restored.async_close(cleanup=False)
         assert state["calls"] == 1
     finally:
         release.set()
@@ -137,3 +159,67 @@ async def test_native_errors_before_the_wait_deadline_keep_their_failure_semanti
     assert not await runtime_engine._call(action, "native-error", runtime_engine.generation)
     assert runtime_engine._journal["native-error"]["status"] == "failed"
     assert any(event.kind == "retry" for event in runtime_engine._queue)
+
+
+@pytest.mark.parametrize("change", ["close", "prune", "context", "status", "replace"])
+async def test_stale_late_result_does_not_change_the_journal(
+    hass, slow_service, runtime_engine, change
+):
+    from copy import deepcopy
+
+    _, release, _, _ = slow_service
+    engine = runtime_engine
+    action = ResolvedAction("switch.turn_on", ("switch.clock",), {}, ("switch.clock",), True)
+    logs = []
+    hass.bus.async_listen(EVENT_ACTION, logs.append)
+    assert not await engine._call(action, "stale", engine.generation)
+    if change == "close":
+        await engine.async_close(cleanup=False)
+    elif change == "prune":
+        engine._journal.pop("stale")
+    elif change == "context":
+        engine._journal["stale"]["context"] = "replacement-context"
+    elif change == "status":
+        engine._journal["stale"]["status"] = "dispatched"
+    else:
+        await engine.async_replace_program(
+            engine.program.model_copy(update={"name": "Replacement"})
+        )
+    before = deepcopy(engine._journal)
+    release.set()
+    await hass.async_block_till_done()
+    assert engine._journal == before and not logs
+
+
+async def test_late_success_does_not_resume_a_stopped_custom_block(
+    hass, slow_service, runtime_engine
+):
+    _, release, _, state = slow_service
+    engine = runtime_engine
+    program = validate_program(
+        {
+            "schema_version": 1,
+            "name": "Slow custom block",
+            "steps": {
+                "block": {
+                    "timing": {"absolute_time": {"start": "23:59:59"}},
+                    "actions": [
+                        {"action": "script.turn_on", "entities": ["script.clock"]},
+                        {"action": "switch.turn_on", "entities": ["switch.clock"]},
+                    ],
+                }
+            },
+        }
+    )
+    await engine.async_replace_program(program)
+    plan = engine._plans[max(engine._plans)]
+    event = plan.events[0]
+    async with engine._lock:
+        await engine._execute_custom_group(plan, event, engine.generation)
+    assert state["calls"] == 1
+    assert any(entry["status"] == "blocked" for entry in engine._journal.values())
+    release.set()
+    await hass.async_block_till_done()
+    async with engine._lock:
+        await engine._execute_custom_group(plan, event, engine.generation)
+    assert state["calls"] == 1

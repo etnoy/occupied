@@ -10,7 +10,7 @@ from homeassistant.core import Context
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 
-from .actions import dispatch_service, observe
+from .actions import dispatch_service, observe, service_payload
 from .activation import ActivationGate
 from .activity import async_log_action
 from .const import DOMAIN
@@ -347,6 +347,34 @@ class LivePreviewManager:
             return "service_missing", f"Service {action.action} is not registered"
         return None
 
+    def _schedule_late_result(self, session_id, event_id, context, action, data, error):
+        self.hass.async_create_task(
+            self._late_result(session_id, event_id, context, action, data, error),
+            name="Occupied late preview result",
+        )
+
+    async def _late_result(self, session_id, event_id, context, action, data, error):
+        async with self.engine._lock:
+            if self.engine.closed or not self.session or self.session["id"] != session_id:
+                return
+            outcome = self.session["outcomes"].get(event_id)
+            if (
+                not outcome
+                or outcome["status"] != "uncertain"
+                or outcome.get("context_id") != context.id
+            ):
+                return
+            outcome.update(
+                status="failed" if error is not None else "dispatched",
+                detail=f"{type(error).__name__}: {error}"
+                if error is not None
+                else "Completed after Occupied stopped waiting",
+            )
+            if error is None:
+                async_log_action(self.engine, action.action, action.targets, data, context)
+            await self._persist()
+            self.engine._notify()
+
     async def async_next(self, session_id, expected_group_id, request_id, user_id):
         async with self.engine._lock:
             if not self.session or self.session["id"] != session_id:
@@ -388,8 +416,11 @@ class LivePreviewManager:
                     break
                 previous_failed = event.custom and any(
                     member.id in self.session["outcomes"]
-                    and self.session["outcomes"][member.id]["status"]
-                    in {"failed", "uncertain", "service_missing", "blocked", "cancelled"}
+                    and (
+                        self.session["outcomes"][member.id].get("block_stopped")
+                        or self.session["outcomes"][member.id]["status"]
+                        in {"failed", "uncertain", "service_missing", "blocked", "cancelled"}
+                    )
                     for member in self.plan.occurrences[event.occurrence_id]
                 )
                 problem = (
@@ -426,7 +457,21 @@ class LivePreviewManager:
                     break
                 if not problem:
                     try:
-                        data = await dispatch_service(self.hass, event.action, context)
+                        data = service_payload(self.hass, event.action)
+                        await dispatch_service(
+                            self.hass,
+                            event.action,
+                            context,
+                            data=data,
+                            on_late_result=partial(
+                                self._schedule_late_result,
+                                self.session["id"],
+                                event.id,
+                                context,
+                                event.action,
+                                data,
+                            ),
+                        )
                         async_log_action(
                             self.engine,
                             event.action.action,
@@ -436,10 +481,16 @@ class LivePreviewManager:
                         )
                         outcome.update(status="dispatched", detail="Service handler completed")
                     except TimeoutError:
-                        outcome.update(status="uncertain", detail="Service timed out; not retried")
+                        outcome.update(
+                            status="uncertain",
+                            detail="Service timed out; not retried",
+                            block_stopped=event.custom,
+                        )
                     except asyncio.CancelledError:
                         outcome.update(
-                            status="uncertain", detail="Dispatch interrupted; not replayed"
+                            status="uncertain",
+                            detail="Dispatch interrupted; not replayed",
+                            block_stopped=event.custom,
                         )
                         self.invalidate("Dispatch interrupted", interrupted=True)
                         await self._persist()

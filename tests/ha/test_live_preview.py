@@ -436,8 +436,9 @@ async def test_native_timeout_is_uncertain_without_retry(live_engine, live_progr
     assert not live_calls and not live_engine._queue
 
 
+@pytest.mark.parametrize("failure", [False, True])
 async def test_timed_out_preview_wait_does_not_cancel_native_service(
-    live_engine, live_program, live_calls
+    live_engine, live_program, live_calls, failure
 ):
     live_program["steps"] = {"slow": live_program["steps"]["morning"] | {"entities": ["light.a"]}}
     release, finished = asyncio.Event(), asyncio.Event()
@@ -452,7 +453,11 @@ async def test_timed_out_preview_wait_does_not_cancel_native_service(
             cancelled = True
             raise
         finished.set()
+        if failure:
+            raise HomeAssistantError("Late preview failure")
 
+    logs = []
+    live_engine.hass.bus.async_listen("occupied_action", logs.append)
     live_engine.hass.services.async_register("light", "turn_on", slow)
     await start(live_engine, live_program)
     try:
@@ -466,6 +471,12 @@ async def test_timed_out_preview_wait_does_not_cancel_native_service(
         release.set()
         await live_engine.hass.async_block_till_done()
     assert finished.is_set() and len(live_calls) == 1
+    outcome = next(iter(live_engine.live_preview.session["outcomes"].values()))
+    assert outcome["status"] == ("failed" if failure else "dispatched")
+    assert len(logs) == (0 if failure else 1)
+    if logs:
+        assert logs[0].context.id == live_calls[0].context.id
+        assert logs[0].context.user_id == "owner"
 
 
 async def test_admin_websocket_start_and_next_are_idempotent(
@@ -768,3 +779,72 @@ async def test_live_preview_condition_loss_during_group_cancels_remaining_calls(
     await next_event(live_engine)
     assert len(calls) == 1 and not live_calls
     assert not live_engine.live_preview.running
+
+
+async def test_late_preview_success_does_not_restart_custom_stagger(
+    live_engine, live_program, live_calls
+):
+    release = asyncio.Event()
+
+    async def slow(call):
+        live_calls.append(call)
+        await release.wait()
+
+    live_engine.hass.services.async_register("light", "turn_on", slow)
+    live_program["steps"] = {
+        "custom": {
+            "timing": {"absolute_time": {"start": "08:00"}},
+            "actions": [
+                {
+                    "action": "turn_on",
+                    "entities": ["light.a", "light.b"],
+                    "stagger": {"enabled": True, "period": "1m"},
+                }
+            ],
+        }
+    }
+    await start(live_engine, live_program)
+    try:
+        with patch("custom_components.occupied.actions.SERVICE_TIMEOUT", 0.02):
+            await next_event(live_engine, "first")
+        assert len(live_calls) == 1
+    finally:
+        release.set()
+        await live_engine.hass.async_block_till_done()
+    outcome = next(iter(live_engine.live_preview.session["outcomes"].values()))
+    assert outcome["status"] == "dispatched"
+    await next_event(live_engine, "second")
+    assert len(live_calls) == 1
+    assert any(
+        outcome["status"] == "blocked"
+        for outcome in live_engine.live_preview.session["outcomes"].values()
+    )
+
+
+@pytest.mark.parametrize("change", ["close", "session", "context", "status"])
+async def test_stale_preview_completion_is_ignored(live_engine, live_program, live_calls, change):
+    release = asyncio.Event()
+
+    async def slow(call):
+        live_calls.append(call)
+        await release.wait()
+
+    live_engine.hass.services.async_register("light", "turn_on", slow)
+    live_program["steps"] = {"slow": live_program["steps"]["morning"] | {"entities": ["light.a"]}}
+    await start(live_engine, live_program)
+    with patch("custom_components.occupied.actions.SERVICE_TIMEOUT", 0.02):
+        await next_event(live_engine)
+    manager = live_engine.live_preview
+    outcome = next(iter(manager.session["outcomes"].values()))
+    if change == "close":
+        await live_engine.async_close(cleanup=False)
+    elif change == "session":
+        manager.session["id"] = "replacement"
+    elif change == "context":
+        outcome["context_id"] = "replacement"
+    else:
+        outcome["status"] = "cancelled"
+    before = deepcopy(manager.session)
+    release.set()
+    await live_engine.hass.async_block_till_done()
+    assert manager.session == before
