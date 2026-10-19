@@ -1,0 +1,29 @@
+custom_components/occupied/frontend/src/app.css
+  s_f2e5350eafcda2::t_7644caee0d25d0 414
+custom_components/occupied/frontend/src/lib/components/random/RandomView.svelte
+  s_f2e5350eafcda2::t_13a92003af0c09 24,57-58,69-118,124-132
+custom_components/occupied/frontend/src/lib/components/steps/StepsView.svelte
+  s_f2e5350eafcda2::t_465c043247af0d 9,33,58-59,74,76-94,96-107,109-121,130-131,133-141
+custom_components/occupied/frontend/src/lib/controllers/steps.ts
+  s_f2e5350eafcda2::t_f5c5be02c1ce03 118-148
+tests/browser/occupied.spec.ts
+  s_f2e5350eafcda2::t_735f7c88446f20 279-280,284,287,291-295,298-299,302-327,329,331-345,354-355,359,361,364-369,371-373,377-380
+tests/frontend/src/step-tree.test.ts
+  s_f2e5350eafcda2::t_1099c543c96dd2 3-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ac34631883e437b3e8abd5bd6bd8047f98b06918",
+  "prompts": {},
+  "sessions": {
+    "s_f2e5350eafcda2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a155c0-a5c8-7e33-8576-afdef5f4b8a9",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
