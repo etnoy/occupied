@@ -67,3 +67,48 @@ def test_tilt_target_preserves_the_cover_position_state():
         {"state": "closed", "attributes": {"current_position": 0, "current_tilt_position": 70}},
         now + timedelta(seconds=20),
     )
+
+
+@pytest.mark.parametrize(
+    "key,target,reported",
+    [
+        ("brightness_pct", 33, 85),
+        ("rgb_color", [30, 40, 50], [31, 39, 51]),
+        ("hs_color", [0, 60], [359.5, 60.5]),
+        ("color_temp_kelvin", 4000, 4035),
+    ],
+)
+def test_light_target_rounding_is_accepted(key, target, reported):
+    now = datetime(2026, 10, 13, tzinfo=UTC)
+    attribute = "brightness" if key == "brightness_pct" else key
+    initial = 20 if isinstance(reported, (int, float)) else [10] * len(reported)
+    observed = {"state": "on", "attributes": {attribute: initial}}
+    action = ResolvedAction(
+        "light.turn_on", ("light.proof",), {key: target, "transition": 30}, ("light.proof",), True
+    )
+    motion = motion_for(action, observed, now)
+    if key == "brightness_pct":
+        assert motion["targets"]["brightness"] == 84
+    assert progresses(
+        motion, {"state": "on", "attributes": {attribute: reported}}, now + timedelta(seconds=10)
+    )
+
+
+def test_small_reporting_reversals_do_not_accumulate_into_manual_motion():
+    now = datetime(2026, 10, 13, tzinfo=UTC)
+    observed = {"state": "on", "attributes": {"brightness": 20}}
+    action = ResolvedAction(
+        "light.turn_on",
+        ("light.proof",),
+        {"brightness": 100, "transition": 30},
+        ("light.proof",),
+        True,
+    )
+    motion = motion_for(action, observed, now)
+    for index, brightness in enumerate([60, 59, 58]):
+        accepted = progresses(
+            motion,
+            {"state": "on", "attributes": {"brightness": brightness}},
+            now + timedelta(seconds=index + 1),
+        )
+        assert accepted is (brightness >= 59)
