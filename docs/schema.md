@@ -108,6 +108,8 @@ Solar sources support sunrise, sunset, dawn, dusk, noon, and midnight. Dawn/dusk
 
 HA sources support time-bearing datetime helpers, timestamp sensors, and calendars. Calendar sources require `attribute: start_time` or `end_time`. Time-only helpers repeat daily. Dated sources use only the occurrence HA reports and are not projected onto unknown future dates. Missing or unavailable values skip the step with a warning. Offline previews have no HA snapshot. Source changes reschedule future work without replaying completed steps for the same source date.
 
+Once a reported anchor instant is reached, Occupied retains it for that source date while the date remains in the runtime planning window, including across restarts. A calendar advancing to its next event therefore preserves offsets that run after midnight. Changes reported before the anchor instant still reschedule its work.
+
 ## Random events
 
 The `random` map defines repeated activity inside a window. The GUI edits it in its own **Random** tab:

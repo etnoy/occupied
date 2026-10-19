@@ -1,6 +1,7 @@
 """Reached HA timestamps keep their remaining events through local midnight."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 from homeassistant.core import CoreState
@@ -21,11 +22,20 @@ def source(hass, kind, at):
         hass.states.async_set("sensor.next_alarm", at, {"device_class": "timestamp"})
 
 
-async def load(hass, freezer, kind, program):
-    await hass.config.async_set_time_zone("UTC")
+async def load(
+    hass,
+    freezer,
+    kind,
+    program,
+    *,
+    timezone="UTC",
+    at="2026-10-13T16:59:00+00:00",
+    anchor="2026-10-13T17:00:00+00:00",
+):
+    await hass.config.async_set_time_zone(timezone)
     hass.set_state(CoreState.running)
-    freezer.move_to("2026-10-13T16:59:00+00:00")
-    source(hass, kind, "2026-10-13T17:00:00+00:00")
+    freezer.move_to(at)
+    source(hass, kind, anchor)
     calls = []
     hass.states.async_set("switch.proof", "off")
 
@@ -53,6 +63,58 @@ def timing(kind, offset="30m"):
             "start_offset": offset,
         }
     }
+
+
+@pytest.mark.parametrize("kind", ["calendar", "alarm"])
+@pytest.mark.parametrize("restart", [False, True])
+@pytest.mark.parametrize(
+    "timezone,anchor,offset,expected",
+    [
+        ("UTC", "2026-10-13T23:00:00+00:00", "2h", "2026-10-14T01:00:00+00:00"),
+        ("Europe/Stockholm", "2026-10-13T23:00:00+02:00", "2h", "2026-10-14T01:00:00+02:00"),
+        ("Europe/Stockholm", "2026-03-28T23:00:00+01:00", "4h", "2026-03-29T04:00:00+02:00"),
+        ("Europe/Stockholm", "2026-10-24T23:00:00+02:00", "4h", "2026-10-25T02:00:00+01:00"),
+    ],
+)
+async def test_overnight_offset_survives_midnight(
+    hass, freezer, kind, restart, timezone, anchor, offset, expected
+):
+    reached = datetime.fromisoformat(anchor)
+    zone = ZoneInfo(timezone)
+    program = {
+        "schema_version": 1,
+        "name": "Overnight anchors",
+        "steps": {
+            "after": {
+                "timing": timing(kind, offset),
+                "action": "turn_on",
+                "entities": ["switch.proof"],
+            }
+        },
+    }
+    entry, calls = await load(
+        hass,
+        freezer,
+        kind,
+        program,
+        timezone=timezone,
+        at=reached - timedelta(minutes=1),
+        anchor=anchor,
+    )
+    await advance(hass, freezer, reached + timedelta(milliseconds=1))
+    tomorrow = reached.astimezone(zone) + timedelta(days=1)
+    source(hass, kind, tomorrow.isoformat())
+    await hass.async_block_till_done()
+    midnight = tomorrow.replace(hour=0, minute=0)
+    await advance(hass, freezer, midnight + timedelta(milliseconds=1))
+    assert not calls
+    if restart:
+        freezer.move_to(midnight + timedelta(minutes=30))
+        assert await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+    await advance(hass, freezer, datetime.fromisoformat(expected) + timedelta(milliseconds=1))
+    assert [call.service for call in calls] == ["turn_on"]
+    assert entry.runtime_data.active
 
 
 @pytest.mark.parametrize("kind", ["calendar", "alarm"])

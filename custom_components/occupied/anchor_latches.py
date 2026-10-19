@@ -1,10 +1,11 @@
-"""Keep reached HA time anchors for the remainder of their local date."""
+"""Keep reached HA time anchors while their source dates remain in the runtime window."""
 
 from dataclasses import replace
 from datetime import UTC, datetime, time
 from zoneinfo import ZoneInfo
 
 from .models import program_timings
+from .runtime_planning import runtime_dates
 from .time_utils import resolve_local
 
 
@@ -38,7 +39,7 @@ class AnchorLatches:
             try:
                 at = datetime.fromisoformat(value["instant"])
                 if at.tzinfo and isinstance(value["value"], str):
-                    self.records[value["entity"], value["attribute"]] = dict(value)
+                    self.records[value["date"], value["entity"], value["attribute"]] = dict(value)
             except KeyError, TypeError, ValueError:
                 continue
 
@@ -51,6 +52,7 @@ class AnchorLatches:
         except ValueError, KeyError:
             return context
         today = now.astimezone(zone).date()
+        dates = {day.isoformat() for day in runtime_dates(program, today)}
         fields = source_fields(program)
         previous = self.snapshot()
         if self.timezone != context.timezone:
@@ -59,21 +61,23 @@ class AnchorLatches:
         self.records = {
             key: value
             for key, value in self.records.items()
-            if value.get("date") == today.isoformat() and key[1] in fields.get(key[0], ())
+            if key[0] in dates
+            and key[2] in fields.get(key[1], ())
+            and context.time_sources.get(key[1], {}).get("kind") in {None, value.get("kind")}
         }
-        latched = {}
+        # Promote retained candidates even when the first refresh after their
+        # instant is on a later date (including after a restart).
+        self.records = {
+            key: record | {"latched": True}
+            if datetime.fromisoformat(record["instant"]) <= now
+            else record
+            for key, record in self.records.items()
+        }
         for entity, attributes in fields.items():
             source = context.time_sources.get(entity, {})
             for attribute in sorted(attributes):
-                key = entity, attribute
+                key = today.isoformat(), entity, attribute
                 record = self.records.get(key)
-                if record and source.get("kind") not in {None, record.get("kind")}:
-                    self.records.pop(key)
-                    record = None
-                # The source can advance directly to tomorrow. Promote the last
-                # observed candidate before considering that replacement value.
-                if record and datetime.fromisoformat(record["instant"]) <= now:
-                    record = record | {"latched": True}
                 if not record or not record.get("latched"):
                     value = source.get(attribute)
                     at = self._instant(value, source.get("kind"), attribute, today, zone)
@@ -90,13 +94,15 @@ class AnchorLatches:
                         "latched": at <= now,
                     }
                 self.records[key] = record
-                if record["latched"]:
-                    latched.setdefault(entity, {"kind": record["kind"]})[attribute] = record[
-                        "value"
-                    ]
+        latched = {}
+        for (day, entity, attribute), record in self.records.items():
+            if record["latched"]:
+                latched.setdefault(day, {}).setdefault(entity, {"kind": record["kind"]})[
+                    attribute
+                ] = record["value"]
         if previous != self.snapshot():
             self.version += 1
-        return replace(context, time_source_latches={today.isoformat(): latched} if latched else {})
+        return replace(context, time_source_latches=latched)
 
     @staticmethod
     def _instant(value, kind, attribute, today, zone):
