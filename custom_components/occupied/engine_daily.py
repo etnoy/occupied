@@ -885,7 +885,10 @@ class DailyEngine:
                 self._plans[plan.simulation_date] = plan
                 self._plan_contexts[plan.simulation_date] = data
                 for issue in plan.issues:
-                    if issue.code == "random_window" and issue.severity == "warning":
+                    if (
+                        issue.code in {"random_window", "random_window_overlap"}
+                        and issue.severity == "warning"
+                    ):
                         self._record(
                             f"planning:{plan.simulation_date}:{issue.path}",
                             "random_window_skipped",

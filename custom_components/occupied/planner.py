@@ -25,7 +25,7 @@ from .validation import (
     validation_warnings,
 )
 
-PLANNER_VERSION = 14
+PLANNER_VERSION = 15
 
 
 class RandomStreams:
@@ -348,8 +348,9 @@ def random_window_issues(
             return (
                 Issue(
                     "random_window_overlap",
-                    "Start and end windows must not overlap",
+                    "Start and end windows overlap; random item skipped",
                     path + ("end",),
+                    "error" if event.start.absolute_time and event.end.absolute_time else "warning",
                 ),
             )
         # Preserve recoverable sampling skips for movable timestamp/step sources.
@@ -436,7 +437,10 @@ def generate_plan(
             program, event, simulation_date, context, path, times, random_ends
         )
         issues.extend(bounds_issues)
-        if any(issue.severity == "error" for issue in bounds_issues):
+        if any(
+            issue.severity == "error" or issue.code == "random_window_overlap"
+            for issue in bounds_issues
+        ):
             continue
         count = streams.rng("random", key, "count").randint(event.min_count, event.max_count)
         if count == 0:
