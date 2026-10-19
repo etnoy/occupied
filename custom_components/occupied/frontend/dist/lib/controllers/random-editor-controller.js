@@ -2,6 +2,7 @@
 import { prepareCustomAction } from "../utils/custom-action.js";
 import { copy, randomReferences } from "../models/model.js";
 import {
+  canShareEntities,
   randomEditor,
   randomErrors,
   buildRandom,
@@ -44,10 +45,7 @@ export function createRandomEditorContext(panel) {
     focusEditor(panel, key);
   };
   const changed = (key) => {
-    if (
-      !["entities", "cover"].includes(form.on.kind) ||
-      form.on.kind !== form.off.kind
-    ) {
+    if (!canShareEntities(form.on, form.off)) {
       form.sameEntities = false;
     }
     if (form.sameEntities) {

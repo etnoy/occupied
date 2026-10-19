@@ -9,6 +9,11 @@ import {
   formTiming,
 } from "./step-model.js";
 import { timingForm, durationSeconds } from "../utils/util.js";
+export function canShareEntities(on, off) {
+  return (
+    on.kind === off.kind && ["entities", "cover", "service"].includes(on.kind)
+  );
+}
 export function countBounds(count) {
   return typeof count === "object"
     ? count
@@ -45,8 +50,7 @@ export function randomEditor(program, entry) {
     on,
     off,
     sameEntities:
-      ["entities", "cover"].includes(on.kind) &&
-      on.kind === off.kind &&
+      canShareEntities(on, off) &&
       JSON.stringify([...on.entities].sort()) ===
         JSON.stringify([...off.entities].sort()),
   };

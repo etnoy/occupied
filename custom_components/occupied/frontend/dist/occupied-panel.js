@@ -11007,6 +11007,11 @@ function TimingBoundaryEditor($$anchor, $$props) {
 }
 
 // custom_components/occupied/frontend/src/lib/models/random-model.ts
+function canShareEntities(on2, off) {
+  return (
+    on2.kind === off.kind && ["entities", "cover", "service"].includes(on2.kind)
+  );
+}
 function countBounds(count) {
   return typeof count === "object"
     ? count
@@ -11043,8 +11048,7 @@ function randomEditor(program, entry) {
     on: on2,
     off,
     sameEntities:
-      ["entities", "cover"].includes(on2.kind) &&
-      on2.kind === off.kind &&
+      canShareEntities(on2, off) &&
       JSON.stringify([...on2.entities].sort()) ===
         JSON.stringify([...off.entities].sort()),
   };
@@ -14083,10 +14087,7 @@ function createRandomEditorContext(panel) {
     focusEditor(panel, key2);
   };
   const changed = (key2) => {
-    if (
-      !["entities", "cover"].includes(form.on.kind) ||
-      form.on.kind !== form.off.kind
-    ) {
+    if (!canShareEntities(form.on, form.off)) {
       form.sameEntities = false;
     }
     if (form.sameEntities) {
@@ -17473,11 +17474,7 @@ function RandomEventEditor($$anchor, $$props) {
       });
       append($$anchor2, label);
     };
-    var d = user_derived(
-      () =>
-        ["entities", "cover"].includes(get(form).on.kind) &&
-        get(form).on.kind === get(form).off.kind,
-    );
+    var d = user_derived(() => canShareEntities(get(form).on, get(form).off));
     if_block(node_11, ($$render) => {
       if (get(d)) $$render(consequent_2);
     });
