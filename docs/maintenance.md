@@ -128,3 +128,36 @@ Every October, revisit the six-release window using fresh
 retrieval date, install shares by minor, interpreter/API boundaries, and CI cost
 in a review PR. Discuss any support-window change before changing the policy;
 analytics coverage alone does not change compatibility automatically.
+
+## Cutting a release
+
+Start a release branch from current `main`. Update the version in `pyproject.toml`
+and `custom_components/occupied/manifest.json` together, then run `uv lock` to
+refresh the project's version in `uv.lock`. Run the complete development gate and
+check the intended tag locally:
+
+```sh
+uv run python scripts/check_release.py
+uv run python scripts/release_preflight.py v0.1.1
+```
+
+Open a **chore: prepare 0.1.1 release** PR containing those three version changes.
+Only the maintainer merges it. After review and merge, fetch `main` and tag that
+PR's merge commit, rather than the release branch or an unrelated newer commit:
+
+```sh
+git fetch origin main --tags
+git tag -a v0.1.1 <reviewed-merge-commit> -m "Occupied 0.1.1"
+git push origin v0.1.1
+```
+
+The tag triggers Release. Its preflight checks that the manifest and project
+versions agree, that the tag is exactly `v<version>`, and that the version uses
+canonical PEP 440 spelling before starting Verify. For example, use `0.2.0rc1`
+and tag `v0.2.0rc1`; `v0.2.0-rc.1` is rejected. Alpha, beta, release-candidate and
+development versions publish as GitHub prereleases. Verification must pass before
+assets and generated compatibility notes are published; asset checks still verify
+the packaged manifest and checksums immediately before publication.
+
+Check the Release run and its installable assets after publication. Do not move an
+existing release tag. Correct inconsistent metadata in a reviewed PR before tagging.
