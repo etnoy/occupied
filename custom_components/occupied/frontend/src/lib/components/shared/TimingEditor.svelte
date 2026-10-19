@@ -17,6 +17,7 @@
     clockLabel = "start_time_window",
     windowEndLabel = "end_of_window_optional",
     addWindowEndLabel = "add_end_of_window",
+    rangeEdge,
     showExplanation = true,
     explanationSubject = "runs",
     modes = [
@@ -30,6 +31,7 @@
     clockLabel?: string;
     windowEndLabel?: string;
     addWindowEndLabel?: string;
+    rangeEdge?: "start" | "end";
     showExplanation?: boolean;
     explanationSubject?: "runs" | "window_starts" | "window_ends";
     modes?: [string, string][];
@@ -37,6 +39,9 @@
 
   let { editor, form, time, t, refresh, changed } = $derived(context);
   let fieldPrefix = $derived(context.fieldPrefix || "");
+  let endTimeVisible = $derived(
+    !!(time.end || editor.showEndTime || editor.errors.end),
+  );
   let choices = $derived.by(() => {
     void context;
     let choices = timeSourceChoices(
@@ -65,9 +70,12 @@
 </script>
 
 <div data-editor-section="time">
-  <h3 id={`step-${fieldPrefix}timing-heading`}>
+  <svelte:element
+    this={rangeEdge ? "h4" : "h3"}
+    id={`step-${fieldPrefix}timing-heading`}
+  >
     {t(heading)}
-  </h3>
+  </svelte:element>
   <fieldset
     class="timing-options"
     aria-labelledby={`step-${fieldPrefix}timing-heading`}
@@ -107,44 +115,57 @@
     <FieldError {t} key="mode" {fieldPrefix} errors={{ ...editor.errors }} />
   </fieldset>
   {#if time.mode === "absolute"}
-    <EditorField
-      {panel}
-      {context}
-      key="start"
-      label={clockLabel}
-      value={time.start}
-      update={(value) => (time.start = value)}
-      options={{ type: "time", step: 1 }}
-    ></EditorField>
-    {#if time.end || editor.showEndTime || editor.errors.end}
+    <div class:time-controls-inline={!!rangeEdge}>
       <EditorField
         {panel}
         {context}
-        key="end"
-        label={windowEndLabel}
-        value={time.end}
-        update={(value) => {
-          time.end = value;
-          if (!value) {
-            editor.showEndTime = false;
-          }
-        }}
-        options={{ type: "time", step: 1, optional: true }}
+        key="start"
+        label={rangeEdge
+          ? `${rangeEdge}_${endTimeVisible ? "between" : "at"}`
+          : clockLabel}
+        accessibleLabel={rangeEdge && endTimeVisible ? clockLabel : undefined}
+        value={time.start}
+        update={(value) => (time.start = value)}
+        options={{ type: "time", step: 1, externalLabel: !!rangeEdge }}
       ></EditorField>
-    {:else}
-      <button
-        type="button"
-        class="text-button"
-        onclick={() => {
-          time.end = time.start;
-          editor.showEndTime = true;
-          changed("end");
-          refresh("end");
-        }}
-      >
-        {t(addWindowEndLabel)}
-      </button>
-    {/if}
+      {#if !endTimeVisible}
+        <button
+          type="button"
+          class:text-button={!rangeEdge}
+          disabled={panel.busy}
+          onclick={() => {
+            time.end = time.start;
+            editor.showEndTime = true;
+            changed("end");
+            refresh("end");
+          }}
+        >
+          {t(addWindowEndLabel)}
+        </button>
+      {/if}
+      {#if endTimeVisible}
+        <EditorField
+          {panel}
+          {context}
+          key="end"
+          label={rangeEdge ? "and" : windowEndLabel}
+          accessibleLabel={rangeEdge ? windowEndLabel : undefined}
+          value={time.end}
+          update={(value) => {
+            time.end = value;
+            if (!value) {
+              editor.showEndTime = false;
+            }
+          }}
+          options={{
+            type: "time",
+            step: 1,
+            optional: true,
+            externalLabel: !!rangeEdge,
+          }}
+        ></EditorField>
+      {/if}
+    </div>
   {:else if time.mode === "duration"}
     <EditorField
       {panel}
@@ -327,3 +348,27 @@
     </p>
   {/if}
 </div>
+
+<style>
+  h4 {
+    font-size: 18px;
+    margin: 16px 0 8px;
+  }
+
+  .time-controls-inline {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 18px 0;
+  }
+
+  .time-controls-inline :global(.field) {
+    margin: 0;
+  }
+
+  .time-controls-inline > button {
+    flex: 0 0 auto;
+    margin-bottom: 7px;
+  }
+</style>

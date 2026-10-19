@@ -18,6 +18,7 @@
     placeholder?: string;
     render?: boolean;
     hideLabel?: boolean;
+    externalLabel?: boolean;
   }
 
   let {
@@ -25,6 +26,7 @@
     context,
     key,
     label,
+    accessibleLabel = label,
     value,
     update,
     options = {},
@@ -34,6 +36,7 @@
     context: EditorContext;
     key: string;
     label: string;
+    accessibleLabel?: string;
     value: string | number;
     update: (value: string) => void;
     options?: FieldOptions;
@@ -72,7 +75,7 @@
 </script>
 
 <div class="field">
-  {#if !nativeTime && !options.hideLabel}
+  {#if (!nativeTime || options.externalLabel) && !options.hideLabel}
     <div class={trailing ? "field-label-row" : ""}>
       <label for={id}>{t(label)}</label>
       {@render trailing?.()}
@@ -84,14 +87,15 @@
     <ha-selector
       {id}
       data-builder-field={field}
-      aria-label={t(label)}
+      aria-label={t(accessibleLabel)}
       aria-invalid={invalid}
       aria-describedby={described}
       tabindex="0"
       use:properties={{
         hass: panel._hass,
         selector: { time: {} },
-        label: t(label),
+        label:
+          options.hideLabel || options.externalLabel ? undefined : t(label),
         required: !options.optional,
         value: value || undefined,
       }}

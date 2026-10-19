@@ -57,27 +57,28 @@
       options={{ hideLabel: true, placeholder: t("optional_title") }}
     />
   </div>
-  <p class="hint">
-    {t("random_create_hint")}
-  </p>
+  <h3>{t("active_period")}</h3>
+  <p class="hint">{t("active_period_hint")}</p>
   <div class="editor-sections">
     <TimingEditor
       {panel}
       context={context.timing("start")}
-      heading="window_starts"
-      clockLabel="window_start"
-      windowEndLabel="latest_window_start_optional"
+      heading="period_start"
+      clockLabel="earliest_start"
+      windowEndLabel="latest_start"
       addWindowEndLabel="randomize_window_start"
-      explanationSubject="window_starts"
+      rangeEdge="start"
+      showExplanation={false}
     />
     <TimingEditor
       {panel}
       context={context.timing("end")}
-      heading="window_ends"
-      clockLabel="window_end"
-      windowEndLabel="latest_window_end_optional"
+      heading="period_end"
+      clockLabel="earliest_end"
+      windowEndLabel="latest_end"
       addWindowEndLabel="randomize_window_end"
-      explanationSubject="window_ends"
+      rangeEdge="end"
+      showExplanation={false}
       modes={[
         ["absolute", "absolute_time"],
         ["duration", "duration"],
