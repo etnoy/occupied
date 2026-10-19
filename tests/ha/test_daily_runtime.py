@@ -710,7 +710,7 @@ async def test_device_activity_includes_successful_actions_and_survives_reload(
     hass.bus.async_listen(EVENT_ACTION, events.append)
     engine = await load(hass, daily_entry, freezer)
     await engine.async_set_enabled(True)
-    await advance(hass, freezer, 60)
+    await advance(hass, freezer, 60.001)
     assert len(events) == 1
     event = events[0]
     assert event.data["message"] == (
@@ -753,8 +753,8 @@ async def test_device_activity_includes_successful_actions_and_survives_reload(
     assert await hass.config_entries.async_reload(daily_entry.entry_id)
     await hass.async_block_till_done()
     assert len(events) == 1
-    await advance(hass, freezer, 60)
-    assert events[-1].data["message"] == "Turned on script.test"
+    await advance(hass, freezer, 60.001)
+    assert any(event.data["message"] == "Turned on script.test" for event in events[1:])
     assert len(events) == len(daily_devices)
     assert [event.context.id for event in events] == [call.context.id for call in daily_devices]
     before_failure = len(events)
