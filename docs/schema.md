@@ -50,6 +50,8 @@ Each boundary accepts exactly one quoted `absolute_time.start` clock or `relativ
 
 A `latest_at` cap before the earliest base time produces a warning: a clock after midnight still belongs to the source date, so it can move an evening step to that morning. The cap remains valid and keeps its source-date behavior. Clock cases warn during validation; solar and helper cases warn after resolving the dated plan.
 
+Previews of the saved program use a read-only copy of the controller's reached time-source latches. Unsaved drafts use the current HA time sources.
+
 Boundaries belong to the schedule's **source local date** and HA location, even when an offset crosses midnight. Earlier clock boundaries do not roll to the next day. Comparisons use UTC instants; repeated clocks use the first occurrence and nonexistent clocks advance to the first valid instant. Calendar previews place actions on their actual local date while retaining the source date and weekday selection. Solar events are calculated for that source date, rather than read from `sun.sun`'s next-event attributes. An unavailable base solar event or solar boundary skips the step; a clock cap is never a fallback. Missing timezone or location follows normal planning validation.
 
 Preview explains adjusted instants and strict-condition skips, including field paths and the candidate/boundary/adjusted instants. A skipped step creates no actions, stagger ticks, dependent anchor, lighting intent, startup target, or live-preview event. Dependents follow the capped time or skip with an unavailable anchor. Conditions are evaluated while planning; late execution does not compare against the current wall clock. Permission, pause, run-condition, missed-event, and manual-control policies still apply.
