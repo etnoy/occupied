@@ -1,0 +1,33 @@
+custom_components/occupied/actions.py
+  s_57c4321274169c::t_6e8832068b526a 9,156-160
+custom_components/occupied/device_motion.py
+  s_57c4321274169c::t_da41e46179503f 6-7,21-22,85,96,103-106,110,112-121,123-130
+custom_components/occupied/engine_daily.py
+  s_57c4321274169c::t_20ddd230c9bd64 45,539
+custom_components/occupied/light_tolerances.py
+  s_57c4321274169c::t_9a0a32b895ecb7 1-29
+docs/schema.md
+  s_57c4321274169c::t_6e2b5aeacd4a08 195
+tests/core/test_device_motion.py
+  s_57c4321274169c::t_25e557ff05d01f 70-114
+tests/ha/test_device_motion.py
+  s_57c4321274169c::t_8ee316a289fec0 193-253
+tests/ha/test_light_color_rounding.py
+  s_57c4321274169c::t_fde359339d87ac 25-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "31c53b7d3ce9f6e65c3dd392a652fe9f9f8908a4",
+  "prompts": {},
+  "sessions": {
+    "s_57c4321274169c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15315-93ce-7243-a6bf-3d428cb6f8af",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
