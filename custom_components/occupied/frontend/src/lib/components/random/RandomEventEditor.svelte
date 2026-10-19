@@ -1,11 +1,12 @@
 <script lang="ts">
   import { canShareEntities } from "../../models/random-model.js";
-  import { untrack } from "svelte";
+  import { flushSync, untrack } from "svelte";
   import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import { createRandomEditorContext } from "../../controllers/random-editor-controller.js";
   import EditorField from "../shared/EditorField.svelte";
   import TimingEditor from "../shared/TimingEditor.svelte";
   import RandomActions from "./RandomActions.svelte";
+  import RandomWeekdaysDialog from "./RandomWeekdaysDialog.svelte";
   import ActionEditor from "../shared/ActionEditor.svelte";
   import FieldError from "../shared/FieldError.svelte";
   import { focusEditor } from "../../controllers/step-editor-controller.js";
@@ -21,9 +22,8 @@
   });
   let { editor, form, t, changed, submit, cancel } = $derived(context);
 
-  let advancedOpen = $state(false);
-  let advancedButton: HTMLButtonElement;
-  let advancedTrigger = $state<HTMLButtonElement>();
+  let weekdaysOpen = $state(false);
+  let weekdaysButton: HTMLButtonElement;
   let showMaxCount = $state(
     untrack(() => Number(form.minCount) !== Number(form.maxCount)),
   );
@@ -40,8 +40,14 @@
       return;
     }
 
-    advancedTrigger = advancedButton;
-    advancedOpen = true;
+    weekdaysOpen = true;
+  }
+
+  function closeWeekdays() {
+    flushSync(() => (weekdaysOpen = false));
+    if (weekdaysButton.isConnected) {
+      weekdaysButton.focus();
+    }
   }
 </script>
 
@@ -57,7 +63,22 @@
       options={{ hideLabel: true, placeholder: t("optional_title") }}
     />
   </div>
-  <h3>{t("active_period")}</h3>
+  <div class="active-period-header">
+    <h3>{t("active_period")}</h3>
+    <button
+      bind:this={weekdaysButton}
+      type="button"
+      class:error={!!editor.errors.days}
+      aria-haspopup="dialog"
+      aria-expanded={weekdaysOpen}
+      aria-describedby={editor.errors.days ? "step-error-days" : undefined}
+      data-builder-field="days"
+      data-random-weekdays
+      disabled={panel.busy}
+      onclick={() => (weekdaysOpen = true)}>{t("weekdays")}</button
+    >
+  </div>
+  <FieldError {t} key="days" errors={{ ...editor.errors }} />
   <p class="hint">{t("active_period_hint")}</p>
   <div class="editor-sections">
     <TimingEditor
@@ -85,23 +106,6 @@
       ]}
     />
   </div>
-  <button
-    bind:this={advancedButton}
-    type="button"
-    class="random-advanced-button"
-    class:error={!!editor.errors.days}
-    aria-haspopup="dialog"
-    aria-expanded={advancedOpen}
-    aria-describedby={editor.errors.days ? "step-error-days" : undefined}
-    data-builder-field="days"
-    data-random-advanced
-    disabled={panel.busy}
-    onclick={(event) => {
-      advancedTrigger = event.currentTarget;
-      advancedOpen = true;
-    }}>{t("advanced_settings")}</button
-  >
-  <FieldError {t} key="days" errors={{ ...editor.errors }} />
   <h3>{t("frequency_and_duration")}</h3>
   <div class="random-frequency">
     <div>
@@ -219,7 +223,7 @@
     <button type="button" disabled={panel.busy} onclick={cancel}
       >{t("cancel")}</button
     >
-    <RandomActions {panel} {context} bind:advancedOpen bind:advancedTrigger />
+    <RandomActions {panel} {context} />
     <button
       type="button"
       class="primary"
@@ -235,9 +239,20 @@
   </div>
 </section>
 
+{#if weekdaysOpen}
+  <RandomWeekdaysDialog {panel} {context} onClose={closeWeekdays} />
+{/if}
+
 <style>
-  .random-advanced-button {
-    margin-top: 16px;
+  .active-period-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .active-period-header h3 {
+    margin: 0;
   }
 
   .random-frequency {

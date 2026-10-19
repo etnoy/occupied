@@ -325,12 +325,12 @@ var en = {
   randomize_window_start: "Randomize start",
   randomize_window_end: "Randomize end",
   frequency_and_duration: "Frequency and duration",
-  minimum_events_per_window: "Minimum events per window",
-  maximum_events_per_window: "Maximum events per window",
+  minimum_events_per_window: "Minimum events per active period",
+  maximum_events_per_window: "Maximum events per active period",
   add_maximum_events: "Add maximum events",
   remove_maximum_events: "Remove maximum events",
   random_count_order_error:
-    "Maximum events per window must be at least the minimum.",
+    "Maximum events per active period must be at least the minimum.",
   random_disabled_hint: "This random event is disabled.",
   random_counts_prompt:
     "Choose valid event counts to describe how often events run.",
@@ -340,11 +340,11 @@ var en = {
   random_empty_window_hint:
     "A window may have no events; dependent random events skip that window.",
   random_count_range_summary:
-    "Between {min} and {max} events start at random times during each window.",
+    "Between {min} and {max} events start at random times during each active period.",
   random_single_event_summary:
-    "One event starts at a random time during each window.",
+    "One event starts at a random time during each active period.",
   random_count_summary:
-    "{count} events start at random times during each window.",
+    "{count} events start at random times during each active period.",
   random_durations_prompt:
     "Choose valid durations to describe how long each event lasts.",
   random_duration_fit_prompt: "Choose durations that fit inside the window.",
@@ -367,7 +367,7 @@ var en = {
   random_single_finish_hint: "The event finishes before the window closes.",
   random_overlap_hint:
     "Events may overlap, but all finish before the window closes.",
-  times_per_window: "times per window",
+  times_per_window: "times per active period",
   minimum_duration: "Minimum duration",
   maximum_duration: "Maximum duration",
   duration_hint: "Use durations like 5m, 30s, or 1h.",
@@ -960,12 +960,12 @@ var sv = {
   randomize_window_start: "Slumpa starttid",
   randomize_window_end: "Slumpa sluttid",
   frequency_and_duration: "Frekvens och varaktighet",
-  minimum_events_per_window: "Minsta antal h\xE4ndelser per tidsf\xF6nster",
-  maximum_events_per_window: "H\xF6gsta antal h\xE4ndelser per tidsf\xF6nster",
+  minimum_events_per_window: "Minsta antal h\xE4ndelser per aktiv period",
+  maximum_events_per_window: "H\xF6gsta antal h\xE4ndelser per aktiv period",
   add_maximum_events: "L\xE4gg till h\xF6gsta antal h\xE4ndelser",
   remove_maximum_events: "Ta bort h\xF6gsta antal h\xE4ndelser",
   random_count_order_error:
-    "H\xF6gsta antal h\xE4ndelser per tidsf\xF6nster m\xE5ste vara minst det l\xE4gsta antalet.",
+    "H\xF6gsta antal h\xE4ndelser per aktiv period m\xE5ste vara minst det l\xE4gsta antalet.",
   random_disabled_hint:
     "Den h\xE4r slumpm\xE4ssiga h\xE4ndelsen \xE4r inaktiverad.",
   random_counts_prompt:
@@ -978,11 +978,11 @@ var sv = {
   random_empty_window_hint:
     "Ett tidsf\xF6nster kan sakna h\xE4ndelser; beroende slumpm\xE4ssiga h\xE4ndelser hoppar \xF6ver det tidsf\xF6nstret.",
   random_count_range_summary:
-    "Mellan {min} och {max} h\xE4ndelser b\xF6rjar vid slumpm\xE4ssiga tider inom varje tidsf\xF6nster.",
+    "Mellan {min} och {max} h\xE4ndelser b\xF6rjar vid slumpm\xE4ssiga tider under varje aktiv period.",
   random_single_event_summary:
-    "En h\xE4ndelse b\xF6rjar vid en slumpm\xE4ssig tid inom varje tidsf\xF6nster.",
+    "En h\xE4ndelse b\xF6rjar vid en slumpm\xE4ssig tid under varje aktiv period.",
   random_count_summary:
-    "{count} h\xE4ndelser b\xF6rjar vid slumpm\xE4ssiga tider inom varje tidsf\xF6nster.",
+    "{count} h\xE4ndelser b\xF6rjar vid slumpm\xE4ssiga tider under varje aktiv period.",
   random_durations_prompt:
     "V\xE4lj giltiga varaktigheter f\xF6r att beskriva hur l\xE4nge varje h\xE4ndelse varar.",
   random_duration_fit_prompt:
@@ -1010,7 +1010,7 @@ var sv = {
     "H\xE4ndelsen avslutas innan tidsf\xF6nstret st\xE4ngs.",
   random_overlap_hint:
     "H\xE4ndelser kan \xF6verlappa, men alla avslutas innan tidsf\xF6nstret st\xE4ngs.",
-  times_per_window: "g\xE5nger per tidsf\xF6nster",
+  times_per_window: "g\xE5nger per aktiv period",
   minimum_duration: "Minsta varaktighet",
   maximum_duration: "L\xE4ngsta varaktighet",
   duration_hint: "Ange varaktigheter som 5m, 30s eller 1h.",
@@ -3228,11 +3228,11 @@ var Batch = class _Batch {
         this.#unlink();
         infinite_loop_guard();
       }
-      for (const root30 of this.#resolve()) {
+      for (const root31 of this.#resolve()) {
         try {
-          this.#traverse(root30, effects, render_effects);
+          this.#traverse(root31, effects, render_effects);
         } catch (e) {
-          reset_all(root30);
+          reset_all(root31);
           if (!this.#is_deferred()) this.discard();
           throw e;
         }
@@ -3311,9 +3311,9 @@ var Batch = class _Batch {
    * @param {Effect[]} effects
    * @param {Effect[]} render_effects
    */
-  #traverse(root30, effects, render_effects) {
-    root30.f ^= CLEAN;
-    var effect2 = root30.first;
+  #traverse(root31, effects, render_effects) {
+    root31.f ^= CLEAN;
+    var effect2 = root31.first;
     while (effect2 !== null) {
       var flags2 = effect2.f;
       var is_branch = (flags2 & (BRANCH_EFFECT | ROOT_EFFECT)) !== 0;
@@ -3577,8 +3577,8 @@ var Batch = class _Batch {
         }
         if (batch.#scheduled.length > 0 && !batch.#decrement_queued) {
           batch.apply();
-          for (var root30 of batch.#resolve()) {
-            batch.#traverse(root30, [], []);
+          for (var root31 of batch.#resolve()) {
+            batch.#traverse(root31, [], []);
           }
         }
         batch.deactivate();
@@ -5210,7 +5210,7 @@ function is_dirty(reaction) {
 function schedule_possible_effect_self_invalidation(
   signal,
   effect2,
-  root30 = true,
+  root31 = true,
 ) {
   var reactions = signal.reactions;
   if (reactions === null) return;
@@ -5231,7 +5231,7 @@ function schedule_possible_effect_self_invalidation(
         false,
       );
     } else if (effect2 === reaction) {
-      if (root30) {
+      if (root31) {
         set_signal_status(reaction, DIRTY);
       } else if ((reaction.f & CLEAN) !== 0) {
         set_signal_status(reaction, MAYBE_DIRTY);
@@ -7671,14 +7671,14 @@ function element(node, get_tag, is_svg, render_fn, get_namespace, location2) {
 function append_styles(anchor, css) {
   effect(() => {
     anchor = active_effect?.parent?.nodes?.start ?? anchor;
-    var root30 = anchor.getRootNode();
+    var root31 = anchor.getRootNode();
     var target =
       /** @type {ShadowRoot} */
-      root30.host
+      root31.host
         ? /** @type {ShadowRoot} */
-          root30
+          root31
         : /** @type {Document} */
-          (root30.head ?? /** @type {Document} */ root30.ownerDocument.head);
+          (root31.head ?? /** @type {Document} */ root31.ownerDocument.head);
     if (!target.querySelector("#" + css.hash)) {
       const style = create_element("style");
       style.id = css.hash;
@@ -14309,11 +14309,11 @@ function ActivityList($$anchor, $$props) {
       ) {
         return current;
       }
-      const root30 = current.getRootNode();
+      const root31 = current.getRootNode();
       current =
         current.assignedSlot ||
         current.parentElement ||
-        (root30 instanceof ShadowRoot ? root30.host : null);
+        (root31 instanceof ShadowRoot ? root31.host : null);
     }
     return document.scrollingElement;
   }
@@ -17931,20 +17931,15 @@ function DeleteRandomDialog($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/random/AdvancedRandomSettings.svelte
-var root25 = from_html(`<button type="button"> </button>`);
+var root25 = from_html(`<h3> </h3> <!>`, 1);
 var root_120 = from_html(
-  `<label class="step-weekday-option"><input type="checkbox"/><span> </span></label>`,
-);
-var root_217 = from_html(`<h3> </h3> <!>`, 1);
-var root_315 = from_html(
-  `<dialog class="step-advanced-dialog" aria-labelledby="random-advanced-title" aria-describedby="random-weekdays-description"><h2 id="random-advanced-title"> </h2> <p id="random-weekdays-description" class="hint"> </p> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!> <!> <!> <p class="hint"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
+  `<dialog class="step-advanced-dialog" aria-labelledby="random-advanced-title"><h2 id="random-advanced-title"> </h2> <!> <!> <p class="hint"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
 );
 function AdvancedRandomSettings($$anchor, $$props) {
   push($$props, true);
   let form = user_derived(() => $$props.context.form),
     t = user_derived(() => $$props.context.t),
     changed = user_derived(() => $$props.context.changed);
-  let selectedDays = state(proxy(untrack(() => [...get(form).days])));
   let startStagger = state(proxy(untrack(() => staggerSettings(get(form).on))));
   let endStagger = state(proxy(untrack(() => staggerSettings(get(form).off))));
   let canStartStagger = user_derived(() => supportsStagger(get(form).on));
@@ -17955,33 +17950,14 @@ function AdvancedRandomSettings($$anchor, $$props) {
       (get(canEndStagger) && staggerPeriodError(get(endStagger))),
   );
   let dialog;
-  const presets = [
-    ["every_day_label", days],
-    ["weekdays", days.slice(0, 5)],
-    ["weekends", days.slice(5)],
-  ];
-  const weekdays = [
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
-    "sunday",
-  ];
-  let dayError = user_derived(() =>
-    get(selectedDays).length > 0 ? void 0 : get(t)("days_required_error"),
-  );
   onMount(() => {
     dialog.showModal();
     dialog.querySelector("input")?.focus();
   });
   function apply2() {
-    if ($$props.panel.busy || get(dayError) || get(staggerError)) {
+    if ($$props.panel.busy || get(staggerError)) {
       return;
     }
-    get(form).days = [...get(selectedDays)];
-    get(changed)("days");
     if (get(canStartStagger)) {
       applyStagger(get(form).on, get(startStagger));
       get(changed)("on.stagger");
@@ -17992,106 +17968,17 @@ function AdvancedRandomSettings($$anchor, $$props) {
     }
     dialog.close();
   }
-  var dialog_1 = root_315();
+  var dialog_1 = root_120();
   var h2 = child(dialog_1);
   var text2 = only_child(h2, true);
-  var p = sibling(h2, 2);
-  var text_1 = only_child(p, true);
-  var fieldset = sibling(p, 2);
-  var legend = child(fieldset);
-  var text_2 = only_child(legend, true);
-  var div = sibling(legend, 2);
-  each(
-    div,
-    21,
-    () => presets,
-    ([label, selection]) => label,
-    ($$anchor2, $$item) => {
-      var $$array = user_derived(() => to_array(get($$item), 2));
-      let label = () => get($$array)[0];
-      let selection = () => get($$array)[1];
-      var button = root25();
-      var text_3 = only_child(button, true);
-      template_effect(
-        ($0, $1) => {
-          set_attribute2(button, "aria-pressed", $0);
-          set_text(text_3, $1);
-        },
-        [
-          () =>
-            get(selectedDays).length === selection().length &&
-            selection().every((day2) => get(selectedDays).includes(day2)),
-          () => get(t)(label()),
-        ],
-      );
-      delegated("click", button, () =>
-        set2(selectedDays, [...selection()], true),
-      );
-      append($$anchor2, button);
-    },
-  );
-  reset(div);
-  var div_1 = sibling(div, 2);
-  each(
-    div_1,
-    22,
-    () => days,
-    (day2) => day2,
-    ($$anchor2, day2, index2) => {
-      var label_1 = root_120();
-      var input = child(label_1);
-      remove_input_defaults(input);
-      var span = sibling(input);
-      var text_4 = only_child(span, true);
-      reset(label_1);
-      template_effect(
-        ($0, $1) => {
-          set_checked(input, $0);
-          set_text(text_4, $1);
-        },
-        [
-          () => get(selectedDays).includes(day2),
-          () => get(t)(weekdays[get(index2)]),
-        ],
-      );
-      delegated("change", input, (event2) => {
-        const checked = event2.currentTarget.checked;
-        set2(
-          selectedDays,
-          days.filter((candidate) =>
-            candidate === day2
-              ? checked
-              : get(selectedDays).includes(candidate),
-          ),
-          true,
-        );
-      });
-      append($$anchor2, label_1);
-    },
-  );
-  reset(div_1);
-  reset(fieldset);
-  var node = sibling(fieldset, 2);
-  {
-    let $0 = user_derived(() => (get(dayError) ? { days: get(dayError) } : {}));
-    FieldError(node, {
-      get t() {
-        return get(t);
-      },
-      key: "days",
-      get errors() {
-        return get($0);
-      },
-    });
-  }
-  var node_1 = sibling(node, 2);
+  var node = sibling(h2, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment = root_217();
+      var fragment = root25();
       var h3 = first_child(fragment);
-      var text_5 = only_child(h3, true);
-      var node_2 = sibling(h3, 2);
-      StaggerSettings(node_2, {
+      var text_1 = only_child(h3, true);
+      var node_1 = sibling(h3, 2);
+      StaggerSettings(node_1, {
         get t() {
           return get(t);
         },
@@ -18107,23 +17994,23 @@ function AdvancedRandomSettings($$anchor, $$props) {
         },
       });
       template_effect(
-        ($0) => set_text(text_5, $0),
+        ($0) => set_text(text_1, $0),
         [() => get(t)("start_action")],
       );
       append($$anchor2, fragment);
     };
-    if_block(node_1, ($$render) => {
+    if_block(node, ($$render) => {
       if (get(canStartStagger)) $$render(consequent);
     });
   }
-  var node_3 = sibling(node_1, 2);
+  var node_2 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment_1 = root_217();
+      var fragment_1 = root25();
       var h3_1 = first_child(fragment_1);
-      var text_6 = only_child(h3_1, true);
-      var node_4 = sibling(h3_1, 2);
-      StaggerSettings(node_4, {
+      var text_2 = only_child(h3_1, true);
+      var node_3 = sibling(h3_1, 2);
+      StaggerSettings(node_3, {
         get t() {
           return get(t);
         },
@@ -18139,23 +18026,23 @@ function AdvancedRandomSettings($$anchor, $$props) {
         },
       });
       template_effect(
-        ($0) => set_text(text_6, $0),
+        ($0) => set_text(text_2, $0),
         [() => get(t)("end_action")],
       );
       append($$anchor2, fragment_1);
     };
-    if_block(node_3, ($$render) => {
+    if_block(node_2, ($$render) => {
       if (get(canEndStagger)) $$render(consequent_1);
     });
   }
-  var p_1 = sibling(node_3, 2);
-  var text_7 = only_child(p_1, true);
-  var div_2 = sibling(p_1, 2);
-  var button_1 = child(div_2);
-  var text_8 = only_child(button_1, true);
-  var button_2 = sibling(button_1, 2);
-  var text_9 = only_child(button_2, true);
-  reset(div_2);
+  var p = sibling(node_2, 2);
+  var text_3 = only_child(p, true);
+  var div = sibling(p, 2);
+  var button = child(div);
+  var text_4 = only_child(button, true);
+  var button_1 = sibling(button, 2);
+  var text_5 = only_child(button_1, true);
+  reset(div);
   reset(dialog_1);
   bind_this(
     dialog_1,
@@ -18163,26 +18050,15 @@ function AdvancedRandomSettings($$anchor, $$props) {
     () => dialog,
   );
   template_effect(
-    ($0, $1, $2, $3, $4, $5) => {
+    ($0, $1, $2, $3) => {
       set_text(text2, $0);
-      set_text(text_1, $1);
-      set_attribute2(
-        fieldset,
-        "aria-describedby",
-        get(dayError) ? "step-error-days" : void 0,
-      );
-      fieldset.disabled = $$props.panel.busy;
-      set_text(text_2, $2);
-      set_text(text_7, $3);
-      set_text(text_8, $4);
-      button_2.disabled =
-        $$props.panel.busy || !!get(dayError) || !!get(staggerError);
-      set_text(text_9, $5);
+      set_text(text_3, $1);
+      set_text(text_4, $2);
+      button_1.disabled = $$props.panel.busy || !!get(staggerError);
+      set_text(text_5, $3);
     },
     [
       () => get(t)("advanced_settings"),
-      () => get(t)("random_days_hint"),
-      () => get(t)("run_on"),
       () => get(t)("random_settings_hint"),
       () => get(t)("cancel"),
       () => get(t)("apply"),
@@ -18191,12 +18067,12 @@ function AdvancedRandomSettings($$anchor, $$props) {
   event("close", dialog_1, function (...$$args) {
     $$props.onClose?.apply(this, $$args);
   });
-  delegated("click", button_1, () => dialog.close());
-  delegated("click", button_2, apply2);
+  delegated("click", button, () => dialog.close());
+  delegated("click", button_1, apply2);
   append($$anchor, dialog_1);
   pop();
 }
-delegate(["click", "change"]);
+delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/random/RandomActions.svelte
 var root26 = from_html(
@@ -18204,31 +18080,27 @@ var root26 = from_html(
   1,
 );
 var root_121 = from_html(
-  `<div class="step-editor-actions"><button type="button" class="icon-button" aria-haspopup="menu" data-random-actions=""><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"></path></svg></button> <div class="step-actions-menu" popover="auto" role="menu" tabindex="-1"><button type="button" role="menuitem" tabindex="-1"> </button> <button type="button" role="menuitem" tabindex="-1"> </button> <!></div></div> <!> <!> <!>`,
+  `<div class="step-editor-actions"><button type="button" class="icon-button" aria-haspopup="menu" data-random-actions=""><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"></path></svg></button> <div class="step-actions-menu" popover="auto" role="menu" tabindex="-1"><button type="button" role="menuitem" tabindex="-1"> </button> <button type="button" role="menuitem" tabindex="-1"> </button> <button type="button" role="menuitem" tabindex="-1"> </button> <!></div></div> <!> <!> <!>`,
   1,
 );
 function RandomActions($$anchor, $$props) {
   push($$props, true);
-  let context = prop($$props, "context", 7),
-    advancedOpen = prop($$props, "advancedOpen", 15, false);
+  let context = prop($$props, "context", 7);
   let menuOpen = state(false);
+  let advancedOpen = state(false);
   let deleteOpen = state(false);
   let previewOpen = state(false);
   let trigger;
   let menu;
   let menuId = user_derived(() => `random-actions-${context().editor.id}`);
   function closeDialog() {
-    const focusTarget =
-      advancedOpen() && $$props.advancedTrigger
-        ? $$props.advancedTrigger
-        : trigger;
     flushSync(() => {
       set2(deleteOpen, false);
-      advancedOpen(false);
+      set2(advancedOpen, false);
       set2(previewOpen, false);
     });
-    if (focusTarget.isConnected) {
-      focusTarget.focus();
+    if (trigger.isConnected) {
+      trigger.focus();
     }
   }
   function closeMenu(restoreFocus = true) {
@@ -18292,20 +18164,22 @@ function RandomActions($$anchor, $$props) {
   var text2 = only_child(button_1, true);
   var button_2 = sibling(button_1, 2);
   var text_1 = only_child(button_2, true);
-  var node = sibling(button_2, 2);
+  var button_3 = sibling(button_2, 2);
+  var text_2 = only_child(button_3, true);
+  var node = sibling(button_3, 2);
   {
     var consequent = ($$anchor2) => {
       var fragment_1 = root26();
-      var button_3 = sibling(first_child(fragment_1), 2);
-      var text_2 = only_child(button_3, true);
+      var button_4 = sibling(first_child(fragment_1), 2);
+      var text_3 = only_child(button_4, true);
       template_effect(
         ($0) => {
-          button_3.disabled = $$props.panel.busy || $$props.panel.stale;
-          set_text(text_2, $0);
+          button_4.disabled = $$props.panel.busy || $$props.panel.stale;
+          set_text(text_3, $0);
         },
         [() => $$props.panel.t("delete_random_event")],
       );
-      delegated("click", button_3, () => {
+      delegated("click", button_4, () => {
         closeMenu(false);
         flushSync(() => set2(deleteOpen, true));
       });
@@ -18350,7 +18224,7 @@ function RandomActions($$anchor, $$props) {
       });
     };
     if_block(node_2, ($$render) => {
-      if (advancedOpen()) $$render(consequent_2);
+      if (get(advancedOpen)) $$render(consequent_2);
     });
   }
   var node_3 = sibling(node_2, 2);
@@ -18385,7 +18259,7 @@ function RandomActions($$anchor, $$props) {
     });
   }
   template_effect(
-    ($0, $1, $2, $3, $4) => {
+    ($0, $1, $2, $3, $4, $5) => {
       set_attribute2(button, "aria-label", $0);
       set_attribute2(button, "title", $1);
       set_attribute2(button, "aria-expanded", get(menuOpen));
@@ -18397,6 +18271,8 @@ function RandomActions($$anchor, $$props) {
       set_text(text2, $3);
       button_2.disabled = $$props.panel.busy;
       set_text(text_1, $4);
+      button_3.disabled = $$props.panel.busy;
+      set_text(text_2, $5);
     },
     [
       () => $$props.panel.t("random_event_actions"),
@@ -18404,6 +18280,7 @@ function RandomActions($$anchor, $$props) {
       () => $$props.panel.t("random_event_actions"),
       () => $$props.panel.t("preview"),
       () => $$props.panel.t(context().form.enabled ? "disable" : "enable"),
+      () => $$props.panel.t("advanced_settings"),
     ],
   );
   delegated("click", button, () => (get(menuOpen) ? closeMenu() : openMenu()));
@@ -18427,10 +18304,197 @@ function RandomActions($$anchor, $$props) {
     context().form.enabled = !context().form.enabled;
     context().changed("enabled");
   });
+  delegated("click", button_3, () => {
+    closeMenu(false);
+    flushSync(() => set2(advancedOpen, true));
+  });
   append($$anchor, fragment);
   pop();
 }
 delegate(["click", "keydown"]);
+
+// custom_components/occupied/frontend/src/lib/components/random/RandomWeekdaysDialog.svelte
+var root27 = from_html(`<button type="button"> </button>`);
+var root_124 = from_html(
+  `<label class="step-weekday-option"><input type="checkbox"/><span> </span></label>`,
+);
+var root_217 = from_html(
+  `<p id="random-weekdays-error" class="error" role="alert"> </p>`,
+);
+var root_315 = from_html(
+  `<dialog class="step-advanced-dialog" aria-labelledby="random-weekdays-title" aria-describedby="random-weekdays-description"><h2 id="random-weekdays-title"> </h2> <p id="random-weekdays-description" class="hint"> </p> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
+);
+function RandomWeekdaysDialog($$anchor, $$props) {
+  push($$props, true);
+  let form = user_derived(() => $$props.context.form),
+    t = user_derived(() => $$props.context.t),
+    changed = user_derived(() => $$props.context.changed);
+  let selectedDays = state(proxy(untrack(() => [...get(form).days])));
+  let dayError = user_derived(() =>
+    get(selectedDays).length > 0 ? void 0 : get(t)("days_required_error"),
+  );
+  let dialog;
+  const presets = [
+    ["every_day_label", days],
+    ["weekdays", days.slice(0, 5)],
+    ["weekends", days.slice(5)],
+  ];
+  const weekdays = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+  ];
+  onMount(() => {
+    dialog.showModal();
+    dialog.querySelector("input")?.focus();
+  });
+  function apply2() {
+    if ($$props.panel.busy || get(dayError)) {
+      return;
+    }
+    get(form).days = [...get(selectedDays)];
+    get(changed)("days");
+    dialog.close();
+  }
+  var dialog_1 = root_315();
+  var h2 = child(dialog_1);
+  var text2 = only_child(h2, true);
+  var p = sibling(h2, 2);
+  var text_1 = only_child(p, true);
+  var fieldset = sibling(p, 2);
+  var legend = child(fieldset);
+  var text_2 = only_child(legend, true);
+  var div = sibling(legend, 2);
+  each(
+    div,
+    21,
+    () => presets,
+    ([label, selection]) => label,
+    ($$anchor2, $$item) => {
+      var $$array = user_derived(() => to_array(get($$item), 2));
+      let label = () => get($$array)[0];
+      let selection = () => get($$array)[1];
+      var button = root27();
+      var text_3 = only_child(button, true);
+      template_effect(
+        ($0, $1) => {
+          set_attribute2(button, "aria-pressed", $0);
+          set_text(text_3, $1);
+        },
+        [
+          () =>
+            get(selectedDays).length === selection().length &&
+            selection().every((day2) => get(selectedDays).includes(day2)),
+          () => get(t)(label()),
+        ],
+      );
+      delegated("click", button, () =>
+        set2(selectedDays, [...selection()], true),
+      );
+      append($$anchor2, button);
+    },
+  );
+  reset(div);
+  var div_1 = sibling(div, 2);
+  each(
+    div_1,
+    22,
+    () => days,
+    (day2) => day2,
+    ($$anchor2, day2, index2) => {
+      var label_1 = root_124();
+      var input = child(label_1);
+      remove_input_defaults(input);
+      var span = sibling(input);
+      var text_4 = only_child(span, true);
+      reset(label_1);
+      template_effect(
+        ($0, $1) => {
+          set_checked(input, $0);
+          set_text(text_4, $1);
+        },
+        [
+          () => get(selectedDays).includes(day2),
+          () => get(t)(weekdays[get(index2)]),
+        ],
+      );
+      delegated("change", input, (event2) => {
+        const checked = event2.currentTarget.checked;
+        set2(
+          selectedDays,
+          days.filter((candidate) =>
+            candidate === day2
+              ? checked
+              : get(selectedDays).includes(candidate),
+          ),
+          true,
+        );
+      });
+      append($$anchor2, label_1);
+    },
+  );
+  reset(div_1);
+  reset(fieldset);
+  var node = sibling(fieldset, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var p_1 = root_217();
+      var text_5 = only_child(p_1, true);
+      template_effect(() => set_text(text_5, get(dayError)));
+      append($$anchor2, p_1);
+    };
+    if_block(node, ($$render) => {
+      if (get(dayError)) $$render(consequent);
+    });
+  }
+  var div_2 = sibling(node, 2);
+  var button_1 = child(div_2);
+  var text_6 = only_child(button_1, true);
+  var button_2 = sibling(button_1, 2);
+  var text_7 = only_child(button_2, true);
+  reset(div_2);
+  reset(dialog_1);
+  bind_this(
+    dialog_1,
+    ($$value) => (dialog = $$value),
+    () => dialog,
+  );
+  template_effect(
+    ($0, $1, $2, $3, $4) => {
+      set_text(text2, $0);
+      set_text(text_1, $1);
+      set_attribute2(
+        fieldset,
+        "aria-describedby",
+        get(dayError) ? "random-weekdays-error" : void 0,
+      );
+      fieldset.disabled = $$props.panel.busy;
+      set_text(text_2, $2);
+      set_text(text_6, $3);
+      button_2.disabled = $$props.panel.busy || !!get(dayError);
+      set_text(text_7, $4);
+    },
+    [
+      () => get(t)("weekdays"),
+      () => get(t)("random_days_hint"),
+      () => get(t)("run_on"),
+      () => get(t)("cancel"),
+      () => get(t)("apply"),
+    ],
+  );
+  event("close", dialog_1, function (...$$args) {
+    $$props.onClose?.apply(this, $$args);
+  });
+  delegated("click", button_1, () => dialog.close());
+  delegated("click", button_2, apply2);
+  append($$anchor, dialog_1);
+  pop();
+}
+delegate(["click", "change"]);
 
 // custom_components/occupied/frontend/src/lib/utils/random-explanation.ts
 function randomExplanation(form, program, catalog, t = translator(), locale) {
@@ -18665,16 +18729,17 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
-var root27 = from_html(`<button type="button" class="text-button"> </button>`);
-var root_124 = from_html(
+var root28 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_125 = from_html(
   `<label class="same-entities svelte-1n39iyr"><input type="checkbox"/> </label>`,
 );
 var root_218 = from_html(
-  `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <h3> </h3> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-advanced=""> </button> <!> <h3> </h3> <div class="random-frequency svelte-1n39iyr"><div><!> <!></div> <div><!></div> <!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <p class="hint"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section>`,
+  `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <div class="active-period-header svelte-1n39iyr"><h3 class="svelte-1n39iyr"> </h3> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-weekdays=""> </button></div> <!> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <h3> </h3> <div class="random-frequency svelte-1n39iyr"><div><!> <!></div> <div><!></div> <!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <p class="hint"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section> <!>`,
+  1,
 );
 var $$css12 = {
   hash: "svelte-1n39iyr",
-  code: ".random-advanced-button.svelte-1n39iyr {margin-top:16px;}.random-frequency.svelte-1n39iyr {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}.same-entities.svelte-1n39iyr {display:flex;align-items:center;gap:8px;margin-top:16px;}\n\n  @media (max-width: 600px) {.random-frequency.svelte-1n39iyr {grid-template-columns:1fr;gap:0;}\n  }",
+  code: ".active-period-header.svelte-1n39iyr {display:flex;align-items:center;justify-content:space-between;gap:16px;}.active-period-header.svelte-1n39iyr h3:where(.svelte-1n39iyr) {margin:0;}.random-frequency.svelte-1n39iyr {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}.same-entities.svelte-1n39iyr {display:flex;align-items:center;gap:8px;margin-top:16px;}\n\n  @media (max-width: 600px) {.random-frequency.svelte-1n39iyr {grid-template-columns:1fr;gap:0;}\n  }",
 };
 function RandomEventEditor($$anchor, $$props) {
   push($$props, true);
@@ -18689,9 +18754,8 @@ function RandomEventEditor($$anchor, $$props) {
     changed = user_derived(() => get(context).changed),
     submit = user_derived(() => get(context).submit),
     cancel = user_derived(() => get(context).cancel);
-  let advancedOpen = state(false);
-  let advancedButton;
-  let advancedTrigger = state(void 0);
+  let weekdaysOpen = state(false);
+  let weekdaysButton;
   let showMaxCount = state(
     proxy(
       untrack(() => Number(get(form).minCount) !== Number(get(form).maxCount)),
@@ -18708,10 +18772,16 @@ function RandomEventEditor($$anchor, $$props) {
     if (!$$props.panel.randomEditor?.errors.days) {
       return;
     }
-    set2(advancedTrigger, advancedButton, true);
-    set2(advancedOpen, true);
+    set2(weekdaysOpen, true);
   }
-  var section = root_218();
+  function closeWeekdays() {
+    flushSync(() => set2(weekdaysOpen, false));
+    if (weekdaysButton.isConnected) {
+      weekdaysButton.focus();
+    }
+  }
+  var fragment = root_218();
+  var section = first_child(fragment);
   var div = child(section);
   var node = child(div);
   {
@@ -18738,15 +18808,38 @@ function RandomEventEditor($$anchor, $$props) {
     });
   }
   reset(div);
-  var h3 = sibling(div, 2);
+  var div_1 = sibling(div, 2);
+  var h3 = child(div_1);
   var text2 = only_child(h3, true);
-  var p = sibling(h3, 2);
-  var text_1 = only_child(p, true);
-  var div_1 = sibling(p, 2);
-  var node_1 = child(div_1);
+  var button = sibling(h3, 2);
+  let classes;
+  var text_1 = only_child(button, true);
+  bind_this(
+    button,
+    ($$value) => (weekdaysButton = $$value),
+    () => weekdaysButton,
+  );
+  reset(div_1);
+  var node_1 = sibling(div_1, 2);
+  {
+    let $0 = user_derived(() => ({ ...get(editor).errors }));
+    FieldError(node_1, {
+      get t() {
+        return get(t);
+      },
+      key: "days",
+      get errors() {
+        return get($0);
+      },
+    });
+  }
+  var p = sibling(node_1, 2);
+  var text_2 = only_child(p, true);
+  var div_2 = sibling(p, 2);
+  var node_2 = child(div_2);
   {
     let $0 = user_derived(() => get(context).timing("start"));
-    TimingEditor(node_1, {
+    TimingEditor(node_2, {
       get panel() {
         return $$props.panel;
       },
@@ -18761,10 +18854,10 @@ function RandomEventEditor($$anchor, $$props) {
       showExplanation: false,
     });
   }
-  var node_2 = sibling(node_1, 2);
+  var node_3 = sibling(node_2, 2);
   {
     let $0 = user_derived(() => get(context).timing("end"));
-    TimingEditor(node_2, {
+    TimingEditor(node_3, {
       get panel() {
         return $$props.panel;
       },
@@ -18783,33 +18876,12 @@ function RandomEventEditor($$anchor, $$props) {
       ],
     });
   }
-  reset(div_1);
-  var button = sibling(div_1, 2);
-  let classes;
-  var text_2 = only_child(button, true);
-  bind_this(
-    button,
-    ($$value) => (advancedButton = $$value),
-    () => advancedButton,
-  );
-  var node_3 = sibling(button, 2);
-  {
-    let $0 = user_derived(() => ({ ...get(editor).errors }));
-    FieldError(node_3, {
-      get t() {
-        return get(t);
-      },
-      key: "days",
-      get errors() {
-        return get($0);
-      },
-    });
-  }
-  var h3_1 = sibling(node_3, 2);
+  reset(div_2);
+  var h3_1 = sibling(div_2, 2);
   var text_3 = only_child(h3_1, true);
-  var div_2 = sibling(h3_1, 2);
-  var div_3 = child(div_2);
-  var node_4 = child(div_3);
+  var div_3 = sibling(h3_1, 2);
+  var div_4 = child(div_3);
+  var node_4 = child(div_4);
   EditorField(node_4, {
     get panel() {
       return $$props.panel;
@@ -18833,7 +18905,7 @@ function RandomEventEditor($$anchor, $$props) {
   var node_5 = sibling(node_4, 2);
   {
     var consequent = ($$anchor2) => {
-      var button_1 = root27();
+      var button_1 = root28();
       var text_4 = only_child(button_1, true);
       template_effect(
         ($0) => {
@@ -18853,14 +18925,14 @@ function RandomEventEditor($$anchor, $$props) {
       if (!get(maxCountVisible)) $$render(consequent);
     });
   }
-  reset(div_3);
-  var div_4 = sibling(div_3, 2);
-  var node_6 = child(div_4);
+  reset(div_4);
+  var div_5 = sibling(div_4, 2);
+  var node_6 = child(div_5);
   {
     var consequent_1 = ($$anchor2) => {
       {
         const trailing = ($$anchor3) => {
-          var button_2 = root27();
+          var button_2 = root28();
           var text_5 = only_child(button_2, true);
           template_effect(
             ($0) => {
@@ -18900,8 +18972,8 @@ function RandomEventEditor($$anchor, $$props) {
       if (get(maxCountVisible)) $$render(consequent_1);
     });
   }
-  reset(div_4);
-  var node_7 = sibling(div_4, 2);
+  reset(div_5);
+  var node_7 = sibling(div_5, 2);
   EditorField(node_7, {
     get panel() {
       return $$props.panel;
@@ -18933,13 +19005,13 @@ function RandomEventEditor($$anchor, $$props) {
     update: (value) => (get(form).maxDuration = value),
     options: { placeholder: "15m" },
   });
-  reset(div_2);
-  var p_1 = sibling(div_2, 2);
+  reset(div_3);
+  var p_1 = sibling(div_3, 2);
   var text_6 = only_child(p_1, true);
   var p_2 = sibling(p_1, 2);
   var text_7 = only_child(p_2, true);
-  var div_5 = sibling(p_2, 2);
-  var node_9 = child(div_5);
+  var div_6 = sibling(p_2, 2);
+  var node_9 = child(div_6);
   {
     let $0 = user_derived(() => get(context).action("on"));
     ActionEditor(node_9, {
@@ -18954,8 +19026,8 @@ function RandomEventEditor($$anchor, $$props) {
       entityLabel: "start_entities",
     });
   }
-  var div_6 = sibling(node_9, 2);
-  var node_10 = child(div_6);
+  var div_7 = sibling(node_9, 2);
+  var node_10 = child(div_7);
   {
     let $0 = user_derived(() => get(context).action("off"));
     ActionEditor(node_10, {
@@ -18976,7 +19048,7 @@ function RandomEventEditor($$anchor, $$props) {
   var node_11 = sibling(node_10, 2);
   {
     var consequent_2 = ($$anchor2) => {
-      var label = root_124();
+      var label = root_125();
       var input = child(label);
       remove_input_defaults(input);
       var text_8 = sibling(input, 1, true);
@@ -18999,10 +19071,10 @@ function RandomEventEditor($$anchor, $$props) {
       if (get(d)) $$render(consequent_2);
     });
   }
+  reset(div_7);
   reset(div_6);
-  reset(div_5);
-  var div_7 = sibling(div_5, 2);
-  var button_3 = child(div_7);
+  var div_8 = sibling(div_6, 2);
+  var button_3 = child(div_8);
   var text_9 = only_child(button_3, true);
   var node_12 = sibling(button_3, 2);
   RandomActions(node_12, {
@@ -19012,42 +19084,42 @@ function RandomEventEditor($$anchor, $$props) {
     get context() {
       return get(context);
     },
-    get advancedOpen() {
-      return get(advancedOpen);
-    },
-    set advancedOpen($$value) {
-      set2(advancedOpen, $$value, true);
-    },
-    get advancedTrigger() {
-      return get(advancedTrigger);
-    },
-    set advancedTrigger($$value) {
-      set2(advancedTrigger, $$value, true);
-    },
   });
   var button_4 = sibling(node_12, 2);
   var text_10 = only_child(button_4, true);
-  reset(div_7);
+  reset(div_8);
   reset(section);
+  var node_13 = sibling(section, 2);
+  {
+    var consequent_3 = ($$anchor2) => {
+      RandomWeekdaysDialog($$anchor2, {
+        get panel() {
+          return $$props.panel;
+        },
+        get context() {
+          return get(context);
+        },
+        onClose: closeWeekdays,
+      });
+    };
+    if_block(node_13, ($$render) => {
+      if (get(weekdaysOpen)) $$render(consequent_3);
+    });
+  }
   template_effect(
     ($0, $1, $2, $3, $4, $5, $6, $7) => {
       set_text(text2, $0);
-      set_text(text_1, $1);
-      classes = set_class(
-        button,
-        1,
-        "random-advanced-button svelte-1n39iyr",
-        null,
-        classes,
-        { error: !!get(editor).errors.days },
-      );
-      set_attribute2(button, "aria-expanded", get(advancedOpen));
+      set_attribute2(button, "aria-expanded", get(weekdaysOpen));
       set_attribute2(
         button,
         "aria-describedby",
         get(editor).errors.days ? "step-error-days" : void 0,
       );
       button.disabled = $$props.panel.busy;
+      classes = set_class(button, 1, "", null, classes, {
+        error: !!get(editor).errors.days,
+      });
+      set_text(text_1, $1);
       set_text(text_2, $2);
       set_text(text_3, $3);
       set_text(text_6, $4);
@@ -19059,8 +19131,8 @@ function RandomEventEditor($$anchor, $$props) {
     },
     [
       () => get(t)("active_period"),
+      () => get(t)("weekdays"),
       () => get(t)("active_period_hint"),
-      () => get(t)("advanced_settings"),
       () => get(t)("frequency_and_duration"),
       () =>
         randomExplanation(
@@ -19080,24 +19152,21 @@ function RandomEventEditor($$anchor, $$props) {
         ),
     ],
   );
-  delegated("click", button, (event2) => {
-    set2(advancedTrigger, event2.currentTarget, true);
-    set2(advancedOpen, true);
-  });
+  delegated("click", button, () => set2(weekdaysOpen, true));
   delegated("click", button_3, function (...$$args) {
     get(cancel)?.apply(this, $$args);
   });
   delegated("click", button_4, save2);
-  append($$anchor, section);
+  append($$anchor, fragment);
   pop();
 }
 delegate(["click", "change"]);
 
 // custom_components/occupied/frontend/src/lib/components/random/RandomView.svelte
-var root28 = from_html(
+var root29 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-random=""> </button></section>`,
 );
-var root_125 = from_html(`<span class="step-status-badge"> </span>`);
+var root_126 = from_html(`<span class="step-status-badge"> </span>`);
 var root_219 = from_html(`<span class="step-row-time"> </span>`);
 var root_316 = from_html(
   `<div style="--depth:0"><div class="step-card-header"><!> <button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button></div> <div><!></div></div>`,
@@ -19137,7 +19206,7 @@ function RandomView($$anchor, $$props) {
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var section = root28();
+      var section = root29();
       var h2 = child(section);
       var text2 = only_child(h2, true);
       var p = sibling(h2, 2);
@@ -19204,7 +19273,7 @@ function RandomView($$anchor, $$props) {
           var node_4 = sibling(strong);
           {
             var consequent_1 = ($$anchor4) => {
-              var span_2 = root_125();
+              var span_2 = root_126();
               var text_4 = only_child(span_2, true);
               template_effect(
                 ($02) => set_text(text_4, $02),
@@ -19375,8 +19444,8 @@ function RandomView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/App.svelte
-var root29 = from_html(`<button type="button"> </button>`);
-var root_126 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
+var root30 = from_html(`<button type="button"> </button>`);
+var root_127 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
 var root_220 = from_html(`<p> </p>`);
 var root_317 = from_html(`<header><p class="hint"> </p></header>`);
 var root_412 = from_html(`<p class="banner" role="status"> </p>`);
@@ -19396,11 +19465,11 @@ function App($$anchor, $$props) {
   const $updates = () => store_get($$props.updates, "$updates", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   const toolbar = ($$anchor2) => {
-    var div = root_126();
+    var div = root_127();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
-        var button = root29();
+        var button = root30();
         var text_1 = only_child(button, true);
         template_effect(
           ($0) => {
@@ -19439,7 +19508,7 @@ function App($$anchor, $$props) {
     var node_1 = first_child(fragment);
     {
       var consequent_1 = ($$anchor3) => {
-        var button_1 = root29();
+        var button_1 = root30();
         var text_2 = only_child(button_1, true);
         template_effect(() => {
           set_class(button_1, 1, clsx2(get(className)));
@@ -19602,7 +19671,7 @@ function App($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let id = () => get($$array)[0];
       let label = () => get($$array)[1];
-      var button_3 = root29();
+      var button_3 = root30();
       var text_10 = only_child(button_3, true);
       template_effect(
         ($0) => {
@@ -19712,7 +19781,7 @@ function App($$anchor, $$props) {
               var node_10 = first_child(fragment_8);
               {
                 var consequent_6 = ($$anchor5) => {
-                  var button_6 = root29();
+                  var button_6 = root30();
                   var text_16 = only_child(button_6, true);
                   template_effect(
                     ($0) => set_text(text_16, $0),
@@ -19735,7 +19804,7 @@ function App($$anchor, $$props) {
                 (get(panel).error && !get(panel).entryLoaded),
             );
             var consequent_8 = ($$anchor4) => {
-              var button_7 = root29();
+              var button_7 = root30();
               var text_17 = only_child(button_7, true);
               template_effect(
                 ($0) => set_text(text_17, $0),

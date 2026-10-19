@@ -229,12 +229,12 @@ export const en = {
   randomize_window_start: "Randomize start",
   randomize_window_end: "Randomize end",
   frequency_and_duration: "Frequency and duration",
-  minimum_events_per_window: "Minimum events per window",
-  maximum_events_per_window: "Maximum events per window",
+  minimum_events_per_window: "Minimum events per active period",
+  maximum_events_per_window: "Maximum events per active period",
   add_maximum_events: "Add maximum events",
   remove_maximum_events: "Remove maximum events",
   random_count_order_error:
-    "Maximum events per window must be at least the minimum.",
+    "Maximum events per active period must be at least the minimum.",
   random_disabled_hint: "This random event is disabled.",
   random_counts_prompt:
     "Choose valid event counts to describe how often events run.",
@@ -244,11 +244,11 @@ export const en = {
   random_empty_window_hint:
     "A window may have no events; dependent random events skip that window.",
   random_count_range_summary:
-    "Between {min} and {max} events start at random times during each window.",
+    "Between {min} and {max} events start at random times during each active period.",
   random_single_event_summary:
-    "One event starts at a random time during each window.",
+    "One event starts at a random time during each active period.",
   random_count_summary:
-    "{count} events start at random times during each window.",
+    "{count} events start at random times during each active period.",
   random_durations_prompt:
     "Choose valid durations to describe how long each event lasts.",
   random_duration_fit_prompt: "Choose durations that fit inside the window.",
@@ -271,7 +271,7 @@ export const en = {
   random_single_finish_hint: "The event finishes before the window closes.",
   random_overlap_hint:
     "Events may overlap, but all finish before the window closes.",
-  times_per_window: "times per window",
+  times_per_window: "times per active period",
   minimum_duration: "Minimum duration",
   maximum_duration: "Maximum duration",
   duration_hint: "Use durations like 5m, 30s, or 1h.",
@@ -856,12 +856,12 @@ export const sv = {
   randomize_window_start: "Slumpa starttid",
   randomize_window_end: "Slumpa sluttid",
   frequency_and_duration: "Frekvens och varaktighet",
-  minimum_events_per_window: "Minsta antal händelser per tidsfönster",
-  maximum_events_per_window: "Högsta antal händelser per tidsfönster",
+  minimum_events_per_window: "Minsta antal händelser per aktiv period",
+  maximum_events_per_window: "Högsta antal händelser per aktiv period",
   add_maximum_events: "Lägg till högsta antal händelser",
   remove_maximum_events: "Ta bort högsta antal händelser",
   random_count_order_error:
-    "Högsta antal händelser per tidsfönster måste vara minst det lägsta antalet.",
+    "Högsta antal händelser per aktiv period måste vara minst det lägsta antalet.",
   random_disabled_hint: "Den här slumpmässiga händelsen är inaktiverad.",
   random_counts_prompt:
     "Välj giltiga antal händelser för att beskriva hur ofta de körs.",
@@ -873,11 +873,11 @@ export const sv = {
   random_empty_window_hint:
     "Ett tidsfönster kan sakna händelser; beroende slumpmässiga händelser hoppar över det tidsfönstret.",
   random_count_range_summary:
-    "Mellan {min} och {max} händelser börjar vid slumpmässiga tider inom varje tidsfönster.",
+    "Mellan {min} och {max} händelser börjar vid slumpmässiga tider under varje aktiv period.",
   random_single_event_summary:
-    "En händelse börjar vid en slumpmässig tid inom varje tidsfönster.",
+    "En händelse börjar vid en slumpmässig tid under varje aktiv period.",
   random_count_summary:
-    "{count} händelser börjar vid slumpmässiga tider inom varje tidsfönster.",
+    "{count} händelser börjar vid slumpmässiga tider under varje aktiv period.",
   random_durations_prompt:
     "Välj giltiga varaktigheter för att beskriva hur länge varje händelse varar.",
   random_duration_fit_prompt: "Välj varaktigheter som ryms inom tidsfönstret.",
@@ -902,7 +902,7 @@ export const sv = {
   random_single_finish_hint: "Händelsen avslutas innan tidsfönstret stängs.",
   random_overlap_hint:
     "Händelser kan överlappa, men alla avslutas innan tidsfönstret stängs.",
-  times_per_window: "gånger per tidsfönster",
+  times_per_window: "gånger per aktiv period",
   minimum_duration: "Minsta varaktighet",
   maximum_duration: "Längsta varaktighet",
   duration_hint: "Ange varaktigheter som 5m, 30s eller 1h.",

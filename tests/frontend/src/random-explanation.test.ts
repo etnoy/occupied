@@ -36,7 +36,7 @@ void test("random explanation describes weekdays, fixed counts, durations, and s
   assert.equal(
     randomExplanation(form, program, catalog),
     "Window starts on weekdays at 18:00. Window ends at 23:00. " +
-      "3 events start at random times during each window. " +
+      "3 events start at random times during each active period. " +
       "Each event lasts between 5 minutes and 15 minutes. " +
       "When each event starts, turn on Living room lamp. " +
       "When each event ends, turn off Living room lamp. " +
