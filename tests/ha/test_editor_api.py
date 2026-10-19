@@ -717,3 +717,70 @@ async def test_generic_turn_schema_checks_each_target_without_dispatch(
     if code == "service_data":
         assert program_document(engine) == before
     assert not calls and not devices
+
+
+@pytest.mark.parametrize(
+    ("service", "activity", "state", "attributes", "warn"),
+    [
+        ("remote.turn_on", "TV", "off", {"activity_list": ["TV", "Wii"]}, False),
+        ("remote.turn_on", "tv", "off", {"activity_list": ["TV", "Wii"]}, False),
+        ("remote.turn_on", "Television", "off", {"activity_list": ["TV", "Wii"]}, True),
+        ("remote.turn_on", "12345", "off", {"activity_list": ["TV", "Wii"]}, False),
+        ("remote.turn_on", 12345, "off", {"activity_list": ["TV", "Wii"]}, False),
+        ("remote.turn_on", "Television", "unavailable", {"activity_list": ["TV"]}, False),
+        ("remote.turn_on", "Television", "off", {}, False),
+        ("homeassistant.turn_on", "Television", "off", {"activity_list": ["TV"]}, True),
+        ("homeassistant.toggle", "Television", "off", {"activity_list": ["TV"]}, True),
+        ("remote.turn_off", "Television", "off", {"activity_list": ["TV"]}, False),
+    ],
+)
+async def test_remote_activity_warning_is_advisory_and_never_calls_services(
+    hass,
+    editor_entry,
+    devices,
+    program_dict,
+    hass_ws_client,
+    service,
+    activity,
+    state,
+    attributes,
+    warn,
+):
+    assert await hass.config_entries.async_setup(editor_entry.entry_id)
+    calls = []
+
+    async def handle(call):
+        calls.append(call)
+
+    domain, name = service.split(".")
+    hass.services.async_register(domain, name, handle)
+    hass.states.async_set("remote.tv", state, attributes)
+    changed = deepcopy(program_dict)
+    changed["steps"]["wake"].update(
+        action=service, entities=["remote.tv"], data={"activity": activity}
+    )
+    client = await hass_ws_client(hass)
+    engine = editor_entry.runtime_data
+    before = program_document(engine)
+    validated = (await request(client, "occupied/editor_validate", editor_entry, program=changed))[
+        "result"
+    ]
+    assert validated["valid"]
+    issues = [i for i in validated["issues"] if i["code"] == "remote_activity_unknown"]
+    assert bool(issues) == warn
+    if warn:
+        assert issues[0]["severity"] == "warning"
+        assert issues[0]["model_path"] == ["steps", "wake", "data"]
+        assert "remote.tv" in issues[0]["message"] and "TV" in issues[0]["message"]
+    saved = (
+        await request(
+            client,
+            "occupied/save",
+            editor_entry,
+            2,
+            program=changed,
+            expected_revision=before["revision"],
+        )
+    )["result"]
+    assert saved["valid"]
+    assert not calls and not devices
