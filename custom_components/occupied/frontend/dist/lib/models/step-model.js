@@ -1,4 +1,5 @@
 // Generated from custom_components/occupied/frontend/src/lib/models/step-model.ts by pnpm run build. Do not edit.
+import { remoteErrors } from "../utils/remote.js";
 import { en, translator } from "../i18n/translations.js";
 import {
   durationSeconds,
@@ -154,6 +155,17 @@ export function actionForm(source) {
     actionTargets(source).every((entity) => entity.startsWith("cover."))
   ) {
     kind = "cover";
+  } else if (
+    source &&
+    ["remote.turn_on", "remote.turn_off"].includes(action || "") &&
+    actionTargets(source).every((entity) => entity.startsWith("remote.")) &&
+    Object.keys(source.data || {}).every(
+      (key) => key === "activity" && action === "remote.turn_on",
+    ) &&
+    (source.data?.activity === undefined ||
+      typeof source.data.activity === "string")
+  ) {
+    kind = "remote";
   } else if (action?.includes(".")) {
     kind = "service";
   }
@@ -199,6 +211,7 @@ export function actionForm(source) {
     action: action === "turn_off" ? "turn_off" : "turn_on",
     position: String(source?.data?.position ?? ""),
     tiltPosition: String(source?.data?.tilt_position ?? ""),
+    activity: String(source?.data?.activity ?? ""),
   };
 }
 export function hasStepChanges(editor) {
@@ -256,6 +269,7 @@ export function actionErrors(form) {
   ) {
     errors.service = "service_error";
   }
+  Object.assign(errors, remoteErrors(form));
   if (form.kind === "cover") {
     if (form.entities.some((entity) => !entity.startsWith("cover."))) {
       errors.entities = "cover_entities_error";
@@ -446,8 +460,16 @@ export function buildAction(form) {
   let action = form.action;
   if (form.kind === "scene") {
     action = "scene.turn_on";
-  } else if (form.kind === "service" || form.kind === "cover") {
+  } else if (["service", "cover", "remote"].includes(form.kind)) {
     action = form.service;
+  }
+  if (form.kind === "remote") {
+    return {
+      action,
+      entities: sorted(form.entities),
+      ...(action === "remote.turn_on" &&
+        form.activity && { data: { activity: form.activity } }),
+    };
   }
   if (form.kind === "cover") {
     const field = coverField(action);

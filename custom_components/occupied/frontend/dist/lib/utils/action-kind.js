@@ -67,6 +67,12 @@ export function changeActionKind(form, value, confirmReplace) {
     form.service = `homeassistant.${form.action}`;
   }
   if (
+    kind === "remote" &&
+    !["remote.turn_on", "remote.turn_off"].includes(form.service)
+  ) {
+    form.service = `remote.${form.action === "turn_off" ? "turn_off" : "turn_on"}`;
+  }
+  if (
     kind === "cover" &&
     coverActions.every(([action]) => action !== form.service)
   ) {
@@ -81,6 +87,7 @@ export function acceptedEntities(kind, entities) {
   const domains = {
     entities: ["light", "switch"],
     cover: ["cover"],
+    remote: ["remote"],
     scene: ["scene"],
   };
   const accepted = entities.filter((entity) =>
