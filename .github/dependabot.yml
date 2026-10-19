@@ -34,16 +34,24 @@ updates:
     commit-message:
       prefix: chore
       include: scope
-    exclude-paths: ["scripts/requirements/**", "scripts/requirements-ha-*.txt"]
+    exclude-paths: ["scripts/requirements/**"]
     schedule:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
-    # The supported HA matrix and its generated environments move together.
+    # ha_matrix.py roll moves HA, its fixture and their constrained dependencies together.
     ignore:
       - dependency-name: homeassistant
       - dependency-name: pytest-homeassistant-custom-component
       - dependency-name: home-assistant-frontend
+      - dependency-name: astral
+      - dependency-name: pyyaml
+      - dependency-name: pydantic
+      - dependency-name: pytest
+      - dependency-name: pytest-asyncio
+      - dependency-name: pytest-cov
+      - dependency-name: pytest-socket
+      - dependency-name: freezegun
     groups:
       python:
         patterns: ["*"]
