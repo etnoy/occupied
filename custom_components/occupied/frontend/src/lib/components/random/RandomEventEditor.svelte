@@ -180,9 +180,6 @@
   <p class="hint" data-random-explanation aria-live="polite">
     {randomExplanation(form, panel.draft, panel.catalog, t, panel._hass.locale)}
   </p>
-  <p class="hint">
-    {t("duration_hint")}
-  </p>
   <div class="editor-sections">
     <ActionEditor
       {panel}
