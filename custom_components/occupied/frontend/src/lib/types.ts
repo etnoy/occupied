@@ -218,6 +218,10 @@ export interface Catalog {
       {
         name?: string;
         description?: string;
+        target?: {
+          entity?:
+            { domain?: string | string[] }[] | { domain?: string | string[] };
+        };
         fields?: Record<
           string,
           {

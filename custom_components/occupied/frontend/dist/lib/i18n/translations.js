@@ -1,6 +1,10 @@
 // Generated from custom_components/occupied/frontend/src/lib/i18n/translations.ts by pnpm run build. Do not edit.
 // Keep UI wording here; call sites use stable, descriptive shorthand keys.
 export const en = {
+  service_fields: "Service fields",
+  required_field: "Required",
+  field_example: "Example",
+  insert_service_example: "Insert example",
   offset_example: "30m or 1h",
   signed_offset_example: "-30m or 90m",
   issue_line: "Line {line}",
@@ -537,6 +541,10 @@ export const en = {
 };
 // Missing translations fall back to English.
 export const sv = {
+  service_fields: "Tjänstefält",
+  required_field: "Obligatoriskt",
+  field_example: "Exempel",
+  insert_service_example: "Infoga exempel",
   offset_example: "30m eller 1h",
   signed_offset_example: "-30m eller 90m",
   issue_line: "Rad {line}",

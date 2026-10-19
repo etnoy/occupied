@@ -6,6 +6,11 @@
   import FieldError from "./FieldError.svelte";
   import EditorField from "./EditorField.svelte";
   import EntitiesEditor from "./EntitiesEditor.svelte";
+  import {
+    serviceOptions,
+    serviceExample,
+    emptyServiceData,
+  } from "../../utils/services.js";
   import { coverActions } from "../../utils/cover.js";
   import { changeActionKind } from "../../utils/action-kind.js";
 
@@ -26,6 +31,12 @@
   } = $props();
 
   let { form, t } = $derived(context);
+  let serviceDescription = $derived.by(() => {
+    const [domain, service] = form.service.split(".", 2);
+
+    return panel.catalog.services[domain]?.[service];
+  });
+  let example = $derived(serviceExample(serviceDescription));
 </script>
 
 <div data-editor-section="action">
@@ -93,14 +104,42 @@
     </p>
   {/if}
   {#if form.kind === "service"}
-    <EditorField
-      {panel}
-      {context}
+    <ha-selector
+      data-builder-field={`${context.fieldPrefix || ""}service`}
+      aria-label={t("service")}
+      aria-invalid={context.editor.errors.service ? "true" : undefined}
+      aria-describedby={context.editor.errors.service
+        ? `step-error-${context.fieldPrefix || ""}service`
+        : undefined}
+      use:properties={{
+        hass: panel._hass,
+        label: t("service"),
+        required: true,
+        value: form.service,
+        selector: {
+          select: {
+            options: serviceOptions(panel.catalog, form.entities, form.service),
+            custom_value: true,
+          },
+        },
+      }}
+      onvalue-changed={(event: Event) => {
+        if (
+          !isValueChangedEvent(event) ||
+          (event.detail.value != null && typeof event.detail.value !== "string")
+        ) {
+          return;
+        }
+        form.service = event.detail.value || "";
+        context.changed("service");
+      }}
+    ></ha-selector>
+    <FieldError
+      {t}
       key="service"
-      label="service"
-      value={form.service}
-      update={(value) => (form.service = value)}
-    ></EditorField>
+      fieldPrefix={context.fieldPrefix || ""}
+      errors={{ ...context.editor.errors }}
+    />
   {/if}
   {#if form.kind === "cover"}
     <EditorField
@@ -150,6 +189,40 @@
       update={(value) => (form.data = value)}
       options={{ multiline: true }}
     ></EditorField>
+  {/if}
+  {#if form.kind === "service" && Object.keys(serviceDescription?.fields || {}).length > 0}
+    <div class="service-fields">
+      <h4>{t("service_fields")}</h4>
+      <dl>
+        {#each Object.entries(serviceDescription?.fields || {}) as [key, field] (key)}
+          <dt>
+            <code>{key}</code>{field.required
+              ? ` · ${t("required_field")}`
+              : ""}
+          </dt>
+          <dd>
+            {#if field.description}<p>{field.description}</p>{/if}
+            {#if field.example !== undefined}<p>
+                {t("field_example")}:
+                <code>{JSON.stringify(field.example)}</code>
+              </p>{/if}
+          </dd>
+        {/each}
+      </dl>
+      {#if Object.keys(example).length > 0}
+        <button
+          type="button"
+          disabled={!emptyServiceData(form.data)}
+          onclick={() => {
+            if (!emptyServiceData(form.data)) {
+              return;
+            }
+            form.data = JSON.stringify(example, null, 2);
+            context.changed("data");
+          }}>{t("insert_service_example")}</button
+        >
+      {/if}
+    </div>
   {/if}
 </div>
 
