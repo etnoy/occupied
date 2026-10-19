@@ -83,8 +83,11 @@ update `uv.lock` with the HA-constrained pydantic version, and run `compile`,
 Do not use `roll` to change a patch within the same minor; it deliberately requires
 advancing the monthly window.
 
-Dependabot handles ordinary dependency and action updates. It ignores the three
-HA environment pins and excludes generated lane files. Keep these exclusions:
+Dependabot handles ordinary dependency and action updates. It ignores the HA,
+fixture and frontend pins plus their constrained dependencies (astral, PyYAML,
+pydantic, pytest, pytest-asyncio, pytest-cov, pytest-socket and freezegun), and
+excludes generated lane files. `ha_matrix.py roll` moves these packages together.
+Keep these exclusions:
 bumping one transitive pin in a hashed HA environment can violate the constraints
 of the HA release being tested. Regenerate lane requirements with `ha_matrix.py
 compile`; never edit package hashes by hand.
