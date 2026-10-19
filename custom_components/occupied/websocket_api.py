@@ -165,20 +165,43 @@ async def websocket_validate(
 async def websocket_preview(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ):
+    from homeassistant.util import dt as dt_util
+
+    from . import resolve_engine
+    from .anchor_latches import AnchorLatches
+    from .file_config import load_program
     from .preview import preview_draft
     from .time_sources import planning_context
+    from .validation import program_revision
+
+    try:
+        engine = resolve_engine(hass, msg["config_entry_id"])
+    except HomeAssistantError as err:
+        _send_error(connection, msg["id"], "not_loaded", err)
+        return
+    context = planning_context(hass)
+    saved_revision = program_revision(engine.program) if hasattr(engine, "program") else None
+    latches = AnchorLatches()
+    if hasattr(engine, "_anchor_latches"):
+        latches.restore(engine._anchor_latches.snapshot())
+    now = dt_util.utcnow()
 
     def prepare(source):
+        program = load_program(source)
+        preview_context = (
+            latches.apply(program, context, now)
+            if program_revision(program) == saved_revision
+            else context
+        )
         return preview_draft(
-            source,
+            program,
             date.fromisoformat(msg["date"]),
             msg["days"],
             msg["seed"],
-            context,
+            preview_context,
             datetime.fromisoformat(msg["at"]) if "at" in msg else None,
         )
 
-    context = planning_context(hass)
     await _draft_operation(hass, connection, msg, prepare)
 
 
