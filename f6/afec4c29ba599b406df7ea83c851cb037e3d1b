@@ -1,0 +1,47 @@
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_57c4321274169c::t_47d7ddd519d58d 13-16,594-597
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_57c4321274169c::t_cb009a50f0de83 109-112,691-694,13894-13896,13931,13933-13947,13954,13964,13985-14004,14008-14009,14026,14033-14037,14071-14073,14773,14903,15090,15309,15644,15706,16043,16056,16397,16415,16507,16659,16691,17188,17230,17615,17740,17894,17966,18129-18131,18252-18263,18273,18283,18293,18303,18313,18330,18332-18333,18338-18340,18342-18343,18357,18368,19336-19338,19393-19395,19503,19635-19671
+custom_components/occupied/frontend/src/App.svelte
+  s_57c4321274169c::t_6577ca4904dfbd 151-152,196-199
+custom_components/occupied/frontend/src/lib/components/settings/SettingsView.svelte
+  s_57c4321274169c::t_cb4cb0e8992436 44-46,92-100
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_57c4321274169c::t_575db06b545b84 13-16,598-601
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_57c4321274169c::t_f9b7f8a2df3d55 734-737,798-800,920,1069-1107
+custom_components/occupied/strings.json
+  s_57c4321274169c::t_f5e8e2acebb3d6 221-223
+custom_components/occupied/translations/en.json
+  s_57c4321274169c::t_6267a6ac72534c 221-223
+custom_components/occupied/translations/sv.json
+  s_57c4321274169c::t_93a2a28d75151c 103-105
+custom_components/occupied/websocket_api.py
+  s_57c4321274169c::t_0fcacc4b9e09ef 220,255-267,536
+docs/schema.md
+  s_57c4321274169c::t_522dc03dd68776 9-10
+tests/browser/occupied.spec.ts
+  s_57c4321274169c::t_25aa6417057f05 2-3,436-508
+tests/browser/serve.py
+  s_57c4321274169c::t_ffe205a3fd8ead 17-18
+tests/frontend/src/instances.test.ts
+  s_57c4321274169c::t_952076e0e80e2f 1338-1448
+tests/ha/test_stored_program_recovery.py
+  s_57c4321274169c::t_c6ac1130000646 89,125-162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f6afec4c29ba599b406df7ea83c851cb037e3d1b",
+  "prompts": {},
+  "sessions": {
+    "s_57c4321274169c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15315-93ce-7243-a6bf-3d428cb6f8af",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
