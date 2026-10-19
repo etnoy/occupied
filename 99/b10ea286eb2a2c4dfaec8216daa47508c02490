@@ -1,0 +1,23 @@
+docs/maintenance.md
+  s_de9cf288f1595c::t_3fac914a7b3a2d 75-77,116-117
+scripts/ha_matrix.py
+  s_de9cf288f1595c::t_bd6cf07a4ac8bb 85,127
+tests/core/test_ha_matrix.py
+  s_de9cf288f1595c::t_273c86b27d81e5 123-129,361
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "99b10ea286eb2a2c4dfaec8216daa47508c02490",
+  "prompts": {},
+  "sessions": {
+    "s_de9cf288f1595c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1534e-ba91-7082-a157-e039c22f6920",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
