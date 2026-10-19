@@ -71,7 +71,6 @@ def matrix_repo(tmp_path, monkeypatch):
     from dataclasses import replace
 
     lanes.append(replace(lanes[-1], id="python-floor", role="python-floor", python="3.14.2"))
-    lanes.append(matrix.Lane("next", "next", "auto", "auto", "auto", "auto", "auto"))
     workflow = tmp_path / matrix.MATRIX_PATH
     workflow.parent.mkdir(parents=True)
     workflow.write_text(
@@ -119,6 +118,13 @@ def edit(root, name, before, after):
 
 def test_supported_matrix_is_consistent():
     assert matrix.check(ROOT)["lanes"] == 6
+
+
+def test_ha_beta_test_lane_is_removed():
+    _, lanes = matrix.load(ROOT)
+    assert all(lane.role != "next" for lane in lanes)
+    with pytest.raises(ValueError, match="Choose a unique HA lane"):
+        matrix.selected(lanes, "next")
 
 
 def test_workflow_matrix_roundtrip_preserves_workflow(tmp_path):
@@ -352,6 +358,7 @@ def test_roll_advances_window_and_updates_generated_claims(monkeypatch, matrix_r
     assert (matrix_repo / "README.md").read_bytes() == readme
     policy, lanes = matrix.load(matrix_repo)
     ha = matrix.ha_lanes(lanes)
+    assert all(lane.role != "next" for lane in lanes)
     assert ha[0].homeassistant == "2026.6.0" and ha[0].role == "floor"
     assert ha[-1].homeassistant == "2026.11.0" and ha[-1].role == "newest"
     assert ha[-2].homeassistant == "2026.10.2"
