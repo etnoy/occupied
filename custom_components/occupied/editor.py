@@ -120,6 +120,7 @@ def installed_issues(hass, program):
                     )
                 )
         for action in resolve_actions(step):
+            issues.extend(_remote_activity_issues(hass, path, action))
             domain, service = action.action.split(".")
             registered = registry.get(domain, {}).get(service)
             if registered is None:
@@ -179,6 +180,37 @@ def _generic_turn_issues(registry, path, action):
                         path + ("data",),
                     )
                 )
+    return issues
+
+
+def _remote_activity_issues(hass, path, action):
+    """Advisory check for activity remotes which accept unknown names silently."""
+    if action.action not in {"remote.turn_on", "homeassistant.turn_on", "homeassistant.toggle"}:
+        return []
+    activity = action.data.get("activity")
+    if not isinstance(activity, str) or not activity or activity.isdecimal():
+        return []
+    issues = []
+    for entity in action.targets:
+        if not entity.startswith("remote."):
+            continue
+        state = hass.states.get(entity)
+        if state is None or state.state in {"unknown", "unavailable"}:
+            continue
+        activities = state.attributes.get("activity_list")
+        if not isinstance(activities, (list, tuple)):
+            continue
+        names = [name for name in activities if isinstance(name, str)]
+        if activity.casefold() not in {name.casefold() for name in names}:
+            issues.append(
+                Issue(
+                    "remote_activity_unknown",
+                    f"Activity {activity!r} is not listed for {entity}. "
+                    f"Valid activities: {', '.join(names)}",
+                    path + ("data",),
+                    "warning",
+                )
+            )
     return issues
 
 
