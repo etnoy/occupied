@@ -113,6 +113,13 @@ The HA Python-floor job uses the newest HA release's own minimum, and its dev
 dependency group has a separate Python bound. Historical requirements compile
 against their recorded lane minimum, keeping the older environments reproducible.
 
+The HA activity/recorder test
+`tests/ha/test_daily_runtime.py::test_device_activity_includes_successful_actions_and_survives_reload`
+is skipped on CPython 3.14.2 and 3.14.3. The recorder fixture hits an
+`annotationlib`/`create_autospec` harness bug on those versions; the same test passes
+on 3.14.4 and newer. Remove the skip when every supported HA lane's minimum Python
+is at least 3.14.4. The Python-floor lane currently reports this one expected skip.
+
 Release discovery reports the latest stable Python patch in a candidate's required
 family; it does not create a beta test environment. A rollover also advances
 the experimental standalone lane to the Python minor after the newest required
