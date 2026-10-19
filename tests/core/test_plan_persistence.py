@@ -3,6 +3,8 @@
 from dataclasses import replace
 from datetime import date, timedelta
 
+import pytest
+
 from custom_components.occupied.plan_persistence import (
     plan_context,
     plan_fingerprint,
@@ -13,7 +15,8 @@ from custom_components.occupied.time_utils import PlanningContext
 from custom_components.occupied.validation import validate_program
 
 
-def test_each_date_regenerates_from_its_original_source_context():
+@pytest.mark.parametrize("drifted", [None, 0, 1])
+def test_each_date_regenerates_from_its_original_source_context(drifted):
     program = validate_program(
         {
             "schema_version": 1,
@@ -42,6 +45,8 @@ def test_each_date_regenerates_from_its_original_source_context():
         assert "sensor.unrelated" not in saved_context["time_sources"]
         records.append(plan_fingerprint(plan, saved_context))
         originals[day] = plan.to_dict()
+    if drifted is not None:
+        records[drifted]["fingerprint"] = "outdated-fingerprint"
     restored = restore_plan_fingerprints(program, records)
     assert {day: plan.to_dict() for day, plan in restored.items()} == originals
 
