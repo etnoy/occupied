@@ -63,7 +63,7 @@ export function changeActionKind(
     }
   }
   if (form.kind !== kind) {
-    form.entities = [];
+    form.entities = acceptedEntities(kind, form.entities);
   }
   form.kind = kind;
   if (!(kind === "entities" && ["turn_on", "turn_off"].includes(value))) {
@@ -80,4 +80,20 @@ export function changeActionKind(
   }
 
   return {};
+}
+
+export function acceptedEntities(kind: string, entities: string[]): string[] {
+  if (kind === "service") {
+    return [...entities];
+  }
+  const domains: Record<string, string[]> = {
+    entities: ["light", "switch"],
+    cover: ["cover"],
+    scene: ["scene"],
+  };
+  const accepted = entities.filter((entity) =>
+    domains[kind]?.includes(entity.split(".", 1)[0]),
+  );
+
+  return kind === "scene" ? accepted.slice(0, 1) : accepted;
 }

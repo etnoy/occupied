@@ -11990,7 +11990,7 @@ function changeActionKind(form, value, confirmReplace) {
     }
   }
   if (form.kind !== kind) {
-    form.entities = [];
+    form.entities = acceptedEntities(kind, form.entities);
   }
   form.kind = kind;
   if (!(kind === "entities" && ["turn_on", "turn_off"].includes(value))) {
@@ -12006,6 +12006,20 @@ function changeActionKind(form, value, confirmReplace) {
     form.service = "cover.open_cover";
   }
   return {};
+}
+function acceptedEntities(kind, entities) {
+  if (kind === "service") {
+    return [...entities];
+  }
+  const domains = {
+    entities: ["light", "switch"],
+    cover: ["cover"],
+    scene: ["scene"],
+  };
+  const accepted = entities.filter((entity) =>
+    domains[kind]?.includes(entity.split(".", 1)[0]),
+  );
+  return kind === "scene" ? accepted.slice(0, 1) : accepted;
 }
 
 // custom_components/occupied/frontend/src/lib/components/shared/ActionEditor.svelte
