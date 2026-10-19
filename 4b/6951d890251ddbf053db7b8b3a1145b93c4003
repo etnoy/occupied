@@ -1,0 +1,33 @@
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_9a81488c1c3c3d::t_c7846fc2cbff70 232-233,237,247,249,251,274,859-860,864,876,878,880,905
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_9a81488c1c3c3d::t_bfc45705990c6e 328-329,333,343,345,347,370,963-964,968,981,983,985,1013,3231,3233,3235,3314-3316,3580-3581,5213,5234,7674,7677,7679,7681,14312,14316,17934,17936,17958,17971,17974,17977,17979-17981,17997,18002,18006,18009,18011-18013,18029,18034,18038-18045,18053,18055-18058,18070-18071,18075,18083,18088,18090,18099,18102-18103,18167-18169,18173-18174,18177-18178,18182,18227,18262,18274-18275,18283,18307-18310,18316-18498,18732-18733,18737-18738,18742,18757-18758,18775,18777-18784,18811-18812,18814-18839,18842,18857,18860,18879-18880,18882-18884,18908,18928-18930,18935,18975-18976,19008-19009,19013-19014,19029-19030,19051,19074,19076-19077,19090,19092-19108,19112,19119-19122,19134,19155,19160,19166,19169,19209,19276,19447-19448,19468,19472,19511,19674,19784,19807
+custom_components/occupied/frontend/src/lib/components/random/AdvancedRandomSettings.svelte
+  s_9a81488c1c3c3d::t_8567166cb4887d 43,89
+custom_components/occupied/frontend/src/lib/components/random/RandomActions.svelte
+  s_9a81488c1c3c3d::t_91dfc5b1ea58ff 18,32-33,160-171
+custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
+  s_9a81488c1c3c3d::t_bc2cde07c57def 3,9,25-26,43-50,66-81,226,242-245,247-255
+custom_components/occupied/frontend/src/lib/components/random/RandomWeekdaysDialog.svelte
+  s_9a81488c1c3c3d::t_87ca07e6261f9a 1-112
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_9a81488c1c3c3d::t_705bf6528b8bd9 233-234,238,248,250,252,275,865-866,870,882,884,886,911
+tests/frontend/src/random-explanation.test.ts
+  s_9a81488c1c3c3d::t_c686229fef811c 39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "4b6951d890251ddbf053db7b8b3a1145b93c4003",
+  "prompts": {},
+  "sessions": {
+    "s_9a81488c1c3c3d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a155ac-37a7-7332-bae7-dd7763024d78",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
