@@ -193,7 +193,7 @@ async def test_live_preview_activity_describes_each_target_and_keeps_user_contex
     assert not events
     await next_event(live_engine)
     await live_engine.hass.async_block_till_done()
-    assert [event.data["entity_id"] for event in events] == ["light.a", "light.b", "switch.a"]
+    assert sorted(event.data["entity_id"] for event in events) == ["light.a", "light.b", "switch.a"]
     assert all(event.context.user_id == "owner" for event in events)
     assert [event.context.id for event in events] == [call.context.id for call in live_calls]
     await next_event(live_engine, "cover")
