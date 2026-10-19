@@ -1,5 +1,6 @@
 """Compact deterministic plan provenance instead of repeating full event arrays."""
 
+import logging
 from dataclasses import asdict, replace
 from datetime import date
 
@@ -7,6 +8,8 @@ from .plan_codec import PlannerVersionChanged
 from .planner import PLANNER_VERSION, generate_plan, supersede_ticks
 from .time_sources import source_entities
 from .time_utils import PlanningContext
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def plan_context(program, context):
@@ -35,7 +38,7 @@ def plan_fingerprint(plan, context):
 
 
 def restore_plan_fingerprints(program, records):
-    """Generate and verify caches in HA's executor, retaining saved source revisions."""
+    """Regenerate caches from saved contexts, tolerating fingerprint drift."""
     plans = {}
     for record in records:
         version = record["planner_version"]
@@ -65,8 +68,14 @@ def restore_plan_fingerprints(program, records):
         day = date.fromisoformat(record["simulation_date"])
         plan = plans[day]
         if plan.to_dict()["plan_fingerprint"] != record["fingerprint"]:
-            plan = replace(plan, events=tuple(resolved[event.id] for event in plan.events))
-            if plan.to_dict()["plan_fingerprint"] != record["fingerprint"]:
-                raise ValueError("Regenerated plan fingerprint differs from saved provenance")
-            plans[day] = plan
+            superseded = replace(plan, events=tuple(resolved[event.id] for event in plan.events))
+            if superseded.to_dict()["plan_fingerprint"] == record["fingerprint"]:
+                plans[day] = superseded
+            else:
+                _LOGGER.info(
+                    "Occupied %s, saved plan %s: fingerprint differs from saved provenance; "
+                    "using the plan regenerated from its saved context",
+                    program.name,
+                    day,
+                )
     return plans

@@ -13,7 +13,7 @@ from custom_components.occupied.validation import validate_program
 
 
 @pytest.mark.parametrize(
-    "change", ["old_version", "future_version", "corrupt", "malformed_version"]
+    "change", ["old_version", "future_version", "corrupt", "malformed_version", "drift"]
 )
 async def test_obsolete_plans_rebuild_without_replaying_completed_steps(
     hass, hass_storage, freezer, caplog, change
@@ -56,28 +56,36 @@ async def test_obsolete_plans_rebuild_without_replaying_completed_steps(
             saved["plan_fingerprints"][0].pop("fingerprint")
         elif change == "malformed_version":
             saved["plan_fingerprints"][0]["planner_version"] = "invalid"
+        elif change == "drift":
+            saved["plan_fingerprints"][0]["fingerprint"] = "outdated-fingerprint"
         else:
             for plan in saved["plan_fingerprints"]:
                 plan["planner_version"] = PLANNER_VERSION + (
                     1 if change == "future_version" else -1
                 )
         caplog.clear()
-        caplog.set_level(logging.INFO, logger="custom_components.occupied.engine_daily")
+        caplog.set_level(logging.INFO, logger="custom_components.occupied")
         restored = DailyEngine(hass, "cache-upgrade", program)
         await restored.async_prepare()
         records = [
             record
             for record in caplog.records
-            if record.name == "custom_components.occupied.engine_daily"
+            if record.name.startswith("custom_components.occupied.")
         ]
         if change in {"corrupt", "malformed_version"}:
             assert any(record.levelno == logging.ERROR for record in records)
         else:
             assert not any(record.levelno >= logging.WARNING for record in records)
             assert any(
-                record.levelno == logging.INFO and "version" in record.getMessage()
+                record.levelno == logging.INFO
+                and ("fingerprint" if change == "drift" else "version") in record.getMessage()
                 for record in records
             )
+        if change == "drift":
+            assert set(restored._plans) == {
+                plan.simulation_date for plan in original._plans.values()
+            }
+            assert restored._plan_contexts == original._plan_contexts
         await restored.async_start()
         assert restored.active and restored._cancel_timer is not None
         assert restored._plans and all(
