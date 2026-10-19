@@ -1663,14 +1663,18 @@ class DailyEngine:
     async def async_replace_program(self, program, *, expected_revision=None, persist_program=True):
         gate = ActivationGate.for_run_condition(self.hass, program.run_condition)
         await gate.async_prepare()
-        today = simulation_date_at(program, dt_util.utcnow(), self._context())
+        now = dt_util.utcnow()
+        latches = AnchorLatches()
+        latches.restore(self._anchor_latches.snapshot())
+        context = latches.apply(program, planning_context(self.hass, source_entities(program)), now)
+        today = simulation_date_at(program, now, context)
         plans = await self.hass.async_add_executor_job(
             partial(
                 preview_dates,
                 program,
                 runtime_dates(program, today),
                 self._seed,
-                context=self._context(),
+                context=context,
             )
         )
         if any(not plan.feasible for plan in plans):
