@@ -56,7 +56,10 @@ export function timelineMarkers(
             y < plot.y ||
             y > plot.y + plot.height
           ) {
-            return null;
+            // HA 2026.5 assumes every rendered point has a graphic element
+            // while updating chart interactions, so use an empty group for
+            // clipped points instead of ECharts' null render result.
+            return { type: "group", children: [] };
           }
 
           return {

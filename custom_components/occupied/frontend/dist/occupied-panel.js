@@ -15305,7 +15305,7 @@ function timelineMarkers(node, data) {
             y < plot.y ||
             y > plot.y + plot.height
           ) {
-            return null;
+            return { type: "group", children: [] };
           }
           return {
             type: "polygon",
