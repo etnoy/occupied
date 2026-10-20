@@ -1,0 +1,37 @@
+README.md
+  s_efe390a5cb33d3::t_1399f82117ccdc 82
+custom_components/occupied/frontend/dist/lib/utils/timeline.js
+  s_9d32b303fe0f4e::t_e3b2bd539252d5 25-43,50,141,145-155,158-161,186
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_9d32b303fe0f4e::t_39ac876769f82e 15475-15491,15499,15587,15591-15601,15604-15607,15632
+custom_components/occupied/frontend/src/lib/utils/timeline.ts
+  s_efe390a5cb33d3::t_47630727ba14bb 46-67,74,169,173-183,186-189,214
+tests/browser/occupied.spec.ts
+  s_efe390a5cb33d3::t_3b6404a5e386d4 679-817
+tests/frontend/src/timeline.test.ts
+  s_efe390a5cb33d3::t_3a8260f44f7dbc 582,591-739
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "8fff9550c9f77aae108b401828680f04c089a644",
+  "prompts": {},
+  "sessions": {
+    "s_9d32b303fe0f4e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15b42-b2e9-7521-97ee-e820c41aa3f8",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_efe390a5cb33d3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15b37-2aeb-7443-9870-79d9402b3ee0",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
