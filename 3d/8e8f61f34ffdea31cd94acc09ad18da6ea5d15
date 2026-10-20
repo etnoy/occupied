@@ -1,0 +1,19 @@
+custom_components/occupied/planner.py
+  s_ae895418850ec6::t_475f20501ccc3f 696,714-716,719
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "3d8e8f61f34ffdea31cd94acc09ad18da6ea5d15",
+  "prompts": {},
+  "sessions": {
+    "s_ae895418850ec6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15b61-9328-7083-a112-c9e1611b549a",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
