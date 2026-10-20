@@ -274,6 +274,94 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }),
   ).toBeVisible();
+  // Entity warnings remain on their cards after save, editor changes, and reload.
+  const unavailableState = await request.post(
+    "/api/states/light.browser_unavailable",
+    {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+      data: { state: "unavailable" },
+    },
+  );
+  expect(unavailableState.ok()).toBeTruthy();
+  const beforeWarnings = await panel.evaluate(async (element) => {
+    const controller = element as OccupiedPanel;
+    const program = controller.saved!;
+    await controller.save({
+      ...program,
+      steps: {
+        ...program.steps,
+        browser_unavailable: {
+          name: "Unavailable step",
+          action: "turn_on",
+          entities: ["light.browser_unavailable"],
+          timing: { absolute_time: { start: "18:00" } },
+        },
+      },
+      random: {
+        browser_unavailable: {
+          name: "Unavailable event",
+          start: { absolute_time: { start: "18:00" } },
+          end: { duration: { min: "1h" } },
+          on: { action: "turn_on", entities: ["light.browser_unavailable"] },
+          off: { action: "turn_off", entities: ["light.browser_unavailable"] },
+        },
+      },
+    });
+
+    return JSON.stringify(program);
+  });
+  const stepWarning = panel.locator('[data-step-id="browser_unavailable"]');
+  await expect(stepWarning).toHaveClass(/step-warning/);
+  await expect(stepWarning.locator(".step-row-warning")).toContainText(
+    "Unresolved entity: light.browser_unavailable",
+  );
+  await expect(
+    panel
+      .locator("#issues")
+      .getByText("Unresolved entity: light.browser_unavailable", {
+        exact: true,
+      }),
+  ).toHaveCount(2);
+  await stepWarning.locator(".step-row").click();
+  await expect(stepWarning).toHaveClass(/step-warning/);
+  await panel.getByRole("button", { name: "Random", exact: true }).click();
+  const eventWarning = panel.locator('[data-random-id="browser_unavailable"]');
+  await expect(eventWarning).toHaveClass(/step-warning/);
+  await expect(eventWarning.locator(".step-warning-message")).toHaveCount(2);
+  await expect(eventWarning.locator(".step-row-warning")).toContainText(
+    "Unresolved entity: light.browser_unavailable",
+  );
+  await eventWarning.locator(".step-row").click();
+  await expect(eventWarning).toHaveClass(/step-warning/);
+  await expect(
+    panel
+      .locator("#issues")
+      .getByText("Unresolved entity: light.browser_unavailable", {
+        exact: true,
+      }),
+  ).toHaveCount(1);
+  await page.reload();
+  await panel.getByRole("button", { name: "Random", exact: true }).click();
+  await expect(eventWarning).toHaveClass(/step-warning/);
+  const recoveredState = await request.post(
+    "/api/states/light.browser_unavailable",
+    {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+      data: { state: "off" },
+    },
+  );
+  expect(recoveredState.ok()).toBeTruthy();
+  await page.reload();
+  await panel.getByRole("button", { name: "Random", exact: true }).click();
+  await expect(eventWarning).not.toHaveClass(/step-warning/);
+  await panel.getByRole("button", { name: "Steps", exact: true }).click();
+  await expect(stepWarning).not.toHaveClass(/step-warning/);
+  await panel.evaluate(async (element, program) => {
+    await (element as OccupiedPanel).save(
+      JSON.parse(program) as ProgramDocument["program"],
+    );
+  }, beforeWarnings);
+
   // Configuration order wins over start times and old browser preferences.
   const ids = await panel.evaluate((element) => {
     const controller = element as OccupiedPanel;
@@ -478,7 +566,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     panel.getByRole("button", { name: "Create your first step" }),
   ).toBeVisible();
-  expect(saves).toHaveLength(2);
+  expect(saves).toHaveLength(4);
   expect(Object.keys(saves.at(-1)?.steps || {})).toEqual([]);
 
   await page.reload();

@@ -4,6 +4,7 @@
   import { randomEntries, countSummary } from "../../models/random-model.js";
   import { openRandom } from "../../controllers/random-editor-controller.js";
   import { stepEntries } from "../../models/step-model.js";
+  import { warningRandomId } from "../../utils/step-issues.js";
   import {
     entitySummary,
     timingSummary,
@@ -18,10 +19,15 @@
 
   let data = $derived.by(() => {
     void revision;
+    const entries = randomEntries(panel.draft, panel.catalog);
 
     return {
       t: panel.t,
-      entries: randomEntries(panel.draft, panel.catalog),
+      entries,
+      issues: panel.visibleIssues().map((issue) => ({
+        issue,
+        randomId: warningRandomId(issue, entries),
+      })),
       steps: [
         ...stepEntries(panel.draft, panel.catalog, panel.t),
         ...randomEntries(panel.draft, panel.catalog).map((entry) => ({
@@ -31,7 +37,7 @@
       ],
     };
   });
-  let { t, entries, steps } = $derived(data);
+  let { t, entries, steps, issues } = $derived(data);
 </script>
 
 {#if entries.length === 0}
@@ -56,6 +62,9 @@
   />
   <div class="step-list" aria-label={t("random_events")}>
     {#each entries as entry (entry.id)}
+      {@const warnings = issues
+        .filter(({ randomId }) => randomId === entry.id)
+        .map(({ issue }) => issue)}
       {@const editing =
         panel.randomEditor?.existing && panel.randomEditor.id === entry.id}
       {@const disabled =
@@ -63,6 +72,7 @@
       <div
         class="step-card"
         class:step-disabled={disabled}
+        class:step-warning={warnings.length > 0}
         data-random-id={entry.id}
         style="--depth:0"
       >
@@ -70,12 +80,15 @@
           type="button"
           id={`random-card-${entry.id}`}
           class="step-row"
-          class:editing
+          class:editing={editing && warnings.length === 0}
           aria-label={disabled
             ? `${entry.name} · ${t("disabled")}`
             : entry.name}
           aria-expanded={editing}
           aria-controls={`random-editor-${entry.id}`}
+          aria-describedby={warnings.length > 0
+            ? `random-warning-${entry.id}`
+            : undefined}
           disabled={panel.busy}
           onclick={() => openRandom(panel, entry)}
         >
@@ -95,7 +108,16 @@
               )}</span
             >
           </span>
-          {#if !editing}
+          {#if warnings.length}
+            <span class="step-row-warning" id={`random-warning-${entry.id}`}>
+              <ha-icon icon="mdi:alert-outline" aria-hidden="true"></ha-icon>
+              <span>
+                {#each warnings as warning (warning)}
+                  <span class="step-warning-message">{warning.message}</span>
+                {/each}
+              </span>
+            </span>
+          {:else if !editing}
             <span class="step-row-time"
               >{timingSummary(
                 { timing: entry.start },

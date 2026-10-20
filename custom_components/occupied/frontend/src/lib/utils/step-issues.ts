@@ -1,9 +1,9 @@
-import type { Issue, StepEntry } from "../types.js";
+import type { Issue, RandomEntry, StepEntry } from "../types.js";
 
-// Keep warnings without a visible step in the panel's general issue list.
-export function warningStepId(
+// Keep warnings without a visible card in the panel's general issue list.
+function warningEntryId(
   issue: Issue,
-  entries: StepEntry[],
+  entries: Pick<StepEntry | RandomEntry, "id" | "path">[],
 ): string | undefined {
   if (issue.severity !== "warning") {
     return;
@@ -12,7 +12,15 @@ export function warningStepId(
   return entries.find((entry) =>
     issue.model_path
       ? entry.path.every((key, index) => issue.model_path?.[index] === key)
-      : issue.path === `$.steps.${entry.id}` ||
-        issue.path?.startsWith(`$.steps.${entry.id}.`),
+      : issue.path === `$.${entry.path.join(".")}` ||
+        issue.path?.startsWith(`$.${entry.path.join(".")}.`),
   )?.id;
+}
+
+export function warningStepId(issue: Issue, entries: StepEntry[]) {
+  return warningEntryId(issue, entries);
+}
+
+export function warningRandomId(issue: Issue, entries: RandomEntry[]) {
+  return warningEntryId(issue, entries);
 }

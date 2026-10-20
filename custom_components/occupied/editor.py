@@ -59,7 +59,11 @@ def program_document(engine):
         "recovery_yaml": engine.source_manager.recovery["yaml"]
         if getattr(engine, "source_manager", None) and engine.source_manager.recovery
         else None,
-        "warnings": [issue.to_dict() for issue in validation_warnings(program)],
+        "warnings": [
+            issue.to_dict()
+            for issue in (*validation_warnings(program), *installed_issues(engine.hass, program))
+            if issue.severity == "warning"
+        ],
         "revision": current_revision(engine),
         "behavior_hash": behavior_hash(program),
         "source": engine.source_manager.mode if getattr(engine, "source_manager", None) else "gui",

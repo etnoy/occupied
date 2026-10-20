@@ -4,7 +4,8 @@
   import type { Issue, Tab } from "./lib/types.js";
   import { errorMessage } from "./lib/utils/util.js";
   import { stepEntries } from "./lib/models/step-model.js";
-  import { warningStepId } from "./lib/utils/step-issues.js";
+  import { randomEntries } from "./lib/models/random-model.js";
+  import { warningStepId, warningRandomId } from "./lib/utils/step-issues.js";
 
   import StepEditor from "./lib/components/steps/StepEditor.svelte";
   import StepsView from "./lib/components/steps/StepsView.svelte";
@@ -54,13 +55,16 @@
   let revision = $derived($updates);
   let state = $derived.by(() => {
     void revision;
-    const showingSteps =
-      panel.tab === "steps" &&
+    const showingCards =
       hasProgram(panel) &&
       panel.selectedInstance?.loaded &&
       !panel._loading &&
-      (!panel.stepEditor || panel.stepEditor.existing);
-    const entries = showingSteps ? stepEntries(panel.draft) : [];
+      (!panel.stepEditor || panel.stepEditor.existing) &&
+      (!panel.randomEditor || panel.randomEditor.existing);
+    const entries =
+      showingCards && panel.tab === "steps" ? stepEntries(panel.draft) : [];
+    const random =
+      showingCards && panel.tab === "random" ? randomEntries(panel.draft) : [];
 
     return {
       t: panel.t,
@@ -68,7 +72,10 @@
       primary: primaryTabs.some(([id]) => id === panel.tab),
       issues: panel
         .visibleIssues()
-        .filter((issue) => !warningStepId(issue, entries)),
+        .filter(
+          (issue) =>
+            !warningStepId(issue, entries) && !warningRandomId(issue, random),
+        ),
     };
   });
   let { t, notices, primary, issues } = $derived(state);
