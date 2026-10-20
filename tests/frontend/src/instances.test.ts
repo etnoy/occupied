@@ -1587,6 +1587,67 @@ void test("random creation, editing, and deletion use the guarded save flow", as
   }
 });
 
+void test("random count ordering validates immediately when either bound changes and blocks invalid saves", async () => {
+  const f = await fixture();
+  try {
+    openRandom(f.panel);
+    const editor = f.panel.randomEditor!;
+    editor.form.on.entities = ["light.a"];
+    const context = createRandomEditorContext(f.panel);
+    context.changed("on.entities");
+    const requests: string[] = [];
+    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      requests.push(String(message.type));
+
+      return Promise.resolve({} as T);
+    };
+    editor.form.maxCount = "2";
+    context.changed("maxCount");
+    assert.equal(editor.errors.maxCount, "random_count_order_error");
+    assert.equal(editor.form.minCount, "3");
+    assert.equal(editor.form.maxCount, "2");
+    await context.submit();
+    assert.deepEqual(requests, []);
+    assert.equal(f.panel.randomEditor, editor);
+    context.changed("maxCount");
+    assert.equal(editor.errors.maxCount, "random_count_order_error");
+    editor.form.maxCount = "3";
+    context.changed("maxCount");
+    assert.deepEqual(editor.errors, {});
+    editor.form.minCount = "4";
+    context.changed("minCount");
+    assert.equal(editor.errors.maxCount, "random_count_order_error");
+    editor.form.minCount = "3";
+    context.changed("minCount");
+    assert.deepEqual(editor.errors, {});
+    editor.form.maxCount = "1.5";
+    context.changed("maxCount");
+    assert.equal(editor.errors.maxCount, "random_count_error");
+    editor.form.minCount = editor.form.maxCount = "0";
+    context.changed("maxCount");
+    assert.deepEqual(editor.errors, {});
+  } finally {
+    f.restore();
+  }
+});
+
+void test("editing a blank fixed count reports the visible field without revealing a hidden maximum", async () => {
+  const f = await fixture();
+  try {
+    openRandom(f.panel);
+    const editor = f.panel.randomEditor!;
+    const context = createRandomEditorContext(f.panel);
+    editor.form.minCount = editor.form.maxCount = "";
+    context.changed("minCount");
+    assert.deepEqual(editor.errors, { minCount: "random_count_error" });
+    editor.form.minCount = editor.form.maxCount = "3";
+    context.changed("minCount");
+    assert.deepEqual(editor.errors, {});
+  } finally {
+    f.restore();
+  }
+});
+
 void test("random forms preserve unsaved changes and backend field errors", async () => {
   const f = await fixture();
   try {

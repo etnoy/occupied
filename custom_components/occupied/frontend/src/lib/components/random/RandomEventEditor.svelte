@@ -107,13 +107,22 @@
     />
   </div>
   <h3>{t("frequency_and_duration")}</h3>
-  <div class="random-frequency">
-    <div>
+  <div class="random-counts" class:with-maximum={maxCountVisible}>
+    <label class="minimum-count-label" for="step-minCount">
+      {t(
+        maxCountVisible
+          ? "minimum_events_per_window"
+          : "events_per_active_period",
+      )}
+    </label>
+    <div class="minimum-count-control count-control">
       <EditorField
         {panel}
         {context}
         key="minCount"
-        label="minimum_events_per_window"
+        label={maxCountVisible
+          ? "minimum_events_per_window"
+          : "events_per_active_period"}
         value={form.minCount}
         update={(value) => {
           if (!maxCountVisible) {
@@ -121,23 +130,31 @@
           }
           form.minCount = value;
         }}
-        options={{ type: "number", min: 0, max: 1000, step: 1 }}
+        options={{
+          type: "number",
+          min: 0,
+          max: 1000,
+          step: 1,
+          hideLabel: true,
+        }}
       />
-      {#if !maxCountVisible}
-        <button
-          type="button"
-          class="text-button"
-          disabled={panel.busy}
-          onclick={() => {
-            showMaxCount = true;
-            changed("maxCount");
-            focusEditor(panel, "maxCount");
-          }}>{t("add_maximum_events")}</button
-        >
-      {/if}
     </div>
-    <div>
-      {#if maxCountVisible}
+    {#if !maxCountVisible}
+      <button
+        type="button"
+        class="randomize-count"
+        disabled={panel.busy}
+        onclick={() => {
+          showMaxCount = true;
+          changed("maxCount");
+          focusEditor(panel, "maxCount");
+        }}>{t("add_randomness")}</button
+      >
+    {:else}
+      <label class="maximum-count-label" for="step-maxCount">
+        {t("maximum_events_per_window")}
+      </label>
+      <div class="maximum-count-control count-control">
         <EditorField
           {panel}
           {context}
@@ -145,24 +162,40 @@
           label="maximum_events_per_window"
           value={form.maxCount}
           update={(value) => (form.maxCount = value)}
-          options={{ type: "number", min: 0, max: 1000, step: 1 }}
+          options={{
+            type: "number",
+            min: Number.isSafeInteger(Number(form.minCount))
+              ? Math.max(0, Number(form.minCount))
+              : 0,
+            max: 1000,
+            step: 1,
+            hideLabel: true,
+          }}
+        />
+        <button
+          type="button"
+          class="icon-button"
+          aria-label={t("remove_maximum_events")}
+          title={t("remove_maximum_events")}
+          disabled={panel.busy}
+          onclick={() => {
+            form.maxCount = form.minCount;
+            showMaxCount = false;
+            delete editor.errors.maxCount;
+            changed("minCount");
+            focusEditor(panel, "minCount");
+          }}
         >
-          {#snippet trailing()}
-            <button
-              type="button"
-              class="text-button"
-              disabled={panel.busy}
-              onclick={() => {
-                form.maxCount = form.minCount;
-                showMaxCount = false;
-                changed("maxCount");
-                focusEditor(panel, "minCount");
-              }}>{t("remove_maximum_events")}</button
-            >
-          {/snippet}
-        </EditorField>
-      {/if}
-    </div>
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path
+              d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12Z"
+            />
+          </svg>
+        </button>
+      </div>
+    {/if}
+  </div>
+  <div class="random-frequency">
     <EditorField
       {panel}
       {context}
@@ -225,7 +258,10 @@
       type="button"
       class="primary"
       data-random-submit
-      disabled={panel.busy || panel.stale}
+      disabled={panel.busy ||
+        panel.stale ||
+        !!editor.errors.minCount ||
+        !!editor.errors.maxCount}
       onclick={save}
       >{t(
         panel.document?.source === "file"
@@ -258,6 +294,58 @@
     gap: 16px;
   }
 
+  .random-counts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "minimum-label ."
+      "minimum-control randomness";
+    gap: 5px 16px;
+    margin: 14px 0;
+  }
+
+  .random-counts.with-maximum {
+    grid-template-areas:
+      "minimum-label maximum-label"
+      "minimum-control maximum-control";
+  }
+
+  .minimum-count-label {
+    grid-area: minimum-label;
+  }
+
+  .maximum-count-label {
+    grid-area: maximum-label;
+  }
+
+  .minimum-count-control {
+    grid-area: minimum-control;
+  }
+
+  .maximum-count-control {
+    grid-area: maximum-control;
+  }
+
+  .count-control {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .count-control :global(.field) {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .randomize-count {
+    grid-area: randomness;
+    justify-self: start;
+    align-self: start;
+    max-width: 100%;
+  }
+
   .same-entities {
     display: flex;
     align-items: center;
@@ -266,6 +354,26 @@
   }
 
   @media (max-width: 600px) {
+    .random-counts {
+      grid-template-columns: minmax(96px, 1fr) minmax(0, max-content);
+      grid-template-areas:
+        "minimum-label minimum-label"
+        "minimum-control randomness";
+    }
+
+    .random-counts.with-maximum {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        "minimum-label"
+        "minimum-control"
+        "maximum-label"
+        "maximum-control";
+    }
+
+    .with-maximum .minimum-count-control {
+      margin-bottom: 12px;
+    }
+
     .random-frequency {
       grid-template-columns: 1fr;
       gap: 0;

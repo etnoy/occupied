@@ -171,11 +171,11 @@ export const en = {
   random_unsaved_confirm:
     "This random event has unsaved changes. Discard them and continue?",
   random_activity_hint:
-    "Run actions at random times within a window. Choose how often they run and how long each occurrence lasts.",
+    "Run actions at random times during an active period. Choose how often they run and how long each occurrence lasts.",
   random_create_hint:
-    "Choose a window, a duration, and actions for the start and end of each occurrence.",
-  window_starts: "Window starts",
-  window_ends: "Window ends",
+    "Choose an active period, a duration, and actions for the start and end of each occurrence.",
+  window_starts: "Active period starts",
+  window_ends: "Active period ends",
   active_period: "Active period",
   active_period_hint: "Random events happen during this period.",
   period_start: "Start",
@@ -191,35 +191,39 @@ export const en = {
   duration: "Duration",
   end_of: "End of",
   the_end_of: "the end of",
-  minimum_window_duration: "Minimum window duration",
-  maximum_window_duration: "Maximum window duration",
-  window_duration_error: "Choose a positive window duration within seven days.",
+  minimum_window_duration: "Minimum active period duration",
+  maximum_window_duration: "Maximum active period duration",
+  window_duration_error:
+    "Choose a positive active period duration within seven days.",
   window_duration_order_error:
-    "Maximum window duration must be at least the minimum.",
-  window_durations_prompt: "Choose valid window durations.",
-  window_duration_summary: "Window closes {duration} after it starts",
+    "Maximum active period duration must be at least the minimum.",
+  window_durations_prompt: "Choose valid active period durations.",
+  window_duration_summary: "Active period ends {duration} after it starts",
   window_duration_range_summary:
-    "Window closes between {min} and {max} after it starts",
+    "Active period ends between {min} and {max} after it starts",
   random_reference_error:
     "Choose another random event without creating a circular relationship.",
   random_relative_start_hint:
-    "This start follows the selected window's closing time.",
+    "This start follows the selected active period's end time.",
   random_relative_end_hint:
-    "Choose Time of day or Duration to replace this saved relative window end.",
+    "Choose Time of day or Duration to change how this active period ends.",
   random_dependents_error:
-    "Other random events depend on this window. Change their starts before deleting.",
+    "Other random events depend on this active period. Change their starts before deleting.",
   random_duration_exceeds_window:
-    "No events can run because the minimum duration is longer than the window.",
-  random_duration_fit_hint: "Reduce the minimum duration or extend the window.",
+    "No events can run because the minimum duration is longer than the active period.",
+  random_duration_fit_hint:
+    "Reduce the minimum duration or extend the active period.",
   random_duration_priority_hint:
     "Duration limits take priority over the event count.",
-  window_start: "Window start",
-  window_end: "Window end",
-  latest_window_start_optional: "Latest window start (optional)",
-  latest_window_end_optional: "Latest window end (optional)",
+  window_start: "Active period start",
+  window_end: "Active period end",
+  latest_window_start_optional: "Latest active period start (optional)",
+  latest_window_end_optional: "Latest active period end (optional)",
   randomize_window_start: "Randomize start",
   randomize_window_end: "Randomize end",
   frequency_and_duration: "Frequency and duration",
+  events_per_active_period: "Events per active period",
+  add_randomness: "Add randomness",
   minimum_events_per_window: "Minimum events per active period",
   maximum_events_per_window: "Maximum events per active period",
   add_maximum_events: "Add maximum events",
@@ -231,9 +235,10 @@ export const en = {
     "Choose valid event counts to describe how often events run.",
   random_count_error: "Choose a whole number from 0 to 1000.",
   random_zero_count_hint: "No events run because the event count is zero.",
-  random_dependents_skip_hint: "Dependent random events also skip this window.",
+  random_dependents_skip_hint:
+    "Dependent random events also skip this active period.",
   random_empty_window_hint:
-    "A window may have no events; dependent random events skip that window.",
+    "An active period may have no events; dependent random events skip that period.",
   random_count_range_summary:
     "Between {min} and {max} events start at random times during each active period.",
   random_single_event_summary:
@@ -242,7 +247,8 @@ export const en = {
     "{count} events start at random times during each active period.",
   random_durations_prompt:
     "Choose valid durations to describe how long each event lasts.",
-  random_duration_fit_prompt: "Choose durations that fit inside the window.",
+  random_duration_fit_prompt:
+    "Choose durations that fit inside the active period.",
   random_duration_summary: "Each event lasts {duration}.",
   random_duration_range_summary: "Each event lasts between {min} and {max}.",
   action_activate_summary: "activate {entities}",
@@ -259,9 +265,10 @@ export const en = {
   action_tilt_position_summary: "set the tilt of {entities} to {position}%",
   random_start_action_summary: "When each event starts, {action}.",
   random_end_action_summary: "When each event ends, {action}.",
-  random_single_finish_hint: "The event finishes before the window closes.",
+  random_single_finish_hint:
+    "The event finishes before the active period ends.",
   random_overlap_hint:
-    "Events may overlap, but all finish before the window closes.",
+    "Events may overlap, but all finish before the active period ends.",
   times_per_window: "times per active period",
   minimum_duration: "Minimum duration",
   maximum_duration: "Maximum duration",
@@ -420,7 +427,8 @@ export const en = {
   add_end_offset: "Add end offset",
   remove_end_offset: "Remove end offset",
   choose_a_step_or_event: "Choose a step or event",
-  window_offsets_prompt: "Enter valid offsets to see the window boundary",
+  window_offsets_prompt:
+    "Enter valid offsets to see the active period boundary",
   turn_on: "Turn on",
   turn_off: "Turn off",
   every_day_label: "Every day",
@@ -516,8 +524,8 @@ export const en = {
   duration_order_error:
     "Maximum duration must be at least the minimum duration.",
   duration_exceeds_window_error:
-    "Minimum duration does not fit inside this window.",
-  window_end_order_error: "Window end must be after its start.",
+    "Minimum duration does not fit inside this active period.",
+  window_end_order_error: "Active period end must be after its start.",
   random_changed_error:
     "This random event changed elsewhere. Cancel and reopen it before saving.",
   custom_yaml_required_error: "Enter an action mapping or a list of actions.",
@@ -555,7 +563,7 @@ export const en = {
   filter_events: "Filter events",
   events: "events",
   activate_scene: "Activate scene",
-  repeated_activity_window: "Repeated activity window",
+  repeated_activity_window: "Repeated activity period",
   add_to_draft: "Add to draft",
   planned_time: "Planned time",
   source: "Source",
@@ -606,8 +614,9 @@ export const sv = {
   duration_order_error:
     "Den längsta varaktigheten måste vara minst lika lång som den kortaste.",
   duration_exceeds_window_error:
-    "Den kortaste varaktigheten ryms inte i tidsfönstret.",
-  window_end_order_error: "Tidsfönstret måste sluta efter att det börjar.",
+    "Den kortaste varaktigheten ryms inte i den aktiva perioden.",
+  window_end_order_error:
+    "Den aktiva perioden måste sluta efter att den börjar.",
   random_changed_error:
     "Den här slumpmässiga händelsen har ändrats på annat håll. Avbryt och öppna den igen innan du sparar.",
   custom_yaml_required_error: "Ange en åtgärd eller en lista med åtgärder.",
@@ -786,12 +795,13 @@ export const sv = {
   random_unsaved_confirm:
     "Händelsen har osparade ändringar. Kasta dem och fortsätta?",
   random_activity_hint:
-    "Kör åtgärder vid slumpmässiga tider inom ett tidsfönster. Välj hur ofta de körs och hur länge varje tillfälle varar.",
+    "Kör åtgärder vid slumpmässiga tider under en aktiv period. Välj hur ofta de körs och hur länge varje tillfälle varar.",
   random_create_hint:
-    "Välj ett tidsfönster, en varaktighet och åtgärder för början och slutet av varje tillfälle.",
-  window_starts: "Tidsfönstret börjar",
-  window_ends: "Tidsfönstret slutar",
+    "Välj en aktiv period, en varaktighet och åtgärder för början och slutet av varje tillfälle.",
+  window_starts: "Den aktiva perioden börjar",
+  window_ends: "Den aktiva perioden slutar",
   active_period: "Aktiv period",
+  repeated_activity_window: "Återkommande aktivitetsperiod",
   active_period_hint: "Slumpmässiga händelser sker under den här perioden.",
   period_start: "Start",
   period_end: "Slut",
@@ -806,37 +816,42 @@ export const sv = {
   duration: "Varaktighet",
   end_of: "Slutet på",
   the_end_of: "slutet på",
-  minimum_window_duration: "Minsta varaktighet för tidsfönstret",
-  maximum_window_duration: "Högsta varaktighet för tidsfönstret",
+  minimum_window_duration: "Minsta varaktighet för den aktiva perioden",
+  maximum_window_duration: "Högsta varaktighet för den aktiva perioden",
   window_duration_error:
-    "Välj en positiv varaktighet för tidsfönstret inom sju dagar.",
+    "Välj en positiv varaktighet för den aktiva perioden inom sju dagar.",
   window_duration_order_error:
-    "Högsta varaktighet för tidsfönstret måste vara minst den lägsta.",
-  window_durations_prompt: "Välj giltiga varaktigheter för tidsfönstret.",
+    "Högsta varaktighet för den aktiva perioden måste vara minst den lägsta.",
+  window_durations_prompt:
+    "Välj giltiga varaktigheter för den aktiva perioden.",
   window_duration_summary:
-    "Tidsfönstret stängs {duration} efter att det börjar",
+    "Den aktiva perioden slutar {duration} efter att den börjar",
   window_duration_range_summary:
-    "Tidsfönstret stängs mellan {min} och {max} efter att det börjar",
+    "Den aktiva perioden slutar mellan {min} och {max} efter att den börjar",
   random_reference_error:
     "Välj en annan slumpmässig händelse utan att skapa ett cirkulärt beroende.",
-  random_relative_start_hint: "Starten följer det valda tidsfönstrets sluttid.",
+  random_relative_start_hint:
+    "Starten följer den valda aktiva periodens sluttid.",
   random_relative_end_hint:
-    "Välj Klockslag eller Varaktighet för att ersätta det sparade tidsfönstrets relativa slut.",
+    "Välj Klockslag eller Varaktighet för att ändra hur den aktiva perioden slutar.",
   random_dependents_error:
-    "Andra slumpmässiga händelser beror på det här tidsfönstret. Ändra deras start innan du tar bort det.",
+    "Andra slumpmässiga händelser beror på den här aktiva perioden. Ändra deras start innan du tar bort den.",
   random_duration_exceeds_window:
-    "Inga händelser kan köras eftersom minsta varaktighet är längre än tidsfönstret.",
+    "Inga händelser kan köras eftersom minsta varaktighet är längre än den aktiva perioden.",
   random_duration_fit_hint:
-    "Minska den kortaste varaktigheten eller förläng tidsfönstret.",
+    "Minska den kortaste varaktigheten eller förläng den aktiva perioden.",
   random_duration_priority_hint:
     "Varaktighetsgränserna har företräde framför antalet händelser.",
-  window_start: "Tidsfönstrets start",
-  window_end: "Tidsfönstrets slut",
-  latest_window_start_optional: "Senaste start för tidsfönstret (valfritt)",
-  latest_window_end_optional: "Senaste slut för tidsfönstret (valfritt)",
+  window_start: "Den aktiva periodens start",
+  window_end: "Den aktiva periodens slut",
+  latest_window_start_optional:
+    "Senaste start för den aktiva perioden (valfritt)",
+  latest_window_end_optional: "Senaste slut för den aktiva perioden (valfritt)",
   randomize_window_start: "Slumpa starttid",
   randomize_window_end: "Slumpa sluttid",
   frequency_and_duration: "Frekvens och varaktighet",
+  events_per_active_period: "Antal händelser per aktiv period",
+  add_randomness: "Lägg till slumpmässighet",
   minimum_events_per_window: "Minsta antal händelser per aktiv period",
   maximum_events_per_window: "Högsta antal händelser per aktiv period",
   add_maximum_events: "Lägg till högsta antal händelser",
@@ -850,9 +865,9 @@ export const sv = {
   random_zero_count_hint:
     "Inga händelser körs eftersom antalet händelser är noll.",
   random_dependents_skip_hint:
-    "Beroende slumpmässiga händelser hoppar också över det här tidsfönstret.",
+    "Beroende slumpmässiga händelser hoppar också över den här aktiva perioden.",
   random_empty_window_hint:
-    "Ett tidsfönster kan sakna händelser; beroende slumpmässiga händelser hoppar över det tidsfönstret.",
+    "En aktiv period kan sakna händelser; beroende slumpmässiga händelser hoppar över den perioden.",
   random_count_range_summary:
     "Mellan {min} och {max} händelser börjar vid slumpmässiga tider under varje aktiv period.",
   random_single_event_summary:
@@ -861,7 +876,8 @@ export const sv = {
     "{count} händelser börjar vid slumpmässiga tider under varje aktiv period.",
   random_durations_prompt:
     "Välj giltiga varaktigheter för att beskriva hur länge varje händelse varar.",
-  random_duration_fit_prompt: "Välj varaktigheter som ryms inom tidsfönstret.",
+  random_duration_fit_prompt:
+    "Välj varaktigheter som ryms inom den aktiva perioden.",
   random_duration_summary: "Varje händelse varar {duration}.",
   random_duration_range_summary: "Varje händelse varar mellan {min} och {max}.",
   action_activate_summary: "aktivera {entities}",
@@ -880,9 +896,10 @@ export const sv = {
     "ställ in lamellerna för {entities} till {position}%",
   random_start_action_summary: "När varje händelse börjar, {action}.",
   random_end_action_summary: "När varje händelse slutar, {action}.",
-  random_single_finish_hint: "Händelsen avslutas innan tidsfönstret stängs.",
+  random_single_finish_hint:
+    "Händelsen avslutas innan den aktiva perioden slutar.",
   random_overlap_hint:
-    "Händelser kan överlappa, men alla avslutas innan tidsfönstret stängs.",
+    "Händelser kan överlappa, men alla avslutas innan den aktiva perioden slutar.",
   times_per_window: "gånger per aktiv period",
   minimum_duration: "Minsta varaktighet",
   maximum_duration: "Längsta varaktighet",
@@ -1044,7 +1061,7 @@ export const sv = {
   remove_end_offset: "Ta bort slutförskjutning",
   choose_a_step_or_event: "Välj ett steg eller en händelse",
   window_offsets_prompt:
-    "Ange giltiga förskjutningar för att se tidsfönstrets gräns",
+    "Ange giltiga förskjutningar för att se den aktiva periodens gräns",
   turn_on: "Slå på",
   turn_off: "Slå av",
   every_day_label: "Varje dag",

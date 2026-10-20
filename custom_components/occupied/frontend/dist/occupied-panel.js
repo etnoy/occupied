@@ -267,11 +267,11 @@ var en = {
   random_unsaved_confirm:
     "This random event has unsaved changes. Discard them and continue?",
   random_activity_hint:
-    "Run actions at random times within a window. Choose how often they run and how long each occurrence lasts.",
+    "Run actions at random times during an active period. Choose how often they run and how long each occurrence lasts.",
   random_create_hint:
-    "Choose a window, a duration, and actions for the start and end of each occurrence.",
-  window_starts: "Window starts",
-  window_ends: "Window ends",
+    "Choose an active period, a duration, and actions for the start and end of each occurrence.",
+  window_starts: "Active period starts",
+  window_ends: "Active period ends",
   active_period: "Active period",
   active_period_hint: "Random events happen during this period.",
   period_start: "Start",
@@ -287,35 +287,39 @@ var en = {
   duration: "Duration",
   end_of: "End of",
   the_end_of: "the end of",
-  minimum_window_duration: "Minimum window duration",
-  maximum_window_duration: "Maximum window duration",
-  window_duration_error: "Choose a positive window duration within seven days.",
+  minimum_window_duration: "Minimum active period duration",
+  maximum_window_duration: "Maximum active period duration",
+  window_duration_error:
+    "Choose a positive active period duration within seven days.",
   window_duration_order_error:
-    "Maximum window duration must be at least the minimum.",
-  window_durations_prompt: "Choose valid window durations.",
-  window_duration_summary: "Window closes {duration} after it starts",
+    "Maximum active period duration must be at least the minimum.",
+  window_durations_prompt: "Choose valid active period durations.",
+  window_duration_summary: "Active period ends {duration} after it starts",
   window_duration_range_summary:
-    "Window closes between {min} and {max} after it starts",
+    "Active period ends between {min} and {max} after it starts",
   random_reference_error:
     "Choose another random event without creating a circular relationship.",
   random_relative_start_hint:
-    "This start follows the selected window's closing time.",
+    "This start follows the selected active period's end time.",
   random_relative_end_hint:
-    "Choose Time of day or Duration to replace this saved relative window end.",
+    "Choose Time of day or Duration to change how this active period ends.",
   random_dependents_error:
-    "Other random events depend on this window. Change their starts before deleting.",
+    "Other random events depend on this active period. Change their starts before deleting.",
   random_duration_exceeds_window:
-    "No events can run because the minimum duration is longer than the window.",
-  random_duration_fit_hint: "Reduce the minimum duration or extend the window.",
+    "No events can run because the minimum duration is longer than the active period.",
+  random_duration_fit_hint:
+    "Reduce the minimum duration or extend the active period.",
   random_duration_priority_hint:
     "Duration limits take priority over the event count.",
-  window_start: "Window start",
-  window_end: "Window end",
-  latest_window_start_optional: "Latest window start (optional)",
-  latest_window_end_optional: "Latest window end (optional)",
+  window_start: "Active period start",
+  window_end: "Active period end",
+  latest_window_start_optional: "Latest active period start (optional)",
+  latest_window_end_optional: "Latest active period end (optional)",
   randomize_window_start: "Randomize start",
   randomize_window_end: "Randomize end",
   frequency_and_duration: "Frequency and duration",
+  events_per_active_period: "Events per active period",
+  add_randomness: "Add randomness",
   minimum_events_per_window: "Minimum events per active period",
   maximum_events_per_window: "Maximum events per active period",
   add_maximum_events: "Add maximum events",
@@ -327,9 +331,10 @@ var en = {
     "Choose valid event counts to describe how often events run.",
   random_count_error: "Choose a whole number from 0 to 1000.",
   random_zero_count_hint: "No events run because the event count is zero.",
-  random_dependents_skip_hint: "Dependent random events also skip this window.",
+  random_dependents_skip_hint:
+    "Dependent random events also skip this active period.",
   random_empty_window_hint:
-    "A window may have no events; dependent random events skip that window.",
+    "An active period may have no events; dependent random events skip that period.",
   random_count_range_summary:
     "Between {min} and {max} events start at random times during each active period.",
   random_single_event_summary:
@@ -338,7 +343,8 @@ var en = {
     "{count} events start at random times during each active period.",
   random_durations_prompt:
     "Choose valid durations to describe how long each event lasts.",
-  random_duration_fit_prompt: "Choose durations that fit inside the window.",
+  random_duration_fit_prompt:
+    "Choose durations that fit inside the active period.",
   random_duration_summary: "Each event lasts {duration}.",
   random_duration_range_summary: "Each event lasts between {min} and {max}.",
   action_activate_summary: "activate {entities}",
@@ -355,9 +361,10 @@ var en = {
   action_tilt_position_summary: "set the tilt of {entities} to {position}%",
   random_start_action_summary: "When each event starts, {action}.",
   random_end_action_summary: "When each event ends, {action}.",
-  random_single_finish_hint: "The event finishes before the window closes.",
+  random_single_finish_hint:
+    "The event finishes before the active period ends.",
   random_overlap_hint:
-    "Events may overlap, but all finish before the window closes.",
+    "Events may overlap, but all finish before the active period ends.",
   times_per_window: "times per active period",
   minimum_duration: "Minimum duration",
   maximum_duration: "Maximum duration",
@@ -516,7 +523,8 @@ var en = {
   add_end_offset: "Add end offset",
   remove_end_offset: "Remove end offset",
   choose_a_step_or_event: "Choose a step or event",
-  window_offsets_prompt: "Enter valid offsets to see the window boundary",
+  window_offsets_prompt:
+    "Enter valid offsets to see the active period boundary",
   turn_on: "Turn on",
   turn_off: "Turn off",
   every_day_label: "Every day",
@@ -612,8 +620,8 @@ var en = {
   duration_order_error:
     "Maximum duration must be at least the minimum duration.",
   duration_exceeds_window_error:
-    "Minimum duration does not fit inside this window.",
-  window_end_order_error: "Window end must be after its start.",
+    "Minimum duration does not fit inside this active period.",
+  window_end_order_error: "Active period end must be after its start.",
   random_changed_error:
     "This random event changed elsewhere. Cancel and reopen it before saving.",
   custom_yaml_required_error: "Enter an action mapping or a list of actions.",
@@ -651,7 +659,7 @@ var en = {
   filter_events: "Filter events",
   events: "events",
   activate_scene: "Activate scene",
-  repeated_activity_window: "Repeated activity window",
+  repeated_activity_window: "Repeated activity period",
   add_to_draft: "Add to draft",
   planned_time: "Planned time",
   source: "Source",
@@ -702,9 +710,9 @@ var sv = {
   duration_order_error:
     "Den l\xE4ngsta varaktigheten m\xE5ste vara minst lika l\xE5ng som den kortaste.",
   duration_exceeds_window_error:
-    "Den kortaste varaktigheten ryms inte i tidsf\xF6nstret.",
+    "Den kortaste varaktigheten ryms inte i den aktiva perioden.",
   window_end_order_error:
-    "Tidsf\xF6nstret m\xE5ste sluta efter att det b\xF6rjar.",
+    "Den aktiva perioden m\xE5ste sluta efter att den b\xF6rjar.",
   random_changed_error:
     "Den h\xE4r slumpm\xE4ssiga h\xE4ndelsen har \xE4ndrats p\xE5 annat h\xE5ll. Avbryt och \xF6ppna den igen innan du sparar.",
   custom_yaml_required_error:
@@ -886,12 +894,13 @@ var sv = {
   random_unsaved_confirm:
     "H\xE4ndelsen har osparade \xE4ndringar. Kasta dem och forts\xE4tta?",
   random_activity_hint:
-    "K\xF6r \xE5tg\xE4rder vid slumpm\xE4ssiga tider inom ett tidsf\xF6nster. V\xE4lj hur ofta de k\xF6rs och hur l\xE4nge varje tillf\xE4lle varar.",
+    "K\xF6r \xE5tg\xE4rder vid slumpm\xE4ssiga tider under en aktiv period. V\xE4lj hur ofta de k\xF6rs och hur l\xE4nge varje tillf\xE4lle varar.",
   random_create_hint:
-    "V\xE4lj ett tidsf\xF6nster, en varaktighet och \xE5tg\xE4rder f\xF6r b\xF6rjan och slutet av varje tillf\xE4lle.",
-  window_starts: "Tidsf\xF6nstret b\xF6rjar",
-  window_ends: "Tidsf\xF6nstret slutar",
+    "V\xE4lj en aktiv period, en varaktighet och \xE5tg\xE4rder f\xF6r b\xF6rjan och slutet av varje tillf\xE4lle.",
+  window_starts: "Den aktiva perioden b\xF6rjar",
+  window_ends: "Den aktiva perioden slutar",
   active_period: "Aktiv period",
+  repeated_activity_window: "\xC5terkommande aktivitetsperiod",
   active_period_hint:
     "Slumpm\xE4ssiga h\xE4ndelser sker under den h\xE4r perioden.",
   period_start: "Start",
@@ -907,40 +916,43 @@ var sv = {
   duration: "Varaktighet",
   end_of: "Slutet p\xE5",
   the_end_of: "slutet p\xE5",
-  minimum_window_duration: "Minsta varaktighet f\xF6r tidsf\xF6nstret",
-  maximum_window_duration: "H\xF6gsta varaktighet f\xF6r tidsf\xF6nstret",
+  minimum_window_duration: "Minsta varaktighet f\xF6r den aktiva perioden",
+  maximum_window_duration: "H\xF6gsta varaktighet f\xF6r den aktiva perioden",
   window_duration_error:
-    "V\xE4lj en positiv varaktighet f\xF6r tidsf\xF6nstret inom sju dagar.",
+    "V\xE4lj en positiv varaktighet f\xF6r den aktiva perioden inom sju dagar.",
   window_duration_order_error:
-    "H\xF6gsta varaktighet f\xF6r tidsf\xF6nstret m\xE5ste vara minst den l\xE4gsta.",
+    "H\xF6gsta varaktighet f\xF6r den aktiva perioden m\xE5ste vara minst den l\xE4gsta.",
   window_durations_prompt:
-    "V\xE4lj giltiga varaktigheter f\xF6r tidsf\xF6nstret.",
+    "V\xE4lj giltiga varaktigheter f\xF6r den aktiva perioden.",
   window_duration_summary:
-    "Tidsf\xF6nstret st\xE4ngs {duration} efter att det b\xF6rjar",
+    "Den aktiva perioden slutar {duration} efter att den b\xF6rjar",
   window_duration_range_summary:
-    "Tidsf\xF6nstret st\xE4ngs mellan {min} och {max} efter att det b\xF6rjar",
+    "Den aktiva perioden slutar mellan {min} och {max} efter att den b\xF6rjar",
   random_reference_error:
     "V\xE4lj en annan slumpm\xE4ssig h\xE4ndelse utan att skapa ett cirkul\xE4rt beroende.",
   random_relative_start_hint:
-    "Starten f\xF6ljer det valda tidsf\xF6nstrets sluttid.",
+    "Starten f\xF6ljer den valda aktiva periodens sluttid.",
   random_relative_end_hint:
-    "V\xE4lj Klockslag eller Varaktighet f\xF6r att ers\xE4tta det sparade tidsf\xF6nstrets relativa slut.",
+    "V\xE4lj Klockslag eller Varaktighet f\xF6r att \xE4ndra hur den aktiva perioden slutar.",
   random_dependents_error:
-    "Andra slumpm\xE4ssiga h\xE4ndelser beror p\xE5 det h\xE4r tidsf\xF6nstret. \xC4ndra deras start innan du tar bort det.",
+    "Andra slumpm\xE4ssiga h\xE4ndelser beror p\xE5 den h\xE4r aktiva perioden. \xC4ndra deras start innan du tar bort den.",
   random_duration_exceeds_window:
-    "Inga h\xE4ndelser kan k\xF6ras eftersom minsta varaktighet \xE4r l\xE4ngre \xE4n tidsf\xF6nstret.",
+    "Inga h\xE4ndelser kan k\xF6ras eftersom minsta varaktighet \xE4r l\xE4ngre \xE4n den aktiva perioden.",
   random_duration_fit_hint:
-    "Minska den kortaste varaktigheten eller f\xF6rl\xE4ng tidsf\xF6nstret.",
+    "Minska den kortaste varaktigheten eller f\xF6rl\xE4ng den aktiva perioden.",
   random_duration_priority_hint:
     "Varaktighetsgr\xE4nserna har f\xF6retr\xE4de framf\xF6r antalet h\xE4ndelser.",
-  window_start: "Tidsf\xF6nstrets start",
-  window_end: "Tidsf\xF6nstrets slut",
+  window_start: "Den aktiva periodens start",
+  window_end: "Den aktiva periodens slut",
   latest_window_start_optional:
-    "Senaste start f\xF6r tidsf\xF6nstret (valfritt)",
-  latest_window_end_optional: "Senaste slut f\xF6r tidsf\xF6nstret (valfritt)",
+    "Senaste start f\xF6r den aktiva perioden (valfritt)",
+  latest_window_end_optional:
+    "Senaste slut f\xF6r den aktiva perioden (valfritt)",
   randomize_window_start: "Slumpa starttid",
   randomize_window_end: "Slumpa sluttid",
   frequency_and_duration: "Frekvens och varaktighet",
+  events_per_active_period: "Antal h\xE4ndelser per aktiv period",
+  add_randomness: "L\xE4gg till slumpm\xE4ssighet",
   minimum_events_per_window: "Minsta antal h\xE4ndelser per aktiv period",
   maximum_events_per_window: "H\xF6gsta antal h\xE4ndelser per aktiv period",
   add_maximum_events: "L\xE4gg till h\xF6gsta antal h\xE4ndelser",
@@ -955,9 +967,9 @@ var sv = {
   random_zero_count_hint:
     "Inga h\xE4ndelser k\xF6rs eftersom antalet h\xE4ndelser \xE4r noll.",
   random_dependents_skip_hint:
-    "Beroende slumpm\xE4ssiga h\xE4ndelser hoppar ocks\xE5 \xF6ver det h\xE4r tidsf\xF6nstret.",
+    "Beroende slumpm\xE4ssiga h\xE4ndelser hoppar ocks\xE5 \xF6ver den h\xE4r aktiva perioden.",
   random_empty_window_hint:
-    "Ett tidsf\xF6nster kan sakna h\xE4ndelser; beroende slumpm\xE4ssiga h\xE4ndelser hoppar \xF6ver det tidsf\xF6nstret.",
+    "En aktiv period kan sakna h\xE4ndelser; beroende slumpm\xE4ssiga h\xE4ndelser hoppar \xF6ver den perioden.",
   random_count_range_summary:
     "Mellan {min} och {max} h\xE4ndelser b\xF6rjar vid slumpm\xE4ssiga tider under varje aktiv period.",
   random_single_event_summary:
@@ -967,7 +979,7 @@ var sv = {
   random_durations_prompt:
     "V\xE4lj giltiga varaktigheter f\xF6r att beskriva hur l\xE4nge varje h\xE4ndelse varar.",
   random_duration_fit_prompt:
-    "V\xE4lj varaktigheter som ryms inom tidsf\xF6nstret.",
+    "V\xE4lj varaktigheter som ryms inom den aktiva perioden.",
   random_duration_summary: "Varje h\xE4ndelse varar {duration}.",
   random_duration_range_summary:
     "Varje h\xE4ndelse varar mellan {min} och {max}.",
@@ -988,9 +1000,9 @@ var sv = {
   random_start_action_summary: "N\xE4r varje h\xE4ndelse b\xF6rjar, {action}.",
   random_end_action_summary: "N\xE4r varje h\xE4ndelse slutar, {action}.",
   random_single_finish_hint:
-    "H\xE4ndelsen avslutas innan tidsf\xF6nstret st\xE4ngs.",
+    "H\xE4ndelsen avslutas innan den aktiva perioden slutar.",
   random_overlap_hint:
-    "H\xE4ndelser kan \xF6verlappa, men alla avslutas innan tidsf\xF6nstret st\xE4ngs.",
+    "H\xE4ndelser kan \xF6verlappa, men alla avslutas innan den aktiva perioden slutar.",
   times_per_window: "g\xE5nger per aktiv period",
   minimum_duration: "Minsta varaktighet",
   maximum_duration: "L\xE4ngsta varaktighet",
@@ -1153,7 +1165,7 @@ var sv = {
   remove_end_offset: "Ta bort slutf\xF6rskjutning",
   choose_a_step_or_event: "V\xE4lj ett steg eller en h\xE4ndelse",
   window_offsets_prompt:
-    "Ange giltiga f\xF6rskjutningar f\xF6r att se tidsf\xF6nstrets gr\xE4ns",
+    "Ange giltiga f\xF6rskjutningar f\xF6r att se den aktiva periodens gr\xE4ns",
   turn_on: "Sl\xE5 p\xE5",
   turn_off: "Sl\xE5 av",
   every_day_label: "Varje dag",
@@ -14950,6 +14962,14 @@ function createRandomEditorContext(panel) {
       }
     }
     delete editor.errors[key2];
+    if (key2 === "minCount" || key2 === "maxCount") {
+      if (errors[key2]) {
+        editor.errors[key2] = errors[key2];
+      }
+      if (errors.maxCount === "random_count_order_error") {
+        editor.errors.maxCount = errors.maxCount;
+      }
+    }
     panel.flush();
   };
   const scopedEditor = (prefix, options) =>
@@ -18110,17 +18130,23 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
-var root28 = from_html(`<button type="button" class="text-button"> </button>`);
+var root28 = from_html(
+  `<button type="button" class="randomize-count svelte-1n39iyr"> </button>`,
+);
 var root_124 = from_html(
-  `<label class="same-entities svelte-1n39iyr"><input type="checkbox"/> </label>`,
+  `<label class="maximum-count-label svelte-1n39iyr" for="step-maxCount"> </label> <div class="maximum-count-control count-control svelte-1n39iyr"><!> <button type="button" class="icon-button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12Z"></path></svg></button></div>`,
+  1,
 );
 var root_217 = from_html(
-  `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <div class="active-period-header svelte-1n39iyr"><h3 class="svelte-1n39iyr"> </h3> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-weekdays=""> </button></div> <!> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <h3> </h3> <div class="random-frequency svelte-1n39iyr"><div><!> <!></div> <div><!></div> <!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section> <!>`,
+  `<label class="same-entities svelte-1n39iyr"><input type="checkbox"/> </label>`,
+);
+var root_315 = from_html(
+  `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <div class="active-period-header svelte-1n39iyr"><h3 class="svelte-1n39iyr"> </h3> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-weekdays=""> </button></div> <!> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <h3> </h3> <div><label class="minimum-count-label svelte-1n39iyr" for="step-minCount"> </label> <div class="minimum-count-control count-control svelte-1n39iyr"><!></div> <!></div> <div class="random-frequency svelte-1n39iyr"><!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section> <!>`,
   1,
 );
 var $$css12 = {
   hash: "svelte-1n39iyr",
-  code: ".active-period-header.svelte-1n39iyr {display:flex;align-items:center;justify-content:space-between;gap:16px;}.active-period-header.svelte-1n39iyr h3:where(.svelte-1n39iyr) {margin:0;}.random-frequency.svelte-1n39iyr {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}.same-entities.svelte-1n39iyr {display:flex;align-items:center;gap:8px;margin-top:16px;}\n\n  @media (max-width: 600px) {.random-frequency.svelte-1n39iyr {grid-template-columns:1fr;gap:0;}\n  }",
+  code: '.active-period-header.svelte-1n39iyr {display:flex;align-items:center;justify-content:space-between;gap:16px;}.active-period-header.svelte-1n39iyr h3:where(.svelte-1n39iyr) {margin:0;}.random-frequency.svelte-1n39iyr {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}.random-counts.svelte-1n39iyr {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));grid-template-areas:"minimum-label ."\n      "minimum-control randomness";gap:5px 16px;margin:14px 0;}.random-counts.with-maximum.svelte-1n39iyr {grid-template-areas:"minimum-label maximum-label"\n      "minimum-control maximum-control";}.minimum-count-label.svelte-1n39iyr {grid-area:minimum-label;}.maximum-count-label.svelte-1n39iyr {grid-area:maximum-label;}.minimum-count-control.svelte-1n39iyr {grid-area:minimum-control;}.maximum-count-control.svelte-1n39iyr {grid-area:maximum-control;}.count-control.svelte-1n39iyr {display:flex;align-items:flex-start;gap:8px;min-width:0;}.count-control.svelte-1n39iyr .field {flex:1;min-width:0;margin:0;}.randomize-count.svelte-1n39iyr {grid-area:randomness;justify-self:start;align-self:start;max-width:100%;}.same-entities.svelte-1n39iyr {display:flex;align-items:center;gap:8px;margin-top:16px;}\n\n  @media (max-width: 600px) {.random-counts.svelte-1n39iyr {grid-template-columns:minmax(96px, 1fr) minmax(0, max-content);grid-template-areas:"minimum-label minimum-label"\n        "minimum-control randomness";}.random-counts.with-maximum.svelte-1n39iyr {grid-template-columns:minmax(0, 1fr);grid-template-areas:"minimum-label"\n        "minimum-control"\n        "maximum-label"\n        "maximum-control";}.with-maximum.svelte-1n39iyr .minimum-count-control:where(.svelte-1n39iyr) {margin-bottom:12px;}.random-frequency.svelte-1n39iyr {grid-template-columns:1fr;gap:0;}\n  }',
 };
 function RandomEventEditor($$anchor, $$props) {
   push($$props, true);
@@ -18161,7 +18187,7 @@ function RandomEventEditor($$anchor, $$props) {
       weekdaysButton.focus();
     }
   }
-  var fragment = root_217();
+  var fragment = root_315();
   var section = first_child(fragment);
   var div = child(section);
   var node = child(div);
@@ -18261,39 +18287,52 @@ function RandomEventEditor($$anchor, $$props) {
   var h3_1 = sibling(div_2, 2);
   var text_3 = only_child(h3_1, true);
   var div_3 = sibling(h3_1, 2);
-  var div_4 = child(div_3);
+  let classes_1;
+  var label = child(div_3);
+  var text_4 = only_child(label, true);
+  var div_4 = sibling(label, 2);
   var node_4 = child(div_4);
-  EditorField(node_4, {
-    get panel() {
-      return $$props.panel;
-    },
-    get context() {
-      return get(context);
-    },
-    key: "minCount",
-    label: "minimum_events_per_window",
-    get value() {
-      return get(form).minCount;
-    },
-    update: (value) => {
-      if (!get(maxCountVisible)) {
-        get(form).maxCount = value;
-      }
-      get(form).minCount = value;
-    },
-    options: { type: "number", min: 0, max: 1e3, step: 1 },
-  });
-  var node_5 = sibling(node_4, 2);
+  {
+    let $0 = user_derived(() =>
+      get(maxCountVisible)
+        ? "minimum_events_per_window"
+        : "events_per_active_period",
+    );
+    EditorField(node_4, {
+      get panel() {
+        return $$props.panel;
+      },
+      get context() {
+        return get(context);
+      },
+      key: "minCount",
+      get label() {
+        return get($0);
+      },
+      get value() {
+        return get(form).minCount;
+      },
+      update: (value) => {
+        if (!get(maxCountVisible)) {
+          get(form).maxCount = value;
+        }
+        get(form).minCount = value;
+      },
+      options: { type: "number", min: 0, max: 1e3, step: 1, hideLabel: true },
+    });
+  }
+  reset(div_4);
+  var node_5 = sibling(div_4, 2);
   {
     var consequent = ($$anchor2) => {
       var button_1 = root28();
-      var text_4 = only_child(button_1, true);
+      var text_5 = only_child(button_1, true);
       template_effect(
         ($0) => {
           button_1.disabled = $$props.panel.busy;
-          set_text(text_4, $0);
+          set_text(text_5, $0);
         },
-        [() => get(t)("add_maximum_events")],
+        [() => get(t)("add_randomness")],
       );
       delegated("click", button_1, () => {
         set2(showMaxCount, true);
@@ -18302,35 +18341,23 @@ function RandomEventEditor($$anchor, $$props) {
       });
       append($$anchor2, button_1);
     };
-    if_block(node_5, ($$render) => {
-      if (!get(maxCountVisible)) $$render(consequent);
-    });
-  }
-  reset(div_4);
-  var div_5 = sibling(div_4, 2);
-  var node_6 = child(div_5);
-  {
-    var consequent_1 = ($$anchor2) => {
+    var alternate = ($$anchor2) => {
+      var fragment_1 = root_124();
+      var label_1 = first_child(fragment_1);
+      var text_6 = only_child(label_1, true);
+      var div_5 = sibling(label_1, 2);
+      var node_6 = child(div_5);
       {
-        const trailing = ($$anchor3) => {
-          var button_2 = root28();
-          var text_5 = only_child(button_2, true);
-          template_effect(
-            ($0) => {
-              button_2.disabled = $$props.panel.busy;
-              set_text(text_5, $0);
-            },
-            [() => get(t)("remove_maximum_events")],
-          );
-          delegated("click", button_2, () => {
-            get(form).maxCount = get(form).minCount;
-            set2(showMaxCount, false);
-            get(changed)("maxCount");
-            focusEditor($$props.panel, "minCount");
-          });
-          append($$anchor3, button_2);
-        };
-        EditorField($$anchor2, {
+        let $0 = user_derived(() => ({
+          type: "number",
+          min: Number.isSafeInteger(Number(get(form).minCount))
+            ? Math.max(0, Number(get(form).minCount))
+            : 0,
+          max: 1e3,
+          step: 1,
+          hideLabel: true,
+        }));
+        EditorField(node_6, {
           get panel() {
             return $$props.panel;
           },
@@ -18343,18 +18370,43 @@ function RandomEventEditor($$anchor, $$props) {
             return get(form).maxCount;
           },
           update: (value) => (get(form).maxCount = value),
-          options: { type: "number", min: 0, max: 1e3, step: 1 },
-          trailing,
-          $$slots: { trailing: true },
+          get options() {
+            return get($0);
+          },
         });
       }
+      var button_2 = sibling(node_6, 2);
+      reset(div_5);
+      template_effect(
+        ($0, $1, $2) => {
+          set_text(text_6, $0);
+          set_attribute2(button_2, "aria-label", $1);
+          set_attribute2(button_2, "title", $2);
+          button_2.disabled = $$props.panel.busy;
+        },
+        [
+          () => get(t)("maximum_events_per_window"),
+          () => get(t)("remove_maximum_events"),
+          () => get(t)("remove_maximum_events"),
+        ],
+      );
+      delegated("click", button_2, () => {
+        get(form).maxCount = get(form).minCount;
+        set2(showMaxCount, false);
+        delete get(editor).errors.maxCount;
+        get(changed)("minCount");
+        focusEditor($$props.panel, "minCount");
+      });
+      append($$anchor2, fragment_1);
     };
-    if_block(node_6, ($$render) => {
-      if (get(maxCountVisible)) $$render(consequent_1);
+    if_block(node_5, ($$render) => {
+      if (!get(maxCountVisible)) $$render(consequent);
+      else $$render(alternate, -1);
     });
   }
-  reset(div_5);
-  var node_7 = sibling(div_5, 2);
+  reset(div_3);
+  var div_6 = sibling(div_3, 2);
+  var node_7 = child(div_6);
   EditorField(node_7, {
     get panel() {
       return $$props.panel;
@@ -18386,11 +18438,11 @@ function RandomEventEditor($$anchor, $$props) {
     update: (value) => (get(form).maxDuration = value),
     options: { placeholder: "15m" },
   });
-  reset(div_3);
-  var p_1 = sibling(div_3, 2);
-  var text_6 = only_child(p_1, true);
-  var div_6 = sibling(p_1, 2);
-  var node_9 = child(div_6);
+  reset(div_6);
+  var p_1 = sibling(div_6, 2);
+  var text_7 = only_child(p_1, true);
+  var div_7 = sibling(p_1, 2);
+  var node_9 = child(div_7);
   {
     let $0 = user_derived(() => get(context).action("on"));
     ActionEditor(node_9, {
@@ -18405,8 +18457,8 @@ function RandomEventEditor($$anchor, $$props) {
       entityLabel: "start_entities",
     });
   }
-  var div_7 = sibling(node_9, 2);
-  var node_10 = child(div_7);
+  var div_8 = sibling(node_9, 2);
+  var node_10 = child(div_8);
   {
     let $0 = user_derived(() => get(context).action("off"));
     ActionEditor(node_10, {
@@ -18426,16 +18478,16 @@ function RandomEventEditor($$anchor, $$props) {
   }
   var node_11 = sibling(node_10, 2);
   {
-    var consequent_2 = ($$anchor2) => {
-      var label = root_124();
-      var input = child(label);
+    var consequent_1 = ($$anchor2) => {
+      var label_2 = root_217();
+      var input = child(label_2);
       remove_input_defaults(input);
-      var text_7 = sibling(input, 1, true);
-      reset(label);
+      var text_8 = sibling(input, 1, true);
+      reset(label_2);
       template_effect(
         ($0) => {
           set_checked(input, get(form).sameEntities);
-          set_text(text_7, $0);
+          set_text(text_8, $0);
         },
         [() => get(t)("use_the_same_entities")],
       );
@@ -18443,18 +18495,18 @@ function RandomEventEditor($$anchor, $$props) {
         get(form).sameEntities = event2.currentTarget.checked;
         get(changed)("sameEntities");
       });
-      append($$anchor2, label);
+      append($$anchor2, label_2);
     };
     var d = user_derived(() => canShareEntities(get(form).on, get(form).off));
     if_block(node_11, ($$render) => {
-      if (get(d)) $$render(consequent_2);
+      if (get(d)) $$render(consequent_1);
     });
   }
+  reset(div_8);
   reset(div_7);
-  reset(div_6);
-  var div_8 = sibling(div_6, 2);
-  var button_3 = child(div_8);
-  var text_8 = only_child(button_3, true);
+  var div_9 = sibling(div_7, 2);
+  var button_3 = child(div_9);
+  var text_9 = only_child(button_3, true);
   var node_12 = sibling(button_3, 2);
   RandomActions(node_12, {
     get panel() {
@@ -18465,12 +18517,12 @@ function RandomEventEditor($$anchor, $$props) {
     },
   });
   var button_4 = sibling(node_12, 2);
-  var text_9 = only_child(button_4, true);
-  reset(div_8);
+  var text_10 = only_child(button_4, true);
+  reset(div_9);
   reset(section);
   var node_13 = sibling(section, 2);
   {
-    var consequent_3 = ($$anchor2) => {
+    var consequent_2 = ($$anchor2) => {
       RandomWeekdaysDialog($$anchor2, {
         get panel() {
           return $$props.panel;
@@ -18482,11 +18534,11 @@ function RandomEventEditor($$anchor, $$props) {
       });
     };
     if_block(node_13, ($$render) => {
-      if (get(weekdaysOpen)) $$render(consequent_3);
+      if (get(weekdaysOpen)) $$render(consequent_2);
     });
   }
   template_effect(
-    ($0, $1, $2, $3, $4, $5, $6) => {
+    ($0, $1, $2, $3, $4, $5, $6, $7) => {
       set_text(text2, $0);
       set_attribute2(button, "aria-expanded", get(weekdaysOpen));
       set_attribute2(
@@ -18501,17 +18553,36 @@ function RandomEventEditor($$anchor, $$props) {
       set_text(text_1, $1);
       set_text(text_2, $2);
       set_text(text_3, $3);
-      set_text(text_6, $4);
+      classes_1 = set_class(
+        div_3,
+        1,
+        "random-counts svelte-1n39iyr",
+        null,
+        classes_1,
+        { "with-maximum": get(maxCountVisible) },
+      );
+      set_text(text_4, $4);
+      set_text(text_7, $5);
       button_3.disabled = $$props.panel.busy;
-      set_text(text_8, $5);
-      button_4.disabled = $$props.panel.busy || $$props.panel.stale;
       set_text(text_9, $6);
+      button_4.disabled =
+        $$props.panel.busy ||
+        $$props.panel.stale ||
+        !!get(editor).errors.minCount ||
+        !!get(editor).errors.maxCount;
+      set_text(text_10, $7);
     },
     [
       () => get(t)("active_period"),
       () => get(t)("weekdays"),
       () => get(t)("active_period_hint"),
       () => get(t)("frequency_and_duration"),
+      () =>
+        get(t)(
+          get(maxCountVisible)
+            ? "minimum_events_per_window"
+            : "events_per_active_period",
+        ),
       () =>
         randomExplanation(
           get(form),
@@ -18545,7 +18616,7 @@ var root29 = from_html(
 );
 var root_125 = from_html(`<span class="step-status-badge"> </span>`);
 var root_218 = from_html(`<span class="step-row-time"> </span>`);
-var root_315 = from_html(
+var root_316 = from_html(
   `<div style="--depth:0"><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button> <div><!></div></div>`,
 );
 var root_410 = from_html(
@@ -18635,7 +18706,7 @@ function RandomView($$anchor, $$props) {
                 ? $$props.panel.randomEditor?.form.enabled
                 : get(entry).enabled) === false,
           );
-          var div_1 = root_315();
+          var div_1 = root_316();
           let classes;
           var button_1 = child(div_1);
           let classes_1;
@@ -18793,7 +18864,7 @@ delegate(["click"]);
 var root30 = from_html(`<button type="button"> </button>`);
 var root_126 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
 var root_219 = from_html(`<p> </p>`);
-var root_316 = from_html(`<header><p class="hint"> </p></header>`);
+var root_317 = from_html(`<header><p class="hint"> </p></header>`);
 var root_411 = from_html(`<p class="banner" role="status"> </p>`);
 var root_59 = from_html(
   `<p class="error" role="alert"> </p> <button type="button"> </button>`,
@@ -18939,7 +19010,7 @@ function App($$anchor, $$props) {
   var node_2 = child(main);
   {
     var consequent_2 = ($$anchor2) => {
-      var header = root_316();
+      var header = root_317();
       var p_1 = child(header);
       var text_4 = only_child(p_1, true);
       reset(header);
