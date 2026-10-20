@@ -68,8 +68,13 @@
       render: true,
     }}
   ></EditorField>
-  {#if !hideEntities && form.kind !== "custom"}
-    <EntitiesEditor {panel} {context} label={entityLabel} />{/if}
+  {#if form.kind !== "custom" && (!hideEntities || form.kind === "entities")}
+    <EntitiesEditor
+      {panel}
+      {context}
+      label={entityLabel}
+      readOnlyTargets={hideEntities}
+    />{/if}
   {#if form.kind === "custom"}
     <ha-code-editor
       role="group"

@@ -152,6 +152,12 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     .getByRole("listitem")
     .click();
   await page.getByText("Smoke light", { exact: true }).click();
+  const lightRow = panel.locator('[data-entity-row="light.smoke_light"]');
+  await lightRow.locator("summary").click();
+  await lightRow
+    .getByRole("spinbutton", { name: "Brightness (%)", exact: true })
+    .fill("40");
+  await expect(lightRow.locator("summary")).toContainText("Brightness 40%");
   await panel
     .getByRole("button", { name: "Step actions", exact: true })
     .click();
@@ -162,6 +168,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   });
   await expect(actionPreview).toContainText("light.turn_on");
   await expect(actionPreview).toContainText("light.smoke_light");
+  await expect(actionPreview).toContainText("brightness: 102");
   expect(saves).toHaveLength(0);
   await actionPreview
     .getByRole("button", { name: "Test action: Action", exact: true })
@@ -183,6 +190,12 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(panel.locator(".step-row")).toHaveAccessibleName(
     /Evening light.*Turn on.*Smoke light.*Runs at/,
   );
+  await panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }).click();
+  await lightRow.locator("summary").click();
+  await expect(
+    lightRow.getByRole("spinbutton", { name: "Brightness (%)", exact: true }),
+  ).toHaveValue("40");
+  await panel.getByRole("button", { name: "Save step", exact: true }).click();
   await panel.getByRole("button", { name: "Random", exact: true }).click();
   await panel.locator("[data-create-random]").click();
   await panel.evaluate((element) => {
@@ -840,6 +853,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   expect(errors).toEqual([]);
   // End of preview lifecycle regression.
 
+  const savesBeforeDeletion = saves.length;
   await page.reload();
   await panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }).click();
   await panel
@@ -863,7 +877,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     panel.getByRole("button", { name: "Create your first step" }),
   ).toBeVisible();
-  expect(saves).toHaveLength(4);
+  expect(saves).toHaveLength(savesBeforeDeletion + 1);
   expect(Object.keys(saves.at(-1)?.steps || {})).toEqual([]);
 
   await page.reload();
@@ -1152,6 +1166,178 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     action: "remote.turn_off",
     entities: ["remote.service_smoke"],
   });
+
+  for (const [entity, attributes] of [
+    [
+      "light.fade_smoke",
+      {
+        friendly_name: "Fade light",
+        supported_color_modes: ["brightness"],
+        supported_features: 32,
+      },
+    ],
+    [
+      "light.onoff_smoke",
+      { friendly_name: "Plain light", supported_color_modes: ["onoff"] },
+    ],
+    ["switch.settings_smoke", { friendly_name: "Settings switch" }],
+  ] as const) {
+    const state = await request.post(`/api/states/${entity}`, {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+      data: { state: "off", attributes },
+    });
+    expect(state.ok()).toBeTruthy();
+  }
+  await panel.evaluate(async (element) => {
+    const controller = element as OccupiedPanel;
+    controller.catalog = (await controller.ws("catalog")) as Catalog;
+    controller.renderView();
+  });
+  await panel.locator("[data-create-random]").click();
+  await random
+    .getByRole("textbox", { name: "Random event name", exact: true })
+    .fill("Settings test");
+  const startAction = random.locator('[data-editor-section="action"]').first();
+  const endAction = random.locator('[data-editor-section="action"]').last();
+  for (const entity of [
+    "light.fade_smoke",
+    "light.onoff_smoke",
+    "switch.settings_smoke",
+  ]) {
+    const add = startAction.getByRole("button", {
+      name: "Add entity",
+      exact: true,
+    });
+    if (await add.isVisible()) {
+      await add.click();
+    }
+    await startAction
+      .locator('[data-builder-field="on.entities"]')
+      .evaluate((element, value) => {
+        element.dispatchEvent(
+          new CustomEvent("value-changed", {
+            detail: { value },
+            bubbles: true,
+          }),
+        );
+      }, entity);
+  }
+  await random.getByRole("checkbox", { name: "Use the same entities" }).check();
+  const startLight = startAction.locator(
+    '[data-entity-row="light.fade_smoke"]',
+  );
+  const endLight = endAction.locator('[data-entity-row="light.fade_smoke"]');
+  await startLight.locator("summary").click();
+  await endLight.locator("summary").click();
+  await startLight
+    .getByRole("spinbutton", { name: "Brightness (%)", exact: true })
+    .fill("0");
+  await random
+    .getByRole("button", { name: "Save random event", exact: true })
+    .click();
+  await expect(startLight.getByRole("alert")).toContainText("greater than 0");
+  await startLight
+    .getByRole("spinbutton", { name: "Brightness (%)", exact: true })
+    .fill("40");
+  await startLight
+    .getByRole("spinbutton", { name: "Transition (seconds)", exact: true })
+    .fill("2");
+  await endLight
+    .getByRole("spinbutton", { name: "Transition (seconds)", exact: true })
+    .fill("7");
+  await expect(
+    endLight.getByRole("spinbutton", { name: "Brightness (%)", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    startAction.locator('[data-entity-row="switch.settings_smoke"] summary'),
+  ).toHaveCount(0);
+  await expect(
+    startAction.locator('[data-entity-row="light.onoff_smoke"] summary'),
+  ).toHaveCount(0);
+  await expect(
+    endAction.getByRole("button", { name: /^Remove entity/ }),
+  ).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(panel).toHaveAttribute("narrow", "");
+  await startLight
+    .getByRole("spinbutton", { name: "Brightness (%)", exact: true })
+    .focus();
+  await page.keyboard.press("Tab");
+  await expect(
+    startLight.getByRole("spinbutton", {
+      name: "Transition (seconds)",
+      exact: true,
+    }),
+  ).toBeFocused();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          globalThis.document.documentElement.scrollWidth <=
+          globalThis.innerWidth,
+      ),
+    )
+    .toBeTruthy();
+  await page.screenshot({
+    path: "test-results/browser/per-entity-settings-mobile.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await random
+    .getByRole("button", { name: "Save random event", exact: true })
+    .click();
+  await expect(random).toHaveCount(0);
+  const settingsEvent = await panel.evaluate((element) => {
+    const controller = element as OccupiedPanel;
+
+    return Object.values(controller.saved!.random!).find(
+      (event) => event.name === "Settings test",
+    );
+  });
+  expect(settingsEvent?.on).toMatchObject({
+    action: "set_state",
+    entities: {
+      "light.fade_smoke": { state: "on", brightness: 102, transition: 2 },
+      "light.onoff_smoke": { state: "on" },
+      "switch.settings_smoke": { state: "on" },
+    },
+  });
+  expect(settingsEvent?.off).toMatchObject({
+    action: "set_state",
+    entities: {
+      "light.fade_smoke": { state: "off", transition: 7 },
+      "light.onoff_smoke": { state: "off" },
+      "switch.settings_smoke": { state: "off" },
+    },
+  });
+  await panel.getByRole("button", { name: /^Settings test(?:\s|$)/ }).click();
+  await startLight.locator("summary").click();
+  await endLight.locator("summary").click();
+  await expect(
+    startLight.getByRole("spinbutton", { name: "Brightness (%)", exact: true }),
+  ).toHaveValue("40");
+  await expect(
+    endLight.getByRole("spinbutton", {
+      name: "Transition (seconds)",
+      exact: true,
+    }),
+  ).toHaveValue("7");
+  await startLight
+    .getByRole("button", { name: "Reset light settings", exact: true })
+    .click();
+  await expect(
+    startLight.getByRole("spinbutton", { name: "Brightness (%)", exact: true }),
+  ).toHaveValue("");
+  await expect(
+    endLight.getByRole("spinbutton", {
+      name: "Transition (seconds)",
+      exact: true,
+    }),
+  ).toHaveValue("7");
+  await random
+    .getByRole("button", { name: "Save random event", exact: true })
+    .click();
+  await expect(random).toHaveCount(0);
 
   // Older programs can have relative boundaries at both ends of a random window.
   await panel.evaluate(async (element) => {

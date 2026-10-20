@@ -7,6 +7,7 @@ import {
   customExample,
 } from "./custom-action.js";
 import { coverActions } from "./cover.js";
+import { setActionEntities, updateEntitySetting } from "./entity-settings.js";
 export function changeActionKind(form, value, confirmReplace) {
   const kind = value === "turn_on" || value === "turn_off" ? "entities" : value;
   if (kind === "custom" && form.kind !== "custom") {
@@ -41,12 +42,12 @@ export function changeActionKind(form, value, confirmReplace) {
       next.kind === kind &&
       (kind !== "entities" || next.action === value);
     if (compatible) {
-      const buffer = {
-        customYaml: form.customYaml,
-        customAccepted: form.customAccepted,
-        customActions: form.customActions,
-      };
-      Object.assign(form, next, buffer);
+      delete form.entitySettings;
+      Object.assign(form, next);
+      // The next YAML conversion must reflect any edits in the GUI.
+      delete form.customYaml;
+      delete form.customAccepted;
+      delete form.customActions;
       return {};
     }
     if (!confirmReplace("custom_yaml_replace_confirm")) {
@@ -54,7 +55,8 @@ export function changeActionKind(form, value, confirmReplace) {
     }
   }
   if (form.kind !== kind) {
-    form.entities = acceptedEntities(kind, form.entities);
+    setActionEntities(form, acceptedEntities(kind, form.entities));
+    delete form.entitySettings;
   }
   form.kind = kind;
   if (!(kind === "entities" && ["turn_on", "turn_off"].includes(value))) {
@@ -62,6 +64,11 @@ export function changeActionKind(form, value, confirmReplace) {
   }
   if (kind === "entities") {
     form.action = value;
+    if (value === "turn_off" && form.entitySettings) {
+      for (const entity of Object.keys(form.entitySettings)) {
+        updateEntitySetting(form, entity, "brightness", "");
+      }
+    }
   }
   if (kind === "service" && !form.service.includes(".")) {
     form.service = `homeassistant.${form.action}`;

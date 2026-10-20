@@ -5,7 +5,12 @@ import type {
   LoadedOccupiedPanel,
 } from "../../occupied-panel.js";
 import { required, offsetErrors } from "../utils/util.js";
-import { stepEntries, editorErrors, buildStep } from "../models/step-model.js";
+import {
+  stepEntries,
+  editorErrors,
+  buildStep,
+  actionErrors,
+} from "../models/step-model.js";
 
 export function focusEditor(panel: OccupiedPanel, key?: string) {
   const target = key
@@ -45,7 +50,14 @@ export function createStepEditorContext(panel: LoadedOccupiedPanel) {
     panel.version++;
     panel.validatedVersion = -1;
     delete editor.errors[key];
-    if (key === "days") {
+    if (key === "entities" || key === "kind") {
+      const errors = actionErrors(form);
+      for (const field of Object.keys(editor.errors)) {
+        if (field.startsWith("entitySettings.") && !errors[field]) {
+          delete editor.errors[field];
+        }
+      }
+    } else if (key === "days") {
       const { anchor } = editorErrors(panel.draft, editor);
       if (anchor) {
         editor.errors.anchor = anchor;

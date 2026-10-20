@@ -11,7 +11,7 @@ from uuid import uuid4
 from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[2]
-artifacts = ROOT / ".browser-artifacts"
+artifacts = (ROOT / ".browser-artifacts").resolve()
 artifacts.mkdir(exist_ok=True)
 port = int(os.environ.get("HA_BROWSER_PORT", "18123"))
 config = Path(tempfile.mkdtemp(prefix="ha-", dir=artifacts))
@@ -41,6 +41,8 @@ template:
       - name: Smoke light
         unique_id: occupied_smoke_light
         state: "{{ false }}"
+        level: "{{ 128 }}"
+        set_level: []
         turn_on: []
         turn_off: []
 """.replace("server_port: 18123", f"server_port: {port}")

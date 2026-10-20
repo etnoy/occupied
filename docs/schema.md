@@ -313,7 +313,6 @@ Live compilation has bounded date and event budgets. Excessively long dependency
 
 Action definitions are shared by scheduled steps and random event phases. Every phase declares its own targets and behavior: `"off"` does not automatically reverse `"on"`, and either phase can contain any supported action. The GUI's reuse-targets shortcut is available for compatible simple controls.
 
-
 ### Action fields
 
 | Field | Required | Meaning |
@@ -339,7 +338,11 @@ entities:
   - switch.window_lights
 ```
 
-These actions take no service data. Occupied resolves the matching light and switch services internally. To set brightness, color, or a fade, use `set_state` or an explicit `light.turn_on`/`light.turn_off` action.
+These actions take no service data. Occupied resolves the matching light and switch services internally. To set brightness, color, or a fade in YAML, use `set_state` or an explicit `light.turn_on`/`light.turn_off` action.
+
+The GUI's expandable **Light settings** offer optional brightness percentages for dimmable lights when turning on, and transition seconds for lights supporting fades when turning on or off. Empty fields send no value; switches have no light settings. Each entity has independent settings. In random events, **Use the same entities** shares the target IDs while start and end settings remain independent.
+
+The GUI saves an ordinary `turn_on`/`turn_off` list when no settings are specified. With settings, it saves the existing `set_state` entity mapping, converting edited percentages to integer `brightness` values from 1 to 255. Opening an existing mapping preserves its exact stored brightness until that field is edited. Uniform on/off light/switch mappings containing only brightness and transition can be edited with these controls; mixed states, colors, covers and ordered action lists remain in Custom YAML. Saved settings for unavailable or unsupported entities remain visible and are preserved until reset. Changing an entity clears its settings; switching to turn off removes brightness and retains transition.
 
 ### Individual states with `set_state`
 
@@ -621,7 +624,7 @@ For an eligible light/switch action, open **Advanced settings** and enable **Sta
 
 ### Custom YAML action editor
 
-Choose **Custom YAML** in a step or a random event's action editor. Enter either one action mapping:
+Choose **Custom YAML** in a step or a random event's action editor for light colors, mixed entity states, and ordered actions. Optional per-entity brightness and transition are also available in the GUI under **Light settings**. Enter either one action mapping:
 
 ```yaml
 action: turn_on
@@ -710,7 +713,7 @@ The editor uses the same strict YAML loader as managed files. It rejects duplica
 
 If a stored program is invalid, Occupied preserves its original YAML and disables GUI editing. Open Settings to repair and save the YAML, or choose **Discard preserved program** and confirm to start with an empty program. Ordinary GUI/API saves cannot replace the preserved source without an explicit discard.
 
-Invalid custom text stays available for correction and cannot replace the last valid configuration. Editing a title or timing preserves the complete action block. Switching to simple controls converts a representable single action without losing settings; replacing individual settings or a multi-action block requires an explicit decision. Custom text remains available while the editor is open.
+Invalid custom text stays available for correction and cannot replace the last valid configuration. Editing a title or timing preserves the complete action block. Switching to simple controls converts a representable single action without losing settings, including uniform light/switch `set_state` mappings with brightness and transition. Converting back to YAML includes subsequent GUI edits. Colors, mixed states, and multi-action blocks require an explicit replacement decision before switching to simpler controls; the replaced custom text remains buffered while the editor is open.
 
 The submit/save flow validates the complete candidate and installed service schemas. In managed-file mode, edits create a draft for export; Occupied does not write the managed source. Deploy the exported configuration and reload it. Moving to GUI storage copies supported action settings.
 

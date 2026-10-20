@@ -7,6 +7,7 @@ import {
 } from "../models/step-model.js";
 import { copy, removeStep } from "../models/model.js";
 import { focusEditor } from "./step-editor-controller.js";
+import { editableEntityMapping } from "../utils/entity-settings.js";
 
 export async function deleteStep(panel: LoadedOccupiedPanel, id: string) {
   if (
@@ -103,6 +104,10 @@ function showEntry(panel: LoadedOccupiedPanel, entry: StepEntry) {
 }
 
 export function actionSummary(entry: StepEntry, t: Translate) {
+  const mapping = editableEntityMapping(entry);
+  if (mapping) {
+    return t(mapping.action);
+  }
   if (entry.actions || entry.action === "set_state") {
     return `${t("custom_yaml")} · ${entry.actions?.length || 1} ${t("actions")}`;
   }

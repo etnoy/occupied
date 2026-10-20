@@ -1,5 +1,9 @@
 // Generated from custom_components/occupied/frontend/src/lib/utils/custom-action.ts by pnpm run build. Do not edit.
 import { entityName } from "./util.js";
+import {
+  editableEntityMapping,
+  entitySettingsData,
+} from "./entity-settings.js";
 export function actionTargets(source) {
   if (!source) {
     return [];
@@ -70,7 +74,10 @@ export function mappedControl(form) {
     entities: Object.fromEntries(
       form.entities.map((entity) => [
         entity,
-        { state: form.action === "turn_off" ? "off" : "on" },
+        {
+          state: form.action === "turn_off" ? "off" : "on",
+          ...entitySettingsData(form, entity),
+        },
       ]),
     ),
   };
@@ -79,25 +86,7 @@ export function simpleMapping(source) {
   if (source.action !== "set_state" || Array.isArray(source.entities)) {
     return source;
   }
-  const entries = Object.entries(source.entities || {});
-  const states = new Set(entries.map(([, settings]) => settings.state));
-  if (
-    entries.length > 0 &&
-    states.size === 1 &&
-    entries.every(
-      ([entity, settings]) =>
-        /^(light|switch)\./.test(entity) &&
-        Object.keys(settings).length === 1 &&
-        ["on", "off"].includes(String(settings.state)),
-    )
-  ) {
-    return {
-      action: states.has("off") ? "turn_off" : "turn_on",
-      ...(source.stagger && { stagger: { ...source.stagger } }),
-      entities: entries.map(([entity]) => entity),
-    };
-  }
-  return;
+  return editableEntityMapping(source) ? source : undefined;
 }
 export async function prepareCustomAction(panel, form) {
   if (form.kind !== "custom") {

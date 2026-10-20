@@ -897,6 +897,45 @@ async def test_action_preview_resolves_unsaved_commands_and_only_dispatches_when
     assert hass_storage == stored
 
 
+async def test_entity_settings_preview_keeps_payloads_separate_and_filters_unsupported_fields(
+    hass, editor_entry, devices, hass_ws_client
+):
+    assert await hass.config_entries.async_setup(editor_entry.entry_id)
+    hass.states.async_set(
+        "light.a",
+        "off",
+        {
+            "supported_color_modes": ["brightness"],
+            "supported_features": light.LightEntityFeature.TRANSITION,
+        },
+    )
+    hass.states.async_set("light.onoff", "off", {"supported_color_modes": ["onoff"]})
+    hass.states.async_set("switch.settings", "off")
+    client = await hass_ws_client(hass)
+    source = {
+        "action": "set_state",
+        "entities": {
+            "light.a": {"state": "on", "brightness": 102, "transition": 3},
+            "light.b": {"state": "on", "brightness": 13, "transition": 7},
+            "light.onoff": {"state": "on", "brightness": 45, "transition": 2},
+            "switch.settings": {"state": "on"},
+        },
+    }
+    result = (await request(client, "occupied/action_preview", editor_entry, action=source))[
+        "result"
+    ]
+    assert result["valid"] and not result["outcomes"] and not devices
+    assert result["calls"] == [
+        {
+            "action": "light.turn_on",
+            "data": {"entity_id": "light.a", "brightness": 102, "transition": 3},
+        },
+        {"action": "light.turn_on", "data": {"entity_id": "light.b", "brightness": 13}},
+        {"action": "light.turn_on", "data": {"entity_id": "light.onoff"}},
+        {"action": "switch.turn_on", "data": {"entity_id": "switch.settings"}},
+    ]
+
+
 @pytest.mark.parametrize(
     "source",
     [

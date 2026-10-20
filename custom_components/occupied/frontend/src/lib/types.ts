@@ -102,7 +102,15 @@ export interface BoundaryForm {
   startOffset: string | number;
 }
 
+export interface EntitySettingsForm {
+  brightness: string;
+  transition: string;
+  // Keep device precision until the percentage is edited.
+  rawBrightness?: number;
+}
+
 export interface ActionForm {
+  entitySettings?: Record<string, EntitySettingsForm>;
   stagger?: Stagger;
   customYaml?: string;
   customActions?: Action[];

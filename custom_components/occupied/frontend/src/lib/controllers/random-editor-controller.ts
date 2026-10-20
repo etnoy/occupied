@@ -16,6 +16,7 @@ import {
   buildRandom,
 } from "../models/random-model.js";
 import { focusEditor } from "./step-editor-controller.js";
+import { setActionEntities } from "../utils/entity-settings.js";
 
 export function openRandom(panel: LoadedOccupiedPanel, entry?: RandomEntry) {
   if (panel.busy) {
@@ -64,7 +65,7 @@ export function createRandomEditorContext(panel: LoadedOccupiedPanel) {
     }
 
     if (form.sameEntities) {
-      form.off.entities = [...form.on.entities];
+      setActionEntities(form.off, form.on.entities);
     }
     panel.version++;
     panel.validatedVersion = -1;
