@@ -59,7 +59,7 @@ You can now create more steps and have those steps either be absolute in time, o
 
 *Dinner lights come on at a different time each evening, within a 30-minute window.*
 
-For more advanced usage like turning on a light at a specific brightness, use **Custom YAML** as the action. See [Custom YAML actions](docs/custom-yaml.md).
+For more advanced usage like turning on a light at a specific brightness, use **Custom YAML** as the action. See [Custom YAML actions](docs/schema.md#custom-yaml-action-editor).
 
 ## Create a Random Event
 
@@ -79,7 +79,7 @@ Random Events manage a light for both on and off, so you can have a kitchen ligh
 
 Open **Preview** to see how the entities would be turned on and off. This will be a render of the random events within the ranges you chose before, so navigate back and forth during the days to see how those will be randomized.
 
-Predictable light, switch, and cover actions appear as state bars. Scenes and other service calls appear as diamonds at their scheduled times, including calls without an entity target. Hover a diamond to see its services, targets, and data.
+Explicit on/off actions appear as state bars for lights, switches, remotes, and other devices, including `homeassistant.turn_on` and `homeassistant.turn_off`. Cover actions show planned position and tilt. Scenes, scripts, and other commands whose effects cannot be represented as a state interval appear as diamonds at their scheduled times, including calls without an entity target. Hover a diamond to see its services, targets, and data.
 
 <img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/timeline.png" alt="Daily timeline showing scheduled lighting and random activity across household lights and switches" width="1072">
 
@@ -157,7 +157,7 @@ While we've put a lot of effort into the GUI, it is still very powerful to do pl
 
 Open **Settings** in the controller to edit the YAML directly or load a file, then choose **Save changes** to validate and apply it. If you are an agent wanting to edit Occupied settings, this is the way to do it!
 
-See the [schema reference](docs/schema.md) and [example programs](examples/house.yaml) for more options.
+See the [YAML reference](docs/schema.md) and [example programs](examples/house.yaml) for more options.
 
 ## Use a managed YAML file
 
@@ -174,7 +174,7 @@ With file-based config, you cannot edit programs with the GUI.
 
 ## CLI
 
-The standalone `occupied` CLI validates, exports, previews, and renames typed step IDs without importing Home Assistant or executing device services:
+There is a standalone `occupied` CLI that validates, exports, previews, and renames typed step IDs.
 
 ```sh
 occupied validate examples/house.yaml --date 2026-10-13 --days 7 --timezone Europe/Stockholm --latitude 59.3 --longitude 18.1
@@ -206,81 +206,4 @@ mise lint
 mise format
 ```
 
-`mise test` runs pytest and accepts
-additional arguments, for example `mise test tests/core/test_planner.py`. The setup commands
-install the dependencies declared in `pyproject.toml`; pip does not reproduce the
-exact dependency versions in `uv.lock`.
-`mise lint` runs Ruff, ESLint on TypeScript sources and Svelte scripts/templates, and strict TypeScript/Svelte type
-checks; `mise format` checks Ruff and Prettier formatting. Use `mise lint-fix` and
-`mise format-fix` to apply automatic fixes and rebuild generated frontend files. Install the
-Node development dependencies with `pnpm install --frozen-lockfile --ignore-scripts` before running these tasks.
-Home Assistant itself depends on the `uv` Python package, so pip installs it inside
-the virtual environment even though these development commands use mise and pip.
-
-The environments are defined in `scripts/ha_matrix.toml`. Validate metadata and
-generated files with `uv run python scripts/ha_matrix.py check`. Reproduce a
-supported environment with `uv run python scripts/ha_matrix.py test --lane floor`
-or replace `floor` with a tested HA version; `--lane all` runs all six. Rebuild
-hashed requirements with `uv run python scripts/ha_matrix.py compile`, and discover
-new releases with `uv run python scripts/ha_matrix.py next`. See the
-[monthly rollover runbook](docs/maintenance.md) for the review and release procedure.
-
-For runtime changes, also run
-`uv run python scripts/ha_matrix.py test --lane floor -- tests/ha/runtime_soak.py`
-and repeat with `--lane newest`. This opt-in soak dispatches every example and
-program fixture for 60 days across each Stockholm DST transition, using virtual
-services and timers firing one millisecond late. It checks that scheduling remains
-active and does not drop previously unhandled events as historical. Startup
-history and already completed entries pruned from the bounded journal are expected.
-
-Historical test environments retain the original HA constraints and their recorded
-SHA-256 digests. The matrix records one security repair: AnyIO versions below
-4.14.2 are replaced by 4.14.2 for [GHSA-82r6-8w77-94w6](https://github.com/advisories/GHSA-82r6-8w77-94w6).
-The compiler removes only that vulnerable constraint from its temporary input,
-records the replacement in each affected override/header, and keeps all other HA
-pins. The dependency review workflow allows the reported PyJWT advisories only
-for the isolated historical test fixtures; their official PyJWT pins remain
-unchanged to satisfy each HA release's exact requirements. These are test
-environments; Occupied does not declare AnyIO or PyJWT as runtime requirements.
-The same narrow advisory-ID exception applies to the reported cryptography
-advisories; official HA pins are preserved. Installed-package checks and the
-full HA suites remain enabled.
-
-The historical Home Assistant fixtures also retain releases affected by
-[GHSA-5hxg-r395-fqxx](https://github.com/advisories/GHSA-5hxg-r395-fqxx),
-[GHSA-wx4m-69m9-gx3m](https://github.com/advisories/GHSA-wx4m-69m9-gx3m), and
-[GHSA-x84v-g949-293w](https://github.com/advisories/GHSA-x84v-g949-293w). The
-dependency-review allowlist is limited to those advisory IDs for the historical
-compatibility matrix; all other high- and critical-severity findings continue to
-fail CI.
-
-The Python tests are split into `tests/core` (planner, codecs, CLI, and examples) and
-`tests/ha` (integration, storage, services, and lifecycle). To run the core suite
-without installing Home Assistant:
-
-```sh
-uv sync --no-dev --group test-core
-uv run --no-dev --group test-core pytest tests/core
-```
-
-For the locked environment used by CI, install [uv](https://docs.astral.sh/uv/) and run:
-
-```sh
-uv sync --python 3.14 --locked
-uv run pytest
-uv run ruff check custom_components tests scripts
-uv run ruff format --check custom_components tests scripts
-pnpm install --frozen-lockfile --ignore-scripts
-pnpm run build:check
-pnpm run lint
-pnpm run typecheck
-pnpm run format:check
-pnpm test
-uv run python scripts/check_release.py
-```
-
-The frontend uses Svelte 5 and TypeScript, with `OccupiedPanel` as HA’s custom element and backend controller. Sources live in `custom_components/occupied/frontend/src/`: components are grouped by feature in `lib/components`, with separate folders for controllers, models, actions, services, translations, and utilities. See the [frontend layout](custom_components/occupied/frontend/README.md). HTML lives in `.svelte` components, using template blocks for conditionals and lists. Model and validation logic remain independent of rendering. Preview orchestration lives in `lib/controllers/preview-controller.ts`; subscription lifecycle guards live in `lib/services/subscription.ts`. The editor requires Home Assistant and loads its native selectors and picker before rendering. A small DOM bridge passes object properties and custom events to those HA elements. Controller updates use Svelte's `flushSync` so editor actions can immediately focus newly rendered fields. TypeScript 6 is pinned for compatibility with `svelte-check`'s TypeScript API; strict checks cover both TypeScript and Svelte sources.
-
-Run `pnpm run lint:fix` for automatic lint fixes and `pnpm run format:fix` for formatting.
-
-Run `pnpm run build` after editing `.ts`, `.svelte`, or `.css` files and commit the generated JavaScript under `custom_components/occupied/frontend/dist/` alongside its sources.
+The frontend uses Svelte 5 and TypeScript, with `OccupiedPanel` as HA’s custom element and backend controller.
