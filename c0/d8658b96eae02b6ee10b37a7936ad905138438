@@ -1,0 +1,27 @@
+custom_components/occupied/editor.py
+  s_d2639e1a8afa3d::t_4f6b75a31621c5 62-66
+custom_components/occupied/frontend/src/App.svelte
+  s_d2639e1a8afa3d::t_ee67a07ddc8c7a 7-8,58,62-67,75-78
+custom_components/occupied/frontend/src/lib/components/random/RandomView.svelte
+  s_d2639e1a8afa3d::t_509947a4060ef4 7,22,26-30,40,65-67,75,83,89-91,111-120
+tests/frontend/src/step-issues.test.ts
+  s_d2639e1a8afa3d::t_001fc151a2d8d9 4-8,74-131
+tests/ha/test_editor_api.py
+  s_d2639e1a8afa3d::t_a3b945a66a6c9a 81-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c0d8658b96eae02b6ee10b37a7936ad905138438",
+  "prompts": {},
+  "sessions": {
+    "s_d2639e1a8afa3d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15811-aac0-7802-86ed-7a4b7ba0aeb3",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
