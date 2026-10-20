@@ -1,0 +1,21 @@
+.github/workflows/check.yml
+  s_32eaff843ff7b1::t_8e8aa95ef7ba1e 158-160
+scripts/ha_matrix.py
+  s_32eaff843ff7b1::t_b0e0c0c1b9a641 5,269-317,768-769,784-785
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ee167bccc487621c69a214148e8f91768f090634",
+  "prompts": {},
+  "sessions": {
+    "s_32eaff843ff7b1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15922-cb82-7403-b330-37d0bfe6ef1b",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
