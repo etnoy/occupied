@@ -40,7 +40,7 @@ with tarfile.open(directory / f"occupied-{version}.tar.gz") as source:
         "scripts/build-frontend.ts",
         "scripts/eslint-svelte-style.mjs",
         "mise.toml",
-        "media/homealone.png",
+        "media/homealone.webp",
         "media/screenshots/timeline.png",
         ".prettierrc.json",
         "custom_components/occupied/frontend/src/App.svelte",
