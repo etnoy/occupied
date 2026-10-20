@@ -579,7 +579,7 @@ void test("marker rows group simultaneous actions and keep repeated commands wit
 
 void test("opaque random actions use markers and random cover targets retain strips", () => {
   const current = plan([
-    { ...event(18, "remote.turn_on", "remote.tv"), kind: "random_start" },
+    { ...event(18, "remote.send_command", "remote.tv"), kind: "random_start" },
     { ...event(19, "cover.open_cover", "cover.blinds"), kind: "random_start" },
   ]);
   const rows = previewTimelineData(current, {});
@@ -587,4 +587,153 @@ void test("opaque random actions use markers and random cover targets retain str
   assert.equal(rows[0].entity_id, "cover.blinds");
   assert.equal(rows[0].data.at(-1)?.state_localize, "Open");
   assert.equal(rows[1].markers?.length, 1);
+});
+
+void test("Harmony service on/off actions render as state bars, including activity data", () => {
+  for (const domain of ["homeassistant", "remote"]) {
+    const on = {
+      ...event(18, `${domain}.turn_on`, "remote.harmony"),
+      source_id: "random_3",
+      kind: "random_start",
+      action: {
+        action: `${domain}.turn_on`,
+        entities: ["remote.harmony"],
+        data: { activity: "TV" },
+      },
+    };
+    const off = {
+      ...event(19, `${domain}.turn_off`, "remote.harmony"),
+      source_id: "random_3",
+      kind: "random_end",
+    };
+    const current = plan([on, off]);
+    const original = structuredClone(current);
+    const rows = previewTimelineData(
+      current,
+      {},
+      {
+        "remote.harmony": "Harmony Hub",
+      },
+    );
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].entity_id, "remote.harmony");
+    assert.equal(rows[0].name, "Harmony Hub");
+    assert.equal(rows[0].markers, undefined);
+    assert.deepEqual(
+      rows[0].data.map((state) => [state.state, state.last_changed]),
+      [
+        ["off", Date.parse(time(0))],
+        ["on", Date.parse(time(18))],
+        ["off", Date.parse(time(19))],
+      ],
+    );
+    assert.deepEqual(current, original);
+  }
+});
+
+void test("explicit on/off services support other device domains and mixed generic targets", () => {
+  const targets = [
+    "remote.tv",
+    "fan.bedroom",
+    "media_player.tv",
+    "input_boolean.away",
+    "light.hall",
+  ];
+  for (const generic of [false, true]) {
+    const events = [18, 19].flatMap<PlannedEvent>((hour) => {
+      const service = hour === 18 ? "turn_on" : "turn_off";
+
+      return generic
+        ? {
+            ...event(hour, `homeassistant.${service}`),
+            action: { action: `homeassistant.${service}`, entities: targets },
+          }
+        : targets.map((entity) =>
+            event(hour, `${entity.split(".", 1)[0]}.${service}`, entity),
+          );
+    });
+    const rows = previewTimelineData(plan(events), {});
+    assert.equal(rows.length, targets.length);
+    for (const row of rows) {
+      assert.equal(row.markers, undefined);
+      assert.deepEqual(
+        row.data.map((state) => state.state),
+        ["off", "on", "off"],
+      );
+    }
+  }
+});
+
+void test("scene activation, scripts, targetless calls, and mismatched services stay as markers", () => {
+  for (const [service, target] of [
+    ["scene.turn_on", "scene.evening"],
+    ["homeassistant.turn_on", "scene.evening"],
+    ["script.turn_on", "script.evening"],
+    ["homeassistant.turn_on", "script.evening"],
+    ["remote.turn_on", "fan.bedroom"],
+    ["notify.send_message", "notify.phone"],
+  ]) {
+    const rows = previewTimelineData(plan([event(18, service, target)]), {});
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].markers?.length, 1);
+    assert.deepEqual(rows[0].data, []);
+  }
+  const targetless = event(18, "homeassistant.turn_on");
+  targetless.action.entities = [];
+  assert.equal(
+    previewTimelineData(plan([targetless]), {})[0].markers?.length,
+    1,
+  );
+});
+
+void test("opaque remote commands invalidate an on/off projection until the next explicit state", () => {
+  const rows = previewTimelineData(
+    plan([
+      event(18, "remote.turn_on", "remote.harmony"),
+      event(19, "remote.toggle", "remote.harmony"),
+      event(20, "homeassistant.turn_off", "remote.harmony"),
+    ]),
+    {},
+  );
+  assert.equal(rows.length, 2);
+  assert.deepEqual(
+    rows[0].data.map((state) => state.state),
+    ["off", "on", "unknown", "off"],
+  );
+  assert.equal(rows[1].markers?.length, 1);
+  assert.match(rows[1].markers![0].description, /remote.toggle/);
+});
+
+void test("remote on/off bars retain overnight history and the next day's tooltip boundary", () => {
+  const current = {
+    ...plan([]),
+    history_events: [
+      {
+        ...event(23, "homeassistant.turn_on", "remote.harmony"),
+        time: "2026-10-12T23:30:00Z",
+      },
+      {
+        ...event(23, "remote.turn_off", "remote.harmony"),
+        time: "2026-10-12T23:45:00Z",
+        superseded: true,
+      },
+    ],
+    future_events: [
+      {
+        ...event(1, "remote.turn_off", "remote.harmony"),
+        time: "2026-10-14T01:00:00Z",
+      },
+    ],
+  };
+  const rows = previewTimelineData(current, {});
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].markers, undefined);
+  assert.deepEqual(rows[0].data, [
+    {
+      state: "on",
+      state_localize: "On",
+      last_changed: Date.parse(time(0)),
+      end_time: Date.parse("2026-10-14T01:00:00Z"),
+    },
+  ]);
 });

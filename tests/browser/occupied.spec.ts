@@ -689,6 +689,145 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       }),
     )
     .toBe(true);
+  // A generic on/off service for a remote uses the same native yellow bars.
+  const harmonyState = await request.post("/api/states/remote.harmony", {
+    headers: { Authorization: `Bearer ${tokens.access_token}` },
+    data: { state: "off", attributes: { friendly_name: "Harmony Hub" } },
+  });
+  expect(harmonyState.ok()).toBeTruthy();
+  await expect
+    .poll(() =>
+      panel.evaluate((element) =>
+        Boolean((element as OccupiedPanel)._hass?.states?.["remote.harmony"]),
+      ),
+    )
+    .toBe(true);
+  await panel.evaluate(async (element) => {
+    const controller = element as OccupiedPanel;
+    controller.catalog = (await controller.ws("catalog")) as Catalog;
+    const day = controller.preview!.plans[0]!;
+    const at = (hour: number) =>
+      new Date(Date.parse(day.start) + hour * 3_600_000).toISOString();
+    controller.previewProgram = {
+      schema_version: 1,
+      random: {
+        random_3: {
+          name: "TV kväll",
+          start: {},
+          end: {},
+          on: {
+            action: "homeassistant.turn_on",
+            entities: ["remote.harmony"],
+            data: { activity: "TV" },
+          },
+          off: {
+            action: "homeassistant.turn_off",
+            entities: ["remote.harmony"],
+          },
+        },
+      },
+    };
+    controller.preview = {
+      valid: true,
+      plans: [
+        {
+          ...day,
+          history_events: [],
+          future_events: [],
+          events: [
+            {
+              time: at(18),
+              source_id: "random_3",
+              kind: "random_start",
+              action: {
+                action: "homeassistant.turn_on",
+                entities: ["remote.harmony"],
+                data: { activity: "TV" },
+              },
+            },
+            {
+              time: at(20),
+              source_id: "random_3",
+              kind: "random_end",
+              action: {
+                action: "homeassistant.turn_off",
+                entities: ["remote.harmony"],
+              },
+            },
+          ],
+        },
+      ],
+    };
+    controller.flush();
+  });
+  await expect
+    .poll(() =>
+      chart.evaluate((element) => {
+        const base = element.shadowRoot!.querySelector(
+          "ha-chart-base",
+        ) as HTMLElement & {
+          chart: {
+            getOption(): {
+              series: ({
+                id: string;
+                data: { value: unknown[]; itemStyle?: { color: string } }[];
+              } | null)[];
+            };
+          };
+        };
+
+        return base.chart
+          .getOption()
+          .series.find((series) => series?.id === "remote.harmony")
+          ?.data.map((point) => ({
+            state: point.value[3],
+            color: point.itemStyle?.color,
+          }));
+      }),
+    )
+    .toEqual([
+      { state: "Off", color: "#9e9e9e" },
+      { state: "On", color: "#ffc107" },
+      { state: "Off", color: "#9e9e9e" },
+    ]);
+  expect(
+    await chart.evaluate((element) => {
+      const timeline = element as HTMLElement & {
+        data: { markers?: unknown[] }[];
+      };
+
+      return timeline.data.some((row) => row.markers?.length);
+    }),
+  ).toBe(false);
+  await expect
+    .poll(() =>
+      chart.evaluate((element) => {
+        const base = element.shadowRoot!.querySelector(
+          "ha-chart-base",
+        ) as HTMLElement & {
+          chart: {
+            getZr(): {
+              storage: {
+                getDisplayList(): {
+                  style?: { text?: string; fill?: string };
+                }[];
+              };
+            };
+          };
+        };
+        const display = base.chart.getZr().storage.getDisplayList();
+
+        return (
+          display.some((item) => item.style?.text === "Harmony Hub") &&
+          display.some((item) => item.style?.fill === "#ffc107")
+        );
+      }),
+    )
+    .toBe(true);
+  await page.screenshot({
+    path: "test-results/browser/service-on-off-bars.png",
+    fullPage: true,
+  });
   await panel.evaluate((element, original) => {
     const controller = element as OccupiedPanel;
     controller.preview = original.preview;
@@ -1196,5 +1335,175 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       exact: true,
     }),
   ).toHaveValue("7");
+  await random
+    .getByRole("button", { name: "Save random event", exact: true })
+    .click();
+  await expect(random).toHaveCount(0);
+
+  // Older programs can have relative boundaries at both ends of a random window.
+  await panel.evaluate(async (element) => {
+    const controller = element as OccupiedPanel;
+    await controller.save({
+      ...controller.saved!,
+      steps: {
+        day: {
+          name: "Day",
+          timing: { absolute_time: { start: "08:00" } },
+          action: "turn_on",
+          entities: ["light.smoke_light"],
+        },
+        evening: {
+          name: "Evening",
+          timing: { absolute_time: { start: "18:00" } },
+          action: "turn_off",
+          entities: ["light.smoke_light"],
+        },
+      },
+      random: {
+        legacy: {
+          name: "Random day",
+          start: { relative_to: { step: "day", start_offset: "0s" } },
+          end: { relative_to: { step: "evening", start_offset: "0s" } },
+          count: 3,
+          min_duration: "5m",
+          max_duration: "15m",
+          on: { action: "turn_on", entities: ["light.smoke_light"] },
+          off: { action: "turn_off", entities: ["light.smoke_light"] },
+        },
+      },
+    });
+  });
+  const legacyCard = panel.getByRole("button", {
+    name: "Random day",
+    exact: true,
+  });
+  const relativeEnd = random.locator(
+    '[data-builder-field="end.mode"][value="relative"]',
+  );
+  const endSource = random.locator('[data-builder-field="end.anchor"]');
+  await legacyCard.click();
+  await expect(relativeEnd).toBeChecked();
+  await expect(endSource).toHaveJSProperty("value", "step:evening");
+  await expect(
+    random.locator('[data-builder-field="start.anchor"]'),
+  ).toHaveJSProperty("value", "step:day");
+  await random.locator("[data-random-submit]").click();
+  await expect(random).toHaveCount(0);
+  expect(
+    await panel.evaluate(
+      (element) => (element as OccupiedPanel).saved!.random!.legacy.end,
+    ),
+  ).toEqual({ relative_to: { step: "evening" } });
+  await legacyCard.click();
+  for (const mode of ["absolute", "duration"]) {
+    await random
+      .locator(`[data-builder-field="end.mode"][value="${mode}"]`)
+      .check();
+    await relativeEnd.check();
+    await expect(endSource).toHaveJSProperty("value", "step:evening");
+  }
+  await endSource.evaluate((element) => {
+    element.dispatchEvent(
+      new CustomEvent("value-changed", {
+        detail: { value: "sun:sunset" },
+        bubbles: true,
+      }),
+    );
+  });
+  await expect(endSource).toHaveJSProperty("value", "sun:sunset");
+  await random.locator('[data-builder-field="end.startOffset"]').fill("-15m");
+  await random
+    .locator('[data-editor-section="time"]')
+    .last()
+    .getByRole("button", { name: "Add end offset", exact: true })
+    .click();
+  await random.locator('[data-builder-field="end.endOffset"]').fill("15m");
+  await random.locator("[data-random-submit]").click();
+  await expect(random).toHaveCount(0);
+  expect(
+    await panel.evaluate(
+      (element) => (element as OccupiedPanel).saved!.random!.legacy.end,
+    ),
+  ).toEqual({
+    relative_to: { sun: "sunset", start_offset: "-15m", end_offset: "15m" },
+  });
+  await legacyCard.click();
+  await expect(relativeEnd).toBeChecked();
+  await expect(endSource).toHaveJSProperty("value", "sun:sunset");
+  await expect(
+    random.locator('[data-builder-field="end.startOffset"]'),
+  ).toHaveValue("-15m");
+  await expect(
+    random.locator('[data-builder-field="end.endOffset"]'),
+  ).toHaveValue("15m");
+
+  const durationEnd = random.locator('[data-editor-section="time"]').last();
+  const minimumDuration = durationEnd.locator(
+    '[data-builder-field="end.minDuration"]',
+  );
+  const maximumDuration = durationEnd.locator(
+    '[data-builder-field="end.maxDuration"]',
+  );
+  const addDurationRange = durationEnd.getByRole("button", {
+    name: "Add randomness",
+    exact: true,
+  });
+  await durationEnd
+    .getByRole("radio", { name: "Duration", exact: true })
+    .check();
+  await expect(
+    durationEnd.getByLabel("Active period duration", { exact: true }),
+  ).toHaveValue("1h");
+  await expect(maximumDuration).toHaveCount(0);
+  await minimumDuration.fill("90m");
+  await expect(maximumDuration).toHaveCount(0);
+  await random.locator("[data-random-submit]").click();
+  await expect(random).toHaveCount(0);
+  expect(
+    await panel.evaluate(
+      (element) => (element as OccupiedPanel).saved!.random!.legacy.end,
+    ),
+  ).toEqual({ duration: { min: "1h30m" } });
+  await legacyCard.click();
+  await expect(maximumDuration).toHaveCount(0);
+  await addDurationRange.click();
+  await expect(maximumDuration).toHaveValue("1h30m");
+  await expect(maximumDuration).toBeFocused();
+  await expect(
+    durationEnd.getByLabel("Minimum active period duration", { exact: true }),
+  ).toHaveValue("1h30m");
+  await maximumDuration.fill("2h");
+  await random.locator("[data-random-submit]").click();
+  await expect(random).toHaveCount(0);
+  expect(
+    await panel.evaluate(
+      (element) => (element as OccupiedPanel).saved!.random!.legacy.end,
+    ),
+  ).toEqual({ duration: { min: "1h30m", max: "2h" } });
+  await legacyCard.click();
+  await expect(maximumDuration).toHaveValue("2h");
+  await maximumDuration.fill("30m");
+  await random.locator("[data-random-submit]").click();
+  await expect(maximumDuration).toHaveAttribute("aria-invalid", "true");
+  await durationEnd
+    .getByRole("button", { name: "Remove maximum duration", exact: true })
+    .click();
+  await expect(maximumDuration).toHaveCount(0);
+  await expect(minimumDuration).toBeFocused();
+  await expect(addDurationRange).toBeVisible();
+  await minimumDuration.fill("2h");
+  await random.locator("[data-random-submit]").click();
+  await expect(random).toHaveCount(0);
+  expect(
+    await panel.evaluate(
+      (element) => (element as OccupiedPanel).saved!.random!.legacy.end,
+    ),
+  ).toEqual({ duration: { min: "2h" } });
+  await legacyCard.click();
+  await expect(maximumDuration).toHaveCount(0);
+  await addDurationRange.click();
+  await maximumDuration.fill("");
+  await expect(maximumDuration).toHaveCount(0);
+  await expect(addDurationRange).toBeVisible();
   expect(errors).toEqual([]);
 });
