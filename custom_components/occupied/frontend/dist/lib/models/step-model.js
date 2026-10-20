@@ -20,7 +20,13 @@ import {
   actionTargets,
   actionTargetSummary,
   actionYaml,
+  mappedControl,
 } from "../utils/custom-action.js";
+import {
+  editableEntityMapping,
+  entitySettingsData,
+  entitySettingsErrors,
+} from "../utils/entity-settings.js";
 import { staggerPeriodError } from "../utils/stagger.js";
 const sorted = (values) => [...new Set(values)].sort();
 const actionLabels = {
@@ -30,10 +36,11 @@ const actionLabels = {
   ...Object.fromEntries(coverActions),
 };
 function stepDisplayName(step, catalog, t) {
+  const action = editableEntityMapping(step)?.action || step.action || "";
   const label =
-    step.actions || step.action === "set_state"
+    step.actions || action === "set_state"
       ? "custom_yaml"
-      : actionLabels[step.action || ""] || step.action || "";
+      : actionLabels[action] || action;
   return `${actionTargetSummary(step, catalog)} · ${t(label)}`;
 }
 export function stepEntries(program, catalog, t = translator()) {
@@ -143,7 +150,8 @@ export function stepEditor(program, entry, parent) {
   };
 }
 export function actionForm(source) {
-  const action = source?.action;
+  const mapping = editableEntityMapping(source);
+  const action = mapping?.action || source?.action;
   let kind = "entities";
   if (source?.actions || action === "set_state") {
     kind = "custom";
@@ -171,6 +179,10 @@ export function actionForm(source) {
   }
   return {
     kind,
+    ...(mapping &&
+      Object.keys(mapping.entitySettings).length > 0 && {
+        entitySettings: mapping.entitySettings,
+      }),
     ...(source?.stagger && { stagger: copy(source.stagger) }),
     ...(kind === "custom" &&
       source && {
@@ -262,6 +274,9 @@ export function actionErrors(form) {
     form.entities.some((e) => !/^(light|switch)\./.test(e))
   ) {
     errors.entities = "light_switch_entities_error";
+  }
+  if (form.kind === "entities") {
+    Object.assign(errors, entitySettingsErrors(form));
   }
   if (
     form.kind === "service" &&
@@ -456,6 +471,14 @@ export function buildAction(form) {
       throw new Error("custom_yaml_validation_error");
     }
     return { actions: copy(form.customActions) };
+  }
+  if (
+    form.kind === "entities" &&
+    form.entities.some(
+      (entity) => Object.keys(entitySettingsData(form, entity)).length > 0,
+    )
+  ) {
+    return mappedControl(form);
   }
   let action = form.action;
   if (form.kind === "scene") {

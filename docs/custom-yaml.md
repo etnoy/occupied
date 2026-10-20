@@ -1,6 +1,6 @@
 # Custom YAML actions
 
-For advanced action configurations, choose **Custom YAML**. This allows you, for example, to set brighness and other extra settings for lights.
+For advanced action configurations, choose **Custom YAML**. Use it for light colors, mixed entity states, and ordered actions. Optional per-entity brightness and transition are also available in the GUI under **Light settings**.
 
 This document is a reference for what is possible with custom yaml.
 
@@ -389,7 +389,7 @@ Quote state strings such as `"on"` and `"off"`, and full-program phase keys `"on
 
 The editor uses the same strict YAML loader as managed files. It rejects duplicate keys, non-string mapping keys, unsafe tags, recursive aliases, merge keys (`<<`), unknown fields, and inputs larger than 1 MiB. Errors include field paths and source line numbers. Ordinary nonrecursive aliases can be parsed, but export does not preserve the original anchor structure.
 
-Invalid custom text stays available for correction and cannot replace the last valid configuration. Editing a title or timing preserves the complete action block. Switching to simple controls converts a representable single action without losing settings; replacing individual settings or a multi-action block requires an explicit decision. Custom text remains available while the editor is open.
+Invalid custom text stays available for correction and cannot replace the last valid configuration. Editing a title or timing preserves the complete action block. Switching to simple controls converts a representable single action without losing settings, including uniform light/switch `set_state` mappings with brightness and transition. Converting back to YAML includes subsequent GUI edits. Colors, mixed states, and multi-action blocks require an explicit replacement decision before switching to simpler controls; the replaced custom text remains buffered while the editor is open.
 
 The submit/save flow validates the complete candidate and installed service schemas. In managed-file mode, edits create a draft for export; Occupied does not write the managed source. Deploy the exported configuration and reload it. Moving to GUI storage copies supported action settings.
 

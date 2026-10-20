@@ -59,7 +59,7 @@ You can now create more steps and have those steps either be absolute in time, o
 
 *Dinner lights come on at a different time each evening, within a 30-minute window.*
 
-For more advanced usage like turning on a light at a specific brightness, use **Custom YAML** as the action. See [Custom YAML actions](docs/custom-yaml.md).
+Expand **Light settings** under an entity to set its brightness or transition time where supported. Each light can have different settings; empty fields send no value. For color settings and ordered actions, use **Custom YAML**. See [Custom YAML actions](docs/custom-yaml.md).
 
 ## Create a Random Event
 

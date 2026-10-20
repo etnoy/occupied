@@ -153,7 +153,7 @@ void test("lossy replacement requires explicit choice and preserves the custom b
     actions: [
       {
         action: "set_state",
-        entities: { "light.sofa": { state: "on", brightness: 20 } },
+        entities: { "light.sofa": { state: "on", rgb_color: [20, 30, 40] } },
       },
     ],
   });
@@ -298,15 +298,15 @@ void test("stagger checkbox state and custom period survive lossless editor conv
   assert.equal(buildAction(form).stagger, undefined);
 });
 
-void test("singular custom mapping preserves stagger options on title/timing edits", () => {
+void test("singular mapping preserves stagger options in the entity editor", () => {
   const source: Action = {
     action: "set_state",
     entities: { "light.a": { state: "on", brightness: 128 } },
     stagger: { enabled: true, period: "3m" },
   };
   const form = actionForm(source);
-  assert.deepEqual(buildAction(form), { actions: [source] });
-  assert.ok(form.customYaml?.includes('period: "3m"'));
+  assert.equal(form.kind, "entities");
+  assert.deepEqual(buildAction(form), source);
 });
 
 void test("advanced stagger options use a buffered 2m default and retain off actions", () => {
@@ -332,7 +332,7 @@ void test("advanced settings can update a single custom action without losing li
     action: "set_state",
     entities: { "light.a": { state: "off", transition: 3 } },
   };
-  const form = actionForm(source);
+  const form = actionForm({ actions: [source] });
   assert.ok(supportsStagger(form));
   const text = form.customYaml;
   applyStagger(form, staggerSettings(form));
