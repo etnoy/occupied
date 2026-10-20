@@ -35,12 +35,12 @@ void test("random explanation describes weekdays, fixed counts, durations, and s
   form.off.entities = ["light.hall"];
   assert.equal(
     randomExplanation(form, program, catalog),
-    "Window starts on weekdays at 18:00. Window ends at 23:00. " +
+    "Active period starts on weekdays at 18:00. Active period ends at 23:00. " +
       "3 events start at random times during each active period. " +
       "Each event lasts between 5 minutes and 15 minutes. " +
       "When each event starts, turn on Living room lamp. " +
       "When each event ends, turn off Living room lamp. " +
-      "Events may overlap, but all finish before the window closes.",
+      "Events may overlap, but all finish before the active period ends.",
   );
   form.sameEntities = false;
   assert.match(
@@ -66,7 +66,7 @@ void test("overnight ranges explain both actions and the effective maximum durat
   form.off.entities = ["light.hall"];
   const text = randomExplanation(form, program, catalog);
   assert.match(text, /^This random event is disabled\./);
-  assert.match(text, /Window ends at 01:00 the next day/);
+  assert.match(text, /Active period ends at 01:00 the next day/);
   assert.match(text, /Between 2 and 6 events start at random times/);
   assert.match(text, /Each event lasts between 10 minutes and 2 hours/);
   assert.match(text, /When each event starts, activate Bedtime/);
@@ -88,9 +88,9 @@ void test("randomized and relative boundaries use named time sources and offsets
   const text = randomExplanation(form, program, catalog);
   assert.match(
     text,
-    /Window starts at a random time between 10 minutes before and 30 minutes after Evening/,
+    /Active period starts at a random time between 10 minutes before and 30 minutes after Evening/,
   );
-  assert.match(text, /Window ends 2 hours after sunset/);
+  assert.match(text, /Active period ends 2 hours after sunset/);
 });
 
 void test("single events and fixed durations use singular descriptions", () => {
@@ -100,11 +100,11 @@ void test("single events and fixed durations use singular descriptions", () => {
   const text = randomExplanation(form, program, catalog);
   assert.match(text, /One event starts at a random time/);
   assert.match(text, /Each event lasts 1 minute 30 seconds/);
-  assert.match(text, /The event finishes before the window closes/);
+  assert.match(text, /The event finishes before the active period ends/);
   assert.doesNotMatch(text, /overlap|When each event/);
 });
 
-void test("zero minimum counts explain skipped windows and their dependents", () => {
+void test("zero minimum counts explain skipped active periods and their dependents", () => {
   const { form } = randomEditor(program);
   form.minCount = "0";
   form.maxCount = "1";
@@ -112,15 +112,15 @@ void test("zero minimum counts explain skipped windows and their dependents", ()
   assert.match(text, /Between 0 and 1 events/);
   assert.match(
     text,
-    /A window may have no events; dependent random events skip that window/,
+    /An active period may have no events; dependent random events skip that period/,
   );
-  assert.match(text, /The event finishes before the window closes/);
+  assert.match(text, /The event finishes before the active period ends/);
   assert.doesNotMatch(text, /Choose valid event counts/);
   const swedish = randomExplanation(form, program, catalog, translator("sv"));
   assert.match(swedish, /Mellan 0 och 1 händelser/);
   assert.match(
     swedish,
-    /beroende slumpmässiga händelser hoppar över det tidsfönstret/,
+    /beroende slumpmässiga händelser hoppar över den perioden/,
   );
 });
 
@@ -131,7 +131,7 @@ void test("fixed zero counts describe no activity without duration or action pro
   form.minDuration = form.maxDuration = "6h";
   const text = randomExplanation(form, program, catalog);
   assert.match(text, /No events run because the event count is zero/);
-  assert.match(text, /Dependent random events also skip this window/);
+  assert.match(text, /Dependent random events also skip this active period/);
   assert.doesNotMatch(
     text,
     /Each event lasts|When each event|overlap|minimum duration|Choose valid/,
@@ -159,7 +159,7 @@ void test("unfinished and invalid fields produce helpful prompts without invente
   form.minDuration = form.maxDuration = "6h";
   assert.match(
     randomExplanation(form, program, catalog),
-    /No events can run because the minimum duration is longer than the window/,
+    /No events can run because the minimum duration is longer than the active period/,
   );
 });
 
@@ -169,17 +169,17 @@ void test("the complete explanation uses the selected language", () => {
   form.maxCount = "6";
   form.on.entities = ["light.living"];
   const text = randomExplanation(form, program, catalog, translator("sv"));
-  assert.match(text, /Tidsfönstret börjar kl\. 18:00/);
+  assert.match(text, /Den aktiva perioden börjar kl\. 18:00/);
   assert.match(text, /Mellan 2 och 6 händelser/);
   assert.match(text, /mellan 5 minuter och 15 minuter/);
   assert.match(text, /När varje händelse slutar, slå av Living room lamp/);
   assert.doesNotMatch(
     text,
-    /\{min\}|\{max\}|\{action\}|Each event|Window starts/,
+    /\{min\}|\{max\}|\{action\}|Each event|Active period starts/,
   );
 });
 
-void test("the explanation describes duration windows and starts after another window closes", () => {
+void test("the explanation describes active period durations and starts after another period ends", () => {
   const parent = randomEditor(program);
   parent.form.name = "Evening activity";
   parent.form.on.entities = ["light.living"];
@@ -198,11 +198,11 @@ void test("the explanation describes duration windows and starts after another w
   const text = randomExplanation(form, next, catalog);
   assert.match(
     text,
-    /Window starts 10 minutes after the end of Evening activity/,
+    /Active period starts 10 minutes after the end of Evening activity/,
   );
   assert.match(
     text,
-    /Window closes between 1 hour and 2 hours after it starts/,
+    /Active period ends between 1 hour and 2 hours after it starts/,
   );
   assert.doesNotMatch(text, /\.\./);
   form.minDuration = "3h";
@@ -210,7 +210,7 @@ void test("the explanation describes duration windows and starts after another w
   const infeasible = randomExplanation(form, next, catalog);
   assert.match(
     infeasible,
-    /No events can run because the minimum duration is longer than the window/,
+    /No events can run because the minimum duration is longer than the active period/,
   );
   assert.match(
     infeasible,

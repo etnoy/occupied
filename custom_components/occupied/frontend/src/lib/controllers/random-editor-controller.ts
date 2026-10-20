@@ -78,6 +78,14 @@ export function createRandomEditorContext(panel: LoadedOccupiedPanel) {
       }
     }
     delete editor.errors[key];
+    if (key === "minCount" || key === "maxCount") {
+      if (errors[key]) {
+        editor.errors[key] = errors[key];
+      }
+      if (errors.maxCount === "random_count_order_error") {
+        editor.errors.maxCount = errors.maxCount;
+      }
+    }
     panel.flush();
   };
 
