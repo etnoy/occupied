@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { SvelteSet } from "svelte/reactivity";
   import { hasProgram } from "./lib/panel-state.js";
   import type { OccupiedPanel } from "./occupied-panel.js";
   import type { Issue, Tab } from "./lib/types.js";
@@ -65,20 +66,54 @@
       showingCards && panel.tab === "steps" ? stepEntries(panel.draft) : [];
     const random =
       showingCards && panel.tab === "random" ? randomEntries(panel.draft) : [];
+    const visibleIssues = panel.visibleIssues();
+    const issueTabs = new SvelteSet<Tab>();
+    for (const issue of visibleIssues) {
+      if (issue.severity === "info") {
+        continue;
+      }
+      const section = issue.model_path
+        ? issue.model_path[0]
+        : issue.path?.match(/^\$\.(steps|random)(?:\.|\[|$)/)?.[1];
+      issueTabs.add(
+        section === "steps" || section === "random" ? section : "settings",
+      );
+    }
+    for (const [tab, errors] of [
+      ["steps", panel.stepEditor?.errors],
+      ["random", panel.randomEditor?.errors],
+      ["settings", panel.runConditionErrors],
+    ] as const) {
+      if (errors && Object.keys(errors).length > 0) {
+        issueTabs.add(tab);
+      }
+    }
+    const previewPlans =
+      panel.liveVisible && panel.livePlan
+        ? [panel.livePlan]
+        : panel.preview?.plans;
+    if (
+      (!(panel.liveVisible && panel.livePlan) &&
+        panel.preview?.valid === false) ||
+      previewPlans?.some((plan) =>
+        plan.issues.some((issue) => issue.severity !== "info"),
+      )
+    ) {
+      issueTabs.add("preview");
+    }
 
     return {
       t: panel.t,
       notices: panel.notices(),
       primary: primaryTabs.some(([id]) => id === panel.tab),
-      issues: panel
-        .visibleIssues()
-        .filter(
-          (issue) =>
-            !warningStepId(issue, entries) && !warningRandomId(issue, random),
-        ),
+      issueTabs,
+      issues: visibleIssues.filter(
+        (issue) =>
+          !warningStepId(issue, entries) && !warningRandomId(issue, random),
+      ),
     };
   });
-  let { t, notices, primary, issues } = $derived(state);
+  let { t, notices, primary, issues, issueTabs } = $derived(state);
 
   const primaryTabs: [Tab, string][] = [
     ["steps", "steps"],
@@ -154,6 +189,7 @@
         <button
           type="button"
           data-tab={id}
+          class:tab-warning={issueTabs.has(id)}
           aria-current={panel.tab === id ? "page" : "false"}
           disabled={!panel.selectedInstance?.loaded ||
             (panel.recovering && id !== "settings")}

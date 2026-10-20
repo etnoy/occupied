@@ -549,7 +549,7 @@ console.log(JSON.stringify({ id: editor.id, program: buildStep(program, editor) 
     "form",
     [
         {
-            "name": "Agnes fönster on",
+            "name": "Window on",
             "entities": ["light.a"],
             "kind": "entities",
             "timing": {"mode": "absolute", "start": "18:00:00", "end": "22:00:00"},
