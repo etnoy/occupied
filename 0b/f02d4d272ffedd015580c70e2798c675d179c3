@@ -1,0 +1,47 @@
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_647e0f2470047c::t_a702f897ca9a8f 1572,1574,1583,1809,2359-2361,2364-2365,2368-2373,2376,2387,2744,2759,7671,7678,7683,8380,8391,8433,9314-9598,9908,9912,11021-11022,11026-11027,11175,11178,11191,12573,12577,12596,13003,13007,13046,13170,13198,13274,14600-14601,14604-14605,15850,15862,15897,15911,15935,15965,15984,16012,16546-16547,16550-16553,18261,18264,18277,18773-18775,19524-19558,19563-19567,19573-19574,19665,19669,19671,19674,19684-19687,19689
+custom_components/occupied/frontend/src/App.svelte
+  s_688cc6ec6ff44b::t_423a7158409ab6 2,69-103,109-113,116,192
+custom_components/occupied/frontend/src/app.css
+  s_688cc6ec6ff44b::t_65561902cd6646 316-323
+tests/fixtures/programs/gui-house.yaml
+  s_688cc6ec6ff44b::t_0e28fec0583736 209
+tests/fixtures/programs/scheduling-edge-cases.yaml
+  s_647e0f2470047c::t_b3508f0db1dfcb 6,21
+tests/frontend/src/instances.test.ts
+  s_8da8abb38d7205::t_7443d2250d4cec 1466
+tests/ha/test_editor_api.py
+  s_688cc6ec6ff44b::t_7eb34cd874b391 552
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0bf02d4d272ffedd015580c70e2798c675d179c3",
+  "prompts": {},
+  "sessions": {
+    "s_647e0f2470047c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15b37-5aea-7400-a96a-fb3ba9d1a7a2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_688cc6ec6ff44b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15b36-8716-7943-b983-0c59c47343e4",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_8da8abb38d7205": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15b36-c8a0-71d2-85b7-19dee5d0d8e9",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
