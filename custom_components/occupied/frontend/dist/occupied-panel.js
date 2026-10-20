@@ -15347,6 +15347,7 @@ function timelineMarkers(node, data) {
       refresh();
     },
     destroy() {
+      generate.call(chart);
       chart._generateData = generate;
     },
   };

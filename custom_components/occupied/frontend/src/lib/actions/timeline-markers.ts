@@ -104,6 +104,10 @@ export function timelineMarkers(
       refresh();
     },
     destroy() {
+      // Restore HA's native state series before the chart is detached. Leaving
+      // custom marker series in _chartData can make HA 2026.5's chart teardown
+      // inspect stale graphic elements.
+      generate.call(chart);
       chart._generateData = generate;
     },
   };
