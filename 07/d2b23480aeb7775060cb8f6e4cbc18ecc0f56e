@@ -1,0 +1,21 @@
+custom_components/occupied/frontend/src/lib/actions/timeline-markers.ts
+  s_32eaff843ff7b1::t_b730ec69194faf 107-110
+tests/frontend/src/timeline-markers.test.ts
+  s_32eaff843ff7b1::t_a00228d5625515 1-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "07d2b23480aeb7775060cb8f6e4cbc18ecc0f56e",
+  "prompts": {},
+  "sessions": {
+    "s_32eaff843ff7b1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15922-cb82-7403-b330-37d0bfe6ef1b",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
