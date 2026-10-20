@@ -1,7 +1,7 @@
 // Generated from custom_components/occupied/frontend/src/lib/utils/timeline.ts by pnpm run build. Do not edit.
 import { managedOffEntities } from "../models/run-condition.js";
 import { translator } from "../i18n/translations.js";
-import { coverActions, coverTarget } from "./cover.js";
+import { coverActions, coverTarget, isCoverAction } from "./cover.js";
 import { formatTimestamp, formatEventTime } from "./time-format.js";
 export function calendarDayPlan(plans, date) {
   const current = plans.find((plan) => plan.simulation_date === date);
@@ -21,6 +21,80 @@ export function calendarDayPlan(plans, date) {
       .sort((a, b) => Date.parse(a.time) - Date.parse(b.time)),
     issues: plans.flatMap((plan) => plan.issues),
   };
+}
+function isStateEvent(event) {
+  return (
+    event.action.entities.length > 0 &&
+    event.action.entities.every((entity) =>
+      entity.startsWith("cover.")
+        ? isCoverAction(event.action) && !event.action.action.includes(".stop_")
+        : /^(light|switch)\./.test(entity) &&
+          /^(light|switch|homeassistant)\.turn_(on|off)$/.test(
+            event.action.action,
+          ) &&
+          (event.action.action.startsWith("homeassistant.") ||
+            event.action.action.startsWith(`${entity.split(".", 1)[0]}.`)),
+    )
+  );
+}
+// Known targets describe state intervals; opaque commands happen at an instant.
+// Synthetic rows let both share HA's native time axis and zoom.
+export function previewTimelineData(
+  plan,
+  program,
+  names = {},
+  t = translator(),
+  locale,
+) {
+  const states = previewStateHistory(plan, program, names, t);
+  const rows = new Map();
+  const start = Date.parse(plan.start),
+    end = Date.parse(plan.end);
+  for (const group of groupPreviewEvents(
+    plan.events.filter(
+      (event) =>
+        !event.superseded &&
+        !isStateEvent(event) &&
+        Date.parse(event.time) >= start &&
+        Date.parse(event.time) < end,
+    ),
+  )) {
+    const event = group.event;
+    const random = event.kind.startsWith("random_");
+    const id = `occupied-${random ? "random" : "step"}:${event.source_id}`;
+    const source = (random ? program.random : program.steps)?.[event.source_id];
+    let row = rows.get(id);
+    if (!row) {
+      row = {
+        entity_id: id,
+        name: source?.name || event.source_id,
+        data: [],
+        markers: [],
+      };
+      rows.set(id, row);
+    }
+    const actions = group.actions.map((action) => {
+      const targets = action.entities
+        .map((entity) => names[entity] || entity)
+        .join(", ");
+      return [
+        action.event.action.action,
+        targets,
+        JSON.stringify(action.event.action.data),
+      ]
+        .filter(Boolean)
+        .join(" · ");
+    });
+    row.markers.push({
+      time: Date.parse(event.time),
+      description: [
+        row.name,
+        formatEventTime(event.time, plan.timezone, locale),
+        ...actions,
+      ].join("\n"),
+    });
+  }
+  return [...states, ...rows.values()];
 }
 export function previewStateHistory(
   plan,
@@ -59,7 +133,9 @@ export function previewStateHistory(
       continue;
     }
     const at = Date.parse(event.time);
-    const typed = /^(light|switch)\.turn_(on|off)$/.test(event.action.action);
+    const typed = /^(light|switch|homeassistant)\.turn_(on|off)$/.test(
+      event.action.action,
+    );
     for (const entity of event.action.entities) {
       if (!/^(light|switch|cover)\./.test(entity)) {
         continue;
@@ -88,7 +164,9 @@ export function previewStateHistory(
       }
       const intended = event.action.action.endsWith("turn_on") ? "on" : "off";
       let state =
-        typed && event.action.action.startsWith(`${entity.split(".", 1)[0]}.`)
+        typed &&
+        (event.action.action.startsWith("homeassistant.") ||
+          event.action.action.startsWith(`${entity.split(".", 1)[0]}.`))
           ? intended
           : "unknown";
       let localized = label(state);

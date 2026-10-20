@@ -5,6 +5,7 @@ import {
   calendarDayPlan,
   calendarStateHistory,
   previewStateHistory,
+  previewTimelineData,
   staggerTransitions,
   eventDetails,
   groupPreviewEvents,
@@ -501,3 +502,89 @@ for (const [timezone, date, start, end] of [
     );
   });
 }
+
+void test("predictable steps and random lights retain state bars alongside scene and targetless service markers", () => {
+  const on = {
+    ...event(18, "light.turn_on"),
+    source_id: "random_light",
+    kind: "random_start",
+  };
+  const off = {
+    ...event(19, "light.turn_off"),
+    source_id: "random_light",
+    kind: "random_end",
+  };
+  const scene = event(20, "scene.turn_on", "scene.evening");
+  const service = {
+    ...event(21, "notify.send_message"),
+    source_id: "notify",
+    action: {
+      action: "notify.send_message",
+      entities: [],
+      data: { message: "<hello>" },
+    },
+  };
+  const current = plan([event(7, "light.turn_on"), on, off, scene, service]);
+  const original = structuredClone(current);
+  const rows = previewTimelineData(current, {
+    steps: { notify: { timing: {}, name: "Evening message" } },
+  });
+  assert.equal(rows.length, 3);
+  assert.deepEqual(
+    rows[0].data.map((state) => state.state),
+    ["off", "on", "off"],
+  );
+  assert.equal(rows[0].data[1].last_changed, Date.parse(time(7)));
+  assert.match(
+    rows[1].markers![0].description,
+    /scene.turn_on · scene.evening/,
+  );
+  assert.equal(rows[2].name, "Evening message");
+  assert.match(
+    rows[2].markers![0].description,
+    /notify.send_message · {"message":"<hello>"}/,
+  );
+  assert.deepEqual(current, original);
+});
+
+void test("marker rows group simultaneous actions and keep repeated commands without leaking calendar context", () => {
+  const first = {
+    ...event(18, "script.turn_on", "script.evening"),
+    source_id: "evening",
+  };
+  const second = {
+    ...event(18, "notify.send_message", "notify.phone"),
+    source_id: "evening",
+  };
+  const current = {
+    ...plan([
+      first,
+      second,
+      { ...first, time: time(19) },
+      { ...first, time: time(20), superseded: true },
+      { ...first, time: "2026-10-14T00:00:00Z" },
+    ]),
+    history_events: [{ ...first, time: "2026-10-12T18:00:00Z" }],
+    future_events: [{ ...first, time: "2026-10-14T18:00:00Z" }],
+  };
+  const rows = previewTimelineData(current, {});
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].markers?.length, 2);
+  assert.match(
+    rows[0].markers![0].description,
+    /script.turn_on · script.evening\nnotify.send_message · notify.phone/,
+  );
+  assert.deepEqual(rows[0].data, []);
+});
+
+void test("opaque random actions use markers and random cover targets retain strips", () => {
+  const current = plan([
+    { ...event(18, "remote.turn_on", "remote.tv"), kind: "random_start" },
+    { ...event(19, "cover.open_cover", "cover.blinds"), kind: "random_start" },
+  ]);
+  const rows = previewTimelineData(current, {});
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].entity_id, "cover.blinds");
+  assert.equal(rows[0].data.at(-1)?.state_localize, "Open");
+  assert.equal(rows[1].markers?.length, 1);
+});

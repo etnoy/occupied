@@ -376,7 +376,7 @@ export const en = {
   yesterday: "Yesterday",
   tomorrow: "Tomorrow",
   schedule_empty_hint: "No steps are scheduled for this date.",
-  planned_device_states: "Planned device states",
+  planned_device_states: "Planned actions and device states",
   loading_graph: "Loading graph…",
   preview_now: "Now",
   on_label: "On",
@@ -387,8 +387,7 @@ export const en = {
   cover_tilt_summary: "Tilt {position}%",
   preview_covers_hint:
     "Cover strips show planned position and tilt targets. Travel time and positions after stop actions are unknown.",
-  preview_devices_empty_hint:
-    "No light, switch, or cover actions on this date. Other actions are listed in Event details.",
+  preview_devices_empty_hint: "No actions to show on this date.",
   preview_lights_empty_hint:
     "No light or switch actions on this date. Other actions are listed in Event details.",
   preview_graph_error:
@@ -1007,7 +1006,7 @@ export const sv = {
   yesterday: "Igår",
   tomorrow: "Imorgon",
   schedule_empty_hint: "Inga steg är schemalagda detta datum.",
-  planned_device_states: "Planerade enhetstillstånd",
+  planned_device_states: "Planerade åtgärder och enhetstillstånd",
   loading_graph: "Laddar diagram…",
   preview_now: "Nu",
   on_label: "På",
@@ -1018,8 +1017,7 @@ export const sv = {
   cover_tilt_summary: "Lameller {position}%",
   preview_covers_hint:
     "Gardiner och persienner visar planerade mål för position och lameller. Förflyttningstid och position efter stopp är okända.",
-  preview_devices_empty_hint:
-    "Inga åtgärder för lampor, brytare, gardiner eller persienner detta datum. Övriga åtgärder visas i Händelsedetaljer.",
+  preview_devices_empty_hint: "Inga åtgärder att visa detta datum.",
   preview_lights_empty_hint:
     "Inga åtgärder för lampor eller brytare detta datum. Övriga åtgärder visas i Händelsedetaljer.",
   preview_graph_error:

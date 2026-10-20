@@ -3,11 +3,12 @@
   import type { HomeAssistant, Plan, Program, Translate } from "../../types.js";
   import { timelineNow, type NowPosition } from "../../actions/timeline-now.js";
   import { timelineTooltip } from "../../actions/timeline-tooltip.js";
+  import { timelineMarkers } from "../../actions/timeline-markers.js";
   import { historyChartProperties } from "../../actions/history-chart.js";
   import { loadHaHistoryChart } from "../../services/ha-controls.js";
   import {
-    calendarStateHistory,
-    previewStateHistory,
+    calendarDayPlan,
+    previewTimelineData,
   } from "../../utils/timeline.js";
 
   let {
@@ -42,15 +43,21 @@
     }
   }
 
+  let locale = $derived(hass.locale);
   let data = $derived(
-    schedulePlans
-      ? calendarStateHistory(schedulePlans, plan, program, names, t)
-      : previewStateHistory(plan, program, names, t),
+    previewTimelineData(
+      schedulePlans
+        ? (calendarDayPlan(schedulePlans, plan.simulation_date) ?? plan)
+        : plan,
+      program,
+      names,
+      t,
+      locale,
+    ),
   );
   // Keep native axis labels/tooltips in the sampled plan's zone, even when
   // HA's display timezone differs. This is a view-only copy of the HA object.
   let config = $derived(hass.config);
-  let locale = $derived(hass.locale);
   let zone = $derived(plan.timezone);
   let start = $derived(plan.start);
   let end = $derived(plan.end);
@@ -123,6 +130,7 @@
       hidden={data.length === 0}
       aria-label={t("planned_device_states")}
       use:timelineTooltip={data}
+      use:timelineMarkers={data}
       use:timelineNow={{
         label: t("preview_now"),
         eventTime,

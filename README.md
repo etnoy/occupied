@@ -24,15 +24,13 @@ Occupied is tested on and supports Home Assistant version 2026.5 or later. Earli
 
 # Installation
 
-Install through [HACS](https://hacs.xyz/):
+## Install with HACS (recommended)
 
-1. Open HACS, select the three-dot menu, and choose **Custom repositories**.
+1. Open [HACS](https://hacs.xyz/), select the three-dot menu, and choose **Custom repositories**.
 2. Add `https://github.com/etnoy/occupied` with the category **Integration**.
 3. Find Occupied in HACS and download it, then restart Home Assistant.
 4. Go to **Settings → Devices & services → Add integration → Occupied**. Choose **Create in the UI** to name a controller and start editing, **Import YAML** to copy a program into GUI storage, or **Use a managed file** to watch an authoritative YAML file under the Home Assistant config directory. Controller names and managed files must be unique.
 5. Select **Configure** on the integration to open the Occupied panel.
-
-New controllers start with permission disabled, so you can create and preview a schedule before enabling it.
 
 ## Manual installation
 
@@ -73,13 +71,15 @@ Random Events manage a light for both on and off, so you can have a kitchen ligh
 4. Choose the entities to turn on and off during each window.
 5. Save the random event.
 
-<img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/random-event.png" alt="Random event editor with two to four kitchen visits between 20:00 and 22:30, each lasting 5–15 minutes" width="820">
+<img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/random-event.png" alt="Random event editor with two to four kitchen visits between 20:00 and 22:30, each lasting 5–15 minutes" width="1070">
 
 *Short kitchen visits add activity between the main steps. Each visit turns the same light on, then off again.*
 
 ## Preview the timeline
 
 Open **Preview** to see how the entities would be turned on and off. This will be a render of the random events within the ranges you chose before, so navigate back and forth during the days to see how those will be randomized.
+
+Predictable light, switch, and cover actions appear as state bars. Scenes and other service calls appear as diamonds at their scheduled times, including calls without an entity target. Hover a diamond to see its services, targets, and data.
 
 <img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/timeline.png" alt="Daily timeline showing scheduled lighting and random activity across household lights and switches" width="1072">
 
@@ -118,7 +118,7 @@ There is also a button, **Enforce expected state**, that you can press if you ac
 
 Use **Extra entities to turn off** for lights and switches that Occupied does not manage but you want turned off when away. This is great for that bathroom light you don't want to forget to turn off when you are away, but you don't want it in a Step or Random Event because the bathroom has no windows.
 
-<img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/run-condition.png" alt="Away mode run condition with state enforcement, a 30-second delay, and extra devices to turn off" width="900">
+<img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/run-condition.png" alt="Away mode run condition with state enforcement, a 30-second delay, and extra devices to turn off" width="1072">
 
 *When Away mode turns on, enforce the expected state after 30 seconds and switch off extra devices such as the bathroom light and coffee machine.*
 
@@ -133,7 +133,7 @@ Use the timing controls to combine clock times and solar events:
 
 In **Preview**, select **Start live preview**. This allows you to preview the schedule on real devices, and you click **Next event** to walk through the simulation step by step.
 
-<img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/live-preview.png" alt="Live preview ready for the next event, showing a dispatched action and the next hallway light change" width="1072">
+<img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/live-preview.png" alt="Live preview ready for the next event, showing a dispatched action and the next bathroom light change" width="1072">
 
 *Walk through the schedule one event at a time and see which action will run next.*
 
