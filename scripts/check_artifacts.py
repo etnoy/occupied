@@ -70,7 +70,8 @@ with tarfile.open(directory / f"occupied-{version}.tar.gz") as source:
         )
         for suffix in suffixes:
             relative = f"scripts/requirements/ha-{lane['homeassistant']}.{suffix}"
-            assert f"occupied-{version}/{relative}" in source.getnames()
+            archive_path = f"occupied-{version}/{relative}"
+            assert archive_path in source.getnames(), f"Missing source archive file: {archive_path}"
 checksums = (directory / "SHA256SUMS").read_text().splitlines()
 assert {line.split("  ", 1)[1] for line in checksums} == {
     "occupied.zip",
