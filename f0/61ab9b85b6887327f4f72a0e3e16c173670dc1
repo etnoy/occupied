@@ -1,0 +1,19 @@
+custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
+  s_65b8418c218a73::t_e14b8393467da9 105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "f061ab9b85b6887327f4f72a0e3e16c173670dc1",
+  "prompts": {},
+  "sessions": {
+    "s_65b8418c218a73": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15b49-4ab1-7503-976b-38ab1b9a479c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
