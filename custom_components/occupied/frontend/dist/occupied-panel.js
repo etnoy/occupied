@@ -10091,17 +10091,222 @@ function dependentNames(program, id) {
   ];
 }
 
+// custom_components/occupied/frontend/src/lib/models/random-model.ts
+function canShareEntities(on2, off) {
+  return (
+    on2.kind === off.kind &&
+    ["entities", "cover", "service", "remote"].includes(on2.kind)
+  );
+}
+function countBounds(count) {
+  return typeof count === "object"
+    ? count
+    : { min: count ?? 3, max: count ?? 3 };
+}
+function countSummary(count) {
+  const { min, max } = countBounds(count);
+  return min === max ? String(min) : `${min}\u2013${max}`;
+}
+function randomEntries(program, catalog) {
+  return Object.entries(program.random || {}).map(([id, event2]) => ({
+    ...event2,
+    id,
+    path: ["random", id],
+    days: [...(event2.days || days)],
+    name: event2.name || actionTargetSummary(event2.on, catalog),
+  }));
+}
+function randomEditor(program, entry) {
+  const source2 = entry ? program.random?.[entry.id] : void 0;
+  const on2 = actionForm(source2?.on);
+  const off = actionForm(source2?.off || { action: "turn_off", entities: [] });
+  const count = countBounds(source2?.count);
+  const form = {
+    name: source2?.name || "",
+    enabled: source2?.enabled !== false,
+    days: [...(source2?.days || days)],
+    start: timingForm(source2?.start),
+    end: timingForm(source2?.end || { absolute_time: { start: "23:00" } }),
+    minDuration: source2?.min_duration || "5m",
+    maxDuration: source2?.max_duration || "15m",
+    minCount: String(count.min),
+    maxCount: String(count.max),
+    on: on2,
+    off,
+    sameEntities:
+      canShareEntities(on2, off) &&
+      JSON.stringify([...on2.entities].sort()) ===
+        JSON.stringify([...off.entities].sort()),
+  };
+  return {
+    id: entry?.id || identifier(program, "random", "random"),
+    existing: !!entry,
+    form,
+    original: copy(form),
+    errors: {},
+    startOptions: {},
+    endOptions: {},
+  };
+}
+function hasRandomChanges(editor) {
+  return JSON.stringify(editor.form) !== JSON.stringify(editor.original);
+}
+function prefixedErrors(errors, prefix) {
+  return Object.fromEntries(
+    Object.entries(errors).map(([field, message]) => [
+      `${prefix}${field}`,
+      message,
+    ]),
+  );
+}
+function randomErrors(program, editor) {
+  const { form } = editor;
+  const errors = {
+    ...prefixedErrors(
+      timingErrors(program, form.start, void 0, editor.id),
+      "start.",
+    ),
+    ...prefixedErrors(windowEndErrors(program, form.end), "end."),
+    ...prefixedErrors(actionErrors(form.on), "on."),
+    ...prefixedErrors(
+      actionErrors(
+        form.sameEntities
+          ? { ...form.off, entities: form.on.entities }
+          : form.off,
+      ),
+      "off.",
+    ),
+  };
+  const minimum = durationSeconds(form.minDuration),
+    maximum = durationSeconds(form.maxDuration);
+  if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604800) {
+    errors.minDuration = "duration_error";
+  }
+  if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604800) {
+    errors.maxDuration = "duration_error";
+  } else if (maximum < minimum) {
+    errors.maxDuration = "duration_order_error";
+  }
+  const minCount = Number(form.minCount),
+    maxCount = Number(form.maxCount);
+  for (const field of ["minCount", "maxCount"]) {
+    const count = Number(form[field]);
+    if (
+      !form[field].trim() ||
+      !Number.isSafeInteger(count) ||
+      count < 0 ||
+      count > 1e3
+    ) {
+      errors[field] = "random_count_error";
+    }
+  }
+  if (!errors.minCount && !errors.maxCount && maxCount < minCount) {
+    errors.maxCount = "random_count_order_error";
+  }
+  if (form.days.length === 0) {
+    errors.days = "days_required_error";
+  }
+  if (
+    maxCount > 0 &&
+    form.end.mode === "duration" &&
+    !errors["end.minDuration"] &&
+    !errors["end.maxDuration"] &&
+    minimum >
+      durationSeconds(form.end.maxDuration || form.end.minDuration || "")
+  ) {
+    errors.minDuration = "duration_exceeds_window_error";
+  }
+  if (
+    maxCount > 0 &&
+    form.start.mode === "absolute" &&
+    form.end.mode === "absolute" &&
+    !form.start.end &&
+    !form.end.end &&
+    !errors["start.start"] &&
+    !errors["end.start"]
+  ) {
+    const seconds = (clock) =>
+      clock
+        .split(":")
+        .reduce((total, part, i) => total + Number(part) * [3600, 60, 1][i], 0);
+    let span = seconds(form.end.start) - seconds(form.start.start);
+    if (span < 0) {
+      span += 86400;
+    }
+    if (span === 0) {
+      errors["end.start"] = "window_end_order_error";
+    } else if (minimum > span) {
+      errors.minDuration = "duration_exceeds_window_error";
+    }
+  }
+  return errors;
+}
+function windowEndErrors(program, time) {
+  if (time.mode !== "duration") {
+    return timingErrors(program, time);
+  }
+  const errors = {};
+  const minimum = durationSeconds(time.minDuration || "");
+  const maximum = durationSeconds(time.maxDuration || time.minDuration || "");
+  if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604800) {
+    errors.minDuration = "window_duration_error";
+  }
+  if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604800) {
+    errors.maxDuration = "window_duration_error";
+  } else if (maximum < minimum) {
+    errors.maxDuration = "window_duration_order_error";
+  }
+  return errors;
+}
+function buildRandom(program, editor) {
+  const errors = randomErrors(program, editor);
+  if (Object.keys(errors).length > 0) {
+    throw new Error(Object.values(errors)[0]);
+  }
+  if (editor.existing && !program.random?.[editor.id]) {
+    throw new Error("random_changed_error");
+  }
+  const next2 = copy(program),
+    { form } = editor;
+  (next2.random ||= {})[editor.id] = {
+    ...(form.name.trim() && { name: form.name.trim() }),
+    ...(!form.enabled && { enabled: false }),
+    days: [...form.days],
+    start: formTiming(form.start),
+    end: formTiming(form.end),
+    min_duration: form.minDuration,
+    max_duration: form.maxDuration,
+    count:
+      Number(form.minCount) === Number(form.maxCount)
+        ? Number(form.minCount)
+        : { min: Number(form.minCount), max: Number(form.maxCount) },
+    on: buildAction(form.on),
+    off: buildAction(
+      form.sameEntities
+        ? { ...form.off, entities: form.on.entities }
+        : form.off,
+    ),
+  };
+  return next2;
+}
+
 // custom_components/occupied/frontend/src/lib/utils/step-issues.ts
-function warningStepId(issue, entries) {
+function warningEntryId(issue, entries) {
   if (issue.severity !== "warning") {
     return;
   }
   return entries.find((entry) =>
     issue.model_path
       ? entry.path.every((key2, index2) => issue.model_path?.[index2] === key2)
-      : issue.path === `$.steps.${entry.id}` ||
-        issue.path?.startsWith(`$.steps.${entry.id}.`),
+      : issue.path === `$.${entry.path.join(".")}` ||
+        issue.path?.startsWith(`$.${entry.path.join(".")}.`),
   )?.id;
+}
+function warningStepId(issue, entries) {
+  return warningEntryId(issue, entries);
+}
+function warningRandomId(issue, entries) {
+  return warningEntryId(issue, entries);
 }
 
 // custom_components/occupied/frontend/src/lib/controllers/step-editor-controller.ts
@@ -11964,205 +12169,6 @@ function TimingBoundaryEditor($$anchor, $$props) {
   }
   append($$anchor, fragment);
   pop();
-}
-
-// custom_components/occupied/frontend/src/lib/models/random-model.ts
-function canShareEntities(on2, off) {
-  return (
-    on2.kind === off.kind &&
-    ["entities", "cover", "service", "remote"].includes(on2.kind)
-  );
-}
-function countBounds(count) {
-  return typeof count === "object"
-    ? count
-    : { min: count ?? 3, max: count ?? 3 };
-}
-function countSummary(count) {
-  const { min, max } = countBounds(count);
-  return min === max ? String(min) : `${min}\u2013${max}`;
-}
-function randomEntries(program, catalog) {
-  return Object.entries(program.random || {}).map(([id, event2]) => ({
-    ...event2,
-    id,
-    path: ["random", id],
-    days: [...(event2.days || days)],
-    name: event2.name || actionTargetSummary(event2.on, catalog),
-  }));
-}
-function randomEditor(program, entry) {
-  const source2 = entry ? program.random?.[entry.id] : void 0;
-  const on2 = actionForm(source2?.on);
-  const off = actionForm(source2?.off || { action: "turn_off", entities: [] });
-  const count = countBounds(source2?.count);
-  const form = {
-    name: source2?.name || "",
-    enabled: source2?.enabled !== false,
-    days: [...(source2?.days || days)],
-    start: timingForm(source2?.start),
-    end: timingForm(source2?.end || { absolute_time: { start: "23:00" } }),
-    minDuration: source2?.min_duration || "5m",
-    maxDuration: source2?.max_duration || "15m",
-    minCount: String(count.min),
-    maxCount: String(count.max),
-    on: on2,
-    off,
-    sameEntities:
-      canShareEntities(on2, off) &&
-      JSON.stringify([...on2.entities].sort()) ===
-        JSON.stringify([...off.entities].sort()),
-  };
-  return {
-    id: entry?.id || identifier(program, "random", "random"),
-    existing: !!entry,
-    form,
-    original: copy(form),
-    errors: {},
-    startOptions: {},
-    endOptions: {},
-  };
-}
-function hasRandomChanges(editor) {
-  return JSON.stringify(editor.form) !== JSON.stringify(editor.original);
-}
-function prefixedErrors(errors, prefix) {
-  return Object.fromEntries(
-    Object.entries(errors).map(([field, message]) => [
-      `${prefix}${field}`,
-      message,
-    ]),
-  );
-}
-function randomErrors(program, editor) {
-  const { form } = editor;
-  const errors = {
-    ...prefixedErrors(
-      timingErrors(program, form.start, void 0, editor.id),
-      "start.",
-    ),
-    ...prefixedErrors(windowEndErrors(program, form.end), "end."),
-    ...prefixedErrors(actionErrors(form.on), "on."),
-    ...prefixedErrors(
-      actionErrors(
-        form.sameEntities
-          ? { ...form.off, entities: form.on.entities }
-          : form.off,
-      ),
-      "off.",
-    ),
-  };
-  const minimum = durationSeconds(form.minDuration),
-    maximum = durationSeconds(form.maxDuration);
-  if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604800) {
-    errors.minDuration = "duration_error";
-  }
-  if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604800) {
-    errors.maxDuration = "duration_error";
-  } else if (maximum < minimum) {
-    errors.maxDuration = "duration_order_error";
-  }
-  const minCount = Number(form.minCount),
-    maxCount = Number(form.maxCount);
-  for (const field of ["minCount", "maxCount"]) {
-    const count = Number(form[field]);
-    if (
-      !form[field].trim() ||
-      !Number.isSafeInteger(count) ||
-      count < 0 ||
-      count > 1e3
-    ) {
-      errors[field] = "random_count_error";
-    }
-  }
-  if (!errors.minCount && !errors.maxCount && maxCount < minCount) {
-    errors.maxCount = "random_count_order_error";
-  }
-  if (form.days.length === 0) {
-    errors.days = "days_required_error";
-  }
-  if (
-    maxCount > 0 &&
-    form.end.mode === "duration" &&
-    !errors["end.minDuration"] &&
-    !errors["end.maxDuration"] &&
-    minimum >
-      durationSeconds(form.end.maxDuration || form.end.minDuration || "")
-  ) {
-    errors.minDuration = "duration_exceeds_window_error";
-  }
-  if (
-    maxCount > 0 &&
-    form.start.mode === "absolute" &&
-    form.end.mode === "absolute" &&
-    !form.start.end &&
-    !form.end.end &&
-    !errors["start.start"] &&
-    !errors["end.start"]
-  ) {
-    const seconds = (clock) =>
-      clock
-        .split(":")
-        .reduce((total, part, i) => total + Number(part) * [3600, 60, 1][i], 0);
-    let span = seconds(form.end.start) - seconds(form.start.start);
-    if (span < 0) {
-      span += 86400;
-    }
-    if (span === 0) {
-      errors["end.start"] = "window_end_order_error";
-    } else if (minimum > span) {
-      errors.minDuration = "duration_exceeds_window_error";
-    }
-  }
-  return errors;
-}
-function windowEndErrors(program, time) {
-  if (time.mode !== "duration") {
-    return timingErrors(program, time);
-  }
-  const errors = {};
-  const minimum = durationSeconds(time.minDuration || "");
-  const maximum = durationSeconds(time.maxDuration || time.minDuration || "");
-  if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604800) {
-    errors.minDuration = "window_duration_error";
-  }
-  if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604800) {
-    errors.maxDuration = "window_duration_error";
-  } else if (maximum < minimum) {
-    errors.maxDuration = "window_duration_order_error";
-  }
-  return errors;
-}
-function buildRandom(program, editor) {
-  const errors = randomErrors(program, editor);
-  if (Object.keys(errors).length > 0) {
-    throw new Error(Object.values(errors)[0]);
-  }
-  if (editor.existing && !program.random?.[editor.id]) {
-    throw new Error("random_changed_error");
-  }
-  const next2 = copy(program),
-    { form } = editor;
-  (next2.random ||= {})[editor.id] = {
-    ...(form.name.trim() && { name: form.name.trim() }),
-    ...(!form.enabled && { enabled: false }),
-    days: [...form.days],
-    start: formTiming(form.start),
-    end: formTiming(form.end),
-    min_duration: form.minDuration,
-    max_duration: form.maxDuration,
-    count:
-      Number(form.minCount) === Number(form.maxCount)
-        ? Number(form.minCount)
-        : { min: Number(form.minCount), max: Number(form.maxCount) },
-    on: buildAction(form.on),
-    off: buildAction(
-      form.sameEntities
-        ? { ...form.off, entities: form.on.entities }
-        : form.off,
-    ),
-  };
-  return next2;
 }
 
 // custom_components/occupied/frontend/src/lib/components/shared/TimingEditor.svelte
@@ -18615,11 +18621,16 @@ var root29 = from_html(
   `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-random=""> </button></section>`,
 );
 var root_125 = from_html(`<span class="step-status-badge"> </span>`);
-var root_218 = from_html(`<span class="step-row-time"> </span>`);
+var root_218 = from_html(`<span class="step-warning-message"> </span>`);
 var root_316 = from_html(
+  `<span class="step-row-warning"><ha-icon></ha-icon> <span></span></span>`,
+  2,
+);
+var root_410 = from_html(`<span class="step-row-time"> </span>`);
+var root_59 = from_html(
   `<div style="--depth:0"><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button> <div><!></div></div>`,
 );
-var root_410 = from_html(
+var root_68 = from_html(
   `<!> <div class="step-list"></div> <button type="button" class="primary" data-create-random=""> </button>`,
   1,
 );
@@ -18627,9 +18638,16 @@ function RandomView($$anchor, $$props) {
   push($$props, true);
   let data = user_derived(() => {
     void $$props.revision;
+    const entries2 = randomEntries($$props.panel.draft, $$props.panel.catalog);
     return {
       t: $$props.panel.t,
-      entries: randomEntries($$props.panel.draft, $$props.panel.catalog),
+      entries: entries2,
+      issues: $$props.panel
+        .visibleIssues()
+        .map((issue) => ({
+          issue,
+          randomId: warningRandomId(issue, entries2),
+        })),
       steps: [
         ...stepEntries(
           $$props.panel.draft,
@@ -18644,7 +18662,8 @@ function RandomView($$anchor, $$props) {
   });
   let t = user_derived(() => get(data).t),
     entries = user_derived(() => get(data).entries),
-    steps = user_derived(() => get(data).steps);
+    steps = user_derived(() => get(data).steps),
+    issues = user_derived(() => get(data).issues);
   var fragment = comment();
   var node = first_child(fragment);
   {
@@ -18674,7 +18693,7 @@ function RandomView($$anchor, $$props) {
       append($$anchor2, section);
     };
     var alternate = ($$anchor2) => {
-      var fragment_1 = root_410();
+      var fragment_1 = root_68();
       var node_1 = first_child(fragment_1);
       {
         let $0 = user_derived(() => get(t)("random_activity"));
@@ -18695,6 +18714,11 @@ function RandomView($$anchor, $$props) {
         () => get(entries),
         (entry) => entry.id,
         ($$anchor3, entry) => {
+          const warnings = user_derived(() =>
+            get(issues)
+              .filter(({ randomId }) => randomId === get(entry).id)
+              .map(({ issue }) => issue),
+          );
           const editing = user_derived(
             () =>
               $$props.panel.randomEditor?.existing &&
@@ -18706,7 +18730,7 @@ function RandomView($$anchor, $$props) {
                 ? $$props.panel.randomEditor?.form.enabled
                 : get(entry).enabled) === false,
           );
-          var div_1 = root_316();
+          var div_1 = root_59();
           let classes;
           var button_1 = child(div_1);
           let classes_1;
@@ -18736,10 +18760,35 @@ function RandomView($$anchor, $$props) {
           var node_3 = sibling(span, 2);
           {
             var consequent_2 = ($$anchor4) => {
-              var span_4 = root_218();
-              var text_6 = only_child(span_4);
+              var span_4 = root_316();
+              var ha_icon = child(span_4);
+              set_custom_element_data(ha_icon, "icon", "mdi:alert-outline");
+              set_custom_element_data(ha_icon, "aria-hidden", "true");
+              var span_5 = sibling(ha_icon, 2);
+              each(
+                span_5,
+                20,
+                () => get(warnings),
+                (warning) => warning,
+                ($$anchor5, warning) => {
+                  var span_6 = root_218();
+                  var text_6 = only_child(span_6, true);
+                  template_effect(() => set_text(text_6, warning.message));
+                  append($$anchor5, span_6);
+                },
+              );
+              reset(span_5);
+              reset(span_4);
+              template_effect(() =>
+                set_attribute2(span_4, "id", `random-warning-${get(entry).id}`),
+              );
+              append($$anchor4, span_4);
+            };
+            var consequent_3 = ($$anchor4) => {
+              var span_7 = root_410();
+              var text_7 = only_child(span_7);
               template_effect(
-                ($0, $1) => set_text(text_6, `${$0 ?? ""} \u2192 ${$1 ?? ""}`),
+                ($0, $1) => set_text(text_7, `${$0 ?? ""} \u2192 ${$1 ?? ""}`),
                 [
                   () =>
                     timingSummary(
@@ -18763,17 +18812,18 @@ function RandomView($$anchor, $$props) {
                     ),
                 ],
               );
-              append($$anchor4, span_4);
+              append($$anchor4, span_7);
             };
             if_block(node_3, ($$render) => {
-              if (!get(editing)) $$render(consequent_2);
+              if (get(warnings).length) $$render(consequent_2);
+              else if (!get(editing)) $$render(consequent_3, 1);
             });
           }
           reset(button_1);
           var div_2 = sibling(button_1, 2);
           var node_4 = child(div_2);
           {
-            var consequent_3 = ($$anchor4) => {
+            var consequent_4 = ($$anchor4) => {
               RandomEventEditor($$anchor4, {
                 get panel() {
                   return $$props.panel;
@@ -18784,7 +18834,7 @@ function RandomView($$anchor, $$props) {
               });
             };
             if_block(node_4, ($$render) => {
-              if (get(editing)) $$render(consequent_3);
+              if (get(editing)) $$render(consequent_4);
             });
           }
           reset(div_2);
@@ -18793,11 +18843,12 @@ function RandomView($$anchor, $$props) {
             ($0, $1, $2, $3) => {
               classes = set_class(div_1, 1, "step-card", null, classes, {
                 "step-disabled": get(disabled),
+                "step-warning": get(warnings).length > 0,
               });
               set_attribute2(div_1, "data-random-id", get(entry).id);
               set_attribute2(button_1, "id", `random-card-${get(entry).id}`);
               classes_1 = set_class(button_1, 1, "step-row", null, classes_1, {
-                editing: get(editing),
+                editing: get(editing) && get(warnings).length === 0,
               });
               set_attribute2(button_1, "aria-label", $0);
               set_attribute2(button_1, "aria-expanded", get(editing));
@@ -18805,6 +18856,13 @@ function RandomView($$anchor, $$props) {
                 button_1,
                 "aria-controls",
                 `random-editor-${get(entry).id}`,
+              );
+              set_attribute2(
+                button_1,
+                "aria-describedby",
+                get(warnings).length > 0
+                  ? `random-warning-${get(entry).id}`
+                  : void 0,
               );
               button_1.disabled = $$props.panel.busy;
               set_text(text_3, get(entry).name);
@@ -18838,12 +18896,12 @@ function RandomView($$anchor, $$props) {
       );
       reset(div);
       var button_2 = sibling(div, 2);
-      var text_7 = only_child(button_2, true);
+      var text_8 = only_child(button_2, true);
       template_effect(
         ($0, $1) => {
           set_attribute2(div, "aria-label", $0);
           button_2.disabled = $$props.panel.busy;
-          set_text(text_7, $1);
+          set_text(text_8, $1);
         },
         [() => get(t)("random_events"), () => get(t)("create_random_event")],
       );
@@ -18866,11 +18924,11 @@ var root_126 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
 var root_219 = from_html(`<p> </p>`);
 var root_317 = from_html(`<header><p class="hint"> </p></header>`);
 var root_411 = from_html(`<p class="banner" role="status"> </p>`);
-var root_59 = from_html(
+var root_510 = from_html(
   `<p class="error" role="alert"> </p> <button type="button"> </button>`,
   1,
 );
-var root_68 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_69 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_77 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
 var root_86 = from_html(`<p> </p> <button type="button"> </button>`, 1);
 var root_96 = from_html(
@@ -18973,20 +19031,30 @@ function App($$anchor, $$props) {
   let revision = user_derived($updates);
   let state2 = user_derived(() => {
     void get(revision);
-    const showingSteps =
-      get(panel).tab === "steps" &&
+    const showingCards =
       hasProgram(get(panel)) &&
       get(panel).selectedInstance?.loaded &&
       !get(panel)._loading &&
-      (!get(panel).stepEditor || get(panel).stepEditor.existing);
-    const entries = showingSteps ? stepEntries(get(panel).draft) : [];
+      (!get(panel).stepEditor || get(panel).stepEditor.existing) &&
+      (!get(panel).randomEditor || get(panel).randomEditor.existing);
+    const entries =
+      showingCards && get(panel).tab === "steps"
+        ? stepEntries(get(panel).draft)
+        : [];
+    const random =
+      showingCards && get(panel).tab === "random"
+        ? randomEntries(get(panel).draft)
+        : [];
     return {
       t: get(panel).t,
       notices: get(panel).notices(),
       primary: primaryTabs.some(([id]) => id === get(panel).tab),
       issues: get(panel)
         .visibleIssues()
-        .filter((issue) => !warningStepId(issue, entries)),
+        .filter(
+          (issue) =>
+            !warningStepId(issue, entries) && !warningRandomId(issue, random),
+        ),
     };
   });
   let t = user_derived(() => get(state2).t),
@@ -19057,7 +19125,7 @@ function App($$anchor, $$props) {
   var node_5 = sibling(div_1, 2);
   {
     var consequent_3 = ($$anchor2) => {
-      var fragment_2 = root_59();
+      var fragment_2 = root_510();
       var p_3 = first_child(fragment_2);
       var text_7 = only_child(p_3, true);
       var button_2 = sibling(p_3, 2);
@@ -19114,7 +19182,7 @@ function App($$anchor, $$props) {
   var node_6 = child(div_3);
   {
     var consequent_4 = ($$anchor2) => {
-      var button_4 = root_68();
+      var button_4 = root_69();
       var text_11 = only_child(button_4, true);
       template_effect(
         ($0) => set_text(text_11, $0),

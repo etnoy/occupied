@@ -78,6 +78,62 @@ async def test_shared_step_entities_need_no_baseline(
     assert not devices
 
 
+@pytest.mark.parametrize("state", [None, "unknown", "unavailable"])
+async def test_entity_warnings_survive_save_and_reload_and_clear_on_recovery(
+    hass, editor_entry, devices, program_dict, hass_ws_client, state
+):
+    program_dict["random"] = {
+        "lamp": {
+            "start": {"absolute_time": {"start": "18:00"}},
+            "end": {"duration": {"min": "1h"}},
+            "on": {"action": "turn_on", "entities": ["light.a"]},
+            "off": {"action": "turn_off", "entities": ["light.a"]},
+        }
+    }
+    assert await hass.config_entries.async_setup(editor_entry.entry_id)
+    if state is None:
+        hass.states.async_remove("light.a")
+    else:
+        hass.states.async_set("light.a", state)
+    client = await hass_ws_client(hass)
+    validation = (
+        await request(client, "occupied/editor_validate", editor_entry, program=program_dict)
+    )["result"]
+    assert validation["valid"]
+    expected_paths = {
+        ("steps", "wake", "entities"),
+        ("steps", "leave", "entities"),
+        ("random", "lamp", "on", "entities"),
+        ("random", "lamp", "off", "entities"),
+    }
+
+    def assert_warnings(issues):
+        warnings = [issue for issue in issues if issue["code"] == "entity_unavailable"]
+        assert {tuple(issue["model_path"]) for issue in warnings} == expected_paths
+        assert all(issue["severity"] == "warning" for issue in warnings)
+
+    assert_warnings(validation["issues"])
+    document = program_document(editor_entry.runtime_data)
+    saved = (
+        await request(
+            client,
+            "occupied/save",
+            editor_entry,
+            2,
+            program=program_dict,
+            expected_revision=document["revision"],
+        )
+    )["result"]
+    assert saved["valid"]
+    assert_warnings(saved["warnings"])
+    loaded = (await request(client, "occupied/program", editor_entry, 3))["result"]
+    assert_warnings(loaded["warnings"])
+    hass.states.async_set("light.a", "off")
+    recovered = (await request(client, "occupied/program", editor_entry, 4))["result"]
+    assert not any(issue["code"] == "entity_unavailable" for issue in recovered["warnings"])
+    assert not devices
+
+
 @pytest.mark.parametrize("count", [0, 3, {"min": 0, "max": 1}, {"min": 2, "max": 6}])
 async def test_random_actions_validate_save_preview_and_export(
     hass, editor_entry, devices, program_dict, hass_ws_client, count
