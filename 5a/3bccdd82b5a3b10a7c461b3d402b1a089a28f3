@@ -1,0 +1,19 @@
+tests/frontend/src/random-explanation.test.ts
+  s_9a81488c1c3c3d::t_44a6b2926c7ab4 38,43,69,91,93,103,107,115,117,123,134,162,172,178,182,201,205,213
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "5a3bccdd82b5a3b10a7c461b3d402b1a089a28f3",
+  "prompts": {},
+  "sessions": {
+    "s_9a81488c1c3c3d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a155ac-37a7-7332-bae7-dd7763024d78",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
