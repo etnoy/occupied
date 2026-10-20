@@ -1,0 +1,47 @@
+.github/workflows/check.yml
+  s_238ec3657d788c::t_4742d31e79c15f 33
+scripts/requirements/ha-2026.5.0.overrides
+  s_1fca80253e32ca::t_c948058ef82a8c 5
+scripts/requirements/ha-2026.5.0.txt
+  s_238ec3657d788c::t_d37c7d3dde0ae6 3,3578-3716,3718
+scripts/requirements/ha-2026.6.4.overrides
+  s_238ec3657d788c::t_6a2c78e44da0b8 5
+scripts/requirements/ha-2026.6.4.txt
+  s_238ec3657d788c::t_822675fa0575da 3,3495-3633,3635
+scripts/requirements/ha-2026.7.4.overrides
+  s_238ec3657d788c::t_d7af188c4cca38 5
+scripts/requirements/ha-2026.7.4.txt
+  s_238ec3657d788c::t_b149235195c80c 3,3441-3579,3581
+scripts/requirements/ha-2026.8.3.overrides
+  s_238ec3657d788c::t_476b41830bdfc9 5
+scripts/requirements/ha-2026.8.3.txt
+  s_238ec3657d788c::t_70948664270764 3,3434-3572,3574
+scripts/requirements/ha-2026.9.4.overrides
+  s_238ec3657d788c::t_f9c01fc98315b7 5
+scripts/requirements/ha-2026.9.4.txt
+  s_238ec3657d788c::t_f0ff6aa1bccc20 3,3508-3646,3648
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "203cf5309077345722fec91379b1aa3901b84e9f",
+  "prompts": {},
+  "sessions": {
+    "s_1fca80253e32ca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15955-7f24-7520-906c-1cce9cf4b7fd",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_238ec3657d788c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15950-b3db-7aa3-a501-102db97c041c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
