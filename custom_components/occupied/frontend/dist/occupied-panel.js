@@ -15174,7 +15174,7 @@ function timelineNow(node, options) {
             if (marker.id === markerId) {
               current.onNowPosition?.(null);
             }
-            return null;
+            return { type: "group", children: [] };
           }
           const alignRight = position > x + width - 40;
           if (marker.id === markerId) {

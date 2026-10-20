@@ -29,10 +29,11 @@ void test("now marker follows the clock and native regeneration, clips to the vi
       },
       api: { coord(value: number[]): number[]; value(index: number): number },
     ) => {
+      type: string;
       children: {
         style: { text?: string; stroke?: string; lineDash?: number[] };
       }[];
-    } | null;
+    };
   }
 
   const chart = {
@@ -54,8 +55,14 @@ void test("now marker follows the clock and native regeneration, clips to the vi
   const params = { coordSys: { x: 100, y: 10, width: 400, height: 90 } };
   const api = { coord: () => [300, 0], value: () => 31_000 };
   assert.equal(render(params, api)?.children[1]?.style.text, "Nu");
-  assert.equal(render(params, { ...api, coord: () => [99, 0] }), null);
-  assert.equal(render(params, { ...api, coord: () => [501, 0] }), null);
+  assert.deepEqual(render(params, { ...api, coord: () => [99, 0] }), {
+    type: "group",
+    children: [],
+  });
+  assert.deepEqual(render(params, { ...api, coord: () => [501, 0] }), {
+    type: "group",
+    children: [],
+  });
   const positions: ({ x: number; alignRight: boolean } | null)[] = [];
   action.update({
     label: "Now",
@@ -68,7 +75,10 @@ void test("now marker follows the clock and native regeneration, clips to the vi
   assert.deepEqual(positions.at(-1), { x: 300, alignRight: false });
   positionedRender(params, { ...api, coord: () => [490, 0] });
   assert.deepEqual(positions.at(-1), { x: 490, alignRight: true });
-  positionedRender(params, { ...api, coord: () => [501, 0] });
+  assert.deepEqual(
+    positionedRender(params, { ...api, coord: () => [501, 0] }),
+    { type: "group", children: [] },
+  );
   assert.equal(positions.at(-1), null);
   const setRange = (start: number, end: number, eventTime?: string) =>
     action.update({
@@ -112,7 +122,10 @@ void test("now marker follows the clock and native regeneration, clips to the vi
   const hoverRender = chart._chartData[2]!.renderItem!;
   assert.equal(hoverRender(params, api)?.children[0]?.style.stroke, "#123456");
   assert.deepEqual(hoverRender(params, api)?.children[0]?.style.lineDash, []);
-  assert.equal(hoverRender(params, { ...api, coord: () => [501, 0] }), null);
+  assert.deepEqual(
+    hoverRender(params, { ...api, coord: () => [501, 0] }),
+    { type: "group", children: [] },
+  );
   chart._generateData();
   assert.equal(chart._chartData.length, 3);
   action.update({ label: "Now", eventTime: "2026-10-16T23:00:00Z" });

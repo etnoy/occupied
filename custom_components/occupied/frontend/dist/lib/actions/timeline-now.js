@@ -71,7 +71,10 @@ export function timelineNow(node, options) {
             if (marker.id === markerId) {
               current.onNowPosition?.(null);
             }
-            return null;
+            // HA 2026.5 assumes every rendered point has a graphic element
+            // while updating chart interactions. Keep clipped markers as an
+            // empty group instead of returning ECharts' null render result.
+            return { type: "group", children: [] };
           }
           const alignRight = position > x + width - 40;
           if (marker.id === markerId) {
