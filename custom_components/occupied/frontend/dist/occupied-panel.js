@@ -287,8 +287,10 @@ var en = {
   duration: "Duration",
   end_of: "End of",
   the_end_of: "the end of",
+  window_duration: "Active period duration",
   minimum_window_duration: "Minimum active period duration",
   maximum_window_duration: "Maximum active period duration",
+  remove_maximum_window_duration: "Remove maximum duration",
   window_duration_error:
     "Choose a positive active period duration within seven days.",
   window_duration_order_error:
@@ -915,8 +917,10 @@ var sv = {
   duration: "Varaktighet",
   end_of: "Slutet p\xE5",
   the_end_of: "slutet p\xE5",
+  window_duration: "Den aktiva periodens varaktighet",
   minimum_window_duration: "Minsta varaktighet f\xF6r den aktiva perioden",
   maximum_window_duration: "H\xF6gsta varaktighet f\xF6r den aktiva perioden",
+  remove_maximum_window_duration: "Ta bort h\xF6gsta varaktighet",
   window_duration_error:
     "V\xE4lj en positiv varaktighet f\xF6r den aktiva perioden inom sju dagar.",
   window_duration_order_error:
@@ -12466,12 +12470,12 @@ var root11 = from_html(
 );
 var root_17 = from_html(`<button type="button"> </button>`);
 var root_26 = from_html(`<div><!> <!> <!></div>`);
-var root_36 = from_html(`<!> <!>`, 1);
-var root_43 = from_html(`<p class="hint"> </p>`);
-var root_53 = from_html(
+var root_36 = from_html(
   `<button type="button" class="text-button svelte-o15vly"> </button>`,
 );
-var root_62 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_43 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_53 = from_html(`<!> <!>`, 1);
+var root_62 = from_html(`<p class="hint"> </p>`);
 var root_7 = from_html(`<!> <!> <!> <!> <!>`, 1);
 var root_8 = from_html(
   `<fieldset class="timing-options"><legend> </legend> <label class="timing-option"><input type="checkbox"/> <span> </span></label> <!></fieldset>`,
@@ -12519,6 +12523,16 @@ function TimingEditor($$anchor, $$props) {
   let endTimeVisible = user_derived(
     () =>
       !!(get(time).end || get(editor).showEndTime || get(editor).errors.end),
+  );
+  let showMaxDuration = state(false);
+  let maxDurationVisible = user_derived(
+    () =>
+      get(showMaxDuration) ||
+      (!!get(time).maxDuration &&
+        get(time).maxDuration !== get(time).minDuration &&
+        durationSeconds(get(time).maxDuration) !==
+          durationSeconds(get(time).minDuration || "")) ||
+      !!get(editor).errors.maxDuration,
   );
   let choices = user_derived(() => {
     void $$props.context;
@@ -12769,11 +12783,16 @@ function TimingEditor($$anchor, $$props) {
       );
       append($$anchor2, div_2);
     };
-    var consequent_3 = ($$anchor2) => {
-      var fragment_2 = root_36();
+    var consequent_4 = ($$anchor2) => {
+      var fragment_2 = root_53();
       var node_6 = first_child(fragment_2);
       {
-        let $0 = user_derived(() => get(time).minDuration || "");
+        let $0 = user_derived(() =>
+          get(maxDurationVisible)
+            ? "minimum_window_duration"
+            : "window_duration",
+        );
+        let $1 = user_derived(() => get(time).minDuration || "");
         EditorField(node_6, {
           get panel() {
             return $$props.panel;
@@ -12782,38 +12801,96 @@ function TimingEditor($$anchor, $$props) {
             return $$props.context;
           },
           key: "minDuration",
-          label: "minimum_window_duration",
-          get value() {
+          get label() {
             return get($0);
           },
-          update: (value) => (get(time).minDuration = value),
+          get value() {
+            return get($1);
+          },
+          update: (value) => {
+            if (!get(maxDurationVisible)) {
+              get(time).maxDuration = value;
+            }
+            get(time).minDuration = value;
+          },
           options: { placeholder: "1h" },
         });
       }
       var node_7 = sibling(node_6, 2);
       {
-        let $0 = user_derived(() => get(time).maxDuration || "");
-        EditorField(node_7, {
-          get panel() {
-            return $$props.panel;
-          },
-          get context() {
-            return $$props.context;
-          },
-          key: "maxDuration",
-          label: "maximum_window_duration",
-          get value() {
-            return get($0);
-          },
-          update: (value) => (get(time).maxDuration = value),
-          options: { placeholder: "2h", optional: true },
+        var consequent_3 = ($$anchor3) => {
+          {
+            const trailing = ($$anchor4) => {
+              var button_1 = root_36();
+              var text_3 = only_child(button_1, true);
+              template_effect(
+                ($02) => {
+                  button_1.disabled = $$props.panel.busy;
+                  set_text(text_3, $02);
+                },
+                [() => get(t)("remove_maximum_window_duration")],
+              );
+              delegated("click", button_1, () => {
+                get(time).maxDuration = "";
+                set2(showMaxDuration, false);
+                get(changed)("maxDuration");
+                get(refresh)("minDuration");
+              });
+              append($$anchor4, button_1);
+            };
+            let $0 = user_derived(() => get(time).maxDuration || "");
+            EditorField($$anchor3, {
+              get panel() {
+                return $$props.panel;
+              },
+              get context() {
+                return $$props.context;
+              },
+              key: "maxDuration",
+              label: "maximum_window_duration",
+              get value() {
+                return get($0);
+              },
+              update: (value) => {
+                get(time).maxDuration = value;
+                if (!value) {
+                  set2(showMaxDuration, false);
+                }
+              },
+              options: { placeholder: "2h", optional: true },
+              trailing,
+              $$slots: { trailing: true },
+            });
+          }
+        };
+        var alternate = ($$anchor3) => {
+          var button_2 = root_43();
+          var text_4 = only_child(button_2, true);
+          template_effect(
+            ($0) => {
+              button_2.disabled = $$props.panel.busy;
+              set_text(text_4, $0);
+            },
+            [() => get(t)("add_randomness")],
+          );
+          delegated("click", button_2, () => {
+            get(time).maxDuration = get(time).minDuration;
+            set2(showMaxDuration, true);
+            get(changed)("maxDuration");
+            get(refresh)("maxDuration");
+          });
+          append($$anchor3, button_2);
+        };
+        if_block(node_7, ($$render) => {
+          if (get(maxDurationVisible)) $$render(consequent_3);
+          else $$render(alternate, -1);
         });
       }
       append($$anchor2, fragment_2);
     };
-    var consequent_7 = ($$anchor2) => {
-      var fragment_3 = root_7();
-      var node_8 = first_child(fragment_3);
+    var consequent_8 = ($$anchor2) => {
+      var fragment_4 = root_7();
+      var node_8 = first_child(fragment_4);
       SourcePicker(
         node_8,
         spread_props(() => ({
@@ -12855,34 +12932,34 @@ function TimingEditor($$anchor, $$props) {
       );
       var node_9 = sibling(node_8, 2);
       {
-        var consequent_4 = ($$anchor3) => {
-          var p = root_43();
-          var text_3 = only_child(p, true);
+        var consequent_5 = ($$anchor3) => {
+          var p = root_62();
+          var text_5 = only_child(p, true);
           template_effect(
-            ($0) => set_text(text_3, $0),
+            ($0) => set_text(text_5, $0),
             [() => get(t)("random_relative_start_hint")],
           );
           append($$anchor3, p);
         };
         var d = user_derived(() => get(time).anchor.startsWith("random:"));
         if_block(node_9, ($$render) => {
-          if (get(d)) $$render(consequent_4);
+          if (get(d)) $$render(consequent_5);
         });
       }
       var node_10 = sibling(node_9, 2);
       {
-        var consequent_5 = ($$anchor3) => {
-          var p_1 = root_43();
-          var text_4 = only_child(p_1, true);
+        var consequent_6 = ($$anchor3) => {
+          var p_1 = root_62();
+          var text_6 = only_child(p_1, true);
           template_effect(
-            ($0) => set_text(text_4, $0),
+            ($0) => set_text(text_6, $0),
             [() => get(t)("ha_time_source_hint")],
           );
           append($$anchor3, p_1);
         };
         var d_1 = user_derived(() => get(time).anchor.startsWith("entity:"));
         if_block(node_10, ($$render) => {
-          if (get(d_1)) $$render(consequent_5);
+          if (get(d_1)) $$render(consequent_6);
         });
       }
       var node_11 = sibling(node_10, 2);
@@ -12910,22 +12987,22 @@ function TimingEditor($$anchor, $$props) {
       }
       var node_12 = sibling(node_11, 2);
       {
-        var consequent_6 = ($$anchor3) => {
+        var consequent_7 = ($$anchor3) => {
           {
             const trailing = ($$anchor4) => {
-              var button_1 = root_53();
-              var text_5 = only_child(button_1, true);
+              var button_3 = root_36();
+              var text_7 = only_child(button_3, true);
               template_effect(
-                ($0) => set_text(text_5, $0),
+                ($0) => set_text(text_7, $0),
                 [() => get(t)("remove_end_offset")],
               );
-              delegated("click", button_1, () => {
+              delegated("click", button_3, () => {
                 get(time).endOffset = "";
                 get(editor).showEndOffset = false;
                 get(changed)("endOffset");
                 get(refresh)("startOffset");
               });
-              append($$anchor4, button_1);
+              append($$anchor4, button_3);
             };
             EditorField($$anchor3, {
               get panel() {
@@ -12946,18 +13023,18 @@ function TimingEditor($$anchor, $$props) {
             });
           }
         };
-        var alternate = ($$anchor3) => {
-          var button_2 = root_62();
-          var text_6 = only_child(button_2, true);
+        var alternate_1 = ($$anchor3) => {
+          var button_4 = root_43();
+          var text_8 = only_child(button_4, true);
           template_effect(
-            ($0) => set_text(text_6, $0),
+            ($0) => set_text(text_8, $0),
             [() => get(t)("add_end_offset")],
           );
-          delegated("click", button_2, () => {
+          delegated("click", button_4, () => {
             get(editor).showEndOffset = true;
             get(refresh)("endOffset");
           });
-          append($$anchor3, button_2);
+          append($$anchor3, button_4);
         };
         if_block(node_12, ($$render) => {
           if (
@@ -12965,34 +13042,34 @@ function TimingEditor($$anchor, $$props) {
             get(editor).showEndOffset ||
             get(editor).errors.endOffset
           )
-            $$render(consequent_6);
-          else $$render(alternate, -1);
+            $$render(consequent_7);
+          else $$render(alternate_1, -1);
         });
       }
-      append($$anchor2, fragment_3);
+      append($$anchor2, fragment_4);
     };
     var d_2 = user_derived(() => modes().some(([mode]) => mode === "relative"));
-    var alternate_1 = ($$anchor2) => {
-      var p_2 = root_43();
-      var text_7 = only_child(p_2, true);
+    var alternate_2 = ($$anchor2) => {
+      var p_2 = root_62();
+      var text_9 = only_child(p_2, true);
       template_effect(
-        ($0) => set_text(text_7, $0),
+        ($0) => set_text(text_9, $0),
         [() => get(t)("random_relative_end_hint")],
       );
       append($$anchor2, p_2);
     };
     if_block(node_2, ($$render) => {
       if (get(time).mode === "absolute") $$render(consequent_2);
-      else if (get(time).mode === "duration") $$render(consequent_3, 1);
-      else if (get(d_2)) $$render(consequent_7, 2);
-      else $$render(alternate_1, -1);
+      else if (get(time).mode === "duration") $$render(consequent_4, 1);
+      else if (get(d_2)) $$render(consequent_8, 2);
+      else $$render(alternate_2, -1);
     });
   }
   var node_13 = sibling(node_2, 2);
   {
-    var consequent_10 = ($$anchor2) => {
-      var fragment_5 = root_36();
-      var node_14 = first_child(fragment_5);
+    var consequent_11 = ($$anchor2) => {
+      var fragment_6 = root_53();
+      var node_14 = first_child(fragment_6);
       each(
         node_14,
         16,
@@ -13008,16 +13085,16 @@ function TimingEditor($$anchor, $$props) {
           const key2 = user_derived(modifier);
           var fieldset_1 = root_8();
           var legend = child(fieldset_1);
-          var text_8 = only_child(legend, true);
+          var text_10 = only_child(legend, true);
           var label_2 = sibling(legend, 2);
           var input_1 = child(label_2);
           remove_input_defaults(input_1);
           var span_1 = sibling(input_1, 2);
-          var text_9 = only_child(span_1, true);
+          var text_11 = only_child(span_1, true);
           reset(label_2);
           var node_15 = sibling(label_2, 2);
           {
-            var consequent_8 = ($$anchor4) => {
+            var consequent_9 = ($$anchor4) => {
               TimingBoundaryEditor($$anchor4, {
                 get panel() {
                   return $$props.panel;
@@ -13031,16 +13108,16 @@ function TimingEditor($$anchor, $$props) {
               });
             };
             if_block(node_15, ($$render) => {
-              if (get(time)[get(key2)]) $$render(consequent_8);
+              if (get(time)[get(key2)]) $$render(consequent_9);
             });
           }
           reset(fieldset_1);
           template_effect(
             ($0, $1, $2) => {
-              set_text(text_8, $0);
+              set_text(text_10, $0);
               set_attribute2(input_1, "data-builder-field", get(key2));
               set_checked(input_1, $1);
-              set_text(text_9, $2);
+              set_text(text_11, $2);
             },
             [
               () => get(t)(label2()),
@@ -13069,33 +13146,33 @@ function TimingEditor($$anchor, $$props) {
       );
       var node_16 = sibling(node_14, 2);
       {
-        var consequent_9 = ($$anchor3) => {
-          var p_3 = root_43();
-          var text_10 = only_child(p_3, true);
+        var consequent_10 = ($$anchor3) => {
+          var p_3 = root_62();
+          var text_12 = only_child(p_3, true);
           template_effect(
-            ($0) => set_text(text_10, $0),
+            ($0) => set_text(text_12, $0),
             [() => get(t)("timing_limits_source_date_hint")],
           );
           append($$anchor3, p_3);
         };
         if_block(node_16, ($$render) => {
           if (get(time).latestAt || get(time).onlyBefore)
-            $$render(consequent_9);
+            $$render(consequent_10);
         });
       }
-      append($$anchor2, fragment_5);
+      append($$anchor2, fragment_6);
     };
     if_block(node_13, ($$render) => {
-      if ($$props.context.stepId !== void 0) $$render(consequent_10);
+      if ($$props.context.stepId !== void 0) $$render(consequent_11);
     });
   }
   var node_17 = sibling(node_13, 2);
   {
-    var consequent_11 = ($$anchor2) => {
+    var consequent_12 = ($$anchor2) => {
       var p_4 = root_9();
-      var text_11 = only_child(p_4, true);
+      var text_13 = only_child(p_4, true);
       template_effect(
-        ($0) => set_text(text_11, $0),
+        ($0) => set_text(text_13, $0),
         [
           () =>
             timingExplanation(
@@ -13128,22 +13205,22 @@ function TimingEditor($$anchor, $$props) {
       append($$anchor2, p_4);
     };
     if_block(node_17, ($$render) => {
-      if (showExplanation()) $$render(consequent_11);
+      if (showExplanation()) $$render(consequent_12);
     });
   }
   var node_18 = sibling(node_17, 2);
   {
-    var consequent_12 = ($$anchor2) => {
-      var p_5 = root_43();
-      var text_12 = only_child(p_5, true);
+    var consequent_13 = ($$anchor2) => {
+      var p_5 = root_62();
+      var text_14 = only_child(p_5, true);
       template_effect(
-        ($0) => set_text(text_12, $0),
+        ($0) => set_text(text_14, $0),
         [() => get(t)("managed_file_draft_hint")],
       );
       append($$anchor2, p_5);
     };
     if_block(node_18, ($$render) => {
-      if ($$props.panel.document?.source === "file") $$render(consequent_12);
+      if ($$props.panel.document?.source === "file") $$render(consequent_13);
     });
   }
   reset(div);
@@ -18761,6 +18838,7 @@ function RandomEventEditor($$anchor, $$props) {
       showExplanation: false,
       modes: [
         ["absolute", "absolute_time"],
+        ["relative", "relative_to"],
         ["duration", "duration"],
       ],
     });

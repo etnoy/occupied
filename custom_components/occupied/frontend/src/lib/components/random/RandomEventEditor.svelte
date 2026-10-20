@@ -102,6 +102,7 @@
       showExplanation={false}
       modes={[
         ["absolute", "absolute_time"],
+        ["relative", "relative_to"],
         ["duration", "duration"],
       ]}
     />

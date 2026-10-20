@@ -7,7 +7,7 @@
   import TimingBoundaryEditor from "./TimingBoundaryEditor.svelte";
 
   import { stepEntries, timeSourceChoices } from "../../models/step-model.js";
-  import { timingExplanation } from "../../utils/util.js";
+  import { durationSeconds, timingExplanation } from "../../utils/util.js";
   import { randomEntries } from "../../models/random-model.js";
 
   let {
@@ -41,6 +41,17 @@
   let fieldPrefix = $derived(context.fieldPrefix || "");
   let endTimeVisible = $derived(
     !!(time.end || editor.showEndTime || editor.errors.end),
+  );
+
+  let showMaxDuration = $state(false);
+
+  let maxDurationVisible = $derived(
+    showMaxDuration ||
+      (!!time.maxDuration &&
+        time.maxDuration !== time.minDuration &&
+        durationSeconds(time.maxDuration) !==
+          durationSeconds(time.minDuration || "")) ||
+      !!editor.errors.maxDuration,
   );
   let choices = $derived.by(() => {
     void context;
@@ -171,20 +182,58 @@
       {panel}
       {context}
       key="minDuration"
-      label="minimum_window_duration"
+      label={maxDurationVisible ? "minimum_window_duration" : "window_duration"}
       value={time.minDuration || ""}
-      update={(value) => (time.minDuration = value)}
+      update={(value) => {
+        if (!maxDurationVisible) {
+          time.maxDuration = value;
+        }
+        time.minDuration = value;
+      }}
       options={{ placeholder: "1h" }}
     />
-    <EditorField
-      {panel}
-      {context}
-      key="maxDuration"
-      label="maximum_window_duration"
-      value={time.maxDuration || ""}
-      update={(value) => (time.maxDuration = value)}
-      options={{ placeholder: "2h", optional: true }}
-    />
+    {#if maxDurationVisible}
+      <EditorField
+        {panel}
+        {context}
+        key="maxDuration"
+        label="maximum_window_duration"
+        value={time.maxDuration || ""}
+        update={(value) => {
+          time.maxDuration = value;
+          if (!value) {
+            showMaxDuration = false;
+          }
+        }}
+        options={{ placeholder: "2h", optional: true }}
+      >
+        {#snippet trailing()}
+          <button
+            type="button"
+            class="text-button"
+            disabled={panel.busy}
+            onclick={() => {
+              time.maxDuration = "";
+              showMaxDuration = false;
+              changed("maxDuration");
+              refresh("minDuration");
+            }}>{t("remove_maximum_window_duration")}</button
+          >
+        {/snippet}
+      </EditorField>
+    {:else}
+      <button
+        type="button"
+        class="text-button"
+        disabled={panel.busy}
+        onclick={() => {
+          time.maxDuration = time.minDuration;
+          showMaxDuration = true;
+          changed("maxDuration");
+          refresh("maxDuration");
+        }}>{t("add_randomness")}</button
+      >
+    {/if}
   {:else if modes.some(([mode]) => mode === "relative")}
     <SourcePicker
       {...{

@@ -191,8 +191,10 @@ export const en = {
   duration: "Duration",
   end_of: "End of",
   the_end_of: "the end of",
+  window_duration: "Active period duration",
   minimum_window_duration: "Minimum active period duration",
   maximum_window_duration: "Maximum active period duration",
+  remove_maximum_window_duration: "Remove maximum duration",
   window_duration_error:
     "Choose a positive active period duration within seven days.",
   window_duration_order_error:
@@ -815,8 +817,10 @@ export const sv = {
   duration: "Varaktighet",
   end_of: "Slutet på",
   the_end_of: "slutet på",
+  window_duration: "Den aktiva periodens varaktighet",
   minimum_window_duration: "Minsta varaktighet för den aktiva perioden",
   maximum_window_duration: "Högsta varaktighet för den aktiva perioden",
+  remove_maximum_window_duration: "Ta bort högsta varaktighet",
   window_duration_error:
     "Välj en positiv varaktighet för den aktiva perioden inom sju dagar.",
   window_duration_order_error:
