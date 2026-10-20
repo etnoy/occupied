@@ -314,22 +314,6 @@ async def test_bootstrap_conflict_does_not_override_entry(hass, managed_file, pr
     assert ("occupied", f"source_conflict_{entry.entry_id}") in ir.async_get(hass).issues
 
 
-async def test_native_file_flow_missing_then_valid(hass, managed_file):
-    result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "file"}
-    )
-    assert result["step_id"] == "file"
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"config_file": "missing.yaml"}
-    )
-    assert result["errors"] == {"config_file": "invalid_file"}
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"config_file": "occupied/house.yaml"}
-    )
-    assert result["type"] == FlowResultType.CREATE_ENTRY and result["data"]["source"] == "file"
-
-
 @pytest.mark.parametrize("relative", ["../outside.yaml", "/tmp/house.yaml", "", ".", "bad\x00path"])
 def test_managed_path_must_stay_under_config(tmp_path, relative):
     with pytest.raises(ProgramError):

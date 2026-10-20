@@ -146,11 +146,6 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        if self.unique_id is None:
-            await self.async_set_unique_id(uuid4().hex)
-        return self.async_show_menu(step_id="user", menu_options=["create", "yaml", "file"])
-
     def _name_error(self, name):
         if not name.strip():
             return "name_required"
@@ -161,16 +156,18 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return "name_already_exists"
         return None
 
-    async def async_step_create(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         from .validation import program_data, validate_program
 
+        if self.unique_id is None:
+            await self.async_set_unique_id(uuid4().hex)
         name = (user_input or {}).get("name", "Occupied").strip()
         errors = {}
         if user_input is not None and (error := self._name_error(name)):
             errors["name"] = error
         if user_input is None or errors:
             return self.async_show_form(
-                step_id="create",
+                step_id="user",
                 errors=errors,
                 data_schema=vol.Schema({vol.Required("name", default=name): str}),
                 last_step=True,
@@ -178,70 +175,6 @@ class OccupiedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         program = validate_program({"schema_version": 1, "name": name})
         return self.async_create_entry(
             title=program.name, data={"name": program.name, "program": program_data(program)}
-        )
-
-    async def async_step_yaml(self, user_input=None):
-        from .file_config import load_program
-        from .validation import ProgramError, program_data
-
-        errors = {}
-        if user_input is not None:
-            try:
-                program = await self.hass.async_add_executor_job(
-                    load_program, user_input["program"]
-                )
-            except ProgramError:
-                errors["base"] = "invalid_program"
-            else:
-                if error := self._name_error(program.name):
-                    errors["base"] = error
-                else:
-                    return self.async_create_entry(
-                        title=program.name,
-                        data={"name": program.name, "program": program_data(program)},
-                    )
-        return self.async_show_form(
-            step_id="yaml",
-            errors=errors,
-            data_schema=vol.Schema(
-                {
-                    vol.Required("program"): selector.TextSelector(
-                        selector.TextSelectorConfig(multiline=True)
-                    )
-                }
-            ),
-        )
-
-    async def async_step_file(self, user_input=None):
-        from .file_config import load_yaml, read_managed
-        from .managed import async_path_in_use
-        from .validation import ProgramError
-
-        errors = {}
-        if user_input is not None:
-            try:
-                source, _ = await self.hass.async_add_executor_job(
-                    read_managed, self.hass.config.config_dir, user_input["config_file"]
-                )
-                program = await self.hass.async_add_executor_job(load_yaml, source)
-            except ProgramError:
-                errors["config_file"] = "invalid_file"
-            else:
-                if await async_path_in_use(self.hass, user_input["config_file"]):
-                    errors["config_file"] = "file_already_managed"
-                elif error := self._name_error(program.name):
-                    errors["base"] = error
-                else:
-                    return self.async_create_entry(
-                        title=program.name,
-                        data={"name": program.name, "source": "file", **user_input},
-                    )
-        return self.async_show_form(
-            step_id="file",
-            errors=errors,
-            data_schema=vol.Schema(
-                {vol.Required("config_file", default="occupied/house.yaml"): str}
-            ),
         )
 
     async def async_step_proof(self, user_input=None):

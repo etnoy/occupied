@@ -1,5 +1,6 @@
 """Bootstrap imports accept managed-file declarations, not program documents."""
 
+import pytest
 from homeassistant.data_entry_flow import FlowResultType
 
 
@@ -12,7 +13,8 @@ async def test_bootstrap_import_rejects_a_program_document(hass, program_dict):
     assert not hass.config_entries.async_entries("occupied")
 
 
-async def test_named_bootstrap_cannot_duplicate_ui_managed_path(hass, tmp_path):
+@pytest.mark.parametrize("alias", [False, True])
+async def test_named_bootstrap_cannot_duplicate_existing_managed_path(hass, tmp_path, alias):
     from homeassistant.helpers import issue_registry as ir
     from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -20,6 +22,8 @@ async def test_named_bootstrap_cannot_duplicate_ui_managed_path(hass, tmp_path):
     directory = tmp_path / "occupied"
     directory.mkdir()
     (directory / "house.yaml").write_text("schema_version: 1\nname: House\n")
+    if alias:
+        (directory / "alias.yaml").symlink_to(directory / "house.yaml")
     owner = MockConfigEntry(
         domain="occupied",
         unique_id="ui-created",
@@ -30,7 +34,10 @@ async def test_named_bootstrap_cannot_duplicate_ui_managed_path(hass, tmp_path):
     result = await hass.config_entries.flow.async_init(
         "occupied",
         context={"source": "import"},
-        data={"id": "house", "config_file": "occupied/./house.yaml"},
+        data={
+            "id": "house",
+            "config_file": "occupied/alias.yaml" if alias else "occupied/./house.yaml",
+        },
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "file_already_managed"
