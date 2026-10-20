@@ -60,9 +60,6 @@ async def test_saved_name_updates_entry_without_reloading_daily_engine(
     assert not devices
 
     flow = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
-    flow = await hass.config_entries.flow.async_configure(
-        flow["flow_id"], {"next_step_id": "create"}
-    )
     result = await hass.config_entries.flow.async_configure(
         flow["flow_id"], user_input={"name": "Renamed"}
     )

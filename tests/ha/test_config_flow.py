@@ -3,8 +3,6 @@
 import pytest
 from homeassistant.data_entry_flow import FlowResultType, InvalidData
 
-from custom_components.occupied.validation import program_data, validate_program
-
 
 async def test_config_flow_allows_another_independent_entry(hass, config, devices):
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "proof"})
@@ -15,11 +13,6 @@ async def test_config_flow_allows_another_independent_entry(hass, config, device
     await hass.async_block_till_done()
     assert len(hass.config_entries.async_entries("occupied")) == 1
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
-    assert result["type"] is FlowResultType.MENU
-    assert result["menu_options"] == ["create", "yaml", "file"]
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "create"}
-    )
     assert result["type"] is FlowResultType.FORM
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input={"name": "Occupied"}
@@ -85,13 +78,8 @@ async def test_gui_bootstrap_requires_a_name_before_creating_a_disabled_controll
     hass, devices, name
 ):
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
-    assert result["type"] is FlowResultType.MENU
-    assert result["menu_options"] == ["create", "yaml", "file"]
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "create"}
-    )
     assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "create"
+    assert result["step_id"] == "user"
     assert result["errors"] == {}
     assert result["data_schema"]({}) == {"name": "Occupied"}
     assert not hass.config_entries.async_entries("occupied")
@@ -110,24 +98,14 @@ async def test_gui_bootstrap_requires_a_name_before_creating_a_disabled_controll
 
 async def test_gui_name_conflict_requires_user_to_choose_another_name(hass, devices):
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
-    assert result["type"] is FlowResultType.MENU
-    assert result["menu_options"] == ["create", "yaml", "file"]
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "create"}
-    )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input={"name": "Occupied"}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     await hass.async_block_till_done()
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
-    assert result["type"] is FlowResultType.MENU
-    assert result["menu_options"] == ["create", "yaml", "file"]
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "create"}
-    )
     assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "create"
+    assert result["step_id"] == "user"
     assert result["errors"] == {}
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input={"name": " occupied "}
@@ -146,27 +124,3 @@ async def test_gui_name_conflict_requires_user_to_choose_another_name(hass, devi
     entries = hass.config_entries.async_entries("occupied")
     assert [entry.title for entry in entries] == ["Occupied", "Guest house"]
     assert entries[0].unique_id != entries[1].unique_id
-
-
-async def test_yaml_setup_reports_invalid_input_then_imports_canonical_snapshot(
-    hass, devices, program_dict
-):
-    result = await hass.config_entries.flow.async_init("occupied", context={"source": "user"})
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"next_step_id": "yaml"}
-    )
-    assert result["step_id"] == "yaml"
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input={"program": "schema_version: 1\nname: A\nname: B"}
-    )
-    assert result["type"] is FlowResultType.FORM
-    assert result["errors"] == {"base": "invalid_program"}
-    import json
-
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input={"program": json.dumps(program_dict)}
-    )
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    await hass.async_block_till_done()
-    assert result["data"]["program"] == program_data(validate_program(program_dict))
-    assert not result["result"].runtime_data.enabled and not devices
