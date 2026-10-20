@@ -29,7 +29,7 @@ Occupied is tested on and supports Home Assistant version 2026.5 or later. Earli
 1. Open [HACS](https://hacs.xyz/), select the three-dot menu, and choose **Custom repositories**.
 2. Add `https://github.com/etnoy/occupied` with the category **Integration**.
 3. Find Occupied in HACS and download it, then restart Home Assistant.
-4. Go to **Settings → Devices & services → Add integration → Occupied**. Choose **Create in the UI** to name a controller and start editing, **Import YAML** to copy a program into GUI storage, or **Use a managed file** to watch an authoritative YAML file under the Home Assistant config directory. Controller names and managed files must be unique.
+4. Go to **Settings → Devices & services → Add integration → Occupied**. Name your controller, then open the Occupied panel to start editing. Controller names must be unique. You can import an existing YAML program in the panel's **Settings**. For externally managed YAML, follow [Use a managed YAML file](#use-a-managed-yaml-file); no UI setup is needed.
 5. Select **Configure** on the integration to open the Occupied panel.
 
 ## Manual installation

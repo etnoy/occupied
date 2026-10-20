@@ -757,7 +757,7 @@ Runtime plan caches store the seed, per-date planning context, source revision a
 
 ## Managed files
 
-A managed file contains a complete program as described above. Add the file through the integration's **Use a managed file** option, or configure a single file in Home Assistant's `configuration.yaml`:
+A managed file contains a complete program as described above. Configure a single file in Home Assistant's `configuration.yaml`, then restart Home Assistant. Occupied creates the controller automatically; no UI setup is needed:
 
 ```yaml
 occupied:
