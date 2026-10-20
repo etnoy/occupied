@@ -676,6 +676,145 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       }),
     )
     .toBe(true);
+  // A generic on/off service for a remote uses the same native yellow bars.
+  const harmonyState = await request.post("/api/states/remote.harmony", {
+    headers: { Authorization: `Bearer ${tokens.access_token}` },
+    data: { state: "off", attributes: { friendly_name: "Harmony Hub" } },
+  });
+  expect(harmonyState.ok()).toBeTruthy();
+  await expect
+    .poll(() =>
+      panel.evaluate((element) =>
+        Boolean((element as OccupiedPanel)._hass?.states?.["remote.harmony"]),
+      ),
+    )
+    .toBe(true);
+  await panel.evaluate(async (element) => {
+    const controller = element as OccupiedPanel;
+    controller.catalog = (await controller.ws("catalog")) as Catalog;
+    const day = controller.preview!.plans[0]!;
+    const at = (hour: number) =>
+      new Date(Date.parse(day.start) + hour * 3_600_000).toISOString();
+    controller.previewProgram = {
+      schema_version: 1,
+      random: {
+        random_3: {
+          name: "TV kväll",
+          start: {},
+          end: {},
+          on: {
+            action: "homeassistant.turn_on",
+            entities: ["remote.harmony"],
+            data: { activity: "TV" },
+          },
+          off: {
+            action: "homeassistant.turn_off",
+            entities: ["remote.harmony"],
+          },
+        },
+      },
+    };
+    controller.preview = {
+      valid: true,
+      plans: [
+        {
+          ...day,
+          history_events: [],
+          future_events: [],
+          events: [
+            {
+              time: at(18),
+              source_id: "random_3",
+              kind: "random_start",
+              action: {
+                action: "homeassistant.turn_on",
+                entities: ["remote.harmony"],
+                data: { activity: "TV" },
+              },
+            },
+            {
+              time: at(20),
+              source_id: "random_3",
+              kind: "random_end",
+              action: {
+                action: "homeassistant.turn_off",
+                entities: ["remote.harmony"],
+              },
+            },
+          ],
+        },
+      ],
+    };
+    controller.flush();
+  });
+  await expect
+    .poll(() =>
+      chart.evaluate((element) => {
+        const base = element.shadowRoot!.querySelector(
+          "ha-chart-base",
+        ) as HTMLElement & {
+          chart: {
+            getOption(): {
+              series: ({
+                id: string;
+                data: { value: unknown[]; itemStyle?: { color: string } }[];
+              } | null)[];
+            };
+          };
+        };
+
+        return base.chart
+          .getOption()
+          .series.find((series) => series?.id === "remote.harmony")
+          ?.data.map((point) => ({
+            state: point.value[3],
+            color: point.itemStyle?.color,
+          }));
+      }),
+    )
+    .toEqual([
+      { state: "Off", color: "#9e9e9e" },
+      { state: "On", color: "#ffc107" },
+      { state: "Off", color: "#9e9e9e" },
+    ]);
+  expect(
+    await chart.evaluate((element) => {
+      const timeline = element as HTMLElement & {
+        data: { markers?: unknown[] }[];
+      };
+
+      return timeline.data.some((row) => row.markers?.length);
+    }),
+  ).toBe(false);
+  await expect
+    .poll(() =>
+      chart.evaluate((element) => {
+        const base = element.shadowRoot!.querySelector(
+          "ha-chart-base",
+        ) as HTMLElement & {
+          chart: {
+            getZr(): {
+              storage: {
+                getDisplayList(): {
+                  style?: { text?: string; fill?: string };
+                }[];
+              };
+            };
+          };
+        };
+        const display = base.chart.getZr().storage.getDisplayList();
+
+        return (
+          display.some((item) => item.style?.text === "Harmony Hub") &&
+          display.some((item) => item.style?.fill === "#ffc107")
+        );
+      }),
+    )
+    .toBe(true);
+  await page.screenshot({
+    path: "test-results/browser/service-on-off-bars.png",
+    fullPage: true,
+  });
   await panel.evaluate((element, original) => {
     const controller = element as OccupiedPanel;
     controller.preview = original.preview;

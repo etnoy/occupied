@@ -43,18 +43,35 @@ export interface PreviewHistoryEntity {
   }[];
 }
 
+function onOffState(event: PlannedEvent, entity: string) {
+  const [domain, service] = event.action.action.split(".", 2);
+  const targetDomain = entity.split(".", 1)[0];
+  // Scene activation and script execution do not describe a persistent state.
+  // Covers use their position/tilt projection instead of binary on/off states.
+  if (
+    ["scene", "script", "cover"].includes(targetDomain) ||
+    (domain !== "homeassistant" && domain !== targetDomain)
+  ) {
+    return;
+  }
+
+  if (service === "turn_on") {
+    return "on";
+  }
+  if (service === "turn_off") {
+    return "off";
+  }
+
+  return;
+}
+
 function isStateEvent(event: PlannedEvent) {
   return (
     event.action.entities.length > 0 &&
     event.action.entities.every((entity) =>
       entity.startsWith("cover.")
         ? isCoverAction(event.action) && !event.action.action.includes(".stop_")
-        : /^(light|switch)\./.test(entity) &&
-          /^(light|switch|homeassistant)\.turn_(on|off)$/.test(
-            event.action.action,
-          ) &&
-          (event.action.action.startsWith("homeassistant.") ||
-            event.action.action.startsWith(`${entity.split(".", 1)[0]}.`)),
+        : onOffState(event, entity) !== undefined,
     )
   );
 }
@@ -149,20 +166,27 @@ export function previewStateHistory(
       data: [{ state, state_localize: label(state), last_changed: start }],
     });
   }
-  for (const event of [
+  const events = [
     ...(plan.history_events || []),
     ...plan.events,
     ...(plan.future_events || []),
-  ].sort((a, b) => Date.parse(a.time) - Date.parse(b.time))) {
-    if (event.superseded) {
-      continue;
-    }
+  ]
+    .filter((event) => !event.superseded)
+    .sort((a, b) => Date.parse(a.time) - Date.parse(b.time));
+  const onOffEntities = new Set(
+    events.flatMap((event) =>
+      event.action.entities.filter(
+        (entity) => onOffState(event, entity) !== undefined,
+      ),
+    ),
+  );
+  for (const event of events) {
     const at = Date.parse(event.time);
-    const typed = /^(light|switch|homeassistant)\.turn_(on|off)$/.test(
-      event.action.action,
-    );
     for (const entity of event.action.entities) {
-      if (!/^(light|switch|cover)\./.test(entity)) {
+      if (
+        !/^(light|switch|cover)\./.test(entity) &&
+        !onOffEntities.has(entity)
+      ) {
         continue;
       }
       let history = entities.get(entity);
@@ -187,13 +211,7 @@ export function previewStateHistory(
         };
         entities.set(entity, history);
       }
-      const intended = event.action.action.endsWith("turn_on") ? "on" : "off";
-      let state =
-        typed &&
-        (event.action.action.startsWith("homeassistant.") ||
-          event.action.action.startsWith(`${entity.split(".", 1)[0]}.`))
-          ? intended
-          : "unknown";
+      let state: string = onOffState(event, entity) ?? "unknown";
       let localized = label(state);
       if (entity.startsWith("cover.")) {
         const target = coverTarget(event.action, covers.get(entity));
