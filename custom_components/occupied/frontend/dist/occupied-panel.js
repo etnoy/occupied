@@ -1569,9 +1569,9 @@ function timingExplanation(
     if (!boundary2) {
       continue;
     }
-    let label = formatClock(boundary2.start, options.locale);
+    let label2 = formatClock(boundary2.start, options.locale);
     if (boundary2.mode === "relative") {
-      label =
+      label2 =
         durationSeconds(String(boundary2.startOffset)) === 0
           ? t(boundary2.anchor.slice(4))
           : baseTimingExplanation(boundary2, [], t, [], {
@@ -1580,7 +1580,7 @@ function timingExplanation(
     }
     explanation += `. ${t(
       key2 === "latestAt" ? "latest_at_summary" : "only_before_summary",
-    ).replace("{boundary}", () => label)}`;
+    ).replace("{boundary}", () => label2)}`;
   }
   if (modified && options.includeHints !== false) {
     explanation += `. ${t("timing_limits_sampling_hint")}`;
@@ -1806,7 +1806,7 @@ function managedOffEntities(program, entities) {
 
 // custom_components/occupied/frontend/src/app.css
 var app_default =
-  '/* Shared element defaults */\np,\nli {\n  overflow-wrap: anywhere;\n}\n\n:host {\n  display: block;\n  min-height: 100%;\n  background: var(--primary-background-color, #f4f5f8);\n  color: var(--primary-text-color, #202c37);\n  font:\n    15px/1.5 system-ui,\n    sans-serif;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nmain {\n  max-width: 1200px;\n  margin: auto;\n  padding: 24px;\n}\n\nh1 {\n  margin: 0;\n  font-size: 28px;\n}\n\nh2 {\n  font-size: 21px;\n  margin: 0 0 12px;\n}\n\nh3 {\n  font-size: 17px;\n}\n\np {\n  margin: 8px 0;\n}\n\nsmall,\n.hint {\n  color: var(--secondary-text-color, #596773);\n}\n\nheader {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  flex-wrap: wrap;\n}\n\nnav,\n.row,\n.toolbar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\nnav {\n  margin: 18px 0;\n}\n\nnav button[aria-current="page"] {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nsection {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  padding: 20px;\n  margin: 16px 0;\n  min-width: 0;\n}\n\nsection section {\n  border-radius: 8px;\n}\n\ndetails {\n  padding: 12px 0;\n}\n\nsummary {\n  cursor: pointer;\n  font-weight: 600;\n}\n\nbutton,\ninput,\nselect,\ntextarea {\n  font: inherit;\n  color: inherit;\n}\n\nbutton {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #bdc9d2);\n  padding: 8px 14px;\n  border-radius: 8px;\n  cursor: pointer;\n  min-height: 42px;\n}\n\nbutton.primary {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nbutton:disabled {\n  opacity: 0.5;\n  cursor: default;\n}\n\nbutton:focus-visible,\ninput:focus-visible,\nselect:focus-visible,\ntextarea:focus-visible,\nsummary:focus-visible,\na:focus-visible,\n[tabindex]:focus-visible {\n  outline: 3px solid var(--primary-color, #167b94);\n  outline-offset: 2px;\n}\n\n.field {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  margin: 12px 0;\n  max-width: 700px;\n}\n\nlabel {\n  font-weight: 500;\n}\n\ninput:not([type="checkbox"]),\nselect,\ntextarea {\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 6px;\n  background: var(--card-background-color, #fff);\n  padding: 9px;\n  min-width: 0;\n  max-width: 100%;\n}\n\n.field input,\n.field select,\n.field textarea {\n  width: 100%;\n}\n\ntextarea {\n  resize: vertical;\n}\n\n.field textarea {\n  font:\n    14px/1.5 ui-monospace,\n    monospace;\n}\n\ninput[type="checkbox"] {\n  width: 20px;\n  height: 20px;\n  vertical-align: middle;\n}\n\nfieldset {\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 8px;\n  margin: 12px 0;\n  min-width: 0;\n}\n\n.banner {\n  padding: 12px 16px;\n  border-radius: 8px;\n  background: var(--secondary-background-color, #e3eef2);\n  margin: 12px 0;\n  overflow-wrap: anywhere;\n}\n\n.banner.unsaved {\n  border: 1px solid var(--warning-color, #e69500);\n  border-left-width: 4px;\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #e69500) 18%,\n    var(--card-background-color, #fff)\n  );\n  color: var(--primary-text-color, #202c37);\n  font-weight: 600;\n}\n\n.error,\n[aria-invalid="true"] {\n  color: var(--error-color, #b3261e);\n}\n\n[aria-invalid="true"] {\n  border-color: var(--error-color, #b3261e);\n}\n\n[hidden] {\n  display: none !important;\n}\n\n.toolbar {\n  position: sticky;\n  top: 0;\n  padding: 12px 0;\n  background: var(--primary-background-color, #f4f5f8);\n  z-index: 2;\n}\n\n.table-wrap {\n  overflow: auto;\n}\n\ntable {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 13px;\n}\n\nth,\ntd {\n  padding: 9px;\n  text-align: left;\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  max-width: 300px;\n  overflow-wrap: anywhere;\n}\n\nth {\n  white-space: nowrap;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 14px;\n  }\n\n  section {\n    padding: 14px;\n  }\n\n  nav {\n    gap: 5px;\n  }\n\n  nav button {\n    padding: 7px 10px;\n  }\n\n  .row input {\n    width: 100%;\n  }\n}\n\n/* Panel shell overrides: keep these after the shared defaults. */\nmain {\n  max-width: 1120px;\n  padding: 32px;\n}\n\nheader {\n  margin-bottom: 24px;\n}\n\nheader h1 {\n  font-size: 24px;\n  letter-spacing: -0.7px;\n}\n\nheader p {\n  margin: 2px 0;\n  font-size: 13px;\n}\n\nnav {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  gap: 24px;\n  margin: 16px 0 32px;\n}\n\nnav button,\nnav button[aria-current="page"] {\n  border: 0;\n  border-radius: 0;\n  border-bottom: 3px solid transparent;\n  background: transparent;\n  padding: 10px 0;\n  color: var(--secondary-text-color, #596773);\n}\n\nnav button[aria-current="page"] {\n  border-bottom-color: var(--primary-color, #167b94);\n  color: var(--primary-color, #167b94);\n  font-weight: 650;\n}\n\n.field-label-row {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: baseline;\n  gap: 4px 12px;\n}\n\n.field-label-row .text-button {\n  min-height: 24px;\n  padding: 0;\n  border: 0;\n  font-size: 13px;\n}\n\n.text-button {\n  border-color: transparent;\n  background: transparent;\n  color: var(--primary-color, #167b94);\n  padding-left: 4px;\n  padding-right: 4px;\n}\n\n.page-heading {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 24px;\n  margin: 24px 0;\n}\n\n.page-heading h2 {\n  font-size: 30px;\n  letter-spacing: -0.8px;\n  margin: 0;\n}\n\n.page-heading .hint {\n  max-width: 500px;\n}\n\n/* Step lists and empty states */\n.activity-intro {\n  border-left: 3px solid var(--primary-color, #167b94);\n  padding: 4px 0 4px 16px;\n  margin: 0 0 24px;\n}\n\n.activity-intro h2 {\n  font-size: 16px;\n  font-weight: 600;\n  margin: 0 0 4px;\n}\n\n.activity-intro p {\n  max-width: 68ch;\n  margin: 0;\n  font-size: 14px;\n  line-height: 1.6;\n}\n\n.step-empty {\n  text-align: center;\n  padding: 60px 32px;\n  border-style: dashed;\n}\n\n.step-empty h2 {\n  font-size: 25px;\n  letter-spacing: -0.5px;\n}\n\n.step-empty p {\n  max-width: 490px;\n  margin: 12px auto 24px;\n}\n\n.empty-steps {\n  font-size: 13px;\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-list {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  margin: 0 0 20px;\n  min-width: 0;\n}\n\n.step-card {\n  width: calc(100% - var(--depth) * 14px);\n  margin-left: calc(var(--depth) * 14px);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  overflow: hidden;\n}\n\n.step-row[aria-expanded="true"] {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n}\n\n.step-card.step-disabled {\n  border-style: dashed;\n}\n\n.step-card.step-warning {\n  border-color: var(--warning-color, #ffa600);\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 10%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-card.step-warning .step-row:not(:disabled):hover {\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 18%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-row-warning {\n  display: flex;\n  align-items: flex-start;\n  gap: 8px;\n  color: var(--warning-color, #ffa600);\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-warning ha-icon {\n  --mdc-icon-size: 20px;\n  flex-shrink: 0;\n}\n\n.step-warning-message {\n  display: block;\n}\n\n.step-card.step-disabled .step-row {\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-row {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);\n  align-items: center;\n  gap: 14px;\n  text-align: left;\n  width: 100%;\n  padding: 20px;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  color: inherit;\n}\n\n.step-row:disabled {\n  opacity: 1;\n  cursor: default;\n}\n\n.step-row.editing {\n  grid-template-columns: minmax(0, 1fr);\n}\n\n.step-row:not(:disabled):hover {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-card .step-editor {\n  margin: 0;\n}\n\n.step-editor-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n/* Editor action menus */\n.step-actions-menu {\n  position: fixed;\n  inset: auto;\n  width: 240px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  margin: 0;\n  padding: 6px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 10px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-actions-menu button {\n  display: block;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  text-align: left;\n}\n\n.step-actions-menu button:hover,\n.step-actions-menu button:focus-visible {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-actions-menu [role="separator"] {\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  margin: 6px 8px;\n}\n\n.step-row-content {\n  display: flex;\n  min-width: 0;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.step-row-heading {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.step-status-badge {\n  padding: 2px 8px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 999px;\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--secondary-text-color, #596773);\n  font-size: 11px;\n  font-weight: 500;\n  line-height: 1.5;\n  white-space: nowrap;\n}\n\n.step-row strong {\n  font-size: 16px;\n  font-weight: 650;\n  overflow-wrap: anywhere;\n}\n\n.step-row-content .hint {\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-time {\n  text-align: right;\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n/* Editor dialogs */\n.step-exit-dialog,\n.step-delete-dialog,\n.step-advanced-dialog {\n  width: 440px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-exit-dialog::backdrop,\n.step-delete-dialog::backdrop,\n.step-advanced-dialog::backdrop {\n  background: #0006;\n}\n\n.step-weekdays {\n  padding: 12px;\n}\n\n.step-weekday-presets {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-bottom: 16px;\n}\n\n.step-weekday-presets button {\n  padding: 6px 10px;\n}\n\n.step-weekday-presets button[aria-pressed="true"] {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.step-weekday-options {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.step-weekday-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  min-height: 42px;\n  cursor: pointer;\n}\n\n.step-weekday-option input {\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-exit-dialog h2 {\n  margin-top: 0;\n}\n\n.step-delete-actions {\n  display: flex;\n  justify-content: flex-end;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n.danger {\n  color: var(--error-color, #b3261e);\n}\n\n.icon-button {\n  display: inline-grid;\n  place-items: center;\n  width: 42px;\n  padding: 8px;\n}\n\n.icon-button svg {\n  width: 20px;\n  height: 20px;\n  fill: currentColor;\n}\n\n.step-editor {\n  max-width: none;\n  margin: 0 auto 32px;\n  padding: 32px;\n}\n\n.step-editor h3 {\n  font-size: 23px;\n  font-weight: 600;\n  letter-spacing: -0.5px;\n  margin: 28px 0 8px;\n}\n\n.entity-native-selector {\n  display: block;\n  width: 100%;\n}\n\n.builder-footer {\n  display: flex;\n  gap: 10px;\n  align-items: center;\n  flex-wrap: wrap;\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  padding-top: 22px;\n  margin-top: 28px;\n}\n\n.builder-footer .step-editor-actions {\n  margin-top: 0;\n}\n\n.builder-footer > button:first-child {\n  margin-right: auto;\n}\n\n.step-editor details {\n  padding: 8px 0;\n}\n\n.step-editor .field {\n  margin: 18px 0;\n}\n\n.source-picker {\n  position: relative;\n}\n\n.source-picker ha-generic-picker {\n  display: block;\n  width: 100%;\n}\n\n.step-editor .error {\n  font-size: 13px;\n}\n\n.timing-options {\n  border: 0;\n  padding: 0;\n  margin: 18px 0;\n}\n\n.timing-option-row {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.timing-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 10px 12px;\n  min-height: 44px;\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 8px;\n  cursor: pointer;\n}\n\n.timing-option:has(input:checked) {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.timing-options input[type="radio"] {\n  width: 18px;\n  height: 18px;\n  padding: 0;\n  margin: 0;\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-editor .step-name-editor .field {\n  max-width: none;\n  margin: 20px 0 28px;\n}\n\n.step-editor .step-name-editor label {\n  font-weight: 600;\n}\n\n.step-editor .step-name-editor input {\n  font-family: inherit;\n  font-size: 22px;\n  font-weight: 600;\n  line-height: 1.4;\n  padding: 14px;\n}\n\n.step-editor .editor-sections {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 28px;\n}\n\n.step-editor .editor-sections > div {\n  min-width: 0;\n}\n\n.step-editor h3 {\n  margin: 16px 0 8px;\n  font-size: 20px;\n}\n\n.step-editor h4 {\n  margin: 14px 0 8px;\n  font-size: 16px;\n  font-weight: 600;\n}\n\n.step-editor .field {\n  margin: 14px 0;\n}\n\n@media (max-width: 900px) {\n  .step-editor .editor-sections {\n    grid-template-columns: 1fr;\n    gap: 20px;\n  }\n\n  .step-editor .editor-sections > div + div {\n    border-top: 1px solid var(--divider-color, #d5dce3);\n    padding-top: 12px;\n  }\n}\n\n#issues:empty {\n  display: none;\n}\n\n#issues button {\n  margin: 0 6px 8px 0;\n  text-align: left;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 18px 14px;\n  }\n\n  header {\n    gap: 10px;\n    margin-bottom: 8px;\n  }\n\n  nav {\n    margin-bottom: 24px;\n  }\n\n  .page-heading {\n    align-items: flex-start;\n    flex-direction: column;\n    gap: 12px;\n  }\n\n  .page-heading h2 {\n    font-size: 27px;\n  }\n\n  .step-row {\n    padding: 14px;\n    gap: 10px;\n    grid-template-columns: minmax(0, 1fr);\n  }\n\n  .step-row-time {\n    text-align: left;\n  }\n\n  .step-editor {\n    padding: 20px 16px;\n  }\n\n  .builder-footer {\n    gap: 6px;\n  }\n\n  .builder-footer button {\n    padding: 8px 12px;\n  }\n\n  .step-empty {\n    padding: 36px 20px;\n  }\n\n  .empty-steps {\n    line-height: 2;\n  }\n}\n';
+  '/* Shared element defaults */\np,\nli {\n  overflow-wrap: anywhere;\n}\n\n:host {\n  display: block;\n  min-height: 100%;\n  background: var(--primary-background-color, #f4f5f8);\n  color: var(--primary-text-color, #202c37);\n  font:\n    15px/1.5 system-ui,\n    sans-serif;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nmain {\n  max-width: 1200px;\n  margin: auto;\n  padding: 24px;\n}\n\nh1 {\n  margin: 0;\n  font-size: 28px;\n}\n\nh2 {\n  font-size: 21px;\n  margin: 0 0 12px;\n}\n\nh3 {\n  font-size: 17px;\n}\n\np {\n  margin: 8px 0;\n}\n\nsmall,\n.hint {\n  color: var(--secondary-text-color, #596773);\n}\n\nheader {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  flex-wrap: wrap;\n}\n\nnav,\n.row,\n.toolbar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\nnav {\n  margin: 18px 0;\n}\n\nnav button[aria-current="page"] {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nsection {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  padding: 20px;\n  margin: 16px 0;\n  min-width: 0;\n}\n\nsection section {\n  border-radius: 8px;\n}\n\ndetails {\n  padding: 12px 0;\n}\n\nsummary {\n  cursor: pointer;\n  font-weight: 600;\n}\n\nbutton,\ninput,\nselect,\ntextarea {\n  font: inherit;\n  color: inherit;\n}\n\nbutton {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #bdc9d2);\n  padding: 8px 14px;\n  border-radius: 8px;\n  cursor: pointer;\n  min-height: 42px;\n}\n\nbutton.primary {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nbutton:disabled {\n  opacity: 0.5;\n  cursor: default;\n}\n\nbutton:focus-visible,\ninput:focus-visible,\nselect:focus-visible,\ntextarea:focus-visible,\nsummary:focus-visible,\na:focus-visible,\n[tabindex]:focus-visible {\n  outline: 3px solid var(--primary-color, #167b94);\n  outline-offset: 2px;\n}\n\n.field {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  margin: 12px 0;\n  max-width: 700px;\n}\n\nlabel {\n  font-weight: 500;\n}\n\ninput:not([type="checkbox"]),\nselect,\ntextarea {\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 6px;\n  background: var(--card-background-color, #fff);\n  padding: 9px;\n  min-width: 0;\n  max-width: 100%;\n}\n\n.field input,\n.field select,\n.field textarea {\n  width: 100%;\n}\n\ntextarea {\n  resize: vertical;\n}\n\n.field textarea {\n  font:\n    14px/1.5 ui-monospace,\n    monospace;\n}\n\ninput[type="checkbox"] {\n  width: 20px;\n  height: 20px;\n  vertical-align: middle;\n}\n\nfieldset {\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 8px;\n  margin: 12px 0;\n  min-width: 0;\n}\n\n.banner {\n  padding: 12px 16px;\n  border-radius: 8px;\n  background: var(--secondary-background-color, #e3eef2);\n  margin: 12px 0;\n  overflow-wrap: anywhere;\n}\n\n.banner.unsaved {\n  border: 1px solid var(--warning-color, #e69500);\n  border-left-width: 4px;\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #e69500) 18%,\n    var(--card-background-color, #fff)\n  );\n  color: var(--primary-text-color, #202c37);\n  font-weight: 600;\n}\n\n.error,\n[aria-invalid="true"] {\n  color: var(--error-color, #b3261e);\n}\n\n[aria-invalid="true"] {\n  border-color: var(--error-color, #b3261e);\n}\n\n[hidden] {\n  display: none !important;\n}\n\n.toolbar {\n  position: sticky;\n  top: 0;\n  padding: 12px 0;\n  background: var(--primary-background-color, #f4f5f8);\n  z-index: 2;\n}\n\n.table-wrap {\n  overflow: auto;\n}\n\ntable {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 13px;\n}\n\nth,\ntd {\n  padding: 9px;\n  text-align: left;\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  max-width: 300px;\n  overflow-wrap: anywhere;\n}\n\nth {\n  white-space: nowrap;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 14px;\n  }\n\n  section {\n    padding: 14px;\n  }\n\n  nav {\n    gap: 5px;\n  }\n\n  nav button {\n    padding: 7px 10px;\n  }\n\n  .row input {\n    width: 100%;\n  }\n}\n\n/* Panel shell overrides: keep these after the shared defaults. */\nmain {\n  max-width: 1120px;\n  padding: 32px;\n}\n\nheader {\n  margin-bottom: 24px;\n}\n\nheader h1 {\n  font-size: 24px;\n  letter-spacing: -0.7px;\n}\n\nheader p {\n  margin: 2px 0;\n  font-size: 13px;\n}\n\nnav {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  gap: 24px;\n  margin: 16px 0 32px;\n}\n\nnav button,\nnav button[aria-current="page"] {\n  border: 0;\n  border-radius: 0;\n  border-bottom: 3px solid transparent;\n  background: transparent;\n  padding: 10px 0;\n  color: var(--secondary-text-color, #596773);\n}\n\nnav button[aria-current="page"] {\n  border-bottom-color: var(--primary-color, #167b94);\n  color: var(--primary-color, #167b94);\n  font-weight: 650;\n}\n\nnav button.tab-warning {\n  color: var(--warning-color, #ffa600);\n}\n\nnav button.tab-warning[aria-current="page"] {\n  border-bottom-color: var(--warning-color, #ffa600);\n}\n\n.field-label-row {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: baseline;\n  gap: 4px 12px;\n}\n\n.field-label-row .text-button {\n  min-height: 24px;\n  padding: 0;\n  border: 0;\n  font-size: 13px;\n}\n\n.text-button {\n  border-color: transparent;\n  background: transparent;\n  color: var(--primary-color, #167b94);\n  padding-left: 4px;\n  padding-right: 4px;\n}\n\n.page-heading {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 24px;\n  margin: 24px 0;\n}\n\n.page-heading h2 {\n  font-size: 30px;\n  letter-spacing: -0.8px;\n  margin: 0;\n}\n\n.page-heading .hint {\n  max-width: 500px;\n}\n\n/* Step lists and empty states */\n.activity-intro {\n  border-left: 3px solid var(--primary-color, #167b94);\n  padding: 4px 0 4px 16px;\n  margin: 0 0 24px;\n}\n\n.activity-intro h2 {\n  font-size: 16px;\n  font-weight: 600;\n  margin: 0 0 4px;\n}\n\n.activity-intro p {\n  max-width: 68ch;\n  margin: 0;\n  font-size: 14px;\n  line-height: 1.6;\n}\n\n.step-empty {\n  text-align: center;\n  padding: 60px 32px;\n  border-style: dashed;\n}\n\n.step-empty h2 {\n  font-size: 25px;\n  letter-spacing: -0.5px;\n}\n\n.step-empty p {\n  max-width: 490px;\n  margin: 12px auto 24px;\n}\n\n.empty-steps {\n  font-size: 13px;\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-list {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  margin: 0 0 20px;\n  min-width: 0;\n}\n\n.step-card {\n  width: calc(100% - var(--depth) * 14px);\n  margin-left: calc(var(--depth) * 14px);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  overflow: hidden;\n}\n\n.step-row[aria-expanded="true"] {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n}\n\n.step-card.step-disabled {\n  border-style: dashed;\n}\n\n.step-card.step-warning {\n  border-color: var(--warning-color, #ffa600);\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 10%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-card.step-warning .step-row:not(:disabled):hover {\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 18%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-row-warning {\n  display: flex;\n  align-items: flex-start;\n  gap: 8px;\n  color: var(--warning-color, #ffa600);\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-warning ha-icon {\n  --mdc-icon-size: 20px;\n  flex-shrink: 0;\n}\n\n.step-warning-message {\n  display: block;\n}\n\n.step-card.step-disabled .step-row {\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-row {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);\n  align-items: center;\n  gap: 14px;\n  text-align: left;\n  width: 100%;\n  padding: 20px;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  color: inherit;\n}\n\n.step-row:disabled {\n  opacity: 1;\n  cursor: default;\n}\n\n.step-row.editing {\n  grid-template-columns: minmax(0, 1fr);\n}\n\n.step-row:not(:disabled):hover {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-card .step-editor {\n  margin: 0;\n}\n\n.step-editor-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n/* Editor action menus */\n.step-actions-menu {\n  position: fixed;\n  inset: auto;\n  width: 240px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  margin: 0;\n  padding: 6px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 10px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-actions-menu button {\n  display: block;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  text-align: left;\n}\n\n.step-actions-menu button:hover,\n.step-actions-menu button:focus-visible {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-actions-menu [role="separator"] {\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  margin: 6px 8px;\n}\n\n.step-row-content {\n  display: flex;\n  min-width: 0;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.step-row-heading {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.step-status-badge {\n  padding: 2px 8px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 999px;\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--secondary-text-color, #596773);\n  font-size: 11px;\n  font-weight: 500;\n  line-height: 1.5;\n  white-space: nowrap;\n}\n\n.step-row strong {\n  font-size: 16px;\n  font-weight: 650;\n  overflow-wrap: anywhere;\n}\n\n.step-row-content .hint {\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-time {\n  text-align: right;\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n/* Editor dialogs */\n.step-exit-dialog,\n.step-delete-dialog,\n.step-advanced-dialog {\n  width: 440px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-exit-dialog::backdrop,\n.step-delete-dialog::backdrop,\n.step-advanced-dialog::backdrop {\n  background: #0006;\n}\n\n.step-weekdays {\n  padding: 12px;\n}\n\n.step-weekday-presets {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-bottom: 16px;\n}\n\n.step-weekday-presets button {\n  padding: 6px 10px;\n}\n\n.step-weekday-presets button[aria-pressed="true"] {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.step-weekday-options {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.step-weekday-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  min-height: 42px;\n  cursor: pointer;\n}\n\n.step-weekday-option input {\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-exit-dialog h2 {\n  margin-top: 0;\n}\n\n.step-delete-actions {\n  display: flex;\n  justify-content: flex-end;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n.danger {\n  color: var(--error-color, #b3261e);\n}\n\n.icon-button {\n  display: inline-grid;\n  place-items: center;\n  width: 42px;\n  padding: 8px;\n}\n\n.icon-button svg {\n  width: 20px;\n  height: 20px;\n  fill: currentColor;\n}\n\n.step-editor {\n  max-width: none;\n  margin: 0 auto 32px;\n  padding: 32px;\n}\n\n.step-editor h3 {\n  font-size: 23px;\n  font-weight: 600;\n  letter-spacing: -0.5px;\n  margin: 28px 0 8px;\n}\n\n.entity-native-selector {\n  display: block;\n  width: 100%;\n}\n\n.builder-footer {\n  display: flex;\n  gap: 10px;\n  align-items: center;\n  flex-wrap: wrap;\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  padding-top: 22px;\n  margin-top: 28px;\n}\n\n.builder-footer .step-editor-actions {\n  margin-top: 0;\n}\n\n.builder-footer > button:first-child {\n  margin-right: auto;\n}\n\n.step-editor details {\n  padding: 8px 0;\n}\n\n.step-editor .field {\n  margin: 18px 0;\n}\n\n.source-picker {\n  position: relative;\n}\n\n.source-picker ha-generic-picker {\n  display: block;\n  width: 100%;\n}\n\n.step-editor .error {\n  font-size: 13px;\n}\n\n.timing-options {\n  border: 0;\n  padding: 0;\n  margin: 18px 0;\n}\n\n.timing-option-row {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.timing-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 10px 12px;\n  min-height: 44px;\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 8px;\n  cursor: pointer;\n}\n\n.timing-option:has(input:checked) {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.timing-options input[type="radio"] {\n  width: 18px;\n  height: 18px;\n  padding: 0;\n  margin: 0;\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-editor .step-name-editor .field {\n  max-width: none;\n  margin: 20px 0 28px;\n}\n\n.step-editor .step-name-editor label {\n  font-weight: 600;\n}\n\n.step-editor .step-name-editor input {\n  font-family: inherit;\n  font-size: 22px;\n  font-weight: 600;\n  line-height: 1.4;\n  padding: 14px;\n}\n\n.step-editor .editor-sections {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 28px;\n}\n\n.step-editor .editor-sections > div {\n  min-width: 0;\n}\n\n.step-editor h3 {\n  margin: 16px 0 8px;\n  font-size: 20px;\n}\n\n.step-editor h4 {\n  margin: 14px 0 8px;\n  font-size: 16px;\n  font-weight: 600;\n}\n\n.step-editor .field {\n  margin: 14px 0;\n}\n\n@media (max-width: 900px) {\n  .step-editor .editor-sections {\n    grid-template-columns: 1fr;\n    gap: 20px;\n  }\n\n  .step-editor .editor-sections > div + div {\n    border-top: 1px solid var(--divider-color, #d5dce3);\n    padding-top: 12px;\n  }\n}\n\n#issues:empty {\n  display: none;\n}\n\n#issues button {\n  margin: 0 6px 8px 0;\n  text-align: left;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 18px 14px;\n  }\n\n  header {\n    gap: 10px;\n    margin-bottom: 8px;\n  }\n\n  nav {\n    margin-bottom: 24px;\n  }\n\n  .page-heading {\n    align-items: flex-start;\n    flex-direction: column;\n    gap: 12px;\n  }\n\n  .page-heading h2 {\n    font-size: 27px;\n  }\n\n  .step-row {\n    padding: 14px;\n    gap: 10px;\n    grid-template-columns: minmax(0, 1fr);\n  }\n\n  .step-row-time {\n    text-align: left;\n  }\n\n  .step-editor {\n    padding: 20px 16px;\n  }\n\n  .builder-footer {\n    gap: 6px;\n  }\n\n  .builder-footer button {\n    padding: 8px 12px;\n  }\n\n  .step-empty {\n    padding: 36px 20px;\n  }\n\n  .empty-steps {\n    line-height: 2;\n  }\n}\n';
 
 // node_modules/.pnpm/esm-env@1.2.2/node_modules/esm-env/dev-fallback.js
 var node_env = globalThis.process?.env?.NODE_ENV;
@@ -2356,18 +2356,24 @@ var tracing_mode_flag = false;
 
 // node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/client/dev/tracing.js
 var tracing_expressions = null;
-function tag(source2, label) {
-  source2.label = label;
-  tag_proxy(source2.v, label);
+function tag(source2, label2) {
+  source2.label = label2;
+  tag_proxy(source2.v, label2);
   return source2;
 }
-function tag_proxy(value, label) {
-  value?.[PROXY_PATH_SYMBOL]?.(label);
+function tag_proxy(value, label2) {
+  value?.[PROXY_PATH_SYMBOL]?.(label2);
   return value;
+}
+function label(value) {
+  if (typeof value === "symbol") return `Symbol(${value.description})`;
+  if (typeof value === "function") return "<function>";
+  if (typeof value === "object" && value) return "<object>";
+  return String(value);
 }
 
 // node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/internal/shared/dev.js
-function get_error(label) {
+function get_error(label2) {
   const error = new Error();
   const stack2 = get_stack();
   if (stack2.length === 0) {
@@ -2378,7 +2384,7 @@ function get_error(label) {
     value: stack2.join("\n"),
   });
   define_property(error, "name", {
-    value: label,
+    value: label2,
   });
   return (
     /** @type {Error & { stack: string }} */
@@ -2735,7 +2741,7 @@ function derived(fn) {
 }
 var OBSOLETE = /* @__PURE__ */ Symbol("obsolete");
 // @__NO_SIDE_EFFECTS__
-function async_derived(fn, label, location2) {
+function async_derived(fn, label2, location2) {
   let parent =
     /** @type {Effect | null} */
     active_effect;
@@ -2750,7 +2756,7 @@ function async_derived(fn, label, location2) {
     /** @type {V} */
     UNINITIALIZED,
   );
-  if (dev_fallback_default) signal.label = label ?? fn.toString();
+  if (dev_fallback_default) signal.label = label2 ?? fn.toString();
   var should_suspend = !active_reaction;
   var deferreds = /* @__PURE__ */ new Set();
   async_effect(() => {
@@ -7662,19 +7668,19 @@ function action(dom, action2, get_value) {
   effect(() => {
     var payload = untrack(() => action2(dom, get_value?.()) || {});
     if (get_value && payload?.update) {
-      var inited = false;
+      var inited2 = false;
       var prev =
         /** @type {any} */
         {};
       render_effect(() => {
         var value = get_value();
         deep_read_state(value);
-        if (inited && safe_not_equal(prev, value)) {
+        if (inited2 && safe_not_equal(prev, value)) {
           prev = value;
           payload.update(value);
         }
       });
-      inited = true;
+      inited2 = true;
     }
     if (payload?.destroy) {
       return () =>
@@ -8371,7 +8377,7 @@ function attribute_effect(
     var prev = void 0;
     var effects = {};
     var is_select = element2.nodeName === SELECT_TAG;
-    var inited = false;
+    var inited2 = false;
     managed(() => {
       var next2 = fn(...values.map(get));
       var current = set_attributes(
@@ -8382,7 +8388,7 @@ function attribute_effect(
         should_remove_defaults,
         skip_warning,
       );
-      if (inited && is_select) {
+      if (inited2 && is_select) {
         var select2 =
           /** @type {HTMLSelectElement} */
           element2;
@@ -8424,7 +8430,7 @@ function attribute_effect(
         init_select(select);
       });
     }
-    inited = true;
+    inited2 = true;
   });
 }
 function get_attributes(element2) {
@@ -9305,6 +9311,291 @@ if (typeof window !== "undefined") {
   );
 }
 
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/reactivity/set.js
+var read_methods = ["forEach", "isDisjointFrom", "isSubsetOf", "isSupersetOf"];
+var set_like_methods = [
+  "difference",
+  "intersection",
+  "symmetricDifference",
+  "union",
+];
+var inited = false;
+var SvelteSet = class _SvelteSet extends Set {
+  /** @type {Map<T, Source<boolean>>} */
+  #sources = /* @__PURE__ */ new Map();
+  #version = state(0);
+  #size = state(0);
+  #update_version = update_version || -1;
+  /**
+   * @param {Iterable<T> | null | undefined} [value]
+   */
+  constructor(value) {
+    super();
+    if (dev_fallback_default) {
+      value = new Set(value);
+      tag(this.#version, "SvelteSet version");
+      tag(this.#size, "SvelteSet.size");
+    }
+    if (value) {
+      for (var element2 of value) {
+        super.add(element2);
+      }
+      this.#size.v = super.size;
+    }
+    if (!inited) this.#init();
+  }
+  /**
+   * If the source is being created inside the same reaction as the SvelteSet instance,
+   * we use `state` so that it will not be a dependency of the reaction. Otherwise we
+   * use `source` so it will be.
+   *
+   * @template T
+   * @param {T} value
+   * @returns {Source<T>}
+   */
+  #source(value) {
+    return update_version === this.#update_version
+      ? state(value)
+      : source(value);
+  }
+  // We init as part of the first instance so that we can treeshake this class
+  #init() {
+    inited = true;
+    var proto = _SvelteSet.prototype;
+    var set_proto = Set.prototype;
+    for (const method of read_methods) {
+      proto[method] = function (...v) {
+        get(this.#version);
+        return set_proto[method].apply(this, v);
+      };
+    }
+    for (const method of set_like_methods) {
+      proto[method] = function (...v) {
+        get(this.#version);
+        var set3 =
+          /** @type {Set<T>} */
+          set_proto[method].apply(this, v);
+        return new _SvelteSet(set3);
+      };
+    }
+  }
+  /** @param {T} value */
+  has(value) {
+    var has = super.has(value);
+    var sources = this.#sources;
+    var s = sources.get(value);
+    if (s === void 0) {
+      if (!has) {
+        get(this.#version);
+        return false;
+      }
+      s = this.#source(true);
+      if (dev_fallback_default) {
+        tag(s, `SvelteSet has(${label(value)})`);
+      }
+      sources.set(value, s);
+    }
+    get(s);
+    return has;
+  }
+  /** @param {T} value */
+  add(value) {
+    if (!super.has(value)) {
+      super.add(value);
+      set2(this.#size, super.size);
+      increment(this.#version);
+    }
+    return this;
+  }
+  /** @param {T} value */
+  delete(value) {
+    var deleted = super.delete(value);
+    var sources = this.#sources;
+    var s = sources.get(value);
+    if (s !== void 0) {
+      sources.delete(value);
+      set2(s, false);
+    }
+    if (deleted) {
+      set2(this.#size, super.size);
+      increment(this.#version);
+    }
+    return deleted;
+  }
+  clear() {
+    if (super.size === 0) {
+      return;
+    }
+    super.clear();
+    var sources = this.#sources;
+    for (var s of sources.values()) {
+      set2(s, false);
+    }
+    sources.clear();
+    set2(this.#size, 0);
+    increment(this.#version);
+  }
+  keys() {
+    return this.values();
+  }
+  values() {
+    get(this.#version);
+    return super.values();
+  }
+  entries() {
+    get(this.#version);
+    return super.entries();
+  }
+  [Symbol.iterator]() {
+    return this.keys();
+  }
+  get size() {
+    return get(this.#size);
+  }
+};
+
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/reactivity/url-search-params.js
+var REPLACE = /* @__PURE__ */ Symbol("replace");
+var SvelteURLSearchParams = class extends URLSearchParams {
+  #version = dev_fallback_default
+    ? tag(state(0), "SvelteURLSearchParams version")
+    : state(0);
+  #url = get_current_url();
+  #updating = false;
+  #update_url() {
+    if (!this.#url || this.#updating) return;
+    this.#updating = true;
+    const search = super.toString();
+    this.#url.search = search && `?${search}`;
+    this.#updating = false;
+  }
+  /**
+   * @param {URLSearchParams} params
+   * @internal
+   */
+  [REPLACE](params) {
+    if (this.#updating) return;
+    if (params.toString() === super.toString()) return;
+    this.#updating = true;
+    for (const key2 of [...super.keys()]) {
+      super.delete(key2);
+    }
+    for (const [key2, value] of params) {
+      super.append(key2, value);
+    }
+    increment(this.#version);
+    this.#updating = false;
+  }
+  /**
+   * @param {string} name
+   * @param {string} value
+   * @returns {void}
+   */
+  append(name, value) {
+    super.append(name, value);
+    this.#update_url();
+    increment(this.#version);
+  }
+  /**
+   * @param {string} name
+   * @param {string=} value
+   * @returns {void}
+   */
+  delete(name, value) {
+    var has_value = super.has(name, value);
+    super.delete(name, value);
+    if (has_value) {
+      this.#update_url();
+      increment(this.#version);
+    }
+  }
+  /**
+   * @param {string} name
+   * @returns {string|null}
+   */
+  get(name) {
+    get(this.#version);
+    return super.get(name);
+  }
+  /**
+   * @param {string} name
+   * @returns {string[]}
+   */
+  getAll(name) {
+    get(this.#version);
+    return super.getAll(name);
+  }
+  /**
+   * @param {string} name
+   * @param {string=} value
+   * @returns {boolean}
+   */
+  has(name, value) {
+    get(this.#version);
+    return super.has(name, value);
+  }
+  keys() {
+    get(this.#version);
+    return super.keys();
+  }
+  /**
+   * @param {(value: string, key: string, parent: URLSearchParams) => void} callback
+   * @param {any} [this_arg]
+   * @returns {void}
+   */
+  forEach(callback, this_arg) {
+    get(this.#version);
+    super.forEach(callback, this_arg);
+  }
+  /**
+   * @param {string} name
+   * @param {string} value
+   * @returns {void}
+   */
+  set(name, value) {
+    var previous = super.getAll(name);
+    super.set(name, value);
+    var current = super.getAll(name);
+    if (
+      previous.length !== current.length ||
+      previous.some((value2, i) => value2 !== current[i])
+    ) {
+      this.#update_url();
+      increment(this.#version);
+    }
+  }
+  sort() {
+    super.sort();
+    this.#update_url();
+    increment(this.#version);
+  }
+  toString() {
+    get(this.#version);
+    return super.toString();
+  }
+  values() {
+    get(this.#version);
+    return super.values();
+  }
+  entries() {
+    get(this.#version);
+    return super.entries();
+  }
+  [Symbol.iterator]() {
+    return this.entries();
+  }
+  get size() {
+    get(this.#version);
+    return super.size;
+  }
+};
+
+// node_modules/.pnpm/svelte@5.57.2_@typescript-eslint+types@8.68.0/node_modules/svelte/src/reactivity/url.js
+var current_url = null;
+function get_current_url() {
+  return current_url;
+}
+
 // custom_components/occupied/frontend/src/lib/panel-state.ts
 function hasProgram(panel) {
   return !!panel.draft && !!panel.saved && !!panel.document;
@@ -9614,11 +9905,11 @@ var actionLabels = {
   ...Object.fromEntries(coverActions),
 };
 function stepDisplayName(step, catalog, t) {
-  const label =
+  const label2 =
     step.actions || step.action === "set_state"
       ? "custom_yaml"
       : actionLabels[step.action || ""] || step.action || "";
-  return `${actionTargetSummary(step, catalog)} \xB7 ${t(label)}`;
+  return `${actionTargetSummary(step, catalog)} \xB7 ${t(label2)}`;
 }
 function stepEntries(program, catalog, t = translator()) {
   return Object.entries(program.steps || {}).map(([id, step]) => ({
@@ -10727,13 +11018,13 @@ function StaggerSettings($$anchor, $$props) {
     disabled = prop($$props, "disabled", 3, false);
   let error = user_derived(() => staggerPeriodError(settings()));
   var fieldset = root_12();
-  var label = child(fieldset);
-  var input = child(label);
+  var label2 = child(fieldset);
+  var input = child(label2);
   remove_input_defaults(input);
   var span = sibling(input, 2);
   var text2 = only_child(span, true);
-  reset(label);
-  var p = sibling(label, 2);
+  reset(label2);
+  var p = sibling(label2, 2);
   var text_1 = only_child(p, true);
   var label_1 = sibling(p, 2);
   var text_2 = only_child(label_1, true);
@@ -10881,10 +11172,10 @@ function AdvancedStepSettings($$anchor, $$props) {
     div,
     21,
     () => presets,
-    ([label, selection]) => label,
+    ([label2, selection]) => label2,
     ($$anchor2, $$item) => {
       var $$array = user_derived(() => to_array(get($$item), 2));
-      let label = () => get($$array)[0];
+      let label2 = () => get($$array)[0];
       let selection = () => get($$array)[1];
       var button = root3();
       var text_3 = only_child(button, true);
@@ -10897,7 +11188,7 @@ function AdvancedStepSettings($$anchor, $$props) {
           () =>
             get(selectedDays).length === selection().length &&
             selection().every((day) => get(selectedDays).includes(day)),
-          () => get(t)(label()),
+          () => get(t)(label2()),
         ],
       );
       delegated("click", button, () =>
@@ -12279,11 +12570,11 @@ function TimingEditor($$anchor, $$props) {
     div_1,
     21,
     modes,
-    ([value, label]) => value,
+    ([value, label2]) => value,
     ($$anchor2, $$item) => {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let value = () => get($$array)[0];
-      let label = () => get($$array)[1];
+      let label2 = () => get($$array)[1];
       var label_1 = root11();
       var input = child(label_1);
       remove_input_defaults(input);
@@ -12302,7 +12593,7 @@ function TimingEditor($$anchor, $$props) {
           set_checked(input, get(time).mode === value());
           set_text(text_1, $0);
         },
-        [() => get(t)(label())],
+        [() => get(t)(label2())],
       );
       delegated("change", input, (event2) => {
         if (!event2.currentTarget.checked) {
@@ -12709,11 +13000,11 @@ function TimingEditor($$anchor, $$props) {
           ["latestAt", "no_later_than"],
           ["onlyBefore", "only_run_before"],
         ],
-        ([modifier, label]) => modifier,
+        ([modifier, label2]) => modifier,
         ($$anchor3, $$item) => {
           var $$array_1 = user_derived(() => to_array($$item, 2));
           let modifier = () => get($$array_1)[0];
-          let label = () => get($$array_1)[1];
+          let label2 = () => get($$array_1)[1];
           const key2 = user_derived(modifier);
           var fieldset_1 = root_8();
           var legend = child(fieldset_1);
@@ -12752,7 +13043,7 @@ function TimingEditor($$anchor, $$props) {
               set_text(text_9, $2);
             },
             [
-              () => get(t)(label()),
+              () => get(t)(label2()),
               () => Boolean(get(time)[get(key2)]),
               () => get(t)("enabled"),
             ],
@@ -12876,7 +13167,7 @@ var root_18 = from_html(
 );
 function EntitiesEditor($$anchor, $$props) {
   push($$props, true);
-  let label = prop($$props, "label", 3, "entities_label");
+  let label2 = prop($$props, "label", 3, "entities_label");
   let editor = user_derived(() => $$props.context.editor),
     form = user_derived(() => $$props.context.form),
     t = user_derived(() => $$props.context.t),
@@ -12904,7 +13195,7 @@ function EntitiesEditor($$anchor, $$props) {
   );
   template_effect(
     ($0) => set_custom_element_data(ha_selector, "aria-label", $0),
-    [() => get(t)(label())],
+    [() => get(t)(label2())],
   );
   template_effect(() =>
     set_custom_element_data(
@@ -12980,7 +13271,7 @@ function EntitiesEditor($$anchor, $$props) {
     });
   }
   reset(div);
-  template_effect(($0) => set_text(text2, $0), [() => get(t)(label())]);
+  template_effect(($0) => set_text(text2, $0), [() => get(t)(label2())]);
   event("value-changed", ha_selector, (event2) => {
     if (!isValueChangedEvent(event2)) {
       return;
@@ -14306,12 +14597,12 @@ function RunConditionSettings($$anchor, $$props) {
       var section = root_93();
       var h2 = child(section);
       var text2 = only_child(h2, true);
-      var label = sibling(h2, 2);
-      var input = child(label);
+      var label2 = sibling(h2, 2);
+      var input = child(label2);
       remove_input_defaults(input);
       var text_1 = sibling(input);
-      reset(label);
-      var node_1 = sibling(label, 2);
+      reset(label2);
+      var node_1 = sibling(label2, 2);
       {
         var consequent_1 = ($$anchor3) => {
           var fieldset = root_111();
@@ -15568,7 +15859,7 @@ function previewStateHistory(plan, program, names = {}, t = translator()) {
     on: "on_label",
     off: "off_label",
   };
-  const label = (state2) => t(stateLabels[state2] || "unknown");
+  const label2 = (state2) => t(stateLabels[state2] || "unknown");
   const extraEntities = program.run_condition?.off_entities ?? [];
   const managedExtras = new Set(managedOffEntities(program, extraEntities));
   for (const entity of extraEntities) {
@@ -15580,7 +15871,7 @@ function previewStateHistory(plan, program, names = {}, t = translator()) {
       entity_id: entity,
       name: names[entity] || entity,
       data: [
-        { state: state2, state_localize: label(state2), last_changed: start },
+        { state: state2, state_localize: label2(state2), last_changed: start },
       ],
     });
   }
@@ -15622,7 +15913,7 @@ function previewStateHistory(plan, program, names = {}, t = translator()) {
           data: [
             {
               state: initialState,
-              state_localize: label(initialState),
+              state_localize: label2(initialState),
               last_changed: start,
             },
           ],
@@ -15630,7 +15921,7 @@ function previewStateHistory(plan, program, names = {}, t = translator()) {
         entities.set(entity, history2);
       }
       let state2 = onOffState(event2, entity) ?? "unknown";
-      let localized = label(state2);
+      let localized = label2(state2);
       if (entity.startsWith("cover.")) {
         const target = coverTarget(event2.action, covers.get(entity));
         covers.set(entity, target);
@@ -15654,7 +15945,7 @@ function previewStateHistory(plan, program, names = {}, t = translator()) {
           );
         }
         state2 = parts.length > 0 ? JSON.stringify(target) : "unknown";
-        localized = parts.length > 0 ? parts.join(" \xB7 ") : label("unknown");
+        localized = parts.length > 0 ? parts.join(" \xB7 ") : label2("unknown");
       }
       const previous = history2.data.at(-1);
       if (at >= end) {
@@ -15684,7 +15975,7 @@ function previewStateHistory(plan, program, names = {}, t = translator()) {
         data: [
           {
             state: "unknown",
-            state_localize: label("unknown"),
+            state_localize: label2("unknown"),
             last_changed: start,
           },
         ],
@@ -15703,7 +15994,7 @@ function stamp(value, zone, locale) {
     return value;
   }
 }
-function eventDetails(event2, label, timezone, t, locale, entityNames = {}) {
+function eventDetails(event2, label2, timezone, t, locale, entityNames = {}) {
   const kinds = {
     random_start: "random_start",
     random_end: "random_end",
@@ -15731,7 +16022,7 @@ function eventDetails(event2, label, timezone, t, locale, entityNames = {}) {
   }
   return {
     time: formatEventTime(event2.time, timezone, locale),
-    source: `${label} \xB7 ${t(kinds[event2.kind] || event2.kind)}`,
+    source: `${label2} \xB7 ${t(kinds[event2.kind] || event2.kind)}`,
     action: action2,
     actionState: ["on_label", "off_label"].includes(actionLabel)
       ? shortService.slice(5)
@@ -16265,11 +16556,14 @@ function Timeline($$anchor, $$props) {
             node_5,
             16,
             () => ["planned_time", "targets", "action"],
-            (label) => label,
-            ($$anchor4, label) => {
+            (label2) => label2,
+            ($$anchor4, label2) => {
               var th = root_114();
               var text_1 = only_child(th, true);
-              template_effect(($0) => set_text(text_1, $0), [() => t()(label)]);
+              template_effect(
+                ($0) => set_text(text_1, $0),
+                [() => t()(label2)],
+              );
               append($$anchor4, th);
             },
           );
@@ -17977,10 +18271,10 @@ function RandomWeekdaysDialog($$anchor, $$props) {
     div,
     21,
     () => presets,
-    ([label, selection]) => label,
+    ([label2, selection]) => label2,
     ($$anchor2, $$item) => {
       var $$array = user_derived(() => to_array(get($$item), 2));
-      let label = () => get($$array)[0];
+      let label2 = () => get($$array)[0];
       let selection = () => get($$array)[1];
       var button = root27();
       var text_3 = only_child(button, true);
@@ -17993,7 +18287,7 @@ function RandomWeekdaysDialog($$anchor, $$props) {
           () =>
             get(selectedDays).length === selection().length &&
             selection().every((day) => get(selectedDays).includes(day)),
-          () => get(t)(label()),
+          () => get(t)(label2()),
         ],
       );
       delegated("click", button, () =>
@@ -18489,9 +18783,9 @@ function RandomEventEditor($$anchor, $$props) {
   var text_3 = only_child(h3_1, true);
   var div_3 = sibling(h3_1, 2);
   let classes_1;
-  var label = child(div_3);
-  var text_4 = only_child(label, true);
-  var div_4 = sibling(label, 2);
+  var label2 = child(div_3);
+  var text_4 = only_child(label2, true);
+  var div_4 = sibling(label2, 2);
   var node_4 = child(div_4);
   {
     let $0 = user_derived(() =>
@@ -19240,22 +19534,57 @@ function App($$anchor, $$props) {
       showingCards && get(panel).tab === "random"
         ? randomEntries(get(panel).draft)
         : [];
+    const visibleIssues = get(panel).visibleIssues();
+    const issueTabs2 = new SvelteSet();
+    for (const issue of visibleIssues) {
+      if (issue.severity === "info") {
+        continue;
+      }
+      const section = issue.model_path
+        ? issue.model_path[0]
+        : issue.path?.match(/^\$\.(steps|random)(?:\.|\[|$)/)?.[1];
+      issueTabs2.add(
+        section === "steps" || section === "random" ? section : "settings",
+      );
+    }
+    for (const [tab, errors] of [
+      ["steps", get(panel).stepEditor?.errors],
+      ["random", get(panel).randomEditor?.errors],
+      ["settings", get(panel).runConditionErrors],
+    ]) {
+      if (errors && Object.keys(errors).length > 0) {
+        issueTabs2.add(tab);
+      }
+    }
+    const previewPlans =
+      get(panel).liveVisible && get(panel).livePlan
+        ? [get(panel).livePlan]
+        : get(panel).preview?.plans;
+    if (
+      (!(get(panel).liveVisible && get(panel).livePlan) &&
+        get(panel).preview?.valid === false) ||
+      previewPlans?.some((plan) =>
+        plan.issues.some((issue) => issue.severity !== "info"),
+      )
+    ) {
+      issueTabs2.add("preview");
+    }
     return {
       t: get(panel).t,
       notices: get(panel).notices(),
       primary: primaryTabs.some(([id]) => id === get(panel).tab),
-      issues: get(panel)
-        .visibleIssues()
-        .filter(
-          (issue) =>
-            !warningStepId(issue, entries) && !warningRandomId(issue, random),
-        ),
+      issueTabs: issueTabs2,
+      issues: visibleIssues.filter(
+        (issue) =>
+          !warningStepId(issue, entries) && !warningRandomId(issue, random),
+      ),
     };
   });
   let t = user_derived(() => get(state2).t),
     notices = user_derived(() => get(state2).notices),
     primary = user_derived(() => get(state2).primary),
-    issues = user_derived(() => get(state2).issues);
+    issues = user_derived(() => get(state2).issues),
+    issueTabs = user_derived(() => get(state2).issueTabs);
   const primaryTabs = [
     ["steps", "steps"],
     ["random", "random"],
@@ -19346,15 +19675,16 @@ function App($$anchor, $$props) {
     nav,
     21,
     () => primaryTabs,
-    ([id, label]) => id,
+    ([id, label2]) => id,
     ($$anchor2, $$item) => {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let id = () => get($$array)[0];
-      let label = () => get($$array)[1];
+      let label2 = () => get($$array)[1];
       var button_3 = root30();
+      let classes;
       var text_10 = only_child(button_3, true);
       template_effect(
-        ($0) => {
+        ($0, $1) => {
           set_attribute2(button_3, "data-tab", id());
           set_attribute2(
             button_3,
@@ -19364,9 +19694,12 @@ function App($$anchor, $$props) {
           button_3.disabled =
             !get(panel).selectedInstance?.loaded ||
             (get(panel).recovering && id() !== "settings");
-          set_text(text_10, $0);
+          classes = set_class(button_3, 1, "", null, classes, {
+            "tab-warning": $0,
+          });
+          set_text(text_10, $1);
         },
-        [() => get(t)(label())],
+        [() => get(issueTabs).has(id()), () => get(t)(label2())],
       );
       delegated("click", button_3, () => get(panel).navigate(id()));
       append($$anchor2, button_3);

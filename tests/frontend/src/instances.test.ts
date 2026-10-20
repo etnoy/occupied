@@ -1463,7 +1463,7 @@ void test("Save step validates and saves new and edited steps, then closes the e
     };
     startStep(f.panel);
     const editor = f.panel.stepEditor!;
-    editor.form.name = "Agnes fönster on";
+    editor.form.name = "Window on";
     editor.form.entities = ["light.basement"];
     editor.form.timing.start = "18:00:00";
     editor.form.timing.end = "22:00:00";

@@ -313,6 +313,14 @@ nav button[aria-current="page"] {
   font-weight: 650;
 }
 
+nav button.tab-warning {
+  color: var(--warning-color, #ffa600);
+}
+
+nav button.tab-warning[aria-current="page"] {
+  border-bottom-color: var(--warning-color, #ffa600);
+}
+
 .field-label-row {
   display: flex;
   flex-wrap: wrap;
