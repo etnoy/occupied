@@ -219,9 +219,8 @@ async def test_random_window_off_survives_calendar_advancing(hass, freezer):
 
 
 @pytest.mark.parametrize("kind", ["calendar", "alarm"])
-@pytest.mark.parametrize("edited", [False, True])
 async def test_saved_preview_uses_runtime_latches_without_mutating_them(
-    hass, freezer, hass_ws_client, kind, edited
+    hass, freezer, hass_ws_client, kind
 ):
     from copy import deepcopy
 
@@ -238,26 +237,19 @@ async def test_saved_preview_uses_runtime_latches_without_mutating_them(
     await hass.async_block_till_done()
     engine = entry.runtime_data
     before, version = deepcopy(engine._anchor_latches.snapshot()), engine._anchor_latches.version
-    draft = deepcopy(program)
-    if edited:
-        draft["steps"]["after"]["timing"] = timing(kind, "45m")
     client = await hass_ws_client(hass)
     await client.send_json(
         {
             "id": 1,
             "type": "occupied/preview",
             "config_entry_id": entry.entry_id,
-            "program": draft,
             "date": "2026-10-13",
             "days": 1,
-            "seed": engine._seed,
         }
     )
     result = (await client.receive_json())["result"]
     assert result["valid"]
     events = [event for plan in result["plans"] for event in plan["events"]]
-    assert bool(events) is (not edited)
-    if events:
-        assert any("17:30:00" in event["time"] for event in events)
+    assert any("17:30:00" in event["time"] for event in events)
     assert engine._anchor_latches.snapshot() == before
     assert engine._anchor_latches.version == version

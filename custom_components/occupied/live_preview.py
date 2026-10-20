@@ -17,10 +17,8 @@ from .const import DOMAIN
 from .file_config import load_program
 from .instances import controlled_entities
 from .planner import occurrence_groups
-from .preview import planning_identity, preview_draft
 from .runtime_planning import MAX_EVENTS
 from .storage import DurableStore, plan_from_data
-from .time_sources import planning_context
 from .validation import program_data, program_revision
 
 RUNNING = {"ready", "executing", "stopping"}
@@ -232,7 +230,7 @@ class LivePreviewManager:
                     f"overlapping entities: {', '.join(sorted(shared))}",
                 )
 
-    async def async_start(self, source, day, seed, fingerprint, request_id, user_id):
+    async def async_start(self, day, fingerprint, request_id, user_id):
         # Serialize starts across controllers so overlapping sessions cannot both win.
         lock = self.hass.data.setdefault(DOMAIN, {}).setdefault("live_start_lock", asyncio.Lock())
         request_key = f"{user_id}:{request_id}"
@@ -248,13 +246,14 @@ class LivePreviewManager:
             self._available()
             if self.running:
                 raise LivePreviewError("session_conflict", "A live preview is already running")
-            context = planning_context(self.hass)
-            program = await self.hass.async_add_executor_job(load_program, source)
+            async with self.engine._lock:
+                inputs = self.engine.preview_inputs()
+            program = inputs.program
             gate = ActivationGate.for_run_condition(self.hass, program.run_condition)
             await gate.async_prepare()
             self._check_condition(gate)
             preview = await self.hass.async_add_executor_job(
-                partial(preview_draft, source, date.fromisoformat(day), 1, seed, context)
+                partial(inputs.render, date.fromisoformat(day), 1)
             )
             if preview["plan_fingerprint"] != fingerprint:
                 raise LivePreviewError("schedule_changed", "Schedule changed; refresh Preview")
@@ -268,9 +267,7 @@ class LivePreviewManager:
                     raise LivePreviewError(
                         "session_conflict", "Start cancelled by controller control"
                     )
-                if planning_identity(program, context) != planning_identity(
-                    program, planning_context(self.hass)
-                ):
+                if inputs != self.engine.preview_inputs():
                     raise LivePreviewError("schedule_changed", "Schedule changed; refresh Preview")
                 self._check_overlap({e for event in plan.events for e in event.action.targets})
                 self.program, self.plan, self.groups = program, plan, occurrence_groups(plan)

@@ -17606,14 +17606,13 @@ function PreviewView($$anchor, $$props) {
   let livePlan = user_derived(() => $$props.panel.livePlan);
   let liveProgram = user_derived(() => $$props.panel.liveProgram);
   let previewProgram = user_derived(() => $$props.panel.previewProgram);
-  let draft = user_derived(() => $$props.panel.draft);
   let schedulePlans = user_derived(() =>
     get(liveVisible) && get(livePlan) ? [get(livePlan)] : get(preview)?.plans,
   );
   let program = user_derived(() =>
     get(liveVisible) && get(liveProgram)
       ? get(liveProgram)
-      : (get(previewProgram) ?? get(draft)),
+      : (get(previewProgram) ?? $$props.panel.document.program),
   );
   let plan = user_derived(() =>
     get(liveVisible) && get(livePlan)
@@ -20080,7 +20079,6 @@ var PreviewController = class {
   loadPreview() {
     if (
       this.panel.busy ||
-      !this.panel.draft ||
       !this.panel.document ||
       this.panel.liveRunning ||
       (this.panel.liveVisible && this.panel.livePlan)
@@ -20088,15 +20086,12 @@ var PreviewController = class {
       return;
     }
     const version = this.panel.version,
-      draft = copy(this.panel.draft),
       date = this.panel.previewDate || this.panel.today;
     this.panel.previewDate = date;
     return this.panel.run(async (epoch) => {
       const result = await this.panel.ws("preview", {
-        program: draft,
         date,
         days: 1,
-        seed: "preview-1",
       });
       if (
         epoch !== this.panel.epoch ||
@@ -20106,7 +20101,7 @@ var PreviewController = class {
         return;
       }
       this.panel.preview = result;
-      this.panel.previewProgram = draft;
+      this.panel.previewProgram = result.program;
       this.panel.showIssues(result);
     });
   }
@@ -20195,9 +20190,7 @@ var PreviewController = class {
     this.panel.flush();
     try {
       const result = await this.panel.ws("live_preview/start", {
-        program: copy(program),
         date: this.panel.previewDate,
-        seed: "preview-1",
         expected_plan_fingerprint: fingerprint,
         request_id: crypto.randomUUID(),
       });

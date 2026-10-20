@@ -55,12 +55,13 @@
   let livePlan = $derived(panel.livePlan);
   let liveProgram = $derived(panel.liveProgram);
   let previewProgram = $derived(panel.previewProgram);
-  let draft = $derived(panel.draft);
   let schedulePlans = $derived(
     liveVisible && livePlan ? [livePlan] : preview?.plans,
   );
   let program = $derived(
-    liveVisible && liveProgram ? liveProgram : (previewProgram ?? draft),
+    liveVisible && liveProgram
+      ? liveProgram
+      : (previewProgram ?? panel.document.program),
   );
   let plan = $derived(
     liveVisible && livePlan

@@ -173,10 +173,8 @@ async def test_random_actions_validate_save_preview_and_export(
             "occupied/preview",
             editor_entry,
             2,
-            program=result["program"],
             date="2026-10-06",
             days=1,
-            seed="random-api",
         )
     )["result"]
     assert preview["valid"]
@@ -394,7 +392,7 @@ async def test_subscription_follows_runtime_and_unsubscribes(
 
 
 @pytest.mark.parametrize("fixture_name", ["gui-house.yaml", "scheduling-edge-cases.yaml"])
-async def test_gui_export_and_yaml_source_normalize_and_preview_identically(
+async def test_gui_and_yaml_validation_leave_the_loaded_preview_unchanged(
     hass, editor_entry, devices, hass_ws_client, fixture_name
 ):
     assert await hass.config_entries.async_setup(editor_entry.entry_id)
@@ -415,12 +413,11 @@ async def test_gui_export_and_yaml_source_normalize_and_preview_identically(
             "occupied/preview",
             editor_entry,
             index * 2 + 1,
-            program=program,
             date="2026-10-06",
             days=7,
-            seed="gui-file-equivalence",
         )
         assert preview["result"]["valid"]
+        assert preview["result"]["program"] == program_data(engine.program)
         results.append(preview["result"])
     assert results[0] == results[1]
     assert engine.snapshot() == before and not devices

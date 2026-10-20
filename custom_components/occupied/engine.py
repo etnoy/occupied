@@ -18,6 +18,7 @@ from homeassistant.const import (
     STATE_UNKNOWN,
 )
 from homeassistant.core import Context, Event, HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
@@ -62,6 +63,9 @@ class ScheduledEvent:
 
 class OccupiedEngine:
     """Keep permission separate from the gate and serialize all device dispatch."""
+
+    def preview_inputs(self):
+        raise HomeAssistantError("Load a schedule before opening Preview")
 
     def __init__(self, hass: HomeAssistant, entry_id: str, config: dict[str, Any]) -> None:
         self.hass = hass

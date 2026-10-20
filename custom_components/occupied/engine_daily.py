@@ -50,6 +50,7 @@ from .models import Handover, controlled_entities, projectable_lights
 from .plan_codec import PlannerVersionChanged
 from .plan_persistence import plan_context, plan_fingerprint, restore_plan_fingerprints
 from .planner import DailyPlan, PlanEvent, ResolvedAction, preview_dates, supersede_ticks
+from .preview import PreviewInputs
 from .reconciliation import expected_actions
 from .runtime_planning import MAX_EVENTS, runtime_dates
 from .storage import DurableStore, instant, plan_from_data, program_store
@@ -181,6 +182,15 @@ class DailyEngine:
             planning_context(self.hass, source_entities(self.program)),
             dt_util.utcnow(),
         )
+
+    def preview_inputs(self):
+        """Capture without changing latches, cached plans, timers, or the journal."""
+        program = self.program
+        context = planning_context(self.hass, source_entities(program))
+        latches = AnchorLatches()
+        latches.restore(self._anchor_latches.snapshot())
+        context = latches.apply(program, context, dt_util.utcnow())
+        return PreviewInputs(program, self._seed, context, tuple(self._plans.values()))
 
     def _context_identity(self, context=None):
         context = context or self._context()

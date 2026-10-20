@@ -134,6 +134,8 @@ async def _draft_operation(hass, connection, msg, operation, *args):
     connection.send_result(msg["id"], {"valid": True, **result})
 
 
+_ENTRY_SCHEMA = {vol.Required("config_entry_id"): str}
+
 _DRAFT_SCHEMA = {
     vol.Required("config_entry_id"): str,
     vol.Required("program"): vol.Any(dict, str),
@@ -153,11 +155,10 @@ async def websocket_validate(
 
 @websocket_api.websocket_command(
     {
-        **_DRAFT_SCHEMA,
+        **_ENTRY_SCHEMA,
         vol.Required("type"): "occupied/preview",
         vol.Required("date"): str,
         vol.Optional("days", default=1): vol.All(int, vol.Range(min=1, max=31)),
-        vol.Required("seed"): vol.Any(str, int),
         vol.Optional("at"): str,
     }
 )
@@ -166,44 +167,31 @@ async def websocket_validate(
 async def websocket_preview(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
 ):
-    from homeassistant.util import dt as dt_util
-
     from . import resolve_engine
-    from .anchor_latches import AnchorLatches
-    from .file_config import load_program
-    from .preview import preview_draft
-    from .time_sources import planning_context
-    from .validation import program_revision
+    from .validation import ProgramError
 
     try:
         engine = resolve_engine(hass, msg["config_entry_id"])
     except HomeAssistantError as err:
         _send_error(connection, msg["id"], "not_loaded", err)
         return
-    context = planning_context(hass)
-    saved_revision = program_revision(engine.program) if hasattr(engine, "program") else None
-    latches = AnchorLatches()
-    if hasattr(engine, "_anchor_latches"):
-        latches.restore(engine._anchor_latches.snapshot())
-    now = dt_util.utcnow()
-
-    def prepare(source):
-        program = load_program(source)
-        preview_context = (
-            latches.apply(program, context, now)
-            if program_revision(program) == saved_revision
-            else context
-        )
-        return preview_draft(
-            program,
+    try:
+        async with engine._lock:
+            inputs = engine.preview_inputs()
+        result = await hass.async_add_executor_job(
+            inputs.render,
             date.fromisoformat(msg["date"]),
             msg["days"],
-            msg["seed"],
-            preview_context,
             datetime.fromisoformat(msg["at"]) if "at" in msg else None,
         )
-
-    await _draft_operation(hass, connection, msg, prepare)
+    except ProgramError as err:
+        result = {"valid": False, "issues": [issue.to_dict() for issue in err.issues]}
+    except ValueError as err:
+        result = {"valid": False, "issues": [{"code": "input", "message": str(err), "path": "$"}]}
+    except HomeAssistantError as err:
+        _send_error(connection, msg["id"], "preview_unavailable", err)
+        return
+    connection.send_result(msg["id"], {"valid": True, **result})
 
 
 @websocket_api.websocket_command({**_DRAFT_SCHEMA, vol.Required("type"): "occupied/export"})
@@ -331,9 +319,6 @@ async def _apply_program(hass, connection, msg, *, editor_save=False):
         _send_error(connection, msg["id"], "apply_failed", err)
 
 
-_ENTRY_SCHEMA = {vol.Required("config_entry_id"): str}
-
-
 @websocket_api.websocket_command(
     {
         **_ENTRY_SCHEMA,
@@ -375,9 +360,7 @@ async def _live_operation(hass, connection, msg, operation):
         user_id = connection.user.id
         if operation == "start":
             result = await manager.async_start(
-                msg["program"],
                 msg["date"],
-                msg["seed"],
                 msg["expected_plan_fingerprint"],
                 msg["request_id"],
                 user_id,
@@ -403,10 +386,9 @@ async def _live_operation(hass, connection, msg, operation):
 
 @websocket_api.websocket_command(
     {
-        **_DRAFT_SCHEMA,
+        **_ENTRY_SCHEMA,
         vol.Required("type"): "occupied/live_preview/start",
         vol.Required("date"): str,
-        vol.Required("seed"): vol.Any(str, int),
         vol.Required("expected_plan_fingerprint"): str,
         vol.Required("request_id"): _REQUEST_ID,
     }
