@@ -15212,6 +15212,9 @@ function timelineNow(node, options) {
     ];
   };
   chart._generateData = () => {
+    if ("isConnected" in node && !node.isConnected) {
+      return;
+    }
     generate.call(chart);
     refresh();
   };
@@ -15337,6 +15340,9 @@ function timelineMarkers(node, data) {
     });
   };
   chart._generateData = () => {
+    if ("isConnected" in node && !node.isConnected) {
+      return;
+    }
     generate.call(chart);
     refresh();
   };
@@ -15347,7 +15353,6 @@ function timelineMarkers(node, data) {
       refresh();
     },
     destroy() {
-      generate.call(chart);
       chart._generateData = generate;
     },
   };
@@ -15355,11 +15360,34 @@ function timelineMarkers(node, data) {
 
 // custom_components/occupied/frontend/src/lib/actions/history-chart.ts
 function historyChartProperties(node, values) {
-  const binding = properties(node, values);
+  const known = /* @__PURE__ */ new Map();
+  const retainSeries = (next2) => {
+    const data = next2.data;
+    if (!Array.isArray(data)) {
+      return next2;
+    }
+    const current = data;
+    const ids = new Set(current.map((entity) => entity.entity_id));
+    for (const entity of current) {
+      known.set(entity.entity_id, entity);
+    }
+    const removed = [...known.values()]
+      .filter((entity) => !ids.has(entity.entity_id))
+      .map((entity) => {
+        const empty = { ...entity, data: [] };
+        if (entity.markers) {
+          empty.markers = [];
+        } else {
+          delete empty.markers;
+        }
+        return empty;
+      });
+    return { ...next2, data: [...current, ...removed] };
+  };
+  const binding = properties(node, retainSeries(values));
   return {
-    update: binding.update,
-    destroy() {
-      Object.assign(node, { data: [] });
+    update(next2) {
+      binding.update(retainSeries(next2));
     },
   };
 }

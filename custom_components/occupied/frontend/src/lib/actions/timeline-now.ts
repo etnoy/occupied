@@ -148,6 +148,9 @@ export function timelineNow(
     ];
   };
   chart._generateData = () => {
+    if ("isConnected" in node && !node.isConnected) {
+      return;
+    }
     generate.call(chart);
     refresh();
   };

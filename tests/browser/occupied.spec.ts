@@ -7,6 +7,8 @@ import type { OccupiedPanel } from "@occupied/occupied-panel.js";
 import type { Catalog, HaSelector } from "@occupied/lib/types.js";
 import type { ProgramDocument } from "@occupied/lib/types.js";
 
+const browserBaseUrl = `http://127.0.0.1:${process.env.HA_BROWSER_PORT || "18123"}`;
+
 test("create, preview, delete and protect YAML edits in the installed release", async ({
   page,
   request,
@@ -38,7 +40,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       name: "Browser tests",
       username: "smoke",
       password: "disposable-smoke-password",
-      client_id: "http://127.0.0.1:18123/",
+      client_id: `${browserBaseUrl}/`,
       language: "en",
     },
   });
@@ -49,7 +51,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     form: {
       grant_type: "authorization_code",
       code: authCode,
-      client_id: "http://127.0.0.1:18123/",
+      client_id: `${browserBaseUrl}/`,
     },
   });
   expect(response.ok(), await response.text()).toBeTruthy();
@@ -60,8 +62,8 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     },
     {
       ...tokens,
-      hassUrl: "http://127.0.0.1:18123",
-      clientId: "http://127.0.0.1:18123/",
+      hassUrl: browserBaseUrl,
+      clientId: `${browserBaseUrl}/`,
       expires: Date.now() + tokens.expires_in * 1000,
     },
   );
@@ -574,11 +576,14 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     .poll(() =>
       chart.evaluate((element) => {
         const timeline = element as HTMLElement & {
-          data: { markers?: unknown[] }[];
+          data: { data: unknown[]; markers?: unknown[] }[];
         };
 
         return (
-          timeline.data.length === 1 && timeline.data[0]!.markers?.length === 1
+          timeline.data.some((row) => row.markers?.length === 1) &&
+          timeline.data
+            .filter((row) => !row.markers)
+            .every((row) => row.data.length === 0)
         );
       }),
     )
