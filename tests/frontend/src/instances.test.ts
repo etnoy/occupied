@@ -174,7 +174,12 @@ async function fixture() {
         return (await programOverride(entry)) as T;
       }
       if (message.type === "occupied/preview" && previewOverride) {
+        preview.program = structuredClone(documents[entry].program);
+
         return (await previewOverride()) as T;
+      }
+      if (message.type === "occupied/preview") {
+        preview.program = structuredClone(documents[entry].program);
       }
 
       return String(message.type).startsWith("occupied/live_preview/") &&
@@ -934,7 +939,7 @@ void test("disconnecting during an advance cannot leave recovered controls perma
   }
 });
 
-void test("opening preview automatically loads the current date and regenerates after edits", async () => {
+void test("preview loads the controller program independently of editor state", async () => {
   const f = await fixture();
   try {
     f.panel.navigate("preview");
@@ -947,7 +952,8 @@ void test("opening preview automatically loads the current date and regenerates 
     assert.equal(requests().length, 1);
     assert.equal(requests()[0].date, f.panel.document.simulation_date);
     assert.equal(requests()[0].days, 1);
-    assert.deepEqual(requests()[0].program, f.panel.draft);
+    assert.equal("program" in requests()[0], false);
+    assert.equal("seed" in requests()[0], false);
     assert.equal("at" in requests()[0], false);
     f.panel.navigate("preview");
     await settle();
@@ -958,7 +964,7 @@ void test("opening preview automatically loads the current date and regenerates 
     assert.equal(f.panel.preview, f.preview);
     await settle();
     assert.equal(requests().length, 2);
-    assert.equal(f.panel.previewProgram?.name, "Updated steps");
+    assert.equal(f.panel.previewProgram?.name, f.documents.main.program.name);
   } finally {
     f.restore();
   }
@@ -989,7 +995,7 @@ void test("reloading on Preview regenerates the saved program before live start 
       (message) => message.type === "occupied/preview",
     );
     assert.equal(previews.length, 2);
-    assert.deepEqual(previews[1].program, updated);
+    assert.equal("program" in previews[1], false);
     assert.equal(f.panel.preview, undefined);
     assert.equal(cachedProgram(), undefined);
     await f.panel.startLivePreview();
@@ -1006,7 +1012,8 @@ void test("reloading on Preview regenerates the saved program before live start 
     const start = f.messages.find(
       (message) => message.type === "occupied/live_preview/start",
     );
-    assert.deepEqual(start?.program, updated);
+    assert.equal("program" in start!, false);
+    assert.equal("seed" in start!, false);
     assert.equal(start?.expected_plan_fingerprint, "updated-preview");
   } finally {
     f.restore();
@@ -1064,7 +1071,7 @@ void test("a pending preview cannot replace a draft edited while it loads", asyn
     f.setPreviewOverride(undefined);
     f.panel.navigate("preview");
     await settle();
-    assert.equal(f.panel.previewProgram?.name, "New draft");
+    assert.equal(f.panel.previewProgram?.name, f.documents.main.program.name);
   } finally {
     f.restore();
   }
@@ -1080,7 +1087,6 @@ void test("preview day navigation loads adjacent dates and Today without overlap
     assert.equal(f.panel.previewDate, "2026-12-31");
     const requests = () =>
       f.messages.filter((message) => message.type === "occupied/preview");
-    const seed = requests()[0].seed;
     const pending = f.panel.movePreviewDay(1);
     assert.equal(f.panel.previewDate, "2027-01-01");
     assert.equal(f.panel.preview, f.preview);
@@ -1100,7 +1106,8 @@ void test("preview day navigation loads adjacent dates and Today without overlap
     assert.equal(requests().length, count);
     assert.ok(
       requests().every(
-        (message) => message.days === 1 && message.seed === seed,
+        (message) =>
+          message.days === 1 && !("program" in message) && !("seed" in message),
       ),
     );
     f.route("guest");
@@ -2011,7 +2018,7 @@ void test("steps, random events, and preview requests use only the selected cont
         (message) => message.type === "occupied/preview",
       )!;
       assert.equal(request.config_entry_id, entry);
-      assert.deepEqual(request.program, f.documents[entry].program);
+      assert.equal("program" in request, false);
       assert.deepEqual(f.panel.previewProgram, f.documents[entry].program);
     }
   } finally {

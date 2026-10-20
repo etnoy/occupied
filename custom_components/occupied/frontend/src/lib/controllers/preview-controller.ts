@@ -1,6 +1,5 @@
 import type { OccupiedPanel } from "../../occupied-panel.js";
 import type { HomeAssistant, LivePreviewResponse } from "../types.js";
-import { copy } from "../models/model.js";
 import { shiftScheduleDate } from "../utils/time-format.js";
 import { mergeLiveSession } from "../utils/live-preview.js";
 
@@ -60,7 +59,6 @@ export class PreviewController {
   loadPreview() {
     if (
       this.panel.busy ||
-      !this.panel.draft ||
       !this.panel.document ||
       this.panel.liveRunning ||
       (this.panel.liveVisible && this.panel.livePlan)
@@ -68,16 +66,13 @@ export class PreviewController {
       return;
     }
     const version = this.panel.version,
-      draft = copy(this.panel.draft),
       date = this.panel.previewDate || this.panel.today;
     this.panel.previewDate = date;
 
     return this.panel.run(async (epoch) => {
       const result = await this.panel.ws("preview", {
-        program: draft,
         date,
         days: 1,
-        seed: "preview-1",
       });
       if (
         epoch !== this.panel.epoch ||
@@ -87,7 +82,7 @@ export class PreviewController {
         return;
       }
       this.panel.preview = result;
-      this.panel.previewProgram = draft;
+      this.panel.previewProgram = result.program;
       this.panel.showIssues(result);
     });
   }
@@ -180,9 +175,7 @@ export class PreviewController {
     this.panel.flush();
     try {
       const result = await this.panel.ws("live_preview/start", {
-        program: copy(program),
         date: this.panel.previewDate,
-        seed: "preview-1",
         expected_plan_fingerprint: fingerprint,
         request_id: crypto.randomUUID(),
       });

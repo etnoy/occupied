@@ -693,7 +693,7 @@ def preview_dates(program: Program, dates: Iterable[date], seed, *, context=None
     )
 
 
-def preview_calendar_dates(program, dates, seed, *, context=None):
+def preview_calendar_dates(program, dates, seed, *, context=None, source_plans=()):
     """Assemble actual local days from all bounded contributing source dates."""
     from .runtime_planning import MAX_CACHED_EVENTS, runtime_dates
 
@@ -711,11 +711,12 @@ def preview_calendar_dates(program, dates, seed, *, context=None):
     maximum = max_plan_events(program)
     if len(sources) * maximum > MAX_CACHED_EVENTS:
         raise ProgramError([Issue("preview_budget", "Preview exceeds its bounded event budget")])
-    plans = {}
-    for index in range(0, len(sources), 31):
+    plans = {plan.simulation_date: plan for plan in source_plans if plan.simulation_date in sources}
+    missing = [day for day in sources if day not in plans]
+    for index in range(0, len(missing), 31):
         plans.update(
             (plan.simulation_date, plan)
-            for plan in preview_dates(program, sources[index : index + 31], seed, context=context)
+            for plan in preview_dates(program, missing[index : index + 31], seed, context=context)
         )
     events = supersede_ticks(event for plan in plans.values() for event in plan.events)
     return tuple(

@@ -2,14 +2,15 @@
 
 import hashlib
 import json
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Any
 
 from .covers import project_covers
 from .file_config import export_yaml, load_program
 from .lighting import preview_handover, project_lighting
-from .models import program_timings
-from .planner import preview_calendar_dates
+from .models import Program, program_timings
+from .planner import DailyPlan, preview_calendar_dates
 from .time_utils import PlanningContext
 from .validation import (
     behavior_hash,
@@ -18,6 +19,23 @@ from .validation import (
     rename_identifier,
     validation_warnings,
 )
+
+
+@dataclass(frozen=True)
+class PreviewInputs:
+    """A read-only snapshot, captured under the controller lock before planning."""
+
+    program: Program
+    seed: str | int
+    context: PlanningContext
+    source_plans: tuple[DailyPlan, ...] = ()
+
+    def render(self, start, days, at=None):
+        result = preview_draft(
+            self.program, start, days, self.seed, self.context, at, source_plans=self.source_plans
+        )
+        result["program"] = program_data(self.program)
+        return result
 
 
 def planning_identity(program, context):
@@ -52,12 +70,18 @@ def preview_draft(
     seed: str | int,
     context: PlanningContext,
     at: datetime | None = None,
+    *,
+    source_plans: tuple[DailyPlan, ...] = (),
 ) -> dict[str, Any]:
     program = load_program(source)
     if not 1 <= days <= 31:
         raise ValueError("Preview between one and 31 schedule dates")
     plans = preview_calendar_dates(
-        program, [start + timedelta(days=index) for index in range(days)], seed, context=context
+        program,
+        [start + timedelta(days=index) for index in range(days)],
+        seed,
+        context=context,
+        source_plans=source_plans,
     )
     result = {
         "valid": all(plan.feasible for plan in plans),

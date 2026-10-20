@@ -364,6 +364,7 @@ export interface Plan {
 
 export interface PreviewResult {
   valid: boolean;
+  program?: Program;
   issues?: Issue[];
   plans: Plan[];
   plan_fingerprint?: string;

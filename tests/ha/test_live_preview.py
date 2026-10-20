@@ -12,10 +12,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.occupied.engine_daily import DailyEngine
 from custom_components.occupied.live_preview import LivePreviewError
 from custom_components.occupied.planner import occurrence_groups, preview_calendar_dates
-from custom_components.occupied.preview import preview_draft
-from custom_components.occupied.time_sources import planning_context
 from custom_components.occupied.time_utils import PlanningContext
-from custom_components.occupied.validation import validate_program
+from custom_components.occupied.validation import ProgramError, validate_program
 
 
 @pytest.fixture
@@ -74,13 +72,13 @@ def live_calls(hass):
 
 
 async def start(engine, program, request="start", user="owner", day="2026-10-14"):
-    preview = preview_draft(
-        program, date.fromisoformat(day), 1, "preview-1", planning_context(engine.hass)
-    )
+    program = validate_program(program)
+    if program != engine.program:
+        await engine.async_replace_program(program)
+    inputs = engine.preview_inputs()
+    preview = await engine.hass.async_add_executor_job(inputs.render, date.fromisoformat(day), 1)
     return await engine.live_preview.async_start(
-        program,
         day,
-        "preview-1",
         preview["plan_fingerprint"],
         request,
         user,
@@ -317,11 +315,13 @@ async def test_freeze_and_changed_context_rejection(live_engine, live_program, l
     program["steps"]["morning"]["timing"] = {"relative_to": {"entity": "input_datetime.wake"}}
     hass = live_engine.hass
     hass.states.async_set("input_datetime.wake", "08:00:00", {"has_time": True, "has_date": False})
-    preview = preview_draft(program, date(2026, 10, 14), 1, "preview-1", planning_context(hass))
+    await live_engine.async_replace_program(validate_program(program))
+    inputs = live_engine.preview_inputs()
+    preview = await hass.async_add_executor_job(inputs.render, date(2026, 10, 14), 1)
     hass.states.async_set("input_datetime.wake", "09:00:00", {"has_time": True, "has_date": False})
     with pytest.raises(LivePreviewError, match="Schedule changed"):
         await live_engine.live_preview.async_start(
-            program, "2026-10-14", "preview-1", preview["plan_fingerprint"], "old", "owner"
+            "2026-10-14", preview["plan_fingerprint"], "old", "owner"
         )
     await start(live_engine, program)
     frozen = live_engine.live_preview.plan.to_dict()
@@ -482,18 +482,15 @@ async def test_timed_out_preview_wait_does_not_cancel_native_service(
 async def test_admin_websocket_start_and_next_are_idempotent(
     live_engine, live_program, live_calls, hass_ws_client
 ):
-    preview = preview_draft(
-        live_program, date(2026, 10, 14), 1, "preview-1", planning_context(live_engine.hass)
-    )
+    inputs = live_engine.preview_inputs()
+    preview = await live_engine.hass.async_add_executor_job(inputs.render, date(2026, 10, 14), 1)
     client = await hass_ws_client(live_engine.hass)
     await client.send_json(
         {
             "id": 1,
             "type": "occupied/live_preview/start",
             "config_entry_id": live_engine.entry_id,
-            "program": live_program,
             "date": "2026-10-14",
-            "seed": "preview-1",
             "expected_plan_fingerprint": preview["plan_fingerprint"],
             "request_id": "start",
         }
@@ -529,9 +526,7 @@ async def test_admin_websocket_start_and_next_are_idempotent(
         (
             "start",
             {
-                "program": {},
                 "date": "2026-10-14",
-                "seed": "preview-1",
                 "expected_plan_fingerprint": "x",
                 "request_id": "start",
             },
@@ -556,7 +551,7 @@ async def test_mutating_commands_require_admin(
     assert not live_calls
 
 
-async def test_empty_and_infeasible_days_cannot_start(live_engine, live_calls):
+async def test_empty_days_cannot_start_and_infeasible_programs_cannot_load(live_engine, live_calls):
     empty = {"schema_version": 1, "name": "Empty"}
     with pytest.raises(LivePreviewError, match="nonempty"):
         await start(live_engine, empty)
@@ -575,7 +570,7 @@ async def test_empty_and_infeasible_days_cannot_start(live_engine, live_calls):
             }
         },
     }
-    with pytest.raises(LivePreviewError, match="feasible"):
+    with pytest.raises(ProgramError, match="Minimum duration"):
         await start(live_engine, infeasible)
     assert not live_calls and not live_engine.paused
 
@@ -721,7 +716,7 @@ async def test_live_custom_stagger_failure_remains_blocked_across_advances(
     )
 
 
-async def test_live_preview_draft_condition_blocks_start_and_cancels_on_loss(
+async def test_live_preview_loaded_condition_blocks_start_and_cancels_on_loss(
     hass,
     live_engine,
     live_program,
@@ -745,7 +740,7 @@ async def test_live_preview_draft_condition_blocks_start_and_cancels_on_loss(
     assert len(live_calls) == count
 
 
-async def test_live_preview_cannot_bypass_saved_condition_by_removing_it_from_draft(
+async def test_live_preview_checks_the_loaded_condition_before_start(
     hass,
     live_engine,
     live_program,
@@ -755,8 +750,12 @@ async def test_live_preview_cannot_bypass_saved_condition_by_removing_it_from_dr
     configured["run_condition"] = {"entity_id": "sensor.alarm", "state": "armed_away"}
     await live_engine.async_replace_program(validate_program(configured))
     hass.states.async_set("sensor.alarm", "disarmed")
+    inputs = live_engine.preview_inputs()
+    preview = await hass.async_add_executor_job(inputs.render, date(2026, 10, 14), 1)
     with pytest.raises(LivePreviewError, match="Run condition"):
-        await start(live_engine, live_program)
+        await live_engine.live_preview.async_start(
+            "2026-10-14", preview["plan_fingerprint"], "condition", "owner"
+        )
     assert not live_calls
 
 
