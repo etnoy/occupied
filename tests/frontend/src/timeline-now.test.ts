@@ -122,10 +122,10 @@ void test("now marker follows the clock and native regeneration, clips to the vi
   const hoverRender = chart._chartData[2]!.renderItem!;
   assert.equal(hoverRender(params, api)?.children[0]?.style.stroke, "#123456");
   assert.deepEqual(hoverRender(params, api)?.children[0]?.style.lineDash, []);
-  assert.deepEqual(
-    hoverRender(params, { ...api, coord: () => [501, 0] }),
-    { type: "group", children: [] },
-  );
+  assert.deepEqual(hoverRender(params, { ...api, coord: () => [501, 0] }), {
+    type: "group",
+    children: [],
+  });
   chart._generateData();
   assert.equal(chart._chartData.length, 3);
   action.update({ label: "Now", eventTime: "2026-10-16T23:00:00Z" });
