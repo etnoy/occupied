@@ -30,6 +30,7 @@ jobs:
               uv: 0.13.1
               security_overrides:
                 anyio: 4.14.2
+                yarl: 1.25.1
             lanes:
               - id: ha-2026.5.0
                 role: floor
