@@ -41,6 +41,7 @@ def matrix_repo(tmp_path, monkeypatch):
         role = "floor" if index == 0 else "newest" if index == 5 else "window"
         constraints = (
             f"pydantic=={pydantic}\nPyYAML==6.0.3\nastral==2.2\n"
+            "aiohttp==3.14.3\n"
             f"home-assistant-frontend=={frontend}\n"
         )
         lane = matrix.Lane(
@@ -118,6 +119,17 @@ def edit(root, name, before, after):
 
 def test_supported_matrix_is_consistent():
     assert matrix.check(ROOT)["lanes"] == 6
+
+
+def test_hashed_ha_dependency_pin_drift_is_rejected(matrix_repo):
+    edit(
+        matrix_repo,
+        "scripts/requirements/ha-2026.5.0.txt",
+        "aiohttp==3.14.3",
+        "aiohttp==3.14.4",
+    )
+    with pytest.raises(ValueError, match="hashed aiohttp differs from HA's constraint"):
+        matrix.check(matrix_repo)
 
 
 def test_ha_beta_test_lane_is_removed():

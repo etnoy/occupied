@@ -209,6 +209,11 @@ def check(root=ROOT):
                     )
             if override_file.read_text() != overrides(lane, security):
                 raise ValueError(f"{lane.id}: overrides differ from the matrix")
+            for name, version in lane_pins.items():
+                if name in resolved and name not in security and resolved[name] != version:
+                    raise ValueError(
+                        f"{lane.id}: hashed {name} differs from HA's constraint {version}"
+                    )
     pydantic_requirement = next(
         (r for r in integration_requirements if canonicalize_name(r.name) == "pydantic"), None
     )
