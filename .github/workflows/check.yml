@@ -155,7 +155,9 @@ jobs:
           uv pip sync --require-hashes "$REQUIREMENTS"
           uv pip install --no-deps -e .
       - name: Verify installed dependency constraints
-        run: uv pip check
+        env:
+          LANE_ID: ${{ matrix.id }}
+        run: .venv/bin/python scripts/ha_matrix.py check-installed --lane "$LANE_ID"
       - if: matrix.role == 'newest'
         run: .venv/bin/ruff check custom_components tests scripts
       - if: matrix.role == 'newest'

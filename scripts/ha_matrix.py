@@ -2,6 +2,7 @@
 
 import argparse
 import hashlib
+import importlib.metadata
 import json
 import os
 import re
@@ -263,6 +264,55 @@ def security_pins(policy, constrained):
         if canonicalize_name(name) in constrained
         and Version(constrained[canonicalize_name(name)]) < Version(version)
     }
+
+
+def check_installed(lane_id, root=ROOT):
+    """Check dependencies, allowing only declared HA security-pin repairs."""
+    policy, lanes = load(root)
+    lane = next((item for item in lanes if item.id == lane_id), None)
+    if lane is None:
+        raise ValueError(f"Unknown HA lane: {lane_id}")
+    result = subprocess.run(["uv", "pip", "check"], capture_output=True, text=True)
+    if result.returncode == 0:
+        print(result.stdout, end="")
+        return
+
+    official = pins(constraints_path(root, lane).read_text())
+    overrides = security_pins(policy, official)
+    pattern = re.compile(
+        r"The package `(?P<owner>[^`]+)` requires `(?P<requirement>[^`]+)`, "
+        r"but `(?P<installed>[^`]+)` is installed"
+    )
+    unexpected = []
+    allowed = 0
+    for line in (result.stdout + result.stderr).splitlines():
+        if line.startswith(("Checked ", "Found ")) or not line:
+            continue
+        match = pattern.fullmatch(line)
+        if not match or match.group("owner") != "homeassistant":
+            unexpected.append(line)
+            continue
+        requirement = Requirement(match.group("requirement"))
+        package = canonicalize_name(requirement.name)
+        version = overrides.get(package)
+        official_version = official.get(package)
+        installed = match.group("installed")
+        if (
+            version is None
+            or official_version is None
+            or str(requirement.specifier) != f"=={official_version}"
+            or installed != version
+            or importlib.metadata.version(package) != version
+        ):
+            unexpected.append(line)
+        else:
+            allowed += 1
+    if unexpected or allowed == 0:
+        raise RuntimeError(
+            "Installed dependency check failed:\n"
+            + "\n".join(unexpected or result.stdout.splitlines())
+        )
+    print(f"uv pip check: allowed declared security overrides for {', '.join(sorted(overrides))}")
 
 
 def security_header(security):
@@ -715,6 +765,8 @@ def main(argv=None):
         commands.add_parser(name)
     matrix = commands.add_parser("github-matrix")
     matrix.add_argument("--kind", choices=("ha", "core", "browser", "python-floor"), default="ha")
+    installed = commands.add_parser("check-installed")
+    installed.add_argument("--lane", required=True)
     rollover = commands.add_parser("roll")
     rollover.add_argument("minor")
     test = commands.add_parser("test")
@@ -729,6 +781,8 @@ def main(argv=None):
             print(json.dumps(check()))
         elif args.command == "github-matrix":
             print(json.dumps(github_matrix(args.kind)))
+        elif args.command == "check-installed":
+            check_installed(args.lane)
         elif args.command == "next":
             print(json.dumps(next_release()))
         elif args.command == "roll":
