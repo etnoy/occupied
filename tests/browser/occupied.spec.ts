@@ -7,6 +7,8 @@ import type { OccupiedPanel } from "@occupied/occupied-panel.js";
 import type { Catalog, HaSelector } from "@occupied/lib/types.js";
 import type { ProgramDocument } from "@occupied/lib/types.js";
 
+const browserBaseUrl = `http://127.0.0.1:${process.env.HA_BROWSER_PORT || "18123"}`;
+
 test("create, preview, delete and protect YAML edits in the installed release", async ({
   page,
   request,
@@ -38,7 +40,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       name: "Browser tests",
       username: "smoke",
       password: "disposable-smoke-password",
-      client_id: "http://127.0.0.1:18123/",
+      client_id: `${browserBaseUrl}/`,
       language: "en",
     },
   });
@@ -49,7 +51,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     form: {
       grant_type: "authorization_code",
       code: authCode,
-      client_id: "http://127.0.0.1:18123/",
+      client_id: `${browserBaseUrl}/`,
     },
   });
   expect(response.ok(), await response.text()).toBeTruthy();
@@ -60,8 +62,8 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     },
     {
       ...tokens,
-      hassUrl: "http://127.0.0.1:18123",
-      clientId: "http://127.0.0.1:18123/",
+      hassUrl: browserBaseUrl,
+      clientId: `${browserBaseUrl}/`,
       expires: Date.now() + tokens.expires_in * 1000,
     },
   );
@@ -524,6 +526,163 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     }, chartInputs),
   ).toBe(true);
   await chartInputs.dispose();
+  // Exercise opaque commands on the real HA chart alongside predictable bars.
+  const originalPreview = await panel.evaluateHandle((element) => {
+    const controller = element as OccupiedPanel;
+    const original = {
+      preview: controller.preview,
+      program: controller.previewProgram,
+    };
+    const day = controller.preview!.plans.at(-1)!;
+    const time = new Date(Date.parse(day.start) + 12 * 3_600_000).toISOString();
+    controller.previewProgram = {
+      steps: { complex: { name: "Scene and message", timing: {} } },
+    };
+    controller.preview = {
+      valid: true,
+      plans: [
+        {
+          ...day,
+          history_events: [],
+          future_events: [],
+          events: [
+            {
+              time,
+              source_id: "light",
+              kind: "step",
+              action: {
+                action: "light.turn_on",
+                entities: ["light.smoke_light"],
+              },
+            },
+            {
+              time,
+              source_id: "complex",
+              kind: "step",
+              action: { action: "scene.turn_on", entities: ["scene.evening"] },
+            },
+            {
+              time,
+              source_id: "complex",
+              kind: "step",
+              action: {
+                action: "notify.send_message",
+                entities: [],
+                data: { message: "<b>Preview only</b>" },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    controller.flush();
+
+    return original;
+  });
+  await expect
+    .poll(() =>
+      chart.evaluate((element) => {
+        const timeline = element as HTMLElement & {
+          _chartData: { id: string; data: unknown[] }[];
+        };
+
+        return timeline._chartData.find(
+          (series) => series.id === "occupied-step:complex",
+        )?.data.length;
+      }),
+    )
+    .toBe(1);
+  await expect
+    .poll(() =>
+      chart.evaluate((element) => {
+        const base = element.shadowRoot!.querySelector(
+          "ha-chart-base",
+        ) as HTMLElement & {
+          chart: { getOption(): { series: { id: string; data: unknown[] }[] } };
+        };
+
+        return base.chart
+          .getOption()
+          .series.find((series) => series.id === "occupied-step:complex")?.data
+          .length;
+      }),
+    )
+    .toBe(1);
+  expect(errors).toEqual([]);
+  await expect(chart.locator("canvas")).toHaveCSS("height", "90px");
+  const markerSeries = await chart.evaluate((element) => {
+    const timeline = element as HTMLElement & {
+      _chartData: { id: string; data: { value: [string, number, string] }[] }[];
+    };
+    const seriesIndex = timeline._chartData.findIndex(
+      (series) => series.id === "occupied-step:complex",
+    );
+    const base = timeline.shadowRoot!.querySelector(
+      "ha-chart-base",
+    ) as HTMLElement & {
+      chart: {
+        getOption(): { series: { id: string }[] };
+        convertToPixel(
+          finder: Record<string, unknown>,
+          value: (string | number)[],
+        ): number[];
+      };
+    };
+    const value = timeline._chartData[seriesIndex]!.data[0]!.value;
+    const [x, y] = base.chart.convertToPixel({ xAxisIndex: 0, yAxisIndex: 0 }, [
+      value[1],
+      value[0],
+    ]);
+
+    return { description: value[2], position: { x, y } };
+  });
+  expect(markerSeries.description).toContain("scene.turn_on · scene.evening");
+  expect(markerSeries.description).toContain("notify.send_message");
+  await chart.locator("canvas").hover({ position: markerSeries.position });
+  await expect(
+    chart.getByText('notify.send_message · {"message":"<b>Preview only</b>"}', {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await expect(chart.locator("b")).toHaveCount(0);
+  await page.screenshot({
+    path: "test-results/browser/action-markers.png",
+    fullPage: true,
+  });
+  // A service-only day still has a visible graph, without placeholder state bars.
+  await panel.evaluate((element) => {
+    const controller = element as OccupiedPanel;
+    const day = controller.preview!.plans[0]!;
+    controller.preview = {
+      valid: true,
+      plans: [{ ...day, events: day.events.slice(1) }],
+    };
+    controller.flush();
+  });
+  await expect(chart).toBeVisible();
+  await expect
+    .poll(() =>
+      chart.evaluate((element) => {
+        const timeline = element as HTMLElement & {
+          data: { data: unknown[]; markers?: unknown[] }[];
+        };
+
+        return (
+          timeline.data.some((row) => row.markers?.length === 1) &&
+          timeline.data
+            .filter((row) => !row.markers)
+            .every((row) => row.data.length === 0)
+        );
+      }),
+    )
+    .toBe(true);
+  await panel.evaluate((element, original) => {
+    const controller = element as OccupiedPanel;
+    controller.preview = original.preview;
+    controller.previewProgram = original.program;
+    controller.flush();
+  }, originalPreview);
+  await originalPreview.dispose();
   await panel.evaluate((element) => {
     const controller = element as OccupiedPanel;
     const timeline = controller.shadowRoot.querySelector(

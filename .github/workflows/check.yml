@@ -30,6 +30,7 @@ jobs:
               uv: 0.13.1
               security_overrides:
                 anyio: 4.14.2
+                yarl: 1.25.1
             lanes:
               - id: ha-2026.5.0
                 role: floor
@@ -154,7 +155,9 @@ jobs:
           uv pip sync --require-hashes "$REQUIREMENTS"
           uv pip install --no-deps -e .
       - name: Verify installed dependency constraints
-        run: uv pip check
+        env:
+          LANE_ID: ${{ matrix.id }}
+        run: .venv/bin/python scripts/ha_matrix.py check-installed --lane "$LANE_ID"
       - if: matrix.role == 'newest'
         run: .venv/bin/ruff check custom_components tests scripts
       - if: matrix.role == 'newest'

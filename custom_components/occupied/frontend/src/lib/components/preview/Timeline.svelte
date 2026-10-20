@@ -266,7 +266,7 @@
     border-bottom: 0;
   }
 
-  td[rowspan] {
+  td[rowspan]:not([rowspan="1"]) {
     vertical-align: top;
   }
 

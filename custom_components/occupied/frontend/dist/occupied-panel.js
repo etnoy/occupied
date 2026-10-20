@@ -472,7 +472,7 @@ var en = {
   yesterday: "Yesterday",
   tomorrow: "Tomorrow",
   schedule_empty_hint: "No steps are scheduled for this date.",
-  planned_device_states: "Planned device states",
+  planned_device_states: "Planned actions and device states",
   loading_graph: "Loading graph\u2026",
   preview_now: "Now",
   on_label: "On",
@@ -483,8 +483,7 @@ var en = {
   cover_tilt_summary: "Tilt {position}%",
   preview_covers_hint:
     "Cover strips show planned position and tilt targets. Travel time and positions after stop actions are unknown.",
-  preview_devices_empty_hint:
-    "No light, switch, or cover actions on this date. Other actions are listed in Event details.",
+  preview_devices_empty_hint: "No actions to show on this date.",
   preview_lights_empty_hint:
     "No light or switch actions on this date. Other actions are listed in Event details.",
   preview_graph_error:
@@ -1111,7 +1110,7 @@ var sv = {
   yesterday: "Ig\xE5r",
   tomorrow: "Imorgon",
   schedule_empty_hint: "Inga steg \xE4r schemalagda detta datum.",
-  planned_device_states: "Planerade enhetstillst\xE5nd",
+  planned_device_states: "Planerade \xE5tg\xE4rder och enhetstillst\xE5nd",
   loading_graph: "Laddar diagram\u2026",
   preview_now: "Nu",
   on_label: "P\xE5",
@@ -1122,8 +1121,7 @@ var sv = {
   cover_tilt_summary: "Lameller {position}%",
   preview_covers_hint:
     "Gardiner och persienner visar planerade m\xE5l f\xF6r position och lameller. F\xF6rflyttningstid och position efter stopp \xE4r ok\xE4nda.",
-  preview_devices_empty_hint:
-    "Inga \xE5tg\xE4rder f\xF6r lampor, brytare, gardiner eller persienner detta datum. \xD6vriga \xE5tg\xE4rder visas i H\xE4ndelsedetaljer.",
+  preview_devices_empty_hint: "Inga \xE5tg\xE4rder att visa detta datum.",
   preview_lights_empty_hint:
     "Inga \xE5tg\xE4rder f\xF6r lampor eller brytare detta datum. \xD6vriga \xE5tg\xE4rder visas i H\xE4ndelsedetaljer.",
   preview_graph_error:
@@ -15182,7 +15180,7 @@ function timelineNow(node, options) {
             if (marker.id === markerId) {
               current.onNowPosition?.(null);
             }
-            return null;
+            return { type: "group", children: [] };
           }
           const alignRight = position > x + width - 40;
           if (marker.id === markerId) {
@@ -15220,6 +15218,9 @@ function timelineNow(node, options) {
     ];
   };
   chart._generateData = () => {
+    if ("isConnected" in node && !node.isConnected) {
+      return;
+    }
     generate.call(chart);
     refresh();
   };
@@ -15275,13 +15276,124 @@ function timelineTooltip(node, data) {
   };
 }
 
+// custom_components/occupied/frontend/src/lib/actions/timeline-markers.ts
+function timelineMarkers(node, data) {
+  const chart = node;
+  const generate = chart._generateData;
+  if (typeof generate !== "function") {
+    return;
+  }
+  let histories = data;
+  const refresh = () => {
+    const color =
+      getComputedStyle(node).getPropertyValue("--primary-color").trim() ||
+      "#03a9f4";
+    chart._chartData = chart._chartData?.map((series) => {
+      const row = histories.find(
+        (history2) => history2.entity_id === series.id,
+      );
+      if (!row?.markers) {
+        return series;
+      }
+      return {
+        id: row.entity_id,
+        name: row.name,
+        type: "custom",
+        progressive: 0,
+        z: 5,
+        animation: false,
+        dimensions: ["id", "time", "description"],
+        encode: { x: 1, y: 0 },
+        itemStyle: { color },
+        renderItem: (params, api) => {
+          const [x, y] = api.coord([api.value(1), api.value(0)]);
+          const plot = params.coordSys;
+          if (
+            x < plot.x ||
+            x > plot.x + plot.width ||
+            y < plot.y ||
+            y > plot.y + plot.height
+          ) {
+            return { type: "group", children: [] };
+          }
+          return {
+            type: "polygon",
+            shape: {
+              points: [
+                [x, y - 7],
+                [x + 7, y],
+                [x, y + 7],
+                [x - 7, y],
+              ],
+            },
+            style: { fill: color },
+          };
+        },
+        data: row.markers.map((marker) => ({
+          value: [row.entity_id, marker.time, marker.description],
+        })),
+        tooltip: {
+          formatter: (point) => {
+            const content = document.createElement("div");
+            content.style.whiteSpace = "pre-wrap";
+            content.style.maxWidth = "320px";
+            content.style.overflowWrap = "anywhere";
+            content.textContent = point.value[2];
+            return content;
+          },
+        },
+      };
+    });
+  };
+  chart._generateData = () => {
+    if ("isConnected" in node && !node.isConnected) {
+      return;
+    }
+    generate.call(chart);
+    refresh();
+  };
+  refresh();
+  return {
+    update(next2) {
+      histories = next2;
+      refresh();
+    },
+    destroy() {
+      chart._generateData = generate;
+    },
+  };
+}
+
 // custom_components/occupied/frontend/src/lib/actions/history-chart.ts
 function historyChartProperties(node, values) {
-  const binding = properties(node, values);
+  const known = /* @__PURE__ */ new Map();
+  const retainSeries = (next2) => {
+    const data = next2.data;
+    if (!Array.isArray(data)) {
+      return next2;
+    }
+    const current = data;
+    const ids = new Set(current.map((entity) => entity.entity_id));
+    for (const entity of current) {
+      known.set(entity.entity_id, entity);
+    }
+    const removed = [...known.values()]
+      .filter((entity) => !ids.has(entity.entity_id))
+      .map((entity) => {
+        const empty = { ...entity, data: [] };
+        if (entity.markers) {
+          empty.markers = [];
+        } else {
+          delete empty.markers;
+        }
+        return empty;
+      });
+    return { ...next2, data: [...current, ...removed] };
+  };
+  const binding = properties(node, retainSeries(values));
   return {
-    update: binding.update,
-    destroy() {
-      Object.assign(node, { data: [] });
+    update(next2) {
+      binding.update(retainSeries(next2));
     },
   };
 }
@@ -15360,6 +15472,81 @@ function calendarDayPlan(plans, date) {
     issues: plans.flatMap((plan) => plan.issues),
   };
 }
+function isStateEvent(event2) {
+  return (
+    event2.action.entities.length > 0 &&
+    event2.action.entities.every((entity) =>
+      entity.startsWith("cover.")
+        ? isCoverAction(event2.action) &&
+          !event2.action.action.includes(".stop_")
+        : /^(light|switch)\./.test(entity) &&
+          /^(light|switch|homeassistant)\.turn_(on|off)$/.test(
+            event2.action.action,
+          ) &&
+          (event2.action.action.startsWith("homeassistant.") ||
+            event2.action.action.startsWith(`${entity.split(".", 1)[0]}.`)),
+    )
+  );
+}
+function previewTimelineData(
+  plan,
+  program,
+  names = {},
+  t = translator(),
+  locale,
+) {
+  const states = previewStateHistory(plan, program, names, t);
+  const rows = /* @__PURE__ */ new Map();
+  const start = Date.parse(plan.start),
+    end = Date.parse(plan.end);
+  for (const group of groupPreviewEvents(
+    plan.events.filter(
+      (event2) =>
+        !event2.superseded &&
+        !isStateEvent(event2) &&
+        Date.parse(event2.time) >= start &&
+        Date.parse(event2.time) < end,
+    ),
+  )) {
+    const event2 = group.event;
+    const random = event2.kind.startsWith("random_");
+    const id = `occupied-${random ? "random" : "step"}:${event2.source_id}`;
+    const source2 = (random ? program.random : program.steps)?.[
+      event2.source_id
+    ];
+    let row = rows.get(id);
+    if (!row) {
+      row = {
+        entity_id: id,
+        name: source2?.name || event2.source_id,
+        data: [],
+        markers: [],
+      };
+      rows.set(id, row);
+    }
+    const actions = group.actions.map((action2) => {
+      const targets = action2.entities
+        .map((entity) => names[entity] || entity)
+        .join(", ");
+      return [
+        action2.event.action.action,
+        targets,
+        JSON.stringify(action2.event.action.data),
+      ]
+        .filter(Boolean)
+        .join(" \xB7 ");
+    });
+    row.markers.push({
+      time: Date.parse(event2.time),
+      description: [
+        row.name,
+        formatEventTime(event2.time, plan.timezone, locale),
+        ...actions,
+      ].join("\n"),
+    });
+  }
+  return [...states, ...rows.values()];
+}
 function previewStateHistory(plan, program, names = {}, t = translator()) {
   const start = Date.parse(plan.start),
     end = Date.parse(plan.end);
@@ -15394,7 +15581,9 @@ function previewStateHistory(plan, program, names = {}, t = translator()) {
       continue;
     }
     const at = Date.parse(event2.time);
-    const typed = /^(light|switch)\.turn_(on|off)$/.test(event2.action.action);
+    const typed = /^(light|switch|homeassistant)\.turn_(on|off)$/.test(
+      event2.action.action,
+    );
     for (const entity of event2.action.entities) {
       if (!/^(light|switch|cover)\./.test(entity)) {
         continue;
@@ -15423,7 +15612,9 @@ function previewStateHistory(plan, program, names = {}, t = translator()) {
       }
       const intended = event2.action.action.endsWith("turn_on") ? "on" : "off";
       let state2 =
-        typed && event2.action.action.startsWith(`${entity.split(".", 1)[0]}.`)
+        typed &&
+        (event2.action.action.startsWith("homeassistant.") ||
+          event2.action.action.startsWith(`${entity.split(".", 1)[0]}.`))
           ? intended
           : "unknown";
       let localized = label(state2);
@@ -15488,23 +15679,6 @@ function previewStateHistory(plan, program, names = {}, t = translator()) {
     }
   }
   return [...entities.values()].sort((a, b) => a.name.localeCompare(b.name));
-}
-function calendarStateHistory(
-  plans,
-  day,
-  program,
-  names = {},
-  t = translator(),
-) {
-  const start = Date.parse(day.start),
-    end = Date.parse(day.end);
-  const events = plans
-    .flatMap((plan) => plan.events)
-    .filter(
-      (event2) =>
-        Date.parse(event2.time) >= start && Date.parse(event2.time) < end,
-    );
-  return previewStateHistory({ ...day, events }, program, names, t);
 }
 function stamp(value, zone, locale) {
   if (!value) {
@@ -15637,19 +15811,22 @@ function PreviewStateGraph($$anchor, $$props) {
       set2(nowPosition, position, true);
     }
   }
+  let locale = user_derived(() => $$props.hass.locale);
   let data = user_derived(() =>
-    $$props.schedulePlans
-      ? calendarStateHistory(
-          $$props.schedulePlans,
-          $$props.plan,
-          $$props.program,
-          names(),
-          $$props.t,
-        )
-      : previewStateHistory($$props.plan, $$props.program, names(), $$props.t),
+    previewTimelineData(
+      $$props.schedulePlans
+        ? (calendarDayPlan(
+            $$props.schedulePlans,
+            $$props.plan.simulation_date,
+          ) ?? $$props.plan)
+        : $$props.plan,
+      $$props.program,
+      names(),
+      $$props.t,
+      get(locale),
+    ),
   );
   let config = user_derived(() => $$props.hass.config);
-  let locale = user_derived(() => $$props.hass.locale);
   let zone = user_derived(() => $$props.plan.timezone);
   let start = user_derived(() => $$props.plan.start);
   let end = user_derived(() => $$props.plan.end);
@@ -15784,6 +15961,11 @@ function PreviewStateGraph($$anchor, $$props) {
       action(
         state_history_chart_timeline,
         ($$node, $$action_arg) => timelineTooltip?.($$node, $$action_arg),
+        () => get(data),
+      );
+      action(
+        state_history_chart_timeline,
+        ($$node, $$action_arg) => timelineMarkers?.($$node, $$action_arg),
         () => get(data),
       );
       action(
@@ -15955,7 +16137,7 @@ var root_162 = from_html(`<p role="status"> </p>`);
 var root_172 = from_html(`<section><!> <!></section>`);
 var $$css9 = {
   hash: "svelte-1iz1525",
-  code: "th.svelte-1iz1525,\n  td.svelte-1iz1525 {padding:6px 9px;}tbody.svelte-1iz1525 tr:where(.svelte-1iz1525):not(:last-child) td:where(.svelte-1iz1525):not([rowspan]) {border-bottom:0;}td[rowspan].svelte-1iz1525 {vertical-align:top;}th.svelte-1iz1525:first-child,\n  .planned-time.svelte-1iz1525 {padding-left:24px;}.planned-time.svelte-1iz1525 {position:relative;}.hover-indicator.svelte-1iz1525 {position:absolute;left:6px;top:50%;transform:translateY(-50%);width:12px;height:12px;fill:none;stroke:var(--info-color, #039be5);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:0;pointer-events:none;}tbody.svelte-1iz1525:hover .hover-indicator:where(.svelte-1iz1525),\n  tbody.svelte-1iz1525:focus-within .hover-indicator:where(.svelte-1iz1525) {opacity:0.7;}.source-link.svelte-1iz1525 {min-height:30px;padding:3px 4px;margin:0;text-align:left;}.event-action.svelte-1iz1525 {display:inline-flex;align-items:center;gap:7px;}.action-indicator.svelte-1iz1525 {display:inline-block;width:12px;height:12px;flex:0 0 12px;box-sizing:border-box;border:2px solid var(--info-color, #039be5);border-radius:50%;}.action-indicator.on.svelte-1iz1525 {background:var(--info-color, #039be5);}tr.current.svelte-1iz1525 {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-1iz1525 {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}",
+  code: 'th.svelte-1iz1525,\n  td.svelte-1iz1525 {padding:6px 9px;}tbody.svelte-1iz1525 tr:where(.svelte-1iz1525):not(:last-child) td:where(.svelte-1iz1525):not([rowspan]) {border-bottom:0;}td[rowspan].svelte-1iz1525:not([rowspan="1"]) {vertical-align:top;}th.svelte-1iz1525:first-child,\n  .planned-time.svelte-1iz1525 {padding-left:24px;}.planned-time.svelte-1iz1525 {position:relative;}.hover-indicator.svelte-1iz1525 {position:absolute;left:6px;top:50%;transform:translateY(-50%);width:12px;height:12px;fill:none;stroke:var(--info-color, #039be5);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:0;pointer-events:none;}tbody.svelte-1iz1525:hover .hover-indicator:where(.svelte-1iz1525),\n  tbody.svelte-1iz1525:focus-within .hover-indicator:where(.svelte-1iz1525) {opacity:0.7;}.source-link.svelte-1iz1525 {min-height:30px;padding:3px 4px;margin:0;text-align:left;}.event-action.svelte-1iz1525 {display:inline-flex;align-items:center;gap:7px;}.action-indicator.svelte-1iz1525 {display:inline-block;width:12px;height:12px;flex:0 0 12px;box-sizing:border-box;border:2px solid var(--info-color, #039be5);border-radius:50%;}.action-indicator.on.svelte-1iz1525 {background:var(--info-color, #039be5);}tr.current.svelte-1iz1525 {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-1iz1525 {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}',
 };
 function Timeline($$anchor, $$props) {
   push($$props, true);
