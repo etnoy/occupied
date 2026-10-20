@@ -79,7 +79,7 @@ Random Events manage a light for both on and off, so you can have a kitchen ligh
 
 Open **Preview** to see how the entities would be turned on and off. This will be a render of the random events within the ranges you chose before, so navigate back and forth during the days to see how those will be randomized.
 
-Predictable light, switch, and cover actions appear as state bars. Scenes and other service calls appear as diamonds at their scheduled times, including calls without an entity target. Hover a diamond to see its services, targets, and data.
+Explicit on/off actions appear as state bars for lights, switches, remotes, and other devices, including `homeassistant.turn_on` and `homeassistant.turn_off`. Cover actions show planned position and tilt. Scenes, scripts, and other commands whose effects cannot be represented as a state interval appear as diamonds at their scheduled times, including calls without an entity target. Hover a diamond to see its services, targets, and data.
 
 <img src="https://raw.githubusercontent.com/etnoy/occupied/main/media/screenshots/timeline.png" alt="Daily timeline showing scheduled lighting and random activity across household lights and switches" width="1072">
 
