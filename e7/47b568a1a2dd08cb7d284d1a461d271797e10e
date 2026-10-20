@@ -1,0 +1,99 @@
+README.md
+  s_9d32b303fe0f4e::t_784e1559ef595e 62
+custom_components/occupied/frontend/dist/lib/controllers/random-editor-controller.js
+  s_9d32b303fe0f4e::t_557003c391d6b3 11,53
+custom_components/occupied/frontend/dist/lib/controllers/step-editor-controller.js
+  s_9d32b303fe0f4e::t_288161a36ecc91 4-9,42-49
+custom_components/occupied/frontend/dist/lib/controllers/steps.js
+  s_9d32b303fe0f4e::t_4e247054b1b058 9,85-88
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_9d32b303fe0f4e::t_1f29b8543b2bb8 309-325,956-972
+custom_components/occupied/frontend/dist/lib/models/step-model.js
+  s_9d32b303fe0f4e::t_5a6c912d81bc3a 23,25-29,39,41,43,153-154,182-185,278-280,475-482
+custom_components/occupied/frontend/dist/lib/utils/action-kind.js
+  s_9d32b303fe0f4e::t_826fdfe463e98e 10,45-50,58-59,67-71
+custom_components/occupied/frontend/dist/lib/utils/custom-action.js
+  s_9d32b303fe0f4e::t_85393148f1e16d 3-6,77-80,89
+custom_components/occupied/frontend/dist/lib/utils/entity-settings.js
+  s_9d32b303fe0f4e::t_6d83281ee41ce9 1-172
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_9d32b303fe0f4e::t_a8949f46365122 405-421,1060-1077,1846,1851,1897,1948,1978,2099,2170,2185,2209,2387,2392,2410,2463,2526,2548,2561,2571,2610,2624,2744,3036,3262,3264,3266,3345-3347,3611-3612,3941,4157,4465,4516,4689,4777,5162,5165,5244,5265,5725,5863,5874,6029,6054,6149,6180,6627,6815,6986,7025,7045,7563,7578,7584,7677,7681,7684,7686,7688,7701,7728,7750,7770,7907,7935,7973,8087,8544,8605-8629,8646,8703,8764,8967,9072,9312,9363,9366,9373,9516,9652,9757-9926,9999-10002,10011,10122,10124,10126,10229-10230,10258-10261,10354-10356,10551-10558,10865-10872,11048-11051,13404-13405,13407-13731,13735-13736,13742,13751,13754-13795,13797-13967,13970,13983,13985-13987,13989,13999-14000,14008,14108-14112,14120-14121,14129-14133,14169,14173-14176,14180-14181,14190,14196,14264-14266,14270-14274,14280,14359,14445,14471,14534,14669,14681,14770,14785,14928,14932,14946,14949-14951,14955-14957,14988,15059,15070,15089,15100,15114,15140,15242,15245,15249-15253,15261,15267,15338,15476,15571,15592,15598,15631,15641,15747-15749,15753,15759,15785,15809,15842,15977,16804-16805,16808,16812-16814,16820,16888,16892,16914,16932,16941,16946,17034,17131-17133,17136-17139,17159,17165,17218,17278,17290,17355,17379,17415,17419,17468,17683,17687,17690,17694-17697,17708,17712,17718,17720,17724,17752,17758,17841,17856,17880,17896,17908,17923,18011,18085,18088-18089,18093-18094,18100,18102,18109,18136,18301,18356,18382,18441-18443,18461,18469,18479,18549-18550,18586,18592,18624,18693,18697,18767,18787,18932-18933,18936,18939,18978,18996,19024,19058,19345,19348,19352,19355,19359,19365,19402,19540,19557,19694,19826,19829-19831,19835-19836,19839,19877,19902,19939,19950,19969,19980,19994,20128-20133,20137-20139,20151,20155,20194,20204,20324,20346,20371,20402,20432,20516,20539
+custom_components/occupied/frontend/src/lib/components/shared/ActionEditor.svelte
+  s_9d32b303fe0f4e::t_2c966b493014b1 71-77
+custom_components/occupied/frontend/src/lib/components/shared/EntitiesEditor.svelte
+  s_65b8418c218a73::t_52172ddc77e1f8 2,9-11,17,22,27-29,43-147,149-154
+custom_components/occupied/frontend/src/lib/components/shared/EntityRow.svelte
+  s_2871013f2ab767::t_d744993d04bc17 1-209
+custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts
+  s_9d32b303fe0f4e::t_d017907214c19a 19,68
+custom_components/occupied/frontend/src/lib/controllers/step-editor-controller.ts
+  s_9d32b303fe0f4e::t_8f2aac41d307d8 8-13,53-60
+custom_components/occupied/frontend/src/lib/controllers/steps.ts
+  s_9d32b303fe0f4e::t_636d5f87637d30 10,107-110
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_9d32b303fe0f4e::t_13d9a32dcff6b8 310-326,962-978
+custom_components/occupied/frontend/src/lib/models/step-model.ts
+  s_65b8418c218a73::t_0e0ccd272eb0e1 36,38-42,58,60,62,188-189,218-221,319-321,533-540
+custom_components/occupied/frontend/src/lib/types.ts
+  s_9d32b303fe0f4e::t_a28e160e7e4d62 105-111,113
+custom_components/occupied/frontend/src/lib/utils/action-kind.ts
+  s_9d32b303fe0f4e::t_85da4f1a876e5c 10,53-58,67-68,76-80
+custom_components/occupied/frontend/src/lib/utils/custom-action.ts
+  s_efe390a5cb33d3::t_13b43e54c86336 4-7,91-94,105
+custom_components/occupied/frontend/src/lib/utils/entity-settings.ts
+  s_2871013f2ab767::t_46c876fcd07335 1-204
+docs/custom-yaml.md
+  s_65b8418c218a73::t_ddc2a0d0f7b562 3,392
+docs/schema.md
+  s_9d32b303fe0f4e::t_1c201aa6ab55b1 182-184
+tests/browser/occupied.spec.ts
+  s_9d32b303fe0f4e::t_516926d31b3a2b 156-161,172,194-199,718,742,1031-1198
+tests/browser/serve.py
+  s_9d32b303fe0f4e::t_3311577fe3b828 14,44-45
+tests/frontend/src/custom-actions.test.ts
+  s_9d32b303fe0f4e::t_d3eea419e39b65 156,301,308-309,335
+tests/frontend/src/entity-settings.test.ts
+  s_9d32b303fe0f4e::t_f77f47a7ba43db 1-333
+tests/ha/test_editor_api.py
+  s_65b8418c218a73::t_7289c0b5d28f43 900-938
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "e747b568a1a2dd08cb7d284d1a461d271797e10e",
+  "prompts": {},
+  "sessions": {
+    "s_2871013f2ab767": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15b49-b0b6-7ce3-bf2f-7937ba99c110",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_65b8418c218a73": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15b49-4ab1-7503-976b-38ab1b9a479c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_9d32b303fe0f4e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15b42-b2e9-7521-97ee-e820c41aa3f8",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_efe390a5cb33d3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15b37-2aeb-7443-9870-79d9402b3ee0",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
