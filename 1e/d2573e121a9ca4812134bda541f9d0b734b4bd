@@ -1,0 +1,31 @@
+scripts/ha_matrix.py
+  s_238ec3657d788c::t_84e4b0d021c8b6 212-216
+scripts/requirements/ha-2026.5.0.txt
+  s_238ec3657d788c::t_33d19cb49aec3d 29-149
+scripts/requirements/ha-2026.6.4.txt
+  s_238ec3657d788c::t_f87d50cbccedae 29-149
+scripts/requirements/ha-2026.7.4.txt
+  s_238ec3657d788c::t_d4bc3fa10024b0 29-148
+scripts/requirements/ha-2026.8.3.txt
+  s_238ec3657d788c::t_f6a35fd82413e0 29-148
+scripts/requirements/ha-2026.9.4.txt
+  s_238ec3657d788c::t_52484ea39455d0 29-148
+tests/core/test_ha_matrix.py
+  s_238ec3657d788c::t_dc86f0e8b958da 44,124-134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "1ed2573e121a9ca4812134bda541f9d0b734b4bd",
+  "prompts": {},
+  "sessions": {
+    "s_238ec3657d788c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15950-b3db-7aa3-a501-102db97c041c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
