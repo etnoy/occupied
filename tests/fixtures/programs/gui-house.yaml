@@ -206,7 +206,7 @@ steps:
     - script.evening
     data:
       variables:
-        title: Fönster
+        title: Window
         sequence:
         - second
         - first

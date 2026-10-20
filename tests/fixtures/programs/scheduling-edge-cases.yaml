@@ -3,7 +3,7 @@ schema_version: 1
 name: Scheduling and normalization edge cases
 steps:
   step:
-    name: Fönsterspottar badrum on
+    name: Bathroom window on
     days:
     - mon
     - tue
@@ -18,7 +18,7 @@ steps:
     entities:
     - light.bathroom_window
   step_2:
-    name: Fönsterspottar badrum off
+    name: Bathroom window off
     days:
     - mon
     - wed
