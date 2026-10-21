@@ -16864,6 +16864,19 @@ function eventDetails(event2, label2, timezone, t, locale, entityNames = {}) {
       .join(", "),
   };
 }
+function previewNowIndex(plan, groups, now) {
+  if (
+    !plan ||
+    groups.length === 0 ||
+    !(now >= Date.parse(plan.start) && now < Date.parse(plan.end))
+  ) {
+    return -1;
+  }
+  const index2 = groups.findIndex(
+    ({ event: event2 }) => Date.parse(event2.time) > now,
+  );
+  return index2 === -1 ? groups.length : index2;
+}
 function groupPreviewEvents(events) {
   const groups = /* @__PURE__ */ new Map();
   const actionKeys = /* @__PURE__ */ new Map();
@@ -17243,41 +17256,72 @@ function lastGroupResult(session) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/preview/Timeline.svelte
-var root21 = from_html(`<h2> </h2>`);
-var root_115 = from_html(`<th scope="col" class="svelte-1iz1525"> </th>`);
-var root_214 = from_html(
+var root21 = from_html(
+  `<tbody class="event-now svelte-1iz1525"><tr class="svelte-1iz1525"><td class="svelte-1iz1525"><div class="now-marker svelte-1iz1525"><span> </span></div></td></tr></tbody>`,
+);
+var root_115 = from_html(`<h2> </h2>`);
+var root_214 = from_html(`<th scope="col" class="svelte-1iz1525"> </th>`);
+var root_313 = from_html(
   `<td class="planned-time svelte-1iz1525"><svg class="hover-indicator svelte-1iz1525" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2 8 6 4 10"></path></svg> </td>`,
 );
-var root_313 = from_html(`<span aria-hidden="true"></span>`);
-var root_410 = from_html(`<span> </span>`);
-var root_58 = from_html(`<div><!> <span> </span> <div> </div></div>`);
-var root_67 = from_html(`<div> </div>`);
-var root_75 = from_html(`<td class="svelte-1iz1525"></td>`);
-var root_84 = from_html(
+var root_410 = from_html(`<span aria-hidden="true"></span>`);
+var root_58 = from_html(`<span> </span>`);
+var root_67 = from_html(`<div><!> <span> </span> <div> </div></div>`);
+var root_75 = from_html(`<div> </div>`);
+var root_84 = from_html(`<td class="svelte-1iz1525"></td>`);
+var root_94 = from_html(
   `<button type="button" class="text-button source-link svelte-1iz1525"> </button>`,
 );
-var root_94 = from_html(`<td class="svelte-1iz1525"><!></td>`);
-var root_103 = from_html(
+var root_103 = from_html(`<td class="svelte-1iz1525"><!></td>`);
+var root_11 = from_html(
   `<tr><!><td class="svelte-1iz1525"> </td><td class="svelte-1iz1525"><span class="event-action svelte-1iz1525"><!> </span></td><!><!></tr>`,
 );
-var root_11 = from_html(`<tbody class="svelte-1iz1525"></tbody>`);
-var root_122 = from_html(
+var root_122 = from_html(`<!> <tbody class="svelte-1iz1525"></tbody>`, 1);
+var root_132 = from_html(
   `<div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div>`,
 );
-var root_132 = from_html(
-  `<div class="event-details"><div><div class="table-wrap"><table><thead><tr><!><!><th scope="col" class="svelte-1iz1525"> </th></tr></thead><!></table></div> <!></div></div>`,
+var root_142 = from_html(
+  `<div class="event-details"><div><div class="table-wrap"><table><thead><tr><!><!><th scope="col" class="svelte-1iz1525"> </th></tr></thead><!><!></table></div> <!></div></div>`,
 );
-var root_142 = from_html(`<p> </p>`);
-var root_152 = from_html(`<!> <!> <!>`, 1);
-var root_162 = from_html(`<p role="status"> </p>`);
-var root_172 = from_html(`<section><!> <!></section>`);
+var root_152 = from_html(`<p> </p>`);
+var root_162 = from_html(`<!> <!> <!>`, 1);
+var root_172 = from_html(`<p role="status"> </p>`);
+var root_182 = from_html(`<section><!> <!></section>`);
 var $$css10 = {
   hash: "svelte-1iz1525",
-  code: 'th.svelte-1iz1525,\n  td.svelte-1iz1525 {padding:6px 9px;}tbody.svelte-1iz1525 tr:where(.svelte-1iz1525):not(:last-child) td:where(.svelte-1iz1525):not([rowspan]) {border-bottom:0;}td[rowspan].svelte-1iz1525:not([rowspan="1"]) {vertical-align:top;}th.svelte-1iz1525:first-child,\n  .planned-time.svelte-1iz1525 {padding-left:24px;}.planned-time.svelte-1iz1525 {position:relative;}.hover-indicator.svelte-1iz1525 {position:absolute;left:6px;top:50%;transform:translateY(-50%);width:12px;height:12px;fill:none;stroke:var(--info-color, #039be5);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:0;pointer-events:none;}tbody.svelte-1iz1525:hover .hover-indicator:where(.svelte-1iz1525),\n  tbody.svelte-1iz1525:focus-within .hover-indicator:where(.svelte-1iz1525) {opacity:0.7;}.source-link.svelte-1iz1525 {min-height:30px;padding:3px 4px;margin:0;text-align:left;}.event-action.svelte-1iz1525 {display:inline-flex;align-items:center;gap:7px;}.action-indicator.svelte-1iz1525 {display:inline-block;width:12px;height:12px;flex:0 0 12px;box-sizing:border-box;border:2px solid var(--info-color, #039be5);border-radius:50%;}.action-indicator.on.svelte-1iz1525 {background:var(--info-color, #039be5);}tr.current.svelte-1iz1525 {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-1iz1525 {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}',
+  code: 'th.svelte-1iz1525,\n  td.svelte-1iz1525 {padding:6px 9px;}tbody.svelte-1iz1525 tr:where(.svelte-1iz1525):not(:last-child) td:where(.svelte-1iz1525):not([rowspan]) {border-bottom:0;}td[rowspan].svelte-1iz1525:not([rowspan="1"]) {vertical-align:top;}th.svelte-1iz1525:first-child,\n  .planned-time.svelte-1iz1525 {padding-left:24px;}.planned-time.svelte-1iz1525 {position:relative;}.event-now.svelte-1iz1525 td:where(.svelte-1iz1525) {padding:8px 9px 8px 24px;border-bottom:0;}.now-marker.svelte-1iz1525 {display:flex;align-items:center;gap:12px;color:var(--primary-color, #03a9f4);font-weight:600;white-space:nowrap;}.now-marker.svelte-1iz1525::after {content:"";flex:1;min-width:24px;border-top:2px solid currentColor;}.hover-indicator.svelte-1iz1525 {position:absolute;left:6px;top:50%;transform:translateY(-50%);width:12px;height:12px;fill:none;stroke:var(--info-color, #039be5);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:0;pointer-events:none;}tbody.svelte-1iz1525:hover .hover-indicator:where(.svelte-1iz1525),\n  tbody.svelte-1iz1525:focus-within .hover-indicator:where(.svelte-1iz1525) {opacity:0.7;}.source-link.svelte-1iz1525 {min-height:30px;padding:3px 4px;margin:0;text-align:left;}.event-action.svelte-1iz1525 {display:inline-flex;align-items:center;gap:7px;}.action-indicator.svelte-1iz1525 {display:inline-block;width:12px;height:12px;flex:0 0 12px;box-sizing:border-box;border:2px solid var(--info-color, #039be5);border-radius:50%;}.action-indicator.on.svelte-1iz1525 {background:var(--info-color, #039be5);}tr.current.svelte-1iz1525 {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-1iz1525 {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}',
 };
 function Timeline($$anchor, $$props) {
   push($$props, true);
   append_styles($$anchor, $$css10);
+  const nowMarker = ($$anchor2) => {
+    var tbody = root21();
+    var tr = child(tbody);
+    var td = child(tr);
+    var div = child(td);
+    var span = child(div);
+    var text2 = only_child(span);
+    reset(div);
+    reset(td);
+    reset(tr);
+    reset(tbody);
+    template_effect(
+      ($0, $1) => {
+        set_attribute2(td, "colspan", liveSession() ? 5 : 4);
+        set_text(text2, `${$0 ?? ""} \xB7 ${$1 ?? ""}`);
+      },
+      [
+        () => t()("preview_now"),
+        () =>
+          formatEventTime(
+            new Date(get(now)).toISOString(),
+            $$props.plan?.timezone,
+            $$props.locale,
+          ),
+      ],
+    );
+    append($$anchor2, tbody);
+  };
   let t = prop($$props, "t", 19, translator),
     entityNames = prop($$props, "entityNames", 19, () => ({})),
     loading = prop($$props, "loading", 3, false),
@@ -17309,6 +17353,14 @@ function Timeline($$anchor, $$props) {
   }
   let page = state(0);
   let hoveredEventTime = state(null);
+  let now = state(proxy(Date.now()));
+  onMount(() => {
+    const timer = globalThis.setInterval(
+      () => set2(now, Date.now(), true),
+      1e3,
+    );
+    return () => globalThis.clearInterval(timer);
+  });
   let scheduleDate = user_derived(() => $$props.plan?.simulation_date);
   user_effect(() => {
     void get(scheduleDate);
@@ -17317,10 +17369,13 @@ function Timeline($$anchor, $$props) {
   });
   let events = user_derived(() => $$props.plan?.events ?? []);
   let groups = user_derived(() => groupPreviewEvents(get(events)));
+  let nowIndex = user_derived(() =>
+    previewNowIndex($$props.plan, get(groups), get(now)),
+  );
   let currentPage = user_derived(() =>
     Math.max(0, Math.min(get(page), Math.ceil(get(groups).length / 50) - 1)),
   );
-  var section = root_172();
+  var section = root_182();
   var node = child(section);
   {
     var consequent = ($$anchor2) => {
@@ -17330,10 +17385,10 @@ function Timeline($$anchor, $$props) {
       append($$anchor2, fragment);
     };
     var consequent_1 = ($$anchor2) => {
-      var h2 = root21();
-      var text2 = only_child(h2, true);
+      var h2 = root_115();
+      var text_1 = only_child(h2, true);
       template_effect(
-        ($0) => set_text(text2, $0),
+        ($0) => set_text(text_1, $0),
         [
           () =>
             formatScheduleDate($$props.plan.simulation_date, $$props.locale),
@@ -17348,8 +17403,8 @@ function Timeline($$anchor, $$props) {
   }
   var node_2 = sibling(node, 2);
   {
-    var consequent_13 = ($$anchor2) => {
-      var fragment_1 = root_152();
+    var consequent_15 = ($$anchor2) => {
+      var fragment_1 = root_162();
       var node_3 = first_child(fragment_1);
       PreviewStateGraph(node_3, {
         get plan() {
@@ -17376,24 +17431,24 @@ function Timeline($$anchor, $$props) {
       });
       var node_4 = sibling(node_3, 2);
       {
-        var consequent_12 = ($$anchor3) => {
-          var div = root_132();
-          var div_1 = child(div);
+        var consequent_14 = ($$anchor3) => {
+          var div_1 = root_142();
           var div_2 = child(div_1);
-          var table = child(div_2);
+          var div_3 = child(div_2);
+          var table = child(div_3);
           var thead = child(table);
-          var tr = child(thead);
-          var node_5 = child(tr);
+          var tr_1 = child(thead);
+          var node_5 = child(tr_1);
           each(
             node_5,
             16,
             () => ["planned_time", "targets", "action"],
             (label2) => label2,
             ($$anchor4, label2) => {
-              var th = root_115();
-              var text_1 = only_child(th, true);
+              var th = root_214();
+              var text_2 = only_child(th, true);
               template_effect(
-                ($0) => set_text(text_1, $0),
+                ($0) => set_text(text_2, $0),
                 [() => t()(label2)],
               );
               append($$anchor4, th);
@@ -17402,10 +17457,10 @@ function Timeline($$anchor, $$props) {
           var node_6 = sibling(node_5);
           {
             var consequent_2 = ($$anchor4) => {
-              var th_1 = root_115();
-              var text_2 = only_child(th_1, true);
+              var th_1 = root_214();
+              var text_3 = only_child(th_1, true);
               template_effect(
-                ($0) => set_text(text_2, $0),
+                ($0) => set_text(text_3, $0),
                 [() => t()("result")],
               );
               append($$anchor4, th_1);
@@ -17415,23 +17470,34 @@ function Timeline($$anchor, $$props) {
             });
           }
           var th_2 = sibling(node_6);
-          var text_3 = only_child(th_2, true);
-          reset(tr);
+          var text_4 = only_child(th_2, true);
+          reset(tr_1);
           reset(thead);
           var node_7 = sibling(thead);
           each(
             node_7,
-            17,
+            19,
             () =>
               get(groups).slice(
                 get(currentPage) * 50,
                 get(currentPage) * 50 + 50,
               ),
             (group) => group.key,
-            ($$anchor4, group) => {
-              var tbody = root_11();
+            ($$anchor4, group, groupIndex) => {
+              var fragment_2 = root_122();
+              var node_8 = first_child(fragment_2);
+              {
+                var consequent_3 = ($$anchor5) => {
+                  nowMarker($$anchor5);
+                };
+                if_block(node_8, ($$render) => {
+                  if (get(nowIndex) === get(currentPage) * 50 + get(groupIndex))
+                    $$render(consequent_3);
+                });
+              }
+              var tbody_1 = sibling(node_8, 2);
               each(
-                tbody,
+                tbody_1,
                 23,
                 () => get(group).actions,
                 (action2) => action2.key,
@@ -17462,41 +17528,41 @@ function Timeline($$anchor, $$props) {
                       entityNames(),
                     ),
                   );
-                  var tr_1 = root_103();
+                  var tr_2 = root_11();
                   let classes;
-                  var node_8 = child(tr_1);
+                  var node_9 = child(tr_2);
                   {
-                    var consequent_3 = ($$anchor6) => {
-                      var td = root_214();
-                      var text_4 = sibling(child(td));
-                      reset(td);
+                    var consequent_4 = ($$anchor6) => {
+                      var td_1 = root_313();
+                      var text_5 = sibling(child(td_1));
+                      reset(td_1);
                       template_effect(() => {
                         set_attribute2(
-                          td,
+                          td_1,
                           "rowspan",
                           get(group).actions.length,
                         );
-                        set_text(text_4, ` ${get(details).time ?? ""}`);
+                        set_text(text_5, ` ${get(details).time ?? ""}`);
                       });
-                      append($$anchor6, td);
+                      append($$anchor6, td_1);
                     };
-                    if_block(node_8, ($$render) => {
-                      if (get(index2) === 0) $$render(consequent_3);
+                    if_block(node_9, ($$render) => {
+                      if (get(index2) === 0) $$render(consequent_4);
                     });
                   }
-                  var td_1 = sibling(node_8);
-                  var text_5 = only_child(td_1, true);
-                  var td_2 = sibling(td_1);
-                  var span = child(td_2);
-                  var node_9 = child(span);
+                  var td_2 = sibling(node_9);
+                  var text_6 = only_child(td_2, true);
+                  var td_3 = sibling(td_2);
+                  var span_1 = child(td_3);
+                  var node_10 = child(span_1);
                   {
-                    var consequent_4 = ($$anchor6) => {
-                      var span_1 = root_313();
+                    var consequent_5 = ($$anchor6) => {
+                      var span_2 = root_410();
                       let classes_1;
                       template_effect(
                         () =>
                           (classes_1 = set_class(
-                            span_1,
+                            span_2,
                             1,
                             "action-indicator svelte-1iz1525",
                             null,
@@ -17504,37 +17570,37 @@ function Timeline($$anchor, $$props) {
                             { on: get(details).actionState === "on" },
                           )),
                       );
-                      append($$anchor6, span_1);
+                      append($$anchor6, span_2);
                     };
-                    if_block(node_9, ($$render) => {
-                      if (get(details).actionState) $$render(consequent_4);
+                    if_block(node_10, ($$render) => {
+                      if (get(details).actionState) $$render(consequent_5);
                     });
                   }
-                  var text_6 = sibling(node_9);
-                  reset(span);
-                  reset(td_2);
-                  var node_10 = sibling(td_2);
+                  var text_7 = sibling(node_10);
+                  reset(span_1);
+                  reset(td_3);
+                  var node_11 = sibling(td_3);
                   {
-                    var consequent_8 = ($$anchor6) => {
-                      var td_3 = root_75();
+                    var consequent_9 = ($$anchor6) => {
+                      var td_4 = root_84();
                       each(
-                        td_3,
+                        td_4,
                         23,
                         () => get(results),
                         (result, resultIndex) => result.event.id || resultIndex,
                         ($$anchor7, result) => {
-                          var fragment_2 = comment();
-                          var node_11 = first_child(fragment_2);
+                          var fragment_4 = comment();
+                          var node_12 = first_child(fragment_4);
                           {
-                            var consequent_6 = ($$anchor8) => {
-                              var div_3 = root_58();
-                              var node_12 = child(div_3);
+                            var consequent_7 = ($$anchor8) => {
+                              var div_4 = root_67();
+                              var node_13 = child(div_4);
                               {
-                                var consequent_5 = ($$anchor9) => {
-                                  var span_2 = root_410();
-                                  var text_7 = only_child(span_2);
+                                var consequent_6 = ($$anchor9) => {
+                                  var span_3 = root_58();
+                                  var text_8 = only_child(span_3);
                                   template_effect(
-                                    ($0) => set_text(text_7, `${$0 ?? ""}:`),
+                                    ($0) => set_text(text_8, `${$0 ?? ""}:`),
                                     [
                                       () =>
                                         get(result)
@@ -17545,22 +17611,22 @@ function Timeline($$anchor, $$props) {
                                           .join(", "),
                                     ],
                                   );
-                                  append($$anchor9, span_2);
+                                  append($$anchor9, span_3);
                                 };
-                                if_block(node_12, ($$render) => {
+                                if_block(node_13, ($$render) => {
                                   if (get(results).length > 1)
-                                    $$render(consequent_5);
+                                    $$render(consequent_6);
                                 });
                               }
-                              var span_3 = sibling(node_12, 2);
-                              var text_8 = only_child(span_3, true);
-                              var div_4 = sibling(span_3, 2);
-                              var text_9 = only_child(div_4, true);
-                              reset(div_3);
+                              var span_4 = sibling(node_13, 2);
+                              var text_9 = only_child(span_4, true);
+                              var div_5 = sibling(span_4, 2);
+                              var text_10 = only_child(div_5, true);
+                              reset(div_4);
                               template_effect(
                                 ($0) => {
                                   set_class(
-                                    span_3,
+                                    span_4,
                                     1,
                                     clsx2(
                                       get(result).live.outcome.status ===
@@ -17569,54 +17635,54 @@ function Timeline($$anchor, $$props) {
                                         : "error",
                                     ),
                                   );
-                                  set_text(text_8, $0);
+                                  set_text(text_9, $0);
                                   set_text(
-                                    text_9,
+                                    text_10,
                                     get(result).live.outcome.detail,
                                   );
                                 },
                                 [() => t()(get(result).live.outcome.status)],
                               );
-                              append($$anchor8, div_3);
+                              append($$anchor8, div_4);
                             };
-                            var consequent_7 = ($$anchor8) => {
-                              var div_5 = root_67();
-                              var text_10 = only_child(div_5, true);
+                            var consequent_8 = ($$anchor8) => {
+                              var div_6 = root_75();
+                              var text_11 = only_child(div_6, true);
                               template_effect(
-                                ($0) => set_text(text_10, $0),
+                                ($0) => set_text(text_11, $0),
                                 [() => t()("next_event")],
                               );
-                              append($$anchor8, div_5);
+                              append($$anchor8, div_6);
                             };
-                            if_block(node_11, ($$render) => {
+                            if_block(node_12, ($$render) => {
                               if (get(result).live?.outcome)
-                                $$render(consequent_6);
+                                $$render(consequent_7);
                               else if (get(result).live?.current)
-                                $$render(consequent_7, 1);
+                                $$render(consequent_8, 1);
                             });
                           }
-                          append($$anchor7, fragment_2);
+                          append($$anchor7, fragment_4);
                         },
                       );
-                      reset(td_3);
-                      append($$anchor6, td_3);
+                      reset(td_4);
+                      append($$anchor6, td_4);
                     };
-                    if_block(node_10, ($$render) => {
-                      if (liveSession()) $$render(consequent_8);
+                    if_block(node_11, ($$render) => {
+                      if (liveSession()) $$render(consequent_9);
                     });
                   }
-                  var node_13 = sibling(node_10);
+                  var node_14 = sibling(node_11);
                   {
-                    var consequent_10 = ($$anchor6) => {
-                      var td_4 = root_94();
-                      var node_14 = child(td_4);
+                    var consequent_11 = ($$anchor6) => {
+                      var td_5 = root_103();
+                      var node_15 = child(td_5);
                       {
-                        var consequent_9 = ($$anchor7) => {
-                          var button = root_84();
-                          var text_11 = only_child(button, true);
+                        var consequent_10 = ($$anchor7) => {
+                          var button = root_94();
+                          var text_12 = only_child(button, true);
                           template_effect(() => {
                             button.disabled = loading();
-                            set_text(text_11, get(details).source);
+                            set_text(text_12, get(details).source);
                           });
                           delegated("click", button, () =>
                             $$props.onOpenSource?.(get(group).event),
@@ -17624,49 +17690,49 @@ function Timeline($$anchor, $$props) {
                           append($$anchor7, button);
                         };
                         var alternate = ($$anchor7) => {
-                          var text_12 = text();
+                          var text_13 = text();
                           template_effect(() =>
-                            set_text(text_12, get(details).source),
+                            set_text(text_13, get(details).source),
                           );
-                          append($$anchor7, text_12);
+                          append($$anchor7, text_13);
                         };
-                        if_block(node_14, ($$render) => {
-                          if ($$props.onOpenSource) $$render(consequent_9);
+                        if_block(node_15, ($$render) => {
+                          if ($$props.onOpenSource) $$render(consequent_10);
                           else $$render(alternate, -1);
                         });
                       }
-                      reset(td_4);
+                      reset(td_5);
                       template_effect(() =>
                         set_attribute2(
-                          td_4,
+                          td_5,
                           "rowspan",
                           get(group).actions.length,
                         ),
                       );
-                      append($$anchor6, td_4);
+                      append($$anchor6, td_5);
                     };
-                    if_block(node_13, ($$render) => {
-                      if (get(index2) === 0) $$render(consequent_10);
+                    if_block(node_14, ($$render) => {
+                      if (get(index2) === 0) $$render(consequent_11);
                     });
                   }
-                  reset(tr_1);
+                  reset(tr_2);
                   template_effect(
                     ($0) => {
                       set_attribute2(
-                        tr_1,
+                        tr_2,
                         "aria-current",
                         get(current) ? "step" : void 0,
                       );
                       classes = set_class(
-                        tr_1,
+                        tr_2,
                         1,
                         "svelte-1iz1525",
                         null,
                         classes,
                         { current: get(current), completed: $0 },
                       );
-                      set_text(text_5, get(details).targets);
-                      set_text(text_6, ` ${get(details).action ?? ""}`);
+                      set_text(text_6, get(details).targets);
+                      set_text(text_7, ` ${get(details).action ?? ""}`);
                     },
                     [
                       () =>
@@ -17675,46 +17741,64 @@ function Timeline($$anchor, $$props) {
                         ),
                     ],
                   );
-                  append($$anchor5, tr_1);
+                  append($$anchor5, tr_2);
                 },
               );
-              reset(tbody);
-              event("pointerenter", tbody, () =>
+              reset(tbody_1);
+              event("pointerenter", tbody_1, () =>
                 set2(hoveredEventTime, get(group).event.time, true),
               );
-              event("pointerleave", tbody, () => set2(hoveredEventTime, null));
-              delegated("focusin", tbody, () =>
+              event("pointerleave", tbody_1, () =>
+                set2(hoveredEventTime, null),
+              );
+              delegated("focusin", tbody_1, () =>
                 set2(hoveredEventTime, get(group).event.time, true),
               );
-              delegated("focusout", tbody, () => set2(hoveredEventTime, null));
-              append($$anchor4, tbody);
+              delegated("focusout", tbody_1, () =>
+                set2(hoveredEventTime, null),
+              );
+              append($$anchor4, fragment_2);
             },
           );
-          reset(table);
-          reset(div_2);
-          var node_15 = sibling(div_2, 2);
+          var node_16 = sibling(node_7);
           {
-            var consequent_11 = ($$anchor4) => {
-              var div_6 = root_122();
-              var button_1 = child(div_6);
-              var text_13 = only_child(button_1, true);
-              var span_4 = sibling(button_1, 2);
-              var text_14 = only_child(span_4);
-              var button_2 = sibling(span_4, 2);
-              var text_15 = only_child(button_2, true);
-              reset(div_6);
+            var consequent_12 = ($$anchor4) => {
+              nowMarker($$anchor4);
+            };
+            var d = user_derived(
+              () =>
+                get(nowIndex) === get(groups).length &&
+                get(currentPage) === Math.ceil(get(groups).length / 50) - 1,
+            );
+            if_block(node_16, ($$render) => {
+              if (get(d)) $$render(consequent_12);
+            });
+          }
+          reset(table);
+          reset(div_3);
+          var node_17 = sibling(div_3, 2);
+          {
+            var consequent_13 = ($$anchor4) => {
+              var div_7 = root_132();
+              var button_1 = child(div_7);
+              var text_14 = only_child(button_1, true);
+              var span_5 = sibling(button_1, 2);
+              var text_15 = only_child(span_5);
+              var button_2 = sibling(span_5, 2);
+              var text_16 = only_child(button_2, true);
+              reset(div_7);
               template_effect(
                 ($0, $1, $2, $3) => {
                   button_1.disabled = get(currentPage) === 0;
-                  set_text(text_13, $0);
+                  set_text(text_14, $0);
                   set_text(
-                    text_14,
+                    text_15,
                     `${get(events).length ?? ""}
                 ${$1 ?? ""} \xB7 ${get(currentPage) + 1}/${$2 ?? ""}`,
                   );
                   button_2.disabled =
                     (get(currentPage) + 1) * 50 >= get(groups).length;
-                  set_text(text_15, $3);
+                  set_text(text_16, $3);
                 },
                 [
                   () => t()("previous"),
@@ -17729,24 +17813,24 @@ function Timeline($$anchor, $$props) {
               delegated("click", button_2, () =>
                 set2(page, get(currentPage) + 1),
               );
-              append($$anchor4, div_6);
+              append($$anchor4, div_7);
             };
-            if_block(node_15, ($$render) => {
-              if (get(groups).length > 50) $$render(consequent_11);
+            if_block(node_17, ($$render) => {
+              if (get(groups).length > 50) $$render(consequent_13);
             });
           }
+          reset(div_2);
           reset(div_1);
-          reset(div);
-          template_effect(($0) => set_text(text_3, $0), [() => t()("source")]);
-          append($$anchor3, div);
+          template_effect(($0) => set_text(text_4, $0), [() => t()("source")]);
+          append($$anchor3, div_1);
         };
         if_block(node_4, ($$render) => {
-          if ($$props.plan.events.length > 0) $$render(consequent_12);
+          if ($$props.plan.events.length > 0) $$render(consequent_14);
         });
       }
-      var node_16 = sibling(node_4, 2);
+      var node_18 = sibling(node_4, 2);
       each(
-        node_16,
+        node_18,
         16,
         () =>
           $$props.plan.issues.filter(
@@ -17758,33 +17842,33 @@ function Timeline($$anchor, $$props) {
           ),
         (issue) => issue,
         ($$anchor3, issue) => {
-          var p = root_142();
-          var text_16 = only_child(p);
+          var p = root_152();
+          var text_17 = only_child(p);
           template_effect(() => {
             set_class(
               p,
               1,
               clsx2(issue.severity === "error" ? "error" : "hint"),
             );
-            set_text(text_16, `${issue.code ?? ""}: ${issue.message ?? ""}`);
+            set_text(text_17, `${issue.code ?? ""}: ${issue.message ?? ""}`);
           });
           append($$anchor3, p);
         },
       );
       append($$anchor2, fragment_1);
     };
-    var consequent_14 = ($$anchor2) => {
-      var p_1 = root_162();
-      var text_17 = only_child(p_1, true);
+    var consequent_16 = ($$anchor2) => {
+      var p_1 = root_172();
+      var text_18 = only_child(p_1, true);
       template_effect(
-        ($0) => set_text(text_17, $0),
+        ($0) => set_text(text_18, $0),
         [() => t()("loading_schedule")],
       );
       append($$anchor2, p_1);
     };
     if_block(node_2, ($$render) => {
-      if ($$props.plan) $$render(consequent_13);
-      else if (showLoading()) $$render(consequent_14, 1);
+      if ($$props.plan) $$render(consequent_15);
+      else if (showLoading()) $$render(consequent_16, 1);
     });
   }
   reset(section);

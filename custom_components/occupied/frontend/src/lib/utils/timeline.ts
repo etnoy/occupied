@@ -361,6 +361,25 @@ export function eventDetails(
   };
 }
 
+// Insert the marker before the next complete group, or after the day's last one.
+// Absolute instants also distinguish repeated clock times on DST transition days.
+export function previewNowIndex(
+  plan: Plan | undefined,
+  groups: { event: Pick<PlannedEvent, "time"> }[],
+  now: number,
+) {
+  if (
+    !plan ||
+    groups.length === 0 ||
+    !(now >= Date.parse(plan.start) && now < Date.parse(plan.end))
+  ) {
+    return -1;
+  }
+  const index = groups.findIndex(({ event }) => Date.parse(event.time) > now);
+
+  return index === -1 ? groups.length : index;
+}
+
 export function groupPreviewEvents(events: PlannedEvent[]) {
   const groups = new Map<
     string,
