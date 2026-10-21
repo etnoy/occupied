@@ -244,6 +244,53 @@ export class OccupiedPanel extends HTMLElement {
     () => this._loadedEntry,
   );
 
+  private startupComplete = false;
+  private startupGeneration = 0;
+  private readonly startupSubscription = new PanelSubscription<unknown>(
+    () => this.isConnected,
+    () => this.recovery.schedule(1000),
+  );
+
+  get starting() {
+    const state = this._hass?.config?.state;
+
+    return !this.startupComplete && state !== undefined && state !== "RUNNING";
+  }
+
+  private async _waitForStartup() {
+    if (!this.starting) {
+      return false;
+    }
+    this.flush();
+    const generation = this.startupGeneration;
+    await this.startupSubscription.subscribe(
+      this._hass.connection,
+      { type: "subscribe_events", event_type: "homeassistant_started" },
+      () => this._startupFinished(),
+      async () => {
+        // The event may have fired before the subscription was established.
+        const config = await this._hass.callWS<{ state: string }>({
+          type: "get_config",
+        });
+        if (
+          generation === this.startupGeneration &&
+          config.state === "RUNNING"
+        ) {
+          this._startupFinished();
+        }
+      },
+    );
+
+    return this.starting;
+  }
+
+  private _startupFinished() {
+    this.startupComplete = true;
+    this.startupSubscription.dispose();
+    this.flush();
+    this.recovery.schedule(0);
+  }
+
   private readonly recovery = new PanelRecovery(
     () => this._refreshEnvironment(),
     () => this._reconnect(),
@@ -341,6 +388,9 @@ export class OccupiedPanel extends HTMLElement {
 
   disconnectedCallback() {
     this.recovery.dispose();
+    this.startupSubscription.dispose();
+    this.startupComplete = false;
+    this.startupGeneration++;
     if (this.component) {
       void unmount(this.component);
       this.component = undefined;
@@ -371,6 +421,9 @@ export class OccupiedPanel extends HTMLElement {
   };
 
   private _reconnect() {
+    this.startupSubscription.dispose();
+    this.startupComplete = false;
+    this.startupGeneration++;
     this._invalidateRequests();
     this._loadedEntry = null;
     this._disposeSubscription();
@@ -381,6 +434,9 @@ export class OccupiedPanel extends HTMLElement {
   private async _refreshEnvironment(): Promise<boolean> {
     if (!this.isConnected || !this._hass || !this._panel) {
       return true;
+    }
+    if (this.starting && (await this._waitForStartup())) {
+      return false;
     }
     if (this.busy || this._loading) {
       return false;
@@ -666,6 +722,9 @@ export class OccupiedPanel extends HTMLElement {
 
   private async _load() {
     if (!this.isConnected || !this._hass || !this._panel) {
+      return;
+    }
+    if (this.starting && (await this._waitForStartup())) {
       return;
     }
     if (!this._instancesReady && !(await this._loadInstances())) {
@@ -983,6 +1042,9 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   visibleIssues() {
+    if (this.starting) {
+      return [];
+    }
     const issues = new Map<string, Issue>();
     for (const issue of [...(this.document?.warnings || []), ...this.issues]) {
       const key = JSON.stringify([

@@ -106,6 +106,7 @@ var en = {
   action_test_skipped: "Skipped because an earlier command did not complete.",
   close: "Close",
   loading: "Loading\u2026",
+  waiting_for_home_assistant: "Waiting for Home Assistant to start\u2026",
   service_fields: "Service fields",
   required_field: "Required",
   field_example: "Example",
@@ -693,6 +694,8 @@ var sv = {
     "Hoppades \xF6ver eftersom ett tidigare kommando inte slutf\xF6rdes.",
   close: "St\xE4ng",
   loading: "Laddar\u2026",
+  waiting_for_home_assistant:
+    "V\xE4ntar p\xE5 att Home Assistant ska starta\u2026",
   service_fields: "Tj\xE4nstef\xE4lt",
   required_field: "Obligatoriskt",
   field_example: "Exempel",
@@ -20349,8 +20352,9 @@ var root_511 = from_html(
   `<button type="button" class="text-button"> </button>`,
 );
 var root_69 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
-var root_76 = from_html(`<p> </p> <button type="button"> </button>`, 1);
-var root_85 = from_html(
+var root_76 = from_html(`<p role="status" aria-live="polite"> </p>`);
+var root_85 = from_html(`<p> </p> <button type="button"> </button>`, 1);
+var root_95 = from_html(
   `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><!> <!> <!> <div id="notice" class="banner" role="status"> </div> <!> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
   3,
 );
@@ -20521,7 +20525,7 @@ function App($$anchor, $$props) {
     ["preview", "preview"],
     ["settings", "settings"],
   ];
-  var fragment_1 = root_85();
+  var fragment_1 = root_95();
   var ha_top_app_bar_fixed = first_child(fragment_1);
   set_custom_element_data(ha_top_app_bar_fixed, "back-button", true);
   template_effect(
@@ -20611,6 +20615,7 @@ function App($$anchor, $$props) {
             get(panel).tab === id() ? "page" : "false",
           );
           button_3.disabled =
+            get(panel).starting ||
             !get(panel).selectedInstance?.loaded ||
             (get(panel).recovering && id() !== "settings");
           classes = set_class(button_3, 1, "", null, classes, {
@@ -20690,15 +20695,24 @@ function App($$anchor, $$props) {
           var node_9 = first_child(fragment_5);
           {
             var consequent_5 = ($$anchor4) => {
-              var fragment_6 = root_76();
-              var p_5 = first_child(fragment_6);
+              var p_5 = root_76();
               var text_12 = only_child(p_5, true);
-              var button_5 = sibling(p_5, 2);
-              var text_13 = only_child(button_5, true);
+              template_effect(
+                ($0) => set_text(text_12, $0),
+                [() => get(t)("waiting_for_home_assistant")],
+              );
+              append($$anchor4, p_5);
+            };
+            var consequent_6 = ($$anchor4) => {
+              var fragment_6 = root_85();
+              var p_6 = first_child(fragment_6);
+              var text_13 = only_child(p_6, true);
+              var button_5 = sibling(p_6, 2);
+              var text_14 = only_child(button_5, true);
               template_effect(
                 ($0, $1) => {
-                  set_text(text_12, $0);
-                  set_text(text_13, $1);
+                  set_text(text_13, $0);
+                  set_text(text_14, $1);
                 },
                 [
                   () => get(t)("instance_unavailable_hint"),
@@ -20708,15 +20722,15 @@ function App($$anchor, $$props) {
               delegated("click", button_5, () => get(panel).retry());
               append($$anchor4, fragment_6);
             };
-            var consequent_7 = ($$anchor4) => {
+            var consequent_8 = ($$anchor4) => {
               var fragment_7 = comment();
               var node_10 = first_child(fragment_7);
               {
-                var consequent_6 = ($$anchor5) => {
+                var consequent_7 = ($$anchor5) => {
                   var button_6 = root31();
-                  var text_14 = only_child(button_6, true);
+                  var text_15 = only_child(button_6, true);
                   template_effect(
-                    ($0) => set_text(text_14, $0),
+                    ($0) => set_text(text_15, $0),
                     [() => get(t)("retry")],
                   );
                   delegated("click", button_6, () => get(panel).retry());
@@ -20724,7 +20738,7 @@ function App($$anchor, $$props) {
                 };
                 if_block(node_10, ($$render) => {
                   if (get(panel).error && !get(panel)._loading)
-                    $$render(consequent_6);
+                    $$render(consequent_7);
                 });
               }
               append($$anchor4, fragment_7);
@@ -20735,11 +20749,11 @@ function App($$anchor, $$props) {
                 !hasProgram(get(panel)) ||
                 (get(panel).error && !get(panel).entryLoaded),
             );
-            var consequent_8 = ($$anchor4) => {
+            var consequent_9 = ($$anchor4) => {
               var button_7 = root31();
-              var text_15 = only_child(button_7, true);
+              var text_16 = only_child(button_7, true);
               template_effect(
-                ($0) => set_text(text_15, $0),
+                ($0) => set_text(text_16, $0),
                 [() => get(t)("settings")],
               );
               delegated("click", button_7, () =>
@@ -20747,7 +20761,7 @@ function App($$anchor, $$props) {
               );
               append($$anchor4, button_7);
             };
-            var consequent_9 = ($$anchor4) => {
+            var consequent_10 = ($$anchor4) => {
               StepEditor($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -20757,7 +20771,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_10 = ($$anchor4) => {
+            var consequent_11 = ($$anchor4) => {
               RandomEventEditor($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -20767,7 +20781,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_11 = ($$anchor4) => {
+            var consequent_12 = ($$anchor4) => {
               StepsView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -20777,7 +20791,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_12 = ($$anchor4) => {
+            var consequent_13 = ($$anchor4) => {
               RandomView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -20787,7 +20801,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_13 = ($$anchor4) => {
+            var consequent_14 = ($$anchor4) => {
               SettingsView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -20797,7 +20811,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_14 = ($$anchor4) => {
+            var consequent_15 = ($$anchor4) => {
               PreviewView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -20808,26 +20822,27 @@ function App($$anchor, $$props) {
               });
             };
             if_block(node_9, ($$render) => {
-              if (
+              if (get(panel).starting) $$render(consequent_5);
+              else if (
                 get(panel).selectedEntry &&
                 !get(panel).selectedInstance?.loaded
               )
-                $$render(consequent_5);
-              else if (get(d)) $$render(consequent_7, 1);
+                $$render(consequent_6, 1);
+              else if (get(d)) $$render(consequent_8, 2);
               else if (get(panel).recovering && get(panel).tab !== "settings")
-                $$render(consequent_8, 2);
-              else if (get(panel).stepEditor && !get(panel).stepEditor.existing)
                 $$render(consequent_9, 3);
+              else if (get(panel).stepEditor && !get(panel).stepEditor.existing)
+                $$render(consequent_10, 4);
               else if (
                 get(panel).randomEditor &&
                 !get(panel).randomEditor.existing
               )
-                $$render(consequent_10, 4);
-              else if (get(panel).tab === "steps") $$render(consequent_11, 5);
-              else if (get(panel).tab === "random") $$render(consequent_12, 6);
+                $$render(consequent_11, 5);
+              else if (get(panel).tab === "steps") $$render(consequent_12, 6);
+              else if (get(panel).tab === "random") $$render(consequent_13, 7);
               else if (get(panel).tab === "settings")
-                $$render(consequent_13, 7);
-              else if (get(panel).tab === "preview") $$render(consequent_14, 8);
+                $$render(consequent_14, 8);
+              else if (get(panel).tab === "preview") $$render(consequent_15, 9);
             });
           }
           append($$anchor3, fragment_5);
@@ -20841,7 +20856,7 @@ function App($$anchor, $$props) {
   reset(ha_top_app_bar_fixed);
   var node_11 = sibling(ha_top_app_bar_fixed, 2);
   {
-    var consequent_15 = ($$anchor2) => {
+    var consequent_16 = ($$anchor2) => {
       UnsavedStepDialog($$anchor2, {
         get panel() {
           return get(panel);
@@ -20852,7 +20867,7 @@ function App($$anchor, $$props) {
       () => get(panel).pendingStepExit && hasProgram(get(panel)),
     );
     if_block(node_11, ($$render) => {
-      if (get(d_1)) $$render(consequent_15);
+      if (get(d_1)) $$render(consequent_16);
     });
   }
   template_effect(
@@ -21494,6 +21509,46 @@ var OccupiedPanel = class extends HTMLElement {
     },
   );
   previewController = new PreviewController(this, () => this._loadedEntry);
+  startupComplete = false;
+  startupGeneration = 0;
+  startupSubscription = new PanelSubscription(
+    () => this.isConnected,
+    () => this.recovery.schedule(1e3),
+  );
+  get starting() {
+    const state2 = this._hass?.config?.state;
+    return !this.startupComplete && state2 !== void 0 && state2 !== "RUNNING";
+  }
+  async _waitForStartup() {
+    if (!this.starting) {
+      return false;
+    }
+    this.flush();
+    const generation = this.startupGeneration;
+    await this.startupSubscription.subscribe(
+      this._hass.connection,
+      { type: "subscribe_events", event_type: "homeassistant_started" },
+      () => this._startupFinished(),
+      async () => {
+        const config = await this._hass.callWS({
+          type: "get_config",
+        });
+        if (
+          generation === this.startupGeneration &&
+          config.state === "RUNNING"
+        ) {
+          this._startupFinished();
+        }
+      },
+    );
+    return this.starting;
+  }
+  _startupFinished() {
+    this.startupComplete = true;
+    this.startupSubscription.dispose();
+    this.flush();
+    this.recovery.schedule(0);
+  }
   recovery = new PanelRecovery(
     () => this._refreshEnvironment(),
     () => this._reconnect(),
@@ -21581,6 +21636,9 @@ var OccupiedPanel = class extends HTMLElement {
   }
   disconnectedCallback() {
     this.recovery.dispose();
+    this.startupSubscription.dispose();
+    this.startupComplete = false;
+    this.startupGeneration++;
     if (this.component) {
       void unmount(this.component);
       this.component = void 0;
@@ -21608,6 +21666,9 @@ var OccupiedPanel = class extends HTMLElement {
     event2.returnValue = "";
   };
   _reconnect() {
+    this.startupSubscription.dispose();
+    this.startupComplete = false;
+    this.startupGeneration++;
     this._invalidateRequests();
     this._loadedEntry = null;
     this._disposeSubscription();
@@ -21617,6 +21678,9 @@ var OccupiedPanel = class extends HTMLElement {
   async _refreshEnvironment() {
     if (!this.isConnected || !this._hass || !this._panel) {
       return true;
+    }
+    if (this.starting && (await this._waitForStartup())) {
+      return false;
     }
     if (this.busy || this._loading) {
       return false;
@@ -21883,6 +21947,9 @@ var OccupiedPanel = class extends HTMLElement {
   }
   async _load() {
     if (!this.isConnected || !this._hass || !this._panel) {
+      return;
+    }
+    if (this.starting && (await this._waitForStartup())) {
       return;
     }
     if (!this._instancesReady && !(await this._loadInstances())) {
@@ -22172,6 +22239,9 @@ var OccupiedPanel = class extends HTMLElement {
     }
   }
   visibleIssues() {
+    if (this.starting) {
+      return [];
+    }
     const issues = /* @__PURE__ */ new Map();
     for (const issue of [...(this.document?.warnings || []), ...this.issues]) {
       const key2 = JSON.stringify([
