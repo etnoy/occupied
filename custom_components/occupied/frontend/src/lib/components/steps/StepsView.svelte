@@ -61,11 +61,7 @@
   />
   <div class="step-layout">
     <div class="step-list" aria-label={t("steps")}>
-      {#each stepTree(
-        entries,
-        panel.catalog.time_sources,
-        relatedEntries,
-      ) as { entry, depth } (entry.id)}
+      {#each stepTree(entries, panel.catalog.time_sources, relatedEntries) as { entry, depth } (entry.id)}
         {@const warnings = issues
           .filter(({ stepId }) => stepId === entry.id)
           .map(({ issue }) => issue)}

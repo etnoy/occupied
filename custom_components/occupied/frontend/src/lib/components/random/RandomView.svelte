@@ -27,10 +27,7 @@
     ];
     const compare = timingOrder(orderedEntries, panel.catalog.time_sources);
     entries.sort((a, b) =>
-      compare(
-        { ...a, id: `random:${a.id}` },
-        { ...b, id: `random:${b.id}` },
-      ),
+      compare({ ...a, id: `random:${a.id}` }, { ...b, id: `random:${b.id}` }),
     );
 
     return {
