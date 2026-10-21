@@ -20353,9 +20353,8 @@ var root_511 = from_html(
 );
 var root_69 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
 var root_76 = from_html(`<p role="status" aria-live="polite"> </p>`);
-var root_85 = from_html(`<p> </p> <button type="button"> </button>`, 1);
-var root_95 = from_html(
-  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><!> <!> <!> <div id="notice" class="banner" role="status"> </div> <!> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
+var root_85 = from_html(
+  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><!> <!> <!> <div id="notice" class="banner" role="status"> </div> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
   3,
 );
 function App($$anchor, $$props) {
@@ -20456,8 +20455,6 @@ function App($$anchor, $$props) {
     void get(revision);
     const showingCards =
       hasProgram(get(panel)) &&
-      get(panel).selectedInstance?.loaded &&
-      !get(panel)._loading &&
       (!get(panel).stepEditor || get(panel).stepEditor.existing) &&
       (!get(panel).randomEditor || get(panel).randomEditor.existing);
     const entries =
@@ -20525,7 +20522,7 @@ function App($$anchor, $$props) {
     ["preview", "preview"],
     ["settings", "settings"],
   ];
-  var fragment_1 = root_95();
+  var fragment_1 = root_85();
   var ha_top_app_bar_fixed = first_child(fragment_1);
   set_custom_element_data(ha_top_app_bar_fixed, "back-button", true);
   template_effect(
@@ -20580,20 +20577,7 @@ function App($$anchor, $$props) {
   toolbar(node_4);
   var div_1 = sibling(node_4, 2);
   var text_6 = only_child(div_1, true);
-  var node_5 = sibling(div_1, 2);
-  {
-    var consequent_3 = ($$anchor2) => {
-      var button_2 = root31();
-      var text_7 = only_child(button_2, true);
-      template_effect(($0) => set_text(text_7, $0), [() => get(t)("retry")]);
-      delegated("click", button_2, () => get(panel).retry());
-      append($$anchor2, button_2);
-    };
-    if_block(node_5, ($$render) => {
-      if (get(panel).runtimeSubscriptionError) $$render(consequent_3);
-    });
-  }
-  var nav = sibling(node_5, 2);
+  var nav = sibling(div_1, 2);
   each(
     nav,
     21,
@@ -20603,48 +20587,48 @@ function App($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let id = () => get($$array)[0];
       let label2 = () => get($$array)[1];
-      var button_3 = root31();
+      var button_2 = root31();
       let classes;
-      var text_8 = only_child(button_3, true);
+      var text_7 = only_child(button_2, true);
       template_effect(
         ($0, $1) => {
-          set_attribute2(button_3, "data-tab", id());
+          set_attribute2(button_2, "data-tab", id());
           set_attribute2(
-            button_3,
+            button_2,
             "aria-current",
             get(panel).tab === id() ? "page" : "false",
           );
-          button_3.disabled =
+          button_2.disabled =
             get(panel).starting ||
             !get(panel).selectedInstance?.loaded ||
             (get(panel).recovering && id() !== "settings");
-          classes = set_class(button_3, 1, "", null, classes, {
+          classes = set_class(button_2, 1, "", null, classes, {
             "tab-warning": $0,
           });
-          set_text(text_8, $1);
+          set_text(text_7, $1);
         },
         [() => get(issueTabs).has(id()), () => get(t)(label2())],
       );
-      delegated("click", button_3, () => get(panel).navigate(id()));
-      append($$anchor2, button_3);
+      delegated("click", button_2, () => get(panel).navigate(id()));
+      append($$anchor2, button_2);
     },
   );
   reset(nav);
   var div_2 = sibling(nav, 2);
-  var node_6 = child(div_2);
+  var node_5 = child(div_2);
   {
-    var consequent_4 = ($$anchor2) => {
-      var button_4 = root_511();
-      var text_9 = only_child(button_4, true);
+    var consequent_3 = ($$anchor2) => {
+      var button_3 = root_511();
+      var text_8 = only_child(button_3, true);
       template_effect(
-        ($0) => set_text(text_9, $0),
+        ($0) => set_text(text_8, $0),
         [() => get(t)("back_to_steps")],
       );
-      delegated("click", button_4, () => get(panel).navigate("steps"));
-      append($$anchor2, button_4);
+      delegated("click", button_3, () => get(panel).navigate("steps"));
+      append($$anchor2, button_3);
     };
-    if_block(node_6, ($$render) => {
-      if (!get(primary)) $$render(consequent_4);
+    if_block(node_5, ($$render) => {
+      if (!get(primary)) $$render(consequent_3);
     });
   }
   reset(div_2);
@@ -20664,24 +20648,24 @@ function App($$anchor, $$props) {
   );
   reset(div_3);
   var div_4 = sibling(div_3, 2);
-  var node_7 = child(div_4);
+  var node_6 = child(div_4);
   key(
-    node_7,
+    node_6,
     () => `${get(panel).selectedEntry}:${get(panel).tab}`,
     ($$anchor2) => {
       var fragment_3 = comment();
-      var node_8 = first_child(fragment_3);
+      var node_7 = first_child(fragment_3);
       {
         const failed = ($$anchor3, error = noop) => {
           var fragment_4 = root_69();
           var p_3 = first_child(fragment_4);
-          var text_10 = only_child(p_3, true);
+          var text_9 = only_child(p_3, true);
           var p_4 = sibling(p_3, 2);
-          var text_11 = only_child(p_4, true);
+          var text_10 = only_child(p_4, true);
           template_effect(
             ($0, $1) => {
-              set_text(text_10, $0);
-              set_text(text_11, $1);
+              set_text(text_9, $0);
+              set_text(text_10, $1);
             },
             [
               () => get(t)(errorMessage(error())),
@@ -20690,78 +20674,52 @@ function App($$anchor, $$props) {
           );
           append($$anchor3, fragment_4);
         };
-        boundary(node_8, { failed }, ($$anchor3) => {
+        boundary(node_7, { failed }, ($$anchor3) => {
           var fragment_5 = comment();
-          var node_9 = first_child(fragment_5);
+          var node_8 = first_child(fragment_5);
           {
-            var consequent_5 = ($$anchor4) => {
+            var consequent_4 = ($$anchor4) => {
               var p_5 = root_76();
-              var text_12 = only_child(p_5, true);
+              var text_11 = only_child(p_5, true);
               template_effect(
-                ($0) => set_text(text_12, $0),
+                ($0) => set_text(text_11, $0),
                 [() => get(t)("waiting_for_home_assistant")],
               );
               append($$anchor4, p_5);
             };
-            var consequent_6 = ($$anchor4) => {
-              var fragment_6 = root_85();
-              var p_6 = first_child(fragment_6);
-              var text_13 = only_child(p_6, true);
-              var button_5 = sibling(p_6, 2);
-              var text_14 = only_child(button_5, true);
-              template_effect(
-                ($0, $1) => {
-                  set_text(text_13, $0);
-                  set_text(text_14, $1);
-                },
-                [
-                  () => get(t)("instance_unavailable_hint"),
-                  () => get(t)("retry"),
-                ],
-              );
-              delegated("click", button_5, () => get(panel).retry());
-              append($$anchor4, fragment_6);
-            };
-            var consequent_8 = ($$anchor4) => {
-              var fragment_7 = comment();
-              var node_10 = first_child(fragment_7);
-              {
-                var consequent_7 = ($$anchor5) => {
-                  var button_6 = root31();
-                  var text_15 = only_child(button_6, true);
-                  template_effect(
-                    ($0) => set_text(text_15, $0),
-                    [() => get(t)("retry")],
-                  );
-                  delegated("click", button_6, () => get(panel).retry());
-                  append($$anchor5, button_6);
-                };
-                if_block(node_10, ($$render) => {
-                  if (get(panel).error && !get(panel)._loading)
-                    $$render(consequent_7);
-                });
-              }
-              append($$anchor4, fragment_7);
-            };
             var d = user_derived(
-              () =>
-                get(panel)._loading ||
-                !hasProgram(get(panel)) ||
-                (get(panel).error && !get(panel).entryLoaded),
+              () => !hasProgram(get(panel)) && get(panel).starting,
             );
-            var consequent_9 = ($$anchor4) => {
-              var button_7 = root31();
-              var text_16 = only_child(button_7, true);
+            var consequent_5 = ($$anchor4) => {
+              var p_6 = root_221();
+              var text_12 = only_child(p_6, true);
               template_effect(
-                ($0) => set_text(text_16, $0),
+                ($0) => set_text(text_12, $0),
+                [() => get(t)("instance_unavailable_hint")],
+              );
+              append($$anchor4, p_6);
+            };
+            var d_1 = user_derived(
+              () =>
+                !hasProgram(get(panel)) &&
+                get(panel).selectedEntry &&
+                !get(panel).selectedInstance?.loaded,
+            );
+            var consequent_6 = ($$anchor4) => {};
+            var d_2 = user_derived(() => !hasProgram(get(panel)));
+            var consequent_7 = ($$anchor4) => {
+              var button_4 = root31();
+              var text_13 = only_child(button_4, true);
+              template_effect(
+                ($0) => set_text(text_13, $0),
                 [() => get(t)("settings")],
               );
-              delegated("click", button_7, () =>
+              delegated("click", button_4, () =>
                 get(panel).navigate("settings"),
               );
-              append($$anchor4, button_7);
+              append($$anchor4, button_4);
             };
-            var consequent_10 = ($$anchor4) => {
+            var consequent_8 = ($$anchor4) => {
               StepEditor($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -20771,7 +20729,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_11 = ($$anchor4) => {
+            var consequent_9 = ($$anchor4) => {
               RandomEventEditor($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -20781,7 +20739,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_12 = ($$anchor4) => {
+            var consequent_10 = ($$anchor4) => {
               StepsView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -20791,7 +20749,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_13 = ($$anchor4) => {
+            var consequent_11 = ($$anchor4) => {
               RandomView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -20801,7 +20759,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_14 = ($$anchor4) => {
+            var consequent_12 = ($$anchor4) => {
               SettingsView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -20811,7 +20769,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_15 = ($$anchor4) => {
+            var consequent_13 = ($$anchor4) => {
               PreviewView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -20821,28 +20779,24 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            if_block(node_9, ($$render) => {
-              if (get(panel).starting) $$render(consequent_5);
-              else if (
-                get(panel).selectedEntry &&
-                !get(panel).selectedInstance?.loaded
-              )
-                $$render(consequent_6, 1);
-              else if (get(d)) $$render(consequent_8, 2);
+            if_block(node_8, ($$render) => {
+              if (get(d)) $$render(consequent_4);
+              else if (get(d_1)) $$render(consequent_5, 1);
+              else if (get(d_2)) $$render(consequent_6, 2);
               else if (get(panel).recovering && get(panel).tab !== "settings")
-                $$render(consequent_9, 3);
+                $$render(consequent_7, 3);
               else if (get(panel).stepEditor && !get(panel).stepEditor.existing)
-                $$render(consequent_10, 4);
+                $$render(consequent_8, 4);
               else if (
                 get(panel).randomEditor &&
                 !get(panel).randomEditor.existing
               )
-                $$render(consequent_11, 5);
-              else if (get(panel).tab === "steps") $$render(consequent_12, 6);
-              else if (get(panel).tab === "random") $$render(consequent_13, 7);
+                $$render(consequent_9, 5);
+              else if (get(panel).tab === "steps") $$render(consequent_10, 6);
+              else if (get(panel).tab === "random") $$render(consequent_11, 7);
               else if (get(panel).tab === "settings")
-                $$render(consequent_14, 8);
-              else if (get(panel).tab === "preview") $$render(consequent_15, 9);
+                $$render(consequent_12, 8);
+              else if (get(panel).tab === "preview") $$render(consequent_13, 9);
             });
           }
           append($$anchor3, fragment_5);
@@ -20854,20 +20808,20 @@ function App($$anchor, $$props) {
   reset(div_4);
   reset(main);
   reset(ha_top_app_bar_fixed);
-  var node_11 = sibling(ha_top_app_bar_fixed, 2);
+  var node_9 = sibling(ha_top_app_bar_fixed, 2);
   {
-    var consequent_16 = ($$anchor2) => {
+    var consequent_14 = ($$anchor2) => {
       UnsavedStepDialog($$anchor2, {
         get panel() {
           return get(panel);
         },
       });
     };
-    var d_1 = user_derived(
+    var d_3 = user_derived(
       () => get(panel).pendingStepExit && hasProgram(get(panel)),
     );
-    if_block(node_11, ($$render) => {
-      if (get(d_1)) $$render(consequent_16);
+    if_block(node_9, ($$render) => {
+      if (get(d_3)) $$render(consequent_14);
     });
   }
   template_effect(

@@ -95,6 +95,10 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     panel.getByRole("button", { name: "Create your first step" }),
   ).toBeVisible();
+  await panel.getByRole("button", { name: "Settings", exact: true }).click();
+  const settingsEditor = panel.locator("ha-code-editor");
+  await expect(settingsEditor).toBeVisible();
+  const settingsNode = await settingsEditor.elementHandle();
   const entryId = await panel.evaluate((element) => {
     const controller = element as OccupiedPanel;
     controller.change(["name"], "Pending reload draft");
@@ -118,14 +122,21 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     });
   const failedReload = await reloadEntry();
   expect(failedReload.ok()).toBeTruthy();
+  await expect
+    .poll(() => panel.evaluate((element) => (element as OccupiedPanel).error))
+    .toBe("Simulated controller load failure");
+  await expect(settingsEditor).toBeVisible();
   await expect(
     panel.getByRole("button", { name: "Retry", exact: true }),
-  ).toBeVisible();
-  await expect(panel.locator("#error")).toHaveCount(0);
-  await expect(
-    panel.getByText("Simulated controller load failure", { exact: true }),
   ).toHaveCount(0);
-  await panel.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect
+    .poll(() =>
+      panel.evaluate((element) => (element as OccupiedPanel).entryLoaded),
+    )
+    .toBe(true);
+  expect(await settingsNode!.evaluate((element) => element.isConnected)).toBe(
+    true,
+  );
   expect(
     await panel.evaluate((element) => (element as OccupiedPanel).draft?.name),
   ).toBe("Pending reload draft");
@@ -137,6 +148,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       panel.evaluate((element) => (element as OccupiedPanel).entryLoaded),
     )
     .toBe(true);
+  await panel.getByRole("button", { name: "Steps", exact: true }).click();
   await panel.getByRole("button", { name: "Create your first step" }).click();
   await panel
     .getByRole("textbox", { name: "Step name", exact: true })
