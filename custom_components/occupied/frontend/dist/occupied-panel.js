@@ -409,15 +409,7 @@ var en = {
   remove_entity: "Remove entity",
   entity_light_settings: "Light settings",
   entity_brightness: "Brightness (%)",
-  entity_transition: "Transition (seconds)",
-  entity_setting_unspecified: "Not specified",
   entity_brightness_summary: "Brightness {value}%",
-  entity_transition_summary: "Transition {value}s",
-  entity_settings_hint:
-    "Empty fields send no value. Use Turn off to switch a light off.",
-  entity_settings_unavailable:
-    "Some saved settings are not currently supported or the entity is unavailable. They are preserved until you reset them.",
-  entity_settings_reset: "Reset light settings",
   entity_brightness_error:
     "Enter a brightness greater than 0 and up to 100%. Use Turn off for 0%.",
   entity_transition_error: "Enter a transition from 0 to 604800 seconds.",
@@ -1066,15 +1058,7 @@ var sv = {
   remove_entity: "Ta bort entitet",
   entity_light_settings: "Ljusinst\xE4llningar",
   entity_brightness: "Ljusstyrka (%)",
-  entity_transition: "\xD6verg\xE5ng (sekunder)",
-  entity_setting_unspecified: "Inte angivet",
   entity_brightness_summary: "Ljusstyrka {value}%",
-  entity_transition_summary: "\xD6verg\xE5ng {value}s",
-  entity_settings_hint:
-    "Tomma f\xE4lt skickar inget v\xE4rde. V\xE4lj Sl\xE5 av f\xF6r att sl\xE4cka en lampa.",
-  entity_settings_unavailable:
-    "Vissa sparade inst\xE4llningar st\xF6ds inte just nu eller s\xE5 \xE4r entiteten otillg\xE4nglig. De bevaras tills du \xE5terst\xE4ller dem.",
-  entity_settings_reset: "\xC5terst\xE4ll ljusinst\xE4llningar",
   entity_brightness_error:
     "Ange en ljusstyrka \xF6ver 0 och h\xF6gst 100 %. V\xE4lj Sl\xE5 av f\xF6r 0 %.",
   entity_transition_error:
@@ -9742,6 +9726,9 @@ function coverTarget(action2, previous = {}) {
 function emptyEntitySettings() {
   return { brightness: "", transition: "" };
 }
+function canSetBrightness(entity, action2) {
+  return action2 === "turn_on" && entity.startsWith("light.");
+}
 function brightnessPercentage(raw) {
   return String(Math.round((raw * 1e3) / 255) / 10);
 }
@@ -9888,24 +9875,12 @@ function entitySettingsData(form, entity) {
   return data;
 }
 function entitySettingsSummary(settings, t, action2 = "turn_on") {
-  const parts = [];
-  if (action2 === "turn_on" && settings?.brightness.trim()) {
-    parts.push(
-      t("entity_brightness_summary").replace(
+  return action2 === "turn_on" && settings?.brightness.trim()
+    ? t("entity_brightness_summary").replace(
         "{value}",
         () => settings.brightness,
-      ),
-    );
-  }
-  if (settings?.transition.trim()) {
-    parts.push(
-      t("entity_transition_summary").replace(
-        "{value}",
-        () => settings.transition,
-      ),
-    );
-  }
-  return parts.join(" \xB7 ");
+      )
+    : "";
 }
 
 // custom_components/occupied/frontend/src/lib/utils/custom-action.ts
@@ -13585,18 +13560,15 @@ var root_18 = from_html(
 );
 var root_27 = from_html(`<span class="hint svelte-1oqxmbq"> </span>`);
 var root_37 = from_html(
-  `<div class="field"><label> </label> <input type="number" step="any"/> <!></div>`,
+  `<details><summary class="svelte-1oqxmbq"> <!></summary> <div class="entity-fields svelte-1oqxmbq"><div class="field"><ha-selector></ha-selector> <!></div></div></details>`,
+  2,
 );
-var root_44 = from_html(`<p class="hint"> </p>`);
-var root_54 = from_html(
-  `<details><summary class="svelte-1oqxmbq"> <!></summary> <div class="entity-fields svelte-1oqxmbq"></div> <p class="hint"> </p> <!> <button type="button"> </button></details>`,
-);
-var root_63 = from_html(
+var root_44 = from_html(
   `<div class="entity-row svelte-1oqxmbq"><div class="entity-target svelte-1oqxmbq"><!></div> <!></div>`,
 );
 var $$css5 = {
   hash: "svelte-1oqxmbq",
-  code: ".entity-row.svelte-1oqxmbq {border:1px solid var(--divider-color, #d5dce3);border-radius:8px;padding:12px;margin-bottom:10px;min-width:0;}.entity-target.svelte-1oqxmbq {display:flex;align-items:center;gap:8px;}ha-selector.svelte-1oqxmbq {flex:1;min-width:0;}.entity-name.svelte-1oqxmbq {overflow-wrap:anywhere;}.entity-fields.svelte-1oqxmbq {display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 160px), 1fr));gap:12px;margin-top:12px;}summary.svelte-1oqxmbq .hint:where(.svelte-1oqxmbq) {font-weight:normal;}",
+  code: ".entity-row.svelte-1oqxmbq {border:1px solid var(--divider-color, #d5dce3);border-radius:8px;padding:12px;margin-bottom:10px;min-width:0;}.entity-target.svelte-1oqxmbq {display:flex;align-items:center;gap:8px;}ha-selector.svelte-1oqxmbq {flex:1;min-width:0;}.entity-name.svelte-1oqxmbq {overflow-wrap:anywhere;}.entity-fields.svelte-1oqxmbq {max-width:520px;margin-top:12px;}ha-selector.svelte-1oqxmbq {display:block;}summary.svelte-1oqxmbq .hint:where(.svelte-1oqxmbq) {font-weight:normal;}",
 };
 function EntityRow($$anchor, $$props) {
   push($$props, true);
@@ -13613,42 +13585,22 @@ function EntityRow($$anchor, $$props) {
   let settings = user_derived(
     () => get(form).entitySettings?.[$$props.entity] || emptyEntitySettings(),
   );
-  let capability = user_derived(() =>
-    $$props.panel.catalog.entities.find(
-      (item) => item.entity_id === $$props.entity,
-    ),
-  );
-  let brightness = user_derived(
-    () =>
-      get(form).action === "turn_on" &&
-      $$props.entity.startsWith("light.") &&
-      !!get(capability)?.dimmable,
-  );
-  let transition2 = user_derived(
-    () => $$props.entity.startsWith("light.") && !!get(capability)?.transition,
+  let brightness = user_derived(() =>
+    canSetBrightness($$props.entity, get(form).action),
   );
   let field = user_derived(() => `entitySettings.${$$props.entity}`);
   let summary = user_derived(() =>
     entitySettingsSummary(get(settings), get(t), get(form).action),
   );
-  let unsupported = user_derived(
-    () =>
-      (get(form).action === "turn_on" &&
-        !!get(settings).brightness &&
-        !get(brightness)) ||
-      (!!get(settings).transition && !get(transition2)),
-  );
   let invalid = user_derived(
-    () =>
-      !!get(editor).errors[`${get(field)}.brightness`] ||
-      !!get(editor).errors[`${get(field)}.transition`],
+    () => !!get(editor).errors[`${get(field)}.brightness`],
   );
   user_effect(() => {
     if (get(invalid)) {
       set2(expanded, true);
     }
   });
-  var div = root_63();
+  var div = root_44();
   var div_1 = child(div);
   var node = child(div_1);
   {
@@ -13714,8 +13666,9 @@ function EntityRow($$anchor, $$props) {
   reset(div_1);
   var node_1 = sibling(div_1, 2);
   {
-    var consequent_4 = ($$anchor2) => {
-      var details = root_54();
+    var consequent_2 = ($$anchor2) => {
+      const fieldKey = user_derived(() => `${get(field)}.brightness`);
+      var details = root_37();
       var summary_1 = child(details);
       var text_1 = child(summary_1);
       var node_2 = sibling(text_1);
@@ -13732,150 +13685,89 @@ function EntityRow($$anchor, $$props) {
       }
       reset(summary_1);
       var div_2 = sibling(summary_1, 2);
-      each(
-        div_2,
-        20,
-        () => ["brightness", "transition"],
-        (key2) => key2,
-        ($$anchor3, key2) => {
-          const available = user_derived(() =>
-            key2 === "brightness" ? get(brightness) : get(transition2),
-          );
-          var fragment_1 = comment();
-          var node_3 = first_child(fragment_1);
-          {
-            var consequent_2 = ($$anchor4) => {
-              const fieldKey = user_derived(() => `${get(field)}.${key2}`);
-              const id = user_derived(
-                () => `step-${get(fieldPrefix)}${get(fieldKey)}`,
-              );
-              var div_3 = root_37();
-              var label2 = child(div_3);
-              var text_3 = only_child(label2, true);
-              var input = sibling(label2, 2);
-              remove_input_defaults(input);
-              var node_4 = sibling(input, 2);
-              {
-                let $0 = user_derived(() => ({ ...get(editor).errors }));
-                FieldError(node_4, {
-                  get t() {
-                    return get(t);
-                  },
-                  get key() {
-                    return get(fieldKey);
-                  },
-                  get fieldPrefix() {
-                    return get(fieldPrefix);
-                  },
-                  get errors() {
-                    return get($0);
-                  },
-                });
-              }
-              reset(div_3);
-              template_effect(
-                ($0, $1) => {
-                  set_attribute2(label2, "for", get(id));
-                  set_text(text_3, $0);
-                  set_attribute2(input, "id", get(id));
-                  set_attribute2(input, "min", key2 === "brightness" ? 0.1 : 0);
-                  set_attribute2(
-                    input,
-                    "max",
-                    key2 === "brightness" ? 100 : 604800,
-                  );
-                  input.disabled = !get(available);
-                  set_value(input, get(settings)[key2]);
-                  set_attribute2(input, "placeholder", $1);
-                  set_attribute2(
-                    input,
-                    "data-builder-field",
-                    `${get(fieldPrefix)}${get(fieldKey)}`,
-                  );
-                  set_attribute2(
-                    input,
-                    "aria-invalid",
-                    get(editor).errors[get(fieldKey)] ? "true" : void 0,
-                  );
-                  set_attribute2(
-                    input,
-                    "aria-describedby",
-                    get(editor).errors[get(fieldKey)]
-                      ? `step-error-${get(fieldPrefix)}${get(fieldKey)}`
-                      : void 0,
-                  );
-                },
-                [
-                  () =>
-                    get(t)(
-                      key2 === "brightness"
-                        ? "entity_brightness"
-                        : "entity_transition",
-                    ),
-                  () => get(t)("entity_setting_unspecified"),
-                ],
-              );
-              delegated("input", input, (event2) => {
-                updateEntitySetting(
-                  get(form),
-                  $$props.entity,
-                  key2,
-                  event2.currentTarget.value,
-                );
-                $$props.context.changed(get(fieldKey));
-              });
-              append($$anchor4, div_3);
-            };
-            if_block(node_3, ($$render) => {
-              if (
-                get(available) ||
-                (key2 === "brightness"
-                  ? get(form).action === "turn_on" && get(settings).brightness
-                  : get(settings).transition)
-              )
-                $$render(consequent_2);
-            });
-          }
-          append($$anchor3, fragment_1);
-        },
+      var div_3 = child(div_2);
+      var ha_selector_1 = child(div_3);
+      template_effect(
+        ($0) => set_custom_element_data(ha_selector_1, "aria-label", $0),
+        [() => get(t)("entity_brightness")],
       );
-      reset(div_2);
-      var p = sibling(div_2, 2);
-      var text_4 = only_child(p, true);
-      var node_5 = sibling(p, 2);
+      template_effect(() =>
+        set_custom_element_data(
+          ha_selector_1,
+          "data-builder-field",
+          `${get(fieldPrefix)}${get(fieldKey)}`,
+        ),
+      );
+      template_effect(() =>
+        set_custom_element_data(
+          ha_selector_1,
+          "aria-invalid",
+          get(editor).errors[get(fieldKey)] ? "true" : void 0,
+        ),
+      );
+      template_effect(() =>
+        set_custom_element_data(
+          ha_selector_1,
+          "aria-describedby",
+          get(editor).errors[get(fieldKey)]
+            ? `step-error-${get(fieldPrefix)}${get(fieldKey)}`
+            : void 0,
+        ),
+      );
+      set_class(ha_selector_1, 1, "svelte-1oqxmbq");
+      action(
+        ha_selector_1,
+        ($$node, $$action_arg) => properties?.($$node, $$action_arg),
+        () => ({
+          hass: $$props.panel._hass,
+          label: get(t)("entity_brightness"),
+          required: false,
+          selector: { number: { min: 1, max: 100, step: 1, mode: "slider" } },
+          value: get(settings).brightness.trim()
+            ? Number(get(settings).brightness)
+            : void 0,
+        }),
+      );
+      var node_3 = sibling(ha_selector_1, 2);
       {
-        var consequent_3 = ($$anchor3) => {
-          var p_1 = root_44();
-          var text_5 = only_child(p_1, true);
-          template_effect(
-            ($0) => set_text(text_5, $0),
-            [() => get(t)("entity_settings_unavailable")],
-          );
-          append($$anchor3, p_1);
-        };
-        if_block(node_5, ($$render) => {
-          if (get(unsupported)) $$render(consequent_3);
+        let $0 = user_derived(() => ({ ...get(editor).errors }));
+        FieldError(node_3, {
+          get t() {
+            return get(t);
+          },
+          get key() {
+            return get(fieldKey);
+          },
+          get fieldPrefix() {
+            return get(fieldPrefix);
+          },
+          get errors() {
+            return get($0);
+          },
         });
       }
-      var button_1 = sibling(node_5, 2);
-      var text_6 = only_child(button_1, true);
+      reset(div_3);
+      reset(div_2);
       reset(details);
       template_effect(
-        ($0, $1, $2) => {
-          set_text(text_1, `${$0 ?? ""} `);
-          set_text(text_4, $1);
-          button_1.disabled = !get(summary);
-          set_text(text_6, $2);
-        },
-        [
-          () => get(t)("entity_light_settings"),
-          () => get(t)("entity_settings_hint"),
-          () => get(t)("entity_settings_reset"),
-        ],
+        ($0) => set_text(text_1, `${$0 ?? ""} `),
+        [() => get(t)("entity_light_settings")],
       );
-      delegated("click", button_1, () => {
-        resetEntitySettings(get(form), $$props.entity);
-        $$props.context.changed("entities");
+      event("value-changed", ha_selector_1, (event2) => {
+        if (!isValueChangedEvent(event2)) {
+          return;
+        }
+        const value = event2.detail.value;
+        if (value !== void 0 && value !== null && typeof value !== "number") {
+          return;
+        }
+        updateEntitySetting(
+          get(form),
+          $$props.entity,
+          "brightness",
+          value == null ? "" : String(value),
+        );
+        $$props.context.changed(get(fieldKey));
       });
       bind_property(
         "open",
@@ -13887,8 +13779,7 @@ function EntityRow($$anchor, $$props) {
       append($$anchor2, details);
     };
     if_block(node_1, ($$render) => {
-      if (get(brightness) || get(transition2) || get(summary))
-        $$render(consequent_4);
+      if (get(brightness)) $$render(consequent_2);
     });
   }
   reset(div);
@@ -13896,7 +13787,7 @@ function EntityRow($$anchor, $$props) {
   append($$anchor, div);
   pop();
 }
-delegate(["click", "input"]);
+delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/shared/EntitiesEditor.svelte
 var root13 = from_html(`<ha-selector></ha-selector>`, 2);
@@ -14353,8 +14244,8 @@ var root_46 = from_html(
   `<!> <!> <p class="hint"> </p> <p class="hint"> </p>`,
   1,
 );
-var root_55 = from_html(`<p> </p>`);
-var root_64 = from_html(`<p> <code> </code></p>`);
+var root_54 = from_html(`<p> </p>`);
+var root_63 = from_html(`<p> <code> </code></p>`);
 var root_72 = from_html(`<dt><code> </code> </dt> <dd><!> <!></dd>`, 1);
 var root_82 = from_html(`<button type="button"> </button>`);
 var root_92 = from_html(
@@ -14842,7 +14733,7 @@ function ActionEditor($$anchor, $$props) {
           var node_14 = child(dd);
           {
             var consequent_9 = ($$anchor4) => {
-              var p_4 = root_55();
+              var p_4 = root_54();
               var text_8 = only_child(p_4, true);
               template_effect(() => set_text(text_8, field().description));
               append($$anchor4, p_4);
@@ -14854,7 +14745,7 @@ function ActionEditor($$anchor, $$props) {
           var node_15 = sibling(node_14, 2);
           {
             var consequent_10 = ($$anchor4) => {
-              var p_5 = root_64();
+              var p_5 = root_63();
               var text_9 = child(p_5);
               var code_1 = sibling(text_9);
               var text_10 = only_child(code_1, true);
@@ -15129,8 +15020,8 @@ var root_310 = from_html(
   2,
 );
 var root_47 = from_html(`<span class="step-row-time"> </span>`);
-var root_56 = from_html(`<div><!></div>`);
-var root_65 = from_html(
+var root_55 = from_html(`<div><!></div>`);
+var root_64 = from_html(
   `<div><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong> <!></span> <span class="hint"> </span></span> <!></button> <!></div>`,
 );
 var root_73 = from_html(
@@ -15243,7 +15134,7 @@ function StepsView($$anchor, $$props) {
               (!$$props.panel.stepEditor &&
                 $$props.panel.selectedStep === entry().id),
           );
-          var div_2 = root_65();
+          var div_2 = root_64();
           let classes;
           var button_1 = child(div_2);
           let classes_1;
@@ -15324,7 +15215,7 @@ function StepsView($$anchor, $$props) {
           var node_4 = sibling(button_1, 2);
           {
             var consequent_5 = ($$anchor4) => {
-              var div_3 = root_56();
+              var div_3 = root_55();
               var node_5 = child(div_3);
               {
                 var consequent_4 = ($$anchor5) => {
@@ -15436,7 +15327,7 @@ var root_112 = from_html(
 var root_211 = from_html(`<p class="hint"> </p>`);
 var root_311 = from_html(`<p> </p>`);
 var root_48 = from_html(`<p role="status"> </p> <!>`, 1);
-var root_57 = from_html(
+var root_56 = from_html(
   `<section><h2> </h2> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <!> <!> <div class="actions svelte-111t7iy"><button type="button" class="primary"> </button> <button type="button"> </button></div> <!></section>`,
 );
 var $$css7 = {
@@ -15505,7 +15396,7 @@ function RunConditionSettings($$anchor, $$props) {
   var node = first_child(fragment);
   {
     var consequent_5 = ($$anchor2) => {
-      var section = root_57();
+      var section = root_56();
       var h2 = child(section);
       var text2 = only_child(h2, true);
       var label2 = sibling(h2, 2);
@@ -17266,8 +17157,8 @@ var root_313 = from_html(
   `<td class="planned-time svelte-1iz1525"><svg class="hover-indicator svelte-1iz1525" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2 8 6 4 10"></path></svg> </td>`,
 );
 var root_410 = from_html(`<span aria-hidden="true"></span>`);
-var root_58 = from_html(`<span> </span>`);
-var root_66 = from_html(`<div><!> <span> </span> <div> </div></div>`);
+var root_57 = from_html(`<span> </span>`);
+var root_65 = from_html(`<div><!> <span> </span> <div> </div></div>`);
 var root_74 = from_html(`<div> </div>`);
 var root_83 = from_html(`<td class="svelte-1iz1525"></td>`);
 var root_93 = from_html(
@@ -17594,11 +17485,11 @@ function Timeline($$anchor, $$props) {
                           var node_12 = first_child(fragment_4);
                           {
                             var consequent_7 = ($$anchor8) => {
-                              var div_4 = root_66();
+                              var div_4 = root_65();
                               var node_13 = child(div_4);
                               {
                                 var consequent_6 = ($$anchor9) => {
-                                  var span_3 = root_58();
+                                  var span_3 = root_57();
                                   var text_8 = only_child(span_3);
                                   template_effect(
                                     ($0) => set_text(text_8, `${$0 ?? ""}:`),
@@ -17893,8 +17784,8 @@ var root_215 = from_html(
 );
 var root_314 = from_html(`<div class="live-actions svelte-jw9j7k"><!></div>`);
 var root_411 = from_html(`<p class="svelte-jw9j7k"> </p>`);
-var root_59 = from_html(`<p class="error svelte-jw9j7k"> </p>`);
-var root_67 = from_html(`<p class="hint svelte-jw9j7k"> </p>`);
+var root_58 = from_html(`<p class="error svelte-jw9j7k"> </p>`);
+var root_66 = from_html(`<p class="hint svelte-jw9j7k"> </p>`);
 var root_75 = from_html(`<p class="call svelte-jw9j7k"> <!></p>`);
 var root_84 = from_html(
   `<p class="svelte-jw9j7k"><strong> </strong></p> <!>`,
@@ -18093,7 +17984,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_7 = sibling(div_1, 2);
           {
             var consequent_5 = ($$anchor4) => {
-              var p_3 = root_59();
+              var p_3 = root_58();
               var text_9 = only_child(p_3, true);
               template_effect(() => set_text(text_9, get(session).detail));
               append($$anchor4, p_3);
@@ -18105,7 +17996,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_8 = sibling(node_7, 2);
           {
             var consequent_6 = ($$anchor4) => {
-              var p_4 = root_67();
+              var p_4 = root_66();
               var text_10 = only_child(p_4, true);
               template_effect(
                 ($0) => set_text(text_10, $0),
@@ -18120,7 +18011,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_9 = sibling(node_8, 2);
           {
             var consequent_7 = ($$anchor4) => {
-              var p_5 = root_67();
+              var p_5 = root_66();
               var text_11 = only_child(p_5, true);
               template_effect(
                 ($0) => set_text(text_11, $0),
@@ -18208,7 +18099,7 @@ function LivePreviewControls($$anchor, $$props) {
               ),
             (outcome) => outcome,
             ($$anchor4, outcome) => {
-              var p_8 = root_59();
+              var p_8 = root_58();
               var text_15 = only_child(p_8);
               template_effect(() =>
                 set_text(
@@ -20033,10 +19924,10 @@ var root_318 = from_html(
   2,
 );
 var root_412 = from_html(`<span class="step-row-time"> </span>`);
-var root_510 = from_html(
+var root_59 = from_html(
   `<div style="--depth:0"><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button> <div><!></div></div>`,
 );
-var root_68 = from_html(
+var root_67 = from_html(
   `<!> <div class="step-list"></div> <button type="button" class="primary" data-create-random=""> </button>`,
   1,
 );
@@ -20117,7 +20008,7 @@ function RandomView($$anchor, $$props) {
       append($$anchor2, section);
     };
     var alternate = ($$anchor2) => {
-      var fragment_1 = root_68();
+      var fragment_1 = root_67();
       var node_1 = first_child(fragment_1);
       {
         let $0 = user_derived(() => get(t)("random_activity"));
@@ -20154,7 +20045,7 @@ function RandomView($$anchor, $$props) {
                 ? $$props.panel.randomEditor?.form.enabled
                 : get(entry).enabled) === false,
           );
-          var div_1 = root_510();
+          var div_1 = root_59();
           let classes;
           var button_1 = child(div_1);
           let classes_1;
@@ -20348,10 +20239,10 @@ var root_127 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
 var root_221 = from_html(`<p> </p>`);
 var root_319 = from_html(`<header><p class="hint"> </p></header>`);
 var root_413 = from_html(`<p class="banner" role="status"> </p>`);
-var root_511 = from_html(
+var root_510 = from_html(
   `<button type="button" class="text-button"> </button>`,
 );
-var root_69 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
+var root_68 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
 var root_76 = from_html(`<p role="status" aria-live="polite"> </p>`);
 var root_85 = from_html(
   `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><!> <!> <!> <div id="notice" class="banner" role="status"> </div> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
@@ -20618,7 +20509,7 @@ function App($$anchor, $$props) {
   var node_5 = child(div_2);
   {
     var consequent_3 = ($$anchor2) => {
-      var button_3 = root_511();
+      var button_3 = root_510();
       var text_8 = only_child(button_3, true);
       template_effect(
         ($0) => set_text(text_8, $0),
@@ -20657,7 +20548,7 @@ function App($$anchor, $$props) {
       var node_7 = first_child(fragment_3);
       {
         const failed = ($$anchor3, error = noop) => {
-          var fragment_4 = root_69();
+          var fragment_4 = root_68();
           var p_3 = first_child(fragment_4);
           var text_9 = only_child(p_3, true);
           var p_4 = sibling(p_3, 2);
