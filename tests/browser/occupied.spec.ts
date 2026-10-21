@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { expectedHaShellError } from "../frontend/src/ha-shell-errors.js";
 import type { OccupiedPanel } from "@occupied/occupied-panel.js";
-import type { Catalog, HaSelector } from "@occupied/lib/types.js";
+import type { Action, Catalog, HaSelector } from "@occupied/lib/types.js";
 import type { ProgramDocument } from "@occupied/lib/types.js";
 
 const browserBaseUrl = `http://127.0.0.1:${process.env.HA_BROWSER_PORT || "18123"}`;
@@ -29,6 +29,19 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       };
       if (message.type === "occupied/save" && message.program) {
         saves.push(message.program);
+      }
+    });
+  });
+  const actionPreviews: { action: Action; execute?: boolean }[] = [];
+  page.on("websocket", (socket) => {
+    socket.on("framesent", ({ payload }) => {
+      const message = JSON.parse(payload.toString()) as {
+        type?: string;
+        action: Action;
+        execute?: boolean;
+      };
+      if (message.type === "occupied/action_preview") {
+        actionPreviews.push(message);
       }
     });
   });
@@ -183,23 +196,21 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     .getByRole("button", { name: "Step actions", exact: true })
     .click();
   await panel.getByRole("menuitem", { name: "Preview", exact: true }).click();
-  const actionPreview = panel.getByRole("dialog", {
-    name: "Preview",
-    exact: true,
-  });
-  await expect(actionPreview).toContainText("light.turn_on");
-  await expect(actionPreview).toContainText("light.smoke_light");
-  await expect(actionPreview).toContainText("brightness: 102");
-  expect(saves).toHaveLength(0);
-  await actionPreview
-    .getByRole("button", { name: "Test action: Action", exact: true })
-    .click();
-  await expect(actionPreview.getByRole("status")).toHaveText(
+  await expect(panel.locator(".step-editor-actions [role=status]")).toHaveText(
     "Command completed.",
   );
-  await actionPreview
-    .getByRole("button", { name: "Close", exact: true })
-    .click();
+  await expect(
+    panel.getByRole("dialog", { name: "Preview", exact: true }),
+  ).toHaveCount(0);
+  expect(actionPreviews).toHaveLength(1);
+  expect(actionPreviews[0]).toMatchObject({
+    execute: true,
+    action: {
+      action: "set_state",
+      entities: { "light.smoke_light": { state: "on", brightness: 102 } },
+    },
+  });
+  expect(saves).toHaveLength(0);
   await expect(
     panel.getByRole("button", { name: "Step actions", exact: true }),
   ).toBeFocused();
@@ -227,38 +238,37 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   });
   const savedCount = saves.length;
   await panel.locator("[data-random-actions]").click();
-  await panel.getByRole("menuitem", { name: "Preview", exact: true }).click();
-  const randomPreview = panel.getByRole("dialog", {
-    name: "Preview",
-    exact: true,
-  });
-  await expect(randomPreview.locator("pre")).toHaveCount(2);
-  await expect(randomPreview.locator("pre").first()).toContainText(
-    "light.turn_on",
-  );
-  await expect(randomPreview.locator("pre").last()).toContainText(
-    "light.turn_off",
-  );
-  await expect(randomPreview.locator("pre").last()).toContainText(
-    "light.smoke_light",
-  );
-  await randomPreview
-    .getByRole("button", {
-      name: "Test action: When event starts",
-      exact: true,
-    })
+  await expect(
+    panel.getByRole("menuitem", { name: "Preview", exact: true }),
+  ).toHaveCount(0);
+  await panel
+    .getByRole("menuitem", { name: "Preview event start", exact: true })
     .click();
-  await expect(randomPreview.getByRole("status")).toHaveText(
+  await expect(panel.locator(".step-editor-actions [role=status]")).toHaveText(
     "Command completed.",
   );
-  await randomPreview
-    .getByRole("button", { name: "Test action: When event ends", exact: true })
+  expect(actionPreviews).toHaveLength(2);
+  expect(actionPreviews[1]).toMatchObject({
+    execute: true,
+    action: { action: "turn_on", entities: ["light.smoke_light"] },
+  });
+  await expect(panel.locator("[data-random-actions]")).toBeFocused();
+  await panel.locator("[data-random-actions]").click();
+  await panel
+    .getByRole("menuitem", { name: "Preview event end", exact: true })
     .click();
-  await expect(randomPreview.getByRole("status")).toHaveCount(2);
+  await expect(panel.locator(".step-editor-actions [role=status]")).toHaveText(
+    "Command completed.",
+  );
+  expect(actionPreviews).toHaveLength(3);
+  expect(actionPreviews[2]).toMatchObject({
+    execute: true,
+    action: { action: "turn_off", entities: ["light.smoke_light"] },
+  });
+  await expect(
+    panel.getByRole("dialog", { name: "Preview", exact: true }),
+  ).toHaveCount(0);
   expect(saves).toHaveLength(savedCount);
-  await randomPreview
-    .getByRole("button", { name: "Close", exact: true })
-    .click();
   await expect(panel.locator("[data-random-actions]")).toBeFocused();
   await panel.evaluate((element) => {
     const controller = element as OccupiedPanel;

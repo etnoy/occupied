@@ -4,7 +4,7 @@
   import type { RandomEditorContext } from "../../controllers/random-editor-controller.js";
   import DeleteRandomDialog from "./DeleteRandomDialog.svelte";
   import AdvancedRandomSettings from "./AdvancedRandomSettings.svelte";
-  import ActionPreviewDialog from "../shared/ActionPreviewDialog.svelte";
+  import { previewAction } from "../../controllers/action-preview-controller.js";
 
   let {
     panel,
@@ -17,7 +17,7 @@
   let menuOpen = $state(false);
   let advancedOpen = $state(false);
   let deleteOpen = $state(false);
-  let previewOpen = $state(false);
+  let previewStatus = $state("");
   let trigger: HTMLButtonElement;
   let menu: HTMLDivElement;
 
@@ -27,7 +27,6 @@
     flushSync(() => {
       deleteOpen = false;
       advancedOpen = false;
-      previewOpen = false;
     });
     if (trigger.isConnected) {
       trigger.focus();
@@ -94,6 +93,9 @@
 <svelte:window onresize={positionMenu} onscroll={positionMenu} />
 
 <div class="step-editor-actions">
+  {#if previewStatus}
+    <p role="status">{previewStatus}</p>
+  {/if}
   <button
     bind:this={trigger}
     type="button"
@@ -132,18 +134,29 @@
     ontoggle={(event) => (menuOpen = event.newState === "open")}
     onkeydown={menuKeydown}
   >
-    <button
-      type="button"
-      role="menuitem"
-      tabindex="-1"
-      disabled={panel.busy}
-      onclick={() => {
-        closeMenu(false);
-        flushSync(() => (previewOpen = true));
-      }}
-    >
-      {panel.t("preview")}
-    </button>
+    {#each ["on", "off"] as phase (phase)}
+      <button
+        type="button"
+        role="menuitem"
+        tabindex="-1"
+        disabled={panel.busy}
+        onclick={async () => {
+          closeMenu();
+          previewStatus = panel.t("running");
+          const form = context.form;
+          let action = phase === "on" ? form.on : form.off;
+          if (phase === "off" && form.sameEntities) {
+            action = { ...form.off, entities: [...form.on.entities] };
+          }
+          previewStatus = (await previewAction(panel, action)) || "";
+          if (trigger.isConnected) {
+            trigger.focus();
+          }
+        }}
+      >
+        {panel.t(phase === "on" ? "preview_event_start" : "preview_event_end")}
+      </button>
+    {/each}
     <button
       type="button"
       role="menuitem"
@@ -192,19 +205,4 @@
 {/if}
 {#if advancedOpen}
   <AdvancedRandomSettings {panel} {context} onClose={closeDialog} />
-{/if}
-{#if previewOpen}
-  <ActionPreviewDialog
-    {panel}
-    commands={[
-      { label: "when_event_starts", form: context.form.on },
-      {
-        label: "when_event_ends",
-        form: context.form.sameEntities
-          ? { ...context.form.off, entities: [...context.form.on.entities] }
-          : context.form.off,
-      },
-    ]}
-    onClose={closeDialog}
-  />
 {/if}
