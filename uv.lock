@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14.2"
 
 [[package]]
@@ -1766,7 +1766,7 @@ wheels = [
 
 [[package]]
 name = "occupied"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "astral" },
@@ -1793,6 +1793,9 @@ test-core = [
     { name = "pytest-cov" },
     { name = "pytest-socket" },
 ]
+
+[package.group-requires-python]
+dev = ">=3.14.2"
 
 [package.metadata]
 requires-dist = [
