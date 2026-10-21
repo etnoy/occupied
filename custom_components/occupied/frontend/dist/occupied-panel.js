@@ -20313,16 +20313,12 @@ var root_221 = from_html(`<p> </p>`);
 var root_319 = from_html(`<header><p class="hint"> </p></header>`);
 var root_413 = from_html(`<p class="banner" role="status"> </p>`);
 var root_511 = from_html(
-  `<p class="error" role="alert"> </p> <button type="button"> </button>`,
-  1,
-);
-var root_610 = from_html(
   `<button type="button" class="text-button"> </button>`,
 );
-var root_77 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
-var root_86 = from_html(`<p> </p> <button type="button"> </button>`, 1);
-var root_96 = from_html(
-  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><!> <!> <!> <div id="notice" class="banner" role="status"> </div> <!> <div id="error" class="error" role="alert"> </div> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
+var root_610 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
+var root_77 = from_html(`<p> </p> <button type="button"> </button>`, 1);
+var root_86 = from_html(
+  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><!> <!> <!> <div id="notice" class="banner" role="status"> </div> <!> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
   3,
 );
 function App($$anchor, $$props) {
@@ -20492,7 +20488,7 @@ function App($$anchor, $$props) {
     ["preview", "preview"],
     ["settings", "settings"],
   ];
-  var fragment_1 = root_96();
+  var fragment_1 = root_86();
   var ha_top_app_bar_fixed = first_child(fragment_1);
   set_custom_element_data(ha_top_app_bar_fixed, "back-button", true);
   template_effect(
@@ -20550,28 +20546,17 @@ function App($$anchor, $$props) {
   var node_5 = sibling(div_1, 2);
   {
     var consequent_3 = ($$anchor2) => {
-      var fragment_2 = root_511();
-      var p_3 = first_child(fragment_2);
-      var text_7 = only_child(p_3, true);
-      var button_2 = sibling(p_3, 2);
-      var text_8 = only_child(button_2, true);
-      template_effect(
-        ($0) => {
-          set_text(text_7, get(panel).runtimeSubscriptionError);
-          set_text(text_8, $0);
-        },
-        [() => get(t)("retry")],
-      );
+      var button_2 = root31();
+      var text_7 = only_child(button_2, true);
+      template_effect(($0) => set_text(text_7, $0), [() => get(t)("retry")]);
       delegated("click", button_2, () => get(panel).retry());
-      append($$anchor2, fragment_2);
+      append($$anchor2, button_2);
     };
     if_block(node_5, ($$render) => {
       if (get(panel).runtimeSubscriptionError) $$render(consequent_3);
     });
   }
-  var div_2 = sibling(node_5, 2);
-  var text_9 = only_child(div_2, true);
-  var nav = sibling(div_2, 2);
+  var nav = sibling(node_5, 2);
   each(
     nav,
     21,
@@ -20583,7 +20568,7 @@ function App($$anchor, $$props) {
       let label2 = () => get($$array)[1];
       var button_3 = root31();
       let classes;
-      var text_10 = only_child(button_3, true);
+      var text_8 = only_child(button_3, true);
       template_effect(
         ($0, $1) => {
           set_attribute2(button_3, "data-tab", id());
@@ -20598,7 +20583,7 @@ function App($$anchor, $$props) {
           classes = set_class(button_3, 1, "", null, classes, {
             "tab-warning": $0,
           });
-          set_text(text_10, $1);
+          set_text(text_8, $1);
         },
         [() => get(issueTabs).has(id()), () => get(t)(label2())],
       );
@@ -20607,14 +20592,14 @@ function App($$anchor, $$props) {
     },
   );
   reset(nav);
-  var div_3 = sibling(nav, 2);
-  var node_6 = child(div_3);
+  var div_2 = sibling(nav, 2);
+  var node_6 = child(div_2);
   {
     var consequent_4 = ($$anchor2) => {
-      var button_4 = root_610();
-      var text_11 = only_child(button_4, true);
+      var button_4 = root_511();
+      var text_9 = only_child(button_4, true);
       template_effect(
-        ($0) => set_text(text_11, $0),
+        ($0) => set_text(text_9, $0),
         [() => get(t)("back_to_steps")],
       );
       delegated("click", button_4, () => get(panel).navigate("steps"));
@@ -20624,10 +20609,10 @@ function App($$anchor, $$props) {
       if (!get(primary)) $$render(consequent_4);
     });
   }
-  reset(div_3);
-  var div_4 = sibling(div_3, 2);
+  reset(div_2);
+  var div_3 = sibling(div_2, 2);
   each(
-    div_4,
+    div_3,
     20,
     () => get(issues),
     (issue) => issue,
@@ -20639,48 +20624,48 @@ function App($$anchor, $$props) {
       );
     },
   );
-  reset(div_4);
-  var div_5 = sibling(div_4, 2);
-  var node_7 = child(div_5);
+  reset(div_3);
+  var div_4 = sibling(div_3, 2);
+  var node_7 = child(div_4);
   key(
     node_7,
     () => `${get(panel).selectedEntry}:${get(panel).tab}`,
     ($$anchor2) => {
-      var fragment_4 = comment();
-      var node_8 = first_child(fragment_4);
+      var fragment_3 = comment();
+      var node_8 = first_child(fragment_3);
       {
         const failed = ($$anchor3, error = noop) => {
-          var fragment_5 = root_77();
-          var p_4 = first_child(fragment_5);
-          var text_12 = only_child(p_4, true);
-          var p_5 = sibling(p_4, 2);
-          var text_13 = only_child(p_5, true);
+          var fragment_4 = root_610();
+          var p_3 = first_child(fragment_4);
+          var text_10 = only_child(p_3, true);
+          var p_4 = sibling(p_3, 2);
+          var text_11 = only_child(p_4, true);
           template_effect(
             ($0, $1) => {
-              set_text(text_12, $0);
-              set_text(text_13, $1);
+              set_text(text_10, $0);
+              set_text(text_11, $1);
             },
             [
               () => get(t)(errorMessage(error())),
               () => get(t)("draft_invalid_hint"),
             ],
           );
-          append($$anchor3, fragment_5);
+          append($$anchor3, fragment_4);
         };
         boundary(node_8, { failed }, ($$anchor3) => {
-          var fragment_6 = comment();
-          var node_9 = first_child(fragment_6);
+          var fragment_5 = comment();
+          var node_9 = first_child(fragment_5);
           {
             var consequent_5 = ($$anchor4) => {
-              var fragment_7 = root_86();
-              var p_6 = first_child(fragment_7);
-              var text_14 = only_child(p_6, true);
-              var button_5 = sibling(p_6, 2);
-              var text_15 = only_child(button_5, true);
+              var fragment_6 = root_77();
+              var p_5 = first_child(fragment_6);
+              var text_12 = only_child(p_5, true);
+              var button_5 = sibling(p_5, 2);
+              var text_13 = only_child(button_5, true);
               template_effect(
                 ($0, $1) => {
-                  set_text(text_14, $0);
-                  set_text(text_15, $1);
+                  set_text(text_12, $0);
+                  set_text(text_13, $1);
                 },
                 [
                   () => get(t)("instance_unavailable_hint"),
@@ -20688,17 +20673,17 @@ function App($$anchor, $$props) {
                 ],
               );
               delegated("click", button_5, () => get(panel).retry());
-              append($$anchor4, fragment_7);
+              append($$anchor4, fragment_6);
             };
             var consequent_7 = ($$anchor4) => {
-              var fragment_8 = comment();
-              var node_10 = first_child(fragment_8);
+              var fragment_7 = comment();
+              var node_10 = first_child(fragment_7);
               {
                 var consequent_6 = ($$anchor5) => {
                   var button_6 = root31();
-                  var text_16 = only_child(button_6, true);
+                  var text_14 = only_child(button_6, true);
                   template_effect(
-                    ($0) => set_text(text_16, $0),
+                    ($0) => set_text(text_14, $0),
                     [() => get(t)("retry")],
                   );
                   delegated("click", button_6, () => get(panel).retry());
@@ -20709,7 +20694,7 @@ function App($$anchor, $$props) {
                     $$render(consequent_6);
                 });
               }
-              append($$anchor4, fragment_8);
+              append($$anchor4, fragment_7);
             };
             var d = user_derived(
               () =>
@@ -20719,9 +20704,9 @@ function App($$anchor, $$props) {
             );
             var consequent_8 = ($$anchor4) => {
               var button_7 = root31();
-              var text_17 = only_child(button_7, true);
+              var text_15 = only_child(button_7, true);
               template_effect(
-                ($0) => set_text(text_17, $0),
+                ($0) => set_text(text_15, $0),
                 [() => get(t)("settings")],
               );
               delegated("click", button_7, () =>
@@ -20812,13 +20797,13 @@ function App($$anchor, $$props) {
               else if (get(panel).tab === "preview") $$render(consequent_14, 8);
             });
           }
-          append($$anchor3, fragment_6);
+          append($$anchor3, fragment_5);
         });
       }
-      append($$anchor2, fragment_4);
+      append($$anchor2, fragment_3);
     },
   );
-  reset(div_5);
+  reset(div_4);
   reset(main);
   reset(ha_top_app_bar_fixed);
   var node_11 = sibling(ha_top_app_bar_fixed, 2);
@@ -20841,8 +20826,6 @@ function App($$anchor, $$props) {
     ($0) => {
       set_attribute2(div_1, "hidden", !get(notices));
       set_text(text_6, get(notices));
-      set_attribute2(div_2, "hidden", !get(panel).error);
-      set_text(text_9, get(panel).error);
       set_attribute2(nav, "aria-label", $0);
     },
     [() => get(t)("occupied")],
