@@ -1105,6 +1105,7 @@ export class OccupiedPanel extends HTMLElement {
       draft = copy(candidate || this.draft),
       expected = this.revision,
       editor = this.activeEditor,
+      editorKind = this.randomEditor ? "random" : "step",
       submittedForm = editor ? copy(editor.form) : null;
 
     return this.run(async (epoch) => {
@@ -1165,9 +1166,7 @@ export class OccupiedPanel extends HTMLElement {
         this.renderView();
         if (editor) {
           this.shadowRoot
-            .getElementById(
-              `${this.tab === "random" ? "random" : "step"}-card-${editor.id}`,
-            )
+            .getElementById(`${editorKind}-card-${editor.id}`)
             ?.focus({ preventScroll: true });
         }
 

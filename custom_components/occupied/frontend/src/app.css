@@ -402,6 +402,16 @@ nav button.tab-warning[aria-current="page"] {
   color: var(--secondary-text-color, #596773);
 }
 
+.activity-add-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.step-empty .activity-add-buttons {
+  justify-content: center;
+}
+
 .step-list {
   display: flex;
   flex-direction: column;
