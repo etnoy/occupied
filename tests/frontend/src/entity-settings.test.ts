@@ -20,12 +20,20 @@ import { createRandomEditorContext } from "@occupied/lib/controllers/random-edit
 import { actionSummary } from "@occupied/lib/controllers/steps.js";
 import { changeActionKind } from "@occupied/lib/utils/action-kind.js";
 import {
+  canSetBrightness,
   entitySettingsSummary,
   resetEntitySettings,
   setActionEntities,
   updateEntitySetting,
 } from "@occupied/lib/utils/entity-settings.js";
 import { translator } from "@occupied/lib/i18n/translations.js";
+
+void test("brightness is available for every light turn-on action", () => {
+  assert.equal(canSetBrightness("light.dimmable", "turn_on"), true);
+  assert.equal(canSetBrightness("light.unknown", "turn_on"), true);
+  assert.equal(canSetBrightness("switch.a", "turn_on"), false);
+  assert.equal(canSetBrightness("light.a", "turn_off"), false);
+});
 
 void test("per-entity settings use an existing mapping without adding defaults to other targets", () => {
   const form = actionForm({
@@ -321,13 +329,13 @@ void test("saved settings do not depend on catalog availability and summaries ar
       translator("en"),
       form.action,
     ),
-    "Transition 2s",
+    "",
   );
   assert.equal(
     entitySettingsSummary(
       { brightness: "40", transition: "3" },
       translator("sv"),
     ),
-    "Ljusstyrka 40% · Övergång 3s",
+    "Ljusstyrka 40%",
   );
 });

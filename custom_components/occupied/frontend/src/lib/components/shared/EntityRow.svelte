@@ -4,10 +4,10 @@
   import { properties } from "../../actions/dom.js";
   import { entityName, isValueChangedEvent } from "../../utils/util.js";
   import {
+    canSetBrightness,
     emptyEntitySettings,
     entitySettingsSummary,
     updateEntitySetting,
-    resetEntitySettings,
   } from "../../utils/entity-settings.js";
   import FieldError from "./FieldError.svelte";
 
@@ -43,27 +43,10 @@
   let settings = $derived(
     form.entitySettings?.[entity] || emptyEntitySettings(),
   );
-  let capability = $derived(
-    panel.catalog.entities.find((item) => item.entity_id === entity),
-  );
-  let brightness = $derived(
-    form.action === "turn_on" &&
-      entity.startsWith("light.") &&
-      !!capability?.dimmable,
-  );
-  let transition = $derived(
-    entity.startsWith("light.") && !!capability?.transition,
-  );
+  let brightness = $derived(canSetBrightness(entity, form.action));
   let field = $derived(`entitySettings.${entity}`);
   let summary = $derived(entitySettingsSummary(settings, t, form.action));
-  let unsupported = $derived(
-    (form.action === "turn_on" && !!settings.brightness && !brightness) ||
-      (!!settings.transition && !transition),
-  );
-  let invalid = $derived(
-    !!editor.errors[`${field}.brightness`] ||
-      !!editor.errors[`${field}.transition`],
-  );
+  let invalid = $derived(!!editor.errors[`${field}.brightness`]);
 
   $effect(() => {
     if (invalid) {
@@ -113,72 +96,67 @@
       </button>
     {/if}
   </div>
-  {#if brightness || transition || summary}
+  {#if brightness}
+    {@const fieldKey = `${field}.brightness`}
     <details bind:open={expanded}>
       <summary>
         {t("entity_light_settings")}
         {#if summary}<span class="hint"> · {summary}</span>{/if}
       </summary>
       <div class="entity-fields">
-        {#each ["brightness", "transition"] as key (key)}
-          {@const available = key === "brightness" ? brightness : transition}
-          {#if available || (key === "brightness" ? form.action === "turn_on" && settings.brightness : settings.transition)}
-            {@const fieldKey = `${field}.${key}`}
-            {@const id = `step-${fieldPrefix}${fieldKey}`}
-            <div class="field">
-              <label for={id}
-                >{t(
-                  key === "brightness"
-                    ? "entity_brightness"
-                    : "entity_transition",
-                )}</label
-              >
-              <input
-                {id}
-                type="number"
-                min={key === "brightness" ? 0.1 : 0}
-                max={key === "brightness" ? 100 : 604_800}
-                step="any"
-                disabled={!available}
-                value={settings[key as "brightness" | "transition"]}
-                placeholder={t("entity_setting_unspecified")}
-                data-builder-field={`${fieldPrefix}${fieldKey}`}
-                aria-invalid={editor.errors[fieldKey] ? "true" : undefined}
-                aria-describedby={editor.errors[fieldKey]
-                  ? `step-error-${fieldPrefix}${fieldKey}`
-                  : undefined}
-                oninput={(event) => {
-                  updateEntitySetting(
-                    form,
-                    entity,
-                    key as "brightness" | "transition",
-                    event.currentTarget.value,
-                  );
-                  context.changed(fieldKey);
-                }}
-              />
-              <FieldError
-                {t}
-                key={fieldKey}
-                {fieldPrefix}
-                errors={{ ...editor.errors }}
-              />
-            </div>
-          {/if}
-        {/each}
+        <div class="field">
+          <ha-selector
+            aria-label={t("entity_brightness")}
+            data-builder-field={`${fieldPrefix}${fieldKey}`}
+            aria-invalid={editor.errors[fieldKey] ? "true" : undefined}
+            aria-describedby={editor.errors[fieldKey]
+              ? `step-error-${fieldPrefix}${fieldKey}`
+              : undefined}
+            use:properties={{
+              hass: panel._hass,
+              label: t("entity_brightness"),
+              required: false,
+              selector: {
+                number: {
+                  min: 1,
+                  max: 100,
+                  step: 1,
+                  mode: "slider",
+                },
+              },
+              value: settings.brightness.trim()
+                ? Number(settings.brightness)
+                : undefined,
+            }}
+            onvalue-changed={(event: Event) => {
+              if (!isValueChangedEvent(event)) {
+                return;
+              }
+              const value = event.detail.value;
+              if (
+                value !== undefined &&
+                value !== null &&
+                typeof value !== "number"
+              ) {
+                return;
+              }
+              updateEntitySetting(
+                form,
+                entity,
+                "brightness",
+                value == null ? "" : String(value),
+              );
+              context.changed(fieldKey);
+            }}
+          ></ha-selector>
+          <FieldError
+            {t}
+            key={fieldKey}
+            {fieldPrefix}
+            errors={{ ...editor.errors }}
+          />
+        </div>
       </div>
-      <p class="hint">{t("entity_settings_hint")}</p>
-      {#if unsupported}<p class="hint">
-          {t("entity_settings_unavailable")}
-        </p>{/if}
-      <button
-        type="button"
-        disabled={!summary}
-        onclick={() => {
-          resetEntitySettings(form, entity);
-          context.changed("entities");
-        }}>{t("entity_settings_reset")}</button
-      >
     </details>
   {/if}
 </div>
@@ -217,10 +195,12 @@
   }
 
   .entity-fields {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
-    gap: 12px;
+    max-width: 520px;
     margin-top: 12px;
+  }
+
+  ha-selector {
+    display: block;
   }
 
   summary .hint {

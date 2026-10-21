@@ -314,15 +314,7 @@ export const en = {
   remove_entity: "Remove entity",
   entity_light_settings: "Light settings",
   entity_brightness: "Brightness (%)",
-  entity_transition: "Transition (seconds)",
-  entity_setting_unspecified: "Not specified",
   entity_brightness_summary: "Brightness {value}%",
-  entity_transition_summary: "Transition {value}s",
-  entity_settings_hint:
-    "Empty fields send no value. Use Turn off to switch a light off.",
-  entity_settings_unavailable:
-    "Some saved settings are not currently supported or the entity is unavailable. They are preserved until you reset them.",
-  entity_settings_reset: "Reset light settings",
   entity_brightness_error:
     "Enter a brightness greater than 0 and up to 100%. Use Turn off for 0%.",
   entity_transition_error: "Enter a transition from 0 to 604800 seconds.",
@@ -963,15 +955,7 @@ export const sv = {
   remove_entity: "Ta bort entitet",
   entity_light_settings: "Ljusinställningar",
   entity_brightness: "Ljusstyrka (%)",
-  entity_transition: "Övergång (sekunder)",
-  entity_setting_unspecified: "Inte angivet",
   entity_brightness_summary: "Ljusstyrka {value}%",
-  entity_transition_summary: "Övergång {value}s",
-  entity_settings_hint:
-    "Tomma fält skickar inget värde. Välj Slå av för att släcka en lampa.",
-  entity_settings_unavailable:
-    "Vissa sparade inställningar stöds inte just nu eller så är entiteten otillgänglig. De bevaras tills du återställer dem.",
-  entity_settings_reset: "Återställ ljusinställningar",
   entity_brightness_error:
     "Ange en ljusstyrka över 0 och högst 100 %. Välj Slå av för 0 %.",
   entity_transition_error: "Ange en övergång från 0 till 604800 sekunder.",

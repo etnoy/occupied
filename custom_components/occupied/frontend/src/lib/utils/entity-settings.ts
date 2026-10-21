@@ -11,6 +11,10 @@ export function emptyEntitySettings(): EntitySettingsForm {
   return { brightness: "", transition: "" };
 }
 
+export function canSetBrightness(entity: string, action: string): boolean {
+  return action === "turn_on" && entity.startsWith("light.");
+}
+
 export function brightnessPercentage(raw: number): string {
   return String(Math.round((raw * 1000) / 255) / 10);
 }
@@ -182,23 +186,10 @@ export function entitySettingsSummary(
   t: Translate,
   action = "turn_on",
 ): string {
-  const parts: string[] = [];
-  if (action === "turn_on" && settings?.brightness.trim()) {
-    parts.push(
-      t("entity_brightness_summary").replace(
+  return action === "turn_on" && settings?.brightness.trim()
+    ? t("entity_brightness_summary").replace(
         "{value}",
         () => settings.brightness,
-      ),
-    );
-  }
-  if (settings?.transition.trim()) {
-    parts.push(
-      t("entity_transition_summary").replace(
-        "{value}",
-        () => settings.transition,
-      ),
-    );
-  }
-
-  return parts.join(" · ");
+      )
+    : "";
 }
