@@ -73,7 +73,6 @@ export const en = {
     "Choose at least one state; unknown and unavailable cannot activate management.",
   run_condition_delay_error: "Use a duration from 0s to 1h, for example 30s.",
   run_condition_countdown: "Enforcing expected states in {seconds} seconds.",
-  run_condition_results: "State enforcement results",
   staggered_action: "Staggered action",
   stagger_timing_summary: "Targets staggered over {duration} in random order",
   stagger_hint:
@@ -716,7 +715,6 @@ export const sv: Partial<Record<TranslationKey, string>> = {
   run_condition_delay_error: "Ange en tid från 0s till 1h, till exempel 30s.",
   run_condition_countdown:
     "Tillämpar förväntade tillstånd om {seconds} sekunder.",
-  run_condition_results: "Resultat för tillämpade tillstånd",
   staggered_action: "Förskjuten åtgärd",
   stagger_timing_summary:
     "Enheterna ändras successivt under {duration} i slumpmässig ordning",
