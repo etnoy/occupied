@@ -6,7 +6,7 @@
   import { startStep } from "../../controllers/steps.js";
   import DeleteStepDialog from "./DeleteStepDialog.svelte";
   import AdvancedStepSettings from "./AdvancedStepSettings.svelte";
-  import ActionPreviewDialog from "../shared/ActionPreviewDialog.svelte";
+  import { previewAction } from "../../controllers/action-preview-controller.js";
 
   let {
     panel,
@@ -21,7 +21,7 @@
   let menuOpen = $state(false);
   let deleteOpen = $state(false);
   let advancedOpen = $state(false);
-  let previewOpen = $state(false);
+  let previewStatus = $state("");
   let trigger: HTMLButtonElement;
   let menu: HTMLDivElement;
 
@@ -31,7 +31,6 @@
     flushSync(() => {
       deleteOpen = false;
       advancedOpen = false;
-      previewOpen = false;
     });
     if (trigger?.isConnected) {
       trigger.focus();
@@ -98,6 +97,9 @@
 <svelte:window onresize={positionMenu} onscroll={positionMenu} />
 
 <div class="step-editor-actions">
+  {#if previewStatus}
+    <p role="status">{previewStatus}</p>
+  {/if}
   <button
     bind:this={trigger}
     type="button"
@@ -146,9 +148,16 @@
         role="menuitem"
         tabindex="-1"
         disabled={panel.busy}
-        onclick={() => {
-          closeMenu(false);
-          flushSync(() => (previewOpen = true));
+        onclick={async () => {
+          closeMenu();
+          previewStatus = panel.t("running");
+          if (!context) {
+            return;
+          }
+          previewStatus = (await previewAction(panel, context.form)) || "";
+          if (trigger.isConnected) {
+            trigger.focus();
+          }
         }}
       >
         {panel.t("preview")}
@@ -223,11 +232,4 @@
 {/if}
 {#if advancedOpen && context}
   <AdvancedStepSettings {panel} {context} onClose={closeDialog} />
-{/if}
-{#if previewOpen && context}
-  <ActionPreviewDialog
-    {panel}
-    commands={[{ label: "action", form: context.form }]}
-    onClose={closeDialog}
-  />
 {/if}
