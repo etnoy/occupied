@@ -518,7 +518,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect.poll(stepIds).toEqual(ids);
   await expect(panel.locator("[data-step-id=browser_child]")).toHaveCSS(
     "margin-left",
-    "14px",
+    "24px",
   );
   await expect(panel.getByRole("button", { name: /^Reorder / })).toHaveCount(0);
   await expect(
@@ -567,8 +567,29 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     '[data-step-id="browser_after_random"]',
     '[data-random-id="browser_nested"]',
   ]) {
-    await expect(panel.locator(selector)).toHaveCSS("margin-left", "14px");
+    await expect(panel.locator(selector)).toHaveCSS("margin-left", "24px");
   }
+  await expect(panel.locator(".step-tree-branch")).toHaveCount(3);
+  await expect
+    .poll(() =>
+      panel.locator(".step-tree-branch").evaluateAll((branches) =>
+        Math.max(
+          ...branches.map((branch) => {
+            const card = branch
+              .closest(".step-tree-item")!
+              .querySelector(".step-card")!
+              .getBoundingClientRect();
+            const rail = branch.getBoundingClientRect();
+            const join =
+              rail.top +
+              Number(getComputedStyle(branch, "::after").top.replace("px", ""));
+
+            return Math.abs(join - card.top - card.height / 2);
+          }),
+        ),
+      ),
+    )
+    .toBeLessThan(1);
   await panel.locator('[data-random-id="browser_early"] .step-row').click();
   const randomName = panel.getByRole("textbox", {
     name: "Random event name",

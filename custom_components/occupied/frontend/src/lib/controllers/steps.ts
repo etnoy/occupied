@@ -132,7 +132,7 @@ export function stepTree<T extends TimedEntry>(
     timingOrder([...entries, ...relatedEntries], sources),
   );
   const seen = new Set<string>(),
-    ordered: { entry: T; depth: number }[] = [];
+    ordered: { entry: T; depth: number; branches: boolean[] }[] = [];
   const parentId = (entry: T) => {
     const relative = (entry.timing || entry.start)?.relative_to;
 
@@ -141,16 +141,17 @@ export function stepTree<T extends TimedEntry>(
       (relative?.random ? `random:${relative.random}` : undefined)
     );
   };
-  const append = (entry: T, depth: number) => {
+  const append = (entry: T, branches: boolean[]) => {
     if (seen.has(entry.id)) {
       return;
     }
     seen.add(entry.id);
-    ordered.push({ entry, depth });
-    for (const child of sortedEntries) {
-      if (parentId(child) === entry.id) {
-        append(child, depth + 1);
-      }
+    ordered.push({ entry, depth: branches.length, branches });
+    const children = sortedEntries.filter(
+      (child) => parentId(child) === entry.id && !seen.has(child.id),
+    );
+    for (const [index, child] of children.entries()) {
+      append(child, [...branches, index < children.length - 1]);
     }
   };
   const isRoot = (entry: T) =>
@@ -158,12 +159,12 @@ export function stepTree<T extends TimedEntry>(
     entries.every((parent) => parent.id !== parentId(entry));
   for (const step of sortedEntries) {
     if (isRoot(step)) {
-      append(step, 0);
+      append(step, []);
     }
   }
 
   for (const step of sortedEntries) {
-    append(step, 0);
+    append(step, []);
   }
 
   return ordered;
