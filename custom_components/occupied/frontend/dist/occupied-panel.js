@@ -10139,7 +10139,7 @@ function stepEntries(program, catalog, t = translator()) {
     name: step.name || stepDisplayName(step, catalog, t),
   }));
 }
-var solarEvents = ["sunrise", "sunset", "dawn", "dusk", "noon", "midnight"];
+var solarEvents = ["midnight", "dawn", "sunrise", "noon", "sunset", "dusk"];
 function timeSourceChoices(
   program,
   id,
@@ -12490,6 +12490,30 @@ function SourcePicker($$anchor, $$props) {
       $$props.choices.find((choice) => choice.value === id)?.name || id;
     return headline;
   }
+  function rowRenderer(item) {
+    const row = document.createElement("ha-combo-box-item");
+    const headline = document.createElement("span");
+    headline.slot = "headline";
+    headline.textContent = item.primary;
+    row.append(headline);
+    if (item.secondary) {
+      const secondary = document.createElement("span");
+      secondary.slot = "supporting-text";
+      secondary.textContent = item.secondary;
+      row.append(secondary);
+    }
+    const choice = $$props.choices.find((choice2) => choice2.value === item.id);
+    if (choice?.value.startsWith("sun:")) {
+      const time = document.createElement("span");
+      time.slot = "end";
+      time.textContent = choice.today_time || $$props.t("unavailable");
+      time.title = $$props.t("today");
+      time.style.cssText =
+        "font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right;";
+      row.append(time);
+    }
+    return row;
+  }
   function select(event2) {
     if (!isValueChangedEvent(event2)) {
       return;
@@ -12551,6 +12575,7 @@ function SourcePicker($$anchor, $$props) {
       getItems: () => get(items),
       searchKeys: ["primary", "secondary", "id", "group"],
       valueRenderer,
+      rowRenderer,
       allowCustomValue: false,
       noSort: true,
       required: true,

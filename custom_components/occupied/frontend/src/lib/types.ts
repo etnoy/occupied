@@ -208,6 +208,7 @@ export interface TimeSource {
   name: string;
   group: string;
   entity_id?: string;
+  today_time?: string | null;
 }
 
 export interface Catalog {
@@ -500,6 +501,7 @@ export interface HaGenericPicker extends HTMLElement {
   getItems: () => (string | PickerItem)[];
   searchKeys: string[];
   valueRenderer: (id: string) => HTMLElement;
+  rowRenderer: (item: PickerItem) => HTMLElement;
   allowCustomValue: boolean;
   noSort: boolean;
   required: boolean;

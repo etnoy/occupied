@@ -1,17 +1,18 @@
 """Copy Home Assistant's known times for the pure planner and editor."""
 
 from datetime import UTC, datetime
+from zoneinfo import ZoneInfo
 
 from .models import program_timings
 from .time_utils import PlanningContext
 
 SOLAR_EVENTS = {
-    "sunrise": "Sunrise",
-    "sunset": "Sunset",
-    "dawn": "Dawn",
-    "dusk": "Dusk",
-    "noon": "Solar noon",
     "midnight": "Solar midnight",
+    "dawn": "Dawn",
+    "sunrise": "Sunrise",
+    "noon": "Solar noon",
+    "sunset": "Sunset",
+    "dusk": "Dusk",
 }
 
 
@@ -66,10 +67,23 @@ def planning_context(hass, entities=None):
 
 def time_source_options(hass):
     """Discover entities; solar semantics stay date-aware rather than next-only."""
-    options = [
-        {"value": f"sun:{event}", "name": name, "group": "Solar events"}
-        for event, name in SOLAR_EVENTS.items()
-    ]
+    from homeassistant.helpers.sun import get_astral_event_date
+    from homeassistant.util import dt as dt_util
+
+    zone = ZoneInfo(hass.config.time_zone)
+    today = dt_util.utcnow().astimezone(zone).date()
+    options = []
+    for event, name in SOLAR_EVENTS.items():
+        instant = get_astral_event_date(hass, event, today)
+        options.append(
+            {
+                "value": f"sun:{event}",
+                "name": name,
+                "group": "Solar events",
+                "today_time": instant.astimezone(zone).strftime("%H:%M") if instant else None,
+            }
+        )
+    options.sort(key=lambda option: option["today_time"] or "99:99")
     for entity_id, source in sorted(time_source_snapshot(hass).items()):
         state = hass.states.get(entity_id)
         group = "Calendars" if source["kind"] == "calendar" else "Home Assistant times"

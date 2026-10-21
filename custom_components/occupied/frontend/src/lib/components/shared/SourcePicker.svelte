@@ -56,6 +56,32 @@
     return headline;
   }
 
+  function rowRenderer(item: PickerItem) {
+    const row = document.createElement("ha-combo-box-item");
+    const headline = document.createElement("span");
+    headline.slot = "headline";
+    headline.textContent = item.primary;
+    row.append(headline);
+    if (item.secondary) {
+      const secondary = document.createElement("span");
+      secondary.slot = "supporting-text";
+      secondary.textContent = item.secondary;
+      row.append(secondary);
+    }
+    const choice = choices.find((choice) => choice.value === item.id);
+    if (choice?.value.startsWith("sun:")) {
+      const time = document.createElement("span");
+      time.slot = "end";
+      time.textContent = choice.today_time || t("unavailable");
+      time.title = t("today");
+      time.style.cssText =
+        "font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right;";
+      row.append(time);
+    }
+
+    return row;
+  }
+
   function select(event: Event) {
     if (!isValueChangedEvent(event)) {
       return;
@@ -91,6 +117,7 @@
       getItems: () => items,
       searchKeys: ["primary", "secondary", "id", "group"],
       valueRenderer,
+      rowRenderer,
       allowCustomValue: false,
       noSort: true,
       required: true,
