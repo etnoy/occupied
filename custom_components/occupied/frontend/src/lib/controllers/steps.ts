@@ -132,17 +132,19 @@ export function stepTree(
     timingOrder([...entries, ...relatedEntries], sources),
   );
   const seen = new Set<string>(),
-    ordered: { entry: StepEntry; depth: number }[] = [];
-  const append = (entry: StepEntry, depth: number) => {
+    ordered: { entry: StepEntry; depth: number; branches: boolean[] }[] = [];
+  const append = (entry: StepEntry, branches: boolean[]) => {
     if (seen.has(entry.id)) {
       return;
     }
     seen.add(entry.id);
-    ordered.push({ entry, depth });
-    for (const child of sortedEntries) {
-      if (child.timing.relative_to?.step === entry.id) {
-        append(child, depth + 1);
-      }
+    ordered.push({ entry, depth: branches.length, branches });
+    const children = sortedEntries.filter(
+      (child) =>
+        child.timing.relative_to?.step === entry.id && !seen.has(child.id),
+    );
+    for (const [index, child] of children.entries()) {
+      append(child, [...branches, index < children.length - 1]);
     }
   };
   const isRoot = (step: StepEntry) =>
@@ -150,12 +152,12 @@ export function stepTree(
     entries.every((parent) => parent.id !== step.timing.relative_to?.step);
   for (const step of sortedEntries) {
     if (isRoot(step)) {
-      append(step, 0);
+      append(step, []);
     }
   }
 
   for (const step of sortedEntries) {
-    append(step, 0);
+    append(step, []);
   }
 
   return ordered;

@@ -62,7 +62,7 @@
   />
   <div class="step-layout">
     <div class="step-list" aria-label={t("steps")}>
-      {#each stepTree(entries, panel.catalog.time_sources, relatedEntries) as { entry, depth } (entry.id)}
+      {#each stepTree(entries, panel.catalog.time_sources, relatedEntries) as { entry, depth, branches } (entry.id)}
         {@const warnings = issues
           .filter(({ stepId }) => stepId === entry.id)
           .map(({ issue }) => issue)}
@@ -72,64 +72,79 @@
           (editing ? panel.stepEditor?.form.enabled : entry.enabled) === false}
         {@const expanded =
           editing || (!panel.stepEditor && panel.selectedStep === entry.id)}
-        <div
-          class="step-card"
-          class:step-disabled={stepDisabled}
-          class:step-warning={warnings.length > 0}
-          data-step-id={entry.id}
-          style={`--depth:${Math.min(depth, 3)}`}
-        >
-          <button
-            type="button"
-            id={`step-card-${entry.id}`}
-            class="step-row"
-            class:editing={editing && warnings.length === 0}
-            disabled={panel.busy}
-            aria-expanded={expanded}
-            aria-controls={`step-editor-${entry.id}`}
-            aria-describedby={warnings.length > 0
-              ? `step-warning-${entry.id}`
-              : undefined}
-            onclick={() => openStep(panel, entry)}
-          >
-            <span class="step-row-content">
-              <span class="step-row-heading">
-                <strong>{entry.name}</strong>
-                {#if stepDisabled}
-                  <span class="step-status-badge">{t("disabled")}</span>
-                {/if}
-              </span>
-              <span class="hint"
-                >{actionSummary(entry, t)} ·
-                {entitySummary(panel.catalog, actionTargets(entry), t)}</span
-              >
-            </span>
-            {#if warnings.length}
-              <span class="step-row-warning" id={`step-warning-${entry.id}`}>
-                <ha-icon icon="mdi:alert-outline" aria-hidden="true"></ha-icon>
-                <span>
-                  <WarningMessages {warnings} {t} />
-                </span>
-              </span>
-            {:else if !editing}
-              <span class="step-row-time">
-                {timingSummary(
-                  entry,
-                  entries,
-                  t,
-                  panel.catalog.time_sources,
-                  panel._hass.locale,
-                )}
-              </span>
-            {/if}
-          </button>
-          {#if expanded}
-            <div id={`step-editor-${entry.id}`}>
-              {#if panel.stepEditor}
-                <StepEditor {panel} {revision} />
+        <div class="step-tree-item">
+          <span class="step-tree-connectors" aria-hidden="true">
+            {#each branches.slice(0, 3) as continues, level (level)}
+              {#if continues || level === depth - 1}
+                <span
+                  class="step-tree-line"
+                  class:step-tree-branch={level === depth - 1}
+                  class:step-tree-last={!continues}
+                  style={`--level:${level}`}
+                ></span>
               {/if}
-            </div>
-          {/if}
+            {/each}
+          </span>
+          <div
+            class="step-card"
+            class:step-disabled={stepDisabled}
+            class:step-warning={warnings.length > 0}
+            data-step-id={entry.id}
+            style={`--depth:${Math.min(depth, 3)}`}
+          >
+            <button
+              type="button"
+              id={`step-card-${entry.id}`}
+              class="step-row"
+              class:editing={editing && warnings.length === 0}
+              disabled={panel.busy}
+              aria-expanded={expanded}
+              aria-controls={`step-editor-${entry.id}`}
+              aria-describedby={warnings.length > 0
+                ? `step-warning-${entry.id}`
+                : undefined}
+              onclick={() => openStep(panel, entry)}
+            >
+              <span class="step-row-content">
+                <span class="step-row-heading">
+                  <strong>{entry.name}</strong>
+                  {#if stepDisabled}
+                    <span class="step-status-badge">{t("disabled")}</span>
+                  {/if}
+                </span>
+                <span class="hint"
+                  >{actionSummary(entry, t)} ·
+                  {entitySummary(panel.catalog, actionTargets(entry), t)}</span
+                >
+              </span>
+              {#if warnings.length}
+                <span class="step-row-warning" id={`step-warning-${entry.id}`}>
+                  <ha-icon icon="mdi:alert-outline" aria-hidden="true"
+                  ></ha-icon>
+                  <span>
+                    <WarningMessages {warnings} {t} />
+                  </span>
+                </span>
+              {:else if !editing}
+                <span class="step-row-time">
+                  {timingSummary(
+                    entry,
+                    entries,
+                    t,
+                    panel.catalog.time_sources,
+                    panel._hass.locale,
+                  )}
+                </span>
+              {/if}
+            </button>
+            {#if expanded}
+              <div id={`step-editor-${entry.id}`}>
+                {#if panel.stepEditor}
+                  <StepEditor {panel} {revision} />
+                {/if}
+              </div>
+            {/if}
+          </div>
         </div>
       {/each}
     </div>

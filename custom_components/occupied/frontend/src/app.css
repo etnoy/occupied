@@ -403,6 +403,7 @@ nav button.tab-warning[aria-current="page"] {
 }
 
 .step-list {
+  --step-tree-indent: 24px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -410,9 +411,46 @@ nav button.tab-warning[aria-current="page"] {
   min-width: 0;
 }
 
+.step-tree-item {
+  position: relative;
+  min-width: 0;
+}
+
+.step-tree-connectors {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: var(--divider-color, #d5dce3);
+}
+
+.step-tree-line {
+  position: absolute;
+  left: calc((var(--level) + 0.5) * var(--step-tree-indent));
+  top: -10px;
+  bottom: 0;
+  border-left: 1px solid currentColor;
+}
+
+.step-tree-line.step-tree-last {
+  bottom: 50%;
+}
+
+.step-tree-branch::after {
+  content: "";
+  position: absolute;
+  top: calc(50% + 5px);
+  left: 0;
+  width: calc(var(--step-tree-indent) / 2 - 1px);
+  border-top: 1px solid currentColor;
+}
+
+.step-tree-last::after {
+  top: 100%;
+}
+
 .step-card {
-  width: calc(100% - var(--depth) * 14px);
-  margin-left: calc(var(--depth) * 14px);
+  width: calc(100% - var(--depth) * var(--step-tree-indent));
+  margin-left: calc(var(--depth) * var(--step-tree-indent));
   border: 1px solid var(--divider-color, #d5dce3);
   border-radius: 12px;
   background: var(--card-background-color, #fff);

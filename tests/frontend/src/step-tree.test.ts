@@ -46,3 +46,28 @@ void test("broken references and cycles keep every step visible once", () => {
     ],
   );
 });
+
+void test("connector branches continue through descendants and stop at the last sibling", () => {
+  const steps: Program["steps"] = {
+    morning: { timing: { absolute_time: { start: "06:00" } } },
+    breakfast: { timing: { relative_to: { step: "morning" } } },
+    day: { timing: { relative_to: { step: "breakfast" } } },
+    work: { timing: { relative_to: { step: "breakfast" } } },
+    lunch: { timing: { relative_to: { step: "morning", start_offset: "6h" } } },
+    evening: { timing: { absolute_time: { start: "20:00" } } },
+  };
+  assert.deepEqual(
+    stepTree(stepEntries({ steps })).map(({ entry, branches }) => [
+      entry.id,
+      branches,
+    ]),
+    [
+      ["morning", []],
+      ["breakfast", [true]],
+      ["day", [true, true]],
+      ["work", [true, false]],
+      ["lunch", [false]],
+      ["evening", []],
+    ],
+  );
+});
