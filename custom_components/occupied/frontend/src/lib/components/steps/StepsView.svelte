@@ -1,50 +1,48 @@
 <script lang="ts">
-  import { actionTargets } from "../../utils/custom-action.js";
   import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
-
-  import {
-    startStep,
-    openStep,
-    actionSummary,
-    stepTree,
-  } from "../../controllers/steps.js";
+  import { startStep, stepTree } from "../../controllers/steps.js";
+  import { openRandom } from "../../controllers/random-editor-controller.js";
   import { stepEntries } from "../../models/step-model.js";
   import { randomEntries } from "../../models/random-model.js";
-  import { warningStepId } from "../../utils/step-issues.js";
-  import { entitySummary, timingSummary } from "../../utils/util.js";
-  import StepEditor from "./StepEditor.svelte";
+  import { warningStepId, warningRandomId } from "../../utils/step-issues.js";
+  import StepCard from "./StepCard.svelte";
+  import RandomCard from "../random/RandomCard.svelte";
   import ActivityIntro from "../shared/ActivityIntro.svelte";
-  import WarningMessages from "../shared/WarningMessages.svelte";
 
   let { panel, revision }: { panel: LoadedOccupiedPanel; revision: number } =
     $props();
 
   let data = $derived.by(() => {
     void revision;
-    const entries = stepEntries(panel.draft, panel.catalog, panel.t);
-    const relatedEntries = randomEntries(panel.draft, panel.catalog).map(
-      (entry) => ({ ...entry, id: `random:${entry.id}` }),
-    );
+    const steps = stepEntries(panel.draft, panel.catalog, panel.t);
+    const random = randomEntries(panel.draft, panel.catalog);
+    const entries = [
+      ...steps.map((entry) => ({ kind: "step" as const, ...entry })),
+      ...random.map((entry) => ({
+        kind: "random" as const,
+        ...entry,
+        id: `random:${entry.id}`,
+        randomEntry: entry,
+        timing: entry.start,
+      })),
+    ];
 
     return {
       t: panel.t,
       entries,
-      relatedEntries,
+      tree: stepTree(entries, panel.catalog.time_sources),
       issues: panel.visibleIssues().map((issue) => ({
         issue,
-        stepId: warningStepId(issue, entries),
+        stepId: warningStepId(issue, steps),
+        randomId: warningRandomId(issue, random),
       })),
     };
   });
-  let { t, entries, relatedEntries, issues } = $derived(data);
+  let { t, entries, tree, issues } = $derived(data);
 </script>
 
-{#if entries.length === 0}
-  <section class="step-empty">
-    <h2>{t("scheduled_activity")}</h2>
-    <p class="hint">
-      {t("steps_hint")}
-    </p>
+{#snippet addButtons(empty: boolean)}
+  <div class="activity-add-buttons">
     <button
       type="button"
       class="primary"
@@ -52,95 +50,55 @@
       disabled={panel.busy}
       onclick={() => startStep(panel)}
     >
-      {t("create_your_first_step")}
+      {t(empty ? "create_your_first_step" : "create_step")}
     </button>
+    <button
+      type="button"
+      data-create-random
+      disabled={panel.busy}
+      onclick={() => openRandom(panel)}
+    >
+      {t("create_random_event")}
+    </button>
+  </div>
+{/snippet}
+
+{#if entries.length === 0}
+  <section class="step-empty">
+    <h2>{t("activity")}</h2>
+    <p class="hint">{t("activity_hint")}</p>
+    {@render addButtons(true)}
   </section>
 {:else}
-  <ActivityIntro
-    title={t("scheduled_activity")}
-    description={t("steps_hint")}
-  />
+  <ActivityIntro title={t("activity")} description={t("activity_hint")} />
   <div class="step-layout">
-    <div class="step-list" aria-label={t("steps")}>
-      {#each stepTree(entries, panel.catalog.time_sources, relatedEntries) as { entry, depth } (entry.id)}
-        {@const warnings = issues
-          .filter(({ stepId }) => stepId === entry.id)
-          .map(({ issue }) => issue)}
-        {@const editing =
-          panel.stepEditor?.existing && panel.stepEditor.id === entry.id}
-        {@const stepDisabled =
-          (editing ? panel.stepEditor?.form.enabled : entry.enabled) === false}
-        {@const expanded =
-          editing || (!panel.stepEditor && panel.selectedStep === entry.id)}
-        <div
-          class="step-card"
-          class:step-disabled={stepDisabled}
-          class:step-warning={warnings.length > 0}
-          data-step-id={entry.id}
-          style={`--depth:${Math.min(depth, 3)}`}
-        >
-          <button
-            type="button"
-            id={`step-card-${entry.id}`}
-            class="step-row"
-            class:editing={editing && warnings.length === 0}
-            disabled={panel.busy}
-            aria-expanded={expanded}
-            aria-controls={`step-editor-${entry.id}`}
-            aria-describedby={warnings.length > 0
-              ? `step-warning-${entry.id}`
-              : undefined}
-            onclick={() => openStep(panel, entry)}
-          >
-            <span class="step-row-content">
-              <span class="step-row-heading">
-                <strong>{entry.name}</strong>
-                {#if stepDisabled}
-                  <span class="step-status-badge">{t("disabled")}</span>
-                {/if}
-              </span>
-              <span class="hint"
-                >{actionSummary(entry, t)} ·
-                {entitySummary(panel.catalog, actionTargets(entry), t)}</span
-              >
-            </span>
-            {#if warnings.length}
-              <span class="step-row-warning" id={`step-warning-${entry.id}`}>
-                <ha-icon icon="mdi:alert-outline" aria-hidden="true"></ha-icon>
-                <span>
-                  <WarningMessages {warnings} {t} />
-                </span>
-              </span>
-            {:else if !editing}
-              <span class="step-row-time">
-                {timingSummary(
-                  entry,
-                  entries,
-                  t,
-                  panel.catalog.time_sources,
-                  panel._hass.locale,
-                )}
-              </span>
-            {/if}
-          </button>
-          {#if expanded}
-            <div id={`step-editor-${entry.id}`}>
-              {#if panel.stepEditor}
-                <StepEditor {panel} {revision} />
-              {/if}
-            </div>
-          {/if}
-        </div>
+    <div class="step-list" aria-label={t("activity")}>
+      {#each tree as { entry, depth } (entry.id)}
+        {#if entry.kind === "random"}
+          <RandomCard
+            {panel}
+            {revision}
+            entry={entry.randomEntry}
+            {depth}
+            {entries}
+            warnings={issues
+              .filter(({ randomId }) => randomId === entry.randomEntry.id)
+              .map(({ issue }) => issue)}
+          />
+        {:else}
+          <StepCard
+            {panel}
+            {revision}
+            {entry}
+            {depth}
+            {entries}
+            warnings={issues
+              .filter(({ stepId }) => stepId === entry.id)
+              .map(({ issue }) => issue)}
+          />
+        {/if}
       {/each}
     </div>
   </div>
-  <button
-    type="button"
-    class="primary"
-    data-create-step
-    disabled={panel.busy}
-    onclick={() => startStep(panel)}
-  >
-    {t("create_step")}
-  </button>
+  {@render addButtons(false)}
 {/if}

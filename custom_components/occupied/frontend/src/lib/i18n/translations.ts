@@ -152,6 +152,9 @@ export const en = {
   steps_and_time_sources: "Steps and time sources",
   matching_sources: "matching sources",
   time_sources_no_matches: "No matching steps or time sources.",
+  activity: "Activity",
+  activity_hint:
+    "Add scheduled steps and random events. Items follow their start times, with dependent items indented below their source.",
   steps: "Steps",
   scheduled_activity: "Scheduled activity",
   steps_hint:
@@ -404,7 +407,7 @@ export const en = {
     "No light or switch actions on this date. Other actions are listed in Event details.",
   preview_graph_error:
     "The Home Assistant graph could not load. Planned actions are available in Event details.",
-  back_to_steps: "Back to steps",
+  back_to_steps: "Back to activity",
   continue: "Continue",
   cancel: "Cancel",
   back: "Back",
@@ -790,6 +793,9 @@ export const sv: Partial<Record<TranslationKey, string>> = {
   steps_and_time_sources: "Steg och tidskällor",
   matching_sources: "matchande tidskällor",
   time_sources_no_matches: "Inga matchande steg eller tidskällor.",
+  activity: "Aktivitet",
+  activity_hint:
+    "Lägg till schemalagda steg och slumpmässiga händelser. Poster följer sina starttider, med beroende poster indragna under sin källa.",
   steps: "Steg",
   scheduled_activity: "Schemalagd aktivitet",
   steps_hint:
@@ -1050,7 +1056,7 @@ export const sv: Partial<Record<TranslationKey, string>> = {
     "Inga åtgärder för lampor eller brytare detta datum. Övriga åtgärder visas i Händelsedetaljer.",
   preview_graph_error:
     "Home Assistant-diagrammet kunde inte laddas. Planerade åtgärder finns i Händelsedetaljer.",
-  back_to_steps: "Tillbaka till steg",
+  back_to_steps: "Tillbaka till aktivitet",
   continue: "Fortsätt",
   cancel: "Avbryt",
   back: "Tillbaka",
