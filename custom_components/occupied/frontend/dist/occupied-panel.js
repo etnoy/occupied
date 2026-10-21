@@ -10956,6 +10956,97 @@ function createStepEditorContext(panel) {
   };
 }
 
+// custom_components/occupied/frontend/src/lib/utils/timing-order.ts
+function offsetMinutes(value) {
+  if (!value) {
+    return 0;
+  }
+  const match =
+    /^([+-]?)(?:(\d+(?:\.\d+)?)h)?(?:(\d+(?:\.\d+)?)m)?(?:(\d+(?:\.\d+)?)s)?$/.exec(
+      value,
+    );
+  if (!match || !/[hms]/.test(value)) {
+    return void 0;
+  }
+  const amount =
+    Number(match[2] || 0) * 60 +
+    Number(match[3] || 0) +
+    Number(match[4] || 0) / 60;
+  return match[1] === "-" ? -amount : amount;
+}
+function clockMinutes(value) {
+  if (!value || !/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)) {
+    return void 0;
+  }
+  const [hours, minutes2, seconds = 0] = value.split(":").map(Number);
+  return hours * 60 + minutes2 + seconds / 60;
+}
+function timingOrder(entries, sources = []) {
+  const byId = new Map(entries.map((entry) => [entry.id, entry]));
+  const sourceTimes = new Map(
+    sources.flatMap((source2) => {
+      const minutes2 = clockMinutes(source2.today_time || void 0);
+      return minutes2 === void 0 ? [] : [[source2.value, minutes2]];
+    }),
+  );
+  const memo = /* @__PURE__ */ new Map();
+  const visiting = /* @__PURE__ */ new Set();
+  const resolve = (entry) => {
+    if (memo.has(entry.id)) {
+      return memo.get(entry.id);
+    }
+    if (visiting.has(entry.id)) {
+      return void 0;
+    }
+    visiting.add(entry.id);
+    const timing = entry.timing || entry.start;
+    let base;
+    if (timing?.absolute_time) {
+      base = clockMinutes(timing.absolute_time.start);
+    } else if (timing?.relative_to) {
+      const relative = timing.relative_to;
+      if (relative.sun) {
+        base = sourceTimes.get(`sun:${relative.sun}`);
+      } else if (relative.step) {
+        const parent = byId.get(relative.step);
+        base = parent && resolve(parent);
+      } else if (relative.random) {
+        const parent = byId.get(`random:${relative.random}`);
+        base = parent?.end
+          ? resolve({ id: `${parent.id}:end`, timing: parent.end })
+          : parent && resolve(parent);
+      } else if (relative.entity) {
+        base = sourceTimes.get(
+          `entity:${relative.entity}${relative.attribute ? `:${relative.attribute}` : ""}`,
+        );
+      }
+      const offset = offsetMinutes(relative.start_offset);
+      if (base === void 0 || offset === void 0) {
+        base = void 0;
+      } else {
+        base += offset;
+      }
+    }
+    const latest = timing?.latest_at?.absolute_time?.start;
+    const latestMinutes = clockMinutes(latest);
+    if (base !== void 0 && latestMinutes !== void 0 && base > latestMinutes) {
+      base = latestMinutes;
+    }
+    visiting.delete(entry.id);
+    const normalized = base === void 0 ? void 0 : ((base % 1440) + 1440) % 1440;
+    memo.set(entry.id, normalized);
+    return normalized;
+  };
+  return (left, right) => {
+    const a = resolve(left);
+    const b = resolve(right);
+    if (a === void 0 || b === void 0) {
+      return a === void 0 ? (b === void 0 ? 0 : 1) : -1;
+    }
+    return a - b;
+  };
+}
+
 // custom_components/occupied/frontend/src/lib/controllers/steps.ts
 async function deleteStep(panel, id) {
   if (
@@ -11047,7 +11138,10 @@ function actionSummary(entry, t) {
   }
   return entry.action;
 }
-function stepTree(entries) {
+function stepTree(entries, sources = [], relatedEntries = []) {
+  const sortedEntries = [...entries].sort(
+    timingOrder([...entries, ...relatedEntries], sources),
+  );
   const seen2 = /* @__PURE__ */ new Set(),
     ordered = [];
   const append2 = (entry, depth) => {
@@ -11056,7 +11150,7 @@ function stepTree(entries) {
     }
     seen2.add(entry.id);
     ordered.push({ entry, depth });
-    for (const child2 of entries) {
+    for (const child2 of sortedEntries) {
       if (child2.timing.relative_to?.step === entry.id) {
         append2(child2, depth + 1);
       }
@@ -11065,12 +11159,12 @@ function stepTree(entries) {
   const isRoot = (step) =>
     !step.timing.relative_to?.step ||
     entries.every((parent) => parent.id !== step.timing.relative_to?.step);
-  for (const step of entries) {
+  for (const step of sortedEntries) {
     if (isRoot(step)) {
       append2(step, 0);
     }
   }
-  for (const step of entries) {
+  for (const step of sortedEntries) {
     append2(step, 0);
   }
   return ordered;
@@ -15055,9 +15149,14 @@ function StepsView($$anchor, $$props) {
       $$props.panel.catalog,
       $$props.panel.t,
     );
+    const relatedEntries2 = randomEntries(
+      $$props.panel.draft,
+      $$props.panel.catalog,
+    ).map((entry) => ({ ...entry, id: `random:${entry.id}` }));
     return {
       t: $$props.panel.t,
       entries: entries2,
+      relatedEntries: relatedEntries2,
       issues: $$props.panel
         .visibleIssues()
         .map((issue) => ({ issue, stepId: warningStepId(issue, entries2) })),
@@ -15065,6 +15164,7 @@ function StepsView($$anchor, $$props) {
   });
   let t = user_derived(() => get(data).t),
     entries = user_derived(() => get(data).entries),
+    relatedEntries = user_derived(() => get(data).relatedEntries),
     issues = user_derived(() => get(data).issues);
   var fragment = comment();
   var node = first_child(fragment);
@@ -15114,7 +15214,12 @@ function StepsView($$anchor, $$props) {
       each(
         div_1,
         21,
-        () => stepTree(get(entries)),
+        () =>
+          stepTree(
+            get(entries),
+            $$props.panel.catalog.time_sources,
+            get(relatedEntries),
+          ),
         ({ entry, depth }) => entry.id,
         ($$anchor3, $$item) => {
           let entry = () => get($$item).entry;
@@ -20027,6 +20132,21 @@ function RandomView($$anchor, $$props) {
   let data = user_derived(() => {
     void $$props.revision;
     const entries2 = randomEntries($$props.panel.draft, $$props.panel.catalog);
+    const orderedEntries = [
+      ...stepEntries(
+        $$props.panel.draft,
+        $$props.panel.catalog,
+        $$props.panel.t,
+      ),
+      ...entries2.map((entry) => ({ ...entry, id: `random:${entry.id}` })),
+    ];
+    const compare = timingOrder(
+      orderedEntries,
+      $$props.panel.catalog.time_sources,
+    );
+    entries2.sort((a, b) =>
+      compare({ ...a, id: `random:${a.id}` }, { ...b, id: `random:${b.id}` }),
+    );
     return {
       t: $$props.panel.t,
       entries: entries2,
@@ -20042,9 +20162,12 @@ function RandomView($$anchor, $$props) {
           $$props.panel.catalog,
           $$props.panel.t,
         ),
-        ...randomEntries($$props.panel.draft, $$props.panel.catalog).map(
-          (entry) => ({ id: `random:${entry.id}`, name: entry.name }),
-        ),
+        ...entries2.map((entry) => ({
+          id: `random:${entry.id}`,
+          name: entry.name,
+          timing: entry.start,
+          end: entry.end,
+        })),
       ],
     };
   });
