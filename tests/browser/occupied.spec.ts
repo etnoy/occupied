@@ -376,7 +376,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     );
   }, beforeWarnings);
 
-  // Configuration order wins over start times and old browser preferences.
+  // Start times order branches and windows despite old browser preferences.
   const ids = await panel.evaluate((element) => {
     const controller = element as OccupiedPanel;
     const draft = controller.draft;
@@ -418,15 +418,15 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     };
     localStorage.setItem(
       `occupied:activity-order:${controller.selectedEntry}:steps`,
-      JSON.stringify(["browser_second", first, "browser_child"]),
+      JSON.stringify([first, "browser_child", "browser_second"]),
     );
     localStorage.setItem(
       `occupied:activity-order:${controller.selectedEntry}:random`,
-      JSON.stringify(["browser_early", "browser_late"]),
+      JSON.stringify(["browser_late", "browser_early"]),
     );
     controller.renderView();
 
-    return [first, "browser_child", "browser_second"];
+    return ["browser_second", first, "browser_child"];
   });
   const stepIds = () =>
     panel
@@ -461,7 +461,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
           rows.map((row) => (row as HTMLElement).dataset.randomId),
         ),
     )
-    .toEqual(["browser_late", "browser_early"]);
+    .toEqual(["browser_early", "browser_late"]);
   await expect(panel.getByRole("button", { name: /^Reorder / })).toHaveCount(0);
   await expect(
     panel.getByRole("button", { name: "Reset to chronological", exact: true }),
