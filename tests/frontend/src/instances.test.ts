@@ -1,4 +1,5 @@
 import test from "node:test";
+import type { LoadedOccupiedPanel } from "@occupied/occupied-panel.js";
 import assert from "node:assert/strict";
 import type {
   HomeAssistant,
@@ -21,7 +22,7 @@ import {
 
 const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
 
-async function fixture() {
+async function fixture(startupState?: string, reportedState = startupState) {
   const originalNow = Date.now;
   Date.now = () => Date.parse("2026-10-06T12:00:00Z");
   const descriptors = new Map(
@@ -156,10 +157,12 @@ async function fixture() {
     ],
   };
   const hass: HomeAssistant = {
+    config: startupState ? { state: startupState } : undefined,
     callWS: async <T>(message: Record<string, unknown>): Promise<T> => {
       messages.push(message);
       const entry = String(message.config_entry_id);
       const responses: Record<string, unknown> = {
+        get_config: { state: reportedState },
         "occupied/instances": instances,
         "occupied/program": documents[entry],
         "occupied/catalog": { entities: [], services: {} },
@@ -228,10 +231,12 @@ async function fixture() {
   panel.hass = hass;
   panel.panel = {};
   await settle();
-  assert.ok(hasProgram(panel));
+  if (!startupState || startupState === "RUNNING") {
+    assert.ok(hasProgram(panel));
+  }
 
   return {
-    panel,
+    panel: panel as LoadedOccupiedPanel,
     documents,
     instances,
     disposed,
@@ -2431,6 +2436,51 @@ void test("initial discovery recovery keeps retrying if the subsequent environme
     assert.equal(panel.error, "");
   } finally {
     panel.disconnectedCallback();
+    f.restore();
+  }
+});
+
+void test("startup waits for the started event before loading and validating", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const f = await fixture("STARTING");
+  try {
+    assert.equal(f.panel.starting, true);
+    assert.deepEqual(
+      f.messages.map((message) => message.type),
+      ["get_config"],
+    );
+    assert.deepEqual(f.panel.visibleIssues(), []);
+    const started = f.subscriptions.get("subscribe_events:all");
+    assert.ok(started);
+    started({ event_type: "homeassistant_started" });
+    t.mock.timers.tick(0);
+    await settle();
+    await settle();
+    assert.equal(f.panel.starting, false);
+    assert.ok(f.panel.draft);
+    assert.ok(
+      f.messages.some((message) => message.type === "occupied/editor_validate"),
+    );
+    assert.ok(f.disposed.includes("subscribe_events:all"));
+  } finally {
+    f.restore();
+  }
+});
+
+void test("startup rechecks config after subscribing in case the started event was missed", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const f = await fixture("STARTING", "RUNNING");
+  try {
+    t.mock.timers.tick(0);
+    await settle();
+    await settle();
+    assert.equal(f.panel.starting, false);
+    assert.ok(f.panel.draft);
+    assert.ok(
+      f.messages.some((message) => message.type === "occupied/editor_validate"),
+    );
+    assert.ok(f.disposed.includes("subscribe_events:all"));
+  } finally {
     f.restore();
   }
 });

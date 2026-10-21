@@ -452,7 +452,7 @@ export interface HomeAssistant {
     { state: string; attributes: Record<string, unknown> }
   >;
   language?: string;
-  config?: { time_zone?: string; [key: string]: unknown };
+  config?: { state?: string; time_zone?: string; [key: string]: unknown };
   locale?: {
     language?: string;
     time_format?: "language" | "system" | "12" | "24";

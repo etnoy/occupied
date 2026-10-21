@@ -191,7 +191,8 @@
           data-tab={id}
           class:tab-warning={issueTabs.has(id)}
           aria-current={panel.tab === id ? "page" : "false"}
-          disabled={!panel.selectedInstance?.loaded ||
+          disabled={panel.starting ||
+            !panel.selectedInstance?.loaded ||
             (panel.recovering && id !== "settings")}
           onclick={() => panel.navigate(id)}
         >
@@ -224,7 +225,11 @@
               {t("draft_invalid_hint")}
             </p>
           {/snippet}
-          {#if panel.selectedEntry && !panel.selectedInstance?.loaded}
+          {#if panel.starting}
+            <p role="status" aria-live="polite">
+              {t("waiting_for_home_assistant")}
+            </p>
+          {:else if panel.selectedEntry && !panel.selectedInstance?.loaded}
             <p>
               {t("instance_unavailable_hint")}
             </p>
