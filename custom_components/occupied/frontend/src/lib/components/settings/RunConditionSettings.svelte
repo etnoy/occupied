@@ -242,31 +242,6 @@
         </p>
       {/if}
     {/if}
-    {#if snapshot.reconciliation && Object.keys(snapshot.reconciliation.results).length > 0}
-      <details>
-        <summary
-          >{t("run_condition_results")} · {t(
-            snapshot.reconciliation.phase,
-          )}</summary
-        >
-        {#if snapshot.reconciliation.counts}
-          <p class="counts">
-            {#each Object.entries(snapshot.reconciliation.counts) as [kind, count] (kind)}
-              <span>{t(`run_condition_count_${kind}`)}: {count} </span>
-            {/each}
-          </p>
-        {/if}
-        <ul>
-          {#each Object.entries(snapshot.reconciliation.results) as [entity, result] (entity)}
-            <li>
-              {entity}: {t(result.status)}{result.reason
-                ? ` · ${result.reason}`
-                : ""}
-            </li>
-          {/each}
-        </ul>
-      </details>
-    {/if}
   </section>
 {/if}
 
@@ -285,10 +260,5 @@
   }
   .managed-warning {
     color: var(--warning-color, #e69500);
-  }
-  .counts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
   }
 </style>
