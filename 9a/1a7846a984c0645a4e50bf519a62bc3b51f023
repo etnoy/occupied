@@ -1,0 +1,45 @@
+custom_components/occupied/frontend/dist/lib/controllers/steps.js
+  s_cfcf8ef18567c5::t_7828546fb9fc58 107,112-118,126,130
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_cfcf8ef18567c5::t_4239205b4b0d96 1814,1816,1821,1867,1918,1948,2069,2140,2155,2179,2357,2362,2380,2433,2496,2518,2531,2541,2580,2594,2714,3006,3911,4127,4435,4486,4659,4747,5132,5135,5695,5833,5844,5999,6024,6119,6150,6597,6785,6956,6995,7015,7533,7548,7554,7647,7671,7698,7720,7740,7877,7905,7943,8057,8514,8575,8599,8616,8673,8734,8937,9042,9282,9333,9336,9343,9486,9622,11121,11126-11132,11140,11144,15084-15086,15090-15091,15093-15095,15154,15179,15183,15206-15246,15248-15252,15254,15256-15258,15263,15265-15266,15269-15273,15275-15277,15280-15282,15290-15291,15293,15295,15297-15299,15313,15315-15317,15321,15323-15325,15327,15337-15338,15341,15343,15345,15347-15348,15351,15355,15359-15360,15362,15383,17269,17648,17896,18149,20349,20676
+custom_components/occupied/frontend/src/app.css
+  s_0a8e506bea4071::t_794c5cc20c5b23 406,414-450,452-453
+custom_components/occupied/frontend/src/lib/components/steps/StepsView.svelte
+  s_70e4e8d93dde49::t_d1c94b6431b5cf 65,75-93,95-113,115-118,120-137,139-147
+custom_components/occupied/frontend/src/lib/controllers/steps.ts
+  s_70e4e8d93dde49::t_a755e91be7cc59 135-136,141-147,155,160
+tests/frontend/src/step-tree.test.ts
+  s_cfcf8ef18567c5::t_85083c06b27339 49-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "9a1a7846a984c0645a4e50bf519a62bc3b51f023",
+  "prompts": {},
+  "sessions": {
+    "s_0a8e506bea4071": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16061-6fc0-7372-ab98-3cb452103574",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_70e4e8d93dde49": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16063-c670-7b31-b20c-87afb5e4a532",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_cfcf8ef18567c5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16063-0663-77c3-b0c2-202f03501266",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
