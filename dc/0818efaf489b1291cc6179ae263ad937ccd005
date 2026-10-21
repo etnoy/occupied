@@ -1,0 +1,33 @@
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_3d61bf5e584740::t_b3858ed72abff1 91,723
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_3d61bf5e584740::t_dc7449da24f32a 187,822,3232,3234,3236,3315-3317,3581-3582,5214,5235,7651,7654,7656,7658,13569,13573,13583-13587,13611,13794-13799,15025-15077,15079,15082-15084,15087-15089,15092,15126,15151,15202,15213,15232,15237-15240,15242-15245,15254-15255,15257,15269,15277,15280-15281,15293,15303,15359,15364,15382,15385,15472,15610,15803-15804,15865,15898,16886-16887,16974,16996,17014,17028,17213,17216,17224,17252,17342,17603,17836,17840,17851,17861,17877,17911,17994,18104,18238,18241,18262,18289,18508,18534,18593-18594,18621,18631,18701-18702,18738,18744,18776,18845,18849,18919,18939,19084-19085,19148,19176,19497,19500,19693,19710,19979,19982-19984,19987-19988,19991,20047,20072,20109,20120,20139,20144-20147,20149-20152,20161-20162,20164,20188,20197,20209,20272,20277,20295-20296,20303-20304,20314,20318,20357,20539,20609,20631,20660
+custom_components/occupied/frontend/src/lib/components/random/RandomView.svelte
+  s_3d61bf5e584740::t_8532dd64c8daee 17,127
+custom_components/occupied/frontend/src/lib/components/shared/EntityRow.svelte
+  s_3d61bf5e584740::t_302f226d8658ac 34-40,58-62,173-181
+custom_components/occupied/frontend/src/lib/components/shared/WarningMessages.svelte
+  s_3d61bf5e584740::t_7b91cf603b803f 1-27
+custom_components/occupied/frontend/src/lib/components/steps/StepsView.svelte
+  s_3d61bf5e584740::t_4165166b6b9520 17,111
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_3d61bf5e584740::t_2f4fab4f61164a 92,729
+tests/browser/occupied.spec.ts
+  s_3d61bf5e584740::t_8efb1f60e3755c 317-326,337-342,371-377,379-384,413-422,427-428
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "dc0818efaf489b1291cc6179ae263ad937ccd005",
+  "prompts": {},
+  "sessions": {
+    "s_3d61bf5e584740": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "efcabf10-469f-4b10-abb1-6318b90f7a36",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
