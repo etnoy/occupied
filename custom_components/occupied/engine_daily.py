@@ -1703,6 +1703,40 @@ class DailyEngine:
             await self._cancel_native_fades()
         self._forget_owned()
 
+    def _rearm_rescheduled_states(self, plans):
+        """Explicit edits can schedule a new future application of a known state."""
+        previous = {
+            event.id: (plan, event) for plan in self._plans.values() for event in plan.events
+        }
+        now = dt_util.utcnow()
+        for plan in plans:
+            for event in plan.events:
+                key = self._key(plan, event)
+                old = previous.get(event.id)
+                if (
+                    event.kind != "step"
+                    or event.at <= now
+                    or old is None
+                    or old[1].at == event.at
+                    or old[1].action != event.action
+                    or self._journal.get(key, {}).get("late_result")
+                    or self._journal.get(key, {}).get("status")
+                    not in {"dispatched", "historical_skipped", "subsumed_handover"}
+                ):
+                    continue
+                # Never replay scripts, toggles, covers, or a state action that
+                # belongs to an ordered block containing opaque service calls.
+                if not all(
+                    member.action.replay_safe
+                    for source, occurrence in ((old[0], old[1]), (plan, event))
+                    for member in source.occurrences[occurrence.occurrence_id]
+                ):
+                    continue
+                self._journal.pop(key)
+                self._record(
+                    key, "rescheduled", f"State application moved to {event.at.isoformat()}"
+                )
+
     async def async_replace_program(self, program, *, expected_revision=None, persist_program=True):
         gate = ActivationGate.for_run_condition(self.hass, program.run_condition)
         await gate.async_prepare()
@@ -1763,6 +1797,7 @@ class DailyEngine:
             )
             self.config["name"] = program.name
             if not same_schedule:
+                self._rearm_rescheduled_states(plans)
                 self._plans.clear()
             self._handover.clear()
             if self.started:

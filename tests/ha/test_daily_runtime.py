@@ -914,6 +914,135 @@ async def test_timing_limit_edits_and_obsolete_cache_do_not_replay_completed_ste
     assert len(daily_devices) == 1
 
 
+@pytest.mark.parametrize("historical", [False, True])
+@pytest.mark.parametrize("reload", [False, True])
+async def test_rescheduled_state_step_runs_after_enforcement(
+    hass, daily_entry, daily_devices, freezer, runtime_program, historical, reload
+):
+    runtime_program["steps"].pop("script")
+    # Keep reload focused on queue persistence rather than automatic light handover.
+    runtime_program["run_condition"] = {
+        "entity_id": "input_boolean.schedule",
+        "state": "on",
+        "enforce_state_on_start": False,
+    }
+    hass.states.async_set("input_boolean.schedule", "on")
+    # Exercise the GUI's set_state action and staggered per-entity journal keys.
+    runtime_program["steps"]["off"].update(
+        action="set_state",
+        entities={"light.proof": {"state": "off"}, "switch.proof": {"state": "off"}},
+        stagger={"enabled": True, "period": "10s"},
+    )
+
+    async def switch_service(call):
+        daily_devices.append(call)
+        for entity in call.data["entity_id"]:
+            hass.states.async_set(
+                entity, "on" if call.service == "turn_on" else "off", context=call.context
+            )
+
+    def register_switch():
+        for service in ("turn_on", "turn_off"):
+            hass.services.async_register(
+                "switch",
+                service,
+                switch_service,
+                schema=vol.Schema({vol.Required("entity_id"): cv.entity_ids}),
+            )
+
+    hass.states.async_set("switch.proof", "on")
+    engine = await load(
+        hass,
+        daily_entry,
+        freezer,
+        "2026-10-13T18:06:00+00:00" if historical else "2026-10-13T18:00:00+00:00",
+    )
+    register_switch()
+    await engine.async_set_enabled(True)
+    if not historical:
+        for seconds in (60, 245, 5):
+            await advance(hass, freezer, seconds)
+        assert hass.states.get("light.proof").state == "off"
+        assert hass.states.get("switch.proof").state == "off"
+
+    runtime_program["steps"]["off"]["timing"]["relative_to"]["start_offset"] = "7m"
+    await engine.async_replace_program(validate_program(runtime_program))
+    await engine.async_enforce_state_now()
+    assert hass.states.get("light.proof").state == "on"
+    assert engine.next_event < dt_util.parse_datetime("2026-10-13T18:09:00+00:00")
+    if reload:
+        assert await hass.config_entries.async_reload(daily_entry.entry_id)
+        await hass.async_block_till_done()
+        engine = daily_entry.runtime_data
+        register_switch()
+
+    inputs = engine.preview_inputs()
+    preview = await hass.async_add_executor_job(inputs.render, dt_util.utcnow().date(), 1)
+    ticks = sorted(
+        (e for e in preview["plans"][0]["events"] if e["source_id"] == "off"),
+        key=lambda event: event["time"],
+    )
+    assert len(ticks) == 2
+    count = len(daily_devices)
+    for tick in ticks:
+        at = dt_util.parse_datetime(tick["time"])
+        await advance(hass, freezer, (at - dt_util.utcnow()).total_seconds() + 0.001)
+        assert daily_devices[-1].service == "turn_off"
+        assert daily_devices[-1].data["entity_id"] == list(tick["action"]["entities"])
+    assert len(daily_devices) == count + 2
+    assert hass.states.get("light.proof").state == "off"
+    assert hass.states.get("switch.proof").state == "off"
+
+
+async def test_rescheduled_mixed_block_does_not_repeat_completed_calls(
+    hass, daily_entry, daily_devices, freezer, runtime_program
+):
+    runtime_program["steps"]["off"] = {
+        "timing": {"absolute_time": {"start": "18:05"}},
+        "actions": [
+            {"action": "turn_off", "entities": ["light.proof"]},
+            {"action": "script.turn_on", "entities": ["script.test"]},
+        ],
+    }
+    runtime_program["steps"].pop("script")
+    engine = await load(hass, daily_entry, freezer)
+    await engine.async_set_enabled(True)
+    await advance(hass, freezer, 60)
+    await advance(hass, freezer, 240)
+    assert [call.service for call in daily_devices] == ["turn_on", "turn_off", "turn_on"]
+    runtime_program["steps"]["off"]["timing"]["absolute_time"]["start"] = "18:08"
+    await engine.async_replace_program(validate_program(runtime_program))
+    await engine.async_enforce_state_now()
+    count = len(daily_devices)
+    await advance(hass, freezer, 180)
+    assert len(daily_devices) == count
+
+
+@pytest.mark.parametrize(
+    "outcome",
+    [
+        {"status": "pending"},
+        {"status": "uncertain"},
+        {"status": "failed"},
+        {"status": "dispatched", "late_result": True},
+    ],
+)
+async def test_rescheduling_does_not_rearm_interrupted_state_calls(
+    hass, daily_entry, daily_devices, freezer, runtime_program, outcome
+):
+    engine = await load(hass, daily_entry, freezer, "2026-10-13T18:06:00+00:00")
+    await engine.async_set_enabled(True)
+    key = "live:step:2026-10-13:step:off:0"
+    engine._journal[key] = outcome.copy()
+    runtime_program["steps"]["off"]["timing"]["relative_to"]["start_offset"] = "7m"
+    await engine.async_replace_program(validate_program(runtime_program))
+    await engine.async_enforce_state_now()
+    count = len(daily_devices)
+    await advance(hass, freezer, 120)
+    assert engine._journal[key] == outcome
+    assert len(daily_devices) == count
+
+
 @pytest.mark.parametrize("enforce", [False, True])
 async def test_excluded_steps_have_no_dispatch_handover_or_startup_intent(
     hass, daily_entry, daily_devices, freezer, runtime_program, enforce
