@@ -1,9 +1,8 @@
 // Generated from custom_components/occupied/frontend/src/lib/i18n/translations.ts by pnpm run build. Do not edit.
 // Keep UI wording here; call sites use stable, descriptive shorthand keys.
 export const en = {
-  action_preview_hint:
-    "Test the current actions without saving. Testing changes real devices immediately, without schedule or stagger delays. Changes stay in effect after closing.",
-  test_action: "Test action",
+  preview_event_start: "Preview event start",
+  preview_event_end: "Preview event end",
   action_test_dispatched: "Command completed.",
   action_test_failed: "Command failed.",
   action_test_uncertain: "Command timed out and may still complete.",
@@ -584,9 +583,8 @@ export const en = {
 };
 // Missing translations fall back to English.
 export const sv = {
-  action_preview_hint:
-    "Testa de aktuella åtgärderna utan att spara. Testet styr riktiga enheter direkt, utan schema- eller förskjutningsfördröjningar. Ändringarna kvarstår när du stänger.",
-  test_action: "Testa åtgärd",
+  preview_event_start: "Förhandsvisa händelsestart",
+  preview_event_end: "Förhandsvisa händelseslut",
   action_test_dispatched: "Kommandot slutfördes.",
   action_test_failed: "Kommandot misslyckades.",
   action_test_uncertain:
