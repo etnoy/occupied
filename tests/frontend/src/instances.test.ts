@@ -132,6 +132,7 @@ async function fixture() {
   const subscriptions = new Map<string, (value: unknown) => void>();
   const disposed: string[] = [];
   const connectionListeners = new Map<string, () => void>();
+  const connectionCallbacks = new Map<string, Set<() => void>>();
   let liveOverride:
     | ((message: Record<string, unknown>) => Promise<LivePreviewResponse>)
     | undefined;
@@ -163,6 +164,7 @@ async function fixture() {
         "occupied/program": documents[entry],
         "occupied/catalog": { entities: [], services: {} },
         "occupied/preview": preview,
+        "occupied/editor_validate": { valid: true, issues: [] },
         "occupied/export": {
           valid: true,
           issues: [],
@@ -189,10 +191,23 @@ async function fixture() {
     },
     connection: {
       addEventListener: (event, callback) => {
-        connectionListeners.set(event, callback);
+        const callbacks =
+          connectionCallbacks.get(event) || new Set<() => void>();
+        callbacks.add(callback);
+        connectionCallbacks.set(event, callbacks);
+        connectionListeners.set(event, () => {
+          const listeners = [...callbacks];
+          for (const listener of listeners) {
+            listener();
+          }
+        });
       },
-      removeEventListener: (event) => {
-        connectionListeners.delete(event);
+      removeEventListener: (event, callback) => {
+        const callbacks = connectionCallbacks.get(event);
+        callbacks?.delete(callback);
+        if (callbacks?.size === 0) {
+          connectionListeners.delete(event);
+        }
       },
       subscribeMessage: <T>(
         callback: (snapshot: T) => void,
@@ -244,6 +259,7 @@ async function fixture() {
       panel.route = {};
     },
     restore() {
+      panel.disconnectedCallback();
       Date.now = originalNow;
       for (const [key, descriptor] of descriptors) {
         if (descriptor) {
@@ -709,7 +725,8 @@ function liveSession(): LivePreviewSession {
   };
 }
 
-void test("reconnect retrieves the frozen day before enabling Next and leaves the draft intact", async () => {
+void test("reconnect retrieves the frozen day before enabling Next and leaves the draft intact", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
   const f = await fixture();
   try {
     f.panel.change(["name"], "Unsaved editor draft");
@@ -723,6 +740,8 @@ void test("reconnect retrieves the frozen day before enabling Next and leaves th
     );
     f.connectionListeners.get("disconnected")!();
     f.connectionListeners.get("ready")!();
+    t.mock.timers.tick(0);
+    await settle();
     assert.equal(f.panel.liveReady, false);
     await f.panel.nextLiveEvent();
     assert.equal(
@@ -2114,6 +2133,304 @@ void test("shared service entities follow edits and clear when a phase changes k
     createRandomEditorContext(f.panel).changed("off.kind");
     assert.equal(form.sameEntities, false);
   } finally {
+    f.restore();
+  }
+});
+
+void test("entity recovery refreshes both warning stores and catalog while preserving every edit", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const f = await deletionFixture();
+  try {
+    const warning = {
+      code: "entity_unavailable",
+      severity: "warning",
+      message: "Unresolved entity: light.test",
+      model_path: ["steps", "evening", "entities"],
+    };
+    const error = {
+      code: "input",
+      severity: "error",
+      message: "Keep this validation error",
+    };
+    f.panel.document.warnings = [warning];
+    f.panel.issues = [warning, error];
+    f.panel.hass = {
+      ...f.panel._hass,
+      states: { "light.test": { state: "unavailable", attributes: {} } },
+    };
+    f.panel.change(["name"], "Unsaved draft");
+    f.panel.stepEditor!.form.name = "Unsaved editor";
+    f.panel.openRunCondition();
+    f.panel.runConditionForm!.enabled = true;
+    f.panel.yaml = "# Unsaved YAML";
+    f.panel.tab = "random";
+    const draft = f.panel.draft;
+    const editor = f.panel.stepEditor;
+    const condition = f.panel.runConditionForm;
+    const version = f.panel.version;
+    const callWS = f.panel._hass.callWS.bind(f.panel._hass);
+    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      if (message.type === "occupied/catalog") {
+        return Promise.resolve({
+          entities: [
+            { entity_id: "light.test", name: "Recovered light", state: "off" },
+          ],
+          services: {},
+        } as T);
+      }
+
+      return callWS<T>(message);
+    };
+    f.documents.main.warnings = [];
+    f.panel.hass = {
+      ...f.panel._hass,
+      states: { "light.test": { state: "off", attributes: {} } },
+    };
+    t.mock.timers.tick(250);
+    await settle();
+    assert.deepEqual(f.panel.visibleIssues(), [error]);
+    assert.equal(f.panel.catalog.entities[0].name, "Recovered light");
+    assert.equal(f.panel.draft, draft);
+    assert.equal(f.panel.draft.name, "Unsaved draft");
+    assert.equal(f.panel.stepEditor, editor);
+    assert.equal(editor!.form.name, "Unsaved editor");
+    assert.equal(f.panel.runConditionForm, condition);
+    assert.equal(condition!.enabled, true);
+    assert.equal(f.panel.yaml, "# Unsaved YAML");
+    assert.equal(f.panel.tab, "random");
+    assert.equal(f.panel.version, version);
+    assert.equal(f.panel.dirty, true);
+    assert.equal(f.confirmations, 0);
+  } finally {
+    f.restore();
+  }
+});
+
+void test("same-object reconnect retries temporary discovery failure and keeps revision conflicts", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const f = await fixture();
+  try {
+    f.panel.change(["name"], "Unsaved restart draft");
+    f.documents.main = {
+      ...f.documents.main,
+      revision: "changed-during-restart",
+    };
+    const callWS = f.panel._hass.callWS.bind(f.panel._hass);
+    let attempts = 0;
+    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      return message.type === "occupied/instances" && ++attempts === 1
+        ? Promise.reject(new Error("HA still starting"))
+        : callWS<T>(message);
+    };
+    const connection = f.panel._hass.connection;
+    f.connectionListeners.get("disconnected")!();
+    f.connectionListeners.get("ready")!();
+    t.mock.timers.tick(0);
+    await settle();
+    assert.equal(f.panel.error, "HA still starting");
+    t.mock.timers.tick(1000);
+    await settle();
+    assert.equal(f.panel._hass.connection, connection);
+    assert.equal(f.panel.error, "");
+    assert.equal(f.panel.runtimeSubscriptionError, "");
+    assert.equal(f.panel.draft.name, "Unsaved restart draft");
+    assert.equal(f.panel.revision, "revision-main");
+    assert.equal(f.panel.stale, true);
+    assert.ok(f.subscriptions.has("occupied/subscribe:main"));
+  } finally {
+    f.restore();
+  }
+});
+
+void test("late environment refresh cannot update another controller", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const f = await deletionFixture();
+  let resolve!: (doc: ProgramDocument) => void;
+  try {
+    f.panel.stepEditor = null;
+    f.panel.hass = {
+      ...f.panel._hass,
+      states: { "light.test": { state: "unavailable", attributes: {} } },
+    };
+    f.setProgramOverride(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        }),
+    );
+    f.panel.hass = {
+      ...f.panel._hass,
+      states: { "light.test": { state: "off", attributes: {} } },
+    };
+    t.mock.timers.tick(250);
+    await settle();
+    f.setProgramOverride(undefined);
+    f.route("guest");
+    await settle();
+    resolve({
+      ...f.documents.main,
+      warnings: [{ severity: "warning", message: "Old response" }],
+    });
+    await settle();
+    assert.equal(f.panel.selectedEntry, "guest");
+    assert.equal(f.panel.draft.name, "guest");
+    assert.deepEqual(f.panel.visibleIssues(), []);
+  } finally {
+    f.restore();
+  }
+});
+
+void test("staggered recovery retains genuine warnings and ignores ordinary state updates", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const f = await deletionFixture();
+  try {
+    f.panel.stepEditor = null;
+    f.panel.draft.steps!.evening.entities = ["light.test", "light.other"];
+    f.documents.main.program.steps!.evening.entities = [
+      "light.test",
+      "light.other",
+    ];
+    const states = {
+      "light.test": { state: "unknown", attributes: {} },
+      "light.other": { state: "unavailable", attributes: {} },
+    };
+    f.panel.hass = { ...f.panel._hass, states: structuredClone(states) };
+    const callWS = f.panel._hass.callWS.bind(f.panel._hass);
+    let refreshes = 0;
+    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      const warnings = Object.entries(states)
+        .filter(([, value]) => ["unknown", "unavailable"].includes(value.state))
+        .map(([entity]) => ({
+          code: "entity_unavailable",
+          severity: "warning",
+          message: `Unresolved entity: ${entity}`,
+          model_path: ["steps", "evening", "entities"],
+        }));
+      if (message.type === "occupied/program") {
+        refreshes++;
+
+        return Promise.resolve({ ...f.documents.main, warnings } as T);
+      }
+
+      return message.type === "occupied/editor_validate"
+        ? Promise.resolve({ valid: true, issues: warnings } as T)
+        : callWS<T>(message);
+    };
+    states["light.test"].state = "off";
+    f.panel.hass = { ...f.panel._hass, states: structuredClone(states) };
+    t.mock.timers.tick(250);
+    await settle();
+    assert.deepEqual(
+      f.panel.visibleIssues().map((issue) => issue.message),
+      ["Unresolved entity: light.other"],
+    );
+    assert.equal(refreshes, 1);
+    states["light.test"].state = "on";
+    f.panel.hass = { ...f.panel._hass, states: structuredClone(states) };
+    t.mock.timers.tick(1000);
+    await settle();
+    assert.equal(refreshes, 1);
+    states["light.other"].state = "off";
+    f.panel.hass = { ...f.panel._hass, states: structuredClone(states) };
+    t.mock.timers.tick(250);
+    await settle();
+    assert.deepEqual(f.panel.visibleIssues(), []);
+    assert.equal(refreshes, 2);
+  } finally {
+    f.restore();
+  }
+});
+
+for (const failure of [
+  "occupied/program",
+  "occupied/catalog",
+  "occupied/subscribe",
+  "occupied/instances_subscribe",
+]) {
+  void test(`reconnect automatically recovers a temporary ${failure} failure`, async (t) => {
+    t.mock.timers.enable({ apis: ["setTimeout"] });
+    const f = await fixture();
+    try {
+      f.panel.change(["name"], "Keep this draft");
+      let failed = false;
+      const callWS = f.panel._hass.callWS.bind(f.panel._hass);
+      const subscribe = f.panel._hass.connection.subscribeMessage.bind(
+        f.panel._hass.connection,
+      );
+      f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+        if (message.type === failure && !failed) {
+          failed = true;
+
+          return Promise.reject(new Error("Still starting"));
+        }
+
+        return callWS<T>(message);
+      };
+      f.panel._hass.connection.subscribeMessage = <T>(
+        callback: (value: T) => void,
+        message: Record<string, unknown>,
+      ) => {
+        if (message.type === failure && !failed) {
+          failed = true;
+
+          return Promise.reject(new Error("Still starting"));
+        }
+
+        return subscribe(callback, message);
+      };
+      f.connectionListeners.get("ready")!();
+      t.mock.timers.tick(0);
+      await settle();
+      t.mock.timers.tick(1000);
+      await settle();
+      assert.equal(failed, true);
+      assert.equal(f.panel.error, "");
+      assert.equal(f.panel.runtimeSubscriptionError, "");
+      assert.equal(f.panel.draft.name, "Keep this draft");
+      assert.ok(f.subscriptions.has("occupied/subscribe:main"));
+      assert.ok(f.subscriptions.has("occupied/instances_subscribe:all"));
+    } finally {
+      f.restore();
+    }
+  });
+}
+
+void test("initial discovery recovery keeps retrying if the subsequent environment refresh fails", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const f = await fixture();
+  const { OccupiedPanel, hasProgram } =
+    await import("@occupied/occupied-panel.js");
+  const panel = new OccupiedPanel();
+  try {
+    f.panel.disconnectedCallback();
+    const callWS = f.panel._hass.callWS.bind(f.panel._hass);
+    let discoveries = 0;
+    let catalogs = 0;
+    panel.hass = {
+      ...f.panel._hass,
+      callWS: <T>(message: Record<string, unknown>) => {
+        if (message.type === "occupied/instances" && ++discoveries === 1) {
+          return Promise.reject(new Error("HA restarting"));
+        }
+
+        return message.type === "occupied/catalog" && ++catalogs === 2
+          ? Promise.reject(new Error("Environment still starting"))
+          : callWS<T>(message);
+      },
+    };
+    panel.panel = {};
+    await settle();
+    assert.equal(panel.error, "HA restarting");
+    t.mock.timers.tick(1000);
+    await settle();
+    assert.ok(hasProgram(panel));
+    assert.equal(catalogs, 2);
+    t.mock.timers.tick(1000);
+    await settle();
+    assert.equal(catalogs, 3);
+    assert.equal(panel.error, "");
+  } finally {
+    panel.disconnectedCallback();
     f.restore();
   }
 });

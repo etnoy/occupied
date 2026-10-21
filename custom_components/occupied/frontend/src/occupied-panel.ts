@@ -35,12 +35,25 @@ import { writable } from "svelte/store";
 import App from "./App.svelte";
 import { PreviewController } from "./lib/controllers/preview-controller.js";
 import { PanelSubscription } from "./lib/services/subscription.js";
+import { PanelRecovery } from "./lib/services/panel-recovery.js";
 import { loadHaControls } from "./lib/services/ha-controls.js";
 import { hasStepChanges } from "./lib/models/step-model.js";
 import { hasRandomChanges } from "./lib/models/random-model.js";
 import { liveRunning, mergeLiveSession } from "./lib/utils/live-preview.js";
 
 type PanelConfig = { config?: { config_entry_id?: string } };
+
+function isInstalledWarning(issue: Issue) {
+  return (
+    issue.severity === "warning" &&
+    [
+      "entity_unavailable",
+      "service_missing",
+      "service_unsupported_entities",
+      "remote_activity_unknown",
+    ].includes(issue.code || "")
+  );
+}
 
 export class OccupiedPanel extends HTMLElement {
   declare shadowRoot: ShadowRoot;
@@ -210,12 +223,18 @@ export class OccupiedPanel extends HTMLElement {
     InstanceDocument[]
   >(
     () => this.isConnected,
-    (error) => this.fail(error),
+    (error) => {
+      this._instancesReady = false;
+      this._instancesFailed = true;
+      this.fail(error);
+      this.recovery.schedule(1000);
+    },
   );
   private readonly runtimeSubscription = new PanelSubscription<RuntimeSnapshot>(
     () => this.isConnected,
     (error) => {
       this.runtimeSubscriptionError = this.t(errorMessage(error));
+      this.recovery.schedule(1000);
       this.previewController.invalidate();
       this.flush();
     },
@@ -223,6 +242,12 @@ export class OccupiedPanel extends HTMLElement {
   private readonly previewController = new PreviewController(
     this,
     () => this._loadedEntry,
+  );
+
+  private readonly recovery = new PanelRecovery(
+    () => this._refreshEnvironment(),
+    () => this._reconnect(),
+    () => this._reconnect(),
   );
 
   constructor() {
@@ -250,10 +275,14 @@ export class OccupiedPanel extends HTMLElement {
       this.flush();
     }
     if (changed) {
-      this._disposeSubscription();
-      this._disposeInstances();
-      this._instancesReady = false;
-      void this._subscribe();
+      this._reconnect();
+    }
+    if (this.isConnected) {
+      this.recovery.connect(value.connection);
+      this.recovery.observe(value.states, [this.saved, this.draft]);
+      if (changed && this.document) {
+        this.recovery.schedule();
+      }
     }
     void this._load();
   }
@@ -287,6 +316,9 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   connectedCallback() {
+    if (this._hass?.connection) {
+      this.recovery.connect(this._hass.connection);
+    }
     if (!this.component) {
       const style = document.createElement("style");
       style.textContent = styles;
@@ -308,6 +340,7 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.recovery.dispose();
     if (this.component) {
       void unmount(this.component);
       this.component = undefined;
@@ -336,6 +369,85 @@ export class OccupiedPanel extends HTMLElement {
     event.preventDefault();
     event.returnValue = "";
   };
+
+  private _reconnect() {
+    this._invalidateRequests();
+    this._loadedEntry = null;
+    this._disposeSubscription();
+    this._disposeInstances();
+    this._instancesReady = false;
+  }
+
+  private async _refreshEnvironment(): Promise<boolean> {
+    if (!this.isConnected || !this._hass || !this._panel) {
+      return true;
+    }
+    if (this.busy || this._loading) {
+      return false;
+    }
+    this._failedEntry = null;
+    this._instancesFailed = false;
+    await this._load();
+    if (!this._instancesReady) {
+      return false;
+    }
+    if (!this.selectedEntry) {
+      return true;
+    }
+    if (!this._loadedEntry || !this.draft || !this.document) {
+      return false;
+    }
+    const epoch = this.epoch;
+    const version = this.version;
+    const revision = this.revision;
+    const issues = this.issues;
+    try {
+      await this._subscribeInstances();
+      await this._subscribe();
+      const [doc, catalog, validation] = await Promise.all([
+        this.ws("program"),
+        this.ws("catalog"),
+        this.ws("editor_validate", { program: copy(this.draft) }),
+      ]);
+      if (epoch !== this.epoch) {
+        return true;
+      }
+      if (
+        version !== this.version ||
+        revision !== this.revision ||
+        this.busy ||
+        issues !== this.issues
+      ) {
+        return false;
+      }
+      // Availability updates must not reset a draft, editor, YAML, or preview.
+      this.document = doc;
+      this.saved = doc.program;
+      this.catalog = catalog;
+      this.stale = doc.revision !== this.revision;
+      this.issues = [
+        ...this.issues.filter((issue) => !isInstalledWarning(issue)),
+        ...(validation.issues || []).filter((issue) =>
+          isInstalledWarning(issue),
+        ),
+      ];
+      this.flush();
+      if (
+        this.stale &&
+        !this.dirty &&
+        !this.yamlDirty &&
+        !this.activeEditor &&
+        !this.hasRunConditionChanges
+      ) {
+        await this.reloadSaved();
+      }
+
+      return this.instanceSubscription.active && !this.runtimeSubscriptionError;
+    } catch {
+      // Startup requests may fail until HA and the integration finish loading.
+      return epoch !== this.epoch;
+    }
+  }
 
   private _disposeInstances() {
     this._instancesEpoch++;
@@ -386,6 +498,9 @@ export class OccupiedPanel extends HTMLElement {
   }
 
   private _resetInstance(entry: string) {
+    if (this.selectedEntry) {
+      this.recovery.reset();
+    }
     this._invalidateRequests();
     this._disposeSubscription();
     this._loadedEntry = null;
@@ -532,6 +647,7 @@ export class OccupiedPanel extends HTMLElement {
           if (epoch === this._instancesEpoch) {
             this._instancesFailed = true;
             this.fail(error);
+            this.recovery.schedule(1000);
           }
 
           return false;
@@ -608,7 +724,8 @@ export class OccupiedPanel extends HTMLElement {
       }
       if (
         this.draft &&
-        (this.dirty ||
+        (doc.revision === this.revision ||
+          this.dirty ||
           this.yamlDirty ||
           this.activeEditor ||
           this.hasRunConditionChanges)
@@ -621,6 +738,7 @@ export class OccupiedPanel extends HTMLElement {
         this.resetDraft();
       }
       this.catalog = catalog;
+      this.recovery.observe(this._hass.states, [this.saved, this.draft]);
       this._failedEntry = null;
       this.error = "";
       this.renderView();
@@ -630,6 +748,7 @@ export class OccupiedPanel extends HTMLElement {
         this._loadedEntry = null;
         this._failedEntry = entry;
         this.fail(error);
+        this.recovery.schedule(1000);
       }
     } finally {
       if (epoch === this.epoch) {

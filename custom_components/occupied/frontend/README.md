@@ -50,3 +50,10 @@ source changes. `pnpm run build:check` verifies them without rewriting files;
 `pnpm test` builds only test output and exercises the committed modules.
 
 Panel program state is optional until loading completes and becomes undefined again on unload or controller switching. Views and editor controllers that need a loaded program use `LoadedOccupiedPanel`, after the `hasProgram` guard checks draft, saved program and document together. Keep the existing epoch checks across asynchronous work: a controller can unload while a request is pending.
+
+The panel refreshes controller discovery and subscriptions after a websocket
+reconnect, including when Home Assistant reuses the connection object. Relevant
+entity availability changes trigger a debounced background catalog and warning
+refresh without replacing drafts, editors, YAML, or the selected tab. Temporary
+startup failures retry with exponential backoff capped at 30 seconds; listeners,
+timers, and late responses are scoped to the mounted panel and selected controller.
