@@ -118,14 +118,14 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     });
   const failedReload = await reloadEntry();
   expect(failedReload.ok()).toBeTruthy();
-  await expect(panel.locator("#error")).toHaveText(
-    "Simulated controller load failure",
-  );
   await expect(
     panel.getByRole("button", { name: "Retry", exact: true }),
   ).toBeVisible();
+  await expect(panel.locator("#error")).toHaveCount(0);
+  await expect(
+    panel.getByText("Simulated controller load failure", { exact: true }),
+  ).toHaveCount(0);
   await panel.getByRole("button", { name: "Retry", exact: true }).click();
-  await expect(panel.locator("#error")).toBeHidden();
   expect(
     await panel.evaluate((element) => (element as OccupiedPanel).draft?.name),
   ).toBe("Pending reload draft");
