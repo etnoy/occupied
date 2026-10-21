@@ -1,0 +1,33 @@
+custom_components/occupied/frontend/dist/lib/models/step-model.js
+  s_c7960de31f2406::t_c8da90a3334439 56-57,59
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_c7960de31f2406::t_73530068c74f87 10142,12493-12516,12578
+custom_components/occupied/frontend/src/lib/components/shared/SourcePicker.svelte
+  s_c7960de31f2406::t_3085de7fafe84d 59-84,120
+custom_components/occupied/frontend/src/lib/models/step-model.ts
+  s_c7960de31f2406::t_69f847a60ca512 82-83,85
+custom_components/occupied/frontend/src/lib/types.ts
+  s_c7960de31f2406::t_212502dd37e525 211,504
+custom_components/occupied/time_sources.py
+  s_c7960de31f2406::t_7f2348babdcf88 4,10-11,13,70-86
+tests/frontend/src/model.test.ts
+  s_c7960de31f2406::t_2439be40a0ae81 205-206,208
+tests/ha/test_editor_api.py
+  s_c7960de31f2406::t_c5174509141b4a 499-542
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "bc1c3b0312b5474ae66bfe6fd6b66a2696f9ca83",
+  "prompts": {},
+  "sessions": {
+    "s_c7960de31f2406": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15d2a-87e2-7503-be8e-0e340842d070",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
