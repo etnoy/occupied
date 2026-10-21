@@ -1,0 +1,31 @@
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_c1c710ab8b87c1::t_e4e1f3334d560c 13,604
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_c1c710ab8b87c1::t_25679d4c0401e7 109,699-700,20326-20328,20499,20600,20680,20682-20693,20696-20697,20707,20711,20713,20715,20723,20734,20736,20738,20746,20756,20766,20776,20786,20796,20807-20808,20812-20813,20816-20817,20822-20824,20826-20827,20841,20852,21496-21535,21623-21625,21653-21655,21666-21668,21936-21938,22226-22228
+custom_components/occupied/frontend/src/App.svelte
+  s_c1c710ab8b87c1::t_3323627d05723c 194-195,228-232
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_c1c710ab8b87c1::t_0033b2df3f72a8 12,608
+custom_components/occupied/frontend/src/lib/types.ts
+  s_c1c710ab8b87c1::t_78fc8cfa3b6c95 455
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_c1c710ab8b87c1::t_6771b355333609 247-293,391-393,424-426,438-440,727-729,1045-1047
+tests/frontend/src/instances.test.ts
+  s_c1c710ab8b87c1::t_0f00a48ce1f00c 2,25,160,165,234-236,239,2442-2486
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "8e0b3ce3fc7901548f5a8be69d61919b7e5685d2",
+  "prompts": {},
+  "sessions": {
+    "s_c1c710ab8b87c1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15d65-f9b7-7bb1-a4ea-f9e2d020fe00",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
