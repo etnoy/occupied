@@ -236,10 +236,10 @@ export function randomExplanation(
   if (off && !cannotFit) {
     sentences.push(say("random_end_action_summary", { action: off }));
   }
-  const conclusion =
-    validCounts && maximum === 1
-      ? "random_single_finish_hint"
-      : "random_overlap_hint";
-  sentences.push(t(cannotFit ? "random_duration_priority_hint" : conclusion));
+  if (cannotFit) {
+    sentences.push(t("random_duration_priority_hint"));
+  } else if (validCounts && maximum === 1) {
+    sentences.push(t("random_single_finish_hint"));
+  }
   return sentences.join(" ");
 }
