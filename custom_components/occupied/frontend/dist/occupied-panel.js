@@ -1568,28 +1568,11 @@ function timingSummary(entry, entries, t = translator(), sources = [], locale) {
   if (!entry.timing) {
     return `${t("repeated_activity_window")}${scheduleDaySuffix(entry.days, t)}`;
   }
-  const timing = timingExplanation(
-    timingForm(entry.timing),
-    entries,
-    t,
-    sources,
-    {
-      includeHints: false,
-      locale,
-      days: entry.days,
-    },
-  );
-  const staggerSeconds = (entry.actions ?? [entry]).reduce(
-    (total, action2) =>
-      total +
-      (action2.stagger?.enabled
-        ? durationSeconds(action2.stagger.period ?? "2m")
-        : 0),
-    0,
-  );
-  return staggerSeconds > 0
-    ? `${timing}. ${t("stagger_timing_summary").replace("{duration}", () => durationLabel(staggerSeconds, t))}`
-    : timing;
+  return timingExplanation(timingForm(entry.timing), entries, t, sources, {
+    includeHints: false,
+    locale,
+    days: entry.days,
+  });
 }
 function timingExplanation(
   input,
