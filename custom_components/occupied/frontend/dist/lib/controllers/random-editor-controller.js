@@ -23,7 +23,7 @@ export function openRandom(panel, entry) {
     return;
   }
   panel.randomEditor = randomEditor(panel.draft, entry);
-  panel.tab = "random";
+  panel.tab = "steps";
   panel.error = "";
   panel.issues = [];
   panel.renderView();

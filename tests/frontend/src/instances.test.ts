@@ -10,7 +10,11 @@ import type {
   LivePreviewSession,
 } from "@occupied/lib/types.js";
 import { stepEditor, stepEntries } from "@occupied/lib/models/step-model.js";
-import { deleteStep, startStep } from "@occupied/lib/controllers/steps.js";
+import {
+  deleteStep,
+  startStep,
+  openStep,
+} from "@occupied/lib/controllers/steps.js";
 import { createStepEditorContext } from "@occupied/lib/controllers/step-editor-controller.js";
 import { previewAction } from "@occupied/lib/controllers/action-preview-controller.js";
 import { changeActionKind } from "@occupied/lib/utils/action-kind.js";
@@ -1585,7 +1589,7 @@ void test("random creation, editing, and deletion use the guarded save flow", as
     createRandomEditorContext(f.panel).changed("on.entities");
     assert.deepEqual(editor.form.off.entities, ["light.a"]);
     await createRandomEditorContext(f.panel).submit();
-    assert.equal(f.panel.tab, "random");
+    assert.equal(f.panel.tab, "steps");
     assert.equal(f.panel.randomEditor, null);
     assert.equal(f.panel.dirty, false);
     assert.equal(requests[1].expected_revision, "revision-main");
@@ -1688,7 +1692,7 @@ void test("random forms preserve unsaved changes and backend field errors", asyn
     editor.form.on.entities = ["light.a"];
     createRandomEditorContext(f.panel).changed("on.entities");
     f.panel.navigate("preview");
-    assert.equal(f.panel.tab, "random");
+    assert.equal(f.panel.tab, "steps");
     assert.ok(f.panel.pendingStepExit);
     f.panel.cancelStepExit();
     assert.equal(f.panel.randomEditor, editor);
@@ -2268,7 +2272,7 @@ void test("entity recovery refreshes both warning stores and catalog while prese
     f.panel.openRunCondition();
     f.panel.runConditionForm!.enabled = true;
     f.panel.yaml = "# Unsaved YAML";
-    f.panel.tab = "random";
+    f.panel.tab = "steps";
     const draft = f.panel.draft;
     const editor = f.panel.stepEditor;
     const condition = f.panel.runConditionForm;
@@ -2302,7 +2306,7 @@ void test("entity recovery refreshes both warning stores and catalog while prese
     assert.equal(f.panel.runConditionForm, condition);
     assert.equal(condition!.enabled, true);
     assert.equal(f.panel.yaml, "# Unsaved YAML");
-    assert.equal(f.panel.tab, "random");
+    assert.equal(f.panel.tab, "steps");
     assert.equal(f.panel.version, version);
     assert.equal(f.panel.dirty, true);
     assert.equal(f.confirmations, 0);
@@ -2580,6 +2584,44 @@ void test("startup rechecks config after subscribing in case the started event w
       f.messages.some((message) => message.type === "occupied/editor_validate"),
     );
     assert.ok(f.disposed.includes("subscribe_events:all"));
+  } finally {
+    f.restore();
+  }
+});
+
+void test("switching between random events and steps protects unsaved editors in both directions", async () => {
+  const f = await fixture();
+  try {
+    openRandom(f.panel);
+    const random = f.panel.randomEditor!;
+    random.form.name = "Unsaved random event";
+    startStep(f.panel);
+    assert.equal(f.panel.randomEditor, random);
+    assert.equal(f.panel.stepEditor, null);
+    assert.ok(f.panel.pendingStepExit);
+    f.panel.cancelStepExit();
+    assert.equal(f.panel.randomEditor, random);
+    openStep(f.panel, {
+      id: "existing",
+      name: "Existing step",
+      path: ["steps", "existing"],
+      timing: {},
+      days: [],
+      action: "turn_on",
+    });
+    assert.equal(f.panel.randomEditor, random);
+    f.panel.confirmStepExit();
+    assert.equal(f.panel.randomEditor, null);
+    const step = f.panel.stepEditor!;
+    step.form.name = "Unsaved step";
+    openRandom(f.panel);
+    assert.equal(f.panel.stepEditor, step);
+    assert.equal(f.panel.randomEditor, null);
+    assert.ok(f.panel.pendingStepExit);
+    f.panel.confirmStepExit();
+    assert.equal(f.panel.stepEditor, null);
+    assert.ok(f.panel.randomEditor);
+    assert.equal(f.panel.tab, "steps");
   } finally {
     f.restore();
   }

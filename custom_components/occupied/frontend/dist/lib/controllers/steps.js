@@ -39,7 +39,7 @@ export async function deleteStep(panel, id) {
   return false;
 }
 export function startStep(panel, entry, parent) {
-  if (panel.stepEditor) {
+  if (panel.activeEditor) {
     panel.requestStepExit(() => startStep(panel, entry, parent));
     return;
   }
@@ -73,7 +73,7 @@ export function openStep(panel, entry) {
     });
     return;
   }
-  if (panel.stepEditor) {
+  if (panel.activeEditor) {
     panel.requestStepExit(() => openStep(panel, entry));
     return;
   }
@@ -104,6 +104,13 @@ export function stepTree(entries, sources = [], relatedEntries = []) {
   );
   const seen = new Set(),
     ordered = [];
+  const parentId = (entry) => {
+    const relative = (entry.timing || entry.start)?.relative_to;
+    return (
+      relative?.step ||
+      (relative?.random ? `random:${relative.random}` : undefined)
+    );
+  };
   const append = (entry, depth) => {
     if (seen.has(entry.id)) {
       return;
@@ -111,14 +118,14 @@ export function stepTree(entries, sources = [], relatedEntries = []) {
     seen.add(entry.id);
     ordered.push({ entry, depth });
     for (const child of sortedEntries) {
-      if (child.timing.relative_to?.step === entry.id) {
+      if (parentId(child) === entry.id) {
         append(child, depth + 1);
       }
     }
   };
-  const isRoot = (step) =>
-    !step.timing.relative_to?.step ||
-    entries.every((parent) => parent.id !== step.timing.relative_to?.step);
+  const isRoot = (entry) =>
+    !parentId(entry) ||
+    entries.every((parent) => parent.id !== parentId(entry));
   for (const step of sortedEntries) {
     if (isRoot(step)) {
       append(step, 0);

@@ -166,7 +166,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       panel.evaluate((element) => (element as OccupiedPanel).entryLoaded),
     )
     .toBe(true);
-  await panel.getByRole("button", { name: "Steps", exact: true }).click();
+  await panel.getByRole("button", { name: "Activity", exact: true }).click();
   await panel.getByRole("button", { name: "Create your first step" }).click();
   await panel
     .getByRole("textbox", { name: "Step name", exact: true })
@@ -226,7 +226,6 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await lightRow.locator("summary").click();
   await expect(brightnessInput(lightRow)).toHaveValue("40");
   await panel.getByRole("button", { name: "Save step", exact: true }).click();
-  await panel.getByRole("button", { name: "Random", exact: true }).click();
   await panel.locator("[data-create-random]").click();
   await panel.evaluate((element) => {
     const controller = element as OccupiedPanel;
@@ -379,7 +378,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       .getByText("Unresolved entity: light.browser_unavailable", {
         exact: true,
       }),
-  ).toHaveCount(2);
+  ).toHaveCount(0);
   await expect(stepWarning.locator(".step-warning-message")).toHaveCount(3);
   await expect(stepWarning.locator(".step-row-warning")).toContainText(
     "1 more...",
@@ -395,7 +394,6 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     stepWarning.locator('[data-entity-row="light.smoke_light"]'),
   ).not.toHaveClass(/entity-warning/);
   await expect(stepWarning).toHaveClass(/step-warning/);
-  await panel.getByRole("button", { name: "Random", exact: true }).click();
   const eventWarning = panel.locator('[data-random-id="browser_unavailable"]');
   await expect(eventWarning).toHaveClass(/step-warning/);
   await expect(eventWarning.locator(".step-warning-message")).toHaveCount(2);
@@ -410,9 +408,8 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       .getByText("Unresolved entity: light.browser_unavailable", {
         exact: true,
       }),
-  ).toHaveCount(1);
+  ).toHaveCount(0);
   await page.reload();
-  await panel.getByRole("button", { name: "Random", exact: true }).click();
   await expect(eventWarning).toHaveClass(/step-warning/);
   const recoveredState = await request.post(
     "/api/states/light.browser_unavailable",
@@ -432,9 +429,8 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     });
     expect(response.ok()).toBeTruthy();
   }
-  await panel.getByRole("button", { name: "Random", exact: true }).click();
   await expect(eventWarning).not.toHaveClass(/step-warning/);
-  await panel.getByRole("button", { name: "Steps", exact: true }).click();
+  await panel.getByRole("button", { name: "Activity", exact: true }).click();
   await expect(stepWarning).not.toHaveClass(/step-warning/);
   await stepWarning.locator(".step-row").click();
   await expect(stepWarning.locator(".entity-warning")).toHaveCount(0);
@@ -444,7 +440,10 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     );
   }, beforeWarnings);
 
-  // Start times order branches and windows despite old browser preferences.
+  // Start times order mixed branches and windows despite old browser preferences.
+  await expect(panel.locator('[data-tab="random"]')).toHaveCount(0);
+  await expect(panel.locator("[data-create-step]")).toBeVisible();
+  await expect(panel.locator("[data-create-random]")).toBeVisible();
   const ids = await panel.evaluate((element) => {
     const controller = element as OccupiedPanel;
     const draft = controller.draft;
@@ -461,6 +460,13 @@ test("create, preview, delete and protect YAML edits in the installed release", 
           name: "Dependent light",
           timing: { relative_to: { step: first, start_offset: "-1h" } },
         },
+        browser_after_random: {
+          ...draft.steps![first],
+          name: "After early window",
+          timing: {
+            relative_to: { random: "browser_early", start_offset: "5m" },
+          },
+        },
         browser_second: {
           ...draft.steps![first],
           name: "Earlier light",
@@ -468,6 +474,13 @@ test("create, preview, delete and protect YAML edits in the installed release", 
         },
       },
       random: {
+        browser_nested: {
+          name: "Dependent window",
+          start: { relative_to: { step: first, start_offset: "15m" } },
+          end: { absolute_time: { start: "08:00" } },
+          on: { action: "turn_on", entities: ["light.smoke_light"] },
+          off: { action: "turn_off", entities: ["light.smoke_light"] },
+        },
         browser_late: {
           name: "Late window",
           start: { absolute_time: { start: "22:00" } },
@@ -478,7 +491,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
         browser_early: {
           name: "Early window",
           start: { absolute_time: { start: "06:00" } },
-          end: { duration: { min: "1h" } },
+          end: { absolute_time: { start: "07:00" } },
           on: { action: "turn_on", entities: ["light.smoke_light"] },
           off: { action: "turn_off", entities: ["light.smoke_light"] },
         },
@@ -494,7 +507,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     );
     controller.renderView();
 
-    return ["browser_second", first, "browser_child"];
+    return ["browser_second", "browser_after_random", first, "browser_child"];
   });
   const stepIds = () =>
     panel
@@ -520,7 +533,6 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     controller.flush();
   });
   await expect.poll(stepIds).toEqual(ids);
-  await panel.getByRole("button", { name: "Random", exact: true }).click();
   await expect
     .poll(() =>
       panel
@@ -529,7 +541,54 @@ test("create, preview, delete and protect YAML edits in the installed release", 
           rows.map((row) => (row as HTMLElement).dataset.randomId),
         ),
     )
-    .toEqual(["browser_early", "browser_late"]);
+    .toEqual(["browser_early", "browser_nested", "browser_late"]);
+  await expect
+    .poll(() =>
+      panel
+        .locator(".step-card")
+        .evaluateAll((rows) =>
+          rows.map(
+            (row) =>
+              (row as HTMLElement).dataset.stepId ||
+              `random:${(row as HTMLElement).dataset.randomId}`,
+          ),
+        ),
+    )
+    .toEqual([
+      ids[0],
+      "random:browser_early",
+      ids[1],
+      ids[2],
+      ids[3],
+      "random:browser_nested",
+      "random:browser_late",
+    ]);
+  for (const selector of [
+    '[data-step-id="browser_after_random"]',
+    '[data-random-id="browser_nested"]',
+  ]) {
+    await expect(panel.locator(selector)).toHaveCSS("margin-left", "14px");
+  }
+  await panel.locator('[data-random-id="browser_early"] .step-row').click();
+  const randomName = panel.getByRole("textbox", {
+    name: "Random event name",
+    exact: true,
+  });
+  await randomName.fill("Unsaved window");
+  await panel.locator('[data-step-id="browser_second"] .step-row').click();
+  await expect(panel.getByRole("alertdialog")).toBeVisible();
+  await panel
+    .getByRole("button", { name: "Keep editing", exact: true })
+    .click();
+  await expect(randomName).toHaveValue("Unsaved window");
+  await panel.locator('[data-step-id="browser_second"] .step-row').click();
+  await panel
+    .getByRole("button", { name: "Discard changes", exact: true })
+    .click();
+  await expect(panel.locator(".random-editor")).toHaveCount(0);
+  await expect(
+    panel.locator('[data-step-id="browser_second"] .step-editor'),
+  ).toBeVisible();
   await expect(panel.getByRole("button", { name: /^Reorder / })).toHaveCount(0);
   await expect(
     panel.getByRole("button", { name: "Reset to chronological", exact: true }),
@@ -1071,11 +1130,9 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     expect(response.ok()).toBeTruthy();
     await page.goto("/occupied");
     await expect(
-      panel.getByRole("button", { name: "Steps", exact: true }),
+      panel.getByRole("button", { name: "Activity", exact: true }),
     ).toBeDisabled();
-    await expect(
-      panel.getByRole("button", { name: "Random", exact: true }),
-    ).toBeDisabled();
+    await expect(panel.locator('[data-tab="random"]')).toHaveCount(0);
     await panel
       .getByRole("navigation", { name: "Occupied", exact: true })
       .getByRole("button", { name: "Settings", exact: true })
@@ -1092,7 +1149,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   });
   await saveYaml.click();
   await expect(
-    panel.getByRole("button", { name: "Steps", exact: true }),
+    panel.getByRole("button", { name: "Activity", exact: true }),
   ).toBeEnabled();
   await expect(panel.locator("#notice")).toBeHidden();
   await enterRecovery();
@@ -1177,7 +1234,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     const controller = element as OccupiedPanel;
     controller.discardEdits();
     controller.catalog = (await controller.ws("catalog")) as Catalog;
-    controller.tab = "random";
+    controller.tab = "steps";
     controller.renderView();
   });
   await panel.locator("[data-create-random]").click();

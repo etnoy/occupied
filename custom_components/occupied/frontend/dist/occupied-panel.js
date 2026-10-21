@@ -246,6 +246,9 @@ var en = {
   steps_and_time_sources: "Steps and time sources",
   matching_sources: "matching sources",
   time_sources_no_matches: "No matching steps or time sources.",
+  activity: "Activity",
+  activity_hint:
+    "Add scheduled steps and random events. Items follow their start times, with dependent items indented below their source.",
   steps: "Steps",
   scheduled_activity: "Scheduled activity",
   steps_hint:
@@ -498,7 +501,7 @@ var en = {
     "No light or switch actions on this date. Other actions are listed in Event details.",
   preview_graph_error:
     "The Home Assistant graph could not load. Planned actions are available in Event details.",
-  back_to_steps: "Back to steps",
+  back_to_steps: "Back to activity",
   continue: "Continue",
   cancel: "Cancel",
   back: "Back",
@@ -881,6 +884,9 @@ var sv = {
   steps_and_time_sources: "Steg och tidsk\xE4llor",
   matching_sources: "matchande tidsk\xE4llor",
   time_sources_no_matches: "Inga matchande steg eller tidsk\xE4llor.",
+  activity: "Aktivitet",
+  activity_hint:
+    "L\xE4gg till schemalagda steg och slumpm\xE4ssiga h\xE4ndelser. Poster f\xF6ljer sina starttider, med beroende poster indragna under sin k\xE4lla.",
   steps: "Steg",
   scheduled_activity: "Schemalagd aktivitet",
   steps_hint:
@@ -1148,7 +1154,7 @@ var sv = {
     "Inga \xE5tg\xE4rder f\xF6r lampor eller brytare detta datum. \xD6vriga \xE5tg\xE4rder visas i H\xE4ndelsedetaljer.",
   preview_graph_error:
     "Home Assistant-diagrammet kunde inte laddas. Planerade \xE5tg\xE4rder finns i H\xE4ndelsedetaljer.",
-  back_to_steps: "Tillbaka till steg",
+  back_to_steps: "Tillbaka till aktivitet",
   continue: "Forts\xE4tt",
   cancel: "Avbryt",
   back: "Tillbaka",
@@ -1809,7 +1815,7 @@ function managedOffEntities(program, entities) {
 
 // custom_components/occupied/frontend/src/app.css
 var app_default =
-  '/* Shared element defaults */\np,\nli {\n  overflow-wrap: anywhere;\n}\n\n:host {\n  display: block;\n  min-height: 100%;\n  background: var(--primary-background-color, #f4f5f8);\n  color: var(--primary-text-color, #202c37);\n  font:\n    15px/1.5 system-ui,\n    sans-serif;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nmain {\n  max-width: 1200px;\n  margin: auto;\n  padding: 24px;\n}\n\nh1 {\n  margin: 0;\n  font-size: 28px;\n}\n\nh2 {\n  font-size: 21px;\n  margin: 0 0 12px;\n}\n\nh3 {\n  font-size: 17px;\n}\n\np {\n  margin: 8px 0;\n}\n\nsmall,\n.hint {\n  color: var(--secondary-text-color, #596773);\n}\n\nheader {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  flex-wrap: wrap;\n}\n\nnav,\n.row,\n.toolbar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\nnav {\n  margin: 18px 0;\n}\n\nnav button[aria-current="page"] {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nsection {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  padding: 20px;\n  margin: 16px 0;\n  min-width: 0;\n}\n\nsection section {\n  border-radius: 8px;\n}\n\ndetails {\n  padding: 12px 0;\n}\n\nsummary {\n  cursor: pointer;\n  font-weight: 600;\n}\n\nbutton,\ninput,\nselect,\ntextarea {\n  font: inherit;\n  color: inherit;\n}\n\nbutton {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #bdc9d2);\n  padding: 8px 14px;\n  border-radius: 8px;\n  cursor: pointer;\n  min-height: 42px;\n}\n\nbutton.primary {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nbutton:disabled {\n  opacity: 0.5;\n  cursor: default;\n}\n\nbutton:focus-visible,\ninput:focus-visible,\nselect:focus-visible,\ntextarea:focus-visible,\nsummary:focus-visible,\na:focus-visible,\n[tabindex]:focus-visible {\n  outline: 3px solid var(--primary-color, #167b94);\n  outline-offset: 2px;\n}\n\n.field {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  margin: 12px 0;\n  max-width: 700px;\n}\n\nlabel {\n  font-weight: 500;\n}\n\ninput:not([type="checkbox"]),\nselect,\ntextarea {\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 6px;\n  background: var(--card-background-color, #fff);\n  padding: 9px;\n  min-width: 0;\n  max-width: 100%;\n}\n\n.field input,\n.field select,\n.field textarea {\n  width: 100%;\n}\n\ntextarea {\n  resize: vertical;\n}\n\n.field textarea {\n  font:\n    14px/1.5 ui-monospace,\n    monospace;\n}\n\ninput[type="checkbox"] {\n  width: 20px;\n  height: 20px;\n  vertical-align: middle;\n}\n\nfieldset {\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 8px;\n  margin: 12px 0;\n  min-width: 0;\n}\n\n.banner {\n  padding: 12px 16px;\n  border-radius: 8px;\n  background: var(--secondary-background-color, #e3eef2);\n  margin: 12px 0;\n  overflow-wrap: anywhere;\n}\n\n.banner.unsaved {\n  border: 1px solid var(--warning-color, #e69500);\n  border-left-width: 4px;\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #e69500) 18%,\n    var(--card-background-color, #fff)\n  );\n  color: var(--primary-text-color, #202c37);\n  font-weight: 600;\n}\n\n.error,\n[aria-invalid="true"] {\n  color: var(--error-color, #b3261e);\n}\n\n[aria-invalid="true"] {\n  border-color: var(--error-color, #b3261e);\n}\n\n[hidden] {\n  display: none !important;\n}\n\n.toolbar {\n  position: sticky;\n  top: 0;\n  padding: 12px 0;\n  background: var(--primary-background-color, #f4f5f8);\n  z-index: 2;\n}\n\n.table-wrap {\n  overflow: auto;\n}\n\ntable {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 13px;\n}\n\nth,\ntd {\n  padding: 9px;\n  text-align: left;\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  max-width: 300px;\n  overflow-wrap: anywhere;\n}\n\nth {\n  white-space: nowrap;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 14px;\n  }\n\n  section {\n    padding: 14px;\n  }\n\n  nav {\n    gap: 5px;\n  }\n\n  nav button {\n    padding: 7px 10px;\n  }\n\n  .row input {\n    width: 100%;\n  }\n}\n\n/* Panel shell overrides: keep these after the shared defaults. */\nmain {\n  max-width: 1120px;\n  padding: 32px;\n}\n\nheader {\n  margin-bottom: 24px;\n}\n\nheader h1 {\n  font-size: 24px;\n  letter-spacing: -0.7px;\n}\n\nheader p {\n  margin: 2px 0;\n  font-size: 13px;\n}\n\nnav {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  gap: 24px;\n  margin: 16px 0 32px;\n}\n\nnav button,\nnav button[aria-current="page"] {\n  border: 0;\n  border-radius: 0;\n  border-bottom: 3px solid transparent;\n  background: transparent;\n  padding: 10px 0;\n  color: var(--secondary-text-color, #596773);\n}\n\nnav button[aria-current="page"] {\n  border-bottom-color: var(--primary-color, #167b94);\n  color: var(--primary-color, #167b94);\n  font-weight: 650;\n}\n\nnav button.tab-warning {\n  color: var(--warning-color, #ffa600);\n}\n\nnav button.tab-warning[aria-current="page"] {\n  border-bottom-color: var(--warning-color, #ffa600);\n}\n\n.field-label-row {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: baseline;\n  gap: 4px 12px;\n}\n\n.field-label-row .text-button {\n  min-height: 24px;\n  padding: 0;\n  border: 0;\n  font-size: 13px;\n}\n\n.text-button {\n  border-color: transparent;\n  background: transparent;\n  color: var(--primary-color, #167b94);\n  padding-left: 4px;\n  padding-right: 4px;\n}\n\n.page-heading {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 24px;\n  margin: 24px 0;\n}\n\n.page-heading h2 {\n  font-size: 30px;\n  letter-spacing: -0.8px;\n  margin: 0;\n}\n\n.page-heading .hint {\n  max-width: 500px;\n}\n\n/* Step lists and empty states */\n.activity-intro {\n  border-left: 3px solid var(--primary-color, #167b94);\n  padding: 4px 0 4px 16px;\n  margin: 0 0 24px;\n}\n\n.activity-intro h2 {\n  font-size: 16px;\n  font-weight: 600;\n  margin: 0 0 4px;\n}\n\n.activity-intro p {\n  max-width: 68ch;\n  margin: 0;\n  font-size: 14px;\n  line-height: 1.6;\n}\n\n.step-empty {\n  text-align: center;\n  padding: 60px 32px;\n  border-style: dashed;\n}\n\n.step-empty h2 {\n  font-size: 25px;\n  letter-spacing: -0.5px;\n}\n\n.step-empty p {\n  max-width: 490px;\n  margin: 12px auto 24px;\n}\n\n.empty-steps {\n  font-size: 13px;\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-list {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  margin: 0 0 20px;\n  min-width: 0;\n}\n\n.step-card {\n  width: calc(100% - var(--depth) * 14px);\n  margin-left: calc(var(--depth) * 14px);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  overflow: hidden;\n}\n\n.step-row[aria-expanded="true"] {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n}\n\n.step-card.step-disabled {\n  border-style: dashed;\n}\n\n.step-card.step-warning {\n  border-color: var(--warning-color, #ffa600);\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 10%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-card.step-warning .step-row:not(:disabled):hover {\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 18%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-row-warning {\n  display: flex;\n  align-items: flex-start;\n  gap: 8px;\n  color: var(--warning-color, #ffa600);\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-warning ha-icon {\n  --mdc-icon-size: 20px;\n  flex-shrink: 0;\n}\n\n.step-warning-message {\n  display: block;\n}\n\n.step-card.step-disabled .step-row {\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-row {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);\n  align-items: center;\n  gap: 14px;\n  text-align: left;\n  width: 100%;\n  padding: 20px;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  color: inherit;\n}\n\n.step-row:disabled {\n  opacity: 1;\n  cursor: default;\n}\n\n.step-row.editing {\n  grid-template-columns: minmax(0, 1fr);\n}\n\n.step-row:not(:disabled):hover {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-card .step-editor {\n  margin: 0;\n}\n\n.step-editor-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n/* Editor action menus */\n.step-actions-menu {\n  position: fixed;\n  inset: auto;\n  width: 240px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  margin: 0;\n  padding: 6px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 10px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-actions-menu button {\n  display: block;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  text-align: left;\n}\n\n.step-actions-menu button:hover,\n.step-actions-menu button:focus-visible {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-actions-menu [role="separator"] {\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  margin: 6px 8px;\n}\n\n.step-row-content {\n  display: flex;\n  min-width: 0;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.step-row-heading {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.step-status-badge {\n  padding: 2px 8px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 999px;\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--secondary-text-color, #596773);\n  font-size: 11px;\n  font-weight: 500;\n  line-height: 1.5;\n  white-space: nowrap;\n}\n\n.step-row strong {\n  font-size: 16px;\n  font-weight: 650;\n  overflow-wrap: anywhere;\n}\n\n.step-row-content .hint {\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-time {\n  text-align: right;\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n/* Editor dialogs */\n.step-exit-dialog,\n.step-delete-dialog,\n.step-advanced-dialog {\n  width: 440px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-exit-dialog::backdrop,\n.step-delete-dialog::backdrop,\n.step-advanced-dialog::backdrop {\n  background: #0006;\n}\n\n.step-weekdays {\n  padding: 12px;\n}\n\n.step-weekday-presets {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-bottom: 16px;\n}\n\n.step-weekday-presets button {\n  padding: 6px 10px;\n}\n\n.step-weekday-presets button[aria-pressed="true"] {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.step-weekday-options {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.step-weekday-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  min-height: 42px;\n  cursor: pointer;\n}\n\n.step-weekday-option input {\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-exit-dialog h2 {\n  margin-top: 0;\n}\n\n.step-delete-actions {\n  display: flex;\n  justify-content: flex-end;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n.danger {\n  color: var(--error-color, #b3261e);\n}\n\n.icon-button {\n  display: inline-grid;\n  place-items: center;\n  width: 42px;\n  padding: 8px;\n}\n\n.icon-button svg {\n  width: 20px;\n  height: 20px;\n  fill: currentColor;\n}\n\n.step-editor {\n  max-width: none;\n  margin: 0 auto 32px;\n  padding: 32px;\n}\n\n.step-editor h3 {\n  font-size: 23px;\n  font-weight: 600;\n  letter-spacing: -0.5px;\n  margin: 28px 0 8px;\n}\n\n.entity-native-selector {\n  display: block;\n  width: 100%;\n}\n\n.builder-footer {\n  display: flex;\n  gap: 10px;\n  align-items: center;\n  flex-wrap: wrap;\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  padding-top: 22px;\n  margin-top: 28px;\n}\n\n.builder-footer .step-editor-actions {\n  margin-top: 0;\n}\n\n.builder-footer > button:first-child {\n  margin-right: auto;\n}\n\n.step-editor details {\n  padding: 8px 0;\n}\n\n.step-editor .field {\n  margin: 18px 0;\n}\n\n.source-picker {\n  position: relative;\n}\n\n.source-picker ha-generic-picker {\n  display: block;\n  width: 100%;\n}\n\n.step-editor .error {\n  font-size: 13px;\n}\n\n.timing-options {\n  border: 0;\n  padding: 0;\n  margin: 18px 0;\n}\n\n.timing-option-row {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.timing-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 10px 12px;\n  min-height: 44px;\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 8px;\n  cursor: pointer;\n}\n\n.timing-option:has(input:checked) {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.timing-options input[type="radio"] {\n  width: 18px;\n  height: 18px;\n  padding: 0;\n  margin: 0;\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-editor .step-name-editor .field {\n  max-width: none;\n  margin: 20px 0 28px;\n}\n\n.step-editor .step-name-editor label {\n  font-weight: 600;\n}\n\n.step-editor .step-name-editor input {\n  font-family: inherit;\n  font-size: 22px;\n  font-weight: 600;\n  line-height: 1.4;\n  padding: 14px;\n}\n\n.step-editor .editor-sections {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 28px;\n}\n\n.step-editor .editor-sections > div {\n  min-width: 0;\n}\n\n.step-editor h3 {\n  margin: 16px 0 8px;\n  font-size: 20px;\n}\n\n.step-editor h4 {\n  margin: 14px 0 8px;\n  font-size: 16px;\n  font-weight: 600;\n}\n\n.step-editor .field {\n  margin: 14px 0;\n}\n\n@media (max-width: 900px) {\n  .step-editor .editor-sections {\n    grid-template-columns: 1fr;\n    gap: 20px;\n  }\n\n  .step-editor .editor-sections > div + div {\n    border-top: 1px solid var(--divider-color, #d5dce3);\n    padding-top: 12px;\n  }\n}\n\n#issues:empty {\n  display: none;\n}\n\n#issues button {\n  margin: 0 6px 8px 0;\n  text-align: left;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 18px 14px;\n  }\n\n  header {\n    gap: 10px;\n    margin-bottom: 8px;\n  }\n\n  nav {\n    margin-bottom: 24px;\n  }\n\n  .page-heading {\n    align-items: flex-start;\n    flex-direction: column;\n    gap: 12px;\n  }\n\n  .page-heading h2 {\n    font-size: 27px;\n  }\n\n  .step-row {\n    padding: 14px;\n    gap: 10px;\n    grid-template-columns: minmax(0, 1fr);\n  }\n\n  .step-row-time {\n    text-align: left;\n  }\n\n  .step-editor {\n    padding: 20px 16px;\n  }\n\n  .builder-footer {\n    gap: 6px;\n  }\n\n  .builder-footer button {\n    padding: 8px 12px;\n  }\n\n  .step-empty {\n    padding: 36px 20px;\n  }\n\n  .empty-steps {\n    line-height: 2;\n  }\n}\n';
+  '/* Shared element defaults */\np,\nli {\n  overflow-wrap: anywhere;\n}\n\n:host {\n  display: block;\n  min-height: 100%;\n  background: var(--primary-background-color, #f4f5f8);\n  color: var(--primary-text-color, #202c37);\n  font:\n    15px/1.5 system-ui,\n    sans-serif;\n}\n\n* {\n  box-sizing: border-box;\n}\n\nmain {\n  max-width: 1200px;\n  margin: auto;\n  padding: 24px;\n}\n\nh1 {\n  margin: 0;\n  font-size: 28px;\n}\n\nh2 {\n  font-size: 21px;\n  margin: 0 0 12px;\n}\n\nh3 {\n  font-size: 17px;\n}\n\np {\n  margin: 8px 0;\n}\n\nsmall,\n.hint {\n  color: var(--secondary-text-color, #596773);\n}\n\nheader {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  flex-wrap: wrap;\n}\n\nnav,\n.row,\n.toolbar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\nnav {\n  margin: 18px 0;\n}\n\nnav button[aria-current="page"] {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nsection {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  padding: 20px;\n  margin: 16px 0;\n  min-width: 0;\n}\n\nsection section {\n  border-radius: 8px;\n}\n\ndetails {\n  padding: 12px 0;\n}\n\nsummary {\n  cursor: pointer;\n  font-weight: 600;\n}\n\nbutton,\ninput,\nselect,\ntextarea {\n  font: inherit;\n  color: inherit;\n}\n\nbutton {\n  background: var(--card-background-color, #fff);\n  border: 1px solid var(--divider-color, #bdc9d2);\n  padding: 8px 14px;\n  border-radius: 8px;\n  cursor: pointer;\n  min-height: 42px;\n}\n\nbutton.primary {\n  background: var(--primary-color, #167b94);\n  color: white;\n}\n\nbutton:disabled {\n  opacity: 0.5;\n  cursor: default;\n}\n\nbutton:focus-visible,\ninput:focus-visible,\nselect:focus-visible,\ntextarea:focus-visible,\nsummary:focus-visible,\na:focus-visible,\n[tabindex]:focus-visible {\n  outline: 3px solid var(--primary-color, #167b94);\n  outline-offset: 2px;\n}\n\n.field {\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  margin: 12px 0;\n  max-width: 700px;\n}\n\nlabel {\n  font-weight: 500;\n}\n\ninput:not([type="checkbox"]),\nselect,\ntextarea {\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 6px;\n  background: var(--card-background-color, #fff);\n  padding: 9px;\n  min-width: 0;\n  max-width: 100%;\n}\n\n.field input,\n.field select,\n.field textarea {\n  width: 100%;\n}\n\ntextarea {\n  resize: vertical;\n}\n\n.field textarea {\n  font:\n    14px/1.5 ui-monospace,\n    monospace;\n}\n\ninput[type="checkbox"] {\n  width: 20px;\n  height: 20px;\n  vertical-align: middle;\n}\n\nfieldset {\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 8px;\n  margin: 12px 0;\n  min-width: 0;\n}\n\n.banner {\n  padding: 12px 16px;\n  border-radius: 8px;\n  background: var(--secondary-background-color, #e3eef2);\n  margin: 12px 0;\n  overflow-wrap: anywhere;\n}\n\n.banner.unsaved {\n  border: 1px solid var(--warning-color, #e69500);\n  border-left-width: 4px;\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #e69500) 18%,\n    var(--card-background-color, #fff)\n  );\n  color: var(--primary-text-color, #202c37);\n  font-weight: 600;\n}\n\n.error,\n[aria-invalid="true"] {\n  color: var(--error-color, #b3261e);\n}\n\n[aria-invalid="true"] {\n  border-color: var(--error-color, #b3261e);\n}\n\n[hidden] {\n  display: none !important;\n}\n\n.toolbar {\n  position: sticky;\n  top: 0;\n  padding: 12px 0;\n  background: var(--primary-background-color, #f4f5f8);\n  z-index: 2;\n}\n\n.table-wrap {\n  overflow: auto;\n}\n\ntable {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 13px;\n}\n\nth,\ntd {\n  padding: 9px;\n  text-align: left;\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  max-width: 300px;\n  overflow-wrap: anywhere;\n}\n\nth {\n  white-space: nowrap;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 14px;\n  }\n\n  section {\n    padding: 14px;\n  }\n\n  nav {\n    gap: 5px;\n  }\n\n  nav button {\n    padding: 7px 10px;\n  }\n\n  .row input {\n    width: 100%;\n  }\n}\n\n/* Panel shell overrides: keep these after the shared defaults. */\nmain {\n  max-width: 1120px;\n  padding: 32px;\n}\n\nheader {\n  margin-bottom: 24px;\n}\n\nheader h1 {\n  font-size: 24px;\n  letter-spacing: -0.7px;\n}\n\nheader p {\n  margin: 2px 0;\n  font-size: 13px;\n}\n\nnav {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n  gap: 24px;\n  margin: 16px 0 32px;\n}\n\nnav button,\nnav button[aria-current="page"] {\n  border: 0;\n  border-radius: 0;\n  border-bottom: 3px solid transparent;\n  background: transparent;\n  padding: 10px 0;\n  color: var(--secondary-text-color, #596773);\n}\n\nnav button[aria-current="page"] {\n  border-bottom-color: var(--primary-color, #167b94);\n  color: var(--primary-color, #167b94);\n  font-weight: 650;\n}\n\nnav button.tab-warning {\n  color: var(--warning-color, #ffa600);\n}\n\nnav button.tab-warning[aria-current="page"] {\n  border-bottom-color: var(--warning-color, #ffa600);\n}\n\n.field-label-row {\n  display: flex;\n  flex-wrap: wrap;\n  align-items: baseline;\n  gap: 4px 12px;\n}\n\n.field-label-row .text-button {\n  min-height: 24px;\n  padding: 0;\n  border: 0;\n  font-size: 13px;\n}\n\n.text-button {\n  border-color: transparent;\n  background: transparent;\n  color: var(--primary-color, #167b94);\n  padding-left: 4px;\n  padding-right: 4px;\n}\n\n.page-heading {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 24px;\n  margin: 24px 0;\n}\n\n.page-heading h2 {\n  font-size: 30px;\n  letter-spacing: -0.8px;\n  margin: 0;\n}\n\n.page-heading .hint {\n  max-width: 500px;\n}\n\n/* Step lists and empty states */\n.activity-intro {\n  border-left: 3px solid var(--primary-color, #167b94);\n  padding: 4px 0 4px 16px;\n  margin: 0 0 24px;\n}\n\n.activity-intro h2 {\n  font-size: 16px;\n  font-weight: 600;\n  margin: 0 0 4px;\n}\n\n.activity-intro p {\n  max-width: 68ch;\n  margin: 0;\n  font-size: 14px;\n  line-height: 1.6;\n}\n\n.step-empty {\n  text-align: center;\n  padding: 60px 32px;\n  border-style: dashed;\n}\n\n.step-empty h2 {\n  font-size: 25px;\n  letter-spacing: -0.5px;\n}\n\n.step-empty p {\n  max-width: 490px;\n  margin: 12px auto 24px;\n}\n\n.empty-steps {\n  font-size: 13px;\n  color: var(--secondary-text-color, #596773);\n}\n\n.activity-add-buttons {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 10px;\n}\n\n.step-empty .activity-add-buttons {\n  justify-content: center;\n}\n\n.step-list {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  margin: 0 0 20px;\n  min-width: 0;\n}\n\n.step-card {\n  width: calc(100% - var(--depth) * 14px);\n  margin-left: calc(var(--depth) * 14px);\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  overflow: hidden;\n}\n\n.step-row[aria-expanded="true"] {\n  border-bottom: 1px solid var(--divider-color, #d5dce3);\n}\n\n.step-card.step-disabled {\n  border-style: dashed;\n}\n\n.step-card.step-warning {\n  border-color: var(--warning-color, #ffa600);\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 10%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-card.step-warning .step-row:not(:disabled):hover {\n  background: color-mix(\n    in srgb,\n    var(--warning-color, #ffa600) 18%,\n    var(--card-background-color, #fff)\n  );\n}\n\n.step-row-warning {\n  display: flex;\n  align-items: flex-start;\n  gap: 8px;\n  color: var(--warning-color, #ffa600);\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-warning ha-icon {\n  --mdc-icon-size: 20px;\n  flex-shrink: 0;\n}\n\n.step-warning-message {\n  display: block;\n}\n\n.step-card.step-disabled .step-row {\n  color: var(--secondary-text-color, #596773);\n}\n\n.step-row {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);\n  align-items: center;\n  gap: 14px;\n  text-align: left;\n  width: 100%;\n  padding: 20px;\n  border: 0;\n  border-radius: 0;\n  background: transparent;\n  color: inherit;\n}\n\n.step-row:disabled {\n  opacity: 1;\n  cursor: default;\n}\n\n.step-row.editing {\n  grid-template-columns: minmax(0, 1fr);\n}\n\n.step-row:not(:disabled):hover {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-card .step-editor {\n  margin: 0;\n}\n\n.step-editor-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n/* Editor action menus */\n.step-actions-menu {\n  position: fixed;\n  inset: auto;\n  width: 240px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  margin: 0;\n  padding: 6px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 10px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-actions-menu button {\n  display: block;\n  width: 100%;\n  border: 0;\n  background: transparent;\n  text-align: left;\n}\n\n.step-actions-menu button:hover,\n.step-actions-menu button:focus-visible {\n  background: var(--secondary-background-color, #e3eef2);\n}\n\n.step-actions-menu [role="separator"] {\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  margin: 6px 8px;\n}\n\n.step-row-content {\n  display: flex;\n  min-width: 0;\n  flex-direction: column;\n  gap: 4px;\n}\n\n.step-row-heading {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.step-status-badge {\n  padding: 2px 8px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 999px;\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--secondary-text-color, #596773);\n  font-size: 11px;\n  font-weight: 500;\n  line-height: 1.5;\n  white-space: nowrap;\n}\n\n.step-row strong {\n  font-size: 16px;\n  font-weight: 650;\n  overflow-wrap: anywhere;\n}\n\n.step-row-content .hint {\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n.step-row-time {\n  text-align: right;\n  font-size: 13px;\n  overflow-wrap: anywhere;\n}\n\n/* Editor dialogs */\n.step-exit-dialog,\n.step-delete-dialog,\n.step-advanced-dialog {\n  width: 440px;\n  max-width: calc(100vw - 32px);\n  max-height: calc(100vh - 32px);\n  overflow: auto;\n  padding: 24px;\n  border: 1px solid var(--divider-color, #d5dce3);\n  border-radius: 12px;\n  background: var(--card-background-color, #fff);\n  color: var(--primary-text-color, #202c37);\n  box-shadow: 0 6px 24px #0003;\n}\n\n.step-exit-dialog::backdrop,\n.step-delete-dialog::backdrop,\n.step-advanced-dialog::backdrop {\n  background: #0006;\n}\n\n.step-weekdays {\n  padding: 12px;\n}\n\n.step-weekday-presets {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-bottom: 16px;\n}\n\n.step-weekday-presets button {\n  padding: 6px 10px;\n}\n\n.step-weekday-presets button[aria-pressed="true"] {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.step-weekday-options {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.step-weekday-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  min-height: 42px;\n  cursor: pointer;\n}\n\n.step-weekday-option input {\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-exit-dialog h2 {\n  margin-top: 0;\n}\n\n.step-delete-actions {\n  display: flex;\n  justify-content: flex-end;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-top: 24px;\n}\n\n.danger {\n  color: var(--error-color, #b3261e);\n}\n\n.icon-button {\n  display: inline-grid;\n  place-items: center;\n  width: 42px;\n  padding: 8px;\n}\n\n.icon-button svg {\n  width: 20px;\n  height: 20px;\n  fill: currentColor;\n}\n\n.step-editor {\n  max-width: none;\n  margin: 0 auto 32px;\n  padding: 32px;\n}\n\n.step-editor h3 {\n  font-size: 23px;\n  font-weight: 600;\n  letter-spacing: -0.5px;\n  margin: 28px 0 8px;\n}\n\n.entity-native-selector {\n  display: block;\n  width: 100%;\n}\n\n.builder-footer {\n  display: flex;\n  gap: 10px;\n  align-items: center;\n  flex-wrap: wrap;\n  border-top: 1px solid var(--divider-color, #d5dce3);\n  padding-top: 22px;\n  margin-top: 28px;\n}\n\n.builder-footer .step-editor-actions {\n  margin-top: 0;\n}\n\n.builder-footer > button:first-child {\n  margin-right: auto;\n}\n\n.step-editor details {\n  padding: 8px 0;\n}\n\n.step-editor .field {\n  margin: 18px 0;\n}\n\n.source-picker {\n  position: relative;\n}\n\n.source-picker ha-generic-picker {\n  display: block;\n  width: 100%;\n}\n\n.step-editor .error {\n  font-size: 13px;\n}\n\n.timing-options {\n  border: 0;\n  padding: 0;\n  margin: 18px 0;\n}\n\n.timing-option-row {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 8px;\n}\n\n.timing-option {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 10px 12px;\n  min-height: 44px;\n  border: 1px solid var(--divider-color, #bdc9d2);\n  border-radius: 8px;\n  cursor: pointer;\n}\n\n.timing-option:has(input:checked) {\n  border-color: var(--primary-color, #167b94);\n  background: var(--secondary-background-color, #e3eef2);\n  color: var(--primary-color, #167b94);\n}\n\n.timing-options input[type="radio"] {\n  width: 18px;\n  height: 18px;\n  padding: 0;\n  margin: 0;\n  flex: 0 0 auto;\n  accent-color: var(--primary-color, #167b94);\n}\n\n.step-editor .step-name-editor .field {\n  max-width: none;\n  margin: 20px 0 28px;\n}\n\n.step-editor .step-name-editor label {\n  font-weight: 600;\n}\n\n.step-editor .step-name-editor input {\n  font-family: inherit;\n  font-size: 22px;\n  font-weight: 600;\n  line-height: 1.4;\n  padding: 14px;\n}\n\n.step-editor .editor-sections {\n  display: grid;\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n  gap: 28px;\n}\n\n.step-editor .editor-sections > div {\n  min-width: 0;\n}\n\n.step-editor h3 {\n  margin: 16px 0 8px;\n  font-size: 20px;\n}\n\n.step-editor h4 {\n  margin: 14px 0 8px;\n  font-size: 16px;\n  font-weight: 600;\n}\n\n.step-editor .field {\n  margin: 14px 0;\n}\n\n@media (max-width: 900px) {\n  .step-editor .editor-sections {\n    grid-template-columns: 1fr;\n    gap: 20px;\n  }\n\n  .step-editor .editor-sections > div + div {\n    border-top: 1px solid var(--divider-color, #d5dce3);\n    padding-top: 12px;\n  }\n}\n\n#issues:empty {\n  display: none;\n}\n\n#issues button {\n  margin: 0 6px 8px 0;\n  text-align: left;\n}\n\n@media (max-width: 600px) {\n  main {\n    padding: 18px 14px;\n  }\n\n  header {\n    gap: 10px;\n    margin-bottom: 8px;\n  }\n\n  nav {\n    margin-bottom: 24px;\n  }\n\n  .page-heading {\n    align-items: flex-start;\n    flex-direction: column;\n    gap: 12px;\n  }\n\n  .page-heading h2 {\n    font-size: 27px;\n  }\n\n  .step-row {\n    padding: 14px;\n    gap: 10px;\n    grid-template-columns: minmax(0, 1fr);\n  }\n\n  .step-row-time {\n    text-align: left;\n  }\n\n  .step-editor {\n    padding: 20px 16px;\n  }\n\n  .builder-footer {\n    gap: 6px;\n  }\n\n  .builder-footer button {\n    padding: 8px 12px;\n  }\n\n  .step-empty {\n    padding: 36px 20px;\n  }\n\n  .empty-steps {\n    line-height: 2;\n  }\n}\n';
 
 // node_modules/.pnpm/esm-env@1.2.2/node_modules/esm-env/dev-fallback.js
 var node_env = globalThis.process?.env?.NODE_ENV;
@@ -3227,11 +3233,11 @@ var Batch = class _Batch {
         this.#unlink();
         infinite_loop_guard();
       }
-      for (const root31 of this.#resolve()) {
+      for (const root32 of this.#resolve()) {
         try {
-          this.#traverse(root31, effects, render_effects);
+          this.#traverse(root32, effects, render_effects);
         } catch (e) {
-          reset_all(root31);
+          reset_all(root32);
           if (!this.#is_deferred()) this.discard();
           throw e;
         }
@@ -3310,9 +3316,9 @@ var Batch = class _Batch {
    * @param {Effect[]} effects
    * @param {Effect[]} render_effects
    */
-  #traverse(root31, effects, render_effects) {
-    root31.f ^= CLEAN;
-    var effect2 = root31.first;
+  #traverse(root32, effects, render_effects) {
+    root32.f ^= CLEAN;
+    var effect2 = root32.first;
     while (effect2 !== null) {
       var flags2 = effect2.f;
       var is_branch = (flags2 & (BRANCH_EFFECT | ROOT_EFFECT)) !== 0;
@@ -3576,8 +3582,8 @@ var Batch = class _Batch {
         }
         if (batch.#scheduled.length > 0 && !batch.#decrement_queued) {
           batch.apply();
-          for (var root31 of batch.#resolve()) {
-            batch.#traverse(root31, [], []);
+          for (var root32 of batch.#resolve()) {
+            batch.#traverse(root32, [], []);
           }
         }
         batch.deactivate();
@@ -5209,7 +5215,7 @@ function is_dirty(reaction) {
 function schedule_possible_effect_self_invalidation(
   signal,
   effect2,
-  root31 = true,
+  root32 = true,
 ) {
   var reactions = signal.reactions;
   if (reactions === null) return;
@@ -5230,7 +5236,7 @@ function schedule_possible_effect_self_invalidation(
         false,
       );
     } else if (effect2 === reaction) {
-      if (root31) {
+      if (root32) {
         set_signal_status(reaction, DIRTY);
       } else if ((reaction.f & CLEAN) !== 0) {
         set_signal_status(reaction, MAYBE_DIRTY);
@@ -7646,14 +7652,14 @@ function element(node, get_tag, is_svg, render_fn, get_namespace, location2) {
 function append_styles(anchor, css) {
   effect(() => {
     anchor = active_effect?.parent?.nodes?.start ?? anchor;
-    var root31 = anchor.getRootNode();
+    var root32 = anchor.getRootNode();
     var target =
       /** @type {ShadowRoot} */
-      root31.host
+      root32.host
         ? /** @type {ShadowRoot} */
-          root31
+          root32
         : /** @type {Document} */
-          (root31.head ?? /** @type {Document} */ root31.ownerDocument.head);
+          (root32.head ?? /** @type {Document} */ root32.ownerDocument.head);
     if (!target.querySelector("#" + css.hash)) {
       const style = create_element("style");
       style.id = css.hash;
@@ -11051,7 +11057,7 @@ async function deleteStep(panel, id) {
   return false;
 }
 function startStep(panel, entry, parent) {
-  if (panel.stepEditor) {
+  if (panel.activeEditor) {
     panel.requestStepExit(() => startStep(panel, entry, parent));
     return;
   }
@@ -11085,7 +11091,7 @@ function openStep(panel, entry) {
     });
     return;
   }
-  if (panel.stepEditor) {
+  if (panel.activeEditor) {
     panel.requestStepExit(() => openStep(panel, entry));
     return;
   }
@@ -11116,6 +11122,13 @@ function stepTree(entries, sources = [], relatedEntries = []) {
   );
   const seen2 = /* @__PURE__ */ new Set(),
     ordered = [];
+  const parentId = (entry) => {
+    const relative = (entry.timing || entry.start)?.relative_to;
+    return (
+      relative?.step ||
+      (relative?.random ? `random:${relative.random}` : void 0)
+    );
+  };
   const append2 = (entry, depth) => {
     if (seen2.has(entry.id)) {
       return;
@@ -11123,14 +11136,14 @@ function stepTree(entries, sources = [], relatedEntries = []) {
     seen2.add(entry.id);
     ordered.push({ entry, depth });
     for (const child2 of sortedEntries) {
-      if (child2.timing.relative_to?.step === entry.id) {
+      if (parentId(child2) === entry.id) {
         append2(child2, depth + 1);
       }
     }
   };
-  const isRoot = (step) =>
-    !step.timing.relative_to?.step ||
-    entries.every((parent) => parent.id !== step.timing.relative_to?.step);
+  const isRoot = (entry) =>
+    !parentId(entry) ||
+    entries.every((parent) => parent.id !== parentId(entry));
   for (const step of sortedEntries) {
     if (isRoot(step)) {
       append2(step, 0);
@@ -14743,990 +14756,6 @@ function StepEditor($$anchor, $$props) {
 }
 delegate(["click"]);
 
-// custom_components/occupied/frontend/src/lib/components/shared/ActivityIntro.svelte
-var root14 = from_html(
-  `<div class="activity-intro"><h2> </h2> <p class="hint"> </p></div>`,
-);
-function ActivityIntro($$anchor, $$props) {
-  var div = root14();
-  var h2 = child(div);
-  var text2 = only_child(h2, true);
-  var p = sibling(h2, 2);
-  var text_1 = only_child(p, true);
-  reset(div);
-  template_effect(() => {
-    set_text(text2, $$props.title);
-    set_text(text_1, $$props.description);
-  });
-  append($$anchor, div);
-}
-
-// custom_components/occupied/frontend/src/lib/components/shared/WarningMessages.svelte
-var root15 = from_html(`<span class="step-warning-message"> </span>`);
-var root_110 = from_html(`<!> <!>`, 1);
-function WarningMessages($$anchor, $$props) {
-  push($$props, true);
-  let unresolved = user_derived(() =>
-    $$props.warnings.filter((warning) => warning.code === "entity_unavailable"),
-  );
-  let visible = user_derived(() =>
-    $$props.warnings.filter(
-      (warning) =>
-        warning.code !== "entity_unavailable" ||
-        get(unresolved).indexOf(warning) < 2,
-    ),
-  );
-  var fragment = root_110();
-  var node = first_child(fragment);
-  each(
-    node,
-    16,
-    () => get(visible),
-    (warning) => warning,
-    ($$anchor2, warning) => {
-      var span = root15();
-      var text2 = only_child(span, true);
-      template_effect(() => set_text(text2, warning.message));
-      append($$anchor2, span);
-    },
-  );
-  var node_1 = sibling(node, 2);
-  {
-    var consequent = ($$anchor2) => {
-      var span_1 = root15();
-      var text_1 = only_child(span_1, true);
-      template_effect(
-        ($0) => set_text(text_1, $0),
-        [
-          () =>
-            $$props
-              .t("warnings_more")
-              .replace("{count}", () => String(get(unresolved).length - 2)),
-        ],
-      );
-      append($$anchor2, span_1);
-    };
-    if_block(node_1, ($$render) => {
-      if (get(unresolved).length > 2) $$render(consequent);
-    });
-  }
-  append($$anchor, fragment);
-  pop();
-}
-
-// custom_components/occupied/frontend/src/lib/components/steps/StepsView.svelte
-var root16 = from_html(
-  `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-step=""> </button></section>`,
-);
-var root_111 = from_html(`<span class="step-status-badge"> </span>`);
-var root_29 = from_html(
-  `<span class="step-row-warning"><ha-icon></ha-icon> <span><!></span></span>`,
-  2,
-);
-var root_39 = from_html(`<span class="step-row-time"> </span>`);
-var root_47 = from_html(`<div><!></div>`);
-var root_54 = from_html(
-  `<div><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong> <!></span> <span class="hint"> </span></span> <!></button> <!></div>`,
-);
-var root_64 = from_html(
-  `<!> <div class="step-layout"><div class="step-list"></div></div> <button type="button" class="primary" data-create-step=""> </button>`,
-  1,
-);
-function StepsView($$anchor, $$props) {
-  push($$props, true);
-  let data = user_derived(() => {
-    void $$props.revision;
-    const entries2 = stepEntries(
-      $$props.panel.draft,
-      $$props.panel.catalog,
-      $$props.panel.t,
-    );
-    const relatedEntries2 = randomEntries(
-      $$props.panel.draft,
-      $$props.panel.catalog,
-    ).map((entry) => ({ ...entry, id: `random:${entry.id}` }));
-    return {
-      t: $$props.panel.t,
-      entries: entries2,
-      relatedEntries: relatedEntries2,
-      issues: $$props.panel
-        .visibleIssues()
-        .map((issue) => ({ issue, stepId: warningStepId(issue, entries2) })),
-    };
-  });
-  let t = user_derived(() => get(data).t),
-    entries = user_derived(() => get(data).entries),
-    relatedEntries = user_derived(() => get(data).relatedEntries),
-    issues = user_derived(() => get(data).issues);
-  var fragment = comment();
-  var node = first_child(fragment);
-  {
-    var consequent = ($$anchor2) => {
-      var section = root16();
-      var h2 = child(section);
-      var text2 = only_child(h2, true);
-      var p = sibling(h2, 2);
-      var text_1 = only_child(p, true);
-      var button = sibling(p, 2);
-      var text_2 = only_child(button, true);
-      reset(section);
-      template_effect(
-        ($0, $1, $2) => {
-          set_text(text2, $0);
-          set_text(text_1, $1);
-          button.disabled = $$props.panel.busy;
-          set_text(text_2, $2);
-        },
-        [
-          () => get(t)("scheduled_activity"),
-          () => get(t)("steps_hint"),
-          () => get(t)("create_your_first_step"),
-        ],
-      );
-      delegated("click", button, () => startStep($$props.panel));
-      append($$anchor2, section);
-    };
-    var alternate = ($$anchor2) => {
-      var fragment_1 = root_64();
-      var node_1 = first_child(fragment_1);
-      {
-        let $0 = user_derived(() => get(t)("scheduled_activity"));
-        let $1 = user_derived(() => get(t)("steps_hint"));
-        ActivityIntro(node_1, {
-          get title() {
-            return get($0);
-          },
-          get description() {
-            return get($1);
-          },
-        });
-      }
-      var div = sibling(node_1, 2);
-      var div_1 = child(div);
-      each(
-        div_1,
-        21,
-        () =>
-          stepTree(
-            get(entries),
-            $$props.panel.catalog.time_sources,
-            get(relatedEntries),
-          ),
-        ({ entry, depth }) => entry.id,
-        ($$anchor3, $$item) => {
-          let entry = () => get($$item).entry;
-          let depth = () => get($$item).depth;
-          const warnings = user_derived(() =>
-            get(issues)
-              .filter(({ stepId }) => stepId === entry().id)
-              .map(({ issue }) => issue),
-          );
-          const editing = user_derived(
-            () =>
-              $$props.panel.stepEditor?.existing &&
-              $$props.panel.stepEditor.id === entry().id,
-          );
-          const stepDisabled = user_derived(
-            () =>
-              (get(editing)
-                ? $$props.panel.stepEditor?.form.enabled
-                : entry().enabled) === false,
-          );
-          const expanded = user_derived(
-            () =>
-              get(editing) ||
-              (!$$props.panel.stepEditor &&
-                $$props.panel.selectedStep === entry().id),
-          );
-          var div_2 = root_54();
-          let classes;
-          var button_1 = child(div_2);
-          let classes_1;
-          var span = child(button_1);
-          var span_1 = child(span);
-          var strong = child(span_1);
-          var text_3 = only_child(strong, true);
-          var node_2 = sibling(strong, 2);
-          {
-            var consequent_1 = ($$anchor4) => {
-              var span_2 = root_111();
-              var text_4 = only_child(span_2, true);
-              template_effect(
-                ($0) => set_text(text_4, $0),
-                [() => get(t)("disabled")],
-              );
-              append($$anchor4, span_2);
-            };
-            if_block(node_2, ($$render) => {
-              if (get(stepDisabled)) $$render(consequent_1);
-            });
-          }
-          reset(span_1);
-          var span_3 = sibling(span_1, 2);
-          var text_5 = only_child(span_3);
-          reset(span);
-          var node_3 = sibling(span, 2);
-          {
-            var consequent_2 = ($$anchor4) => {
-              var span_4 = root_29();
-              var ha_icon = child(span_4);
-              set_custom_element_data(ha_icon, "icon", "mdi:alert-outline");
-              set_custom_element_data(ha_icon, "aria-hidden", "true");
-              var span_5 = sibling(ha_icon, 2);
-              var node_4 = child(span_5);
-              WarningMessages(node_4, {
-                get warnings() {
-                  return get(warnings);
-                },
-                get t() {
-                  return get(t);
-                },
-              });
-              reset(span_5);
-              reset(span_4);
-              template_effect(() =>
-                set_attribute2(span_4, "id", `step-warning-${entry().id}`),
-              );
-              append($$anchor4, span_4);
-            };
-            var consequent_3 = ($$anchor4) => {
-              var span_6 = root_39();
-              var text_6 = only_child(span_6, true);
-              template_effect(
-                ($0) => set_text(text_6, $0),
-                [
-                  () =>
-                    timingSummary(
-                      entry(),
-                      get(entries),
-                      get(t),
-                      $$props.panel.catalog.time_sources,
-                      $$props.panel._hass.locale,
-                    ),
-                ],
-              );
-              append($$anchor4, span_6);
-            };
-            if_block(node_3, ($$render) => {
-              if (get(warnings).length) $$render(consequent_2);
-              else if (!get(editing)) $$render(consequent_3, 1);
-            });
-          }
-          reset(button_1);
-          var node_5 = sibling(button_1, 2);
-          {
-            var consequent_5 = ($$anchor4) => {
-              var div_3 = root_47();
-              var node_6 = child(div_3);
-              {
-                var consequent_4 = ($$anchor5) => {
-                  StepEditor($$anchor5, {
-                    get panel() {
-                      return $$props.panel;
-                    },
-                    get revision() {
-                      return $$props.revision;
-                    },
-                  });
-                };
-                if_block(node_6, ($$render) => {
-                  if ($$props.panel.stepEditor) $$render(consequent_4);
-                });
-              }
-              reset(div_3);
-              template_effect(() =>
-                set_attribute2(div_3, "id", `step-editor-${entry().id}`),
-              );
-              append($$anchor4, div_3);
-            };
-            if_block(node_5, ($$render) => {
-              if (get(expanded)) $$render(consequent_5);
-            });
-          }
-          reset(div_2);
-          template_effect(
-            ($0, $1, $2) => {
-              classes = set_class(div_2, 1, "step-card", null, classes, {
-                "step-disabled": get(stepDisabled),
-                "step-warning": get(warnings).length > 0,
-              });
-              set_attribute2(div_2, "data-step-id", entry().id);
-              set_style(div_2, $0);
-              set_attribute2(button_1, "id", `step-card-${entry().id}`);
-              classes_1 = set_class(button_1, 1, "step-row", null, classes_1, {
-                editing: get(editing) && get(warnings).length === 0,
-              });
-              button_1.disabled = $$props.panel.busy;
-              set_attribute2(button_1, "aria-expanded", get(expanded));
-              set_attribute2(
-                button_1,
-                "aria-controls",
-                `step-editor-${entry().id}`,
-              );
-              set_attribute2(
-                button_1,
-                "aria-describedby",
-                get(warnings).length > 0
-                  ? `step-warning-${entry().id}`
-                  : void 0,
-              );
-              set_text(text_3, entry().name);
-              set_text(
-                text_5,
-                `${$1 ?? ""} \xB7
-                ${$2 ?? ""}`,
-              );
-            },
-            [
-              () => `--depth:${Math.min(depth(), 3)}`,
-              () => actionSummary(entry(), get(t)),
-              () =>
-                entitySummary(
-                  $$props.panel.catalog,
-                  actionTargets(entry()),
-                  get(t),
-                ),
-            ],
-          );
-          delegated("click", button_1, () => openStep($$props.panel, entry()));
-          append($$anchor3, div_2);
-        },
-      );
-      reset(div_1);
-      reset(div);
-      var button_2 = sibling(div, 2);
-      var text_7 = only_child(button_2, true);
-      template_effect(
-        ($0, $1) => {
-          set_attribute2(div_1, "aria-label", $0);
-          button_2.disabled = $$props.panel.busy;
-          set_text(text_7, $1);
-        },
-        [() => get(t)("steps"), () => get(t)("create_step")],
-      );
-      delegated("click", button_2, () => startStep($$props.panel));
-      append($$anchor2, fragment_1);
-    };
-    if_block(node, ($$render) => {
-      if (get(entries).length === 0) $$render(consequent);
-      else $$render(alternate, -1);
-    });
-  }
-  append($$anchor, fragment);
-  pop();
-}
-delegate(["click"]);
-
-// custom_components/occupied/frontend/src/lib/components/settings/RunConditionSettings.svelte
-var root17 = from_html(
-  `<p class="managed-warning svelte-111t7iy" role="alert"> </p>`,
-);
-var root_112 = from_html(
-  `<fieldset class="svelte-111t7iy"><legend> </legend> <label for="run-condition-entity" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label for="run-condition-states" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <p class="hint"> </p> <label for="run-condition-delay" class="svelte-111t7iy"> </label> <input id="run-condition-delay" type="text"/> <!> <p class="hint"> </p> <label for="run-condition-offEntities" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <p class="hint"> </p> <!></fieldset>`,
-  2,
-);
-var root_210 = from_html(`<p class="hint"> </p>`);
-var root_310 = from_html(`<p> </p>`);
-var root_48 = from_html(`<p role="status"> </p> <!>`, 1);
-var root_55 = from_html(
-  `<section><h2> </h2> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <!> <!> <div class="actions svelte-111t7iy"><button type="button" class="primary"> </button> <button type="button"> </button></div> <!></section>`,
-);
-var $$css5 = {
-  hash: "svelte-111t7iy",
-  code: "fieldset.svelte-111t7iy {margin:12px 0;}label.svelte-111t7iy {display:block;margin:12px 0 6px;}.actions.svelte-111t7iy {display:flex;gap:8px;margin-top:12px;}.managed-warning.svelte-111t7iy {color:var(--warning-color, #e69500);}",
-};
-function RunConditionSettings($$anchor, $$props) {
-  push($$props, true);
-  append_styles($$anchor, $$css5);
-  let data = user_derived(() => {
-    void $$props.revision;
-    return {
-      t: $$props.panel.t,
-      form: $$props.panel.runConditionForm,
-      errors: $$props.panel.runConditionErrors,
-      snapshot: $$props.panel.runtimeSnapshot,
-      managedExtras: managedOffEntities(
-        $$props.panel.draft,
-        $$props.panel.runConditionForm?.offEntities ?? [],
-      ),
-    };
-  });
-  let t = user_derived(() => get(data).t),
-    form = user_derived(() => get(data).form),
-    errors = user_derived(() => get(data).errors),
-    snapshot2 = user_derived(() => get(data).snapshot),
-    managedExtras = user_derived(() => get(data).managedExtras);
-  let current = user_derived(() =>
-    $$props.panel.catalog.entities.find(
-      (item) => item.entity_id === get(form)?.entityId,
-    ),
-  );
-  let now = state(proxy(Date.now()));
-  let deadline = user_derived(
-    () => get(snapshot2).run_condition?.activation_deadline,
-  );
-  let remaining = user_derived(() =>
-    get(deadline)
-      ? Math.max(0, Math.ceil((Date.parse(get(deadline)) - get(now)) / 1e3))
-      : 0,
-  );
-  user_effect(() => {
-    if ($$props.panel.runConditionForm) {
-      return;
-    }
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (!cancelled) {
-        $$props.panel.openRunCondition();
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  });
-  user_effect(() => {
-    if (!get(deadline)) {
-      return;
-    }
-    const timer = setInterval(() => {
-      set2(now, Date.now(), true);
-    }, 1e3);
-    return () => clearInterval(timer);
-  });
-  var fragment = comment();
-  var node = first_child(fragment);
-  {
-    var consequent_5 = ($$anchor2) => {
-      var section = root_55();
-      var h2 = child(section);
-      var text2 = only_child(h2, true);
-      var label2 = sibling(h2, 2);
-      var input = child(label2);
-      remove_input_defaults(input);
-      var text_1 = sibling(input);
-      reset(label2);
-      var node_1 = sibling(label2, 2);
-      {
-        var consequent_1 = ($$anchor3) => {
-          var fieldset = root_112();
-          var legend = child(fieldset);
-          var text_2 = only_child(legend, true);
-          var label_1 = sibling(legend, 2);
-          var text_3 = only_child(label_1, true);
-          var ha_selector = sibling(label_1, 2);
-          set_custom_element_data(ha_selector, "id", "run-condition-entity");
-          template_effect(
-            ($0) => set_custom_element_data(ha_selector, "aria-label", $0),
-            [() => get(t)("run_condition_entity")],
-          );
-          action(
-            ha_selector,
-            ($$node, $$action_arg) => properties?.($$node, $$action_arg),
-            () => ({
-              hass: $$props.panel._hass,
-              selector: { entity: {} },
-              value: get(form).entityId,
-              disabled: $$props.panel.busy || $$props.panel.yamlDirty,
-            }),
-          );
-          var node_2 = sibling(ha_selector, 2);
-          FieldError(node_2, {
-            get t() {
-              return get(t);
-            },
-            get errors() {
-              return get(errors);
-            },
-            key: "entityId",
-            fieldPrefix: "run-condition-",
-          });
-          var label_2 = sibling(node_2, 2);
-          var text_4 = only_child(label_2, true);
-          var ha_selector_1 = sibling(label_2, 2);
-          set_custom_element_data(ha_selector_1, "id", "run-condition-states");
-          template_effect(
-            ($0) => set_custom_element_data(ha_selector_1, "aria-label", $0),
-            [() => get(t)("run_condition_states")],
-          );
-          action(
-            ha_selector_1,
-            ($$node, $$action_arg) => properties?.($$node, $$action_arg),
-            () => ({
-              hass: $$props.panel._hass,
-              selector: {
-                select: {
-                  multiple: true,
-                  custom_value: true,
-                  options: runConditionStateOptions(
-                    get(form).entityId,
-                    get(form).states,
-                    get(current)?.state,
-                  ),
-                },
-              },
-              value: get(form).states,
-              disabled: $$props.panel.busy || $$props.panel.yamlDirty,
-            }),
-          );
-          var node_3 = sibling(ha_selector_1, 2);
-          FieldError(node_3, {
-            get t() {
-              return get(t);
-            },
-            get errors() {
-              return get(errors);
-            },
-            key: "states",
-            fieldPrefix: "run-condition-",
-          });
-          var label_3 = sibling(node_3, 2);
-          var input_1 = child(label_3);
-          remove_input_defaults(input_1);
-          var text_5 = sibling(input_1);
-          reset(label_3);
-          var p = sibling(label_3, 2);
-          var text_6 = only_child(p, true);
-          var label_4 = sibling(p, 2);
-          var text_7 = only_child(label_4, true);
-          var input_2 = sibling(label_4, 2);
-          remove_input_defaults(input_2);
-          var node_4 = sibling(input_2, 2);
-          FieldError(node_4, {
-            get t() {
-              return get(t);
-            },
-            get errors() {
-              return get(errors);
-            },
-            key: "startDelay",
-            fieldPrefix: "run-condition-",
-          });
-          var p_1 = sibling(node_4, 2);
-          var text_8 = only_child(p_1, true);
-          var label_5 = sibling(p_1, 2);
-          var text_9 = only_child(label_5, true);
-          var ha_selector_2 = sibling(label_5, 2);
-          set_custom_element_data(
-            ha_selector_2,
-            "id",
-            "run-condition-offEntities",
-          );
-          template_effect(
-            ($0) => set_custom_element_data(ha_selector_2, "aria-label", $0),
-            [() => get(t)("run_condition_off_entities")],
-          );
-          action(
-            ha_selector_2,
-            ($$node, $$action_arg) => properties?.($$node, $$action_arg),
-            () => ({
-              hass: $$props.panel._hass,
-              selector: {
-                entity: {
-                  multiple: true,
-                  filter: { domain: ["light", "switch"] },
-                },
-              },
-              value: get(form).offEntities,
-              disabled: $$props.panel.busy || $$props.panel.yamlDirty,
-            }),
-          );
-          var node_5 = sibling(ha_selector_2, 2);
-          FieldError(node_5, {
-            get t() {
-              return get(t);
-            },
-            get errors() {
-              return get(errors);
-            },
-            key: "offEntities",
-            fieldPrefix: "run-condition-",
-          });
-          var p_2 = sibling(node_5, 2);
-          var text_10 = only_child(p_2, true);
-          var node_6 = sibling(p_2, 2);
-          {
-            var consequent = ($$anchor4) => {
-              var p_3 = root17();
-              var text_11 = only_child(p_3);
-              template_effect(
-                ($0, $1) =>
-                  set_text(
-                    text_11,
-                    `${$0 ?? ""}
-            ${$1 ?? ""}`,
-                  ),
-                [
-                  () => get(t)("run_condition_off_entities_warning"),
-                  () => get(managedExtras).join(", "),
-                ],
-              );
-              append($$anchor4, p_3);
-            };
-            if_block(node_6, ($$render) => {
-              if (get(managedExtras).length > 0) $$render(consequent);
-            });
-          }
-          reset(fieldset);
-          template_effect(
-            ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
-              fieldset.disabled = $$props.panel.busy || $$props.panel.yamlDirty;
-              set_text(text_2, $0);
-              set_text(text_3, $1);
-              set_text(text_4, $2);
-              set_checked(input_1, get(form).enforceState);
-              set_text(text_5, ` ${$3 ?? ""}`);
-              set_text(text_6, $4);
-              set_text(text_7, $5);
-              set_value(input_2, get(form).startDelay);
-              input_2.disabled = !get(form).enforceState;
-              set_attribute2(input_2, "aria-invalid", !!get(errors).startDelay);
-              set_text(text_8, $6);
-              set_text(text_9, $7);
-              set_text(text_10, $8);
-            },
-            [
-              () => get(t)("run_condition"),
-              () => get(t)("run_condition_entity"),
-              () => get(t)("run_condition_states"),
-              () => get(t)("run_condition_enforce"),
-              () => get(t)("run_condition_enforce_hint"),
-              () => get(t)("run_condition_delay"),
-              () => get(t)("run_condition_delay_hint"),
-              () => get(t)("run_condition_off_entities"),
-              () => get(t)("run_condition_off_entities_hint"),
-            ],
-          );
-          event("value-changed", ha_selector, (event2) => {
-            if (!isValueChangedEvent(event2)) {
-              return;
-            }
-            get(form).entityId =
-              typeof event2.detail.value === "string"
-                ? event2.detail.value
-                : "";
-            $$props.panel.updateRunCondition();
-          });
-          event("value-changed", ha_selector_1, (event2) => {
-            if (!(
-              isValueChangedEvent(event2) && Array.isArray(event2.detail.value)
-            )) {
-              return;
-            }
-            get(form).states = event2.detail.value;
-            $$props.panel.updateRunCondition();
-          });
-          delegated("change", input_1, (event2) => {
-            get(form).enforceState = event2.currentTarget.checked;
-            $$props.panel.updateRunCondition();
-          });
-          delegated("input", input_2, (event2) => {
-            get(form).startDelay = event2.currentTarget.value;
-            $$props.panel.updateRunCondition();
-          });
-          event("value-changed", ha_selector_2, (event2) => {
-            if (!(
-              isValueChangedEvent(event2) && Array.isArray(event2.detail.value)
-            )) {
-              return;
-            }
-            get(form).offEntities = event2.detail.value;
-            $$props.panel.updateRunCondition();
-          });
-          append($$anchor3, fieldset);
-        };
-        if_block(node_1, ($$render) => {
-          if (get(form).enabled) $$render(consequent_1);
-        });
-      }
-      var node_7 = sibling(node_1, 2);
-      {
-        var consequent_2 = ($$anchor3) => {
-          var p_4 = root_210();
-          var text_12 = only_child(p_4, true);
-          template_effect(
-            ($0) => set_text(text_12, $0),
-            [() => get(t)("run_condition_yaml_hint")],
-          );
-          append($$anchor3, p_4);
-        };
-        if_block(node_7, ($$render) => {
-          if ($$props.panel.yamlDirty) $$render(consequent_2);
-        });
-      }
-      var div = sibling(node_7, 2);
-      var button = child(div);
-      var text_13 = only_child(button, true);
-      var button_1 = sibling(button, 2);
-      var text_14 = only_child(button_1, true);
-      reset(div);
-      var node_8 = sibling(div, 2);
-      {
-        var consequent_4 = ($$anchor3) => {
-          var fragment_1 = root_48();
-          var p_5 = first_child(fragment_1);
-          var text_15 = only_child(p_5, true);
-          var node_9 = sibling(p_5, 2);
-          {
-            var consequent_3 = ($$anchor4) => {
-              var p_6 = root_310();
-              var text_16 = only_child(p_6, true);
-              template_effect(
-                ($0) => set_text(text_16, $0),
-                [
-                  () =>
-                    get(t)("run_condition_countdown").replace("{seconds}", () =>
-                      String(get(remaining)),
-                    ),
-                ],
-              );
-              append($$anchor4, p_6);
-            };
-            if_block(node_9, ($$render) => {
-              if (get(deadline)) $$render(consequent_3);
-            });
-          }
-          template_effect(() => set_text(text_15, get(snapshot2).reason));
-          append($$anchor3, fragment_1);
-        };
-        if_block(node_8, ($$render) => {
-          if (get(snapshot2).run_condition) $$render(consequent_4);
-        });
-      }
-      reset(section);
-      template_effect(
-        ($0, $1, $2, $3) => {
-          set_text(text2, $0);
-          set_checked(input, get(form).enabled);
-          input.disabled = $$props.panel.busy || $$props.panel.yamlDirty;
-          set_text(text_1, ` ${$1 ?? ""}`);
-          button.disabled =
-            $$props.panel.busy ||
-            $$props.panel.stale ||
-            $$props.panel.yamlDirty ||
-            !$$props.panel.hasRunConditionChanges;
-          set_text(text_13, $2);
-          button_1.disabled =
-            $$props.panel.busy || !$$props.panel.hasRunConditionChanges;
-          set_text(text_14, $3);
-        },
-        [
-          () => get(t)("run_condition"),
-          () => get(t)("run_condition_enable"),
-          () =>
-            get(t)(
-              $$props.panel.document.source === "file"
-                ? "add_to_draft"
-                : "save_changes",
-            ),
-          () => get(t)("discard_changes"),
-        ],
-      );
-      delegated("change", input, (event2) => {
-        get(form).enabled = event2.currentTarget.checked;
-        $$props.panel.updateRunCondition();
-      });
-      delegated("click", button, () => $$props.panel.saveRunCondition());
-      delegated("click", button_1, () => $$props.panel.openRunCondition());
-      append($$anchor2, section);
-    };
-    if_block(node, ($$render) => {
-      if (get(form)) $$render(consequent_5);
-    });
-  }
-  append($$anchor, fragment);
-  pop();
-}
-delegate(["change", "input", "click"]);
-
-// custom_components/occupied/frontend/src/lib/components/settings/SettingsView.svelte
-var root18 = from_html(`<span class="changes svelte-g0xj3p"> </span>`);
-var root_113 = from_html(`<button type="button"> </button>`);
-var root_211 = from_html(
-  `<!> <section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <div class="yaml-actions svelte-g0xj3p"><!> <button type="button" class="primary"> </button> <button type="button"> </button> <button type="button" class="download svelte-g0xj3p"> </button></div></section>`,
-  3,
-);
-var $$css6 = {
-  hash: "svelte-g0xj3p",
-  code: ".yaml-actions.svelte-g0xj3p {display:flex;align-items:center;flex-wrap:wrap;gap:8px;}.yaml-actions.svelte-g0xj3p .download:where(.svelte-g0xj3p) {margin-left:auto;}ha-code-editor.svelte-g0xj3p {display:block;width:100%;margin:8px 0;--code-mirror-height: 420px;--code-mirror-max-height: 60vh;}section.yaml-panel.svelte-g0xj3p {border-color:var(--divider-color, #d5dce3);border-left-color:var(--divider-color, #d5dce3);background:var(--card-background-color, #fff);}section.yaml-panel.has-changes.svelte-g0xj3p {border-color:var(--warning-color, #e69500);border-left-color:var(--warning-color, #e69500);background:color-mix(\n      in srgb,\n      var(--warning-color, #e69500) 18%,\n      var(--card-background-color, #fff)\n    );}.changes.svelte-g0xj3p {color:var(--warning-color, #e69500);font-size:0.75em;font-weight:500;}",
-};
-function SettingsView($$anchor, $$props) {
-  push($$props, true);
-  append_styles($$anchor, $$css6);
-  let panel = prop($$props, "panel", 7);
-  let data = user_derived(() => {
-    void $$props.revision;
-    return { t: panel().t };
-  });
-  let t = user_derived(() => get(data).t);
-  let yamlDirty = user_derived(() => panel().yamlDirty);
-  let autoExportStarted = false;
-  user_effect(() => {
-    void $$props.revision;
-    if (autoExportStarted || panel().busy) {
-      return;
-    }
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) {
-        return;
-      }
-      autoExportStarted = true;
-      void panel().exportYaml();
-    });
-    return () => {
-      cancelled = true;
-    };
-  });
-  var fragment = root_211();
-  var node = first_child(fragment);
-  {
-    var consequent = ($$anchor2) => {
-      RunConditionSettings($$anchor2, {
-        get panel() {
-          return panel();
-        },
-        get revision() {
-          return $$props.revision;
-        },
-      });
-    };
-    if_block(node, ($$render) => {
-      if (!panel().recovering) $$render(consequent);
-    });
-  }
-  var section = sibling(node, 2);
-  let classes;
-  var h2 = child(section);
-  var text2 = child(h2);
-  var node_1 = sibling(text2);
-  {
-    var consequent_1 = ($$anchor2) => {
-      var span = root18();
-      var text_1 = only_child(span);
-      template_effect(
-        ($0) => set_text(text_1, `(${$0 ?? ""})`),
-        [() => get(t)("changes")],
-      );
-      append($$anchor2, span);
-    };
-    if_block(node_1, ($$render) => {
-      if (get(yamlDirty)) $$render(consequent_1);
-    });
-  }
-  reset(h2);
-  var p = sibling(h2, 2);
-  var text_2 = only_child(p, true);
-  var input = sibling(p, 2);
-  var ha_code_editor = sibling(input, 2);
-  set_custom_element_data(ha_code_editor, "role", "group");
-  template_effect(
-    ($0) => set_custom_element_data(ha_code_editor, "aria-label", $0),
-    [() => get(t)("occupied_yaml")],
-  );
-  set_custom_element_data(ha_code_editor, "dir", "ltr");
-  set_class(ha_code_editor, 1, "svelte-g0xj3p");
-  action(
-    ha_code_editor,
-    ($$node, $$action_arg) => properties?.($$node, $$action_arg),
-    () => ({ mode: "yaml", value: panel().yaml, linewrap: true }),
-  );
-  var div = sibling(ha_code_editor, 2);
-  var node_2 = child(div);
-  {
-    var consequent_2 = ($$anchor2) => {
-      var button = root_113();
-      var text_3 = only_child(button, true);
-      template_effect(
-        ($0) => {
-          button.disabled = panel().busy || panel().stale;
-          set_text(text_3, $0);
-        },
-        [() => get(t)("discard_preserved_program")],
-      );
-      delegated("click", button, () => panel().discardRecovery());
-      append($$anchor2, button);
-    };
-    if_block(node_2, ($$render) => {
-      if (panel().recovering) $$render(consequent_2);
-    });
-  }
-  var button_1 = sibling(node_2, 2);
-  var text_4 = only_child(button_1, true);
-  var button_2 = sibling(button_1, 2);
-  var text_5 = only_child(button_2, true);
-  var button_3 = sibling(button_2, 2);
-  var text_6 = only_child(button_3, true);
-  reset(div);
-  reset(section);
-  template_effect(
-    ($0, $1, $2, $3, $4, $5) => {
-      classes = set_class(
-        section,
-        1,
-        "yaml-panel svelte-g0xj3p",
-        null,
-        classes,
-        { "has-changes": get(yamlDirty) },
-      );
-      set_text(text2, `${$0 ?? ""} `);
-      set_text(text_2, $1);
-      set_attribute2(input, "aria-label", $2);
-      ha_code_editor.dir = ha_code_editor.dir;
-      button_1.disabled =
-        panel().busy ||
-        panel().stale ||
-        panel().document.source === "file" ||
-        !get(yamlDirty) ||
-        !panel().yaml ||
-        panel().hasRunConditionChanges;
-      set_text(text_4, $3);
-      button_2.disabled = panel().busy || !get(yamlDirty);
-      set_text(text_5, $4);
-      button_3.disabled = panel().busy || !panel().yaml;
-      set_text(text_6, $5);
-    },
-    [
-      () => get(t)("yaml"),
-      () => get(t)("yaml_editor_hint"),
-      () => get(t)("choose_configuration_file"),
-      () => get(t)("save_changes"),
-      () => get(t)("discard_changes"),
-      () => get(t)("download"),
-    ],
-  );
-  delegated("change", input, async (event2) => {
-    const file = event2.currentTarget.files?.[0];
-    if (!file) {
-      return;
-    }
-    const epoch = panel().epoch;
-    const yaml = await file.text();
-    if (epoch !== panel().epoch) {
-      return;
-    }
-    panel().yaml = yaml;
-    panel().flush();
-  });
-  event("value-changed", ha_code_editor, (event2) => {
-    if (
-      !isValueChangedEvent(event2) ||
-      typeof event2.detail.value !== "string"
-    ) {
-      return;
-    }
-    panel().yaml = event2.detail.value;
-    panel().flush();
-  });
-  delegated("click", button_1, () => panel().saveYaml());
-  delegated("click", button_2, () => panel().discardYaml());
-  delegated("click", button_3, () =>
-    download("occupied.yaml", panel().yaml, "text/yaml"),
-  );
-  append($$anchor, fragment);
-  pop();
-}
-delegate(["change", "click"]);
-
 // custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts
 function openRandom(panel, entry) {
   if (panel.busy) {
@@ -15742,7 +14771,7 @@ function openRandom(panel, entry) {
     return;
   }
   panel.randomEditor = randomEditor(panel.draft, entry);
-  panel.tab = "random";
+  panel.tab = "steps";
   panel.error = "";
   panel.issues = [];
   panel.renderView();
@@ -15923,6 +14952,2663 @@ async function deleteRandom(panel) {
   }
   await panel.save(candidate);
 }
+
+// custom_components/occupied/frontend/src/lib/components/shared/WarningMessages.svelte
+var root14 = from_html(`<span class="step-warning-message"> </span>`);
+var root_110 = from_html(`<!> <!>`, 1);
+function WarningMessages($$anchor, $$props) {
+  push($$props, true);
+  let unresolved = user_derived(() =>
+    $$props.warnings.filter((warning) => warning.code === "entity_unavailable"),
+  );
+  let visible = user_derived(() =>
+    $$props.warnings.filter(
+      (warning) =>
+        warning.code !== "entity_unavailable" ||
+        get(unresolved).indexOf(warning) < 2,
+    ),
+  );
+  var fragment = root_110();
+  var node = first_child(fragment);
+  each(
+    node,
+    16,
+    () => get(visible),
+    (warning) => warning,
+    ($$anchor2, warning) => {
+      var span = root14();
+      var text2 = only_child(span, true);
+      template_effect(() => set_text(text2, warning.message));
+      append($$anchor2, span);
+    },
+  );
+  var node_1 = sibling(node, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var span_1 = root14();
+      var text_1 = only_child(span_1, true);
+      template_effect(
+        ($0) => set_text(text_1, $0),
+        [
+          () =>
+            $$props
+              .t("warnings_more")
+              .replace("{count}", () => String(get(unresolved).length - 2)),
+        ],
+      );
+      append($$anchor2, span_1);
+    };
+    if_block(node_1, ($$render) => {
+      if (get(unresolved).length > 2) $$render(consequent);
+    });
+  }
+  append($$anchor, fragment);
+  pop();
+}
+
+// custom_components/occupied/frontend/src/lib/components/steps/StepCard.svelte
+var root15 = from_html(`<span class="step-status-badge"> </span>`);
+var root_111 = from_html(
+  `<span class="step-row-warning"><ha-icon></ha-icon> <span><!></span></span>`,
+  2,
+);
+var root_29 = from_html(`<span class="step-row-time"> </span>`);
+var root_39 = from_html(`<div><!></div>`);
+var root_47 = from_html(
+  `<div><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong> <!></span> <span class="hint"> </span></span> <!></button> <!></div>`,
+);
+function StepCard($$anchor, $$props) {
+  push($$props, true);
+  let t = user_derived(() => $$props.panel.t);
+  let editing = user_derived(
+    () =>
+      $$props.panel.stepEditor?.existing &&
+      $$props.panel.stepEditor.id === $$props.entry.id,
+  );
+  let stepDisabled = user_derived(
+    () =>
+      (get(editing)
+        ? $$props.panel.stepEditor?.form.enabled
+        : $$props.entry.enabled) === false,
+  );
+  let expanded = user_derived(
+    () =>
+      get(editing) ||
+      (!$$props.panel.activeEditor &&
+        $$props.panel.selectedStep === $$props.entry.id),
+  );
+  var div = root_47();
+  let classes;
+  var button = child(div);
+  let classes_1;
+  var span = child(button);
+  var span_1 = child(span);
+  var strong = child(span_1);
+  var text2 = only_child(strong, true);
+  var node = sibling(strong, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var span_2 = root15();
+      var text_1 = only_child(span_2, true);
+      template_effect(($0) => set_text(text_1, $0), [() => get(t)("disabled")]);
+      append($$anchor2, span_2);
+    };
+    if_block(node, ($$render) => {
+      if (get(stepDisabled)) $$render(consequent);
+    });
+  }
+  reset(span_1);
+  var span_3 = sibling(span_1, 2);
+  var text_2 = only_child(span_3);
+  reset(span);
+  var node_1 = sibling(span, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      var span_4 = root_111();
+      var ha_icon = child(span_4);
+      set_custom_element_data(ha_icon, "icon", "mdi:alert-outline");
+      set_custom_element_data(ha_icon, "aria-hidden", "true");
+      var span_5 = sibling(ha_icon, 2);
+      var node_2 = child(span_5);
+      WarningMessages(node_2, {
+        get warnings() {
+          return $$props.warnings;
+        },
+        get t() {
+          return get(t);
+        },
+      });
+      reset(span_5);
+      reset(span_4);
+      template_effect(() =>
+        set_attribute2(span_4, "id", `step-warning-${$$props.entry.id}`),
+      );
+      append($$anchor2, span_4);
+    };
+    var consequent_2 = ($$anchor2) => {
+      var span_6 = root_29();
+      var text_3 = only_child(span_6, true);
+      template_effect(
+        ($0) => set_text(text_3, $0),
+        [
+          () =>
+            timingSummary(
+              $$props.entry,
+              $$props.entries,
+              get(t),
+              $$props.panel.catalog.time_sources,
+              $$props.panel._hass.locale,
+            ),
+        ],
+      );
+      append($$anchor2, span_6);
+    };
+    if_block(node_1, ($$render) => {
+      if ($$props.warnings.length) $$render(consequent_1);
+      else if (!get(editing)) $$render(consequent_2, 1);
+    });
+  }
+  reset(button);
+  var node_3 = sibling(button, 2);
+  {
+    var consequent_4 = ($$anchor2) => {
+      var div_1 = root_39();
+      var node_4 = child(div_1);
+      {
+        var consequent_3 = ($$anchor3) => {
+          StepEditor($$anchor3, {
+            get panel() {
+              return $$props.panel;
+            },
+            get revision() {
+              return $$props.revision;
+            },
+          });
+        };
+        if_block(node_4, ($$render) => {
+          if ($$props.panel.stepEditor) $$render(consequent_3);
+        });
+      }
+      reset(div_1);
+      template_effect(() =>
+        set_attribute2(div_1, "id", `step-editor-${$$props.entry.id}`),
+      );
+      append($$anchor2, div_1);
+    };
+    if_block(node_3, ($$render) => {
+      if (get(expanded)) $$render(consequent_4);
+    });
+  }
+  reset(div);
+  template_effect(
+    ($0, $1, $2) => {
+      classes = set_class(div, 1, "step-card", null, classes, {
+        "step-disabled": get(stepDisabled),
+        "step-warning": $$props.warnings.length > 0,
+      });
+      set_attribute2(div, "data-step-id", $$props.entry.id);
+      set_style(div, $0);
+      set_attribute2(button, "id", `step-card-${$$props.entry.id}`);
+      classes_1 = set_class(button, 1, "step-row", null, classes_1, {
+        editing: get(editing) && $$props.warnings.length === 0,
+      });
+      button.disabled = $$props.panel.busy;
+      set_attribute2(button, "aria-expanded", get(expanded));
+      set_attribute2(
+        button,
+        "aria-controls",
+        `step-editor-${$$props.entry.id}`,
+      );
+      set_attribute2(
+        button,
+        "aria-describedby",
+        $$props.warnings.length > 0
+          ? `step-warning-${$$props.entry.id}`
+          : void 0,
+      );
+      set_text(text2, $$props.entry.name);
+      set_text(
+        text_2,
+        `${$1 ?? ""} \xB7
+        ${$2 ?? ""}`,
+      );
+    },
+    [
+      () => `--depth:${Math.min($$props.depth, 3)}`,
+      () => actionSummary($$props.entry, get(t)),
+      () =>
+        entitySummary(
+          $$props.panel.catalog,
+          actionTargets($$props.entry),
+          get(t),
+        ),
+    ],
+  );
+  delegated("click", button, () => openStep($$props.panel, $$props.entry));
+  append($$anchor, div);
+  pop();
+}
+delegate(["click"]);
+
+// custom_components/occupied/frontend/src/lib/components/random/DeleteRandomDialog.svelte
+var root16 = from_html(`<li> </li>`);
+var root_112 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
+var root_210 = from_html(
+  `<dialog class="step-delete-dialog" aria-labelledby="random-delete-title"><h2 id="random-delete-title"> </h2> <p> </p> <!> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog>`,
+);
+function DeleteRandomDialog($$anchor, $$props) {
+  push($$props, true);
+  let dialog;
+  let dependents = user_derived(() =>
+    randomEntries($$props.panel.draft, $$props.panel.catalog).filter((entry) =>
+      randomReferences(
+        $$props.panel.draft,
+        $$props.panel.randomEditor?.id || "",
+      ).some((path) => path[1] === entry.id),
+    ),
+  );
+  onMount(() => {
+    dialog.showModal();
+    dialog.querySelector("button")?.focus();
+  });
+  var dialog_1 = root_210();
+  var h2 = child(dialog_1);
+  var text2 = only_child(h2, true);
+  var p = sibling(h2, 2);
+  var text_1 = only_child(p, true);
+  var node = sibling(p, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var fragment = root_112();
+      var p_1 = first_child(fragment);
+      var text_2 = only_child(p_1);
+      var ul = sibling(p_1, 2);
+      each(
+        ul,
+        21,
+        () => get(dependents),
+        (entry) => entry.id,
+        ($$anchor3, entry) => {
+          var li = root16();
+          var text_3 = only_child(li, true);
+          template_effect(() => set_text(text_3, get(entry).name));
+          append($$anchor3, li);
+        },
+      );
+      reset(ul);
+      var p_2 = sibling(ul, 2);
+      var text_4 = only_child(p_2, true);
+      template_effect(
+        ($0, $1) => {
+          set_text(text_2, `${$0 ?? ""}:`);
+          set_text(text_4, $1);
+        },
+        [
+          () => $$props.panel.t("used_by"),
+          () => $$props.panel.t("delete_dependents_hint"),
+        ],
+      );
+      append($$anchor2, fragment);
+    };
+    if_block(node, ($$render) => {
+      if (get(dependents).length) $$render(consequent);
+    });
+  }
+  var div = sibling(node, 2);
+  var button = child(div);
+  var text_5 = only_child(button, true);
+  var button_1 = sibling(button, 2);
+  var text_6 = only_child(button_1, true);
+  reset(div);
+  reset(dialog_1);
+  bind_this(
+    dialog_1,
+    ($$value) => (dialog = $$value),
+    () => dialog,
+  );
+  template_effect(
+    ($0, $1, $2, $3) => {
+      set_text(text2, $0);
+      set_text(text_1, $1);
+      button.disabled = $$props.panel.busy;
+      set_text(text_5, $2);
+      button_1.disabled =
+        $$props.panel.busy || $$props.panel.stale || get(dependents).length > 0;
+      set_text(text_6, $3);
+    },
+    [
+      () => $$props.panel.t("delete_random_event_confirm"),
+      () => $$props.panel.t("delete_random_event_hint"),
+      () => $$props.panel.t("cancel"),
+      () => $$props.panel.t("delete_random_event"),
+    ],
+  );
+  event("close", dialog_1, function (...$$args) {
+    $$props.onClose?.apply(this, $$args);
+  });
+  delegated("click", button, () => dialog.close());
+  delegated("click", button_1, async () => {
+    await deleteRandom($$props.panel);
+    if (!$$props.panel.error && !$$props.panel.randomEditor) {
+      dialog.close();
+    }
+  });
+  append($$anchor, dialog_1);
+  pop();
+}
+delegate(["click"]);
+
+// custom_components/occupied/frontend/src/lib/components/random/AdvancedRandomSettings.svelte
+var root17 = from_html(`<h3> </h3> <!>`, 1);
+var root_113 = from_html(
+  `<dialog class="step-advanced-dialog" aria-labelledby="random-advanced-title"><h2 id="random-advanced-title"> </h2> <!> <!> <p class="hint"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
+);
+function AdvancedRandomSettings($$anchor, $$props) {
+  push($$props, true);
+  let form = user_derived(() => $$props.context.form),
+    t = user_derived(() => $$props.context.t),
+    changed = user_derived(() => $$props.context.changed);
+  let startStagger = state(proxy(untrack(() => staggerSettings(get(form).on))));
+  let endStagger = state(proxy(untrack(() => staggerSettings(get(form).off))));
+  let canStartStagger = user_derived(() => supportsStagger(get(form).on));
+  let canEndStagger = user_derived(() => supportsStagger(get(form).off));
+  let staggerError = user_derived(
+    () =>
+      (get(canStartStagger) && staggerPeriodError(get(startStagger))) ||
+      (get(canEndStagger) && staggerPeriodError(get(endStagger))),
+  );
+  let dialog;
+  onMount(() => {
+    dialog.showModal();
+    dialog.querySelector("input")?.focus();
+  });
+  function apply2() {
+    if ($$props.panel.busy || get(staggerError)) {
+      return;
+    }
+    if (get(canStartStagger)) {
+      applyStagger(get(form).on, get(startStagger));
+      get(changed)("on.stagger");
+    }
+    if (get(canEndStagger)) {
+      applyStagger(get(form).off, get(endStagger));
+      get(changed)("off.stagger");
+    }
+    dialog.close();
+  }
+  var dialog_1 = root_113();
+  var h2 = child(dialog_1);
+  var text2 = only_child(h2, true);
+  var node = sibling(h2, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var fragment = root17();
+      var h3 = first_child(fragment);
+      var text_1 = only_child(h3, true);
+      var node_1 = sibling(h3, 2);
+      StaggerSettings(node_1, {
+        get t() {
+          return get(t);
+        },
+        id: "random-start-stagger",
+        get disabled() {
+          return $$props.panel.busy;
+        },
+        get settings() {
+          return get(startStagger);
+        },
+        set settings($$value) {
+          set2(startStagger, $$value, true);
+        },
+      });
+      template_effect(
+        ($0) => set_text(text_1, $0),
+        [() => get(t)("start_action")],
+      );
+      append($$anchor2, fragment);
+    };
+    if_block(node, ($$render) => {
+      if (get(canStartStagger)) $$render(consequent);
+    });
+  }
+  var node_2 = sibling(node, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      var fragment_1 = root17();
+      var h3_1 = first_child(fragment_1);
+      var text_2 = only_child(h3_1, true);
+      var node_3 = sibling(h3_1, 2);
+      StaggerSettings(node_3, {
+        get t() {
+          return get(t);
+        },
+        id: "random-end-stagger",
+        get disabled() {
+          return $$props.panel.busy;
+        },
+        get settings() {
+          return get(endStagger);
+        },
+        set settings($$value) {
+          set2(endStagger, $$value, true);
+        },
+      });
+      template_effect(
+        ($0) => set_text(text_2, $0),
+        [() => get(t)("end_action")],
+      );
+      append($$anchor2, fragment_1);
+    };
+    if_block(node_2, ($$render) => {
+      if (get(canEndStagger)) $$render(consequent_1);
+    });
+  }
+  var p = sibling(node_2, 2);
+  var text_3 = only_child(p, true);
+  var div = sibling(p, 2);
+  var button = child(div);
+  var text_4 = only_child(button, true);
+  var button_1 = sibling(button, 2);
+  var text_5 = only_child(button_1, true);
+  reset(div);
+  reset(dialog_1);
+  bind_this(
+    dialog_1,
+    ($$value) => (dialog = $$value),
+    () => dialog,
+  );
+  template_effect(
+    ($0, $1, $2, $3) => {
+      set_text(text2, $0);
+      set_text(text_3, $1);
+      set_text(text_4, $2);
+      button_1.disabled = $$props.panel.busy || !!get(staggerError);
+      set_text(text_5, $3);
+    },
+    [
+      () => get(t)("advanced_settings"),
+      () => get(t)("random_settings_hint"),
+      () => get(t)("cancel"),
+      () => get(t)("apply"),
+    ],
+  );
+  event("close", dialog_1, function (...$$args) {
+    $$props.onClose?.apply(this, $$args);
+  });
+  delegated("click", button, () => dialog.close());
+  delegated("click", button_1, apply2);
+  append($$anchor, dialog_1);
+  pop();
+}
+delegate(["click"]);
+
+// custom_components/occupied/frontend/src/lib/components/random/RandomActions.svelte
+var root18 = from_html(`<p role="status"> </p>`);
+var root_114 = from_html(
+  `<button type="button" role="menuitem" tabindex="-1"> </button>`,
+);
+var root_211 = from_html(
+  `<div role="separator"></div> <button type="button" role="menuitem" tabindex="-1" class="danger"> </button>`,
+  1,
+);
+var root_310 = from_html(
+  `<div class="step-editor-actions"><!> <button type="button" class="icon-button" aria-haspopup="menu" data-random-actions=""><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"></path></svg></button> <div class="step-actions-menu" popover="auto" role="menu" tabindex="-1"><!> <button type="button" role="menuitem" tabindex="-1"> </button> <button type="button" role="menuitem" tabindex="-1"> </button> <!></div></div> <!> <!>`,
+  1,
+);
+function RandomActions($$anchor, $$props) {
+  push($$props, true);
+  let context = prop($$props, "context", 7);
+  let menuOpen = state(false);
+  let advancedOpen = state(false);
+  let deleteOpen = state(false);
+  let previewStatus = state("");
+  let trigger;
+  let menu;
+  let menuId = user_derived(() => `random-actions-${context().editor.id}`);
+  function closeDialog() {
+    flushSync(() => {
+      set2(deleteOpen, false);
+      set2(advancedOpen, false);
+    });
+    if (trigger.isConnected) {
+      trigger.focus();
+    }
+  }
+  function closeMenu(restoreFocus = true) {
+    menu.hidePopover();
+    set2(menuOpen, false);
+    if (restoreFocus) {
+      trigger.focus();
+    }
+  }
+  function positionMenu() {
+    if (!menu.matches(":popover-open")) {
+      return;
+    }
+    const anchor = trigger.getBoundingClientRect();
+    const bounds = menu.getBoundingClientRect();
+    const above = anchor.top - bounds.height - 8;
+    const top = above >= 16 ? above : anchor.bottom + 8;
+    menu.style.left = `${Math.max(16, Math.min(anchor.right - bounds.width, window.innerWidth - bounds.width - 16))}px`;
+    menu.style.top = `${Math.max(16, Math.min(top, window.innerHeight - bounds.height - 16))}px`;
+  }
+  function openMenu(last = false) {
+    menu.showPopover();
+    set2(menuOpen, true);
+    positionMenu();
+    const items = [...menu.querySelectorAll("button:not(:disabled)")];
+    (last ? items.at(-1) : items[0])?.focus({ preventScroll: true });
+  }
+  function menuKeydown(event2) {
+    const items = [...menu.querySelectorAll("button:not(:disabled)")];
+    const index2 = items.indexOf($$props.panel.shadowRoot.activeElement);
+    if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event2.key)) {
+      event2.preventDefault();
+      let next2 =
+        (index2 + (event2.key === "ArrowDown" ? 1 : -1) + items.length) %
+        items.length;
+      if (event2.key === "Home") {
+        next2 = 0;
+      } else if (event2.key === "End") {
+        next2 = items.length - 1;
+      }
+      items[next2]?.focus();
+    } else if (event2.key === "Escape") {
+      event2.preventDefault();
+      closeMenu();
+    } else if (event2.key === "Tab") {
+      closeMenu();
+    }
+  }
+  var fragment = root_310();
+  event("resize", $window, positionMenu);
+  event("scroll", $window, positionMenu);
+  var div = first_child(fragment);
+  var node = child(div);
+  {
+    var consequent = ($$anchor2) => {
+      var p = root18();
+      var text2 = only_child(p, true);
+      template_effect(() => set_text(text2, get(previewStatus)));
+      append($$anchor2, p);
+    };
+    if_block(node, ($$render) => {
+      if (get(previewStatus)) $$render(consequent);
+    });
+  }
+  var button = sibling(node, 2);
+  bind_this(
+    button,
+    ($$value) => (trigger = $$value),
+    () => trigger,
+  );
+  var div_1 = sibling(button, 2);
+  var node_1 = child(div_1);
+  each(
+    node_1,
+    16,
+    () => ["on", "off"],
+    (phase) => phase,
+    ($$anchor2, phase) => {
+      var button_1 = root_114();
+      var text_1 = only_child(button_1, true);
+      template_effect(
+        ($0) => {
+          button_1.disabled = $$props.panel.busy;
+          set_text(text_1, $0);
+        },
+        [
+          () =>
+            $$props.panel.t(
+              phase === "on" ? "preview_event_start" : "preview_event_end",
+            ),
+        ],
+      );
+      delegated("click", button_1, async () => {
+        closeMenu();
+        set2(previewStatus, $$props.panel.t("running"), true);
+        const form = context().form;
+        let action2 = phase === "on" ? form.on : form.off;
+        if (phase === "off" && form.sameEntities) {
+          action2 = { ...form.off, entities: [...form.on.entities] };
+        }
+        set2(
+          previewStatus,
+          (await previewAction($$props.panel, action2)) || "",
+          true,
+        );
+        if (trigger.isConnected) {
+          trigger.focus();
+        }
+      });
+      append($$anchor2, button_1);
+    },
+  );
+  var button_2 = sibling(node_1, 2);
+  var text_2 = only_child(button_2, true);
+  var button_3 = sibling(button_2, 2);
+  var text_3 = only_child(button_3, true);
+  var node_2 = sibling(button_3, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      var fragment_1 = root_211();
+      var button_4 = sibling(first_child(fragment_1), 2);
+      var text_4 = only_child(button_4, true);
+      template_effect(
+        ($0) => {
+          button_4.disabled = $$props.panel.busy || $$props.panel.stale;
+          set_text(text_4, $0);
+        },
+        [() => $$props.panel.t("delete_random_event")],
+      );
+      delegated("click", button_4, () => {
+        closeMenu(false);
+        flushSync(() => set2(deleteOpen, true));
+      });
+      append($$anchor2, fragment_1);
+    };
+    if_block(node_2, ($$render) => {
+      if (context().editor.existing) $$render(consequent_1);
+    });
+  }
+  reset(div_1);
+  bind_this(
+    div_1,
+    ($$value) => (menu = $$value),
+    () => menu,
+  );
+  reset(div);
+  var node_3 = sibling(div, 2);
+  {
+    var consequent_2 = ($$anchor2) => {
+      DeleteRandomDialog($$anchor2, {
+        get panel() {
+          return $$props.panel;
+        },
+        onClose: closeDialog,
+      });
+    };
+    if_block(node_3, ($$render) => {
+      if (get(deleteOpen)) $$render(consequent_2);
+    });
+  }
+  var node_4 = sibling(node_3, 2);
+  {
+    var consequent_3 = ($$anchor2) => {
+      AdvancedRandomSettings($$anchor2, {
+        get panel() {
+          return $$props.panel;
+        },
+        get context() {
+          return context();
+        },
+        onClose: closeDialog,
+      });
+    };
+    if_block(node_4, ($$render) => {
+      if (get(advancedOpen)) $$render(consequent_3);
+    });
+  }
+  template_effect(
+    ($0, $1, $2, $3, $4) => {
+      set_attribute2(button, "aria-label", $0);
+      set_attribute2(button, "title", $1);
+      set_attribute2(button, "aria-expanded", get(menuOpen));
+      set_attribute2(button, "aria-controls", get(menuId));
+      button.disabled = $$props.panel.busy;
+      set_attribute2(div_1, "id", get(menuId));
+      set_attribute2(div_1, "aria-label", $2);
+      button_2.disabled = $$props.panel.busy;
+      set_text(text_2, $3);
+      button_3.disabled = $$props.panel.busy;
+      set_text(text_3, $4);
+    },
+    [
+      () => $$props.panel.t("random_event_actions"),
+      () => $$props.panel.t("random_event_actions"),
+      () => $$props.panel.t("random_event_actions"),
+      () => $$props.panel.t(context().form.enabled ? "disable" : "enable"),
+      () => $$props.panel.t("advanced_settings"),
+    ],
+  );
+  delegated("click", button, () => (get(menuOpen) ? closeMenu() : openMenu()));
+  delegated("keydown", button, (event2) => {
+    if (!(event2.key === "ArrowDown" || event2.key === "ArrowUp")) {
+      return;
+    }
+    event2.preventDefault();
+    openMenu(event2.key === "ArrowUp");
+  });
+  event("toggle", div_1, (event2) =>
+    set2(menuOpen, event2.newState === "open"),
+  );
+  delegated("keydown", div_1, menuKeydown);
+  delegated("click", button_2, () => {
+    closeMenu();
+    context().form.enabled = !context().form.enabled;
+    context().changed("enabled");
+  });
+  delegated("click", button_3, () => {
+    closeMenu(false);
+    flushSync(() => set2(advancedOpen, true));
+  });
+  append($$anchor, fragment);
+  pop();
+}
+delegate(["click", "keydown"]);
+
+// custom_components/occupied/frontend/src/lib/components/random/RandomWeekdaysDialog.svelte
+var root19 = from_html(`<button type="button"> </button>`);
+var root_115 = from_html(
+  `<label class="step-weekday-option"><input type="checkbox"/><span> </span></label>`,
+);
+var root_212 = from_html(
+  `<p id="random-weekdays-error" class="error" role="alert"> </p>`,
+);
+var root_311 = from_html(
+  `<dialog class="step-advanced-dialog" aria-labelledby="random-weekdays-title" aria-describedby="random-weekdays-description"><h2 id="random-weekdays-title"> </h2> <p id="random-weekdays-description" class="hint"> </p> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
+);
+function RandomWeekdaysDialog($$anchor, $$props) {
+  push($$props, true);
+  let form = user_derived(() => $$props.context.form),
+    t = user_derived(() => $$props.context.t),
+    changed = user_derived(() => $$props.context.changed);
+  let selectedDays = state(proxy(untrack(() => [...get(form).days])));
+  let dayError = user_derived(() =>
+    get(selectedDays).length > 0 ? void 0 : get(t)("days_required_error"),
+  );
+  let dialog;
+  const presets = [
+    ["every_day_label", days],
+    ["weekdays", days.slice(0, 5)],
+    ["weekends", days.slice(5)],
+  ];
+  const weekdays = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+  ];
+  onMount(() => {
+    dialog.showModal();
+    dialog.querySelector("input")?.focus();
+  });
+  function apply2() {
+    if ($$props.panel.busy || get(dayError)) {
+      return;
+    }
+    get(form).days = [...get(selectedDays)];
+    get(changed)("days");
+    dialog.close();
+  }
+  var dialog_1 = root_311();
+  var h2 = child(dialog_1);
+  var text2 = only_child(h2, true);
+  var p = sibling(h2, 2);
+  var text_1 = only_child(p, true);
+  var fieldset = sibling(p, 2);
+  var legend = child(fieldset);
+  var text_2 = only_child(legend, true);
+  var div = sibling(legend, 2);
+  each(
+    div,
+    21,
+    () => presets,
+    ([label2, selection]) => label2,
+    ($$anchor2, $$item) => {
+      var $$array = user_derived(() => to_array(get($$item), 2));
+      let label2 = () => get($$array)[0];
+      let selection = () => get($$array)[1];
+      var button = root19();
+      var text_3 = only_child(button, true);
+      template_effect(
+        ($0, $1) => {
+          set_attribute2(button, "aria-pressed", $0);
+          set_text(text_3, $1);
+        },
+        [
+          () =>
+            get(selectedDays).length === selection().length &&
+            selection().every((day) => get(selectedDays).includes(day)),
+          () => get(t)(label2()),
+        ],
+      );
+      delegated("click", button, () =>
+        set2(selectedDays, [...selection()], true),
+      );
+      append($$anchor2, button);
+    },
+  );
+  reset(div);
+  var div_1 = sibling(div, 2);
+  each(
+    div_1,
+    22,
+    () => days,
+    (day) => day,
+    ($$anchor2, day, index2) => {
+      var label_1 = root_115();
+      var input = child(label_1);
+      remove_input_defaults(input);
+      var span = sibling(input);
+      var text_4 = only_child(span, true);
+      reset(label_1);
+      template_effect(
+        ($0, $1) => {
+          set_checked(input, $0);
+          set_text(text_4, $1);
+        },
+        [
+          () => get(selectedDays).includes(day),
+          () => get(t)(weekdays[get(index2)]),
+        ],
+      );
+      delegated("change", input, (event2) => {
+        const checked = event2.currentTarget.checked;
+        set2(
+          selectedDays,
+          days.filter((candidate) =>
+            candidate === day ? checked : get(selectedDays).includes(candidate),
+          ),
+          true,
+        );
+      });
+      append($$anchor2, label_1);
+    },
+  );
+  reset(div_1);
+  reset(fieldset);
+  var node = sibling(fieldset, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var p_1 = root_212();
+      var text_5 = only_child(p_1, true);
+      template_effect(() => set_text(text_5, get(dayError)));
+      append($$anchor2, p_1);
+    };
+    if_block(node, ($$render) => {
+      if (get(dayError)) $$render(consequent);
+    });
+  }
+  var div_2 = sibling(node, 2);
+  var button_1 = child(div_2);
+  var text_6 = only_child(button_1, true);
+  var button_2 = sibling(button_1, 2);
+  var text_7 = only_child(button_2, true);
+  reset(div_2);
+  reset(dialog_1);
+  bind_this(
+    dialog_1,
+    ($$value) => (dialog = $$value),
+    () => dialog,
+  );
+  template_effect(
+    ($0, $1, $2, $3, $4) => {
+      set_text(text2, $0);
+      set_text(text_1, $1);
+      set_attribute2(
+        fieldset,
+        "aria-describedby",
+        get(dayError) ? "random-weekdays-error" : void 0,
+      );
+      fieldset.disabled = $$props.panel.busy;
+      set_text(text_2, $2);
+      set_text(text_6, $3);
+      button_2.disabled = $$props.panel.busy || !!get(dayError);
+      set_text(text_7, $4);
+    },
+    [
+      () => get(t)("weekdays"),
+      () => get(t)("random_days_hint"),
+      () => get(t)("run_on"),
+      () => get(t)("cancel"),
+      () => get(t)("apply"),
+    ],
+  );
+  event("close", dialog_1, function (...$$args) {
+    $$props.onClose?.apply(this, $$args);
+  });
+  delegated("click", button_1, () => dialog.close());
+  delegated("click", button_2, apply2);
+  append($$anchor, dialog_1);
+  pop();
+}
+delegate(["click", "change"]);
+
+// custom_components/occupied/frontend/src/lib/utils/random-explanation.ts
+function randomExplanation(form, program, catalog, t = translator(), locale) {
+  const say = (text2, values = {}) => {
+    let message = t(text2);
+    for (const [key2, value] of Object.entries(values)) {
+      message = message.replaceAll(`{${key2}}`, () => String(value));
+    }
+    return message;
+  };
+  const entries = [
+    ...stepEntries(program, catalog, t),
+    ...randomEntries(program, catalog).map((entry) => ({
+      id: `random:${entry.id}`,
+      name: entry.name,
+    })),
+  ];
+  const start = timingExplanation(
+    form.start,
+    entries,
+    t,
+    catalog.time_sources,
+    {
+      includeHints: false,
+      subject: "window_starts",
+      days: form.days,
+      locale,
+    },
+  );
+  let end = timingExplanation(form.end, entries, t, catalog.time_sources, {
+    includeHints: false,
+    subject: "window_ends",
+    locale,
+  });
+  let windowSeconds;
+  const clockSeconds = (value) =>
+    /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)
+      ? value
+          .split(":")
+          .reduce(
+            (total, part, index2) =>
+              total + Number(part) * [3600, 60, 1][index2],
+            0,
+          )
+      : NaN;
+  if (
+    form.start.mode === "absolute" &&
+    form.end.mode === "absolute" &&
+    !form.start.end &&
+    !form.end.end
+  ) {
+    const difference =
+      clockSeconds(form.end.start) - clockSeconds(form.start.start);
+    if (Number.isFinite(difference)) {
+      windowSeconds = difference < 0 ? difference + 86400 : difference;
+      if (difference < 0) {
+        end += ` ${t("the_next_day")}`;
+      }
+    }
+  }
+  if (form.end.mode === "duration") {
+    const duration2 = durationSeconds(
+      form.end.maxDuration || form.end.minDuration || "",
+    );
+    if (Number.isFinite(duration2) && duration2 > 0) {
+      windowSeconds = duration2;
+    }
+  }
+  const minDuration = durationSeconds(form.minDuration);
+  const maxDuration = durationSeconds(form.maxDuration);
+  const cannotFit =
+    windowSeconds !== void 0 &&
+    Number.isFinite(minDuration) &&
+    minDuration > windowSeconds;
+  const sentences = [
+    ...(form.enabled ? [] : [t("random_disabled_hint")]),
+    `${start}.`,
+    `${end}.`,
+  ];
+  const minimum = Number(form.minCount);
+  const maximum = Number(form.maxCount);
+  const validCount = (value) =>
+    Number.isSafeInteger(value) && value >= 0 && value <= 1e3;
+  const validCounts =
+    !!form.minCount.trim() &&
+    !!form.maxCount.trim() &&
+    validCount(minimum) &&
+    validCount(maximum) &&
+    maximum >= minimum;
+  if (validCounts && maximum === 0) {
+    sentences.push(
+      t("random_zero_count_hint"),
+      t("random_dependents_skip_hint"),
+    );
+    return sentences.join(" ");
+  }
+  if (cannotFit) {
+    sentences.push(t("random_duration_exceeds_window"));
+  } else if (!validCounts) {
+    sentences.push(t("random_counts_prompt"));
+  } else if (minimum === maximum) {
+    sentences.push(
+      minimum === 1
+        ? t("random_single_event_summary")
+        : say("random_count_summary", {
+            count: minimum,
+          }),
+    );
+  } else {
+    sentences.push(
+      say("random_count_range_summary", {
+        min: minimum,
+        max: maximum,
+      }),
+    );
+  }
+  if (validCounts && minimum === 0) {
+    sentences.push(t("random_empty_window_hint"));
+  }
+  const duration = (seconds) => durationLabel(seconds, t);
+  if (
+    !Number.isFinite(minDuration) ||
+    !Number.isFinite(maxDuration) ||
+    minDuration <= 0 ||
+    maxDuration < minDuration ||
+    maxDuration > 604800
+  ) {
+    sentences.push(t("random_durations_prompt"));
+  } else if (windowSeconds !== void 0 && minDuration > windowSeconds) {
+    sentences.push(t("random_duration_fit_hint"));
+  } else {
+    const longest =
+      windowSeconds === void 0
+        ? maxDuration
+        : Math.min(maxDuration, windowSeconds);
+    sentences.push(
+      minDuration === longest
+        ? say("random_duration_summary", {
+            duration: duration(minDuration),
+          })
+        : say("random_duration_range_summary", {
+            min: duration(minDuration),
+            max: duration(longest),
+          }),
+    );
+  }
+  const action2 = (selected) => {
+    if (selected.kind === "custom") {
+      return t("custom_yaml_summary");
+    }
+    const names = [...new Set(selected.entities)].map((id) =>
+      entityName(catalog, id),
+    );
+    if (names.length === 0) {
+      return "";
+    }
+    const last = names.pop();
+    const entities =
+      names.length > 0 ? `${names.join(", ")} ${t("and")} ${last}` : last;
+    if (selected.kind === "scene") {
+      return say("action_activate_summary", { entities });
+    }
+    if (selected.kind === "cover") {
+      const descriptions = {
+        "cover.open_cover": "action_open_summary",
+        "cover.close_cover": "action_close_summary",
+        "cover.stop_cover": "action_stop_summary",
+        "cover.set_cover_position": "action_position_summary",
+        "cover.open_cover_tilt": "action_open_tilt_summary",
+        "cover.close_cover_tilt": "action_close_tilt_summary",
+        "cover.stop_cover_tilt": "action_stop_tilt_summary",
+        "cover.set_cover_tilt_position": "action_tilt_position_summary",
+      };
+      const description = descriptions[selected.service];
+      if (!description) {
+        return "";
+      }
+      const position =
+        selected.service === "cover.set_cover_position"
+          ? selected.position
+          : selected.tiltPosition;
+      return t(description).includes("{position}") &&
+        (!position.trim() ||
+          !Number.isSafeInteger(Number(position)) ||
+          Number(position) < 0 ||
+          Number(position) > 100)
+        ? ""
+        : say(description, { entities, position });
+    }
+    if (selected.kind === "remote") {
+      if (selected.service === "remote.turn_off") {
+        return say("action_turn_off_summary", { entities });
+      }
+      return selected.activity
+        ? say("action_remote_activity_summary", {
+            activity: selected.activity,
+            entities,
+          })
+        : say("action_remote_default_summary", { entities });
+    }
+    if (selected.kind === "service") {
+      return selected.service.trim()
+        ? say("action_service_summary", {
+            service: selected.service.trim(),
+            entities,
+          })
+        : "";
+    }
+    return say(
+      selected.action === "turn_off"
+        ? "action_turn_off_summary"
+        : "action_turn_on_summary",
+      { entities },
+    );
+  };
+  const on2 = action2(form.on);
+  const off = action2(
+    form.sameEntities ? { ...form.off, entities: form.on.entities } : form.off,
+  );
+  if (on2 && !cannotFit) {
+    sentences.push(say("random_start_action_summary", { action: on2 }));
+  }
+  if (off && !cannotFit) {
+    sentences.push(say("random_end_action_summary", { action: off }));
+  }
+  const conclusion =
+    validCounts && maximum === 1
+      ? "random_single_finish_hint"
+      : "random_overlap_hint";
+  sentences.push(t(cannotFit ? "random_duration_priority_hint" : conclusion));
+  return sentences.join(" ");
+}
+
+// custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
+var root20 = from_html(
+  `<button type="button" class="randomize-count svelte-1n39iyr"> </button>`,
+);
+var root_116 = from_html(
+  `<label class="maximum-count-label svelte-1n39iyr" for="step-maxCount"> </label> <div class="maximum-count-control count-control svelte-1n39iyr"><!> <button type="button" class="icon-button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12Z"></path></svg></button></div>`,
+  1,
+);
+var root_213 = from_html(
+  `<label class="same-entities svelte-1n39iyr"><input type="checkbox"/> </label>`,
+);
+var root_312 = from_html(
+  `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <div class="active-period-header svelte-1n39iyr"><h3 class="svelte-1n39iyr"> </h3> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-weekdays=""> </button></div> <!> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <h3> </h3> <div><label class="minimum-count-label svelte-1n39iyr" for="step-minCount"> </label> <div class="minimum-count-control count-control svelte-1n39iyr"><!></div> <!></div> <div class="random-frequency svelte-1n39iyr"><!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section> <!>`,
+  1,
+);
+var $$css5 = {
+  hash: "svelte-1n39iyr",
+  code: '.active-period-header.svelte-1n39iyr {display:flex;align-items:center;justify-content:space-between;gap:16px;}.active-period-header.svelte-1n39iyr h3:where(.svelte-1n39iyr) {margin:0;}.random-frequency.svelte-1n39iyr {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}.random-counts.svelte-1n39iyr {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));grid-template-areas:"minimum-label ."\n      "minimum-control randomness";gap:5px 16px;margin:14px 0;}.random-counts.with-maximum.svelte-1n39iyr {grid-template-areas:"minimum-label maximum-label"\n      "minimum-control maximum-control";}.minimum-count-label.svelte-1n39iyr {grid-area:minimum-label;}.maximum-count-label.svelte-1n39iyr {grid-area:maximum-label;}.minimum-count-control.svelte-1n39iyr {grid-area:minimum-control;}.maximum-count-control.svelte-1n39iyr {grid-area:maximum-control;}.count-control.svelte-1n39iyr {display:flex;align-items:flex-start;gap:8px;min-width:0;}.count-control.svelte-1n39iyr .field {flex:1;min-width:0;margin:0;}.randomize-count.svelte-1n39iyr {grid-area:randomness;justify-self:start;align-self:start;max-width:100%;}.same-entities.svelte-1n39iyr {display:flex;align-items:center;gap:8px;margin-top:16px;}\n\n  @media (max-width: 600px) {.random-counts.svelte-1n39iyr {grid-template-columns:minmax(96px, 1fr) minmax(0, max-content);grid-template-areas:"minimum-label minimum-label"\n        "minimum-control randomness";}.random-counts.with-maximum.svelte-1n39iyr {grid-template-columns:minmax(0, 1fr);grid-template-areas:"minimum-label"\n        "minimum-control"\n        "maximum-label"\n        "maximum-control";}.with-maximum.svelte-1n39iyr .minimum-count-control:where(.svelte-1n39iyr) {margin-bottom:12px;}.random-frequency.svelte-1n39iyr {grid-template-columns:1fr;gap:0;}\n  }',
+};
+function RandomEventEditor($$anchor, $$props) {
+  push($$props, true);
+  append_styles($$anchor, $$css5);
+  let context = user_derived(() => {
+    void $$props.revision;
+    return createRandomEditorContext($$props.panel);
+  });
+  let editor = user_derived(() => get(context).editor),
+    form = user_derived(() => get(context).form),
+    t = user_derived(() => get(context).t),
+    changed = user_derived(() => get(context).changed),
+    submit = user_derived(() => get(context).submit),
+    cancel = user_derived(() => get(context).cancel);
+  let weekdaysOpen = state(false);
+  let weekdaysButton;
+  let showMaxCount = state(
+    proxy(
+      untrack(() => Number(get(form).minCount) !== Number(get(form).maxCount)),
+    ),
+  );
+  let maxCountVisible = user_derived(
+    () =>
+      get(showMaxCount) ||
+      Number(get(form).minCount) !== Number(get(form).maxCount) ||
+      !!get(editor).errors.maxCount,
+  );
+  async function save2() {
+    await get(submit)();
+    if (!$$props.panel.randomEditor?.errors.days) {
+      return;
+    }
+    set2(weekdaysOpen, true);
+  }
+  function closeWeekdays() {
+    flushSync(() => set2(weekdaysOpen, false));
+    if (weekdaysButton.isConnected) {
+      weekdaysButton.focus();
+    }
+  }
+  var fragment = root_312();
+  var section = first_child(fragment);
+  var div = child(section);
+  var node = child(div);
+  {
+    let $0 = user_derived(() => ({
+      hideLabel: true,
+      placeholder: get(t)("optional_title"),
+    }));
+    EditorField(node, {
+      get panel() {
+        return $$props.panel;
+      },
+      get context() {
+        return get(context);
+      },
+      key: "name",
+      label: "random_event_name",
+      get value() {
+        return get(form).name;
+      },
+      update: (value) => (get(form).name = value),
+      get options() {
+        return get($0);
+      },
+    });
+  }
+  reset(div);
+  var div_1 = sibling(div, 2);
+  var h3 = child(div_1);
+  var text2 = only_child(h3, true);
+  var button = sibling(h3, 2);
+  let classes;
+  var text_1 = only_child(button, true);
+  bind_this(
+    button,
+    ($$value) => (weekdaysButton = $$value),
+    () => weekdaysButton,
+  );
+  reset(div_1);
+  var node_1 = sibling(div_1, 2);
+  {
+    let $0 = user_derived(() => ({ ...get(editor).errors }));
+    FieldError(node_1, {
+      get t() {
+        return get(t);
+      },
+      key: "days",
+      get errors() {
+        return get($0);
+      },
+    });
+  }
+  var p = sibling(node_1, 2);
+  var text_2 = only_child(p, true);
+  var div_2 = sibling(p, 2);
+  var node_2 = child(div_2);
+  {
+    let $0 = user_derived(() => get(context).timing("start"));
+    TimingEditor(node_2, {
+      get panel() {
+        return $$props.panel;
+      },
+      get context() {
+        return get($0);
+      },
+      heading: "period_start",
+      clockLabel: "earliest_start",
+      windowEndLabel: "latest_start",
+      addWindowEndLabel: "randomize_window_start",
+      rangeEdge: "start",
+      showExplanation: false,
+    });
+  }
+  var node_3 = sibling(node_2, 2);
+  {
+    let $0 = user_derived(() => get(context).timing("end"));
+    TimingEditor(node_3, {
+      get panel() {
+        return $$props.panel;
+      },
+      get context() {
+        return get($0);
+      },
+      heading: "period_end",
+      clockLabel: "earliest_end",
+      windowEndLabel: "latest_end",
+      addWindowEndLabel: "randomize_window_end",
+      rangeEdge: "end",
+      showExplanation: false,
+      modes: [
+        ["absolute", "absolute_time"],
+        ["relative", "relative_to"],
+        ["duration", "duration"],
+      ],
+    });
+  }
+  reset(div_2);
+  var h3_1 = sibling(div_2, 2);
+  var text_3 = only_child(h3_1, true);
+  var div_3 = sibling(h3_1, 2);
+  let classes_1;
+  var label2 = child(div_3);
+  var text_4 = only_child(label2, true);
+  var div_4 = sibling(label2, 2);
+  var node_4 = child(div_4);
+  {
+    let $0 = user_derived(() =>
+      get(maxCountVisible)
+        ? "minimum_events_per_window"
+        : "events_per_active_period",
+    );
+    EditorField(node_4, {
+      get panel() {
+        return $$props.panel;
+      },
+      get context() {
+        return get(context);
+      },
+      key: "minCount",
+      get label() {
+        return get($0);
+      },
+      get value() {
+        return get(form).minCount;
+      },
+      update: (value) => {
+        if (!get(maxCountVisible)) {
+          get(form).maxCount = value;
+        }
+        get(form).minCount = value;
+      },
+      options: { type: "number", min: 0, max: 1e3, step: 1, hideLabel: true },
+    });
+  }
+  reset(div_4);
+  var node_5 = sibling(div_4, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var button_1 = root20();
+      var text_5 = only_child(button_1, true);
+      template_effect(
+        ($0) => {
+          button_1.disabled = $$props.panel.busy;
+          set_text(text_5, $0);
+        },
+        [() => get(t)("add_randomness")],
+      );
+      delegated("click", button_1, () => {
+        set2(showMaxCount, true);
+        get(changed)("maxCount");
+        focusEditor($$props.panel, "maxCount");
+      });
+      append($$anchor2, button_1);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_1 = root_116();
+      var label_1 = first_child(fragment_1);
+      var text_6 = only_child(label_1, true);
+      var div_5 = sibling(label_1, 2);
+      var node_6 = child(div_5);
+      {
+        let $0 = user_derived(() => ({
+          type: "number",
+          min: Number.isSafeInteger(Number(get(form).minCount))
+            ? Math.max(0, Number(get(form).minCount))
+            : 0,
+          max: 1e3,
+          step: 1,
+          hideLabel: true,
+        }));
+        EditorField(node_6, {
+          get panel() {
+            return $$props.panel;
+          },
+          get context() {
+            return get(context);
+          },
+          key: "maxCount",
+          label: "maximum_events_per_window",
+          get value() {
+            return get(form).maxCount;
+          },
+          update: (value) => (get(form).maxCount = value),
+          get options() {
+            return get($0);
+          },
+        });
+      }
+      var button_2 = sibling(node_6, 2);
+      reset(div_5);
+      template_effect(
+        ($0, $1, $2) => {
+          set_text(text_6, $0);
+          set_attribute2(button_2, "aria-label", $1);
+          set_attribute2(button_2, "title", $2);
+          button_2.disabled = $$props.panel.busy;
+        },
+        [
+          () => get(t)("maximum_events_per_window"),
+          () => get(t)("remove_maximum_events"),
+          () => get(t)("remove_maximum_events"),
+        ],
+      );
+      delegated("click", button_2, () => {
+        get(form).maxCount = get(form).minCount;
+        set2(showMaxCount, false);
+        delete get(editor).errors.maxCount;
+        get(changed)("minCount");
+        focusEditor($$props.panel, "minCount");
+      });
+      append($$anchor2, fragment_1);
+    };
+    if_block(node_5, ($$render) => {
+      if (!get(maxCountVisible)) $$render(consequent);
+      else $$render(alternate, -1);
+    });
+  }
+  reset(div_3);
+  var div_6 = sibling(div_3, 2);
+  var node_7 = child(div_6);
+  EditorField(node_7, {
+    get panel() {
+      return $$props.panel;
+    },
+    get context() {
+      return get(context);
+    },
+    key: "minDuration",
+    label: "minimum_duration",
+    get value() {
+      return get(form).minDuration;
+    },
+    update: (value) => (get(form).minDuration = value),
+    options: { placeholder: "5m" },
+  });
+  var node_8 = sibling(node_7, 2);
+  EditorField(node_8, {
+    get panel() {
+      return $$props.panel;
+    },
+    get context() {
+      return get(context);
+    },
+    key: "maxDuration",
+    label: "maximum_duration",
+    get value() {
+      return get(form).maxDuration;
+    },
+    update: (value) => (get(form).maxDuration = value),
+    options: { placeholder: "15m" },
+  });
+  reset(div_6);
+  var p_1 = sibling(div_6, 2);
+  var text_7 = only_child(p_1, true);
+  var div_7 = sibling(p_1, 2);
+  var node_9 = child(div_7);
+  {
+    let $0 = user_derived(() => get(context).action("on"));
+    ActionEditor(node_9, {
+      get panel() {
+        return $$props.panel;
+      },
+      get context() {
+        return get($0);
+      },
+      heading: "when_event_starts",
+      kindLabel: "start_action",
+      entityLabel: "start_entities",
+    });
+  }
+  var div_8 = sibling(node_9, 2);
+  var node_10 = child(div_8);
+  {
+    let $0 = user_derived(() => get(context).action("off"));
+    ActionEditor(node_10, {
+      get panel() {
+        return $$props.panel;
+      },
+      get context() {
+        return get($0);
+      },
+      heading: "when_event_ends",
+      kindLabel: "end_action",
+      entityLabel: "end_entities",
+      get hideEntities() {
+        return get(form).sameEntities;
+      },
+    });
+  }
+  var node_11 = sibling(node_10, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      var label_2 = root_213();
+      var input = child(label_2);
+      remove_input_defaults(input);
+      var text_8 = sibling(input, 1, true);
+      reset(label_2);
+      template_effect(
+        ($0) => {
+          set_checked(input, get(form).sameEntities);
+          set_text(text_8, $0);
+        },
+        [() => get(t)("use_the_same_entities")],
+      );
+      delegated("change", input, (event2) => {
+        get(form).sameEntities = event2.currentTarget.checked;
+        get(changed)("sameEntities");
+      });
+      append($$anchor2, label_2);
+    };
+    var d = user_derived(() => canShareEntities(get(form).on, get(form).off));
+    if_block(node_11, ($$render) => {
+      if (get(d)) $$render(consequent_1);
+    });
+  }
+  reset(div_8);
+  reset(div_7);
+  var div_9 = sibling(div_7, 2);
+  var button_3 = child(div_9);
+  var text_9 = only_child(button_3, true);
+  var node_12 = sibling(button_3, 2);
+  RandomActions(node_12, {
+    get panel() {
+      return $$props.panel;
+    },
+    get context() {
+      return get(context);
+    },
+  });
+  var button_4 = sibling(node_12, 2);
+  var text_10 = only_child(button_4, true);
+  reset(div_9);
+  reset(section);
+  var node_13 = sibling(section, 2);
+  {
+    var consequent_2 = ($$anchor2) => {
+      RandomWeekdaysDialog($$anchor2, {
+        get panel() {
+          return $$props.panel;
+        },
+        get context() {
+          return get(context);
+        },
+        onClose: closeWeekdays,
+      });
+    };
+    if_block(node_13, ($$render) => {
+      if (get(weekdaysOpen)) $$render(consequent_2);
+    });
+  }
+  template_effect(
+    ($0, $1, $2, $3, $4, $5, $6, $7) => {
+      set_text(text2, $0);
+      set_attribute2(button, "aria-expanded", get(weekdaysOpen));
+      set_attribute2(
+        button,
+        "aria-describedby",
+        get(editor).errors.days ? "step-error-days" : void 0,
+      );
+      button.disabled = $$props.panel.busy;
+      classes = set_class(button, 1, "", null, classes, {
+        error: !!get(editor).errors.days,
+      });
+      set_text(text_1, $1);
+      set_text(text_2, $2);
+      set_text(text_3, $3);
+      classes_1 = set_class(
+        div_3,
+        1,
+        "random-counts svelte-1n39iyr",
+        null,
+        classes_1,
+        { "with-maximum": get(maxCountVisible) },
+      );
+      set_text(text_4, $4);
+      set_text(text_7, $5);
+      button_3.disabled = $$props.panel.busy;
+      set_text(text_9, $6);
+      button_4.disabled =
+        $$props.panel.busy ||
+        $$props.panel.stale ||
+        !!get(editor).errors.minCount ||
+        !!get(editor).errors.maxCount;
+      set_text(text_10, $7);
+    },
+    [
+      () => get(t)("active_period"),
+      () => get(t)("weekdays"),
+      () => get(t)("active_period_hint"),
+      () => get(t)("frequency_and_duration"),
+      () =>
+        get(t)(
+          get(maxCountVisible)
+            ? "minimum_events_per_window"
+            : "events_per_active_period",
+        ),
+      () =>
+        randomExplanation(
+          get(form),
+          $$props.panel.draft,
+          $$props.panel.catalog,
+          get(t),
+          $$props.panel._hass.locale,
+        ),
+      () => get(t)("cancel"),
+      () =>
+        get(t)(
+          $$props.panel.document?.source === "file"
+            ? "add_to_draft"
+            : "save_random_event",
+        ),
+    ],
+  );
+  delegated("click", button, () => set2(weekdaysOpen, true));
+  delegated("click", button_3, function (...$$args) {
+    get(cancel)?.apply(this, $$args);
+  });
+  delegated("click", button_4, save2);
+  append($$anchor, fragment);
+  pop();
+}
+delegate(["click", "change"]);
+
+// custom_components/occupied/frontend/src/lib/components/random/RandomCard.svelte
+var root21 = from_html(`<span class="step-status-badge"> </span>`);
+var root_117 = from_html(
+  `<span class="step-row-warning"><ha-icon></ha-icon> <span><!></span></span>`,
+  2,
+);
+var root_214 = from_html(`<span class="step-row-time"> </span>`);
+var root_313 = from_html(
+  `<div><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button> <div><!></div></div>`,
+);
+function RandomCard($$anchor, $$props) {
+  push($$props, true);
+  let t = user_derived(() => $$props.panel.t);
+  let editing = user_derived(
+    () =>
+      $$props.panel.randomEditor?.existing &&
+      $$props.panel.randomEditor.id === $$props.entry.id,
+  );
+  let disabled = user_derived(
+    () =>
+      (get(editing)
+        ? $$props.panel.randomEditor?.form.enabled
+        : $$props.entry.enabled) === false,
+  );
+  var div = root_313();
+  let classes;
+  var button = child(div);
+  let classes_1;
+  var span = child(button);
+  var span_1 = child(span);
+  var strong = child(span_1);
+  var text2 = only_child(strong, true);
+  var node = sibling(strong);
+  {
+    var consequent = ($$anchor2) => {
+      var span_2 = root21();
+      var text_1 = only_child(span_2, true);
+      template_effect(($0) => set_text(text_1, $0), [() => get(t)("disabled")]);
+      append($$anchor2, span_2);
+    };
+    if_block(node, ($$render) => {
+      if (get(disabled)) $$render(consequent);
+    });
+  }
+  reset(span_1);
+  var span_3 = sibling(span_1, 2);
+  var text_2 = only_child(span_3);
+  reset(span);
+  var node_1 = sibling(span, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      var span_4 = root_117();
+      var ha_icon = child(span_4);
+      set_custom_element_data(ha_icon, "icon", "mdi:alert-outline");
+      set_custom_element_data(ha_icon, "aria-hidden", "true");
+      var span_5 = sibling(ha_icon, 2);
+      var node_2 = child(span_5);
+      WarningMessages(node_2, {
+        get warnings() {
+          return $$props.warnings;
+        },
+        get t() {
+          return get(t);
+        },
+      });
+      reset(span_5);
+      reset(span_4);
+      template_effect(() =>
+        set_attribute2(span_4, "id", `random-warning-${$$props.entry.id}`),
+      );
+      append($$anchor2, span_4);
+    };
+    var consequent_2 = ($$anchor2) => {
+      var span_6 = root_214();
+      var text_3 = only_child(span_6);
+      template_effect(
+        ($0, $1) => set_text(text_3, `${$0 ?? ""} \u2192 ${$1 ?? ""}`),
+        [
+          () =>
+            timingSummary(
+              { timing: $$props.entry.start },
+              $$props.entries,
+              get(t),
+              $$props.panel.catalog.time_sources,
+              $$props.panel._hass.locale,
+            ),
+          () =>
+            timingExplanation(
+              timingForm($$props.entry.end),
+              $$props.entries,
+              get(t),
+              $$props.panel.catalog.time_sources,
+              {
+                subject: "window_ends",
+                includeHints: false,
+                locale: $$props.panel._hass.locale,
+              },
+            ),
+        ],
+      );
+      append($$anchor2, span_6);
+    };
+    if_block(node_1, ($$render) => {
+      if ($$props.warnings.length) $$render(consequent_1);
+      else if (!get(editing)) $$render(consequent_2, 1);
+    });
+  }
+  reset(button);
+  var div_1 = sibling(button, 2);
+  var node_3 = child(div_1);
+  {
+    var consequent_3 = ($$anchor2) => {
+      RandomEventEditor($$anchor2, {
+        get panel() {
+          return $$props.panel;
+        },
+        get revision() {
+          return $$props.revision;
+        },
+      });
+    };
+    if_block(node_3, ($$render) => {
+      if (get(editing)) $$render(consequent_3);
+    });
+  }
+  reset(div_1);
+  reset(div);
+  template_effect(
+    ($0, $1, $2, $3, $4) => {
+      classes = set_class(div, 1, "step-card", null, classes, {
+        "step-disabled": get(disabled),
+        "step-warning": $$props.warnings.length > 0,
+      });
+      set_attribute2(div, "data-random-id", $$props.entry.id);
+      set_style(div, $0);
+      set_attribute2(button, "id", `random-card-${$$props.entry.id}`);
+      classes_1 = set_class(button, 1, "step-row", null, classes_1, {
+        editing: get(editing) && $$props.warnings.length === 0,
+      });
+      set_attribute2(button, "aria-label", $1);
+      set_attribute2(button, "aria-expanded", get(editing));
+      set_attribute2(
+        button,
+        "aria-controls",
+        `random-editor-${$$props.entry.id}`,
+      );
+      set_attribute2(
+        button,
+        "aria-describedby",
+        $$props.warnings.length > 0
+          ? `random-warning-${$$props.entry.id}`
+          : void 0,
+      );
+      button.disabled = $$props.panel.busy;
+      set_text(text2, $$props.entry.name);
+      set_text(
+        text_2,
+        `${$2 ?? ""}
+        ${$3 ?? ""} \xB7 ${($$props.entry.min_duration || "5m") ?? ""}\u2013${($$props.entry.max_duration || "15m") ?? ""} \xB7 ${$4 ?? ""}`,
+      );
+      set_attribute2(div_1, "id", `random-editor-${$$props.entry.id}`);
+    },
+    [
+      () => `--depth:${Math.min($$props.depth, 3)}`,
+      () =>
+        get(disabled)
+          ? `${$$props.entry.name} \xB7 ${get(t)("disabled")}`
+          : $$props.entry.name,
+      () => countSummary($$props.entry.count),
+      () => get(t)("times_per_window"),
+      () =>
+        entitySummary(
+          $$props.panel.catalog,
+          actionTargets($$props.entry.on),
+          get(t),
+        ),
+    ],
+  );
+  delegated("click", button, () => openRandom($$props.panel, $$props.entry));
+  append($$anchor, div);
+  pop();
+}
+delegate(["click"]);
+
+// custom_components/occupied/frontend/src/lib/components/shared/ActivityIntro.svelte
+var root22 = from_html(
+  `<div class="activity-intro"><h2> </h2> <p class="hint"> </p></div>`,
+);
+function ActivityIntro($$anchor, $$props) {
+  var div = root22();
+  var h2 = child(div);
+  var text2 = only_child(h2, true);
+  var p = sibling(h2, 2);
+  var text_1 = only_child(p, true);
+  reset(div);
+  template_effect(() => {
+    set_text(text2, $$props.title);
+    set_text(text_1, $$props.description);
+  });
+  append($$anchor, div);
+}
+
+// custom_components/occupied/frontend/src/lib/components/steps/StepsView.svelte
+var root23 = from_html(
+  `<div class="activity-add-buttons"><button type="button" class="primary" data-create-step=""> </button> <button type="button" data-create-random=""> </button></div>`,
+);
+var root_118 = from_html(
+  `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <!></section>`,
+);
+var root_215 = from_html(
+  `<!> <div class="step-layout"><div class="step-list"></div></div> <!>`,
+  1,
+);
+function StepsView($$anchor, $$props) {
+  push($$props, true);
+  const addButtons = ($$anchor2, empty = noop) => {
+    var div = root23();
+    var button = child(div);
+    var text2 = only_child(button, true);
+    var button_1 = sibling(button, 2);
+    var text_1 = only_child(button_1, true);
+    reset(div);
+    template_effect(
+      ($0, $1) => {
+        button.disabled = $$props.panel.busy;
+        set_text(text2, $0);
+        button_1.disabled = $$props.panel.busy;
+        set_text(text_1, $1);
+      },
+      [
+        () => get(t)(empty() ? "create_your_first_step" : "create_step"),
+        () => get(t)("create_random_event"),
+      ],
+    );
+    delegated("click", button, () => startStep($$props.panel));
+    delegated("click", button_1, () => openRandom($$props.panel));
+    append($$anchor2, div);
+  };
+  let data = user_derived(() => {
+    void $$props.revision;
+    const steps = stepEntries(
+      $$props.panel.draft,
+      $$props.panel.catalog,
+      $$props.panel.t,
+    );
+    const random = randomEntries($$props.panel.draft, $$props.panel.catalog);
+    const entries2 = [
+      ...steps.map((entry) => ({ kind: "step", ...entry })),
+      ...random.map((entry) => ({
+        kind: "random",
+        ...entry,
+        id: `random:${entry.id}`,
+        randomEntry: entry,
+        timing: entry.start,
+      })),
+    ];
+    return {
+      t: $$props.panel.t,
+      entries: entries2,
+      tree: stepTree(entries2, $$props.panel.catalog.time_sources),
+      issues: $$props.panel.visibleIssues().map((issue) => ({
+        issue,
+        stepId: warningStepId(issue, steps),
+        randomId: warningRandomId(issue, random),
+      })),
+    };
+  });
+  let t = user_derived(() => get(data).t),
+    entries = user_derived(() => get(data).entries),
+    tree = user_derived(() => get(data).tree),
+    issues = user_derived(() => get(data).issues);
+  var fragment = comment();
+  var node = first_child(fragment);
+  {
+    var consequent = ($$anchor2) => {
+      var section = root_118();
+      var h2 = child(section);
+      var text_2 = only_child(h2, true);
+      var p = sibling(h2, 2);
+      var text_3 = only_child(p, true);
+      var node_1 = sibling(p, 2);
+      addButtons(node_1, () => true);
+      reset(section);
+      template_effect(
+        ($0, $1) => {
+          set_text(text_2, $0);
+          set_text(text_3, $1);
+        },
+        [() => get(t)("activity"), () => get(t)("activity_hint")],
+      );
+      append($$anchor2, section);
+    };
+    var alternate_1 = ($$anchor2) => {
+      var fragment_1 = root_215();
+      var node_2 = first_child(fragment_1);
+      {
+        let $0 = user_derived(() => get(t)("activity"));
+        let $1 = user_derived(() => get(t)("activity_hint"));
+        ActivityIntro(node_2, {
+          get title() {
+            return get($0);
+          },
+          get description() {
+            return get($1);
+          },
+        });
+      }
+      var div_1 = sibling(node_2, 2);
+      var div_2 = child(div_1);
+      each(
+        div_2,
+        21,
+        () => get(tree),
+        ({ entry, depth }) => entry.id,
+        ($$anchor3, $$item) => {
+          let entry = () => get($$item).entry;
+          let depth = () => get($$item).depth;
+          var fragment_2 = comment();
+          var node_3 = first_child(fragment_2);
+          {
+            var consequent_1 = ($$anchor4) => {
+              {
+                let $0 = user_derived(() =>
+                  get(issues)
+                    .filter(
+                      ({ randomId }) => randomId === entry().randomEntry.id,
+                    )
+                    .map(({ issue }) => issue),
+                );
+                RandomCard($$anchor4, {
+                  get panel() {
+                    return $$props.panel;
+                  },
+                  get revision() {
+                    return $$props.revision;
+                  },
+                  get entry() {
+                    return entry().randomEntry;
+                  },
+                  get depth() {
+                    return depth();
+                  },
+                  get entries() {
+                    return get(entries);
+                  },
+                  get warnings() {
+                    return get($0);
+                  },
+                });
+              }
+            };
+            var alternate = ($$anchor4) => {
+              {
+                let $0 = user_derived(() =>
+                  get(issues)
+                    .filter(({ stepId }) => stepId === entry().id)
+                    .map(({ issue }) => issue),
+                );
+                StepCard($$anchor4, {
+                  get panel() {
+                    return $$props.panel;
+                  },
+                  get revision() {
+                    return $$props.revision;
+                  },
+                  get entry() {
+                    return entry();
+                  },
+                  get depth() {
+                    return depth();
+                  },
+                  get entries() {
+                    return get(entries);
+                  },
+                  get warnings() {
+                    return get($0);
+                  },
+                });
+              }
+            };
+            if_block(node_3, ($$render) => {
+              if (entry().kind === "random") $$render(consequent_1);
+              else $$render(alternate, -1);
+            });
+          }
+          append($$anchor3, fragment_2);
+        },
+      );
+      reset(div_2);
+      reset(div_1);
+      var node_4 = sibling(div_1, 2);
+      addButtons(node_4, () => false);
+      template_effect(
+        ($0) => set_attribute2(div_2, "aria-label", $0),
+        [() => get(t)("activity")],
+      );
+      append($$anchor2, fragment_1);
+    };
+    if_block(node, ($$render) => {
+      if (get(entries).length === 0) $$render(consequent);
+      else $$render(alternate_1, -1);
+    });
+  }
+  append($$anchor, fragment);
+  pop();
+}
+delegate(["click"]);
+
+// custom_components/occupied/frontend/src/lib/components/settings/RunConditionSettings.svelte
+var root24 = from_html(
+  `<p class="managed-warning svelte-111t7iy" role="alert"> </p>`,
+);
+var root_119 = from_html(
+  `<fieldset class="svelte-111t7iy"><legend> </legend> <label for="run-condition-entity" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label for="run-condition-states" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <p class="hint"> </p> <label for="run-condition-delay" class="svelte-111t7iy"> </label> <input id="run-condition-delay" type="text"/> <!> <p class="hint"> </p> <label for="run-condition-offEntities" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <p class="hint"> </p> <!></fieldset>`,
+  2,
+);
+var root_216 = from_html(`<p class="hint"> </p>`);
+var root_314 = from_html(`<p> </p>`);
+var root_48 = from_html(`<p role="status"> </p> <!>`, 1);
+var root_54 = from_html(
+  `<section><h2> </h2> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <!> <!> <div class="actions svelte-111t7iy"><button type="button" class="primary"> </button> <button type="button"> </button></div> <!></section>`,
+);
+var $$css6 = {
+  hash: "svelte-111t7iy",
+  code: "fieldset.svelte-111t7iy {margin:12px 0;}label.svelte-111t7iy {display:block;margin:12px 0 6px;}.actions.svelte-111t7iy {display:flex;gap:8px;margin-top:12px;}.managed-warning.svelte-111t7iy {color:var(--warning-color, #e69500);}",
+};
+function RunConditionSettings($$anchor, $$props) {
+  push($$props, true);
+  append_styles($$anchor, $$css6);
+  let data = user_derived(() => {
+    void $$props.revision;
+    return {
+      t: $$props.panel.t,
+      form: $$props.panel.runConditionForm,
+      errors: $$props.panel.runConditionErrors,
+      snapshot: $$props.panel.runtimeSnapshot,
+      managedExtras: managedOffEntities(
+        $$props.panel.draft,
+        $$props.panel.runConditionForm?.offEntities ?? [],
+      ),
+    };
+  });
+  let t = user_derived(() => get(data).t),
+    form = user_derived(() => get(data).form),
+    errors = user_derived(() => get(data).errors),
+    snapshot2 = user_derived(() => get(data).snapshot),
+    managedExtras = user_derived(() => get(data).managedExtras);
+  let current = user_derived(() =>
+    $$props.panel.catalog.entities.find(
+      (item) => item.entity_id === get(form)?.entityId,
+    ),
+  );
+  let now = state(proxy(Date.now()));
+  let deadline = user_derived(
+    () => get(snapshot2).run_condition?.activation_deadline,
+  );
+  let remaining = user_derived(() =>
+    get(deadline)
+      ? Math.max(0, Math.ceil((Date.parse(get(deadline)) - get(now)) / 1e3))
+      : 0,
+  );
+  user_effect(() => {
+    if ($$props.panel.runConditionForm) {
+      return;
+    }
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) {
+        $$props.panel.openRunCondition();
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
+  user_effect(() => {
+    if (!get(deadline)) {
+      return;
+    }
+    const timer = setInterval(() => {
+      set2(now, Date.now(), true);
+    }, 1e3);
+    return () => clearInterval(timer);
+  });
+  var fragment = comment();
+  var node = first_child(fragment);
+  {
+    var consequent_5 = ($$anchor2) => {
+      var section = root_54();
+      var h2 = child(section);
+      var text2 = only_child(h2, true);
+      var label2 = sibling(h2, 2);
+      var input = child(label2);
+      remove_input_defaults(input);
+      var text_1 = sibling(input);
+      reset(label2);
+      var node_1 = sibling(label2, 2);
+      {
+        var consequent_1 = ($$anchor3) => {
+          var fieldset = root_119();
+          var legend = child(fieldset);
+          var text_2 = only_child(legend, true);
+          var label_1 = sibling(legend, 2);
+          var text_3 = only_child(label_1, true);
+          var ha_selector = sibling(label_1, 2);
+          set_custom_element_data(ha_selector, "id", "run-condition-entity");
+          template_effect(
+            ($0) => set_custom_element_data(ha_selector, "aria-label", $0),
+            [() => get(t)("run_condition_entity")],
+          );
+          action(
+            ha_selector,
+            ($$node, $$action_arg) => properties?.($$node, $$action_arg),
+            () => ({
+              hass: $$props.panel._hass,
+              selector: { entity: {} },
+              value: get(form).entityId,
+              disabled: $$props.panel.busy || $$props.panel.yamlDirty,
+            }),
+          );
+          var node_2 = sibling(ha_selector, 2);
+          FieldError(node_2, {
+            get t() {
+              return get(t);
+            },
+            get errors() {
+              return get(errors);
+            },
+            key: "entityId",
+            fieldPrefix: "run-condition-",
+          });
+          var label_2 = sibling(node_2, 2);
+          var text_4 = only_child(label_2, true);
+          var ha_selector_1 = sibling(label_2, 2);
+          set_custom_element_data(ha_selector_1, "id", "run-condition-states");
+          template_effect(
+            ($0) => set_custom_element_data(ha_selector_1, "aria-label", $0),
+            [() => get(t)("run_condition_states")],
+          );
+          action(
+            ha_selector_1,
+            ($$node, $$action_arg) => properties?.($$node, $$action_arg),
+            () => ({
+              hass: $$props.panel._hass,
+              selector: {
+                select: {
+                  multiple: true,
+                  custom_value: true,
+                  options: runConditionStateOptions(
+                    get(form).entityId,
+                    get(form).states,
+                    get(current)?.state,
+                  ),
+                },
+              },
+              value: get(form).states,
+              disabled: $$props.panel.busy || $$props.panel.yamlDirty,
+            }),
+          );
+          var node_3 = sibling(ha_selector_1, 2);
+          FieldError(node_3, {
+            get t() {
+              return get(t);
+            },
+            get errors() {
+              return get(errors);
+            },
+            key: "states",
+            fieldPrefix: "run-condition-",
+          });
+          var label_3 = sibling(node_3, 2);
+          var input_1 = child(label_3);
+          remove_input_defaults(input_1);
+          var text_5 = sibling(input_1);
+          reset(label_3);
+          var p = sibling(label_3, 2);
+          var text_6 = only_child(p, true);
+          var label_4 = sibling(p, 2);
+          var text_7 = only_child(label_4, true);
+          var input_2 = sibling(label_4, 2);
+          remove_input_defaults(input_2);
+          var node_4 = sibling(input_2, 2);
+          FieldError(node_4, {
+            get t() {
+              return get(t);
+            },
+            get errors() {
+              return get(errors);
+            },
+            key: "startDelay",
+            fieldPrefix: "run-condition-",
+          });
+          var p_1 = sibling(node_4, 2);
+          var text_8 = only_child(p_1, true);
+          var label_5 = sibling(p_1, 2);
+          var text_9 = only_child(label_5, true);
+          var ha_selector_2 = sibling(label_5, 2);
+          set_custom_element_data(
+            ha_selector_2,
+            "id",
+            "run-condition-offEntities",
+          );
+          template_effect(
+            ($0) => set_custom_element_data(ha_selector_2, "aria-label", $0),
+            [() => get(t)("run_condition_off_entities")],
+          );
+          action(
+            ha_selector_2,
+            ($$node, $$action_arg) => properties?.($$node, $$action_arg),
+            () => ({
+              hass: $$props.panel._hass,
+              selector: {
+                entity: {
+                  multiple: true,
+                  filter: { domain: ["light", "switch"] },
+                },
+              },
+              value: get(form).offEntities,
+              disabled: $$props.panel.busy || $$props.panel.yamlDirty,
+            }),
+          );
+          var node_5 = sibling(ha_selector_2, 2);
+          FieldError(node_5, {
+            get t() {
+              return get(t);
+            },
+            get errors() {
+              return get(errors);
+            },
+            key: "offEntities",
+            fieldPrefix: "run-condition-",
+          });
+          var p_2 = sibling(node_5, 2);
+          var text_10 = only_child(p_2, true);
+          var node_6 = sibling(p_2, 2);
+          {
+            var consequent = ($$anchor4) => {
+              var p_3 = root24();
+              var text_11 = only_child(p_3);
+              template_effect(
+                ($0, $1) =>
+                  set_text(
+                    text_11,
+                    `${$0 ?? ""}
+            ${$1 ?? ""}`,
+                  ),
+                [
+                  () => get(t)("run_condition_off_entities_warning"),
+                  () => get(managedExtras).join(", "),
+                ],
+              );
+              append($$anchor4, p_3);
+            };
+            if_block(node_6, ($$render) => {
+              if (get(managedExtras).length > 0) $$render(consequent);
+            });
+          }
+          reset(fieldset);
+          template_effect(
+            ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
+              fieldset.disabled = $$props.panel.busy || $$props.panel.yamlDirty;
+              set_text(text_2, $0);
+              set_text(text_3, $1);
+              set_text(text_4, $2);
+              set_checked(input_1, get(form).enforceState);
+              set_text(text_5, ` ${$3 ?? ""}`);
+              set_text(text_6, $4);
+              set_text(text_7, $5);
+              set_value(input_2, get(form).startDelay);
+              input_2.disabled = !get(form).enforceState;
+              set_attribute2(input_2, "aria-invalid", !!get(errors).startDelay);
+              set_text(text_8, $6);
+              set_text(text_9, $7);
+              set_text(text_10, $8);
+            },
+            [
+              () => get(t)("run_condition"),
+              () => get(t)("run_condition_entity"),
+              () => get(t)("run_condition_states"),
+              () => get(t)("run_condition_enforce"),
+              () => get(t)("run_condition_enforce_hint"),
+              () => get(t)("run_condition_delay"),
+              () => get(t)("run_condition_delay_hint"),
+              () => get(t)("run_condition_off_entities"),
+              () => get(t)("run_condition_off_entities_hint"),
+            ],
+          );
+          event("value-changed", ha_selector, (event2) => {
+            if (!isValueChangedEvent(event2)) {
+              return;
+            }
+            get(form).entityId =
+              typeof event2.detail.value === "string"
+                ? event2.detail.value
+                : "";
+            $$props.panel.updateRunCondition();
+          });
+          event("value-changed", ha_selector_1, (event2) => {
+            if (!(
+              isValueChangedEvent(event2) && Array.isArray(event2.detail.value)
+            )) {
+              return;
+            }
+            get(form).states = event2.detail.value;
+            $$props.panel.updateRunCondition();
+          });
+          delegated("change", input_1, (event2) => {
+            get(form).enforceState = event2.currentTarget.checked;
+            $$props.panel.updateRunCondition();
+          });
+          delegated("input", input_2, (event2) => {
+            get(form).startDelay = event2.currentTarget.value;
+            $$props.panel.updateRunCondition();
+          });
+          event("value-changed", ha_selector_2, (event2) => {
+            if (!(
+              isValueChangedEvent(event2) && Array.isArray(event2.detail.value)
+            )) {
+              return;
+            }
+            get(form).offEntities = event2.detail.value;
+            $$props.panel.updateRunCondition();
+          });
+          append($$anchor3, fieldset);
+        };
+        if_block(node_1, ($$render) => {
+          if (get(form).enabled) $$render(consequent_1);
+        });
+      }
+      var node_7 = sibling(node_1, 2);
+      {
+        var consequent_2 = ($$anchor3) => {
+          var p_4 = root_216();
+          var text_12 = only_child(p_4, true);
+          template_effect(
+            ($0) => set_text(text_12, $0),
+            [() => get(t)("run_condition_yaml_hint")],
+          );
+          append($$anchor3, p_4);
+        };
+        if_block(node_7, ($$render) => {
+          if ($$props.panel.yamlDirty) $$render(consequent_2);
+        });
+      }
+      var div = sibling(node_7, 2);
+      var button = child(div);
+      var text_13 = only_child(button, true);
+      var button_1 = sibling(button, 2);
+      var text_14 = only_child(button_1, true);
+      reset(div);
+      var node_8 = sibling(div, 2);
+      {
+        var consequent_4 = ($$anchor3) => {
+          var fragment_1 = root_48();
+          var p_5 = first_child(fragment_1);
+          var text_15 = only_child(p_5, true);
+          var node_9 = sibling(p_5, 2);
+          {
+            var consequent_3 = ($$anchor4) => {
+              var p_6 = root_314();
+              var text_16 = only_child(p_6, true);
+              template_effect(
+                ($0) => set_text(text_16, $0),
+                [
+                  () =>
+                    get(t)("run_condition_countdown").replace("{seconds}", () =>
+                      String(get(remaining)),
+                    ),
+                ],
+              );
+              append($$anchor4, p_6);
+            };
+            if_block(node_9, ($$render) => {
+              if (get(deadline)) $$render(consequent_3);
+            });
+          }
+          template_effect(() => set_text(text_15, get(snapshot2).reason));
+          append($$anchor3, fragment_1);
+        };
+        if_block(node_8, ($$render) => {
+          if (get(snapshot2).run_condition) $$render(consequent_4);
+        });
+      }
+      reset(section);
+      template_effect(
+        ($0, $1, $2, $3) => {
+          set_text(text2, $0);
+          set_checked(input, get(form).enabled);
+          input.disabled = $$props.panel.busy || $$props.panel.yamlDirty;
+          set_text(text_1, ` ${$1 ?? ""}`);
+          button.disabled =
+            $$props.panel.busy ||
+            $$props.panel.stale ||
+            $$props.panel.yamlDirty ||
+            !$$props.panel.hasRunConditionChanges;
+          set_text(text_13, $2);
+          button_1.disabled =
+            $$props.panel.busy || !$$props.panel.hasRunConditionChanges;
+          set_text(text_14, $3);
+        },
+        [
+          () => get(t)("run_condition"),
+          () => get(t)("run_condition_enable"),
+          () =>
+            get(t)(
+              $$props.panel.document.source === "file"
+                ? "add_to_draft"
+                : "save_changes",
+            ),
+          () => get(t)("discard_changes"),
+        ],
+      );
+      delegated("change", input, (event2) => {
+        get(form).enabled = event2.currentTarget.checked;
+        $$props.panel.updateRunCondition();
+      });
+      delegated("click", button, () => $$props.panel.saveRunCondition());
+      delegated("click", button_1, () => $$props.panel.openRunCondition());
+      append($$anchor2, section);
+    };
+    if_block(node, ($$render) => {
+      if (get(form)) $$render(consequent_5);
+    });
+  }
+  append($$anchor, fragment);
+  pop();
+}
+delegate(["change", "input", "click"]);
+
+// custom_components/occupied/frontend/src/lib/components/settings/SettingsView.svelte
+var root25 = from_html(`<span class="changes svelte-g0xj3p"> </span>`);
+var root_120 = from_html(`<button type="button"> </button>`);
+var root_217 = from_html(
+  `<!> <section><h2> <!></h2> <p class="hint"> </p> <input type="file" accept=".yaml,.yml,.json"/> <ha-code-editor></ha-code-editor> <div class="yaml-actions svelte-g0xj3p"><!> <button type="button" class="primary"> </button> <button type="button"> </button> <button type="button" class="download svelte-g0xj3p"> </button></div></section>`,
+  3,
+);
+var $$css7 = {
+  hash: "svelte-g0xj3p",
+  code: ".yaml-actions.svelte-g0xj3p {display:flex;align-items:center;flex-wrap:wrap;gap:8px;}.yaml-actions.svelte-g0xj3p .download:where(.svelte-g0xj3p) {margin-left:auto;}ha-code-editor.svelte-g0xj3p {display:block;width:100%;margin:8px 0;--code-mirror-height: 420px;--code-mirror-max-height: 60vh;}section.yaml-panel.svelte-g0xj3p {border-color:var(--divider-color, #d5dce3);border-left-color:var(--divider-color, #d5dce3);background:var(--card-background-color, #fff);}section.yaml-panel.has-changes.svelte-g0xj3p {border-color:var(--warning-color, #e69500);border-left-color:var(--warning-color, #e69500);background:color-mix(\n      in srgb,\n      var(--warning-color, #e69500) 18%,\n      var(--card-background-color, #fff)\n    );}.changes.svelte-g0xj3p {color:var(--warning-color, #e69500);font-size:0.75em;font-weight:500;}",
+};
+function SettingsView($$anchor, $$props) {
+  push($$props, true);
+  append_styles($$anchor, $$css7);
+  let panel = prop($$props, "panel", 7);
+  let data = user_derived(() => {
+    void $$props.revision;
+    return { t: panel().t };
+  });
+  let t = user_derived(() => get(data).t);
+  let yamlDirty = user_derived(() => panel().yamlDirty);
+  let autoExportStarted = false;
+  user_effect(() => {
+    void $$props.revision;
+    if (autoExportStarted || panel().busy) {
+      return;
+    }
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) {
+        return;
+      }
+      autoExportStarted = true;
+      void panel().exportYaml();
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
+  var fragment = root_217();
+  var node = first_child(fragment);
+  {
+    var consequent = ($$anchor2) => {
+      RunConditionSettings($$anchor2, {
+        get panel() {
+          return panel();
+        },
+        get revision() {
+          return $$props.revision;
+        },
+      });
+    };
+    if_block(node, ($$render) => {
+      if (!panel().recovering) $$render(consequent);
+    });
+  }
+  var section = sibling(node, 2);
+  let classes;
+  var h2 = child(section);
+  var text2 = child(h2);
+  var node_1 = sibling(text2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      var span = root25();
+      var text_1 = only_child(span);
+      template_effect(
+        ($0) => set_text(text_1, `(${$0 ?? ""})`),
+        [() => get(t)("changes")],
+      );
+      append($$anchor2, span);
+    };
+    if_block(node_1, ($$render) => {
+      if (get(yamlDirty)) $$render(consequent_1);
+    });
+  }
+  reset(h2);
+  var p = sibling(h2, 2);
+  var text_2 = only_child(p, true);
+  var input = sibling(p, 2);
+  var ha_code_editor = sibling(input, 2);
+  set_custom_element_data(ha_code_editor, "role", "group");
+  template_effect(
+    ($0) => set_custom_element_data(ha_code_editor, "aria-label", $0),
+    [() => get(t)("occupied_yaml")],
+  );
+  set_custom_element_data(ha_code_editor, "dir", "ltr");
+  set_class(ha_code_editor, 1, "svelte-g0xj3p");
+  action(
+    ha_code_editor,
+    ($$node, $$action_arg) => properties?.($$node, $$action_arg),
+    () => ({ mode: "yaml", value: panel().yaml, linewrap: true }),
+  );
+  var div = sibling(ha_code_editor, 2);
+  var node_2 = child(div);
+  {
+    var consequent_2 = ($$anchor2) => {
+      var button = root_120();
+      var text_3 = only_child(button, true);
+      template_effect(
+        ($0) => {
+          button.disabled = panel().busy || panel().stale;
+          set_text(text_3, $0);
+        },
+        [() => get(t)("discard_preserved_program")],
+      );
+      delegated("click", button, () => panel().discardRecovery());
+      append($$anchor2, button);
+    };
+    if_block(node_2, ($$render) => {
+      if (panel().recovering) $$render(consequent_2);
+    });
+  }
+  var button_1 = sibling(node_2, 2);
+  var text_4 = only_child(button_1, true);
+  var button_2 = sibling(button_1, 2);
+  var text_5 = only_child(button_2, true);
+  var button_3 = sibling(button_2, 2);
+  var text_6 = only_child(button_3, true);
+  reset(div);
+  reset(section);
+  template_effect(
+    ($0, $1, $2, $3, $4, $5) => {
+      classes = set_class(
+        section,
+        1,
+        "yaml-panel svelte-g0xj3p",
+        null,
+        classes,
+        { "has-changes": get(yamlDirty) },
+      );
+      set_text(text2, `${$0 ?? ""} `);
+      set_text(text_2, $1);
+      set_attribute2(input, "aria-label", $2);
+      ha_code_editor.dir = ha_code_editor.dir;
+      button_1.disabled =
+        panel().busy ||
+        panel().stale ||
+        panel().document.source === "file" ||
+        !get(yamlDirty) ||
+        !panel().yaml ||
+        panel().hasRunConditionChanges;
+      set_text(text_4, $3);
+      button_2.disabled = panel().busy || !get(yamlDirty);
+      set_text(text_5, $4);
+      button_3.disabled = panel().busy || !panel().yaml;
+      set_text(text_6, $5);
+    },
+    [
+      () => get(t)("yaml"),
+      () => get(t)("yaml_editor_hint"),
+      () => get(t)("choose_configuration_file"),
+      () => get(t)("save_changes"),
+      () => get(t)("discard_changes"),
+      () => get(t)("download"),
+    ],
+  );
+  delegated("change", input, async (event2) => {
+    const file = event2.currentTarget.files?.[0];
+    if (!file) {
+      return;
+    }
+    const epoch = panel().epoch;
+    const yaml = await file.text();
+    if (epoch !== panel().epoch) {
+      return;
+    }
+    panel().yaml = yaml;
+    panel().flush();
+  });
+  event("value-changed", ha_code_editor, (event2) => {
+    if (
+      !isValueChangedEvent(event2) ||
+      typeof event2.detail.value !== "string"
+    ) {
+      return;
+    }
+    panel().yaml = event2.detail.value;
+    panel().flush();
+  });
+  delegated("click", button_1, () => panel().saveYaml());
+  delegated("click", button_2, () => panel().discardYaml());
+  delegated("click", button_3, () =>
+    download("occupied.yaml", panel().yaml, "text/yaml"),
+  );
+  append($$anchor, fragment);
+  pop();
+}
+delegate(["change", "click"]);
 
 // custom_components/occupied/frontend/src/lib/actions/timeline-now.ts
 function timelineNow(node, options) {
@@ -16622,23 +18308,23 @@ function groupPreviewEvents(events) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/preview/PreviewStateGraph.svelte
-var root19 = from_html(`<p class="hint"> </p>`);
-var root_114 = from_html(
+var root26 = from_html(`<p class="hint"> </p>`);
+var root_121 = from_html(
   `<span class="now-label svelte-1kps2qf" aria-hidden="true"> </span>`,
 );
-var root_212 = from_html(
+var root_218 = from_html(
   `<div><!> <state-history-chart-timeline></state-history-chart-timeline></div>`,
   2,
 );
-var root_311 = from_html(`<p role="status"> </p>`);
+var root_315 = from_html(`<p role="status"> </p>`);
 var root_49 = from_html(`<!> <!> <!>`, 1);
-var $$css7 = {
+var $$css8 = {
   hash: "svelte-1kps2qf",
   code: ".preview-graph.svelte-1kps2qf {position:relative;padding-top:18px;}.preview-graph.empty.svelte-1kps2qf {display:none;}.now-label.svelte-1kps2qf {position:absolute;top:0;color:var(--secondary-text-color, #727272);font-size:12px;line-height:16px;transform:translateX(-50%);pointer-events:none;}state-history-chart-timeline.svelte-1kps2qf {display:block;width:100%;}state-history-chart-timeline[hidden].svelte-1kps2qf {display:none;}",
 };
 function PreviewStateGraph($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css7);
+  append_styles($$anchor, $$css8);
   let names = prop($$props, "names", 19, () => ({})),
     eventTime = prop($$props, "eventTime", 3, null);
   let ready = state(false);
@@ -16710,7 +18396,7 @@ function PreviewStateGraph($$anchor, $$props) {
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
-      var p = root19();
+      var p = root26();
       var text2 = only_child(p, true);
       template_effect(
         ($0) => set_text(text2, $0),
@@ -16732,7 +18418,7 @@ function PreviewStateGraph($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var p_1 = root19();
+      var p_1 = root26();
       var text_1 = only_child(p_1, true);
       template_effect(
         ($0) => set_text(text_1, $0),
@@ -16750,7 +18436,7 @@ function PreviewStateGraph($$anchor, $$props) {
   var node_2 = sibling(node_1, 2);
   {
     var consequent_2 = ($$anchor2) => {
-      var p_2 = root19();
+      var p_2 = root26();
       var text_2 = only_child(p_2, true);
       template_effect(
         ($0) => set_text(text_2, $0),
@@ -16759,12 +18445,12 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, p_2);
     };
     var consequent_4 = ($$anchor2) => {
-      var div = root_212();
+      var div = root_218();
       let classes;
       var node_3 = child(div);
       {
         var consequent_3 = ($$anchor3) => {
-          var span = root_114();
+          var span = root_121();
           let styles;
           var text_3 = only_child(span, true);
           template_effect(
@@ -16852,7 +18538,7 @@ function PreviewStateGraph($$anchor, $$props) {
       append($$anchor2, div);
     };
     var consequent_5 = ($$anchor2) => {
-      var p_3 = root_311();
+      var p_3 = root_315();
       var text_4 = only_child(p_3, true);
       template_effect(
         ($0) => set_text(text_4, $0),
@@ -16949,17 +18635,17 @@ function lastGroupResult(session) {
 }
 
 // custom_components/occupied/frontend/src/lib/components/preview/Timeline.svelte
-var root20 = from_html(
+var root27 = from_html(
   `<tbody class="event-now svelte-1iz1525"><tr class="svelte-1iz1525"><td class="svelte-1iz1525"><div class="now-marker svelte-1iz1525"><span> </span></div></td></tr></tbody>`,
 );
-var root_115 = from_html(`<h2> </h2>`);
-var root_213 = from_html(`<th scope="col" class="svelte-1iz1525"> </th>`);
-var root_312 = from_html(
+var root_122 = from_html(`<h2> </h2>`);
+var root_219 = from_html(`<th scope="col" class="svelte-1iz1525"> </th>`);
+var root_316 = from_html(
   `<td class="planned-time svelte-1iz1525"><svg class="hover-indicator svelte-1iz1525" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2 8 6 4 10"></path></svg> </td>`,
 );
 var root_410 = from_html(`<span aria-hidden="true"></span>`);
-var root_56 = from_html(`<span> </span>`);
-var root_65 = from_html(`<div><!> <span> </span> <div> </div></div>`);
+var root_55 = from_html(`<span> </span>`);
+var root_64 = from_html(`<div><!> <span> </span> <div> </div></div>`);
 var root_73 = from_html(`<div> </div>`);
 var root_83 = from_html(`<td class="svelte-1iz1525"></td>`);
 var root_93 = from_html(
@@ -16969,7 +18655,7 @@ var root_103 = from_html(`<td class="svelte-1iz1525"><!></td>`);
 var root_11 = from_html(
   `<tr><!><td class="svelte-1iz1525"> </td><td class="svelte-1iz1525"><span class="event-action svelte-1iz1525"><!> </span></td><!><!></tr>`,
 );
-var root_122 = from_html(`<!> <tbody class="svelte-1iz1525"></tbody>`, 1);
+var root_123 = from_html(`<!> <tbody class="svelte-1iz1525"></tbody>`, 1);
 var root_132 = from_html(
   `<div class="row"><button type="button"> </button> <span> </span> <button type="button"> </button></div>`,
 );
@@ -16980,15 +18666,15 @@ var root_152 = from_html(`<p> </p>`);
 var root_162 = from_html(`<!> <!> <!>`, 1);
 var root_172 = from_html(`<p role="status"> </p>`);
 var root_182 = from_html(`<section><!> <!></section>`);
-var $$css8 = {
+var $$css9 = {
   hash: "svelte-1iz1525",
   code: 'th.svelte-1iz1525,\n  td.svelte-1iz1525 {padding:6px 9px;}tbody.svelte-1iz1525 tr:where(.svelte-1iz1525):not(:last-child) td:where(.svelte-1iz1525):not([rowspan]) {border-bottom:0;}td[rowspan].svelte-1iz1525:not([rowspan="1"]) {vertical-align:top;}th.svelte-1iz1525:first-child,\n  .planned-time.svelte-1iz1525 {padding-left:24px;}.planned-time.svelte-1iz1525 {position:relative;}.event-now.svelte-1iz1525 td:where(.svelte-1iz1525) {padding:8px 9px 8px 24px;border-bottom:0;}.now-marker.svelte-1iz1525 {display:flex;align-items:center;gap:12px;color:var(--primary-color, #03a9f4);font-weight:600;white-space:nowrap;}.now-marker.svelte-1iz1525::after {content:"";flex:1;min-width:24px;border-top:2px solid currentColor;}.hover-indicator.svelte-1iz1525 {position:absolute;left:6px;top:50%;transform:translateY(-50%);width:12px;height:12px;fill:none;stroke:var(--info-color, #039be5);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:0;pointer-events:none;}tbody.svelte-1iz1525:hover .hover-indicator:where(.svelte-1iz1525),\n  tbody.svelte-1iz1525:focus-within .hover-indicator:where(.svelte-1iz1525) {opacity:0.7;}.source-link.svelte-1iz1525 {min-height:30px;padding:3px 4px;margin:0;text-align:left;}.event-action.svelte-1iz1525 {display:inline-flex;align-items:center;gap:7px;}.action-indicator.svelte-1iz1525 {display:inline-block;width:12px;height:12px;flex:0 0 12px;box-sizing:border-box;border:2px solid var(--info-color, #039be5);border-radius:50%;}.action-indicator.on.svelte-1iz1525 {background:var(--info-color, #039be5);}tr.current.svelte-1iz1525 {background:var(--secondary-background-color, #eef4ff);outline:2px solid var(--primary-color, #03a9f4);outline-offset:-2px;}tr.completed.svelte-1iz1525 {background:color-mix(\n      in srgb,\n      var(--success-color, #4caf50) 12%,\n      transparent\n    );}',
 };
 function Timeline($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css8);
+  append_styles($$anchor, $$css9);
   const nowMarker = ($$anchor2) => {
-    var tbody = root20();
+    var tbody = root27();
     var tr = child(tbody);
     var td = child(tr);
     var div = child(td);
@@ -17078,7 +18764,7 @@ function Timeline($$anchor, $$props) {
       append($$anchor2, fragment);
     };
     var consequent_1 = ($$anchor2) => {
-      var h2 = root_115();
+      var h2 = root_122();
       var text_1 = only_child(h2, true);
       template_effect(
         ($0) => set_text(text_1, $0),
@@ -17138,7 +18824,7 @@ function Timeline($$anchor, $$props) {
             () => ["planned_time", "targets", "action"],
             (label2) => label2,
             ($$anchor4, label2) => {
-              var th = root_213();
+              var th = root_219();
               var text_2 = only_child(th, true);
               template_effect(
                 ($0) => set_text(text_2, $0),
@@ -17150,7 +18836,7 @@ function Timeline($$anchor, $$props) {
           var node_6 = sibling(node_5);
           {
             var consequent_2 = ($$anchor4) => {
-              var th_1 = root_213();
+              var th_1 = root_219();
               var text_3 = only_child(th_1, true);
               template_effect(
                 ($0) => set_text(text_3, $0),
@@ -17177,7 +18863,7 @@ function Timeline($$anchor, $$props) {
               ),
             (group) => group.key,
             ($$anchor4, group, groupIndex) => {
-              var fragment_2 = root_122();
+              var fragment_2 = root_123();
               var node_8 = first_child(fragment_2);
               {
                 var consequent_3 = ($$anchor5) => {
@@ -17226,7 +18912,7 @@ function Timeline($$anchor, $$props) {
                   var node_9 = child(tr_2);
                   {
                     var consequent_4 = ($$anchor6) => {
-                      var td_1 = root_312();
+                      var td_1 = root_316();
                       var text_5 = sibling(child(td_1));
                       reset(td_1);
                       template_effect(() => {
@@ -17286,11 +18972,11 @@ function Timeline($$anchor, $$props) {
                           var node_12 = first_child(fragment_4);
                           {
                             var consequent_7 = ($$anchor8) => {
-                              var div_4 = root_65();
+                              var div_4 = root_64();
                               var node_13 = child(div_4);
                               {
                                 var consequent_6 = ($$anchor9) => {
-                                  var span_3 = root_56();
+                                  var span_3 = root_55();
                                   var text_8 = only_child(span_3);
                                   template_effect(
                                     ($0) => set_text(text_8, `${$0 ?? ""}:`),
@@ -17572,21 +19258,21 @@ function Timeline($$anchor, $$props) {
 delegate(["focusin", "focusout", "click"]);
 
 // custom_components/occupied/frontend/src/lib/components/preview/LivePreviewControls.svelte
-var root21 = from_html(
+var root28 = from_html(
   `<button type="button" class="primary svelte-jw9j7k"> </button> <button type="button" class="svelte-jw9j7k"> </button>`,
   1,
 );
-var root_116 = from_html(
+var root_124 = from_html(
   `<button type="button" class="svelte-jw9j7k"> </button>`,
 );
-var root_214 = from_html(
+var root_220 = from_html(
   `<button type="button" class="primary svelte-jw9j7k"> </button> <!>`,
   1,
 );
-var root_313 = from_html(`<div class="live-actions svelte-jw9j7k"><!></div>`);
+var root_317 = from_html(`<div class="live-actions svelte-jw9j7k"><!></div>`);
 var root_411 = from_html(`<p class="svelte-jw9j7k"> </p>`);
-var root_57 = from_html(`<p class="error svelte-jw9j7k"> </p>`);
-var root_66 = from_html(`<p class="hint svelte-jw9j7k"> </p>`);
+var root_56 = from_html(`<p class="error svelte-jw9j7k"> </p>`);
+var root_65 = from_html(`<p class="hint svelte-jw9j7k"> </p>`);
 var root_74 = from_html(`<p class="call svelte-jw9j7k"> <!></p>`);
 var root_84 = from_html(
   `<p class="svelte-jw9j7k"><strong> </strong></p> <!>`,
@@ -17597,23 +19283,23 @@ var root_94 = from_html(
   1,
 );
 var root_104 = from_html(`<p role="status" class="hint svelte-jw9j7k"> </p>`);
-var root_117 = from_html(
+var root_1110 = from_html(
   `<section class="live-card svelte-jw9j7k"><h2 class="svelte-jw9j7k"> </h2> <!> <!></section>`,
 );
-var root_123 = from_html(`<!> <!> <!>`, 1);
-var $$css9 = {
+var root_125 = from_html(`<!> <!> <!>`, 1);
+var $$css10 = {
   hash: "svelte-jw9j7k",
   code: ".live-card.svelte-jw9j7k {border:1px solid var(--divider-color, #ddd);border-radius:12px;padding:16px;margin-bottom:16px;}h2.svelte-jw9j7k {margin:0;}p.svelte-jw9j7k {margin:8px 0;}.call.svelte-jw9j7k {overflow-wrap:anywhere;}.live-actions.svelte-jw9j7k {display:flex;flex-wrap:wrap;gap:8px;padding:12px;margin-bottom:16px;background:var(--card-background-color, white);border:1px solid var(--divider-color, #ddd);border-radius:12px;}.live-actions.svelte-jw9j7k button:where(.svelte-jw9j7k) {min-height:48px;margin:0;}.primary.svelte-jw9j7k {flex:1;}\n\n  @media (max-width: 600px) {.live-actions.svelte-jw9j7k {padding-bottom:max(12px, env(safe-area-inset-bottom, 0px));}\n  }",
 };
 function LivePreviewControls($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css9);
+  append_styles($$anchor, $$css10);
   const actionControls = ($$anchor2) => {
-    var div = root_313();
+    var div = root_317();
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
-        var fragment = root21();
+        var fragment = root28();
         var button = first_child(fragment);
         var text2 = only_child(button, true);
         var button_1 = sibling(button, 2);
@@ -17641,13 +19327,13 @@ function LivePreviewControls($$anchor, $$props) {
         append($$anchor3, fragment);
       };
       var alternate = ($$anchor3) => {
-        var fragment_1 = root_214();
+        var fragment_1 = root_220();
         var button_2 = first_child(fragment_1);
         var text_2 = only_child(button_2, true);
         var node_1 = sibling(button_2, 2);
         {
           var consequent_1 = ($$anchor4) => {
-            var button_3 = root_116();
+            var button_3 = root_124();
             var text_3 = only_child(button_3, true);
             template_effect(
               ($0) => {
@@ -17717,7 +19403,7 @@ function LivePreviewControls($$anchor, $$props) {
       (outcome) => outcome.group_id === get(session)?.last_group_id,
     ),
   );
-  var fragment_2 = root_123();
+  var fragment_2 = root_125();
   var node_2 = first_child(fragment_2);
   {
     var consequent_2 = ($$anchor2) => {
@@ -17730,7 +19416,7 @@ function LivePreviewControls($$anchor, $$props) {
   var node_3 = sibling(node_2, 2);
   {
     var consequent_12 = ($$anchor2) => {
-      var section = root_117();
+      var section = root_1110();
       var h2 = child(section);
       var text_4 = only_child(h2, true);
       var node_4 = sibling(h2, 2);
@@ -17785,7 +19471,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_7 = sibling(div_1, 2);
           {
             var consequent_5 = ($$anchor4) => {
-              var p_3 = root_57();
+              var p_3 = root_56();
               var text_9 = only_child(p_3, true);
               template_effect(() => set_text(text_9, get(session).detail));
               append($$anchor4, p_3);
@@ -17797,7 +19483,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_8 = sibling(node_7, 2);
           {
             var consequent_6 = ($$anchor4) => {
-              var p_4 = root_66();
+              var p_4 = root_65();
               var text_10 = only_child(p_4, true);
               template_effect(
                 ($0) => set_text(text_10, $0),
@@ -17812,7 +19498,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_9 = sibling(node_8, 2);
           {
             var consequent_7 = ($$anchor4) => {
-              var p_5 = root_66();
+              var p_5 = root_65();
               var text_11 = only_child(p_5, true);
               template_effect(
                 ($0) => set_text(text_11, $0),
@@ -17900,7 +19586,7 @@ function LivePreviewControls($$anchor, $$props) {
               ),
             (outcome) => outcome,
             ($$anchor4, outcome) => {
-              var p_8 = root_57();
+              var p_8 = root_56();
               var text_15 = only_child(p_8);
               template_effect(() =>
                 set_text(
@@ -17974,31 +19660,31 @@ function LivePreviewControls($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/preview/PreviewView.svelte
-var root22 = from_html(
+var root29 = from_html(
   `<button type="button" class="refresh-button svelte-1gez8n9"><svg viewBox="0 0 24 24" aria-hidden="true" class="svelte-1gez8n9"><path></path></svg></button>`,
 );
-var root_118 = from_html(`<span class="hint" role="status"> </span>`);
-var root_215 = from_html(
+var root_126 = from_html(`<span class="hint" role="status"> </span>`);
+var root_221 = from_html(
   `<div class="schedule-heading svelte-1gez8n9"><div class="schedule-title svelte-1gez8n9"><h2 aria-live="polite" class="svelte-1gez8n9"> </h2> <!></div> <!> <div class="day-navigation svelte-1gez8n9" role="group"><ha-icon-button></ha-icon-button> <button type="button" class="text-button svelte-1gez8n9"> </button>  <ha-icon-button></ha-icon-button></div></div>`,
   2,
 );
-var root_314 = from_html(`<!> <!>`, 1);
-var $$css10 = {
+var root_318 = from_html(`<!> <!>`, 1);
+var $$css11 = {
   hash: "svelte-1gez8n9",
   code: ".schedule-heading.svelte-1gez8n9 {display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-bottom:20px;}h2.svelte-1gez8n9 {margin:0;line-height:1.25;}.schedule-title.svelte-1gez8n9 {display:flex;align-items:center;gap:8px;}.refresh-button.svelte-1gez8n9 {display:grid;place-items:center;flex:0 0 36px;width:36px;min-height:36px;padding:0;border:0;border-radius:50%;background:transparent;}.refresh-button.svelte-1gez8n9:hover:not(:disabled) {background:var(--secondary-background-color, #eee);}.refresh-button.svelte-1gez8n9 svg:where(.svelte-1gez8n9) {width:24px;height:24px;fill:currentColor;}.day-navigation.svelte-1gez8n9 {display:flex;align-items:center;gap:4px;margin-left:auto;}.day-navigation.svelte-1gez8n9 button:where(.svelte-1gez8n9) {margin:0;}",
 };
 function PreviewView($$anchor, $$props) {
   push($$props, true);
-  append_styles($$anchor, $$css10);
+  append_styles($$anchor, $$css11);
   const dayHeading = ($$anchor2) => {
-    var div = root_215();
+    var div = root_221();
     var div_1 = child(div);
     var h2 = child(div_1);
     var text2 = only_child(h2, true);
     var node = sibling(h2, 2);
     {
       var consequent = ($$anchor3) => {
-        var button = root22();
+        var button = root29();
         var svg = child(button);
         var path = child(svg);
         set_attribute2(path, "d", refreshIcon);
@@ -18025,7 +19711,7 @@ function PreviewView($$anchor, $$props) {
     var node_1 = sibling(div_1, 2);
     {
       var consequent_1 = ($$anchor3) => {
-        var span = root_118();
+        var span = root_126();
         var text_1 = only_child(span, true);
         template_effect(
           ($0) => set_text(text_1, $0),
@@ -18189,7 +19875,7 @@ function PreviewView($$anchor, $$props) {
       get(entities).map((entity) => [entity.entity_id, entity.name]),
     ),
   );
-  var fragment = root_314();
+  var fragment = root_318();
   var node_2 = first_child(fragment);
   {
     let $0 = user_derived(() =>
@@ -18244,7 +19930,7 @@ function PreviewView($$anchor, $$props) {
 delegate(["click"]);
 
 // custom_components/occupied/frontend/src/lib/components/shared/UnsavedStepDialog.svelte
-var root23 = from_html(
+var root30 = from_html(
   `<dialog class="step-exit-dialog" role="alertdialog" aria-modal="true" aria-labelledby="step-exit-title" aria-describedby="step-exit-description"><h2 id="step-exit-title"> </h2> <p id="step-exit-description"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog>`,
 );
 function UnsavedStepDialog($$anchor, $$props) {
@@ -18270,7 +19956,7 @@ function UnsavedStepDialog($$anchor, $$props) {
     keepEditing.focus();
     return () => dialog.close();
   });
-  var dialog_1 = root23();
+  var dialog_1 = root30();
   var h2 = child(dialog_1);
   var text2 = only_child(h2, true);
   var p = sibling(h2, 2);
@@ -18328,1732 +20014,14 @@ function UnsavedStepDialog($$anchor, $$props) {
 }
 delegate(["keydown", "click"]);
 
-// custom_components/occupied/frontend/src/lib/components/random/DeleteRandomDialog.svelte
-var root24 = from_html(`<li> </li>`);
-var root_119 = from_html(`<p> </p> <ul></ul> <p class="hint"> </p>`, 1);
-var root_216 = from_html(
-  `<dialog class="step-delete-dialog" aria-labelledby="random-delete-title"><h2 id="random-delete-title"> </h2> <p> </p> <!> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="danger"> </button></div></dialog>`,
-);
-function DeleteRandomDialog($$anchor, $$props) {
-  push($$props, true);
-  let dialog;
-  let dependents = user_derived(() =>
-    randomEntries($$props.panel.draft, $$props.panel.catalog).filter((entry) =>
-      randomReferences(
-        $$props.panel.draft,
-        $$props.panel.randomEditor?.id || "",
-      ).some((path) => path[1] === entry.id),
-    ),
-  );
-  onMount(() => {
-    dialog.showModal();
-    dialog.querySelector("button")?.focus();
-  });
-  var dialog_1 = root_216();
-  var h2 = child(dialog_1);
-  var text2 = only_child(h2, true);
-  var p = sibling(h2, 2);
-  var text_1 = only_child(p, true);
-  var node = sibling(p, 2);
-  {
-    var consequent = ($$anchor2) => {
-      var fragment = root_119();
-      var p_1 = first_child(fragment);
-      var text_2 = only_child(p_1);
-      var ul = sibling(p_1, 2);
-      each(
-        ul,
-        21,
-        () => get(dependents),
-        (entry) => entry.id,
-        ($$anchor3, entry) => {
-          var li = root24();
-          var text_3 = only_child(li, true);
-          template_effect(() => set_text(text_3, get(entry).name));
-          append($$anchor3, li);
-        },
-      );
-      reset(ul);
-      var p_2 = sibling(ul, 2);
-      var text_4 = only_child(p_2, true);
-      template_effect(
-        ($0, $1) => {
-          set_text(text_2, `${$0 ?? ""}:`);
-          set_text(text_4, $1);
-        },
-        [
-          () => $$props.panel.t("used_by"),
-          () => $$props.panel.t("delete_dependents_hint"),
-        ],
-      );
-      append($$anchor2, fragment);
-    };
-    if_block(node, ($$render) => {
-      if (get(dependents).length) $$render(consequent);
-    });
-  }
-  var div = sibling(node, 2);
-  var button = child(div);
-  var text_5 = only_child(button, true);
-  var button_1 = sibling(button, 2);
-  var text_6 = only_child(button_1, true);
-  reset(div);
-  reset(dialog_1);
-  bind_this(
-    dialog_1,
-    ($$value) => (dialog = $$value),
-    () => dialog,
-  );
-  template_effect(
-    ($0, $1, $2, $3) => {
-      set_text(text2, $0);
-      set_text(text_1, $1);
-      button.disabled = $$props.panel.busy;
-      set_text(text_5, $2);
-      button_1.disabled =
-        $$props.panel.busy || $$props.panel.stale || get(dependents).length > 0;
-      set_text(text_6, $3);
-    },
-    [
-      () => $$props.panel.t("delete_random_event_confirm"),
-      () => $$props.panel.t("delete_random_event_hint"),
-      () => $$props.panel.t("cancel"),
-      () => $$props.panel.t("delete_random_event"),
-    ],
-  );
-  event("close", dialog_1, function (...$$args) {
-    $$props.onClose?.apply(this, $$args);
-  });
-  delegated("click", button, () => dialog.close());
-  delegated("click", button_1, async () => {
-    await deleteRandom($$props.panel);
-    if (!$$props.panel.error && !$$props.panel.randomEditor) {
-      dialog.close();
-    }
-  });
-  append($$anchor, dialog_1);
-  pop();
-}
-delegate(["click"]);
-
-// custom_components/occupied/frontend/src/lib/components/random/AdvancedRandomSettings.svelte
-var root25 = from_html(`<h3> </h3> <!>`, 1);
-var root_120 = from_html(
-  `<dialog class="step-advanced-dialog" aria-labelledby="random-advanced-title"><h2 id="random-advanced-title"> </h2> <!> <!> <p class="hint"> </p> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
-);
-function AdvancedRandomSettings($$anchor, $$props) {
-  push($$props, true);
-  let form = user_derived(() => $$props.context.form),
-    t = user_derived(() => $$props.context.t),
-    changed = user_derived(() => $$props.context.changed);
-  let startStagger = state(proxy(untrack(() => staggerSettings(get(form).on))));
-  let endStagger = state(proxy(untrack(() => staggerSettings(get(form).off))));
-  let canStartStagger = user_derived(() => supportsStagger(get(form).on));
-  let canEndStagger = user_derived(() => supportsStagger(get(form).off));
-  let staggerError = user_derived(
-    () =>
-      (get(canStartStagger) && staggerPeriodError(get(startStagger))) ||
-      (get(canEndStagger) && staggerPeriodError(get(endStagger))),
-  );
-  let dialog;
-  onMount(() => {
-    dialog.showModal();
-    dialog.querySelector("input")?.focus();
-  });
-  function apply2() {
-    if ($$props.panel.busy || get(staggerError)) {
-      return;
-    }
-    if (get(canStartStagger)) {
-      applyStagger(get(form).on, get(startStagger));
-      get(changed)("on.stagger");
-    }
-    if (get(canEndStagger)) {
-      applyStagger(get(form).off, get(endStagger));
-      get(changed)("off.stagger");
-    }
-    dialog.close();
-  }
-  var dialog_1 = root_120();
-  var h2 = child(dialog_1);
-  var text2 = only_child(h2, true);
-  var node = sibling(h2, 2);
-  {
-    var consequent = ($$anchor2) => {
-      var fragment = root25();
-      var h3 = first_child(fragment);
-      var text_1 = only_child(h3, true);
-      var node_1 = sibling(h3, 2);
-      StaggerSettings(node_1, {
-        get t() {
-          return get(t);
-        },
-        id: "random-start-stagger",
-        get disabled() {
-          return $$props.panel.busy;
-        },
-        get settings() {
-          return get(startStagger);
-        },
-        set settings($$value) {
-          set2(startStagger, $$value, true);
-        },
-      });
-      template_effect(
-        ($0) => set_text(text_1, $0),
-        [() => get(t)("start_action")],
-      );
-      append($$anchor2, fragment);
-    };
-    if_block(node, ($$render) => {
-      if (get(canStartStagger)) $$render(consequent);
-    });
-  }
-  var node_2 = sibling(node, 2);
-  {
-    var consequent_1 = ($$anchor2) => {
-      var fragment_1 = root25();
-      var h3_1 = first_child(fragment_1);
-      var text_2 = only_child(h3_1, true);
-      var node_3 = sibling(h3_1, 2);
-      StaggerSettings(node_3, {
-        get t() {
-          return get(t);
-        },
-        id: "random-end-stagger",
-        get disabled() {
-          return $$props.panel.busy;
-        },
-        get settings() {
-          return get(endStagger);
-        },
-        set settings($$value) {
-          set2(endStagger, $$value, true);
-        },
-      });
-      template_effect(
-        ($0) => set_text(text_2, $0),
-        [() => get(t)("end_action")],
-      );
-      append($$anchor2, fragment_1);
-    };
-    if_block(node_2, ($$render) => {
-      if (get(canEndStagger)) $$render(consequent_1);
-    });
-  }
-  var p = sibling(node_2, 2);
-  var text_3 = only_child(p, true);
-  var div = sibling(p, 2);
-  var button = child(div);
-  var text_4 = only_child(button, true);
-  var button_1 = sibling(button, 2);
-  var text_5 = only_child(button_1, true);
-  reset(div);
-  reset(dialog_1);
-  bind_this(
-    dialog_1,
-    ($$value) => (dialog = $$value),
-    () => dialog,
-  );
-  template_effect(
-    ($0, $1, $2, $3) => {
-      set_text(text2, $0);
-      set_text(text_3, $1);
-      set_text(text_4, $2);
-      button_1.disabled = $$props.panel.busy || !!get(staggerError);
-      set_text(text_5, $3);
-    },
-    [
-      () => get(t)("advanced_settings"),
-      () => get(t)("random_settings_hint"),
-      () => get(t)("cancel"),
-      () => get(t)("apply"),
-    ],
-  );
-  event("close", dialog_1, function (...$$args) {
-    $$props.onClose?.apply(this, $$args);
-  });
-  delegated("click", button, () => dialog.close());
-  delegated("click", button_1, apply2);
-  append($$anchor, dialog_1);
-  pop();
-}
-delegate(["click"]);
-
-// custom_components/occupied/frontend/src/lib/components/random/RandomActions.svelte
-var root26 = from_html(`<p role="status"> </p>`);
-var root_121 = from_html(
-  `<button type="button" role="menuitem" tabindex="-1"> </button>`,
-);
-var root_217 = from_html(
-  `<div role="separator"></div> <button type="button" role="menuitem" tabindex="-1" class="danger"> </button>`,
-  1,
-);
-var root_315 = from_html(
-  `<div class="step-editor-actions"><!> <button type="button" class="icon-button" aria-haspopup="menu" data-random-actions=""><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"></path></svg></button> <div class="step-actions-menu" popover="auto" role="menu" tabindex="-1"><!> <button type="button" role="menuitem" tabindex="-1"> </button> <button type="button" role="menuitem" tabindex="-1"> </button> <!></div></div> <!> <!>`,
-  1,
-);
-function RandomActions($$anchor, $$props) {
-  push($$props, true);
-  let context = prop($$props, "context", 7);
-  let menuOpen = state(false);
-  let advancedOpen = state(false);
-  let deleteOpen = state(false);
-  let previewStatus = state("");
-  let trigger;
-  let menu;
-  let menuId = user_derived(() => `random-actions-${context().editor.id}`);
-  function closeDialog() {
-    flushSync(() => {
-      set2(deleteOpen, false);
-      set2(advancedOpen, false);
-    });
-    if (trigger.isConnected) {
-      trigger.focus();
-    }
-  }
-  function closeMenu(restoreFocus = true) {
-    menu.hidePopover();
-    set2(menuOpen, false);
-    if (restoreFocus) {
-      trigger.focus();
-    }
-  }
-  function positionMenu() {
-    if (!menu.matches(":popover-open")) {
-      return;
-    }
-    const anchor = trigger.getBoundingClientRect();
-    const bounds = menu.getBoundingClientRect();
-    const above = anchor.top - bounds.height - 8;
-    const top = above >= 16 ? above : anchor.bottom + 8;
-    menu.style.left = `${Math.max(16, Math.min(anchor.right - bounds.width, window.innerWidth - bounds.width - 16))}px`;
-    menu.style.top = `${Math.max(16, Math.min(top, window.innerHeight - bounds.height - 16))}px`;
-  }
-  function openMenu(last = false) {
-    menu.showPopover();
-    set2(menuOpen, true);
-    positionMenu();
-    const items = [...menu.querySelectorAll("button:not(:disabled)")];
-    (last ? items.at(-1) : items[0])?.focus({ preventScroll: true });
-  }
-  function menuKeydown(event2) {
-    const items = [...menu.querySelectorAll("button:not(:disabled)")];
-    const index2 = items.indexOf($$props.panel.shadowRoot.activeElement);
-    if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event2.key)) {
-      event2.preventDefault();
-      let next2 =
-        (index2 + (event2.key === "ArrowDown" ? 1 : -1) + items.length) %
-        items.length;
-      if (event2.key === "Home") {
-        next2 = 0;
-      } else if (event2.key === "End") {
-        next2 = items.length - 1;
-      }
-      items[next2]?.focus();
-    } else if (event2.key === "Escape") {
-      event2.preventDefault();
-      closeMenu();
-    } else if (event2.key === "Tab") {
-      closeMenu();
-    }
-  }
-  var fragment = root_315();
-  event("resize", $window, positionMenu);
-  event("scroll", $window, positionMenu);
-  var div = first_child(fragment);
-  var node = child(div);
-  {
-    var consequent = ($$anchor2) => {
-      var p = root26();
-      var text2 = only_child(p, true);
-      template_effect(() => set_text(text2, get(previewStatus)));
-      append($$anchor2, p);
-    };
-    if_block(node, ($$render) => {
-      if (get(previewStatus)) $$render(consequent);
-    });
-  }
-  var button = sibling(node, 2);
-  bind_this(
-    button,
-    ($$value) => (trigger = $$value),
-    () => trigger,
-  );
-  var div_1 = sibling(button, 2);
-  var node_1 = child(div_1);
-  each(
-    node_1,
-    16,
-    () => ["on", "off"],
-    (phase) => phase,
-    ($$anchor2, phase) => {
-      var button_1 = root_121();
-      var text_1 = only_child(button_1, true);
-      template_effect(
-        ($0) => {
-          button_1.disabled = $$props.panel.busy;
-          set_text(text_1, $0);
-        },
-        [
-          () =>
-            $$props.panel.t(
-              phase === "on" ? "preview_event_start" : "preview_event_end",
-            ),
-        ],
-      );
-      delegated("click", button_1, async () => {
-        closeMenu();
-        set2(previewStatus, $$props.panel.t("running"), true);
-        const form = context().form;
-        let action2 = phase === "on" ? form.on : form.off;
-        if (phase === "off" && form.sameEntities) {
-          action2 = { ...form.off, entities: [...form.on.entities] };
-        }
-        set2(
-          previewStatus,
-          (await previewAction($$props.panel, action2)) || "",
-          true,
-        );
-        if (trigger.isConnected) {
-          trigger.focus();
-        }
-      });
-      append($$anchor2, button_1);
-    },
-  );
-  var button_2 = sibling(node_1, 2);
-  var text_2 = only_child(button_2, true);
-  var button_3 = sibling(button_2, 2);
-  var text_3 = only_child(button_3, true);
-  var node_2 = sibling(button_3, 2);
-  {
-    var consequent_1 = ($$anchor2) => {
-      var fragment_1 = root_217();
-      var button_4 = sibling(first_child(fragment_1), 2);
-      var text_4 = only_child(button_4, true);
-      template_effect(
-        ($0) => {
-          button_4.disabled = $$props.panel.busy || $$props.panel.stale;
-          set_text(text_4, $0);
-        },
-        [() => $$props.panel.t("delete_random_event")],
-      );
-      delegated("click", button_4, () => {
-        closeMenu(false);
-        flushSync(() => set2(deleteOpen, true));
-      });
-      append($$anchor2, fragment_1);
-    };
-    if_block(node_2, ($$render) => {
-      if (context().editor.existing) $$render(consequent_1);
-    });
-  }
-  reset(div_1);
-  bind_this(
-    div_1,
-    ($$value) => (menu = $$value),
-    () => menu,
-  );
-  reset(div);
-  var node_3 = sibling(div, 2);
-  {
-    var consequent_2 = ($$anchor2) => {
-      DeleteRandomDialog($$anchor2, {
-        get panel() {
-          return $$props.panel;
-        },
-        onClose: closeDialog,
-      });
-    };
-    if_block(node_3, ($$render) => {
-      if (get(deleteOpen)) $$render(consequent_2);
-    });
-  }
-  var node_4 = sibling(node_3, 2);
-  {
-    var consequent_3 = ($$anchor2) => {
-      AdvancedRandomSettings($$anchor2, {
-        get panel() {
-          return $$props.panel;
-        },
-        get context() {
-          return context();
-        },
-        onClose: closeDialog,
-      });
-    };
-    if_block(node_4, ($$render) => {
-      if (get(advancedOpen)) $$render(consequent_3);
-    });
-  }
-  template_effect(
-    ($0, $1, $2, $3, $4) => {
-      set_attribute2(button, "aria-label", $0);
-      set_attribute2(button, "title", $1);
-      set_attribute2(button, "aria-expanded", get(menuOpen));
-      set_attribute2(button, "aria-controls", get(menuId));
-      button.disabled = $$props.panel.busy;
-      set_attribute2(div_1, "id", get(menuId));
-      set_attribute2(div_1, "aria-label", $2);
-      button_2.disabled = $$props.panel.busy;
-      set_text(text_2, $3);
-      button_3.disabled = $$props.panel.busy;
-      set_text(text_3, $4);
-    },
-    [
-      () => $$props.panel.t("random_event_actions"),
-      () => $$props.panel.t("random_event_actions"),
-      () => $$props.panel.t("random_event_actions"),
-      () => $$props.panel.t(context().form.enabled ? "disable" : "enable"),
-      () => $$props.panel.t("advanced_settings"),
-    ],
-  );
-  delegated("click", button, () => (get(menuOpen) ? closeMenu() : openMenu()));
-  delegated("keydown", button, (event2) => {
-    if (!(event2.key === "ArrowDown" || event2.key === "ArrowUp")) {
-      return;
-    }
-    event2.preventDefault();
-    openMenu(event2.key === "ArrowUp");
-  });
-  event("toggle", div_1, (event2) =>
-    set2(menuOpen, event2.newState === "open"),
-  );
-  delegated("keydown", div_1, menuKeydown);
-  delegated("click", button_2, () => {
-    closeMenu();
-    context().form.enabled = !context().form.enabled;
-    context().changed("enabled");
-  });
-  delegated("click", button_3, () => {
-    closeMenu(false);
-    flushSync(() => set2(advancedOpen, true));
-  });
-  append($$anchor, fragment);
-  pop();
-}
-delegate(["click", "keydown"]);
-
-// custom_components/occupied/frontend/src/lib/components/random/RandomWeekdaysDialog.svelte
-var root27 = from_html(`<button type="button"> </button>`);
-var root_124 = from_html(
-  `<label class="step-weekday-option"><input type="checkbox"/><span> </span></label>`,
-);
-var root_218 = from_html(
-  `<p id="random-weekdays-error" class="error" role="alert"> </p>`,
-);
-var root_316 = from_html(
-  `<dialog class="step-advanced-dialog" aria-labelledby="random-weekdays-title" aria-describedby="random-weekdays-description"><h2 id="random-weekdays-title"> </h2> <p id="random-weekdays-description" class="hint"> </p> <fieldset class="step-weekdays"><legend> </legend> <div class="step-weekday-presets"></div> <div class="step-weekday-options"></div></fieldset> <!> <div class="step-delete-actions"><button type="button"> </button> <button type="button" class="primary"> </button></div></dialog>`,
-);
-function RandomWeekdaysDialog($$anchor, $$props) {
-  push($$props, true);
-  let form = user_derived(() => $$props.context.form),
-    t = user_derived(() => $$props.context.t),
-    changed = user_derived(() => $$props.context.changed);
-  let selectedDays = state(proxy(untrack(() => [...get(form).days])));
-  let dayError = user_derived(() =>
-    get(selectedDays).length > 0 ? void 0 : get(t)("days_required_error"),
-  );
-  let dialog;
-  const presets = [
-    ["every_day_label", days],
-    ["weekdays", days.slice(0, 5)],
-    ["weekends", days.slice(5)],
-  ];
-  const weekdays = [
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
-    "sunday",
-  ];
-  onMount(() => {
-    dialog.showModal();
-    dialog.querySelector("input")?.focus();
-  });
-  function apply2() {
-    if ($$props.panel.busy || get(dayError)) {
-      return;
-    }
-    get(form).days = [...get(selectedDays)];
-    get(changed)("days");
-    dialog.close();
-  }
-  var dialog_1 = root_316();
-  var h2 = child(dialog_1);
-  var text2 = only_child(h2, true);
-  var p = sibling(h2, 2);
-  var text_1 = only_child(p, true);
-  var fieldset = sibling(p, 2);
-  var legend = child(fieldset);
-  var text_2 = only_child(legend, true);
-  var div = sibling(legend, 2);
-  each(
-    div,
-    21,
-    () => presets,
-    ([label2, selection]) => label2,
-    ($$anchor2, $$item) => {
-      var $$array = user_derived(() => to_array(get($$item), 2));
-      let label2 = () => get($$array)[0];
-      let selection = () => get($$array)[1];
-      var button = root27();
-      var text_3 = only_child(button, true);
-      template_effect(
-        ($0, $1) => {
-          set_attribute2(button, "aria-pressed", $0);
-          set_text(text_3, $1);
-        },
-        [
-          () =>
-            get(selectedDays).length === selection().length &&
-            selection().every((day) => get(selectedDays).includes(day)),
-          () => get(t)(label2()),
-        ],
-      );
-      delegated("click", button, () =>
-        set2(selectedDays, [...selection()], true),
-      );
-      append($$anchor2, button);
-    },
-  );
-  reset(div);
-  var div_1 = sibling(div, 2);
-  each(
-    div_1,
-    22,
-    () => days,
-    (day) => day,
-    ($$anchor2, day, index2) => {
-      var label_1 = root_124();
-      var input = child(label_1);
-      remove_input_defaults(input);
-      var span = sibling(input);
-      var text_4 = only_child(span, true);
-      reset(label_1);
-      template_effect(
-        ($0, $1) => {
-          set_checked(input, $0);
-          set_text(text_4, $1);
-        },
-        [
-          () => get(selectedDays).includes(day),
-          () => get(t)(weekdays[get(index2)]),
-        ],
-      );
-      delegated("change", input, (event2) => {
-        const checked = event2.currentTarget.checked;
-        set2(
-          selectedDays,
-          days.filter((candidate) =>
-            candidate === day ? checked : get(selectedDays).includes(candidate),
-          ),
-          true,
-        );
-      });
-      append($$anchor2, label_1);
-    },
-  );
-  reset(div_1);
-  reset(fieldset);
-  var node = sibling(fieldset, 2);
-  {
-    var consequent = ($$anchor2) => {
-      var p_1 = root_218();
-      var text_5 = only_child(p_1, true);
-      template_effect(() => set_text(text_5, get(dayError)));
-      append($$anchor2, p_1);
-    };
-    if_block(node, ($$render) => {
-      if (get(dayError)) $$render(consequent);
-    });
-  }
-  var div_2 = sibling(node, 2);
-  var button_1 = child(div_2);
-  var text_6 = only_child(button_1, true);
-  var button_2 = sibling(button_1, 2);
-  var text_7 = only_child(button_2, true);
-  reset(div_2);
-  reset(dialog_1);
-  bind_this(
-    dialog_1,
-    ($$value) => (dialog = $$value),
-    () => dialog,
-  );
-  template_effect(
-    ($0, $1, $2, $3, $4) => {
-      set_text(text2, $0);
-      set_text(text_1, $1);
-      set_attribute2(
-        fieldset,
-        "aria-describedby",
-        get(dayError) ? "random-weekdays-error" : void 0,
-      );
-      fieldset.disabled = $$props.panel.busy;
-      set_text(text_2, $2);
-      set_text(text_6, $3);
-      button_2.disabled = $$props.panel.busy || !!get(dayError);
-      set_text(text_7, $4);
-    },
-    [
-      () => get(t)("weekdays"),
-      () => get(t)("random_days_hint"),
-      () => get(t)("run_on"),
-      () => get(t)("cancel"),
-      () => get(t)("apply"),
-    ],
-  );
-  event("close", dialog_1, function (...$$args) {
-    $$props.onClose?.apply(this, $$args);
-  });
-  delegated("click", button_1, () => dialog.close());
-  delegated("click", button_2, apply2);
-  append($$anchor, dialog_1);
-  pop();
-}
-delegate(["click", "change"]);
-
-// custom_components/occupied/frontend/src/lib/utils/random-explanation.ts
-function randomExplanation(form, program, catalog, t = translator(), locale) {
-  const say = (text2, values = {}) => {
-    let message = t(text2);
-    for (const [key2, value] of Object.entries(values)) {
-      message = message.replaceAll(`{${key2}}`, () => String(value));
-    }
-    return message;
-  };
-  const entries = [
-    ...stepEntries(program, catalog, t),
-    ...randomEntries(program, catalog).map((entry) => ({
-      id: `random:${entry.id}`,
-      name: entry.name,
-    })),
-  ];
-  const start = timingExplanation(
-    form.start,
-    entries,
-    t,
-    catalog.time_sources,
-    {
-      includeHints: false,
-      subject: "window_starts",
-      days: form.days,
-      locale,
-    },
-  );
-  let end = timingExplanation(form.end, entries, t, catalog.time_sources, {
-    includeHints: false,
-    subject: "window_ends",
-    locale,
-  });
-  let windowSeconds;
-  const clockSeconds = (value) =>
-    /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)
-      ? value
-          .split(":")
-          .reduce(
-            (total, part, index2) =>
-              total + Number(part) * [3600, 60, 1][index2],
-            0,
-          )
-      : NaN;
-  if (
-    form.start.mode === "absolute" &&
-    form.end.mode === "absolute" &&
-    !form.start.end &&
-    !form.end.end
-  ) {
-    const difference =
-      clockSeconds(form.end.start) - clockSeconds(form.start.start);
-    if (Number.isFinite(difference)) {
-      windowSeconds = difference < 0 ? difference + 86400 : difference;
-      if (difference < 0) {
-        end += ` ${t("the_next_day")}`;
-      }
-    }
-  }
-  if (form.end.mode === "duration") {
-    const duration2 = durationSeconds(
-      form.end.maxDuration || form.end.minDuration || "",
-    );
-    if (Number.isFinite(duration2) && duration2 > 0) {
-      windowSeconds = duration2;
-    }
-  }
-  const minDuration = durationSeconds(form.minDuration);
-  const maxDuration = durationSeconds(form.maxDuration);
-  const cannotFit =
-    windowSeconds !== void 0 &&
-    Number.isFinite(minDuration) &&
-    minDuration > windowSeconds;
-  const sentences = [
-    ...(form.enabled ? [] : [t("random_disabled_hint")]),
-    `${start}.`,
-    `${end}.`,
-  ];
-  const minimum = Number(form.minCount);
-  const maximum = Number(form.maxCount);
-  const validCount = (value) =>
-    Number.isSafeInteger(value) && value >= 0 && value <= 1e3;
-  const validCounts =
-    !!form.minCount.trim() &&
-    !!form.maxCount.trim() &&
-    validCount(minimum) &&
-    validCount(maximum) &&
-    maximum >= minimum;
-  if (validCounts && maximum === 0) {
-    sentences.push(
-      t("random_zero_count_hint"),
-      t("random_dependents_skip_hint"),
-    );
-    return sentences.join(" ");
-  }
-  if (cannotFit) {
-    sentences.push(t("random_duration_exceeds_window"));
-  } else if (!validCounts) {
-    sentences.push(t("random_counts_prompt"));
-  } else if (minimum === maximum) {
-    sentences.push(
-      minimum === 1
-        ? t("random_single_event_summary")
-        : say("random_count_summary", {
-            count: minimum,
-          }),
-    );
-  } else {
-    sentences.push(
-      say("random_count_range_summary", {
-        min: minimum,
-        max: maximum,
-      }),
-    );
-  }
-  if (validCounts && minimum === 0) {
-    sentences.push(t("random_empty_window_hint"));
-  }
-  const duration = (seconds) => durationLabel(seconds, t);
-  if (
-    !Number.isFinite(minDuration) ||
-    !Number.isFinite(maxDuration) ||
-    minDuration <= 0 ||
-    maxDuration < minDuration ||
-    maxDuration > 604800
-  ) {
-    sentences.push(t("random_durations_prompt"));
-  } else if (windowSeconds !== void 0 && minDuration > windowSeconds) {
-    sentences.push(t("random_duration_fit_hint"));
-  } else {
-    const longest =
-      windowSeconds === void 0
-        ? maxDuration
-        : Math.min(maxDuration, windowSeconds);
-    sentences.push(
-      minDuration === longest
-        ? say("random_duration_summary", {
-            duration: duration(minDuration),
-          })
-        : say("random_duration_range_summary", {
-            min: duration(minDuration),
-            max: duration(longest),
-          }),
-    );
-  }
-  const action2 = (selected) => {
-    if (selected.kind === "custom") {
-      return t("custom_yaml_summary");
-    }
-    const names = [...new Set(selected.entities)].map((id) =>
-      entityName(catalog, id),
-    );
-    if (names.length === 0) {
-      return "";
-    }
-    const last = names.pop();
-    const entities =
-      names.length > 0 ? `${names.join(", ")} ${t("and")} ${last}` : last;
-    if (selected.kind === "scene") {
-      return say("action_activate_summary", { entities });
-    }
-    if (selected.kind === "cover") {
-      const descriptions = {
-        "cover.open_cover": "action_open_summary",
-        "cover.close_cover": "action_close_summary",
-        "cover.stop_cover": "action_stop_summary",
-        "cover.set_cover_position": "action_position_summary",
-        "cover.open_cover_tilt": "action_open_tilt_summary",
-        "cover.close_cover_tilt": "action_close_tilt_summary",
-        "cover.stop_cover_tilt": "action_stop_tilt_summary",
-        "cover.set_cover_tilt_position": "action_tilt_position_summary",
-      };
-      const description = descriptions[selected.service];
-      if (!description) {
-        return "";
-      }
-      const position =
-        selected.service === "cover.set_cover_position"
-          ? selected.position
-          : selected.tiltPosition;
-      return t(description).includes("{position}") &&
-        (!position.trim() ||
-          !Number.isSafeInteger(Number(position)) ||
-          Number(position) < 0 ||
-          Number(position) > 100)
-        ? ""
-        : say(description, { entities, position });
-    }
-    if (selected.kind === "remote") {
-      if (selected.service === "remote.turn_off") {
-        return say("action_turn_off_summary", { entities });
-      }
-      return selected.activity
-        ? say("action_remote_activity_summary", {
-            activity: selected.activity,
-            entities,
-          })
-        : say("action_remote_default_summary", { entities });
-    }
-    if (selected.kind === "service") {
-      return selected.service.trim()
-        ? say("action_service_summary", {
-            service: selected.service.trim(),
-            entities,
-          })
-        : "";
-    }
-    return say(
-      selected.action === "turn_off"
-        ? "action_turn_off_summary"
-        : "action_turn_on_summary",
-      { entities },
-    );
-  };
-  const on2 = action2(form.on);
-  const off = action2(
-    form.sameEntities ? { ...form.off, entities: form.on.entities } : form.off,
-  );
-  if (on2 && !cannotFit) {
-    sentences.push(say("random_start_action_summary", { action: on2 }));
-  }
-  if (off && !cannotFit) {
-    sentences.push(say("random_end_action_summary", { action: off }));
-  }
-  const conclusion =
-    validCounts && maximum === 1
-      ? "random_single_finish_hint"
-      : "random_overlap_hint";
-  sentences.push(t(cannotFit ? "random_duration_priority_hint" : conclusion));
-  return sentences.join(" ");
-}
-
-// custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
-var root28 = from_html(
-  `<button type="button" class="randomize-count svelte-1n39iyr"> </button>`,
-);
-var root_125 = from_html(
-  `<label class="maximum-count-label svelte-1n39iyr" for="step-maxCount"> </label> <div class="maximum-count-control count-control svelte-1n39iyr"><!> <button type="button" class="icon-button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12Z"></path></svg></button></div>`,
-  1,
-);
-var root_219 = from_html(
-  `<label class="same-entities svelte-1n39iyr"><input type="checkbox"/> </label>`,
-);
-var root_317 = from_html(
-  `<section class="step-editor random-editor"><div class="step-name-editor"><!></div> <div class="active-period-header svelte-1n39iyr"><h3 class="svelte-1n39iyr"> </h3> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-weekdays=""> </button></div> <!> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <h3> </h3> <div><label class="minimum-count-label svelte-1n39iyr" for="step-minCount"> </label> <div class="minimum-count-control count-control svelte-1n39iyr"><!></div> <!></div> <div class="random-frequency svelte-1n39iyr"><!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section> <!>`,
-  1,
-);
-var $$css11 = {
-  hash: "svelte-1n39iyr",
-  code: '.active-period-header.svelte-1n39iyr {display:flex;align-items:center;justify-content:space-between;gap:16px;}.active-period-header.svelte-1n39iyr h3:where(.svelte-1n39iyr) {margin:0;}.random-frequency.svelte-1n39iyr {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}.random-counts.svelte-1n39iyr {display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));grid-template-areas:"minimum-label ."\n      "minimum-control randomness";gap:5px 16px;margin:14px 0;}.random-counts.with-maximum.svelte-1n39iyr {grid-template-areas:"minimum-label maximum-label"\n      "minimum-control maximum-control";}.minimum-count-label.svelte-1n39iyr {grid-area:minimum-label;}.maximum-count-label.svelte-1n39iyr {grid-area:maximum-label;}.minimum-count-control.svelte-1n39iyr {grid-area:minimum-control;}.maximum-count-control.svelte-1n39iyr {grid-area:maximum-control;}.count-control.svelte-1n39iyr {display:flex;align-items:flex-start;gap:8px;min-width:0;}.count-control.svelte-1n39iyr .field {flex:1;min-width:0;margin:0;}.randomize-count.svelte-1n39iyr {grid-area:randomness;justify-self:start;align-self:start;max-width:100%;}.same-entities.svelte-1n39iyr {display:flex;align-items:center;gap:8px;margin-top:16px;}\n\n  @media (max-width: 600px) {.random-counts.svelte-1n39iyr {grid-template-columns:minmax(96px, 1fr) minmax(0, max-content);grid-template-areas:"minimum-label minimum-label"\n        "minimum-control randomness";}.random-counts.with-maximum.svelte-1n39iyr {grid-template-columns:minmax(0, 1fr);grid-template-areas:"minimum-label"\n        "minimum-control"\n        "maximum-label"\n        "maximum-control";}.with-maximum.svelte-1n39iyr .minimum-count-control:where(.svelte-1n39iyr) {margin-bottom:12px;}.random-frequency.svelte-1n39iyr {grid-template-columns:1fr;gap:0;}\n  }',
-};
-function RandomEventEditor($$anchor, $$props) {
-  push($$props, true);
-  append_styles($$anchor, $$css11);
-  let context = user_derived(() => {
-    void $$props.revision;
-    return createRandomEditorContext($$props.panel);
-  });
-  let editor = user_derived(() => get(context).editor),
-    form = user_derived(() => get(context).form),
-    t = user_derived(() => get(context).t),
-    changed = user_derived(() => get(context).changed),
-    submit = user_derived(() => get(context).submit),
-    cancel = user_derived(() => get(context).cancel);
-  let weekdaysOpen = state(false);
-  let weekdaysButton;
-  let showMaxCount = state(
-    proxy(
-      untrack(() => Number(get(form).minCount) !== Number(get(form).maxCount)),
-    ),
-  );
-  let maxCountVisible = user_derived(
-    () =>
-      get(showMaxCount) ||
-      Number(get(form).minCount) !== Number(get(form).maxCount) ||
-      !!get(editor).errors.maxCount,
-  );
-  async function save2() {
-    await get(submit)();
-    if (!$$props.panel.randomEditor?.errors.days) {
-      return;
-    }
-    set2(weekdaysOpen, true);
-  }
-  function closeWeekdays() {
-    flushSync(() => set2(weekdaysOpen, false));
-    if (weekdaysButton.isConnected) {
-      weekdaysButton.focus();
-    }
-  }
-  var fragment = root_317();
-  var section = first_child(fragment);
-  var div = child(section);
-  var node = child(div);
-  {
-    let $0 = user_derived(() => ({
-      hideLabel: true,
-      placeholder: get(t)("optional_title"),
-    }));
-    EditorField(node, {
-      get panel() {
-        return $$props.panel;
-      },
-      get context() {
-        return get(context);
-      },
-      key: "name",
-      label: "random_event_name",
-      get value() {
-        return get(form).name;
-      },
-      update: (value) => (get(form).name = value),
-      get options() {
-        return get($0);
-      },
-    });
-  }
-  reset(div);
-  var div_1 = sibling(div, 2);
-  var h3 = child(div_1);
-  var text2 = only_child(h3, true);
-  var button = sibling(h3, 2);
-  let classes;
-  var text_1 = only_child(button, true);
-  bind_this(
-    button,
-    ($$value) => (weekdaysButton = $$value),
-    () => weekdaysButton,
-  );
-  reset(div_1);
-  var node_1 = sibling(div_1, 2);
-  {
-    let $0 = user_derived(() => ({ ...get(editor).errors }));
-    FieldError(node_1, {
-      get t() {
-        return get(t);
-      },
-      key: "days",
-      get errors() {
-        return get($0);
-      },
-    });
-  }
-  var p = sibling(node_1, 2);
-  var text_2 = only_child(p, true);
-  var div_2 = sibling(p, 2);
-  var node_2 = child(div_2);
-  {
-    let $0 = user_derived(() => get(context).timing("start"));
-    TimingEditor(node_2, {
-      get panel() {
-        return $$props.panel;
-      },
-      get context() {
-        return get($0);
-      },
-      heading: "period_start",
-      clockLabel: "earliest_start",
-      windowEndLabel: "latest_start",
-      addWindowEndLabel: "randomize_window_start",
-      rangeEdge: "start",
-      showExplanation: false,
-    });
-  }
-  var node_3 = sibling(node_2, 2);
-  {
-    let $0 = user_derived(() => get(context).timing("end"));
-    TimingEditor(node_3, {
-      get panel() {
-        return $$props.panel;
-      },
-      get context() {
-        return get($0);
-      },
-      heading: "period_end",
-      clockLabel: "earliest_end",
-      windowEndLabel: "latest_end",
-      addWindowEndLabel: "randomize_window_end",
-      rangeEdge: "end",
-      showExplanation: false,
-      modes: [
-        ["absolute", "absolute_time"],
-        ["relative", "relative_to"],
-        ["duration", "duration"],
-      ],
-    });
-  }
-  reset(div_2);
-  var h3_1 = sibling(div_2, 2);
-  var text_3 = only_child(h3_1, true);
-  var div_3 = sibling(h3_1, 2);
-  let classes_1;
-  var label2 = child(div_3);
-  var text_4 = only_child(label2, true);
-  var div_4 = sibling(label2, 2);
-  var node_4 = child(div_4);
-  {
-    let $0 = user_derived(() =>
-      get(maxCountVisible)
-        ? "minimum_events_per_window"
-        : "events_per_active_period",
-    );
-    EditorField(node_4, {
-      get panel() {
-        return $$props.panel;
-      },
-      get context() {
-        return get(context);
-      },
-      key: "minCount",
-      get label() {
-        return get($0);
-      },
-      get value() {
-        return get(form).minCount;
-      },
-      update: (value) => {
-        if (!get(maxCountVisible)) {
-          get(form).maxCount = value;
-        }
-        get(form).minCount = value;
-      },
-      options: { type: "number", min: 0, max: 1e3, step: 1, hideLabel: true },
-    });
-  }
-  reset(div_4);
-  var node_5 = sibling(div_4, 2);
-  {
-    var consequent = ($$anchor2) => {
-      var button_1 = root28();
-      var text_5 = only_child(button_1, true);
-      template_effect(
-        ($0) => {
-          button_1.disabled = $$props.panel.busy;
-          set_text(text_5, $0);
-        },
-        [() => get(t)("add_randomness")],
-      );
-      delegated("click", button_1, () => {
-        set2(showMaxCount, true);
-        get(changed)("maxCount");
-        focusEditor($$props.panel, "maxCount");
-      });
-      append($$anchor2, button_1);
-    };
-    var alternate = ($$anchor2) => {
-      var fragment_1 = root_125();
-      var label_1 = first_child(fragment_1);
-      var text_6 = only_child(label_1, true);
-      var div_5 = sibling(label_1, 2);
-      var node_6 = child(div_5);
-      {
-        let $0 = user_derived(() => ({
-          type: "number",
-          min: Number.isSafeInteger(Number(get(form).minCount))
-            ? Math.max(0, Number(get(form).minCount))
-            : 0,
-          max: 1e3,
-          step: 1,
-          hideLabel: true,
-        }));
-        EditorField(node_6, {
-          get panel() {
-            return $$props.panel;
-          },
-          get context() {
-            return get(context);
-          },
-          key: "maxCount",
-          label: "maximum_events_per_window",
-          get value() {
-            return get(form).maxCount;
-          },
-          update: (value) => (get(form).maxCount = value),
-          get options() {
-            return get($0);
-          },
-        });
-      }
-      var button_2 = sibling(node_6, 2);
-      reset(div_5);
-      template_effect(
-        ($0, $1, $2) => {
-          set_text(text_6, $0);
-          set_attribute2(button_2, "aria-label", $1);
-          set_attribute2(button_2, "title", $2);
-          button_2.disabled = $$props.panel.busy;
-        },
-        [
-          () => get(t)("maximum_events_per_window"),
-          () => get(t)("remove_maximum_events"),
-          () => get(t)("remove_maximum_events"),
-        ],
-      );
-      delegated("click", button_2, () => {
-        get(form).maxCount = get(form).minCount;
-        set2(showMaxCount, false);
-        delete get(editor).errors.maxCount;
-        get(changed)("minCount");
-        focusEditor($$props.panel, "minCount");
-      });
-      append($$anchor2, fragment_1);
-    };
-    if_block(node_5, ($$render) => {
-      if (!get(maxCountVisible)) $$render(consequent);
-      else $$render(alternate, -1);
-    });
-  }
-  reset(div_3);
-  var div_6 = sibling(div_3, 2);
-  var node_7 = child(div_6);
-  EditorField(node_7, {
-    get panel() {
-      return $$props.panel;
-    },
-    get context() {
-      return get(context);
-    },
-    key: "minDuration",
-    label: "minimum_duration",
-    get value() {
-      return get(form).minDuration;
-    },
-    update: (value) => (get(form).minDuration = value),
-    options: { placeholder: "5m" },
-  });
-  var node_8 = sibling(node_7, 2);
-  EditorField(node_8, {
-    get panel() {
-      return $$props.panel;
-    },
-    get context() {
-      return get(context);
-    },
-    key: "maxDuration",
-    label: "maximum_duration",
-    get value() {
-      return get(form).maxDuration;
-    },
-    update: (value) => (get(form).maxDuration = value),
-    options: { placeholder: "15m" },
-  });
-  reset(div_6);
-  var p_1 = sibling(div_6, 2);
-  var text_7 = only_child(p_1, true);
-  var div_7 = sibling(p_1, 2);
-  var node_9 = child(div_7);
-  {
-    let $0 = user_derived(() => get(context).action("on"));
-    ActionEditor(node_9, {
-      get panel() {
-        return $$props.panel;
-      },
-      get context() {
-        return get($0);
-      },
-      heading: "when_event_starts",
-      kindLabel: "start_action",
-      entityLabel: "start_entities",
-    });
-  }
-  var div_8 = sibling(node_9, 2);
-  var node_10 = child(div_8);
-  {
-    let $0 = user_derived(() => get(context).action("off"));
-    ActionEditor(node_10, {
-      get panel() {
-        return $$props.panel;
-      },
-      get context() {
-        return get($0);
-      },
-      heading: "when_event_ends",
-      kindLabel: "end_action",
-      entityLabel: "end_entities",
-      get hideEntities() {
-        return get(form).sameEntities;
-      },
-    });
-  }
-  var node_11 = sibling(node_10, 2);
-  {
-    var consequent_1 = ($$anchor2) => {
-      var label_2 = root_219();
-      var input = child(label_2);
-      remove_input_defaults(input);
-      var text_8 = sibling(input, 1, true);
-      reset(label_2);
-      template_effect(
-        ($0) => {
-          set_checked(input, get(form).sameEntities);
-          set_text(text_8, $0);
-        },
-        [() => get(t)("use_the_same_entities")],
-      );
-      delegated("change", input, (event2) => {
-        get(form).sameEntities = event2.currentTarget.checked;
-        get(changed)("sameEntities");
-      });
-      append($$anchor2, label_2);
-    };
-    var d = user_derived(() => canShareEntities(get(form).on, get(form).off));
-    if_block(node_11, ($$render) => {
-      if (get(d)) $$render(consequent_1);
-    });
-  }
-  reset(div_8);
-  reset(div_7);
-  var div_9 = sibling(div_7, 2);
-  var button_3 = child(div_9);
-  var text_9 = only_child(button_3, true);
-  var node_12 = sibling(button_3, 2);
-  RandomActions(node_12, {
-    get panel() {
-      return $$props.panel;
-    },
-    get context() {
-      return get(context);
-    },
-  });
-  var button_4 = sibling(node_12, 2);
-  var text_10 = only_child(button_4, true);
-  reset(div_9);
-  reset(section);
-  var node_13 = sibling(section, 2);
-  {
-    var consequent_2 = ($$anchor2) => {
-      RandomWeekdaysDialog($$anchor2, {
-        get panel() {
-          return $$props.panel;
-        },
-        get context() {
-          return get(context);
-        },
-        onClose: closeWeekdays,
-      });
-    };
-    if_block(node_13, ($$render) => {
-      if (get(weekdaysOpen)) $$render(consequent_2);
-    });
-  }
-  template_effect(
-    ($0, $1, $2, $3, $4, $5, $6, $7) => {
-      set_text(text2, $0);
-      set_attribute2(button, "aria-expanded", get(weekdaysOpen));
-      set_attribute2(
-        button,
-        "aria-describedby",
-        get(editor).errors.days ? "step-error-days" : void 0,
-      );
-      button.disabled = $$props.panel.busy;
-      classes = set_class(button, 1, "", null, classes, {
-        error: !!get(editor).errors.days,
-      });
-      set_text(text_1, $1);
-      set_text(text_2, $2);
-      set_text(text_3, $3);
-      classes_1 = set_class(
-        div_3,
-        1,
-        "random-counts svelte-1n39iyr",
-        null,
-        classes_1,
-        { "with-maximum": get(maxCountVisible) },
-      );
-      set_text(text_4, $4);
-      set_text(text_7, $5);
-      button_3.disabled = $$props.panel.busy;
-      set_text(text_9, $6);
-      button_4.disabled =
-        $$props.panel.busy ||
-        $$props.panel.stale ||
-        !!get(editor).errors.minCount ||
-        !!get(editor).errors.maxCount;
-      set_text(text_10, $7);
-    },
-    [
-      () => get(t)("active_period"),
-      () => get(t)("weekdays"),
-      () => get(t)("active_period_hint"),
-      () => get(t)("frequency_and_duration"),
-      () =>
-        get(t)(
-          get(maxCountVisible)
-            ? "minimum_events_per_window"
-            : "events_per_active_period",
-        ),
-      () =>
-        randomExplanation(
-          get(form),
-          $$props.panel.draft,
-          $$props.panel.catalog,
-          get(t),
-          $$props.panel._hass.locale,
-        ),
-      () => get(t)("cancel"),
-      () =>
-        get(t)(
-          $$props.panel.document?.source === "file"
-            ? "add_to_draft"
-            : "save_random_event",
-        ),
-    ],
-  );
-  delegated("click", button, () => set2(weekdaysOpen, true));
-  delegated("click", button_3, function (...$$args) {
-    get(cancel)?.apply(this, $$args);
-  });
-  delegated("click", button_4, save2);
-  append($$anchor, fragment);
-  pop();
-}
-delegate(["click", "change"]);
-
-// custom_components/occupied/frontend/src/lib/components/random/RandomView.svelte
-var root29 = from_html(
-  `<section class="step-empty"><h2> </h2> <p class="hint"> </p> <button type="button" class="primary" data-create-random=""> </button></section>`,
-);
-var root_126 = from_html(`<span class="step-status-badge"> </span>`);
-var root_220 = from_html(
-  `<span class="step-row-warning"><ha-icon></ha-icon> <span><!></span></span>`,
-  2,
-);
-var root_318 = from_html(`<span class="step-row-time"> </span>`);
-var root_412 = from_html(
-  `<div style="--depth:0"><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button> <div><!></div></div>`,
-);
-var root_58 = from_html(
-  `<!> <div class="step-list"></div> <button type="button" class="primary" data-create-random=""> </button>`,
-  1,
-);
-function RandomView($$anchor, $$props) {
-  push($$props, true);
-  let data = user_derived(() => {
-    void $$props.revision;
-    const entries2 = randomEntries($$props.panel.draft, $$props.panel.catalog);
-    const orderedEntries = [
-      ...stepEntries(
-        $$props.panel.draft,
-        $$props.panel.catalog,
-        $$props.panel.t,
-      ),
-      ...entries2.map((entry) => ({ ...entry, id: `random:${entry.id}` })),
-    ];
-    const compare = timingOrder(
-      orderedEntries,
-      $$props.panel.catalog.time_sources,
-    );
-    entries2.sort((a, b) =>
-      compare({ ...a, id: `random:${a.id}` }, { ...b, id: `random:${b.id}` }),
-    );
-    return {
-      t: $$props.panel.t,
-      entries: entries2,
-      issues: $$props.panel
-        .visibleIssues()
-        .map((issue) => ({
-          issue,
-          randomId: warningRandomId(issue, entries2),
-        })),
-      steps: [
-        ...stepEntries(
-          $$props.panel.draft,
-          $$props.panel.catalog,
-          $$props.panel.t,
-        ),
-        ...entries2.map((entry) => ({
-          id: `random:${entry.id}`,
-          name: entry.name,
-          timing: entry.start,
-          end: entry.end,
-        })),
-      ],
-    };
-  });
-  let t = user_derived(() => get(data).t),
-    entries = user_derived(() => get(data).entries),
-    steps = user_derived(() => get(data).steps),
-    issues = user_derived(() => get(data).issues);
-  var fragment = comment();
-  var node = first_child(fragment);
-  {
-    var consequent = ($$anchor2) => {
-      var section = root29();
-      var h2 = child(section);
-      var text2 = only_child(h2, true);
-      var p = sibling(h2, 2);
-      var text_1 = only_child(p, true);
-      var button = sibling(p, 2);
-      var text_2 = only_child(button, true);
-      reset(section);
-      template_effect(
-        ($0, $1, $2) => {
-          set_text(text2, $0);
-          set_text(text_1, $1);
-          button.disabled = $$props.panel.busy;
-          set_text(text_2, $2);
-        },
-        [
-          () => get(t)("random_activity"),
-          () => get(t)("random_activity_hint"),
-          () => get(t)("create_your_first_random_event"),
-        ],
-      );
-      delegated("click", button, () => openRandom($$props.panel));
-      append($$anchor2, section);
-    };
-    var alternate = ($$anchor2) => {
-      var fragment_1 = root_58();
-      var node_1 = first_child(fragment_1);
-      {
-        let $0 = user_derived(() => get(t)("random_activity"));
-        let $1 = user_derived(() => get(t)("random_activity_hint"));
-        ActivityIntro(node_1, {
-          get title() {
-            return get($0);
-          },
-          get description() {
-            return get($1);
-          },
-        });
-      }
-      var div = sibling(node_1, 2);
-      each(
-        div,
-        21,
-        () => get(entries),
-        (entry) => entry.id,
-        ($$anchor3, entry) => {
-          const warnings = user_derived(() =>
-            get(issues)
-              .filter(({ randomId }) => randomId === get(entry).id)
-              .map(({ issue }) => issue),
-          );
-          const editing = user_derived(
-            () =>
-              $$props.panel.randomEditor?.existing &&
-              $$props.panel.randomEditor.id === get(entry).id,
-          );
-          const disabled = user_derived(
-            () =>
-              (get(editing)
-                ? $$props.panel.randomEditor?.form.enabled
-                : get(entry).enabled) === false,
-          );
-          var div_1 = root_412();
-          let classes;
-          var button_1 = child(div_1);
-          let classes_1;
-          var span = child(button_1);
-          var span_1 = child(span);
-          var strong = child(span_1);
-          var text_3 = only_child(strong, true);
-          var node_2 = sibling(strong);
-          {
-            var consequent_1 = ($$anchor4) => {
-              var span_2 = root_126();
-              var text_4 = only_child(span_2, true);
-              template_effect(
-                ($0) => set_text(text_4, $0),
-                [() => get(t)("disabled")],
-              );
-              append($$anchor4, span_2);
-            };
-            if_block(node_2, ($$render) => {
-              if (get(disabled)) $$render(consequent_1);
-            });
-          }
-          reset(span_1);
-          var span_3 = sibling(span_1, 2);
-          var text_5 = only_child(span_3);
-          reset(span);
-          var node_3 = sibling(span, 2);
-          {
-            var consequent_2 = ($$anchor4) => {
-              var span_4 = root_220();
-              var ha_icon = child(span_4);
-              set_custom_element_data(ha_icon, "icon", "mdi:alert-outline");
-              set_custom_element_data(ha_icon, "aria-hidden", "true");
-              var span_5 = sibling(ha_icon, 2);
-              var node_4 = child(span_5);
-              WarningMessages(node_4, {
-                get warnings() {
-                  return get(warnings);
-                },
-                get t() {
-                  return get(t);
-                },
-              });
-              reset(span_5);
-              reset(span_4);
-              template_effect(() =>
-                set_attribute2(span_4, "id", `random-warning-${get(entry).id}`),
-              );
-              append($$anchor4, span_4);
-            };
-            var consequent_3 = ($$anchor4) => {
-              var span_6 = root_318();
-              var text_6 = only_child(span_6);
-              template_effect(
-                ($0, $1) => set_text(text_6, `${$0 ?? ""} \u2192 ${$1 ?? ""}`),
-                [
-                  () =>
-                    timingSummary(
-                      { timing: get(entry).start },
-                      get(steps),
-                      get(t),
-                      $$props.panel.catalog.time_sources,
-                      $$props.panel._hass.locale,
-                    ),
-                  () =>
-                    timingExplanation(
-                      timingForm(get(entry).end),
-                      get(steps),
-                      get(t),
-                      $$props.panel.catalog.time_sources,
-                      {
-                        subject: "window_ends",
-                        includeHints: false,
-                        locale: $$props.panel._hass.locale,
-                      },
-                    ),
-                ],
-              );
-              append($$anchor4, span_6);
-            };
-            if_block(node_3, ($$render) => {
-              if (get(warnings).length) $$render(consequent_2);
-              else if (!get(editing)) $$render(consequent_3, 1);
-            });
-          }
-          reset(button_1);
-          var div_2 = sibling(button_1, 2);
-          var node_5 = child(div_2);
-          {
-            var consequent_4 = ($$anchor4) => {
-              RandomEventEditor($$anchor4, {
-                get panel() {
-                  return $$props.panel;
-                },
-                get revision() {
-                  return $$props.revision;
-                },
-              });
-            };
-            if_block(node_5, ($$render) => {
-              if (get(editing)) $$render(consequent_4);
-            });
-          }
-          reset(div_2);
-          reset(div_1);
-          template_effect(
-            ($0, $1, $2, $3) => {
-              classes = set_class(div_1, 1, "step-card", null, classes, {
-                "step-disabled": get(disabled),
-                "step-warning": get(warnings).length > 0,
-              });
-              set_attribute2(div_1, "data-random-id", get(entry).id);
-              set_attribute2(button_1, "id", `random-card-${get(entry).id}`);
-              classes_1 = set_class(button_1, 1, "step-row", null, classes_1, {
-                editing: get(editing) && get(warnings).length === 0,
-              });
-              set_attribute2(button_1, "aria-label", $0);
-              set_attribute2(button_1, "aria-expanded", get(editing));
-              set_attribute2(
-                button_1,
-                "aria-controls",
-                `random-editor-${get(entry).id}`,
-              );
-              set_attribute2(
-                button_1,
-                "aria-describedby",
-                get(warnings).length > 0
-                  ? `random-warning-${get(entry).id}`
-                  : void 0,
-              );
-              button_1.disabled = $$props.panel.busy;
-              set_text(text_3, get(entry).name);
-              set_text(
-                text_5,
-                `${$1 ?? ""}
-              ${$2 ?? ""} \xB7 ${(get(entry).min_duration || "5m") ?? ""}\u2013${(get(entry).max_duration || "15m") ?? ""} \xB7 ${$3 ?? ""}`,
-              );
-              set_attribute2(div_2, "id", `random-editor-${get(entry).id}`);
-            },
-            [
-              () =>
-                get(disabled)
-                  ? `${get(entry).name} \xB7 ${get(t)("disabled")}`
-                  : get(entry).name,
-              () => countSummary(get(entry).count),
-              () => get(t)("times_per_window"),
-              () =>
-                entitySummary(
-                  $$props.panel.catalog,
-                  actionTargets(get(entry).on),
-                  get(t),
-                ),
-            ],
-          );
-          delegated("click", button_1, () =>
-            openRandom($$props.panel, get(entry)),
-          );
-          append($$anchor3, div_1);
-        },
-      );
-      reset(div);
-      var button_2 = sibling(div, 2);
-      var text_7 = only_child(button_2, true);
-      template_effect(
-        ($0, $1) => {
-          set_attribute2(div, "aria-label", $0);
-          button_2.disabled = $$props.panel.busy;
-          set_text(text_7, $1);
-        },
-        [() => get(t)("random_events"), () => get(t)("create_random_event")],
-      );
-      delegated("click", button_2, () => openRandom($$props.panel));
-      append($$anchor2, fragment_1);
-    };
-    if_block(node, ($$render) => {
-      if (get(entries).length === 0) $$render(consequent);
-      else $$render(alternate, -1);
-    });
-  }
-  append($$anchor, fragment);
-  pop();
-}
-delegate(["click"]);
-
 // custom_components/occupied/frontend/src/App.svelte
-var root30 = from_html(`<button type="button"> </button>`);
+var root31 = from_html(`<button type="button"> </button>`);
 var root_127 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
-var root_221 = from_html(`<p> </p>`);
+var root_222 = from_html(`<p> </p>`);
 var root_319 = from_html(`<header><p class="hint"> </p></header>`);
-var root_413 = from_html(`<p class="banner" role="status"> </p>`);
-var root_59 = from_html(`<button type="button" class="text-button"> </button>`);
-var root_67 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
+var root_412 = from_html(`<p class="banner" role="status"> </p>`);
+var root_57 = from_html(`<button type="button" class="text-button"> </button>`);
+var root_66 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
 var root_75 = from_html(`<p role="status" aria-live="polite"> </p>`);
 var root_85 = from_html(
   `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><!> <!> <!> <div id="notice" class="banner" role="status"> </div> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
@@ -20068,7 +20036,7 @@ function App($$anchor, $$props) {
     var node = child(div);
     {
       var consequent = ($$anchor3) => {
-        var button = root30();
+        var button = root31();
         var text_1 = only_child(button, true);
         template_effect(
           ($0) => {
@@ -20107,7 +20075,7 @@ function App($$anchor, $$props) {
     var node_1 = first_child(fragment);
     {
       var consequent_1 = ($$anchor3) => {
-        var button_1 = root30();
+        var button_1 = root31();
         var text_2 = only_child(button_1, true);
         template_effect(() => {
           set_class(button_1, 1, clsx2(get(className)));
@@ -20117,7 +20085,7 @@ function App($$anchor, $$props) {
         append($$anchor3, button_1);
       };
       var alternate = ($$anchor3) => {
-        var p = root_221();
+        var p = root_222();
         var text_3 = only_child(p, true);
         template_effect(() => {
           set_class(p, 1, clsx2(get(className)));
@@ -20164,7 +20132,7 @@ function App($$anchor, $$props) {
         ? stepEntries(get(panel).draft)
         : [];
     const random =
-      showingCards && get(panel).tab === "random"
+      showingCards && get(panel).tab === "steps"
         ? randomEntries(get(panel).draft)
         : [];
     const visibleIssues = get(panel).visibleIssues();
@@ -20177,12 +20145,12 @@ function App($$anchor, $$props) {
         ? issue.model_path[0]
         : issue.path?.match(/^\$\.(steps|random)(?:\.|\[|$)/)?.[1];
       issueTabs2.add(
-        section === "steps" || section === "random" ? section : "settings",
+        section === "steps" || section === "random" ? "steps" : "settings",
       );
     }
     for (const [tab, errors] of [
       ["steps", get(panel).stepEditor?.errors],
-      ["random", get(panel).randomEditor?.errors],
+      ["steps", get(panel).randomEditor?.errors],
       ["settings", get(panel).runConditionErrors],
     ]) {
       if (errors && Object.keys(errors).length > 0) {
@@ -20219,8 +20187,7 @@ function App($$anchor, $$props) {
     issues = user_derived(() => get(state2).issues),
     issueTabs = user_derived(() => get(state2).issueTabs);
   const primaryTabs = [
-    ["steps", "steps"],
-    ["random", "random"],
+    ["steps", "activity"],
     ["preview", "preview"],
     ["settings", "settings"],
   ];
@@ -20257,7 +20224,7 @@ function App($$anchor, $$props) {
     () => get(panel).selectedInstance?.overlaps || [],
     (overlap) => overlap.config_entry_id,
     ($$anchor2, overlap) => {
-      var p_2 = root_413();
+      var p_2 = root_412();
       var text_5 = only_child(p_2);
       template_effect(
         ($0, $1, $2) =>
@@ -20289,7 +20256,7 @@ function App($$anchor, $$props) {
       var $$array = user_derived(() => to_array(get($$item), 2));
       let id = () => get($$array)[0];
       let label2 = () => get($$array)[1];
-      var button_2 = root30();
+      var button_2 = root31();
       let classes;
       var text_7 = only_child(button_2, true);
       template_effect(
@@ -20320,7 +20287,7 @@ function App($$anchor, $$props) {
   var node_5 = child(div_2);
   {
     var consequent_3 = ($$anchor2) => {
-      var button_3 = root_59();
+      var button_3 = root_57();
       var text_8 = only_child(button_3, true);
       template_effect(
         ($0) => set_text(text_8, $0),
@@ -20359,7 +20326,7 @@ function App($$anchor, $$props) {
       var node_7 = first_child(fragment_3);
       {
         const failed = ($$anchor3, error = noop) => {
-          var fragment_4 = root_67();
+          var fragment_4 = root_66();
           var p_3 = first_child(fragment_4);
           var text_9 = only_child(p_3, true);
           var p_4 = sibling(p_3, 2);
@@ -20393,7 +20360,7 @@ function App($$anchor, $$props) {
               () => !hasProgram(get(panel)) && get(panel).starting,
             );
             var consequent_5 = ($$anchor4) => {
-              var p_6 = root_221();
+              var p_6 = root_222();
               var text_12 = only_child(p_6, true);
               template_effect(
                 ($0) => set_text(text_12, $0),
@@ -20410,7 +20377,7 @@ function App($$anchor, $$props) {
             var consequent_6 = ($$anchor4) => {};
             var d_2 = user_derived(() => !hasProgram(get(panel)));
             var consequent_7 = ($$anchor4) => {
-              var button_4 = root30();
+              var button_4 = root31();
               var text_13 = only_child(button_4, true);
               template_effect(
                 ($0) => set_text(text_13, $0),
@@ -20452,16 +20419,6 @@ function App($$anchor, $$props) {
               });
             };
             var consequent_11 = ($$anchor4) => {
-              RandomView($$anchor4, {
-                get panel() {
-                  return get(panel);
-                },
-                get revision() {
-                  return get(revision);
-                },
-              });
-            };
-            var consequent_12 = ($$anchor4) => {
               SettingsView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -20471,7 +20428,7 @@ function App($$anchor, $$props) {
                 },
               });
             };
-            var consequent_13 = ($$anchor4) => {
+            var consequent_12 = ($$anchor4) => {
               PreviewView($$anchor4, {
                 get panel() {
                   return get(panel);
@@ -20495,10 +20452,9 @@ function App($$anchor, $$props) {
               )
                 $$render(consequent_9, 5);
               else if (get(panel).tab === "steps") $$render(consequent_10, 6);
-              else if (get(panel).tab === "random") $$render(consequent_11, 7);
               else if (get(panel).tab === "settings")
-                $$render(consequent_12, 8);
-              else if (get(panel).tab === "preview") $$render(consequent_13, 9);
+                $$render(consequent_11, 7);
+              else if (get(panel).tab === "preview") $$render(consequent_12, 8);
             });
           }
           append($$anchor3, fragment_5);
@@ -20512,7 +20468,7 @@ function App($$anchor, $$props) {
   reset(ha_top_app_bar_fixed);
   var node_9 = sibling(ha_top_app_bar_fixed, 2);
   {
-    var consequent_14 = ($$anchor2) => {
+    var consequent_13 = ($$anchor2) => {
       UnsavedStepDialog($$anchor2, {
         get panel() {
           return get(panel);
@@ -20523,7 +20479,7 @@ function App($$anchor, $$props) {
       () => get(panel).pendingStepExit && hasProgram(get(panel)),
     );
     if_block(node_9, ($$render) => {
-      if (get(d_3)) $$render(consequent_14);
+      if (get(d_3)) $$render(consequent_13);
     });
   }
   template_effect(
@@ -21952,6 +21908,7 @@ var OccupiedPanel = class extends HTMLElement {
       draft = copy(candidate || this.draft),
       expected = this.revision,
       editor = this.activeEditor,
+      editorKind = this.randomEditor ? "random" : "step",
       submittedForm = editor ? copy(editor.form) : null;
     return this.run(async (epoch) => {
       const validation = await this.ws("editor_validate", { program: draft });
@@ -22008,9 +21965,7 @@ var OccupiedPanel = class extends HTMLElement {
         this.renderView();
         if (editor) {
           this.shadowRoot
-            .getElementById(
-              `${this.tab === "random" ? "random" : "step"}-card-${editor.id}`,
-            )
+            .getElementById(`${editorKind}-card-${editor.id}`)
             ?.focus({ preventScroll: true });
         }
         return true;
