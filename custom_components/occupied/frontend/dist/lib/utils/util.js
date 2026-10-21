@@ -225,7 +225,7 @@ export function timingExplanation(
               includeHints: false,
             }).slice(t("runs").length + 1);
     }
-    explanation += `. ${t(key === "latestAt" ? "latest_at_summary" : "only_before_summary").replace("{boundary}", () => label)}`;
+    explanation += `, ${t(key === "latestAt" ? "latest_at_summary" : "only_before_summary").replace("{boundary}", () => label)}`;
   }
   if (modified && options.includeHints !== false) {
     explanation += `. ${t("timing_limits_sampling_hint")}`;
@@ -290,9 +290,7 @@ function baseTimingExplanation(
     if (seconds(time.end) === seconds(time.start)) {
       return `${fixedTime}${includeHints ? `. ${t("time_window_fixed_hint")}` : ""}`;
     }
-    const nextDay =
-      seconds(time.end) < seconds(time.start) ? ` ${t("the_next_day")}` : "";
-    return `${runs} ${t("at_a_random_time_between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}`;
+    return `${runs} ${t("at_a_random_time_between")} ${display(time.start)} ${t("and")} ${display(time.end)}`;
   }
   if (Object.keys(offsetErrors(time)).length > 0) {
     return t(

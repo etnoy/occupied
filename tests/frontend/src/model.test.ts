@@ -342,7 +342,7 @@ void test("absolute timing explanation follows fixed, random and overnight windo
   );
   assert.equal(
     timingExplanation({ ...base, start: "23:00", end: "00:30" }),
-    "Runs at a random time between 23:00 and 00:30 the next day",
+    "Runs at a random time between 23:00 and 00:30",
   );
   assert.equal(
     timingExplanation({ ...base, end: "18:00:00" }),

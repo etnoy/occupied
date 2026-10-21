@@ -68,21 +68,53 @@ void test("modifier validation reports nested fields and permits fixed solar sou
   assert.equal(buildStep(p, editor).steps!.bedroom.timing.latest_at, undefined);
 });
 
-void test("timing summaries describe cap, strict gate, source and sampling order", () => {
+void test("timing summaries describe limits and sampling order", () => {
   const time = timingForm(program().steps!.bedroom.timing);
   const text = timingExplanation(time, [], translator("en"));
   assert.match(text, /Runs 1 hour 30 minutes before sunset/);
-  assert.match(text, /No later than 18:00/);
+  assert.match(text, /, but no later than 18:00/);
   assert.match(
     text,
-    /Only runs strictly before 1 hour 30 minutes after sunrise; equality skips/,
+    /, but only if that is 1 hour 30 minutes after sunrise or earlier/,
   );
   assert.match(text, /Sample once, then apply the limit and condition/);
   assert.match(text, /without resampling/);
   assert.doesNotMatch(text, /Add an end offset/);
   const swedish = timingExplanation(time, [], translator("sv"));
-  assert.match(swedish, /Senast 18:00/);
-  assert.match(swedish, /Kör endast strikt före/);
+  assert.match(swedish, /, men senast 18:00/);
+  assert.match(swedish, /, men bara om det är/);
   time.onlyBefore!.startOffset = "0s";
-  assert.match(timingExplanation(time), /Only runs strictly before sunrise;/);
+  assert.match(
+    timingExplanation(time),
+    /, but only if that is sunrise or earlier/,
+  );
+});
+
+void test("step summaries connect the requested clock and solar limits", () => {
+  assert.equal(
+    timingExplanation(
+      timingForm({
+        absolute_time: { start: "05:30" },
+        only_before: { relative_to: { sun: "sunrise", start_offset: "90m" } },
+      }),
+      [],
+      translator("en"),
+      [],
+      { includeHints: false },
+    ),
+    "Runs at 05:30, but only if that is 1 hour 30 minutes after sunrise or earlier",
+  );
+  assert.equal(
+    timingExplanation(
+      timingForm({
+        relative_to: { sun: "sunset", start_offset: "-90m" },
+        latest_at: { absolute_time: { start: "18:00" } },
+      }),
+      [],
+      translator("en"),
+      [],
+      { includeHints: false },
+    ),
+    "Runs 1 hour 30 minutes before sunset, but no later than 18:00",
+  );
 });
