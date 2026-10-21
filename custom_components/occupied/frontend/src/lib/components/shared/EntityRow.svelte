@@ -31,6 +31,13 @@
 
   let expanded = $state(false);
 
+  let unresolved = $derived.by(() => {
+    void context;
+    const state = panel._hass.states?.[entity]?.state;
+
+    return state == null || state === "unknown" || state === "unavailable";
+  });
+
   let fieldPrefix = $derived(context.fieldPrefix || "");
   let name = $derived(entityName(panel.catalog, entity));
   let settings = $derived(
@@ -48,7 +55,11 @@
   });
 </script>
 
-<div class="entity-row" data-entity-row={entity}>
+<div
+  class="entity-row"
+  class:entity-warning={unresolved}
+  data-entity-row={entity}
+>
   <div class="entity-target">
     {#if readOnlyTarget}
       <span class="entity-name">{name}</span>
@@ -157,6 +168,15 @@
     padding: 12px;
     margin-bottom: 10px;
     min-width: 0;
+  }
+
+  .entity-row.entity-warning {
+    border-color: var(--warning-color, #ffa600);
+    background: color-mix(
+      in srgb,
+      var(--warning-color, #ffa600) 10%,
+      var(--card-background-color, #fff)
+    );
   }
 
   .entity-target {

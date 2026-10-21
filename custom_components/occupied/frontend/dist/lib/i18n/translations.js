@@ -88,6 +88,7 @@ export const en = {
   action_yaml: "Action YAML",
   actions: "actions",
   entity_and_more: "{entity} and {count} more",
+  warnings_more: "{count} more...",
   custom_yaml_hint:
     "Enter one action or an ordered list of actions. Use brightness from 1 to 255. Timing stays in the controls above. A failed call stops the remaining actions.",
   custom_yaml_replace_confirm:
@@ -719,6 +720,7 @@ export const sv = {
   action_yaml: "Åtgärds-YAML",
   actions: "åtgärder",
   entity_and_more: "{entity} och {count} till",
+  warnings_more: "{count} till...",
   custom_yaml_hint:
     "Ange en åtgärd eller en ordnad lista med åtgärder. Använd brightness från 1 till 255. Tider anges i kontrollerna ovan. Ett misslyckat anrop stoppar återstående åtgärder.",
   custom_yaml_replace_confirm:
