@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
@@ -8,6 +8,11 @@ import type { Catalog, HaSelector } from "@occupied/lib/types.js";
 import type { ProgramDocument } from "@occupied/lib/types.js";
 
 const browserBaseUrl = `http://127.0.0.1:${process.env.HA_BROWSER_PORT || "18123"}`;
+
+const brightnessInput = (row: Locator) =>
+  row
+    .locator('ha-selector[aria-label="Brightness (%)"]')
+    .getByRole("spinbutton");
 
 test("create, preview, delete and protect YAML edits in the installed release", async ({
   page,
@@ -166,10 +171,9 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await page.getByText("Smoke light", { exact: true }).click();
   const lightRow = panel.locator('[data-entity-row="light.smoke_light"]');
   await lightRow.locator("summary").click();
-  const brightness = lightRow.getByRole("slider", {
-    name: "Brightness (%)",
-    exact: true,
-  });
+  const brightness = lightRow
+    .locator('ha-selector[aria-label="Brightness (%)"]')
+    .getByRole("slider");
   await brightness.press("Home");
   for (let value = 1; value < 40; value += 1) {
     await brightness.press("ArrowRight");
@@ -209,9 +213,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   );
   await panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }).click();
   await lightRow.locator("summary").click();
-  await expect(
-    lightRow.getByRole("spinbutton", { name: "Brightness (%)", exact: true }),
-  ).toHaveValue("40");
+  await expect(brightnessInput(lightRow)).toHaveValue("40");
   await panel.getByRole("button", { name: "Save step", exact: true }).click();
   await panel.getByRole("button", { name: "Random", exact: true }).click();
   await panel.locator("[data-create-random]").click();
@@ -1288,25 +1290,19 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   const endLight = endAction.locator('[data-entity-row="light.fade_smoke"]');
   await startLight.locator("summary").click();
   await endLight.locator("summary").click();
-  await startLight
-    .getByRole("spinbutton", { name: "Brightness (%)", exact: true })
-    .fill("0");
+  await brightnessInput(startLight).fill("0");
   await random
     .getByRole("button", { name: "Save random event", exact: true })
     .click();
   await expect(startLight.getByRole("alert")).toContainText("greater than 0");
-  await startLight
-    .getByRole("spinbutton", { name: "Brightness (%)", exact: true })
-    .fill("40");
+  await brightnessInput(startLight).fill("40");
   await startLight
     .getByRole("spinbutton", { name: "Transition (seconds)", exact: true })
     .fill("2");
   await endLight
     .getByRole("spinbutton", { name: "Transition (seconds)", exact: true })
     .fill("7");
-  await expect(
-    endLight.getByRole("spinbutton", { name: "Brightness (%)", exact: true }),
-  ).toHaveCount(0);
+  await expect(brightnessInput(endLight)).toHaveCount(0);
   await expect(
     startAction.locator('[data-entity-row="switch.settings_smoke"] summary'),
   ).toHaveCount(0);
@@ -1318,9 +1314,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   ).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(panel).toHaveAttribute("narrow", "");
-  await startLight
-    .getByRole("spinbutton", { name: "Brightness (%)", exact: true })
-    .focus();
+  await brightnessInput(startLight).focus();
   await page.keyboard.press("Tab");
   await expect(
     startLight.getByRole("spinbutton", {
@@ -1372,9 +1366,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await panel.getByRole("button", { name: /^Settings test(?:\s|$)/ }).click();
   await startLight.locator("summary").click();
   await endLight.locator("summary").click();
-  await expect(
-    startLight.getByRole("spinbutton", { name: "Brightness (%)", exact: true }),
-  ).toHaveValue("40");
+  await expect(brightnessInput(startLight)).toHaveValue("40");
   await expect(
     endLight.getByRole("spinbutton", {
       name: "Transition (seconds)",
@@ -1384,9 +1376,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await startLight
     .getByRole("button", { name: "Reset light settings", exact: true })
     .click();
-  await expect(
-    startLight.getByRole("spinbutton", { name: "Brightness (%)", exact: true }),
-  ).toHaveValue("");
+  await expect(brightnessInput(startLight)).toHaveValue("");
   await expect(
     endLight.getByRole("spinbutton", {
       name: "Transition (seconds)",
