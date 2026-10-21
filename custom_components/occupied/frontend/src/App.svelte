@@ -13,7 +13,6 @@
   import SettingsView from "./lib/components/settings/SettingsView.svelte";
   import PreviewView from "./lib/components/preview/PreviewView.svelte";
   import UnsavedStepDialog from "./lib/components/shared/UnsavedStepDialog.svelte";
-  import RandomView from "./lib/components/random/RandomView.svelte";
   import RandomEventEditor from "./lib/components/random/RandomEventEditor.svelte";
 
   let {
@@ -63,7 +62,7 @@
     const entries =
       showingCards && panel.tab === "steps" ? stepEntries(panel.draft) : [];
     const random =
-      showingCards && panel.tab === "random" ? randomEntries(panel.draft) : [];
+      showingCards && panel.tab === "steps" ? randomEntries(panel.draft) : [];
     const visibleIssues = panel.visibleIssues();
     const issueTabs = new SvelteSet<Tab>();
     for (const issue of visibleIssues) {
@@ -74,12 +73,12 @@
         ? issue.model_path[0]
         : issue.path?.match(/^\$\.(steps|random)(?:\.|\[|$)/)?.[1];
       issueTabs.add(
-        section === "steps" || section === "random" ? section : "settings",
+        section === "steps" || section === "random" ? "steps" : "settings",
       );
     }
     for (const [tab, errors] of [
       ["steps", panel.stepEditor?.errors],
-      ["random", panel.randomEditor?.errors],
+      ["steps", panel.randomEditor?.errors],
       ["settings", panel.runConditionErrors],
     ] as const) {
       if (errors && Object.keys(errors).length > 0) {
@@ -114,8 +113,7 @@
   let { t, notices, primary, issues, issueTabs } = $derived(state);
 
   const primaryTabs: [Tab, string][] = [
-    ["steps", "steps"],
-    ["random", "random"],
+    ["steps", "activity"],
     ["preview", "preview"],
     ["settings", "settings"],
   ];
@@ -236,8 +234,6 @@
             <RandomEventEditor {panel} {revision} />
           {:else if panel.tab === "steps"}
             <StepsView {panel} {revision} />
-          {:else if panel.tab === "random"}
-            <RandomView {panel} {revision} />
           {:else if panel.tab === "settings"}
             <SettingsView {panel} {revision} />
           {:else if panel.tab === "preview"}

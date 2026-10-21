@@ -33,7 +33,7 @@ export function openRandom(panel: LoadedOccupiedPanel, entry?: RandomEntry) {
     return;
   }
   panel.randomEditor = randomEditor(panel.draft, entry);
-  panel.tab = "random";
+  panel.tab = "steps";
   panel.error = "";
   panel.issues = [];
   panel.renderView();

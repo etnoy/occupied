@@ -507,7 +507,7 @@ export interface HaGenericPicker extends HTMLElement {
   required: boolean;
 }
 
-export type Tab = "steps" | "random" | "settings" | "preview";
+export type Tab = "steps" | "settings" | "preview";
 
 declare global {
   interface HTMLElementTagNameMap {

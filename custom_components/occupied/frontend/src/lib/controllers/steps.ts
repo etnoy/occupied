@@ -50,7 +50,7 @@ export function startStep(
   entry?: StepEntry | null,
   parent?: StepEntry,
 ) {
-  if (panel.stepEditor) {
+  if (panel.activeEditor) {
     panel.requestStepExit(() => startStep(panel, entry, parent));
 
     return;
@@ -93,7 +93,7 @@ export function openStep(panel: LoadedOccupiedPanel, entry: StepEntry) {
 
     return;
   }
-  if (panel.stepEditor) {
+  if (panel.activeEditor) {
     panel.requestStepExit(() => openStep(panel, entry));
 
     return;
@@ -123,8 +123,8 @@ export function actionSummary(entry: StepEntry, t: Translate) {
   return entry.action;
 }
 
-export function stepTree(
-  entries: StepEntry[],
+export function stepTree<T extends TimedEntry>(
+  entries: T[],
   sources: Pick<TimeSource, "value" | "today_time">[] = [],
   relatedEntries: TimedEntry[] = [],
 ) {
@@ -132,24 +132,31 @@ export function stepTree(
     timingOrder([...entries, ...relatedEntries], sources),
   );
   const seen = new Set<string>(),
-    ordered: { entry: StepEntry; depth: number; branches: boolean[] }[] = [];
-  const append = (entry: StepEntry, branches: boolean[]) => {
+    ordered: { entry: T; depth: number; branches: boolean[] }[] = [];
+  const parentId = (entry: T) => {
+    const relative = (entry.timing || entry.start)?.relative_to;
+
+    return (
+      relative?.step ||
+      (relative?.random ? `random:${relative.random}` : undefined)
+    );
+  };
+  const append = (entry: T, branches: boolean[]) => {
     if (seen.has(entry.id)) {
       return;
     }
     seen.add(entry.id);
     ordered.push({ entry, depth: branches.length, branches });
     const children = sortedEntries.filter(
-      (child) =>
-        child.timing.relative_to?.step === entry.id && !seen.has(child.id),
+      (child) => parentId(child) === entry.id && !seen.has(child.id),
     );
     for (const [index, child] of children.entries()) {
       append(child, [...branches, index < children.length - 1]);
     }
   };
-  const isRoot = (step: StepEntry) =>
-    !step.timing.relative_to?.step ||
-    entries.every((parent) => parent.id !== step.timing.relative_to?.step);
+  const isRoot = (entry: T) =>
+    !parentId(entry) ||
+    entries.every((parent) => parent.id !== parentId(entry));
   for (const step of sortedEntries) {
     if (isRoot(step)) {
       append(step, []);
