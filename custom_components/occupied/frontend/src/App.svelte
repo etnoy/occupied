@@ -58,8 +58,6 @@
     void revision;
     const showingCards =
       hasProgram(panel) &&
-      panel.selectedInstance?.loaded &&
-      !panel._loading &&
       (!panel.stepEditor || panel.stepEditor.existing) &&
       (!panel.randomEditor || panel.randomEditor.existing);
     const entries =
@@ -177,9 +175,6 @@
     <div id="notice" class="banner" role="status" hidden={!notices}>
       {notices}
     </div>
-    {#if panel.runtimeSubscriptionError}
-      <button type="button" onclick={() => panel.retry()}>{t("retry")}</button>
-    {/if}
     <nav aria-label={t("occupied")}>
       {#each primaryTabs as [id, label] (id)}
         <button
@@ -221,22 +216,16 @@
               {t("draft_invalid_hint")}
             </p>
           {/snippet}
-          {#if panel.starting}
+          {#if !hasProgram(panel) && panel.starting}
             <p role="status" aria-live="polite">
               {t("waiting_for_home_assistant")}
             </p>
-          {:else if panel.selectedEntry && !panel.selectedInstance?.loaded}
+          {:else if !hasProgram(panel) && panel.selectedEntry && !panel.selectedInstance?.loaded}
             <p>
               {t("instance_unavailable_hint")}
             </p>
-            <button type="button" onclick={() => panel.retry()}
-              >{t("retry")}</button
-            >
-          {:else if panel._loading || !hasProgram(panel) || (panel.error && !panel.entryLoaded)}
-            {#if panel.error && !panel._loading}
-              <button type="button" onclick={() => panel.retry()}
-                >{t("retry")}</button
-              >{/if}
+          {:else if !hasProgram(panel)}
+            <!-- Initial loads recover automatically; keep an existing view mounted. -->
           {:else if panel.recovering && panel.tab !== "settings"}
             <button type="button" onclick={() => panel.navigate("settings")}
               >{t("settings")}</button
