@@ -39,8 +39,7 @@ void test("random explanation describes weekdays, fixed counts, durations, and s
       "3 events start at random times during each active period. " +
       "Each event lasts between 5 minutes and 15 minutes. " +
       "When each event starts, turn on Living room lamp. " +
-      "When each event ends, turn off Living room lamp. " +
-      "Events may overlap, but all finish before the active period ends.",
+      "When each event ends, turn off Living room lamp.",
   );
   form.sameEntities = false;
   assert.match(

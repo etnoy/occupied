@@ -369,8 +369,6 @@ var en = {
   random_end_action_summary: "When each event ends, {action}.",
   random_single_finish_hint:
     "The event finishes before the active period ends.",
-  random_overlap_hint:
-    "Events may overlap, but all finish before the active period ends.",
   times_per_window: "times per active period",
   minimum_duration: "Minimum duration",
   maximum_duration: "Maximum duration",
@@ -531,9 +529,9 @@ var en = {
   time_window_fixed_hint: "Start and end are the same, so the time is fixed",
   end_of_window_optional: "End of window (optional)",
   add_end_of_window: "Add end of window",
+  offset: "Offset",
   start_offset: "Start offset",
-  end_offset_optional: "End offset (optional)",
-  add_end_offset: "Add end offset",
+  end_offset: "End offset",
   remove_end_offset: "Remove end offset",
   choose_a_step_or_event: "Choose a step or event",
   window_offsets_prompt:
@@ -1021,8 +1019,6 @@ var sv = {
   random_end_action_summary: "N\xE4r varje h\xE4ndelse slutar, {action}.",
   random_single_finish_hint:
     "H\xE4ndelsen avslutas innan den aktiva perioden slutar.",
-  random_overlap_hint:
-    "H\xE4ndelser kan \xF6verlappa, men alla avslutas innan den aktiva perioden slutar.",
   times_per_window: "g\xE5nger per aktiv period",
   minimum_duration: "Minsta varaktighet",
   maximum_duration: "L\xE4ngsta varaktighet",
@@ -1187,9 +1183,9 @@ var sv = {
   time_window_fixed_hint: "Start och slut \xE4r samma, s\xE5 tiden \xE4r fast",
   end_of_window_optional: "Slut p\xE5 tidsintervall (valfritt)",
   add_end_of_window: "L\xE4gg till slut p\xE5 tidsintervall",
+  offset: "F\xF6rskjutning",
   start_offset: "Startf\xF6rskjutning",
-  end_offset_optional: "Slutf\xF6rskjutning (valfritt)",
-  add_end_offset: "L\xE4gg till slutf\xF6rskjutning",
+  end_offset: "Slutf\xF6rskjutning",
   remove_end_offset: "Ta bort slutf\xF6rskjutning",
   choose_a_step_or_event: "V\xE4lj ett steg eller en h\xE4ndelse",
   window_offsets_prompt:
@@ -12807,19 +12803,22 @@ var root_36 = from_html(
 var root_43 = from_html(`<button type="button" class="text-button"> </button>`);
 var root_53 = from_html(`<!> <!>`, 1);
 var root_62 = from_html(`<p class="hint"> </p>`);
-var root_7 = from_html(`<!> <!> <!> <!> <!>`, 1);
-var root_8 = from_html(
+var root_7 = from_html(
+  `<button type="button" class="icon-button remove-offset svelte-o15vly"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12Z"></path></svg></button>`,
+);
+var root_8 = from_html(`<!> <!> <!> <!> <!>`, 1);
+var root_9 = from_html(
   `<fieldset class="timing-options"><legend> </legend> <label class="timing-option"><input type="checkbox"/> <span> </span></label> <!></fieldset>`,
 );
-var root_9 = from_html(
+var root_10 = from_html(
   `<p class="hint" data-timing-explanation="" aria-live="polite"> </p>`,
 );
-var root_10 = from_html(
+var root_11 = from_html(
   `<div data-editor-section="time"><!> <fieldset class="timing-options"><div class="timing-option-row"></div> <!></fieldset> <!> <!> <!> <!></div>`,
 );
 var $$css4 = {
   hash: "svelte-o15vly",
-  code: "h4.svelte-o15vly {font-size:18px;margin:16px 0 8px;}.time-controls-inline.svelte-o15vly {display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px;margin:18px 0;}.time-controls-inline.svelte-o15vly .field {margin:0;}.time-controls-inline.svelte-o15vly > button:where(.svelte-o15vly) {flex:0 0 auto;margin-bottom:7px;}",
+  code: "h4.svelte-o15vly {font-size:18px;margin:16px 0 8px;}.remove-offset.svelte-o15vly {width:28px;min-height:28px;padding:4px;}.time-controls-inline.svelte-o15vly {display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px;margin:18px 0;}.time-controls-inline.svelte-o15vly .field {margin:0;}.time-controls-inline.svelte-o15vly > button:where(.svelte-o15vly) {flex:0 0 auto;margin-bottom:7px;}",
 };
 function TimingEditor($$anchor, $$props) {
   push($$props, true);
@@ -12855,6 +12854,14 @@ function TimingEditor($$anchor, $$props) {
     () =>
       !!(get(time).end || get(editor).showEndTime || get(editor).errors.end),
   );
+  let endOffsetVisible = user_derived(
+    () =>
+      !!(
+        get(time).endOffset ||
+        get(editor).showEndOffset ||
+        get(editor).errors.endOffset
+      ),
+  );
   let showMaxDuration = state(false);
   let maxDurationVisible = user_derived(
     () =>
@@ -12889,7 +12896,7 @@ function TimingEditor($$anchor, $$props) {
     }
     return choices2;
   });
-  var div = root_10();
+  var div = root_11();
   var node = child(div);
   element(
     node,
@@ -13220,7 +13227,7 @@ function TimingEditor($$anchor, $$props) {
       append($$anchor2, fragment_2);
     };
     var consequent_8 = ($$anchor2) => {
-      var fragment_4 = root_7();
+      var fragment_4 = root_8();
       var node_8 = first_child(fragment_4);
       SourcePicker(
         node_8,
@@ -13295,7 +13302,10 @@ function TimingEditor($$anchor, $$props) {
       }
       var node_11 = sibling(node_10, 2);
       {
-        let $0 = user_derived(() => ({
+        let $0 = user_derived(() =>
+          get(endOffsetVisible) ? "start_offset" : "offset",
+        );
+        let $1 = user_derived(() => ({
           placeholder: $$props.context.t("offset_example"),
         }));
         EditorField(node_11, {
@@ -13306,13 +13316,15 @@ function TimingEditor($$anchor, $$props) {
             return $$props.context;
           },
           key: "startOffset",
-          label: "start_offset",
+          get label() {
+            return get($0);
+          },
           get value() {
             return get(time).startOffset;
           },
           update: (value) => (get(time).startOffset = value),
           get options() {
-            return get($0);
+            return get($1);
           },
         });
       }
@@ -13321,11 +13333,17 @@ function TimingEditor($$anchor, $$props) {
         var consequent_7 = ($$anchor3) => {
           {
             const trailing = ($$anchor4) => {
-              var button_3 = root_36();
-              var text_7 = only_child(button_3, true);
+              var button_3 = root_7();
               template_effect(
-                ($0) => set_text(text_7, $0),
-                [() => get(t)("remove_end_offset")],
+                ($0, $1) => {
+                  set_attribute2(button_3, "aria-label", $0);
+                  set_attribute2(button_3, "title", $1);
+                  button_3.disabled = $$props.panel.busy;
+                },
+                [
+                  () => get(t)("remove_end_offset"),
+                  () => get(t)("remove_end_offset"),
+                ],
               );
               delegated("click", button_3, () => {
                 get(time).endOffset = "";
@@ -13343,7 +13361,7 @@ function TimingEditor($$anchor, $$props) {
                 return $$props.context;
               },
               key: "endOffset",
-              label: "end_offset_optional",
+              label: "end_offset",
               get value() {
                 return get(time).endOffset;
               },
@@ -13355,11 +13373,14 @@ function TimingEditor($$anchor, $$props) {
           }
         };
         var alternate_1 = ($$anchor3) => {
-          var button_4 = root_43();
-          var text_8 = only_child(button_4, true);
+          var button_4 = root_17();
+          var text_7 = only_child(button_4, true);
           template_effect(
-            ($0) => set_text(text_8, $0),
-            [() => get(t)("add_end_offset")],
+            ($0) => {
+              button_4.disabled = $$props.panel.busy;
+              set_text(text_7, $0);
+            },
+            [() => get(t)("add_randomness")],
           );
           delegated("click", button_4, () => {
             get(editor).showEndOffset = true;
@@ -13368,12 +13389,7 @@ function TimingEditor($$anchor, $$props) {
           append($$anchor3, button_4);
         };
         if_block(node_12, ($$render) => {
-          if (
-            get(time).endOffset ||
-            get(editor).showEndOffset ||
-            get(editor).errors.endOffset
-          )
-            $$render(consequent_7);
+          if (get(endOffsetVisible)) $$render(consequent_7);
           else $$render(alternate_1, -1);
         });
       }
@@ -13382,9 +13398,9 @@ function TimingEditor($$anchor, $$props) {
     var d_2 = user_derived(() => modes().some(([mode]) => mode === "relative"));
     var alternate_2 = ($$anchor2) => {
       var p_2 = root_62();
-      var text_9 = only_child(p_2, true);
+      var text_8 = only_child(p_2, true);
       template_effect(
-        ($0) => set_text(text_9, $0),
+        ($0) => set_text(text_8, $0),
         [() => get(t)("random_relative_end_hint")],
       );
       append($$anchor2, p_2);
@@ -13414,14 +13430,14 @@ function TimingEditor($$anchor, $$props) {
           let modifier = () => get($$array_1)[0];
           let label2 = () => get($$array_1)[1];
           const key2 = user_derived(modifier);
-          var fieldset_1 = root_8();
+          var fieldset_1 = root_9();
           var legend = child(fieldset_1);
-          var text_10 = only_child(legend, true);
+          var text_9 = only_child(legend, true);
           var label_2 = sibling(legend, 2);
           var input_1 = child(label_2);
           remove_input_defaults(input_1);
           var span_1 = sibling(input_1, 2);
-          var text_11 = only_child(span_1, true);
+          var text_10 = only_child(span_1, true);
           reset(label_2);
           var node_15 = sibling(label_2, 2);
           {
@@ -13445,10 +13461,10 @@ function TimingEditor($$anchor, $$props) {
           reset(fieldset_1);
           template_effect(
             ($0, $1, $2) => {
-              set_text(text_10, $0);
+              set_text(text_9, $0);
               set_attribute2(input_1, "data-builder-field", get(key2));
               set_checked(input_1, $1);
-              set_text(text_11, $2);
+              set_text(text_10, $2);
             },
             [
               () => get(t)(label2()),
@@ -13479,9 +13495,9 @@ function TimingEditor($$anchor, $$props) {
       {
         var consequent_10 = ($$anchor3) => {
           var p_3 = root_62();
-          var text_12 = only_child(p_3, true);
+          var text_11 = only_child(p_3, true);
           template_effect(
-            ($0) => set_text(text_12, $0),
+            ($0) => set_text(text_11, $0),
             [() => get(t)("timing_limits_source_date_hint")],
           );
           append($$anchor3, p_3);
@@ -13500,10 +13516,10 @@ function TimingEditor($$anchor, $$props) {
   var node_17 = sibling(node_13, 2);
   {
     var consequent_12 = ($$anchor2) => {
-      var p_4 = root_9();
-      var text_13 = only_child(p_4, true);
+      var p_4 = root_10();
+      var text_12 = only_child(p_4, true);
       template_effect(
-        ($0) => set_text(text_13, $0),
+        ($0) => set_text(text_12, $0),
         [
           () =>
             timingExplanation(
@@ -13543,9 +13559,9 @@ function TimingEditor($$anchor, $$props) {
   {
     var consequent_13 = ($$anchor2) => {
       var p_5 = root_62();
-      var text_14 = only_child(p_5, true);
+      var text_13 = only_child(p_5, true);
       template_effect(
-        ($0) => set_text(text_14, $0),
+        ($0) => set_text(text_13, $0),
         [() => get(t)("managed_file_draft_hint")],
       );
       append($$anchor2, p_5);
@@ -14354,17 +14370,10 @@ function ActionEditor($$anchor, $$props) {
         get label() {
           return entityLabel();
         },
-        get readOnlyTargets() {
-          return hideEntities();
-        },
       });
     };
     if_block(node_1, ($$render) => {
-      if (
-        get(form).kind !== "custom" &&
-        (!hideEntities() || get(form).kind === "entities")
-      )
-        $$render(consequent);
+      if (get(form).kind !== "custom" && !hideEntities()) $$render(consequent);
     });
   }
   var node_2 = sibling(node_1, 2);
@@ -16347,11 +16356,11 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
   if (off && !cannotFit) {
     sentences.push(say("random_end_action_summary", { action: off }));
   }
-  const conclusion =
-    validCounts && maximum === 1
-      ? "random_single_finish_hint"
-      : "random_overlap_hint";
-  sentences.push(t(cannotFit ? "random_duration_priority_hint" : conclusion));
+  if (cannotFit) {
+    sentences.push(t("random_duration_priority_hint"));
+  } else if (validCounts && maximum === 1) {
+    sentences.push(t("random_single_finish_hint"));
+  }
   return sentences.join(" ");
 }
 
@@ -18897,7 +18906,7 @@ var root_93 = from_html(
   `<button type="button" class="text-button source-link svelte-1iz1525"> </button>`,
 );
 var root_103 = from_html(`<td class="svelte-1iz1525"><!></td>`);
-var root_11 = from_html(
+var root_1110 = from_html(
   `<tr><!><td class="svelte-1iz1525"> </td><td class="svelte-1iz1525"><span class="event-action svelte-1iz1525"><!> </span></td><!><!></tr>`,
 );
 var root_124 = from_html(`<!> <tbody class="svelte-1iz1525"></tbody>`, 1);
@@ -19152,7 +19161,7 @@ function Timeline($$anchor, $$props) {
                       entityNames(),
                     ),
                   );
-                  var tr_2 = root_11();
+                  var tr_2 = root_1110();
                   let classes;
                   var node_9 = child(tr_2);
                   {
@@ -19528,7 +19537,7 @@ var root_94 = from_html(
   1,
 );
 var root_104 = from_html(`<p role="status" class="hint svelte-jw9j7k"> </p>`);
-var root_1110 = from_html(
+var root_1111 = from_html(
   `<section class="live-card svelte-jw9j7k"><h2 class="svelte-jw9j7k"> </h2> <!> <!></section>`,
 );
 var root_126 = from_html(`<!> <!> <!>`, 1);
@@ -19661,7 +19670,7 @@ function LivePreviewControls($$anchor, $$props) {
   var node_3 = sibling(node_2, 2);
   {
     var consequent_12 = ($$anchor2) => {
-      var section = root_1110();
+      var section = root_1111();
       var h2 = child(section);
       var text_4 = only_child(h2, true);
       var node_4 = sibling(h2, 2);

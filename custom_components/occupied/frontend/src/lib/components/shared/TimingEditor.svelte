@@ -42,6 +42,9 @@
   let endTimeVisible = $derived(
     !!(time.end || editor.showEndTime || editor.errors.end),
   );
+  let endOffsetVisible = $derived(
+    !!(time.endOffset || editor.showEndOffset || editor.errors.endOffset),
+  );
 
   let showMaxDuration = $state(false);
 
@@ -287,23 +290,26 @@
       {panel}
       {context}
       key="startOffset"
-      label="start_offset"
+      label={endOffsetVisible ? "start_offset" : "offset"}
       value={time.startOffset}
       update={(value) => (time.startOffset = value)}
       options={{ placeholder: context.t("offset_example") }}
     ></EditorField>
-    {#if time.endOffset || editor.showEndOffset || editor.errors.endOffset}
+    {#if endOffsetVisible}
       <EditorField
         {panel}
         {context}
         key="endOffset"
-        label="end_offset_optional"
+        label="end_offset"
         value={time.endOffset}
         update={(value) => (time.endOffset = value)}
         options={{}}
         >{#snippet trailing()}<button
             type="button"
-            class="text-button"
+            class="icon-button remove-offset"
+            aria-label={t("remove_end_offset")}
+            title={t("remove_end_offset")}
+            disabled={panel.busy}
             onclick={() => {
               time.endOffset = "";
               editor.showEndOffset = false;
@@ -311,19 +317,23 @@
               refresh("startOffset");
             }}
           >
-            {t("remove_end_offset")}
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path
+                d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12Z"
+              />
+            </svg>
           </button>{/snippet}</EditorField
       >
     {:else}
       <button
         type="button"
-        class="text-button"
+        disabled={panel.busy}
         onclick={() => {
           editor.showEndOffset = true;
           refresh("endOffset");
         }}
       >
-        {t("add_end_offset")}
+        {t("add_randomness")}
       </button>
     {/if}
   {:else}
@@ -402,6 +412,12 @@
   h4 {
     font-size: 18px;
     margin: 16px 0 8px;
+  }
+
+  .remove-offset {
+    width: 28px;
+    min-height: 28px;
+    padding: 4px;
   }
 
   .time-controls-inline {

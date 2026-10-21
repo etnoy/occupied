@@ -273,8 +273,6 @@ export const en = {
   random_end_action_summary: "When each event ends, {action}.",
   random_single_finish_hint:
     "The event finishes before the active period ends.",
-  random_overlap_hint:
-    "Events may overlap, but all finish before the active period ends.",
   times_per_window: "times per active period",
   minimum_duration: "Minimum duration",
   maximum_duration: "Maximum duration",
@@ -435,9 +433,9 @@ export const en = {
   time_window_fixed_hint: "Start and end are the same, so the time is fixed",
   end_of_window_optional: "End of window (optional)",
   add_end_of_window: "Add end of window",
+  offset: "Offset",
   start_offset: "Start offset",
-  end_offset_optional: "End offset (optional)",
-  add_end_offset: "Add end offset",
+  end_offset: "End offset",
   remove_end_offset: "Remove end offset",
   choose_a_step_or_event: "Choose a step or event",
   window_offsets_prompt:
@@ -917,8 +915,6 @@ export const sv = {
   random_end_action_summary: "När varje händelse slutar, {action}.",
   random_single_finish_hint:
     "Händelsen avslutas innan den aktiva perioden slutar.",
-  random_overlap_hint:
-    "Händelser kan överlappa, men alla avslutas innan den aktiva perioden slutar.",
   times_per_window: "gånger per aktiv period",
   minimum_duration: "Minsta varaktighet",
   maximum_duration: "Längsta varaktighet",
@@ -1081,9 +1077,9 @@ export const sv = {
   time_window_fixed_hint: "Start och slut är samma, så tiden är fast",
   end_of_window_optional: "Slut på tidsintervall (valfritt)",
   add_end_of_window: "Lägg till slut på tidsintervall",
+  offset: "Förskjutning",
   start_offset: "Startförskjutning",
-  end_offset_optional: "Slutförskjutning (valfritt)",
-  add_end_offset: "Lägg till slutförskjutning",
+  end_offset: "Slutförskjutning",
   remove_end_offset: "Ta bort slutförskjutning",
   choose_a_step_or_event: "Välj ett steg eller en händelse",
   window_offsets_prompt:

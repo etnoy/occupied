@@ -1345,6 +1345,15 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     '[data-entity-row="light.fade_smoke"]',
   );
   const endLight = endAction.locator('[data-entity-row="light.fade_smoke"]');
+  await expect(
+    endAction.locator('[data-editor-section="entities"]'),
+  ).toHaveCount(0);
+  await random
+    .getByRole("checkbox", { name: "Use the same entities" })
+    .uncheck();
+  await expect(endLight).toBeVisible();
+  await random.getByRole("checkbox", { name: "Use the same entities" }).check();
+  await expect(endLight).toHaveCount(0);
   await startLight.locator("summary").click();
   await brightnessInput(startLight).fill("0");
   await random
@@ -1462,6 +1471,35 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     random.locator('[data-builder-field="start.anchor"]'),
   ).toHaveJSProperty("value", "step:day");
+  await expect(random.locator("[data-random-explanation]")).not.toContainText(
+    "Events may overlap",
+  );
+  for (const timing of await random
+    .locator('[data-editor-section="time"]')
+    .all()) {
+    const offset = timing.getByRole("textbox", { name: "Offset", exact: true });
+    await expect(offset).toHaveValue("0s");
+    await timing
+      .getByRole("button", { name: "Add randomness", exact: true })
+      .click();
+    await expect(
+      timing.getByRole("textbox", { name: "Start offset", exact: true }),
+    ).toHaveValue("0s");
+    await timing
+      .getByRole("textbox", { name: "End offset", exact: true })
+      .fill("15m");
+    await timing
+      .getByRole("button", { name: "Remove end offset", exact: true })
+      .click();
+    await expect(offset).toHaveValue("0s");
+    await expect(offset).toBeFocused();
+    await expect(
+      timing.getByRole("textbox", { name: "End offset", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      timing.getByRole("button", { name: "Add randomness", exact: true }),
+    ).toBeVisible();
+  }
   await random.locator("[data-random-submit]").click();
   await expect(random).toHaveCount(0);
   expect(
@@ -1490,7 +1528,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await random
     .locator('[data-editor-section="time"]')
     .last()
-    .getByRole("button", { name: "Add end offset", exact: true })
+    .getByRole("button", { name: "Add randomness", exact: true })
     .click();
   await random.locator('[data-builder-field="end.endOffset"]').fill("15m");
   await random.locator("[data-random-submit]").click();
@@ -1510,6 +1548,15 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   ).toHaveValue("-15m");
   await expect(
     random.locator('[data-builder-field="end.endOffset"]'),
+  ).toHaveValue("15m");
+  await expect(
+    random.getByRole("textbox", { name: "Offset", exact: true }),
+  ).toHaveCount(1);
+  await expect(
+    random.getByRole("textbox", { name: "Start offset", exact: true }),
+  ).toHaveValue("-15m");
+  await expect(
+    random.getByRole("textbox", { name: "End offset", exact: true }),
   ).toHaveValue("15m");
 
   const durationEnd = random.locator('[data-editor-section="time"]').last();
