@@ -14,6 +14,7 @@
   import { entitySummary, timingSummary } from "../../utils/util.js";
   import StepEditor from "./StepEditor.svelte";
   import ActivityIntro from "../shared/ActivityIntro.svelte";
+  import WarningMessages from "../shared/WarningMessages.svelte";
 
   let { panel, revision }: { panel: LoadedOccupiedPanel; revision: number } =
     $props();
@@ -107,9 +108,7 @@
               <span class="step-row-warning" id={`step-warning-${entry.id}`}>
                 <ha-icon icon="mdi:alert-outline" aria-hidden="true"></ha-icon>
                 <span>
-                  {#each warnings as warning (warning)}
-                    <span class="step-warning-message">{warning.message}</span>
-                  {/each}
+                  <WarningMessages {warnings} {t} />
                 </span>
               </span>
             {:else if !editing}
