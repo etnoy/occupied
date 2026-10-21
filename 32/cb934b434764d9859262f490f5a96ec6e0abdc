@@ -1,0 +1,59 @@
+custom_components/occupied/frontend/dist/lib/controllers/action-preview-controller.js
+  s_7dc85f6f8f52f0::t_4fe8deda53fd70 1-41
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_7dc85f6f8f52f0::t_0cd76b6dacc071 4-5,586-587
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_cfcf8ef18567c5::t_2988e494003be9 100-101,681-682,3236,3238,3240,3319-3321,3585-3586,5218,5239,7655,7658,7660,7662,11637-11648,11650-11654,11657-11658,11660-11669,11672,11677-11678,11682,11685,11689-11690,11699,11760,11764-11776,11784,11786-11787,11789,11791,11795,11797,11804-11817,11829-11830,11833,11835-11837,11841,11853-11854,11857,11859-11861,11865,11875-11876,11879,11881-11882,11884,11888,11898-11899,11909,11911,11922-11923,11926,11928,11940,11985,11993,12018-12021,12023,12068,12092,12132,12142,12201,12265,12334,12413,12435,12480,12539,12542-12544,12548,12560,12566,12663,12726,12769,12858,12895,13064,13142,13311-13312,13316-13317,13324,13330,13369,13375,13432,13438,13559-13562,13590,13638,13702,13729,13819,14002,14006-14008,14013,14023,14029,14113,14192,14278,14304,14502,14603,14618,14958-14959,14972,14980,14989,15011-15012,15016-15017,15052,15068,15090,15116,15195-15197,15215,15223,15233,15303-15304,15340,15346,15378,15447-15451,15455-15456,15465,15524,15528-15540,15547-15589,15591-15592,15594-15595,15597,15601,15611-15612,15622,15624,15632-15633,15636,15638,15649-15650,15654,15663,15665,15702-15703,15766,15794,16115,16118,16129,16135,16311,16328,16597-16598,16631,16647,16781,16785,16799,16802,16816,16875,17050,17053,17060,17063,17069,17129,17140,17278,17471-17472,17477,17483,17533,17566,18357-18358,18367,18373,18445,18467,18485,18499,18684,18687,18693,18704,18715,18721,18723,18813,18912,19025,19307,19311,19320,19335-19336,19342,19348,19382,19452,19520,19635,19709,19712,19718,19724,19733,19760,19979,20005,20064-20065,20069,20081,20085,20124,20305,20336,20426
+custom_components/occupied/frontend/src/lib/components/random/RandomActions.svelte
+  s_70e4e8d93dde49::t_034810624e9b69 7,20,96-98,137-159
+custom_components/occupied/frontend/src/lib/components/steps/StepActions.svelte
+  s_70e4e8d93dde49::t_1dfa29d164581e 9,24,100-102,151-160
+custom_components/occupied/frontend/src/lib/controllers/action-preview-controller.ts
+  s_70e4e8d93dde49::t_ca5fb1cefa70f8 1-13,15-16,19-39,42-44
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_70e4e8d93dde49::t_db20ed6d22a35e 3-4,590-591
+tests/browser/occupied.spec.ts
+  s_3707ba947ffab9::t_01a691934a71eb 7,35-47,199,202-213,240-244,246,249-257,259-269,521,570,572-592
+tests/frontend/src/instances.test.ts
+  s_70e4e8d93dde49::t_9010dbd8600f45 19,1967-2065
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "32cb934b434764d9859262f490f5a96ec6e0abdc",
+  "prompts": {},
+  "sessions": {
+    "s_3707ba947ffab9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16080-6c02-70c1-85be-1401b4775e5e",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_70e4e8d93dde49": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16063-c670-7b31-b20c-87afb5e4a532",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_7dc85f6f8f52f0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1607f-f7fe-7fa1-a3f9-30dc73832249",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_cfcf8ef18567c5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16063-0663-77c3-b0c2-202f03501266",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
