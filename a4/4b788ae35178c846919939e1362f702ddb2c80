@@ -1,0 +1,19 @@
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_9939abb9649c5d::t_3bdfb46932f895 1832,1837,1883,1934,1964,2085,2156,2171,2195,2373,2378,2396,2449,2512,2534,2547,2557,2596,2610,2730,3022,3927,4143,4451,4502,4675,4763,5148,5151,5711,5849,5860,6015,6040,6135,6166,6613,6801,6972,7011,7031,7549,7564,7570,7663,7687,7714,7736,7756,7893,7921,7959,8073,8530,8591,8615,8632,8689,8750,8953,9058,9298,9349,9352,9359,9502,9638
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a44b788ae35178c846919939e1362f702ddb2c80",
+  "prompts": {},
+  "sessions": {
+    "s_9939abb9649c5d": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "d52710ca-eed6-4253-a327-93c408855959",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
