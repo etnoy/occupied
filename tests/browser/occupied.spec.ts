@@ -166,9 +166,14 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await page.getByText("Smoke light", { exact: true }).click();
   const lightRow = panel.locator('[data-entity-row="light.smoke_light"]');
   await lightRow.locator("summary").click();
-  await lightRow
-    .getByRole("spinbutton", { name: "Brightness (%)", exact: true })
-    .fill("40");
+  const brightness = lightRow.getByRole("slider", {
+    name: "Brightness (%)",
+    exact: true,
+  });
+  await brightness.press("Home");
+  for (let value = 1; value < 40; value += 1) {
+    await brightness.press("ArrowRight");
+  }
   await expect(lightRow.locator("summary")).toContainText("Brightness 40%");
   await panel
     .getByRole("button", { name: "Step actions", exact: true })
