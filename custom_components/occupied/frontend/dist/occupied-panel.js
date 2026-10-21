@@ -169,7 +169,6 @@ var en = {
     "Choose at least one state; unknown and unavailable cannot activate management.",
   run_condition_delay_error: "Use a duration from 0s to 1h, for example 30s.",
   run_condition_countdown: "Enforcing expected states in {seconds} seconds.",
-  run_condition_results: "State enforcement results",
   staggered_action: "Staggered action",
   stagger_timing_summary: "Targets staggered over {duration} in random order",
   stagger_hint:
@@ -811,7 +810,6 @@ var sv = {
     "Ange en tid fr\xE5n 0s till 1h, till exempel 30s.",
   run_condition_countdown:
     "Till\xE4mpar f\xF6rv\xE4ntade tillst\xE5nd om {seconds} sekunder.",
-  run_condition_results: "Resultat f\xF6r till\xE4mpade tillst\xE5nd",
   staggered_action: "F\xF6rskjuten \xE5tg\xE4rd",
   stagger_timing_summary:
     "Enheterna \xE4ndras successivt under {duration} i slumpm\xE4ssig ordning",
@@ -15442,18 +15440,12 @@ var root_112 = from_html(
 var root_211 = from_html(`<p class="hint"> </p>`);
 var root_311 = from_html(`<p> </p>`);
 var root_48 = from_html(`<p role="status"> </p> <!>`, 1);
-var root_57 = from_html(`<span> </span>`);
-var root_66 = from_html(`<p class="counts svelte-111t7iy"></p>`);
-var root_74 = from_html(`<li> </li>`);
-var root_83 = from_html(
-  `<details><summary> </summary> <!> <ul></ul></details>`,
-);
-var root_93 = from_html(
-  `<section><h2> </h2> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <!> <!> <div class="actions svelte-111t7iy"><button type="button" class="primary"> </button> <button type="button"> </button></div> <!> <!></section>`,
+var root_57 = from_html(
+  `<section><h2> </h2> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <!> <!> <div class="actions svelte-111t7iy"><button type="button" class="primary"> </button> <button type="button"> </button></div> <!></section>`,
 );
 var $$css7 = {
   hash: "svelte-111t7iy",
-  code: "fieldset.svelte-111t7iy {margin:12px 0;}label.svelte-111t7iy {display:block;margin:12px 0 6px;}.actions.svelte-111t7iy {display:flex;gap:8px;margin-top:12px;}.managed-warning.svelte-111t7iy {color:var(--warning-color, #e69500);}.counts.svelte-111t7iy {display:flex;flex-wrap:wrap;gap:12px;}",
+  code: "fieldset.svelte-111t7iy {margin:12px 0;}label.svelte-111t7iy {display:block;margin:12px 0 6px;}.actions.svelte-111t7iy {display:flex;gap:8px;margin-top:12px;}.managed-warning.svelte-111t7iy {color:var(--warning-color, #e69500);}",
 };
 function RunConditionSettings($$anchor, $$props) {
   push($$props, true);
@@ -15516,8 +15508,8 @@ function RunConditionSettings($$anchor, $$props) {
   var fragment = comment();
   var node = first_child(fragment);
   {
-    var consequent_7 = ($$anchor2) => {
-      var section = root_93();
+    var consequent_5 = ($$anchor2) => {
+      var section = root_57();
       var h2 = child(section);
       var text2 = only_child(h2, true);
       var label2 = sibling(h2, 2);
@@ -15812,84 +15804,6 @@ function RunConditionSettings($$anchor, $$props) {
           if (get(snapshot2).run_condition) $$render(consequent_4);
         });
       }
-      var node_10 = sibling(node_8, 2);
-      {
-        var consequent_6 = ($$anchor3) => {
-          var details = root_83();
-          var summary = child(details);
-          var text_17 = only_child(summary);
-          var node_11 = sibling(summary, 2);
-          {
-            var consequent_5 = ($$anchor4) => {
-              var p_7 = root_66();
-              each(
-                p_7,
-                21,
-                () => Object.entries(get(snapshot2).reconciliation.counts),
-                ([kind, count]) => kind,
-                ($$anchor5, $$item) => {
-                  var $$array = user_derived(() => to_array(get($$item), 2));
-                  let kind = () => get($$array)[0];
-                  let count = () => get($$array)[1];
-                  var span = root_57();
-                  var text_18 = only_child(span);
-                  template_effect(
-                    ($0) => set_text(text_18, `${$0 ?? ""}: ${count() ?? ""}`),
-                    [() => get(t)(`run_condition_count_${kind()}`)],
-                  );
-                  append($$anchor5, span);
-                },
-              );
-              reset(p_7);
-              append($$anchor4, p_7);
-            };
-            if_block(node_11, ($$render) => {
-              if (get(snapshot2).reconciliation.counts) $$render(consequent_5);
-            });
-          }
-          var ul = sibling(node_11, 2);
-          each(
-            ul,
-            21,
-            () => Object.entries(get(snapshot2).reconciliation.results),
-            ([entity, result]) => entity,
-            ($$anchor4, $$item) => {
-              var $$array_1 = user_derived(() => to_array(get($$item), 2));
-              let entity = () => get($$array_1)[0];
-              let result = () => get($$array_1)[1];
-              var li = root_74();
-              var text_19 = only_child(li);
-              template_effect(
-                ($0) =>
-                  set_text(
-                    text_19,
-                    `${entity() ?? ""}: ${$0 ?? ""}${result().reason ? ` \xB7 ${result().reason}` : ""}`,
-                  ),
-                [() => get(t)(result().status)],
-              );
-              append($$anchor4, li);
-            },
-          );
-          reset(ul);
-          reset(details);
-          template_effect(
-            ($0, $1) => set_text(text_17, `${$0 ?? ""} \xB7 ${$1 ?? ""}`),
-            [
-              () => get(t)("run_condition_results"),
-              () => get(t)(get(snapshot2).reconciliation.phase),
-            ],
-          );
-          append($$anchor3, details);
-        };
-        var d = user_derived(
-          () =>
-            get(snapshot2).reconciliation &&
-            Object.keys(get(snapshot2).reconciliation.results).length > 0,
-        );
-        if_block(node_10, ($$render) => {
-          if (get(d)) $$render(consequent_6);
-        });
-      }
       reset(section);
       template_effect(
         ($0, $1, $2, $3) => {
@@ -15928,7 +15842,7 @@ function RunConditionSettings($$anchor, $$props) {
       append($$anchor2, section);
     };
     if_block(node, ($$render) => {
-      if (get(form)) $$render(consequent_7);
+      if (get(form)) $$render(consequent_5);
     });
   }
   append($$anchor, fragment);
@@ -17357,10 +17271,10 @@ var root_313 = from_html(
 );
 var root_410 = from_html(`<span aria-hidden="true"></span>`);
 var root_58 = from_html(`<span> </span>`);
-var root_67 = from_html(`<div><!> <span> </span> <div> </div></div>`);
-var root_75 = from_html(`<div> </div>`);
-var root_84 = from_html(`<td class="svelte-1iz1525"></td>`);
-var root_94 = from_html(
+var root_66 = from_html(`<div><!> <span> </span> <div> </div></div>`);
+var root_74 = from_html(`<div> </div>`);
+var root_83 = from_html(`<td class="svelte-1iz1525"></td>`);
+var root_93 = from_html(
   `<button type="button" class="text-button source-link svelte-1iz1525"> </button>`,
 );
 var root_103 = from_html(`<td class="svelte-1iz1525"><!></td>`);
@@ -17673,7 +17587,7 @@ function Timeline($$anchor, $$props) {
                   var node_11 = sibling(td_3);
                   {
                     var consequent_9 = ($$anchor6) => {
-                      var td_4 = root_84();
+                      var td_4 = root_83();
                       each(
                         td_4,
                         23,
@@ -17684,7 +17598,7 @@ function Timeline($$anchor, $$props) {
                           var node_12 = first_child(fragment_4);
                           {
                             var consequent_7 = ($$anchor8) => {
-                              var div_4 = root_67();
+                              var div_4 = root_66();
                               var node_13 = child(div_4);
                               {
                                 var consequent_6 = ($$anchor9) => {
@@ -17737,7 +17651,7 @@ function Timeline($$anchor, $$props) {
                               append($$anchor8, div_4);
                             };
                             var consequent_8 = ($$anchor8) => {
-                              var div_6 = root_75();
+                              var div_6 = root_74();
                               var text_11 = only_child(div_6, true);
                               template_effect(
                                 ($0) => set_text(text_11, $0),
@@ -17769,7 +17683,7 @@ function Timeline($$anchor, $$props) {
                       var node_15 = child(td_5);
                       {
                         var consequent_10 = ($$anchor7) => {
-                          var button = root_94();
+                          var button = root_93();
                           var text_12 = only_child(button, true);
                           template_effect(() => {
                             button.disabled = loading();
@@ -17984,13 +17898,13 @@ var root_215 = from_html(
 var root_314 = from_html(`<div class="live-actions svelte-jw9j7k"><!></div>`);
 var root_411 = from_html(`<p class="svelte-jw9j7k"> </p>`);
 var root_59 = from_html(`<p class="error svelte-jw9j7k"> </p>`);
-var root_68 = from_html(`<p class="hint svelte-jw9j7k"> </p>`);
-var root_76 = from_html(`<p class="call svelte-jw9j7k"> <!></p>`);
-var root_85 = from_html(
+var root_67 = from_html(`<p class="hint svelte-jw9j7k"> </p>`);
+var root_75 = from_html(`<p class="call svelte-jw9j7k"> <!></p>`);
+var root_84 = from_html(
   `<p class="svelte-jw9j7k"><strong> </strong></p> <!>`,
   1,
 );
-var root_95 = from_html(
+var root_94 = from_html(
   `<div role="status" aria-live="polite" aria-atomic="true"><strong> </strong> <p class="svelte-jw9j7k"> </p> <!> <!></div> <!> <!> <!> <!> <!>`,
   1,
 );
@@ -18134,7 +18048,7 @@ function LivePreviewControls($$anchor, $$props) {
       var node_4 = sibling(h2, 2);
       {
         var consequent_10 = ($$anchor3) => {
-          var fragment_4 = root_95();
+          var fragment_4 = root_94();
           var div_1 = first_child(fragment_4);
           var strong = child(div_1);
           var text_5 = only_child(strong, true);
@@ -18195,7 +18109,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_8 = sibling(node_7, 2);
           {
             var consequent_6 = ($$anchor4) => {
-              var p_4 = root_68();
+              var p_4 = root_67();
               var text_10 = only_child(p_4, true);
               template_effect(
                 ($0) => set_text(text_10, $0),
@@ -18210,7 +18124,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_9 = sibling(node_8, 2);
           {
             var consequent_7 = ($$anchor4) => {
-              var p_5 = root_68();
+              var p_5 = root_67();
               var text_11 = only_child(p_5, true);
               template_effect(
                 ($0) => set_text(text_11, $0),
@@ -18226,7 +18140,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_10 = sibling(node_9, 2);
           {
             var consequent_9 = ($$anchor4) => {
-              var fragment_5 = root_85();
+              var fragment_5 = root_84();
               var p_6 = first_child(fragment_5);
               var strong_1 = child(p_6);
               var text_12 = only_child(strong_1);
@@ -18238,7 +18152,7 @@ function LivePreviewControls($$anchor, $$props) {
                 () => get(session).next_group.calls,
                 (call) => call.id,
                 ($$anchor5, call) => {
-                  var p_7 = root_76();
+                  var p_7 = root_75();
                   var text_13 = child(p_7);
                   var node_12 = sibling(text_13);
                   {
@@ -20126,7 +20040,7 @@ var root_412 = from_html(`<span class="step-row-time"> </span>`);
 var root_510 = from_html(
   `<div style="--depth:0"><button type="button"><span class="step-row-content"><span class="step-row-heading"><strong> </strong><!></span> <span class="hint"> </span></span> <!></button> <div><!></div></div>`,
 );
-var root_69 = from_html(
+var root_68 = from_html(
   `<!> <div class="step-list"></div> <button type="button" class="primary" data-create-random=""> </button>`,
   1,
 );
@@ -20207,7 +20121,7 @@ function RandomView($$anchor, $$props) {
       append($$anchor2, section);
     };
     var alternate = ($$anchor2) => {
-      var fragment_1 = root_69();
+      var fragment_1 = root_68();
       var node_1 = first_child(fragment_1);
       {
         let $0 = user_derived(() => get(t)("random_activity"));
@@ -20441,10 +20355,10 @@ var root_413 = from_html(`<p class="banner" role="status"> </p>`);
 var root_511 = from_html(
   `<button type="button" class="text-button"> </button>`,
 );
-var root_610 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
-var root_77 = from_html(`<p role="status" aria-live="polite"> </p>`);
-var root_86 = from_html(`<p> </p> <button type="button"> </button>`, 1);
-var root_96 = from_html(
+var root_69 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
+var root_76 = from_html(`<p role="status" aria-live="polite"> </p>`);
+var root_85 = from_html(`<p> </p> <button type="button"> </button>`, 1);
+var root_95 = from_html(
   `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><!> <!> <!> <div id="notice" class="banner" role="status"> </div> <!> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
   3,
 );
@@ -20615,7 +20529,7 @@ function App($$anchor, $$props) {
     ["preview", "preview"],
     ["settings", "settings"],
   ];
-  var fragment_1 = root_96();
+  var fragment_1 = root_95();
   var ha_top_app_bar_fixed = first_child(fragment_1);
   set_custom_element_data(ha_top_app_bar_fixed, "back-button", true);
   template_effect(
@@ -20763,7 +20677,7 @@ function App($$anchor, $$props) {
       var node_8 = first_child(fragment_3);
       {
         const failed = ($$anchor3, error = noop) => {
-          var fragment_4 = root_610();
+          var fragment_4 = root_69();
           var p_3 = first_child(fragment_4);
           var text_10 = only_child(p_3, true);
           var p_4 = sibling(p_3, 2);
@@ -20785,7 +20699,7 @@ function App($$anchor, $$props) {
           var node_9 = first_child(fragment_5);
           {
             var consequent_5 = ($$anchor4) => {
-              var p_5 = root_77();
+              var p_5 = root_76();
               var text_12 = only_child(p_5, true);
               template_effect(
                 ($0) => set_text(text_12, $0),
@@ -20794,7 +20708,7 @@ function App($$anchor, $$props) {
               append($$anchor4, p_5);
             };
             var consequent_6 = ($$anchor4) => {
-              var fragment_6 = root_86();
+              var fragment_6 = root_85();
               var p_6 = first_child(fragment_6);
               var text_13 = only_child(p_6, true);
               var button_5 = sibling(p_6, 2);
