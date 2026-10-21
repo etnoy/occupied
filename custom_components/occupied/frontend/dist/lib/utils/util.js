@@ -193,28 +193,11 @@ export function timingSummary(
   if (!entry.timing) {
     return `${t("repeated_activity_window")}${scheduleDaySuffix(entry.days, t)}`;
   }
-  const timing = timingExplanation(
-    timingForm(entry.timing),
-    entries,
-    t,
-    sources,
-    {
-      includeHints: false,
-      locale,
-      days: entry.days,
-    },
-  );
-  const staggerSeconds = (entry.actions ?? [entry]).reduce(
-    (total, action) =>
-      total +
-      (action.stagger?.enabled
-        ? durationSeconds(action.stagger.period ?? "2m")
-        : 0),
-    0,
-  );
-  return staggerSeconds > 0
-    ? `${timing}. ${t("stagger_timing_summary").replace("{duration}", () => durationLabel(staggerSeconds, t))}`
-    : timing;
+  return timingExplanation(timingForm(entry.timing), entries, t, sources, {
+    includeHints: false,
+    locale,
+    days: entry.days,
+  });
 }
 export function timingExplanation(
   input,

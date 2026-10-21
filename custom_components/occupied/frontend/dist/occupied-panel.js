@@ -1566,28 +1566,11 @@ function timingSummary(entry, entries, t = translator(), sources = [], locale) {
   if (!entry.timing) {
     return `${t("repeated_activity_window")}${scheduleDaySuffix(entry.days, t)}`;
   }
-  const timing = timingExplanation(
-    timingForm(entry.timing),
-    entries,
-    t,
-    sources,
-    {
-      includeHints: false,
-      locale,
-      days: entry.days,
-    },
-  );
-  const staggerSeconds = (entry.actions ?? [entry]).reduce(
-    (total, action2) =>
-      total +
-      (action2.stagger?.enabled
-        ? durationSeconds(action2.stagger.period ?? "2m")
-        : 0),
-    0,
-  );
-  return staggerSeconds > 0
-    ? `${timing}. ${t("stagger_timing_summary").replace("{duration}", () => durationLabel(staggerSeconds, t))}`
-    : timing;
+  return timingExplanation(timingForm(entry.timing), entries, t, sources, {
+    includeHints: false,
+    locale,
+    days: entry.days,
+  });
 }
 function timingExplanation(
   input,
@@ -10971,6 +10954,97 @@ function createStepEditorContext(panel) {
   };
 }
 
+// custom_components/occupied/frontend/src/lib/utils/timing-order.ts
+function offsetMinutes(value) {
+  if (!value) {
+    return 0;
+  }
+  const match =
+    /^([+-]?)(?:(\d+(?:\.\d+)?)h)?(?:(\d+(?:\.\d+)?)m)?(?:(\d+(?:\.\d+)?)s)?$/.exec(
+      value,
+    );
+  if (!match || !/[hms]/.test(value)) {
+    return void 0;
+  }
+  const amount =
+    Number(match[2] || 0) * 60 +
+    Number(match[3] || 0) +
+    Number(match[4] || 0) / 60;
+  return match[1] === "-" ? -amount : amount;
+}
+function clockMinutes(value) {
+  if (!value || !/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)) {
+    return void 0;
+  }
+  const [hours, minutes2, seconds = 0] = value.split(":").map(Number);
+  return hours * 60 + minutes2 + seconds / 60;
+}
+function timingOrder(entries, sources = []) {
+  const byId = new Map(entries.map((entry) => [entry.id, entry]));
+  const sourceTimes = new Map(
+    sources.flatMap((source2) => {
+      const minutes2 = clockMinutes(source2.today_time || void 0);
+      return minutes2 === void 0 ? [] : [[source2.value, minutes2]];
+    }),
+  );
+  const memo = /* @__PURE__ */ new Map();
+  const visiting = /* @__PURE__ */ new Set();
+  const resolve = (entry) => {
+    if (memo.has(entry.id)) {
+      return memo.get(entry.id);
+    }
+    if (visiting.has(entry.id)) {
+      return void 0;
+    }
+    visiting.add(entry.id);
+    const timing = entry.timing || entry.start;
+    let base;
+    if (timing?.absolute_time) {
+      base = clockMinutes(timing.absolute_time.start);
+    } else if (timing?.relative_to) {
+      const relative = timing.relative_to;
+      if (relative.sun) {
+        base = sourceTimes.get(`sun:${relative.sun}`);
+      } else if (relative.step) {
+        const parent = byId.get(relative.step);
+        base = parent && resolve(parent);
+      } else if (relative.random) {
+        const parent = byId.get(`random:${relative.random}`);
+        base = parent?.end
+          ? resolve({ id: `${parent.id}:end`, timing: parent.end })
+          : parent && resolve(parent);
+      } else if (relative.entity) {
+        base = sourceTimes.get(
+          `entity:${relative.entity}${relative.attribute ? `:${relative.attribute}` : ""}`,
+        );
+      }
+      const offset = offsetMinutes(relative.start_offset);
+      if (base === void 0 || offset === void 0) {
+        base = void 0;
+      } else {
+        base += offset;
+      }
+    }
+    const latest = timing?.latest_at?.absolute_time?.start;
+    const latestMinutes = clockMinutes(latest);
+    if (base !== void 0 && latestMinutes !== void 0 && base > latestMinutes) {
+      base = latestMinutes;
+    }
+    visiting.delete(entry.id);
+    const normalized = base === void 0 ? void 0 : ((base % 1440) + 1440) % 1440;
+    memo.set(entry.id, normalized);
+    return normalized;
+  };
+  return (left, right) => {
+    const a = resolve(left);
+    const b = resolve(right);
+    if (a === void 0 || b === void 0) {
+      return a === void 0 ? (b === void 0 ? 0 : 1) : -1;
+    }
+    return a - b;
+  };
+}
+
 // custom_components/occupied/frontend/src/lib/controllers/steps.ts
 async function deleteStep(panel, id) {
   if (
@@ -11062,7 +11136,10 @@ function actionSummary(entry, t) {
   }
   return entry.action;
 }
-function stepTree(entries) {
+function stepTree(entries, sources = [], relatedEntries = []) {
+  const sortedEntries = [...entries].sort(
+    timingOrder([...entries, ...relatedEntries], sources),
+  );
   const seen2 = /* @__PURE__ */ new Set(),
     ordered = [];
   const append2 = (entry, depth) => {
@@ -11071,7 +11148,7 @@ function stepTree(entries) {
     }
     seen2.add(entry.id);
     ordered.push({ entry, depth });
-    for (const child2 of entries) {
+    for (const child2 of sortedEntries) {
       if (child2.timing.relative_to?.step === entry.id) {
         append2(child2, depth + 1);
       }
@@ -11080,12 +11157,12 @@ function stepTree(entries) {
   const isRoot = (step) =>
     !step.timing.relative_to?.step ||
     entries.every((parent) => parent.id !== step.timing.relative_to?.step);
-  for (const step of entries) {
+  for (const step of sortedEntries) {
     if (isRoot(step)) {
       append2(step, 0);
     }
   }
-  for (const step of entries) {
+  for (const step of sortedEntries) {
     append2(step, 0);
   }
   return ordered;
@@ -15070,9 +15147,14 @@ function StepsView($$anchor, $$props) {
       $$props.panel.catalog,
       $$props.panel.t,
     );
+    const relatedEntries2 = randomEntries(
+      $$props.panel.draft,
+      $$props.panel.catalog,
+    ).map((entry) => ({ ...entry, id: `random:${entry.id}` }));
     return {
       t: $$props.panel.t,
       entries: entries2,
+      relatedEntries: relatedEntries2,
       issues: $$props.panel
         .visibleIssues()
         .map((issue) => ({ issue, stepId: warningStepId(issue, entries2) })),
@@ -15080,6 +15162,7 @@ function StepsView($$anchor, $$props) {
   });
   let t = user_derived(() => get(data).t),
     entries = user_derived(() => get(data).entries),
+    relatedEntries = user_derived(() => get(data).relatedEntries),
     issues = user_derived(() => get(data).issues);
   var fragment = comment();
   var node = first_child(fragment);
@@ -15129,7 +15212,12 @@ function StepsView($$anchor, $$props) {
       each(
         div_1,
         21,
-        () => stepTree(get(entries)),
+        () =>
+          stepTree(
+            get(entries),
+            $$props.panel.catalog.time_sources,
+            get(relatedEntries),
+          ),
         ({ entry, depth }) => entry.id,
         ($$anchor3, $$item) => {
           let entry = () => get($$item).entry;
@@ -19958,6 +20046,21 @@ function RandomView($$anchor, $$props) {
   let data = user_derived(() => {
     void $$props.revision;
     const entries2 = randomEntries($$props.panel.draft, $$props.panel.catalog);
+    const orderedEntries = [
+      ...stepEntries(
+        $$props.panel.draft,
+        $$props.panel.catalog,
+        $$props.panel.t,
+      ),
+      ...entries2.map((entry) => ({ ...entry, id: `random:${entry.id}` })),
+    ];
+    const compare = timingOrder(
+      orderedEntries,
+      $$props.panel.catalog.time_sources,
+    );
+    entries2.sort((a, b) =>
+      compare({ ...a, id: `random:${a.id}` }, { ...b, id: `random:${b.id}` }),
+    );
     return {
       t: $$props.panel.t,
       entries: entries2,
@@ -19973,9 +20076,12 @@ function RandomView($$anchor, $$props) {
           $$props.panel.catalog,
           $$props.panel.t,
         ),
-        ...randomEntries($$props.panel.draft, $$props.panel.catalog).map(
-          (entry) => ({ id: `random:${entry.id}`, name: entry.name }),
-        ),
+        ...entries2.map((entry) => ({
+          id: `random:${entry.id}`,
+          name: entry.name,
+          timing: entry.start,
+          end: entry.end,
+        })),
       ],
     };
   });
@@ -20244,14 +20350,12 @@ var root_221 = from_html(`<p> </p>`);
 var root_319 = from_html(`<header><p class="hint"> </p></header>`);
 var root_413 = from_html(`<p class="banner" role="status"> </p>`);
 var root_511 = from_html(
-  `<p class="error" role="alert"> </p> <button type="button"> </button>`,
-  1,
+  `<button type="button" class="text-button"> </button>`,
 );
-var root_69 = from_html(`<button type="button" class="text-button"> </button>`);
-var root_76 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
-var root_85 = from_html(`<p> </p> <button type="button"> </button>`, 1);
-var root_95 = from_html(
-  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><!> <!> <!> <div id="notice" class="banner" role="status"> </div> <!> <div id="error" class="error" role="alert"> </div> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
+var root_69 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
+var root_76 = from_html(`<p> </p> <button type="button"> </button>`, 1);
+var root_85 = from_html(
+  `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><!> <!> <!> <div id="notice" class="banner" role="status"> </div> <!> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
   3,
 );
 function App($$anchor, $$props) {
@@ -20421,7 +20525,7 @@ function App($$anchor, $$props) {
     ["preview", "preview"],
     ["settings", "settings"],
   ];
-  var fragment_1 = root_95();
+  var fragment_1 = root_85();
   var ha_top_app_bar_fixed = first_child(fragment_1);
   set_custom_element_data(ha_top_app_bar_fixed, "back-button", true);
   template_effect(
@@ -20479,28 +20583,17 @@ function App($$anchor, $$props) {
   var node_5 = sibling(div_1, 2);
   {
     var consequent_3 = ($$anchor2) => {
-      var fragment_2 = root_511();
-      var p_3 = first_child(fragment_2);
-      var text_7 = only_child(p_3, true);
-      var button_2 = sibling(p_3, 2);
-      var text_8 = only_child(button_2, true);
-      template_effect(
-        ($0) => {
-          set_text(text_7, get(panel).runtimeSubscriptionError);
-          set_text(text_8, $0);
-        },
-        [() => get(t)("retry")],
-      );
+      var button_2 = root31();
+      var text_7 = only_child(button_2, true);
+      template_effect(($0) => set_text(text_7, $0), [() => get(t)("retry")]);
       delegated("click", button_2, () => get(panel).retry());
-      append($$anchor2, fragment_2);
+      append($$anchor2, button_2);
     };
     if_block(node_5, ($$render) => {
       if (get(panel).runtimeSubscriptionError) $$render(consequent_3);
     });
   }
-  var div_2 = sibling(node_5, 2);
-  var text_9 = only_child(div_2, true);
-  var nav = sibling(div_2, 2);
+  var nav = sibling(node_5, 2);
   each(
     nav,
     21,
@@ -20512,7 +20605,7 @@ function App($$anchor, $$props) {
       let label2 = () => get($$array)[1];
       var button_3 = root31();
       let classes;
-      var text_10 = only_child(button_3, true);
+      var text_8 = only_child(button_3, true);
       template_effect(
         ($0, $1) => {
           set_attribute2(button_3, "data-tab", id());
@@ -20527,7 +20620,7 @@ function App($$anchor, $$props) {
           classes = set_class(button_3, 1, "", null, classes, {
             "tab-warning": $0,
           });
-          set_text(text_10, $1);
+          set_text(text_8, $1);
         },
         [() => get(issueTabs).has(id()), () => get(t)(label2())],
       );
@@ -20536,14 +20629,14 @@ function App($$anchor, $$props) {
     },
   );
   reset(nav);
-  var div_3 = sibling(nav, 2);
-  var node_6 = child(div_3);
+  var div_2 = sibling(nav, 2);
+  var node_6 = child(div_2);
   {
     var consequent_4 = ($$anchor2) => {
-      var button_4 = root_69();
-      var text_11 = only_child(button_4, true);
+      var button_4 = root_511();
+      var text_9 = only_child(button_4, true);
       template_effect(
-        ($0) => set_text(text_11, $0),
+        ($0) => set_text(text_9, $0),
         [() => get(t)("back_to_steps")],
       );
       delegated("click", button_4, () => get(panel).navigate("steps"));
@@ -20553,10 +20646,10 @@ function App($$anchor, $$props) {
       if (!get(primary)) $$render(consequent_4);
     });
   }
-  reset(div_3);
-  var div_4 = sibling(div_3, 2);
+  reset(div_2);
+  var div_3 = sibling(div_2, 2);
   each(
-    div_4,
+    div_3,
     20,
     () => get(issues),
     (issue) => issue,
@@ -20568,48 +20661,48 @@ function App($$anchor, $$props) {
       );
     },
   );
-  reset(div_4);
-  var div_5 = sibling(div_4, 2);
-  var node_7 = child(div_5);
+  reset(div_3);
+  var div_4 = sibling(div_3, 2);
+  var node_7 = child(div_4);
   key(
     node_7,
     () => `${get(panel).selectedEntry}:${get(panel).tab}`,
     ($$anchor2) => {
-      var fragment_4 = comment();
-      var node_8 = first_child(fragment_4);
+      var fragment_3 = comment();
+      var node_8 = first_child(fragment_3);
       {
         const failed = ($$anchor3, error = noop) => {
-          var fragment_5 = root_76();
-          var p_4 = first_child(fragment_5);
-          var text_12 = only_child(p_4, true);
-          var p_5 = sibling(p_4, 2);
-          var text_13 = only_child(p_5, true);
+          var fragment_4 = root_69();
+          var p_3 = first_child(fragment_4);
+          var text_10 = only_child(p_3, true);
+          var p_4 = sibling(p_3, 2);
+          var text_11 = only_child(p_4, true);
           template_effect(
             ($0, $1) => {
-              set_text(text_12, $0);
-              set_text(text_13, $1);
+              set_text(text_10, $0);
+              set_text(text_11, $1);
             },
             [
               () => get(t)(errorMessage(error())),
               () => get(t)("draft_invalid_hint"),
             ],
           );
-          append($$anchor3, fragment_5);
+          append($$anchor3, fragment_4);
         };
         boundary(node_8, { failed }, ($$anchor3) => {
-          var fragment_6 = comment();
-          var node_9 = first_child(fragment_6);
+          var fragment_5 = comment();
+          var node_9 = first_child(fragment_5);
           {
             var consequent_5 = ($$anchor4) => {
-              var fragment_7 = root_85();
-              var p_6 = first_child(fragment_7);
-              var text_14 = only_child(p_6, true);
-              var button_5 = sibling(p_6, 2);
-              var text_15 = only_child(button_5, true);
+              var fragment_6 = root_76();
+              var p_5 = first_child(fragment_6);
+              var text_12 = only_child(p_5, true);
+              var button_5 = sibling(p_5, 2);
+              var text_13 = only_child(button_5, true);
               template_effect(
                 ($0, $1) => {
-                  set_text(text_14, $0);
-                  set_text(text_15, $1);
+                  set_text(text_12, $0);
+                  set_text(text_13, $1);
                 },
                 [
                   () => get(t)("instance_unavailable_hint"),
@@ -20617,17 +20710,17 @@ function App($$anchor, $$props) {
                 ],
               );
               delegated("click", button_5, () => get(panel).retry());
-              append($$anchor4, fragment_7);
+              append($$anchor4, fragment_6);
             };
             var consequent_7 = ($$anchor4) => {
-              var fragment_8 = comment();
-              var node_10 = first_child(fragment_8);
+              var fragment_7 = comment();
+              var node_10 = first_child(fragment_7);
               {
                 var consequent_6 = ($$anchor5) => {
                   var button_6 = root31();
-                  var text_16 = only_child(button_6, true);
+                  var text_14 = only_child(button_6, true);
                   template_effect(
-                    ($0) => set_text(text_16, $0),
+                    ($0) => set_text(text_14, $0),
                     [() => get(t)("retry")],
                   );
                   delegated("click", button_6, () => get(panel).retry());
@@ -20638,7 +20731,7 @@ function App($$anchor, $$props) {
                     $$render(consequent_6);
                 });
               }
-              append($$anchor4, fragment_8);
+              append($$anchor4, fragment_7);
             };
             var d = user_derived(
               () =>
@@ -20648,9 +20741,9 @@ function App($$anchor, $$props) {
             );
             var consequent_8 = ($$anchor4) => {
               var button_7 = root31();
-              var text_17 = only_child(button_7, true);
+              var text_15 = only_child(button_7, true);
               template_effect(
-                ($0) => set_text(text_17, $0),
+                ($0) => set_text(text_15, $0),
                 [() => get(t)("settings")],
               );
               delegated("click", button_7, () =>
@@ -20741,13 +20834,13 @@ function App($$anchor, $$props) {
               else if (get(panel).tab === "preview") $$render(consequent_14, 8);
             });
           }
-          append($$anchor3, fragment_6);
+          append($$anchor3, fragment_5);
         });
       }
-      append($$anchor2, fragment_4);
+      append($$anchor2, fragment_3);
     },
   );
-  reset(div_5);
+  reset(div_4);
   reset(main);
   reset(ha_top_app_bar_fixed);
   var node_11 = sibling(ha_top_app_bar_fixed, 2);
@@ -20770,8 +20863,6 @@ function App($$anchor, $$props) {
     ($0) => {
       set_attribute2(div_1, "hidden", !get(notices));
       set_text(text_6, get(notices));
-      set_attribute2(div_2, "hidden", !get(panel).error);
-      set_text(text_9, get(panel).error);
       set_attribute2(nav, "aria-label", $0);
     },
     [() => get(t)("occupied")],

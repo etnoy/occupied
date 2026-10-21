@@ -7,6 +7,7 @@ import {
 import { copy, removeStep } from "../models/model.js";
 import { focusEditor } from "./step-editor-controller.js";
 import { editableEntityMapping } from "../utils/entity-settings.js";
+import { timingOrder } from "../utils/timing-order.js";
 export async function deleteStep(panel, id) {
   if (
     !panel.document ||
@@ -97,7 +98,10 @@ export function actionSummary(entry, t) {
   }
   return entry.action;
 }
-export function stepTree(entries) {
+export function stepTree(entries, sources = [], relatedEntries = []) {
+  const sortedEntries = [...entries].sort(
+    timingOrder([...entries, ...relatedEntries], sources),
+  );
   const seen = new Set(),
     ordered = [];
   const append = (entry, depth) => {
@@ -106,7 +110,7 @@ export function stepTree(entries) {
     }
     seen.add(entry.id);
     ordered.push({ entry, depth });
-    for (const child of entries) {
+    for (const child of sortedEntries) {
       if (child.timing.relative_to?.step === entry.id) {
         append(child, depth + 1);
       }
@@ -115,12 +119,12 @@ export function stepTree(entries) {
   const isRoot = (step) =>
     !step.timing.relative_to?.step ||
     entries.every((parent) => parent.id !== step.timing.relative_to?.step);
-  for (const step of entries) {
+  for (const step of sortedEntries) {
     if (isRoot(step)) {
       append(step, 0);
     }
   }
-  for (const step of entries) {
+  for (const step of sortedEntries) {
     append(step, 0);
   }
   return ordered;
