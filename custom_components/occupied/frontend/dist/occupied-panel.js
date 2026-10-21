@@ -1665,9 +1665,7 @@ function baseTimingExplanation(
     if (seconds(time.end) === seconds(time.start)) {
       return `${fixedTime}${includeHints ? `. ${t("time_window_fixed_hint")}` : ""}`;
     }
-    const nextDay =
-      seconds(time.end) < seconds(time.start) ? ` ${t("the_next_day")}` : "";
-    return `${runs} ${t("at_a_random_time_between")} ${display(time.start)} ${t("and")} ${display(time.end)}${nextDay}`;
+    return `${runs} ${t("at_a_random_time_between")} ${display(time.start)} ${t("and")} ${display(time.end)}`;
   }
   if (Object.keys(offsetErrors(time)).length > 0) {
     return t(
