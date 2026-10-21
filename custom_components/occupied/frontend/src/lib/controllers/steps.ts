@@ -1,5 +1,5 @@
 import type { LoadedOccupiedPanel } from "../../occupied-panel.js";
-import type { StepEntry, Translate } from "../types.js";
+import type { StepEntry, TimeSource, Translate } from "../types.js";
 import {
   dependentNames,
   stepEditor,
@@ -8,6 +8,8 @@ import {
 import { copy, removeStep } from "../models/model.js";
 import { focusEditor } from "./step-editor-controller.js";
 import { editableEntityMapping } from "../utils/entity-settings.js";
+import { timingOrder } from "../utils/timing-order.js";
+import type { TimedEntry } from "../utils/timing-order.js";
 
 export async function deleteStep(panel: LoadedOccupiedPanel, id: string) {
   if (
@@ -121,7 +123,14 @@ export function actionSummary(entry: StepEntry, t: Translate) {
   return entry.action;
 }
 
-export function stepTree(entries: StepEntry[]) {
+export function stepTree(
+  entries: StepEntry[],
+  sources: Pick<TimeSource, "value" | "today_time">[] = [],
+  relatedEntries: TimedEntry[] = [],
+) {
+  const sortedEntries = [...entries].sort(
+    timingOrder([...entries, ...relatedEntries], sources),
+  );
   const seen = new Set<string>(),
     ordered: { entry: StepEntry; depth: number }[] = [];
   const append = (entry: StepEntry, depth: number) => {
@@ -130,7 +139,7 @@ export function stepTree(entries: StepEntry[]) {
     }
     seen.add(entry.id);
     ordered.push({ entry, depth });
-    for (const child of entries) {
+    for (const child of sortedEntries) {
       if (child.timing.relative_to?.step === entry.id) {
         append(child, depth + 1);
       }
@@ -139,13 +148,13 @@ export function stepTree(entries: StepEntry[]) {
   const isRoot = (step: StepEntry) =>
     !step.timing.relative_to?.step ||
     entries.every((parent) => parent.id !== step.timing.relative_to?.step);
-  for (const step of entries) {
+  for (const step of sortedEntries) {
     if (isRoot(step)) {
       append(step, 0);
     }
   }
 
-  for (const step of entries) {
+  for (const step of sortedEntries) {
     append(step, 0);
   }
 

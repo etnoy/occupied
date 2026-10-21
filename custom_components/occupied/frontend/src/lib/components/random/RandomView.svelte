@@ -4,6 +4,7 @@
   import { randomEntries, countSummary } from "../../models/random-model.js";
   import { openRandom } from "../../controllers/random-editor-controller.js";
   import { stepEntries } from "../../models/step-model.js";
+  import { timingOrder } from "../../utils/timing-order.js";
   import { warningRandomId } from "../../utils/step-issues.js";
   import {
     entitySummary,
@@ -20,6 +21,17 @@
   let data = $derived.by(() => {
     void revision;
     const entries = randomEntries(panel.draft, panel.catalog);
+    const orderedEntries = [
+      ...stepEntries(panel.draft, panel.catalog, panel.t),
+      ...entries.map((entry) => ({ ...entry, id: `random:${entry.id}` })),
+    ];
+    const compare = timingOrder(orderedEntries, panel.catalog.time_sources);
+    entries.sort((a, b) =>
+      compare(
+        { ...a, id: `random:${a.id}` },
+        { ...b, id: `random:${b.id}` },
+      ),
+    );
 
     return {
       t: panel.t,
@@ -30,9 +42,11 @@
       })),
       steps: [
         ...stepEntries(panel.draft, panel.catalog, panel.t),
-        ...randomEntries(panel.draft, panel.catalog).map((entry) => ({
+        ...entries.map((entry) => ({
           id: `random:${entry.id}`,
           name: entry.name,
+          timing: entry.start,
+          end: entry.end,
         })),
       ],
     };
