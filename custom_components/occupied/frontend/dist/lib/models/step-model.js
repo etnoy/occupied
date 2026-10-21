@@ -53,12 +53,12 @@ export function stepEntries(program, catalog, t = translator()) {
   }));
 }
 export const solarEvents = [
-  "sunrise",
-  "sunset",
-  "dawn",
-  "dusk",
-  "noon",
   "midnight",
+  "dawn",
+  "sunrise",
+  "noon",
+  "sunset",
+  "dusk",
 ];
 export function timeSourceChoices(
   program,

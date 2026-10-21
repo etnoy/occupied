@@ -496,6 +496,50 @@ async def test_catalog_discovers_time_entities_and_calendar_bounds(hass):
     assert planning_context(hass).time_sources["calendar.work"]["start_time"] is None
 
 
+@pytest.mark.parametrize("instant", ["2026-10-21T18:00:00Z", "2026-10-20T22:30:00Z"])
+async def test_solar_choices_use_native_times_for_today(hass, freezer, instant):
+    from homeassistant.helpers.sun import get_astral_event_date
+    from homeassistant.util import dt as dt_util
+
+    from custom_components.occupied.time_sources import time_source_options
+
+    await hass.config.async_set_time_zone("Europe/Stockholm")
+    await hass.config.async_update(latitude=59.3, longitude=18.1, elevation=0)
+    freezer.move_to(instant)
+    # The native entity's next sunrise has already rolled over to tomorrow.
+    hass.states.async_set("sun.sun", "below_horizon", {"next_rising": "2026-10-22T05:42:00Z"})
+    choices = time_source_options(hass)
+    assert [choice["value"] for choice in choices] == [
+        "sun:midnight",
+        "sun:dawn",
+        "sun:sunrise",
+        "sun:noon",
+        "sun:sunset",
+        "sun:dusk",
+    ]
+    assert [choice["today_time"] for choice in choices] == sorted(
+        choice["today_time"] for choice in choices
+    )
+    today = dt_util.now().date()
+    assert today.isoformat() == "2026-10-21"
+    for choice in choices:
+        native = get_astral_event_date(hass, choice["value"].split(":")[1], today)
+        assert choice["today_time"] == dt_util.as_local(native).strftime("%H:%M")
+
+
+async def test_solar_choices_keep_unavailable_polar_events(hass, freezer):
+    from custom_components.occupied.time_sources import time_source_options
+
+    await hass.config.async_set_time_zone("Europe/Oslo")
+    await hass.config.async_update(latitude=69.65, longitude=18.96, elevation=0)
+    freezer.move_to("2026-06-21T12:00:00Z")
+    choices = time_source_options(hass)
+    assert len(choices) == 6
+    unavailable = {choice["value"] for choice in choices if choice["today_time"] is None}
+    assert unavailable == {"sun:sunrise", "sun:sunset", "sun:dawn", "sun:dusk"}
+    assert all(choice["today_time"] is None for choice in choices[-4:])
+
+
 async def test_yaml_editor_save_validates_before_persisting(
     hass, editor_entry, program_dict, devices, hass_ws_client
 ):
