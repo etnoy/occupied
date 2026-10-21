@@ -7,7 +7,7 @@ import type { Program } from "@occupied/lib/types.js";
 const tree = (steps: Program["steps"]) =>
   stepTree(stepEntries({ steps })).map(({ entry, depth }) => [entry.id, depth]);
 
-void test("step branches follow configuration order regardless of start times", () => {
+void test("step branches and siblings follow start times while preserving hierarchy", () => {
   assert.deepEqual(
     tree({
       evening: { timing: { absolute_time: { start: "20:00" } } },
@@ -21,11 +21,11 @@ void test("step branches follow configuration order regardless of start times", 
       grandchild: { timing: { relative_to: { step: "child" } } },
     }),
     [
-      ["evening", 0],
       ["morning", 0],
+      ["secondChild", 1],
       ["child", 1],
       ["grandchild", 2],
-      ["secondChild", 1],
+      ["evening", 0],
     ],
   );
 });

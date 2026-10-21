@@ -9,6 +9,7 @@
     stepTree,
   } from "../../controllers/steps.js";
   import { stepEntries } from "../../models/step-model.js";
+  import { randomEntries } from "../../models/random-model.js";
   import { warningStepId } from "../../utils/step-issues.js";
   import { entitySummary, timingSummary } from "../../utils/util.js";
   import StepEditor from "./StepEditor.svelte";
@@ -20,17 +21,21 @@
   let data = $derived.by(() => {
     void revision;
     const entries = stepEntries(panel.draft, panel.catalog, panel.t);
+    const relatedEntries = randomEntries(panel.draft, panel.catalog).map(
+      (entry) => ({ ...entry, id: `random:${entry.id}` }),
+    );
 
     return {
       t: panel.t,
       entries,
+      relatedEntries,
       issues: panel.visibleIssues().map((issue) => ({
         issue,
         stepId: warningStepId(issue, entries),
       })),
     };
   });
-  let { t, entries, issues } = $derived(data);
+  let { t, entries, relatedEntries, issues } = $derived(data);
 </script>
 
 {#if entries.length === 0}
@@ -56,7 +61,7 @@
   />
   <div class="step-layout">
     <div class="step-list" aria-label={t("steps")}>
-      {#each stepTree(entries) as { entry, depth } (entry.id)}
+      {#each stepTree(entries, panel.catalog.time_sources, relatedEntries) as { entry, depth } (entry.id)}
         {@const warnings = issues
           .filter(({ stepId }) => stepId === entry.id)
           .map(({ issue }) => issue)}
