@@ -365,7 +365,6 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     },
   );
   expect(recoveredState.ok()).toBeTruthy();
-  await page.reload();
   await panel.getByRole("button", { name: "Random", exact: true }).click();
   await expect(eventWarning).not.toHaveClass(/step-warning/);
   await panel.getByRole("button", { name: "Steps", exact: true }).click();

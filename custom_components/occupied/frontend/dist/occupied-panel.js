@@ -21109,7 +21109,147 @@ var PanelSubscription = class {
   }
 };
 
+// custom_components/occupied/frontend/src/lib/services/panel-recovery.ts
+function entityAvailability(states, programs) {
+  const entities = /* @__PURE__ */ new Set();
+  for (const program of programs) {
+    for (const step of Object.values(program?.steps || {})) {
+      for (const entity of actionTargets(step)) {
+        entities.add(entity);
+      }
+    }
+    for (const event2 of Object.values(program?.random || {})) {
+      for (const entity of [
+        ...actionTargets(event2.on),
+        ...actionTargets(event2.off),
+      ]) {
+        entities.add(entity);
+      }
+    }
+  }
+  return JSON.stringify(
+    [...entities].sort().map((entity) => {
+      const state2 = states?.[entity]?.state;
+      const availability = state2 == null ? "missing" : "available";
+      return [
+        entity,
+        state2 === "unknown" || state2 === "unavailable"
+          ? state2
+          : availability,
+      ];
+    }),
+  );
+}
+var PanelRecovery = class {
+  constructor(refresh, reconnect2, disconnect = () => {}) {
+    this.refresh = refresh;
+    this.reconnect = reconnect2;
+    this.disconnect = disconnect;
+  }
+  refresh;
+  reconnect;
+  disconnect;
+  connection;
+  timer;
+  generation = 0;
+  pending = false;
+  running = false;
+  offline = false;
+  delay = 1e3;
+  availability;
+  connect(connection) {
+    if (this.connection === connection) {
+      return;
+    }
+    this.dispose();
+    this.connection = connection;
+    connection.addEventListener?.("ready", this.ready);
+    connection.addEventListener?.("disconnected", this.disconnected);
+  }
+  dispose() {
+    this.connection?.removeEventListener?.("ready", this.ready);
+    this.connection?.removeEventListener?.("disconnected", this.disconnected);
+    this.connection = void 0;
+    this.reset();
+  }
+  reset() {
+    this.generation++;
+    clearTimeout(this.timer);
+    this.timer = void 0;
+    this.pending = this.running = this.offline = false;
+    this.delay = 1e3;
+    this.availability = void 0;
+  }
+  observe(states, programs) {
+    if (!states) {
+      return;
+    }
+    const availability = entityAvailability(states, programs);
+    if (this.availability !== void 0 && availability !== this.availability) {
+      this.schedule();
+    }
+    this.availability = availability;
+  }
+  schedule(delay = 250) {
+    if (!this.connection) {
+      return;
+    }
+    this.pending = true;
+    if (this.offline || this.running || this.timer !== void 0) {
+      return;
+    }
+    this.timer = setTimeout(() => {
+      this.timer = void 0;
+      void this.run();
+    }, delay);
+  }
+  disconnected = () => {
+    this.reset();
+    this.offline = true;
+    this.disconnect();
+  };
+  ready = () => {
+    this.reset();
+    this.reconnect();
+    this.schedule(0);
+  };
+  async run() {
+    const generation = this.generation;
+    this.pending = false;
+    this.running = true;
+    let success = false;
+    try {
+      success = await this.refresh();
+    } catch {
+    } finally {
+      if (generation === this.generation) {
+        this.running = false;
+        if (success) {
+          this.delay = 1e3;
+          if (this.pending) {
+            this.schedule();
+          }
+        } else {
+          this.schedule(this.delay);
+          this.delay = Math.min(this.delay * 2, 3e4);
+        }
+      }
+    }
+  }
+};
+
 // custom_components/occupied/frontend/src/occupied-panel.ts
+function isInstalledWarning(issue) {
+  return (
+    issue.severity === "warning" &&
+    [
+      "entity_unavailable",
+      "service_missing",
+      "service_unsupported_entities",
+      "remote_activity_unknown",
+    ].includes(issue.code || "")
+  );
+}
 var OccupiedPanel = class extends HTMLElement {
   draft;
   saved;
@@ -21254,17 +21394,28 @@ var OccupiedPanel = class extends HTMLElement {
   component;
   instanceSubscription = new PanelSubscription(
     () => this.isConnected,
-    (error) => this.fail(error),
+    (error) => {
+      this._instancesReady = false;
+      this._instancesFailed = true;
+      this.fail(error);
+      this.recovery.schedule(1e3);
+    },
   );
   runtimeSubscription = new PanelSubscription(
     () => this.isConnected,
     (error) => {
       this.runtimeSubscriptionError = this.t(errorMessage(error));
+      this.recovery.schedule(1e3);
       this.previewController.invalidate();
       this.flush();
     },
   );
   previewController = new PreviewController(this, () => this._loadedEntry);
+  recovery = new PanelRecovery(
+    () => this._refreshEnvironment(),
+    () => this._reconnect(),
+    () => this._reconnect(),
+  );
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -21288,10 +21439,14 @@ var OccupiedPanel = class extends HTMLElement {
       this.flush();
     }
     if (changed) {
-      this._disposeSubscription();
-      this._disposeInstances();
-      this._instancesReady = false;
-      void this._subscribe();
+      this._reconnect();
+    }
+    if (this.isConnected) {
+      this.recovery.connect(value.connection);
+      this.recovery.observe(value.states, [this.saved, this.draft]);
+      if (changed && this.document) {
+        this.recovery.schedule();
+      }
     }
     void this._load();
   }
@@ -21319,6 +21474,9 @@ var OccupiedPanel = class extends HTMLElement {
     return this._loadedEntry === this.selectedEntry;
   }
   connectedCallback() {
+    if (this._hass?.connection) {
+      this.recovery.connect(this._hass.connection);
+    }
     if (!this.component) {
       const style = document.createElement("style");
       style.textContent = app_default;
@@ -21339,6 +21497,7 @@ var OccupiedPanel = class extends HTMLElement {
     );
   }
   disconnectedCallback() {
+    this.recovery.dispose();
     if (this.component) {
       void unmount(this.component);
       this.component = void 0;
@@ -21365,6 +21524,80 @@ var OccupiedPanel = class extends HTMLElement {
     event2.preventDefault();
     event2.returnValue = "";
   };
+  _reconnect() {
+    this._invalidateRequests();
+    this._loadedEntry = null;
+    this._disposeSubscription();
+    this._disposeInstances();
+    this._instancesReady = false;
+  }
+  async _refreshEnvironment() {
+    if (!this.isConnected || !this._hass || !this._panel) {
+      return true;
+    }
+    if (this.busy || this._loading) {
+      return false;
+    }
+    this._failedEntry = null;
+    this._instancesFailed = false;
+    await this._load();
+    if (!this._instancesReady) {
+      return false;
+    }
+    if (!this.selectedEntry) {
+      return true;
+    }
+    if (!this._loadedEntry || !this.draft || !this.document) {
+      return false;
+    }
+    const epoch = this.epoch;
+    const version = this.version;
+    const revision = this.revision;
+    const issues = this.issues;
+    try {
+      await this._subscribeInstances();
+      await this._subscribe();
+      const [doc, catalog, validation] = await Promise.all([
+        this.ws("program"),
+        this.ws("catalog"),
+        this.ws("editor_validate", { program: copy(this.draft) }),
+      ]);
+      if (epoch !== this.epoch) {
+        return true;
+      }
+      if (
+        version !== this.version ||
+        revision !== this.revision ||
+        this.busy ||
+        issues !== this.issues
+      ) {
+        return false;
+      }
+      this.document = doc;
+      this.saved = doc.program;
+      this.catalog = catalog;
+      this.stale = doc.revision !== this.revision;
+      this.issues = [
+        ...this.issues.filter((issue) => !isInstalledWarning(issue)),
+        ...(validation.issues || []).filter((issue) =>
+          isInstalledWarning(issue),
+        ),
+      ];
+      this.flush();
+      if (
+        this.stale &&
+        !this.dirty &&
+        !this.yamlDirty &&
+        !this.activeEditor &&
+        !this.hasRunConditionChanges
+      ) {
+        await this.reloadSaved();
+      }
+      return this.instanceSubscription.active && !this.runtimeSubscriptionError;
+    } catch {
+      return epoch !== this.epoch;
+    }
+  }
   _disposeInstances() {
     this._instancesEpoch++;
     this._instancesRequest = void 0;
@@ -21409,6 +21642,9 @@ var OccupiedPanel = class extends HTMLElement {
     this._loading = this.busy = this.liveBusy = this.liveStopping = false;
   }
   _resetInstance(entry) {
+    if (this.selectedEntry) {
+      this.recovery.reset();
+    }
     this._invalidateRequests();
     this._disposeSubscription();
     this._loadedEntry = null;
@@ -21547,6 +21783,7 @@ var OccupiedPanel = class extends HTMLElement {
           if (epoch === this._instancesEpoch) {
             this._instancesFailed = true;
             this.fail(error);
+            this.recovery.schedule(1e3);
           }
           return false;
         }
@@ -21618,7 +21855,8 @@ var OccupiedPanel = class extends HTMLElement {
       }
       if (
         this.draft &&
-        (this.dirty ||
+        (doc.revision === this.revision ||
+          this.dirty ||
           this.yamlDirty ||
           this.activeEditor ||
           this.hasRunConditionChanges)
@@ -21631,6 +21869,7 @@ var OccupiedPanel = class extends HTMLElement {
         this.resetDraft();
       }
       this.catalog = catalog;
+      this.recovery.observe(this._hass.states, [this.saved, this.draft]);
       this._failedEntry = null;
       this.error = "";
       this.renderView();
@@ -21640,6 +21879,7 @@ var OccupiedPanel = class extends HTMLElement {
         this._loadedEntry = null;
         this._failedEntry = entry;
         this.fail(error);
+        this.recovery.schedule(1e3);
       }
     } finally {
       if (epoch === this.epoch) {
