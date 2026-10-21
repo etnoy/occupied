@@ -1,0 +1,27 @@
+custom_components/occupied/frontend/dist/lib/utils/entity-settings.js
+  s_1e4bba9d24ba25::t_e777a4eb1cf441 5-7,157-158,161-162
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_1e4bba9d24ba25::t_2e4ba066a0b827 9729-9731,9878-9879,9882-9883,13563-13564,13566,13571,13588-13589,13596,13603,13669-13671,13688-13692,13694-13731,13733-13746,13749-13750,13753-13754,13756-13770,13782,13790,14247-14248,14736,14748,15023-15024,15137,15218,15330,15399,17160-17161,17488,17492,17787-17788,17987,17999,18014,18102,19927,19930,20011,20048,20242,20245,20512,20551
+custom_components/occupied/frontend/src/lib/components/shared/EntityRow.svelte
+  s_1e4bba9d24ba25::t_5de2326acb6b06 7,39,42,88-89,96-147,178,182-185
+custom_components/occupied/frontend/src/lib/utils/entity-settings.ts
+  s_1e4bba9d24ba25::t_2c96d8c96603b3 14-17,189-190,193-194
+tests/frontend/src/entity-settings.test.ts
+  s_1e4bba9d24ba25::t_e1420e0c3f555d 23,31-37,332,339
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a710d0d36b3ba3ae73b838c7d6fcdbfbb19ca620",
+  "prompts": {},
+  "sessions": {
+    "s_1e4bba9d24ba25": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "90eeddbe-e688-42e9-afdb-cf64f10f49d4",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
