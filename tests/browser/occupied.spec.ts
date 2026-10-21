@@ -297,6 +297,16 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     },
   );
   expect(unavailableState.ok()).toBeTruthy();
+  for (const entity of [
+    "light.browser_unavailable_2",
+    "light.browser_unavailable_3",
+  ]) {
+    const response = await request.post(`/api/states/${entity}`, {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+      data: { state: "unavailable" },
+    });
+    expect(response.ok()).toBeTruthy();
+  }
   const beforeWarnings = await panel.evaluate(async (element) => {
     const controller = element as OccupiedPanel;
     const program = controller.saved!;
@@ -307,7 +317,12 @@ test("create, preview, delete and protect YAML edits in the installed release", 
         browser_unavailable: {
           name: "Unavailable step",
           action: "turn_on",
-          entities: ["light.browser_unavailable"],
+          entities: [
+            "light.browser_unavailable",
+            "light.browser_unavailable_2",
+            "light.browser_unavailable_3",
+            "light.smoke_light",
+          ],
           timing: { absolute_time: { start: "18:00" } },
         },
       },
@@ -336,7 +351,20 @@ test("create, preview, delete and protect YAML edits in the installed release", 
         exact: true,
       }),
   ).toHaveCount(2);
+  await expect(stepWarning.locator(".step-warning-message")).toHaveCount(3);
+  await expect(stepWarning.locator(".step-row-warning")).toContainText(
+    "1 more...",
+  );
+  await expect(stepWarning.locator(".step-row-warning")).not.toContainText(
+    "light.browser_unavailable_3",
+  );
   await stepWarning.locator(".step-row").click();
+  await expect(
+    stepWarning.locator('[data-entity-row="light.browser_unavailable_3"]'),
+  ).toHaveClass(/entity-warning/);
+  await expect(
+    stepWarning.locator('[data-entity-row="light.smoke_light"]'),
+  ).not.toHaveClass(/entity-warning/);
   await expect(stepWarning).toHaveClass(/step-warning/);
   await panel.getByRole("button", { name: "Random", exact: true }).click();
   const eventWarning = panel.locator('[data-random-id="browser_unavailable"]');
@@ -365,10 +393,22 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     },
   );
   expect(recoveredState.ok()).toBeTruthy();
+  for (const entity of [
+    "light.browser_unavailable_2",
+    "light.browser_unavailable_3",
+  ]) {
+    const response = await request.post(`/api/states/${entity}`, {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+      data: { state: "off" },
+    });
+    expect(response.ok()).toBeTruthy();
+  }
   await panel.getByRole("button", { name: "Random", exact: true }).click();
   await expect(eventWarning).not.toHaveClass(/step-warning/);
   await panel.getByRole("button", { name: "Steps", exact: true }).click();
   await expect(stepWarning).not.toHaveClass(/step-warning/);
+  await stepWarning.locator(".step-row").click();
+  await expect(stepWarning.locator(".entity-warning")).toHaveCount(0);
   await panel.evaluate(async (element, program) => {
     await (element as OccupiedPanel).save(
       JSON.parse(program) as ProgramDocument["program"],
