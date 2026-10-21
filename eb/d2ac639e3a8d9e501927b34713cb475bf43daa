@@ -1,0 +1,25 @@
+custom_components/occupied/frontend/dist/lib/utils/util.js
+  s_1a77ab62bed59f::t_e07ed2d0fceec8 293
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_1a77ab62bed59f::t_6b893c03940a3d 1668
+custom_components/occupied/frontend/src/lib/utils/util.ts
+  s_1a77ab62bed59f::t_d6a60ce58dc209 362
+tests/frontend/src/model.test.ts
+  s_1a77ab62bed59f::t_df05c336cd362f 345
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ebd2ac639e3a8d9e501927b34713cb475bf43daa",
+  "prompts": {},
+  "sessions": {
+    "s_1a77ab62bed59f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15d6a-c787-7ca1-afd0-51468be37151",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
