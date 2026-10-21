@@ -1343,12 +1343,12 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     },
   });
   expect(settingsEvent?.off).toMatchObject({
-    action: "set_state",
-    entities: {
-      "light.fade_smoke": { state: "off" },
-      "light.onoff_smoke": { state: "off" },
-      "switch.settings_smoke": { state: "off" },
-    },
+    action: "turn_off",
+    entities: [
+      "light.fade_smoke",
+      "light.onoff_smoke",
+      "switch.settings_smoke",
+    ],
   });
   await panel.getByRole("button", { name: /^Settings test(?:\s|$)/ }).click();
   await startLight.locator("summary").click();
