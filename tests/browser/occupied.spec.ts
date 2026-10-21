@@ -931,7 +931,10 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(saveYaml).toBeEnabled();
   await expect.poll(yamlValue).toBe(yaml);
   await saveYaml.click();
-  await expect(panel.getByRole("alert")).toContainText("program changed");
+  await expect
+    .poll(() => panel.evaluate((element) => (element as OccupiedPanel).error))
+    .toContain("program changed");
+  await expect(panel.locator("#error")).toHaveCount(0);
   await expect(reload).toBeVisible();
   const saved = await panel.evaluate((element) => {
     const controller = element as OccupiedPanel;
