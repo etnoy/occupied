@@ -6,12 +6,12 @@ from .models import program_timings
 from .time_utils import PlanningContext
 
 SOLAR_EVENTS = {
-    "sunrise": "Sunrise",
-    "sunset": "Sunset",
-    "dawn": "Dawn",
-    "dusk": "Dusk",
-    "noon": "Solar noon",
     "midnight": "Solar midnight",
+    "dawn": "Dawn",
+    "sunrise": "Sunrise",
+    "noon": "Solar noon",
+    "sunset": "Sunset",
+    "dusk": "Dusk",
 }
 
 

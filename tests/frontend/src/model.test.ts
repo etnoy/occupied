@@ -202,12 +202,12 @@ void test("source picker offers all supported solar sources", () => {
       .filter((s) => s.group === "Solar events")
       .map((s) => s.value),
     [
-      "sun:sunrise",
-      "sun:sunset",
-      "sun:dawn",
-      "sun:dusk",
-      "sun:noon",
       "sun:midnight",
+      "sun:dawn",
+      "sun:sunrise",
+      "sun:noon",
+      "sun:sunset",
+      "sun:dusk",
     ],
   );
 });
