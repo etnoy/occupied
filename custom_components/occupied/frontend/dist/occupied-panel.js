@@ -469,9 +469,8 @@ var en = {
   only_run_before: "Only run before",
   boundary_source: "Boundary source",
   boundary_clock: "Boundary time",
-  latest_at_summary: "No later than {boundary}",
-  only_before_summary:
-    "Only runs strictly before {boundary}; equality skips the occurrence",
+  latest_at_summary: "but no later than {boundary}",
+  only_before_summary: "but only if that is {boundary} or earlier",
   timing_limits_sampling_hint:
     "Sample once, then apply the limit and condition. Samples beyond the limit land on the limit; excluded samples are skipped without resampling",
   timing_limits_source_date_hint:
@@ -1127,9 +1126,8 @@ var sv = {
   only_run_before: "K\xF6r endast f\xF6re",
   boundary_source: "Gr\xE4nsens k\xE4lla",
   boundary_clock: "Gr\xE4nstid",
-  latest_at_summary: "Senast {boundary}",
-  only_before_summary:
-    "K\xF6r endast strikt f\xF6re {boundary}; vid samma tid hoppas tillf\xE4llet \xF6ver",
+  latest_at_summary: "men senast {boundary}",
+  only_before_summary: "men bara om det \xE4r {boundary} eller tidigare",
   timing_limits_sampling_hint:
     "Slumpa en g\xE5ng och till\xE4mpa sedan gr\xE4nsen och villkoret. Tider efter gr\xE4nsen flyttas till gr\xE4nsen; uteslutna tillf\xE4llen hoppas \xF6ver utan ny slumpning",
   timing_limits_source_date_hint:
@@ -1600,7 +1598,7 @@ function timingExplanation(
               includeHints: false,
             }).slice(t("runs").length + 1);
     }
-    explanation += `. ${t(
+    explanation += `, ${t(
       key2 === "latestAt" ? "latest_at_summary" : "only_before_summary",
     ).replace("{boundary}", () => label2)}`;
   }

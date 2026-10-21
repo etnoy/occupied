@@ -373,9 +373,8 @@ export const en = {
   only_run_before: "Only run before",
   boundary_source: "Boundary source",
   boundary_clock: "Boundary time",
-  latest_at_summary: "No later than {boundary}",
-  only_before_summary:
-    "Only runs strictly before {boundary}; equality skips the occurrence",
+  latest_at_summary: "but no later than {boundary}",
+  only_before_summary: "but only if that is {boundary} or earlier",
   timing_limits_sampling_hint:
     "Sample once, then apply the limit and condition. Samples beyond the limit land on the limit; excluded samples are skipped without resampling",
   timing_limits_source_date_hint:
@@ -1022,9 +1021,8 @@ export const sv = {
   only_run_before: "Kör endast före",
   boundary_source: "Gränsens källa",
   boundary_clock: "Gränstid",
-  latest_at_summary: "Senast {boundary}",
-  only_before_summary:
-    "Kör endast strikt före {boundary}; vid samma tid hoppas tillfället över",
+  latest_at_summary: "men senast {boundary}",
+  only_before_summary: "men bara om det är {boundary} eller tidigare",
   timing_limits_sampling_hint:
     "Slumpa en gång och tillämpa sedan gränsen och villkoret. Tider efter gränsen flyttas till gränsen; uteslutna tillfällen hoppas över utan ny slumpning",
   timing_limits_source_date_hint:

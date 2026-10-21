@@ -278,7 +278,7 @@ export function timingExplanation(
               includeHints: false,
             }).slice(t("runs").length + 1);
     }
-    explanation += `. ${t(
+    explanation += `, ${t(
       key === "latestAt" ? "latest_at_summary" : "only_before_summary",
     ).replace("{boundary}", () => label)}`;
   }

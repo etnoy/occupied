@@ -225,7 +225,7 @@ export function timingExplanation(
               includeHints: false,
             }).slice(t("runs").length + 1);
     }
-    explanation += `. ${t(key === "latestAt" ? "latest_at_summary" : "only_before_summary").replace("{boundary}", () => label)}`;
+    explanation += `, ${t(key === "latestAt" ? "latest_at_summary" : "only_before_summary").replace("{boundary}", () => label)}`;
   }
   if (modified && options.includeHints !== false) {
     explanation += `. ${t("timing_limits_sampling_hint")}`;
