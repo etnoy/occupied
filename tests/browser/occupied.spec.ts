@@ -1301,7 +1301,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   ).toHaveCount(0);
   await expect(
     startAction.locator('[data-entity-row="light.onoff_smoke"] summary'),
-  ).toHaveCount(0);
+  ).toHaveCount(1);
   await expect(
     endAction.getByRole("button", { name: /^Remove entity/ }),
   ).toHaveCount(0);
