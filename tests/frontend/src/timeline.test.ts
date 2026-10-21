@@ -9,6 +9,7 @@ import {
   staggerTransitions,
   eventDetails,
   groupPreviewEvents,
+  previewNowIndex,
 } from "@occupied/lib/utils/timeline.js";
 import type { Plan, PlannedEvent, Program } from "@occupied/lib/types.js";
 import { shiftScheduleDate } from "@occupied/lib/utils/time-format.js";
@@ -46,6 +47,52 @@ const plan = (events: PlannedEvent[]): Plan => ({
   events,
   steps: {},
   issues: [],
+});
+
+void test("event-list Now marker separates complete groups and includes the day's edges", () => {
+  const day = plan([
+    event(5, "light.turn_on"),
+    event(5, "scene.turn_on"),
+    event(9, "light.turn_off"),
+    event(9, "switch.turn_off"),
+  ]);
+  const groups = groupPreviewEvents(day.events);
+  for (const [instant, expected] of [
+    [day.start, 0],
+    [time(4), 0],
+    [time(5), 2],
+    [time(8), 2],
+    [time(9), 4],
+    [time(23), 4],
+    [day.end, -1],
+    ["2026-10-12T23:59:59Z", -1],
+  ] as const) {
+    assert.equal(previewNowIndex(day, groups, Date.parse(instant)), expected);
+  }
+  assert.equal(previewNowIndex(undefined, groups, Date.parse(time(8))), -1);
+  assert.equal(previewNowIndex(day, [], Date.parse(time(8))), -1);
+});
+
+void test("event-list Now marker uses absolute time across repeated DST hours", () => {
+  const day = {
+    ...plan([]),
+    simulation_date: "2026-10-25",
+    timezone: "Europe/Stockholm",
+    start: "2026-10-25T00:00:00+02:00",
+    end: "2026-10-26T00:00:00+01:00",
+  };
+  const groups = [
+    { event: { time: "2026-10-25T02:30:00+02:00" } },
+    { event: { time: "2026-10-25T02:30:00+01:00" } },
+  ];
+  assert.equal(
+    previewNowIndex(day, groups, Date.parse("2026-10-25T02:15:00+01:00")),
+    1,
+  );
+  assert.equal(
+    previewNowIndex(day, groups, Date.parse("2026-10-25T23:59:59+01:00")),
+    2,
+  );
 });
 
 void test("event details omit stagger metadata while preserving random labels, superseded state, and friendly names", () => {

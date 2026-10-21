@@ -1,11 +1,19 @@
 <script lang="ts">
   import { translator } from "../../i18n/translations.js";
+  import { onMount } from "svelte";
   import type { Snippet } from "svelte";
   import type { Plan, Program, Translate, HomeAssistant } from "../../types.js";
   import PreviewStateGraph from "./PreviewStateGraph.svelte";
   import type { HomeAssistantLocale } from "../../utils/time-format.js";
-  import { formatScheduleDate } from "../../utils/time-format.js";
-  import { eventDetails, groupPreviewEvents } from "../../utils/timeline.js";
+  import {
+    formatEventTime,
+    formatScheduleDate,
+  } from "../../utils/time-format.js";
+  import {
+    eventDetails,
+    groupPreviewEvents,
+    previewNowIndex,
+  } from "../../utils/timeline.js";
   import { stepEntries } from "../../models/step-model.js";
   import { randomEntries } from "../../models/random-model.js";
   import type { PlannedEvent } from "../../types.js";
@@ -67,6 +75,13 @@
 
   let page = $state(0);
   let hoveredEventTime = $state<string | null>(null);
+  let now = $state(Date.now());
+
+  onMount(() => {
+    const timer = globalThis.setInterval(() => (now = Date.now()), 1000);
+
+    return () => globalThis.clearInterval(timer);
+  });
 
   let scheduleDate = $derived(plan?.simulation_date);
   $effect(() => {
@@ -77,10 +92,29 @@
 
   let events = $derived(plan?.events ?? []);
   let groups = $derived(groupPreviewEvents(events));
+  let nowIndex = $derived(previewNowIndex(plan, groups, now));
   let currentPage = $derived(
     Math.max(0, Math.min(page, Math.ceil(groups.length / 50) - 1)),
   );
 </script>
+
+{#snippet nowMarker()}
+  <tbody class="event-now">
+    <tr>
+      <td colspan={liveSession ? 5 : 4}>
+        <div class="now-marker">
+          <span
+            >{t("preview_now")} · {formatEventTime(
+              new Date(now).toISOString(),
+              plan?.timezone,
+              locale,
+            )}</span
+          >
+        </div>
+      </td>
+    </tr>
+  </tbody>
+{/snippet}
 
 <section aria-busy={loading}>
   {#if heading}
@@ -114,7 +148,10 @@
                   <th scope="col">{t("source")}</th>
                 </tr>
               </thead>
-              {#each groups.slice(currentPage * 50, currentPage * 50 + 50) as group (group.key)}
+              {#each groups.slice(currentPage * 50, currentPage * 50 + 50) as group, groupIndex (group.key)}
+                {#if nowIndex === currentPage * 50 + groupIndex}
+                  {@render nowMarker()}
+                {/if}
                 <tbody
                   onpointerenter={() => (hoveredEventTime = group.event.time)}
                   onpointerleave={() => (hoveredEventTime = null)}
@@ -220,6 +257,9 @@
                   {/each}
                 </tbody>
               {/each}
+              {#if nowIndex === groups.length && currentPage === Math.ceil(groups.length / 50) - 1}
+                {@render nowMarker()}
+              {/if}
             </table>
           </div>
           {#if groups.length > 50}
@@ -277,6 +317,27 @@
 
   .planned-time {
     position: relative;
+  }
+
+  .event-now td {
+    padding: 8px 9px 8px 24px;
+    border-bottom: 0;
+  }
+
+  .now-marker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--primary-color, #03a9f4);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .now-marker::after {
+    content: "";
+    flex: 1;
+    min-width: 24px;
+    border-top: 2px solid currentColor;
   }
 
   .hover-indicator {
