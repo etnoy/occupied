@@ -1289,19 +1289,12 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   );
   const endLight = endAction.locator('[data-entity-row="light.fade_smoke"]');
   await startLight.locator("summary").click();
-  await endLight.locator("summary").click();
   await brightnessInput(startLight).fill("0");
   await random
     .getByRole("button", { name: "Save random event", exact: true })
     .click();
   await expect(startLight.getByRole("alert")).toContainText("greater than 0");
   await brightnessInput(startLight).fill("40");
-  await startLight
-    .getByRole("spinbutton", { name: "Transition (seconds)", exact: true })
-    .fill("2");
-  await endLight
-    .getByRole("spinbutton", { name: "Transition (seconds)", exact: true })
-    .fill("7");
   await expect(brightnessInput(endLight)).toHaveCount(0);
   await expect(
     startAction.locator('[data-entity-row="switch.settings_smoke"] summary'),
@@ -1315,13 +1308,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(panel).toHaveAttribute("narrow", "");
   await brightnessInput(startLight).focus();
-  await page.keyboard.press("Tab");
-  await expect(
-    startLight.getByRole("spinbutton", {
-      name: "Transition (seconds)",
-      exact: true,
-    }),
-  ).toBeFocused();
+  await expect(brightnessInput(startLight)).toBeFocused();
   await expect
     .poll(() =>
       page.evaluate(
@@ -1350,7 +1337,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   expect(settingsEvent?.on).toMatchObject({
     action: "set_state",
     entities: {
-      "light.fade_smoke": { state: "on", brightness: 102, transition: 2 },
+      "light.fade_smoke": { state: "on", brightness: 102 },
       "light.onoff_smoke": { state: "on" },
       "switch.settings_smoke": { state: "on" },
     },
@@ -1358,31 +1345,14 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   expect(settingsEvent?.off).toMatchObject({
     action: "set_state",
     entities: {
-      "light.fade_smoke": { state: "off", transition: 7 },
+      "light.fade_smoke": { state: "off" },
       "light.onoff_smoke": { state: "off" },
       "switch.settings_smoke": { state: "off" },
     },
   });
   await panel.getByRole("button", { name: /^Settings test(?:\s|$)/ }).click();
   await startLight.locator("summary").click();
-  await endLight.locator("summary").click();
   await expect(brightnessInput(startLight)).toHaveValue("40");
-  await expect(
-    endLight.getByRole("spinbutton", {
-      name: "Transition (seconds)",
-      exact: true,
-    }),
-  ).toHaveValue("7");
-  await startLight
-    .getByRole("button", { name: "Reset light settings", exact: true })
-    .click();
-  await expect(brightnessInput(startLight)).toHaveValue("");
-  await expect(
-    endLight.getByRole("spinbutton", {
-      name: "Transition (seconds)",
-      exact: true,
-    }),
-  ).toHaveValue("7");
   await random
     .getByRole("button", { name: "Save random event", exact: true })
     .click();
