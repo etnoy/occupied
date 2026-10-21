@@ -1,0 +1,31 @@
+custom_components/occupied/frontend/README.md
+  s_bc07bf5b21f983::t_0973cab0887aec 53-59
+custom_components/occupied/frontend/dist/lib/services/panel-recovery.js
+  s_bc07bf5b21f983::t_b5b0b8d02e3cb0 1-129
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_bc07bf5b21f983::t_cebd2edc8599e4 21087-21215,21217-21227,21372-21377,21383,21389-21393,21417-21424,21452-21454,21475,21502-21575,21620-21622,21761,21833-21834,21847,21857
+custom_components/occupied/frontend/src/lib/services/panel-recovery.ts
+  s_bc07bf5b21f983::t_6a6180cdbaa60f 1-143
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_bc07bf5b21f983::t_88a2d1360e9e76 38,46-57,226-231,237,247-252,278-285,319-321,343,373-451,501-503,650,727-728,741,751
+tests/frontend/src/instances.test.ts
+  s_bc07bf5b21f983::t_0d789f9c970d77 135,167,194-203,205-210,262,728-729,743-744,2139-2436
+tests/frontend/src/panel-recovery.test.ts
+  s_bc07bf5b21f983::t_a87ed90497fc32 1-157
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a27098ba160022de6aa8a792e5205a401a6b6586",
+  "prompts": {},
+  "sessions": {
+    "s_bc07bf5b21f983": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15d3d-a8ab-7c72-b056-fda2a07cddfb",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
