@@ -1,0 +1,19 @@
+tests/browser/occupied.spec.ts
+  s_3d61bf5e584740::t_f1ed0cfbae547b 1311,1340,1348
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d603f048622689ff6379a8026d0b0221de3ae87e",
+  "prompts": {},
+  "sessions": {
+    "s_3d61bf5e584740": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "efcabf10-469f-4b10-abb1-6318b90f7a36",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
