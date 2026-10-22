@@ -16353,7 +16353,14 @@ function RandomWeekdaysDialog($$anchor, $$props) {
 delegate(["click", "change"]);
 
 // custom_components/occupied/frontend/src/lib/utils/random-explanation.ts
-function randomExplanation(form, program, catalog, t = translator(), locale) {
+function randomExplanation(
+  form,
+  program,
+  catalog,
+  t = translator(),
+  locale,
+  section = "all",
+) {
   const say = (text2, values = {}) => {
     let message = t(text2);
     for (const [key2, value] of Object.entries(values)) {
@@ -16419,17 +16426,21 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
       windowSeconds = duration2;
     }
   }
+  const periodSentences = [
+    ...(form.enabled ? [] : [t("random_disabled_hint")]),
+    `${start}.`,
+    `${end}.`,
+  ];
+  if (section === "active-period") {
+    return periodSentences.join(" ");
+  }
   const minDuration = durationSeconds(form.minDuration);
   const maxDuration = durationSeconds(form.maxDuration);
   const cannotFit =
     windowSeconds !== void 0 &&
     Number.isFinite(minDuration) &&
     minDuration > windowSeconds;
-  const sentences = [
-    ...(form.enabled ? [] : [t("random_disabled_hint")]),
-    `${start}.`,
-    `${end}.`,
-  ];
+  const sentences = section === "all" ? periodSentences : [];
   const minimum = Number(form.minCount);
   const maximum = Number(form.maxCount);
   const validCount = (value) =>
@@ -16445,7 +16456,7 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
       t("random_zero_count_hint"),
       t("random_dependents_skip_hint"),
     );
-    return sentences.join(" ");
+    return section === "actions" ? "" : sentences.join(" ");
   }
   if (cannotFit) {
     sentences.push(t("random_duration_exceeds_window"));
@@ -16496,6 +16507,9 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
             max: duration(longest),
           }),
     );
+  }
+  if (section === "actions") {
+    sentences.length = 0;
   }
   const action2 = (selected) => {
     if (selected.kind === "custom") {
@@ -16570,15 +16584,15 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
   const off = action2(
     form.sameEntities ? { ...form.off, entities: form.on.entities } : form.off,
   );
-  if (on2 && !cannotFit) {
+  if (on2 && !cannotFit && section !== "frequency") {
     sentences.push(say("random_start_action_summary", { action: on2 }));
   }
-  if (off && !cannotFit) {
+  if (off && !cannotFit && section !== "frequency") {
     sentences.push(say("random_end_action_summary", { action: off }));
   }
-  if (cannotFit) {
+  if (cannotFit && section !== "actions") {
     sentences.push(t("random_duration_priority_hint"));
-  } else if (validCounts && maximum === 1) {
+  } else if (section !== "actions" && validCounts && maximum === 1) {
     sentences.push(t("random_single_finish_hint"));
   }
   return sentences.join(" ");
@@ -16596,7 +16610,10 @@ var root_213 = from_html(
   `<label class="same-entities svelte-1n39iyr"><input type="checkbox"/> </label>`,
 );
 var root_312 = from_html(
-  `<section><div class="step-name-editor"><!></div> <div class="active-period-header svelte-1n39iyr"><h3 class="svelte-1n39iyr"> </h3> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-weekdays=""> </button></div> <!> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <h3> </h3> <div><label class="minimum-count-label svelte-1n39iyr" for="step-minCount"> </label> <div class="minimum-count-control count-control svelte-1n39iyr"><!></div> <!></div> <div class="random-frequency svelte-1n39iyr"><!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section> <!>`,
+  `<p class="hint" data-random-actions-explanation="" aria-live="polite"> </p>`,
+);
+var root_48 = from_html(
+  `<section><div class="step-name-editor"><!></div> <div class="active-period-header svelte-1n39iyr"><h3 class="svelte-1n39iyr"> </h3> <button type="button" aria-haspopup="dialog" data-builder-field="days" data-random-weekdays=""> </button></div> <!> <p class="hint"> </p> <div class="editor-sections"><!> <!></div> <p class="hint" data-random-period-explanation="" aria-live="polite"> </p> <h3> </h3> <div><label class="minimum-count-label svelte-1n39iyr" for="step-minCount"> </label> <div class="minimum-count-control count-control svelte-1n39iyr"><!></div> <!></div> <div class="random-frequency svelte-1n39iyr"><!> <!></div> <p class="hint" data-random-explanation="" aria-live="polite"> </p> <div class="editor-sections"><!> <div><!> <!></div></div> <!> <div class="builder-footer"><button type="button"> </button> <!> <button type="button" class="primary" data-random-submit=""> </button></div></section> <!>`,
   1,
 );
 var $$css5 = {
@@ -16616,6 +16633,16 @@ function RandomEventEditor($$anchor, $$props) {
     changed = user_derived(() => get(context).changed),
     submit = user_derived(() => get(context).submit),
     cancel = user_derived(() => get(context).cancel);
+  let actionExplanation = user_derived(() =>
+    randomExplanation(
+      get(form),
+      $$props.panel.draft,
+      $$props.panel.catalog,
+      get(t),
+      $$props.panel._hass.locale,
+      "actions",
+    ),
+  );
   let weekdaysOpen = state(false);
   let weekdaysButton;
   let showMaxCount = state(
@@ -16642,7 +16669,7 @@ function RandomEventEditor($$anchor, $$props) {
       weekdaysButton.focus();
     }
   }
-  var fragment = root_312();
+  var fragment = root_48();
   var section = first_child(fragment);
   let classes;
   var div = child(section);
@@ -16741,12 +16768,14 @@ function RandomEventEditor($$anchor, $$props) {
     });
   }
   reset(div_2);
-  var h3_1 = sibling(div_2, 2);
-  var text_3 = only_child(h3_1, true);
+  var p_1 = sibling(div_2, 2);
+  var text_3 = only_child(p_1, true);
+  var h3_1 = sibling(p_1, 2);
+  var text_4 = only_child(h3_1, true);
   var div_3 = sibling(h3_1, 2);
   let classes_2;
   var label2 = child(div_3);
-  var text_4 = only_child(label2, true);
+  var text_5 = only_child(label2, true);
   var div_4 = sibling(label2, 2);
   var node_4 = child(div_4);
   {
@@ -16783,11 +16812,11 @@ function RandomEventEditor($$anchor, $$props) {
   {
     var consequent = ($$anchor2) => {
       var button_1 = root20();
-      var text_5 = only_child(button_1, true);
+      var text_6 = only_child(button_1, true);
       template_effect(
         ($0) => {
           button_1.disabled = $$props.panel.busy;
-          set_text(text_5, $0);
+          set_text(text_6, $0);
         },
         [() => get(t)("add_randomness")],
       );
@@ -16801,7 +16830,7 @@ function RandomEventEditor($$anchor, $$props) {
     var alternate = ($$anchor2) => {
       var fragment_1 = root_117();
       var label_1 = first_child(fragment_1);
-      var text_6 = only_child(label_1, true);
+      var text_7 = only_child(label_1, true);
       var div_5 = sibling(label_1, 2);
       var node_6 = child(div_5);
       {
@@ -16836,7 +16865,7 @@ function RandomEventEditor($$anchor, $$props) {
       reset(div_5);
       template_effect(
         ($0, $1, $2) => {
-          set_text(text_6, $0);
+          set_text(text_7, $0);
           set_attribute2(button_2, "aria-label", $1);
           set_attribute2(button_2, "title", $2);
           button_2.disabled = $$props.panel.busy;
@@ -16896,9 +16925,9 @@ function RandomEventEditor($$anchor, $$props) {
     options: { placeholder: "15m" },
   });
   reset(div_6);
-  var p_1 = sibling(div_6, 2);
-  var text_7 = only_child(p_1, true);
-  var div_7 = sibling(p_1, 2);
+  var p_2 = sibling(div_6, 2);
+  var text_8 = only_child(p_2, true);
+  var div_7 = sibling(p_2, 2);
   var node_9 = child(div_7);
   {
     let $0 = user_derived(() => get(context).action("on"));
@@ -16939,12 +16968,12 @@ function RandomEventEditor($$anchor, $$props) {
       var label_2 = root_213();
       var input = child(label_2);
       remove_input_defaults(input);
-      var text_8 = sibling(input, 1, true);
+      var text_9 = sibling(input, 1, true);
       reset(label_2);
       template_effect(
         ($0) => {
           set_checked(input, get(form).sameEntities);
-          set_text(text_8, $0);
+          set_text(text_9, $0);
         },
         [() => get(t)("use_the_same_entities")],
       );
@@ -16961,11 +16990,23 @@ function RandomEventEditor($$anchor, $$props) {
   }
   reset(div_8);
   reset(div_7);
-  var div_9 = sibling(div_7, 2);
+  var node_12 = sibling(div_7, 2);
+  {
+    var consequent_2 = ($$anchor2) => {
+      var p_3 = root_312();
+      var text_10 = only_child(p_3, true);
+      template_effect(() => set_text(text_10, get(actionExplanation)));
+      append($$anchor2, p_3);
+    };
+    if_block(node_12, ($$render) => {
+      if (get(actionExplanation)) $$render(consequent_2);
+    });
+  }
+  var div_9 = sibling(node_12, 2);
   var button_3 = child(div_9);
-  var text_9 = only_child(button_3, true);
-  var node_12 = sibling(button_3, 2);
-  RandomActions(node_12, {
+  var text_11 = only_child(button_3, true);
+  var node_13 = sibling(button_3, 2);
+  RandomActions(node_13, {
     get panel() {
       return $$props.panel;
     },
@@ -16973,13 +17014,13 @@ function RandomEventEditor($$anchor, $$props) {
       return get(context);
     },
   });
-  var button_4 = sibling(node_12, 2);
-  var text_10 = only_child(button_4, true);
+  var button_4 = sibling(node_13, 2);
+  var text_12 = only_child(button_4, true);
   reset(div_9);
   reset(section);
-  var node_13 = sibling(section, 2);
+  var node_14 = sibling(section, 2);
   {
-    var consequent_2 = ($$anchor2) => {
+    var consequent_3 = ($$anchor2) => {
       RandomWeekdaysDialog($$anchor2, {
         get panel() {
           return $$props.panel;
@@ -16990,12 +17031,12 @@ function RandomEventEditor($$anchor, $$props) {
         onClose: closeWeekdays,
       });
     };
-    if_block(node_13, ($$render) => {
-      if (get(weekdaysOpen)) $$render(consequent_2);
+    if_block(node_14, ($$render) => {
+      if (get(weekdaysOpen)) $$render(consequent_3);
     });
   }
   template_effect(
-    ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
+    ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9) => {
       classes = set_class(
         section,
         1,
@@ -17018,6 +17059,7 @@ function RandomEventEditor($$anchor, $$props) {
       set_text(text_1, $2);
       set_text(text_2, $3);
       set_text(text_3, $4);
+      set_text(text_4, $5);
       classes_2 = set_class(
         div_3,
         1,
@@ -17026,16 +17068,16 @@ function RandomEventEditor($$anchor, $$props) {
         classes_2,
         { "with-maximum": get(maxCountVisible) },
       );
-      set_text(text_4, $5);
-      set_text(text_7, $6);
+      set_text(text_5, $6);
+      set_text(text_8, $7);
       button_3.disabled = $$props.panel.busy;
-      set_text(text_9, $7);
+      set_text(text_11, $8);
       button_4.disabled =
         $$props.panel.busy ||
         $$props.panel.stale ||
         !!get(editor).errors.minCount ||
         !!get(editor).errors.maxCount;
-      set_text(text_10, $8);
+      set_text(text_12, $9);
     },
     [
       () =>
@@ -17049,6 +17091,15 @@ function RandomEventEditor($$anchor, $$props) {
       () => get(t)("active_period"),
       () => get(t)("weekdays"),
       () => get(t)("active_period_hint"),
+      () =>
+        randomExplanation(
+          get(form),
+          $$props.panel.draft,
+          $$props.panel.catalog,
+          get(t),
+          $$props.panel._hass.locale,
+          "active-period",
+        ),
       () => get(t)("frequency_and_duration"),
       () =>
         get(t)(
@@ -17063,6 +17114,7 @@ function RandomEventEditor($$anchor, $$props) {
           $$props.panel.catalog,
           get(t),
           $$props.panel._hass.locale,
+          "frequency",
         ),
       () => get(t)("cancel"),
       () => get(t)("save_random_event"),
@@ -17276,7 +17328,7 @@ var root_215 = from_html(`<span></span>`);
 var root_314 = from_html(
   `<div class="step-tree-item"><span class="step-tree-connectors" aria-hidden="true"></span> <!></div>`,
 );
-var root_48 = from_html(
+var root_49 = from_html(
   `<div class="step-layout"><div class="step-list"></div></div> <!>`,
   1,
 );
@@ -17360,7 +17412,7 @@ function StepsView($$anchor, $$props) {
       append($$anchor2, section);
     };
     var alternate_1 = ($$anchor2) => {
-      var fragment_1 = root_48();
+      var fragment_1 = root_49();
       var div_1 = first_child(fragment_1);
       var div_2 = child(div_1);
       each(
@@ -17516,7 +17568,7 @@ var root_216 = from_html(
   2,
 );
 var root_315 = from_html(`<p class="hint"> </p>`);
-var root_49 = from_html(`<p> </p>`);
+var root_410 = from_html(`<p> </p>`);
 var root_56 = from_html(`<p role="status"> </p> <!>`, 1);
 var root_66 = from_html(
   `<section><h2> </h2> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <!> <!> <div class="actions svelte-111t7iy"><button type="button" class="primary"> </button> <button type="button"> </button></div> <!></section>`,
@@ -17969,7 +18021,7 @@ function RunConditionSettings($$anchor, $$props) {
           var node_10 = sibling(p_6, 2);
           {
             var consequent_3 = ($$anchor4) => {
-              var p_7 = root_49();
+              var p_7 = root_410();
               var text_17 = only_child(p_7, true);
               template_effect(
                 ($0) => set_text(text_17, $0),
@@ -18934,7 +18986,7 @@ var root_218 = from_html(
   2,
 );
 var root_316 = from_html(`<p role="status"> </p>`);
-var root_410 = from_html(`<!> <!> <!>`, 1);
+var root_411 = from_html(`<!> <!> <!>`, 1);
 var $$css8 = {
   hash: "svelte-1kps2qf",
   code: ".preview-graph.svelte-1kps2qf {position:relative;padding-top:18px;}.preview-graph.empty.svelte-1kps2qf {display:none;}.now-label.svelte-1kps2qf {position:absolute;top:0;color:var(--secondary-text-color, #727272);font-size:12px;line-height:16px;transform:translateX(-50%);pointer-events:none;}state-history-chart-timeline.svelte-1kps2qf {display:block;width:100%;}state-history-chart-timeline[hidden].svelte-1kps2qf {display:none;}",
@@ -19009,7 +19061,7 @@ function PreviewStateGraph($$anchor, $$props) {
       media.removeEventListener("change", updateNarrow);
     };
   });
-  var fragment = root_410();
+  var fragment = root_411();
   var node = first_child(fragment);
   {
     var consequent = ($$anchor2) => {
@@ -19260,7 +19312,7 @@ var root_219 = from_html(`<th scope="col" class="svelte-1iz1525"> </th>`);
 var root_317 = from_html(
   `<td class="planned-time svelte-1iz1525"><svg class="hover-indicator svelte-1iz1525" viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2 8 6 4 10"></path></svg> </td>`,
 );
-var root_411 = from_html(`<span aria-hidden="true"></span>`);
+var root_412 = from_html(`<span aria-hidden="true"></span>`);
 var root_57 = from_html(`<span> </span>`);
 var root_67 = from_html(`<div><!> <span> </span> <div> </div></div>`);
 var root_73 = from_html(`<div> </div>`);
@@ -19553,7 +19605,7 @@ function Timeline($$anchor, $$props) {
                   var node_10 = child(span_1);
                   {
                     var consequent_5 = ($$anchor6) => {
-                      var span_2 = root_411();
+                      var span_2 = root_412();
                       let classes_1;
                       template_effect(
                         () =>
@@ -19887,7 +19939,7 @@ var root_220 = from_html(
   1,
 );
 var root_318 = from_html(`<div class="live-actions svelte-jw9j7k"><!></div>`);
-var root_412 = from_html(`<p class="svelte-jw9j7k"> </p>`);
+var root_413 = from_html(`<p class="svelte-jw9j7k"> </p>`);
 var root_58 = from_html(`<p class="error svelte-jw9j7k"> </p>`);
 var root_68 = from_html(`<p class="hint svelte-jw9j7k"> </p>`);
 var root_74 = from_html(`<p class="call svelte-jw9j7k"> <!></p>`);
@@ -20048,7 +20100,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_5 = sibling(p, 2);
           {
             var consequent_3 = ($$anchor4) => {
-              var p_1 = root_412();
+              var p_1 = root_413();
               var text_7 = only_child(p_1);
               template_effect(
                 ($0, $1) => set_text(text_7, `${$0 ?? ""}: ${$1 ?? ""}`),
@@ -20072,7 +20124,7 @@ function LivePreviewControls($$anchor, $$props) {
           var node_6 = sibling(node_5, 2);
           {
             var consequent_4 = ($$anchor4) => {
-              var p_2 = root_412();
+              var p_2 = root_413();
               var text_8 = only_child(p_2);
               template_effect(
                 ($0, $1) => set_text(text_8, `${$0 ?? ""}: ${$1 ?? ""}`),
@@ -20636,7 +20688,7 @@ var root30 = from_html(`<button type="button"> </button>`);
 var root_128 = from_html(`<div id="toolbar" class="toolbar"><!></div>`);
 var root_222 = from_html(`<p> </p>`);
 var root_320 = from_html(`<p class="banner" role="status"> </p>`);
-var root_413 = from_html(
+var root_414 = from_html(
   `<button type="button" class="text-button"> </button>`,
 );
 var root_59 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
@@ -20898,7 +20950,7 @@ function App($$anchor, $$props) {
   var node_4 = child(div_2);
   {
     var consequent_2 = ($$anchor2) => {
-      var button_3 = root_413();
+      var button_3 = root_414();
       var text_7 = only_child(button_3, true);
       template_effect(
         ($0) => set_text(text_7, $0),

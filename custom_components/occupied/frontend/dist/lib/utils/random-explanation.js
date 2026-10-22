@@ -14,6 +14,7 @@ export function randomExplanation(
   catalog,
   t = translator(),
   locale,
+  section = "all",
 ) {
   const say = (text, values = {}) => {
     let message = t(text);
@@ -79,17 +80,21 @@ export function randomExplanation(
       windowSeconds = duration;
     }
   }
+  const periodSentences = [
+    ...(form.enabled ? [] : [t("random_disabled_hint")]),
+    `${start}.`,
+    `${end}.`,
+  ];
+  if (section === "active-period") {
+    return periodSentences.join(" ");
+  }
   const minDuration = durationSeconds(form.minDuration);
   const maxDuration = durationSeconds(form.maxDuration);
   const cannotFit =
     windowSeconds !== undefined &&
     Number.isFinite(minDuration) &&
     minDuration > windowSeconds;
-  const sentences = [
-    ...(form.enabled ? [] : [t("random_disabled_hint")]),
-    `${start}.`,
-    `${end}.`,
-  ];
+  const sentences = section === "all" ? periodSentences : [];
   const minimum = Number(form.minCount);
   const maximum = Number(form.maxCount);
   const validCount = (value) =>
@@ -105,7 +110,7 @@ export function randomExplanation(
       t("random_zero_count_hint"),
       t("random_dependents_skip_hint"),
     );
-    return sentences.join(" ");
+    return section === "actions" ? "" : sentences.join(" ");
   }
   if (cannotFit) {
     sentences.push(t("random_duration_exceeds_window"));
@@ -156,6 +161,9 @@ export function randomExplanation(
             max: duration(longest),
           }),
     );
+  }
+  if (section === "actions") {
+    sentences.length = 0;
   }
   const action = (selected) => {
     if (selected.kind === "custom") {
@@ -230,15 +238,15 @@ export function randomExplanation(
   const off = action(
     form.sameEntities ? { ...form.off, entities: form.on.entities } : form.off,
   );
-  if (on && !cannotFit) {
+  if (on && !cannotFit && section !== "frequency") {
     sentences.push(say("random_start_action_summary", { action: on }));
   }
-  if (off && !cannotFit) {
+  if (off && !cannotFit && section !== "frequency") {
     sentences.push(say("random_end_action_summary", { action: off }));
   }
-  if (cannotFit) {
+  if (cannotFit && section !== "actions") {
     sentences.push(t("random_duration_priority_hint"));
-  } else if (validCounts && maximum === 1) {
+  } else if (section !== "actions" && validCounts && maximum === 1) {
     sentences.push(t("random_single_finish_hint"));
   }
   return sentences.join(" ");
