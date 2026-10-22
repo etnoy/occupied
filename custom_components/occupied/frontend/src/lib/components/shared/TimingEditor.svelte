@@ -375,9 +375,6 @@
         {/if}
       </fieldset>
     {/each}
-    {#if time.latestAt || time.onlyBefore}
-      <p class="hint">{t("timing_limits_source_date_hint")}</p>
-    {/if}
   {/if}
   {#if showExplanation}
     <p class="hint" data-timing-explanation aria-live="polite">

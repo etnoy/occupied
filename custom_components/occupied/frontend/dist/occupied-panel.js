@@ -464,10 +464,6 @@ var en = {
   boundary_clock: "Boundary time",
   latest_at_summary: "but no later than {boundary}",
   only_before_summary: "but only if that is {boundary} or earlier",
-  timing_limits_sampling_hint:
-    "Sample once, then apply the limit and condition. Samples beyond the limit land on the limit; excluded samples are skipped without resampling",
-  timing_limits_source_date_hint:
-    "Boundaries use the schedule's source date and Home Assistant location. An unavailable solar event skips the step and its dependents",
   enabled: "Enabled",
   disabled: "Disabled",
   save_step: "Save step",
@@ -1115,10 +1111,6 @@ var sv = {
   boundary_clock: "Gr\xE4nstid",
   latest_at_summary: "men senast {boundary}",
   only_before_summary: "men bara om det \xE4r {boundary} eller tidigare",
-  timing_limits_sampling_hint:
-    "Slumpa en g\xE5ng och till\xE4mpa sedan gr\xE4nsen och villkoret. Tider efter gr\xE4nsen flyttas till gr\xE4nsen; uteslutna tillf\xE4llen hoppas \xF6ver utan ny slumpning",
-  timing_limits_source_date_hint:
-    "Gr\xE4nser anv\xE4nder schemats ursprungsdatum och Home Assistants plats. En otillg\xE4nglig solh\xE4ndelse hoppar \xF6ver steget och dess beroenden",
   enabled: "Aktiverat",
   disabled: "Inaktiverat",
   save_step: "Spara steg",
@@ -1559,6 +1551,16 @@ function timingSummary(entry, entries, t = translator(), sources = [], locale) {
     days: entry.days,
   });
 }
+function clockSeconds(value) {
+  return value && /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)
+    ? value
+        .split(":")
+        .reduce(
+          (sum, part, index2) => sum + Number(part) * [3600, 60, 1][index2],
+          0,
+        )
+    : NaN;
+}
 function timingExplanation(
   input,
   entries = [],
@@ -1567,13 +1569,23 @@ function timingExplanation(
   options = {},
 ) {
   const modified = input.latestAt || input.onlyBefore;
+  const start = clockSeconds(input.start);
+  const fixedClock =
+    input.mode === "absolute" &&
+    Number.isFinite(start) &&
+    (!input.end || clockSeconds(input.end) === start);
   let explanation = baseTimingExplanation(input, entries, t, sources, {
     ...options,
     ...(modified && { includeHints: false }),
   });
   for (const key2 of ["latestAt", "onlyBefore"]) {
     const boundary2 = input[key2];
-    if (!boundary2) {
+    if (
+      !boundary2 ||
+      (fixedClock &&
+        boundary2.mode === "absolute" &&
+        clockSeconds(boundary2.start) === start)
+    ) {
       continue;
     }
     let label2 = formatClock(boundary2.start, options.locale);
@@ -1590,7 +1602,7 @@ function timingExplanation(
     ).replace("{boundary}", () => label2)}`;
   }
   if (modified && options.includeHints !== false) {
-    explanation += `. ${t("timing_limits_sampling_hint")}`;
+    explanation += ".";
   }
   return explanation;
 }
@@ -1632,24 +1644,18 @@ function baseTimingExplanation(
       .replace("{max}", () => durationLabel(maximum, t));
   }
   if (time.mode === "absolute") {
-    const valid = (value) =>
-      /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value);
     const display = (value) => formatClock(value, locale);
-    const seconds = (value) =>
-      value
-        .split(":")
-        .reduce(
-          (sum, part, index2) => sum + Number(part) * [3600, 60, 1][index2],
-          0,
-        );
-    if (!valid(time.start) || (time.end && !valid(time.end))) {
+    if (
+      !Number.isFinite(clockSeconds(time.start)) ||
+      (time.end && !Number.isFinite(clockSeconds(time.end)))
+    ) {
       return t("time_window_prompt");
     }
     const fixedTime = `${runs} ${t("at")} ${display(time.start)}`;
     if (!time.end) {
       return `${fixedTime}${includeHints ? `. ${t("time_window_randomness_hint")}` : ""}`;
     }
-    if (seconds(time.end) === seconds(time.start)) {
+    if (clockSeconds(time.end) === clockSeconds(time.start)) {
       return `${fixedTime}${includeHints ? `. ${t("time_window_fixed_hint")}` : ""}`;
     }
     return `${runs} ${t("at_a_random_time_between")} ${display(time.start)} ${t("and")} ${display(time.end)}`;
@@ -13154,8 +13160,8 @@ function TimingEditor($$anchor, $$props) {
   }
   var node_13 = sibling(node_2, 2);
   {
-    var consequent_11 = ($$anchor2) => {
-      var fragment_6 = root_52();
+    var consequent_10 = ($$anchor2) => {
+      var fragment_6 = comment();
       var node_14 = first_child(fragment_6);
       each(
         node_14,
@@ -13231,35 +13237,19 @@ function TimingEditor($$anchor, $$props) {
           append($$anchor3, fieldset_1);
         },
       );
-      var node_16 = sibling(node_14, 2);
-      {
-        var consequent_10 = ($$anchor3) => {
-          var p_3 = root_62();
-          var text_11 = only_child(p_3, true);
-          template_effect(
-            ($0) => set_text(text_11, $0),
-            [() => get(t)("timing_limits_source_date_hint")],
-          );
-          append($$anchor3, p_3);
-        };
-        if_block(node_16, ($$render) => {
-          if (get(time).latestAt || get(time).onlyBefore)
-            $$render(consequent_10);
-        });
-      }
       append($$anchor2, fragment_6);
     };
     if_block(node_13, ($$render) => {
-      if ($$props.context.stepId !== void 0) $$render(consequent_11);
+      if ($$props.context.stepId !== void 0) $$render(consequent_10);
     });
   }
-  var node_17 = sibling(node_13, 2);
+  var node_16 = sibling(node_13, 2);
   {
-    var consequent_12 = ($$anchor2) => {
-      var p_4 = root_10();
-      var text_12 = only_child(p_4, true);
+    var consequent_11 = ($$anchor2) => {
+      var p_3 = root_10();
+      var text_11 = only_child(p_3, true);
       template_effect(
-        ($0) => set_text(text_12, $0),
+        ($0) => set_text(text_11, $0),
         [
           () =>
             timingExplanation(
@@ -13289,25 +13279,25 @@ function TimingEditor($$anchor, $$props) {
             ),
         ],
       );
+      append($$anchor2, p_3);
+    };
+    if_block(node_16, ($$render) => {
+      if (showExplanation()) $$render(consequent_11);
+    });
+  }
+  var node_17 = sibling(node_16, 2);
+  {
+    var consequent_12 = ($$anchor2) => {
+      var p_4 = root_62();
+      var text_12 = only_child(p_4, true);
+      template_effect(
+        ($0) => set_text(text_12, $0),
+        [() => get(t)("managed_file_draft_hint")],
+      );
       append($$anchor2, p_4);
     };
     if_block(node_17, ($$render) => {
-      if (showExplanation()) $$render(consequent_12);
-    });
-  }
-  var node_18 = sibling(node_17, 2);
-  {
-    var consequent_13 = ($$anchor2) => {
-      var p_5 = root_62();
-      var text_13 = only_child(p_5, true);
-      template_effect(
-        ($0) => set_text(text_13, $0),
-        [() => get(t)("managed_file_draft_hint")],
-      );
-      append($$anchor2, p_5);
-    };
-    if_block(node_18, ($$render) => {
-      if ($$props.panel.document?.source === "file") $$render(consequent_13);
+      if ($$props.panel.document?.source === "file") $$render(consequent_12);
     });
   }
   reset(div);
@@ -15922,7 +15912,7 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
     locale,
   });
   let windowSeconds;
-  const clockSeconds = (value) =>
+  const clockSeconds2 = (value) =>
     /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)
       ? value
           .split(":")
@@ -15939,7 +15929,7 @@ function randomExplanation(form, program, catalog, t = translator(), locale) {
     !form.end.end
   ) {
     const difference =
-      clockSeconds(form.end.start) - clockSeconds(form.start.start);
+      clockSeconds2(form.end.start) - clockSeconds2(form.start.start);
     if (Number.isFinite(difference)) {
       windowSeconds = difference < 0 ? difference + 86400 : difference;
       if (difference < 0) {
