@@ -1,0 +1,27 @@
+custom_components/occupied/frontend/dist/lib/utils/random-explanation.js
+  s_6615b0ad189d38::t_f4aa9b98269444 17,83-90,97,113,165-167,241,244,247,249
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_6615b0ad189d38::t_74be0a56c8526e 16400-16407,16473-16480,16487,16503,16555-16557,16631,16634,16637,16639,16657-16660,16680-16689,16716,16815-16818,16822,16859,16863,16877,16912,16972-16974,17015,17020,17037-17049,17051-17053,17061-17062,17065,17067,17078-17079,17083,17106,17115-17116,17118,17124,17138-17146,17161,17395,17479,17648,18101,19071,19146,19397,19690,20024,20185,20209,20773,20989
+custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
+  s_6615b0ad189d38::t_e6b2b97f13d588 25-35,129-138,249-256,289-293
+custom_components/occupied/frontend/src/lib/utils/random-explanation.ts
+  s_6615b0ad189d38::t_b088982b23fb6b 25,92-99,106,123,175-177,254,257,260,262
+tests/frontend/src/random-explanation.test.ts
+  s_6615b0ad189d38::t_5ee1462cbefe54 220-275
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a7af48a042e17df45ebd4453828fa6c47001a2ff",
+  "prompts": {},
+  "sessions": {
+    "s_6615b0ad189d38": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16250-0b42-7d50-9703-14e141b4a72c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
