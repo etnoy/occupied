@@ -21,7 +21,15 @@
   let { editor, form, t, editing, submit, cancel } = $derived(context);
 </script>
 
-<section class="step-editor">
+<section
+  class="step-editor"
+  class:entity-conflict={panel
+    .offEntityConflicts()
+    .some(
+      (issue) =>
+        issue.model_path?.[0] === "steps" && issue.model_path[1] === editor.id,
+    )}
+>
   <div class="step-name-editor">
     <EditorField
       {panel}

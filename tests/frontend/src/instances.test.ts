@@ -16,6 +16,7 @@ import {
   openStep,
 } from "@occupied/lib/controllers/steps.js";
 import { createStepEditorContext } from "@occupied/lib/controllers/step-editor-controller.js";
+import { previewAction } from "@occupied/lib/controllers/action-preview-controller.js";
 import { changeActionKind } from "@occupied/lib/utils/action-kind.js";
 import { randomEntries } from "@occupied/lib/models/random-model.js";
 import {
@@ -1800,6 +1801,96 @@ async function yamlFixture() {
   };
 }
 
+for (const source of ["gui", "file"] as const) {
+  void test(`extra off conflicts block ${source} activity submissions and follow live form targets`, async () => {
+    const f = await fixture();
+    try {
+      f.panel.document.source = source;
+      f.panel.draft.run_condition = {
+        entity_id: "sensor.alarm",
+        state: "armed",
+        off_entities: ["light.extra"],
+      };
+      const before = structuredClone(f.panel.draft);
+      const messages = f.messages.length;
+      startStep(f.panel);
+      const editor = f.panel.stepEditor!;
+      editor.form.entities = ["light.extra"];
+      const context = createStepEditorContext(f.panel);
+      context.changed("entities");
+      assert.equal(f.panel.offEntityConflicts().length, 2);
+      await context.submit();
+      assert.equal(f.panel.stepEditor, editor);
+      assert.match(editor.errors.entities, /Extra entities to turn off/);
+      assert.deepEqual(f.panel.draft, before);
+      assert.equal(f.messages.length, messages);
+      editor.form.entities = ["light.other"];
+      context.changed("entities");
+      assert.deepEqual(f.panel.offEntityConflicts(), []);
+      assert.equal(
+        f.panel
+          .visibleIssues()
+          .filter((issue) => issue.code === "off_entity_conflict").length,
+        0,
+      );
+      f.panel.stepEditor = null;
+
+      openRandom(f.panel);
+      const random = f.panel.randomEditor!;
+      random.form.on.entities = ["light.extra"];
+      const randomContext = createRandomEditorContext(f.panel);
+      randomContext.changed("on.entities");
+      assert.ok(
+        f.panel
+          .offEntityConflicts()
+          .some((issue) => issue.model_path?.[2] === "off"),
+      );
+      await randomContext.submit();
+      assert.equal(f.panel.randomEditor, random);
+      assert.match(random.errors["on.entities"], /Extra entities to turn off/);
+      assert.deepEqual(f.panel.draft, before);
+      assert.equal(f.messages.length, messages);
+      random.form.on.entities = ["light.other"];
+      randomContext.changed("on.entities");
+      assert.deepEqual(f.panel.offEntityConflicts(), []);
+    } finally {
+      f.restore();
+    }
+  });
+}
+
+void test("extra off setting conflicts follow unsaved settings and reject saving", async () => {
+  const f = await fixture();
+  try {
+    f.panel.draft.steps = {
+      lamp: { timing: {}, entities: ["light.lamp"] },
+    };
+    f.panel.openRunCondition();
+    Object.assign(f.panel.runConditionForm!, {
+      enabled: true,
+      entityId: "sensor.alarm",
+      states: ["armed"],
+      offEntities: ["light.lamp"],
+    });
+    f.panel.updateRunCondition();
+    assert.equal(f.panel.offEntityConflicts().length, 2);
+    const messages = f.messages.length;
+    await f.panel.saveRunCondition();
+    assert.equal(
+      f.panel.runConditionErrors.offEntities,
+      "run_condition_off_entities_warning",
+    );
+    assert.equal(f.messages.length, messages);
+    assert.equal(f.panel.draft.run_condition, undefined);
+    f.panel.runConditionForm!.offEntities = ["light.other"];
+    f.panel.updateRunCondition();
+    assert.deepEqual(f.panel.offEntityConflicts(), []);
+    assert.deepEqual(f.panel.runConditionErrors, {});
+  } finally {
+    f.restore();
+  }
+});
+
 void test("reloading a saved program keeps edited YAML tied to its original revision", async () => {
   const f = await yamlFixture();
   try {
@@ -1958,6 +2049,105 @@ void test("YAML save conflicts preserve code and managed files cannot be saved",
       assert.fail("managed save must not send a request");
     };
     await f.panel.saveYaml();
+  } finally {
+    f.restore();
+  }
+});
+
+void test("direct action previews validate unsaved actions and surface execution failures without saving", async () => {
+  const f = await fixture();
+  try {
+    startStep(f.panel);
+    const form = f.panel.stepEditor!.form;
+    const originalDraft = structuredClone(f.panel.draft);
+    const requests: Record<string, unknown>[] = [];
+    let result: unknown = {
+      valid: true,
+      calls: [],
+      outcomes: [{ status: "dispatched" }],
+    };
+    const callWS = f.panel._hass.callWS;
+    f.panel._hass.callWS = <T>(
+      message: Record<string, unknown>,
+    ): Promise<T> => {
+      requests.push(message);
+
+      return message.type === "occupied/action_preview"
+        ? Promise.resolve(result as T)
+        : callWS<T>(message);
+    };
+    await previewAction(f.panel, form);
+    assert.equal(f.panel.error, f.panel.t("entities_required_error"));
+    assert.equal(requests.length, 0);
+    form.entities = ["light.unsaved"];
+    assert.equal(await previewAction(f.panel, form), "Command completed.");
+    assert.equal(f.panel.error, "");
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].type, "occupied/action_preview");
+    assert.equal(requests[0].execute, true);
+    assert.deepEqual(requests[0].action, {
+      action: "turn_on",
+      entities: ["light.unsaved"],
+    });
+    result = { valid: false, issues: [{ message: "Unavailable entity" }] };
+    assert.equal(await previewAction(f.panel, form), undefined);
+    assert.equal(f.panel.error, "Unavailable entity");
+    result = {
+      valid: true,
+      calls: [],
+      outcomes: [
+        { status: "dispatched" },
+        { status: "uncertain", detail: "Device timeout" },
+        { status: "skipped" },
+      ],
+    };
+    assert.equal(await previewAction(f.panel, form), undefined);
+    assert.match(f.panel.error, /Command timed out and may still complete/);
+    assert.match(f.panel.error, /Device timeout/);
+    assert.match(f.panel.error, /Skipped because an earlier command/);
+    assert.equal(f.panel.busy, false);
+    assert.deepEqual(f.panel.draft, originalDraft);
+    assert.equal(
+      requests.every((message) => message.type === "occupied/action_preview"),
+      true,
+    );
+  } finally {
+    f.restore();
+  }
+});
+
+void test("pending custom action previews cannot execute after unloading or execute twice", async () => {
+  const f = await fixture();
+  try {
+    startStep(f.panel);
+    const form = f.panel.stepEditor!.form;
+    form.kind = "custom";
+    form.customYaml = "action: turn_on\nentities: [light.main]";
+    let resolve!: (value: unknown) => void;
+    const callWS = f.panel._hass.callWS;
+    f.panel._hass.callWS = <T>(message: Record<string, unknown>): Promise<T> =>
+      message.type === "occupied/action_yaml"
+        ? new Promise((done) => {
+            resolve = done as (value: unknown) => void;
+          })
+        : callWS<T>(message);
+    const pending = previewAction(f.panel, form);
+    assert.equal(f.panel.busy, true);
+    assert.equal(await previewAction(f.panel, form), undefined);
+    f.instances[0].loaded = false;
+    f.subscriptions.get("occupied/instances_subscribe:all")!(f.instances);
+    await settle();
+    resolve({
+      valid: true,
+      actions: [{ action: "turn_on", entities: ["light.main"] }],
+    });
+    assert.equal(await pending, undefined);
+    assert.equal(f.panel.error, "");
+    assert.equal(f.panel.busy, false);
+    assert.equal(
+      f.messages.some((message) => message.type === "occupied/action_preview"),
+      false,
+    );
   } finally {
     f.restore();
   }

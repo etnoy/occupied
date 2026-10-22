@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { expectedHaShellError } from "../frontend/src/ha-shell-errors.js";
 import type { OccupiedPanel } from "@occupied/occupied-panel.js";
-import type { Catalog, HaSelector } from "@occupied/lib/types.js";
+import type { Action, Catalog, HaSelector } from "@occupied/lib/types.js";
 import type { ProgramDocument } from "@occupied/lib/types.js";
 
 const browserBaseUrl = `http://127.0.0.1:${process.env.HA_BROWSER_PORT || "18123"}`;
@@ -29,6 +29,19 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       };
       if (message.type === "occupied/save" && message.program) {
         saves.push(message.program);
+      }
+    });
+  });
+  const actionPreviews: { action: Action; execute?: boolean }[] = [];
+  page.on("websocket", (socket) => {
+    socket.on("framesent", ({ payload }) => {
+      const message = JSON.parse(payload.toString()) as {
+        type?: string;
+        action: Action;
+        execute?: boolean;
+      };
+      if (message.type === "occupied/action_preview") {
+        actionPreviews.push(message);
       }
     });
   });
@@ -236,23 +249,21 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     .getByRole("button", { name: "Step actions", exact: true })
     .click();
   await panel.getByRole("menuitem", { name: "Preview", exact: true }).click();
-  const actionPreview = panel.getByRole("dialog", {
-    name: "Preview",
-    exact: true,
-  });
-  await expect(actionPreview).toContainText("light.turn_on");
-  await expect(actionPreview).toContainText("light.smoke_light");
-  await expect(actionPreview).toContainText("brightness: 102");
-  expect(saves).toHaveLength(0);
-  await actionPreview
-    .getByRole("button", { name: "Test action: Action", exact: true })
-    .click();
-  await expect(actionPreview.getByRole("status")).toHaveText(
+  await expect(panel.locator(".step-editor-actions [role=status]")).toHaveText(
     "Command completed.",
   );
-  await actionPreview
-    .getByRole("button", { name: "Close", exact: true })
-    .click();
+  await expect(
+    panel.getByRole("dialog", { name: "Preview", exact: true }),
+  ).toHaveCount(0);
+  expect(actionPreviews).toHaveLength(1);
+  expect(actionPreviews[0]).toMatchObject({
+    execute: true,
+    action: {
+      action: "set_state",
+      entities: { "light.smoke_light": { state: "on", brightness: 102 } },
+    },
+  });
+  expect(saves).toHaveLength(0);
   await expect(
     panel.getByRole("button", { name: "Step actions", exact: true }),
   ).toBeFocused();
@@ -278,38 +289,37 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   });
   const savedCount = saves.length;
   await panel.locator("[data-random-actions]").click();
-  await panel.getByRole("menuitem", { name: "Preview", exact: true }).click();
-  const randomPreview = panel.getByRole("dialog", {
-    name: "Preview",
-    exact: true,
-  });
-  await expect(randomPreview.locator("pre")).toHaveCount(2);
-  await expect(randomPreview.locator("pre").first()).toContainText(
-    "light.turn_on",
-  );
-  await expect(randomPreview.locator("pre").last()).toContainText(
-    "light.turn_off",
-  );
-  await expect(randomPreview.locator("pre").last()).toContainText(
-    "light.smoke_light",
-  );
-  await randomPreview
-    .getByRole("button", {
-      name: "Test action: When event starts",
-      exact: true,
-    })
+  await expect(
+    panel.getByRole("menuitem", { name: "Preview", exact: true }),
+  ).toHaveCount(0);
+  await panel
+    .getByRole("menuitem", { name: "Preview event start", exact: true })
     .click();
-  await expect(randomPreview.getByRole("status")).toHaveText(
+  await expect(panel.locator(".step-editor-actions [role=status]")).toHaveText(
     "Command completed.",
   );
-  await randomPreview
-    .getByRole("button", { name: "Test action: When event ends", exact: true })
+  expect(actionPreviews).toHaveLength(2);
+  expect(actionPreviews[1]).toMatchObject({
+    execute: true,
+    action: { action: "turn_on", entities: ["light.smoke_light"] },
+  });
+  await expect(panel.locator("[data-random-actions]")).toBeFocused();
+  await panel.locator("[data-random-actions]").click();
+  await panel
+    .getByRole("menuitem", { name: "Preview event end", exact: true })
     .click();
-  await expect(randomPreview.getByRole("status")).toHaveCount(2);
+  await expect(panel.locator(".step-editor-actions [role=status]")).toHaveText(
+    "Command completed.",
+  );
+  expect(actionPreviews).toHaveLength(3);
+  expect(actionPreviews[2]).toMatchObject({
+    execute: true,
+    action: { action: "turn_off", entities: ["light.smoke_light"] },
+  });
+  await expect(
+    panel.getByRole("dialog", { name: "Preview", exact: true }),
+  ).toHaveCount(0);
   expect(saves).toHaveLength(savedCount);
-  await randomPreview
-    .getByRole("button", { name: "Close", exact: true })
-    .click();
   await expect(panel.locator("[data-random-actions]")).toBeFocused();
   await panel.evaluate((element) => {
     const controller = element as OccupiedPanel;
@@ -482,6 +492,86 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     );
   }, beforeWarnings);
 
+  // A draft overlap marks both activities and only the relevant extra-off rows.
+  const beforeConflicts = await panel.evaluate((element) => {
+    const controller = element as OccupiedPanel;
+    const program = controller.saved!;
+    controller.change([], {
+      ...program,
+      run_condition: {
+        entity_id: "light.smoke_light",
+        state: "off",
+        off_entities: ["light.smoke_light", "light.browser_unavailable"],
+      },
+      steps: {
+        ...program.steps,
+        conflict: {
+          name: "Conflicting step",
+          action: "turn_on",
+          entities: ["light.smoke_light"],
+          timing: { absolute_time: { start: "18:00" } },
+        },
+      },
+      random: {
+        conflict: {
+          name: "Conflicting random event",
+          start: { absolute_time: { start: "18:00" } },
+          end: { duration: { min: "1h" } },
+          on: { action: "turn_on", entities: ["light.smoke_light"] },
+          off: { action: "turn_off", entities: ["light.smoke_light"] },
+        },
+      },
+    });
+
+    return JSON.stringify(program);
+  });
+  const conflictStep = panel.locator('[data-step-id="conflict"]');
+  const conflictRandom = panel.locator('[data-random-id="conflict"]');
+  await expect(conflictStep).toHaveClass(/step-warning/);
+  await expect(conflictRandom).toHaveClass(/step-warning/);
+  await expect(conflictRandom.locator(".step-row-warning")).toContainText(
+    "light.smoke_light is also in Extra entities to turn off",
+  );
+  await expect(
+    panel.getByRole("button", { name: "Settings", exact: true }),
+  ).toHaveClass(/tab-warning/);
+  await conflictStep.locator(".step-row").click();
+  await expect(
+    conflictStep.locator('[data-entity-row="light.smoke_light"]'),
+  ).toHaveClass(/entity-warning/);
+  await panel.getByRole("button", { name: "Settings", exact: true }).click();
+  const conflictRow = panel.locator('[data-off-entity="light.smoke_light"]');
+  await expect(conflictRow).toHaveClass(/entity-conflict/);
+  await expect(
+    panel.locator('[data-off-entity="light.browser_unavailable"]'),
+  ).not.toHaveClass(/entity-conflict/);
+  const conditionSettings = panel.locator(
+    "section:has(#run-condition-offEntities)",
+  );
+  await expect(conditionSettings).toHaveClass(/entity-conflict/);
+  await conflictRow.getByRole("button", { name: /^Remove entity:/ }).click();
+  await expect(conditionSettings).not.toHaveClass(/entity-conflict/);
+  await conditionSettings
+    .getByRole("button", { name: "Save changes", exact: true })
+    .click();
+  await expect
+    .poll(() =>
+      panel.evaluate((element) => {
+        const controller = element as OccupiedPanel;
+
+        return !controller.busy && !controller.hasRunConditionChanges;
+      }),
+    )
+    .toBe(true);
+  await panel.getByRole("button", { name: "Activity", exact: true }).click();
+  await expect(conflictStep).not.toHaveClass(/step-warning/);
+  await expect(conflictRandom).not.toHaveClass(/step-warning/);
+  await panel.evaluate(async (element, program) => {
+    await (element as OccupiedPanel).save(
+      JSON.parse(program) as ProgramDocument["program"],
+    );
+  }, beforeConflicts);
+
   // Start times order mixed branches and windows despite old browser preferences.
   await expect(panel.locator('[data-tab="random"]')).toHaveCount(0);
   await expect(panel.locator("[data-create-step]")).toBeVisible();
@@ -560,7 +650,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect.poll(stepIds).toEqual(ids);
   await expect(panel.locator("[data-step-id=browser_child]")).toHaveCSS(
     "margin-left",
-    "14px",
+    "24px",
   );
   await expect(panel.getByRole("button", { name: /^Reorder / })).toHaveCount(0);
   await expect(
@@ -609,8 +699,29 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     '[data-step-id="browser_after_random"]',
     '[data-random-id="browser_nested"]',
   ]) {
-    await expect(panel.locator(selector)).toHaveCSS("margin-left", "14px");
+    await expect(panel.locator(selector)).toHaveCSS("margin-left", "24px");
   }
+  await expect(panel.locator(".step-tree-branch")).toHaveCount(3);
+  await expect
+    .poll(() =>
+      panel.locator(".step-tree-branch").evaluateAll((branches) =>
+        Math.max(
+          ...branches.map((branch) => {
+            const card = branch
+              .closest(".step-tree-item")!
+              .querySelector(".step-card")!
+              .getBoundingClientRect();
+            const rail = branch.getBoundingClientRect();
+            const join =
+              rail.top +
+              Number(getComputedStyle(branch, "::after").top.replace("px", ""));
+
+            return Math.abs(join - card.top - card.height / 2);
+          }),
+        ),
+      ),
+    )
+    .toBeLessThan(1);
   await panel.locator('[data-random-id="browser_early"] .step-row').click();
   const randomName = panel.getByRole("textbox", {
     name: "Random event name",
@@ -1397,6 +1508,15 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     '[data-entity-row="light.fade_smoke"]',
   );
   const endLight = endAction.locator('[data-entity-row="light.fade_smoke"]');
+  await expect(
+    endAction.locator('[data-editor-section="entities"]'),
+  ).toHaveCount(0);
+  await random
+    .getByRole("checkbox", { name: "Use the same entities" })
+    .uncheck();
+  await expect(endLight).toBeVisible();
+  await random.getByRole("checkbox", { name: "Use the same entities" }).check();
+  await expect(endLight).toHaveCount(0);
   await startLight.getByRole("button", { name: /^Add light property/ }).click();
   await startLight
     .getByRole("menuitem", { name: "Brightness (%)", exact: true })
@@ -1520,6 +1640,35 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     random.locator('[data-builder-field="start.anchor"]'),
   ).toHaveJSProperty("value", "step:day");
+  await expect(random.locator("[data-random-explanation]")).not.toContainText(
+    "Events may overlap",
+  );
+  for (const timing of await random
+    .locator('[data-editor-section="time"]')
+    .all()) {
+    const offset = timing.getByRole("textbox", { name: "Offset", exact: true });
+    await expect(offset).toHaveValue("0s");
+    await timing
+      .getByRole("button", { name: "Add randomness", exact: true })
+      .click();
+    await expect(
+      timing.getByRole("textbox", { name: "Start offset", exact: true }),
+    ).toHaveValue("0s");
+    await timing
+      .getByRole("textbox", { name: "End offset", exact: true })
+      .fill("15m");
+    await timing
+      .getByRole("button", { name: "Remove end offset", exact: true })
+      .click();
+    await expect(offset).toHaveValue("0s");
+    await expect(offset).toBeFocused();
+    await expect(
+      timing.getByRole("textbox", { name: "End offset", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      timing.getByRole("button", { name: "Add randomness", exact: true }),
+    ).toBeVisible();
+  }
   await random.locator("[data-random-submit]").click();
   await expect(random).toHaveCount(0);
   expect(
@@ -1548,7 +1697,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await random
     .locator('[data-editor-section="time"]')
     .last()
-    .getByRole("button", { name: "Add end offset", exact: true })
+    .getByRole("button", { name: "Add randomness", exact: true })
     .click();
   await random.locator('[data-builder-field="end.endOffset"]').fill("15m");
   await random.locator("[data-random-submit]").click();
@@ -1568,6 +1717,15 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   ).toHaveValue("-15m");
   await expect(
     random.locator('[data-builder-field="end.endOffset"]'),
+  ).toHaveValue("15m");
+  await expect(
+    random.getByRole("textbox", { name: "Offset", exact: true }),
+  ).toHaveCount(1);
+  await expect(
+    random.getByRole("textbox", { name: "Start offset", exact: true }),
+  ).toHaveValue("-15m");
+  await expect(
+    random.getByRole("textbox", { name: "End offset", exact: true }),
   ).toHaveValue("15m");
 
   const durationEnd = random.locator('[data-editor-section="time"]').last();

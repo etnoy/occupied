@@ -73,30 +73,44 @@
   <ActivityIntro title={t("activity")} description={t("activity_hint")} />
   <div class="step-layout">
     <div class="step-list" aria-label={t("activity")}>
-      {#each tree as { entry, depth } (entry.id)}
-        {#if entry.kind === "random"}
-          <RandomCard
-            {panel}
-            {revision}
-            entry={entry.randomEntry}
-            {depth}
-            {entries}
-            warnings={issues
-              .filter(({ randomId }) => randomId === entry.randomEntry.id)
-              .map(({ issue }) => issue)}
-          />
-        {:else}
-          <StepCard
-            {panel}
-            {revision}
-            {entry}
-            {depth}
-            {entries}
-            warnings={issues
-              .filter(({ stepId }) => stepId === entry.id)
-              .map(({ issue }) => issue)}
-          />
-        {/if}
+      {#each tree as { entry, depth, branches } (entry.id)}
+        <div class="step-tree-item">
+          <span class="step-tree-connectors" aria-hidden="true">
+            {#each branches.slice(0, 3) as continues, level (level)}
+              {#if continues || level === depth - 1}
+                <span
+                  class="step-tree-line"
+                  class:step-tree-branch={level === depth - 1}
+                  class:step-tree-last={!continues}
+                  style={`--level:${level}`}
+                ></span>
+              {/if}
+            {/each}
+          </span>
+          {#if entry.kind === "random"}
+            <RandomCard
+              {panel}
+              {revision}
+              entry={entry.randomEntry}
+              {depth}
+              {entries}
+              warnings={issues
+                .filter(({ randomId }) => randomId === entry.randomEntry.id)
+                .map(({ issue }) => issue)}
+            />
+          {:else}
+            <StepCard
+              {panel}
+              {revision}
+              {entry}
+              {depth}
+              {entries}
+              warnings={issues
+                .filter(({ stepId }) => stepId === entry.id)
+                .map(({ issue }) => issue)}
+            />
+          {/if}
+        </div>
       {/each}
     </div>
   </div>

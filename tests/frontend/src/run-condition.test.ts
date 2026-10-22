@@ -6,7 +6,9 @@ import {
   runConditionErrors,
   runConditionValue,
   runConditionStateOptions,
+  offEntityConflictIssues,
 } from "@occupied/lib/models/run-condition.js";
+import { translator } from "@occupied/lib/i18n/translations.js";
 
 void test("optional condition defaults to no gate with a retained 30 second enforcement delay", () => {
   const form = runConditionForm();
@@ -136,4 +138,60 @@ void test("extra off entity warnings find step, custom, disabled and random targ
     ]),
     ["light.regular", "switch.custom", "light.random_on", "light.random_off"],
   );
+});
+
+void test("off entity conflicts locate every action and each setting entry, and clear after removal", () => {
+  const program = {
+    run_condition: {
+      entity_id: "sensor.alarm",
+      state: "armed",
+      off_entities: ["light.extra", "light.lamp", "switch.fan"],
+    },
+    steps: {
+      lamp: { timing: {}, entities: ["light.other", "light.lamp"] },
+      custom: {
+        timing: {},
+        enabled: false,
+        actions: [{ entities: { "switch.fan": { state: "on" } } }],
+      },
+    },
+    random: {
+      fan: {
+        start: {},
+        end: {},
+        enabled: false,
+        on: { entities: ["switch.fan"] },
+        off: { actions: [{ entities: ["switch.fan"] }] },
+      },
+    },
+  };
+  const issues = offEntityConflictIssues(program, translator("en"));
+  assert.deepEqual(
+    issues.map((issue) => issue.model_path),
+    [
+      ["steps", "lamp", "entities", 1],
+      ["steps", "custom", "actions", 0, "entities", "switch.fan"],
+      ["random", "fan", "on", "entities", 0],
+      ["random", "fan", "off", "actions", 0, "entities", 0],
+      ["run_condition", "off_entities", 1],
+      ["run_condition", "off_entities", 2],
+    ],
+  );
+  assert.ok(
+    issues.every(
+      (issue) =>
+        issue.severity === "error" &&
+        issue.code === "off_entity_conflict" &&
+        issue.message.includes(issue.details!.entity_id),
+    ),
+  );
+  const form = runConditionForm(program.run_condition);
+  assert.equal(
+    runConditionErrors(form, program).offEntities,
+    "run_condition_off_entities_warning",
+  );
+  form.enabled = false;
+  assert.deepEqual(runConditionErrors(form, program), {});
+  program.run_condition.off_entities = ["light.extra"];
+  assert.deepEqual(offEntityConflictIssues(program, translator("en")), []);
 });

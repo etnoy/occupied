@@ -1,8 +1,7 @@
 // Keep UI wording here; call sites use stable, descriptive shorthand keys.
 export const en = {
-  action_preview_hint:
-    "Test the current actions without saving. Testing changes real devices immediately, without schedule or stagger delays. Changes stay in effect after closing.",
-  test_action: "Test action",
+  preview_event_start: "Preview event start",
+  preview_event_end: "Preview event end",
   action_test_dispatched: "Command completed.",
   action_test_failed: "Command failed.",
   action_test_uncertain: "Command timed out and may still complete.",
@@ -63,10 +62,14 @@ export const en = {
     "Default: 30s. Use 0s to 1h. Scheduled device changes wait for this delay, then use the state expected at that time.",
   run_condition_off_entities: "Extra entities to turn off",
   run_condition_off_entities_hint:
-    "Turn off these lights and switches when expected states are enforced, after the startup delay or with the enforcement button. Entities used in steps or events keep their scheduled targets. Manual changes are respected until the next activation or button press.",
+    "Turn off these lights and switches when expected states are enforced, after the startup delay or with the enforcement button. Entities used in steps or random events, including disabled ones, cannot also appear in this list. Manual changes are respected until the next activation or button press.",
   run_condition_off_entities_error: "Select valid light or switch entities.",
   run_condition_off_entities_warning:
-    "Already managed by steps or events (including disabled ones). These entities keep their scheduled targets and will not be turned off by this list:",
+    "Remove these entities from this list or from their steps and random events (including disabled ones):",
+  off_entity_action_conflict:
+    "{entity} is also in Extra entities to turn off. Remove it from that list or this action.",
+  off_entity_setting_conflict:
+    "{entity} is also used by a step or random event (including disabled ones). Remove it from this list or those actions.",
   run_condition_yaml_hint:
     "Save or discard YAML edits before changing the run condition.",
   run_condition_entity_error: "Select a valid condition entity.",
@@ -274,8 +277,6 @@ export const en = {
   random_end_action_summary: "When each event ends, {action}.",
   random_single_finish_hint:
     "The event finishes before the active period ends.",
-  random_overlap_hint:
-    "Events may overlap, but all finish before the active period ends.",
   times_per_window: "times per active period",
   minimum_duration: "Minimum duration",
   maximum_duration: "Maximum duration",
@@ -380,10 +381,6 @@ export const en = {
   boundary_clock: "Boundary time",
   latest_at_summary: "but no later than {boundary}",
   only_before_summary: "but only if that is {boundary} or earlier",
-  timing_limits_sampling_hint:
-    "Sample once, then apply the limit and condition. Samples beyond the limit land on the limit; excluded samples are skipped without resampling",
-  timing_limits_source_date_hint:
-    "Boundaries use the schedule's source date and Home Assistant location. An unavailable solar event skips the step and its dependents",
   enabled: "Enabled",
   disabled: "Disabled",
   save_step: "Save step",
@@ -444,9 +441,9 @@ export const en = {
   time_window_fixed_hint: "Start and end are the same, so the time is fixed",
   end_of_window_optional: "End of window (optional)",
   add_end_of_window: "Add end of window",
+  offset: "Offset",
   start_offset: "Start offset",
-  end_offset_optional: "End offset (optional)",
-  add_end_offset: "Add end offset",
+  end_offset: "End offset",
   remove_end_offset: "Remove end offset",
   choose_a_step_or_event: "Choose a step or event",
   window_offsets_prompt:
@@ -596,9 +593,8 @@ export type TranslationKey = keyof typeof en;
 
 // Missing translations fall back to English.
 export const sv: Partial<Record<TranslationKey, string>> = {
-  action_preview_hint:
-    "Testa de aktuella åtgärderna utan att spara. Testet styr riktiga enheter direkt, utan schema- eller förskjutningsfördröjningar. Ändringarna kvarstår när du stänger.",
-  test_action: "Testa åtgärd",
+  preview_event_start: "Förhandsvisa händelsestart",
+  preview_event_end: "Förhandsvisa händelseslut",
   action_test_dispatched: "Kommandot slutfördes.",
   action_test_failed: "Kommandot misslyckades.",
   action_test_uncertain:
@@ -707,11 +703,15 @@ export const sv: Partial<Record<TranslationKey, string>> = {
     "Standard: 30s. Ange 0s till 1h. Schemalagda enhetsändringar väntar på fördröjningen och använder sedan det tillstånd som förväntas då.",
   run_condition_off_entities: "Extra entiteter att stänga av",
   run_condition_off_entities_hint:
-    "Stäng av dessa lampor och strömbrytare när förväntade tillstånd tillämpas, efter startfördröjningen eller med tillämpningsknappen. Entiteter i steg eller händelser behåller sina schemalagda mål. Manuella ändringar respekteras tills nästa aktivering eller knapptryckning.",
+    "Stäng av dessa lampor och strömbrytare när förväntade tillstånd tillämpas, efter startfördröjningen eller med tillämpningsknappen. Entiteter i steg eller slumpmässiga händelser, även inaktiverade, får inte också finnas i denna lista. Manuella ändringar respekteras tills nästa aktivering eller knapptryckning.",
   run_condition_off_entities_error:
     "Välj giltiga lamp- eller strömbrytarentiteter.",
   run_condition_off_entities_warning:
-    "Hanteras redan av steg eller händelser (även inaktiverade). Dessa entiteter behåller sina schemalagda mål och stängs inte av via denna lista:",
+    "Ta bort dessa entiteter från denna lista eller från deras steg och slumpmässiga händelser (även inaktiverade):",
+  off_entity_action_conflict:
+    "{entity} finns också i Extra entiteter att stänga av. Ta bort den från listan eller denna åtgärd.",
+  off_entity_setting_conflict:
+    "{entity} används också av ett steg eller en slumpmässig händelse (även inaktiverade). Ta bort den från listan eller dessa åtgärder.",
   run_condition_yaml_hint:
     "Spara eller kasta YAML-ändringar innan du ändrar körvillkoret.",
   run_condition_entity_error: "Välj en giltig entitet för villkoret.",
@@ -931,8 +931,6 @@ export const sv: Partial<Record<TranslationKey, string>> = {
   random_end_action_summary: "När varje händelse slutar, {action}.",
   random_single_finish_hint:
     "Händelsen avslutas innan den aktiva perioden slutar.",
-  random_overlap_hint:
-    "Händelser kan överlappa, men alla avslutas innan den aktiva perioden slutar.",
   times_per_window: "gånger per aktiv period",
   minimum_duration: "Minsta varaktighet",
   maximum_duration: "Längsta varaktighet",
@@ -1036,10 +1034,6 @@ export const sv: Partial<Record<TranslationKey, string>> = {
   boundary_clock: "Gränstid",
   latest_at_summary: "men senast {boundary}",
   only_before_summary: "men bara om det är {boundary} eller tidigare",
-  timing_limits_sampling_hint:
-    "Slumpa en gång och tillämpa sedan gränsen och villkoret. Tider efter gränsen flyttas till gränsen; uteslutna tillfällen hoppas över utan ny slumpning",
-  timing_limits_source_date_hint:
-    "Gränser använder schemats ursprungsdatum och Home Assistants plats. En otillgänglig solhändelse hoppar över steget och dess beroenden",
   enabled: "Aktiverat",
   disabled: "Inaktiverat",
   save_step: "Spara steg",
@@ -1102,9 +1096,9 @@ export const sv: Partial<Record<TranslationKey, string>> = {
   time_window_fixed_hint: "Start och slut är samma, så tiden är fast",
   end_of_window_optional: "Slut på tidsintervall (valfritt)",
   add_end_of_window: "Lägg till slut på tidsintervall",
+  offset: "Förskjutning",
   start_offset: "Startförskjutning",
-  end_offset_optional: "Slutförskjutning (valfritt)",
-  add_end_offset: "Lägg till slutförskjutning",
+  end_offset: "Slutförskjutning",
   remove_end_offset: "Ta bort slutförskjutning",
   choose_a_step_or_event: "Välj ett steg eller en händelse",
   window_offsets_prompt:

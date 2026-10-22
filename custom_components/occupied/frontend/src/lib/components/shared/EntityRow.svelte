@@ -43,6 +43,16 @@
 
     return state == null || state === "unknown" || state === "unavailable";
   });
+  let conflict = $derived.by(() => {
+    void context;
+
+    return (
+      (panel.runConditionForm
+        ? panel.runConditionForm.enabled &&
+          panel.runConditionForm.offEntities.includes(entity)
+        : panel.draft.run_condition?.off_entities?.includes(entity)) ?? false
+    );
+  });
 
   let fieldPrefix = $derived(context.fieldPrefix || "");
   let name = $derived(entityName(panel.catalog, entity));
@@ -182,7 +192,8 @@
 <div
   bind:this={row}
   class="entity-row"
-  class:entity-warning={unresolved}
+  class:entity-warning={unresolved || conflict}
+  aria-invalid={conflict ? "true" : undefined}
   data-entity-row={entity}
 >
   <div class="entity-target">

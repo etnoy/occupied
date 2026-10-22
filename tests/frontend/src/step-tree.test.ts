@@ -89,15 +89,19 @@ void test("mixed activity sorts roots and siblings while indenting cross-type de
     })),
   ];
   assert.deepEqual(
-    stepTree(entries).map(({ entry, depth }) => [entry.id, depth]),
+    stepTree(entries).map(({ entry, depth, branches }) => [
+      entry.id,
+      depth,
+      branches,
+    ]),
     [
-      ["shared", 0],
-      ["random:nested", 1],
-      ["child", 1],
-      ["random:shared", 0],
-      ["afterRandom", 1],
-      ["random:grandchild", 1],
-      ["late", 0],
+      ["shared", 0, []],
+      ["random:nested", 1, [true]],
+      ["child", 1, [false]],
+      ["random:shared", 0, []],
+      ["afterRandom", 1, [true]],
+      ["random:grandchild", 1, [false]],
+      ["late", 0, []],
     ],
   );
 });
@@ -113,6 +117,31 @@ void test("mixed cycles and missing random references remain visible exactly onc
       ["orphan", 0],
       ["step", 0],
       ["random:event", 1],
+    ],
+  );
+});
+
+void test("connector branches continue through descendants and stop at the last sibling", () => {
+  const steps: Program["steps"] = {
+    morning: { timing: { absolute_time: { start: "06:00" } } },
+    breakfast: { timing: { relative_to: { step: "morning" } } },
+    day: { timing: { relative_to: { step: "breakfast" } } },
+    work: { timing: { relative_to: { step: "breakfast" } } },
+    lunch: { timing: { relative_to: { step: "morning", start_offset: "6h" } } },
+    evening: { timing: { absolute_time: { start: "20:00" } } },
+  };
+  assert.deepEqual(
+    stepTree(stepEntries({ steps })).map(({ entry, branches }) => [
+      entry.id,
+      branches,
+    ]),
+    [
+      ["morning", []],
+      ["breakfast", [true]],
+      ["day", [true, true]],
+      ["work", [true, false]],
+      ["lunch", [false]],
+      ["evening", []],
     ],
   );
 });

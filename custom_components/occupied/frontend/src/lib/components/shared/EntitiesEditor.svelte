@@ -24,6 +24,14 @@
 
   let { editor, form, t, changed } = $derived(context);
   let fieldPrefix = $derived(context.fieldPrefix || "");
+  let conflicts = $derived(
+    form.entities.filter((entity) =>
+      panel.runConditionForm
+        ? panel.runConditionForm.enabled &&
+          panel.runConditionForm.offEntities.includes(entity)
+        : panel.draft.run_condition?.off_entities?.includes(entity),
+    ),
+  );
 
   let adding = $state(false);
 
@@ -38,8 +46,23 @@
   });
 </script>
 
-<div data-editor-section="entities">
+<div
+  data-editor-section="entities"
+  class:entity-conflict={form.kind !== "entities" && conflicts.length > 0}
+>
   <h4>{t(label)}</h4>
+  {#if conflicts.length > 0}
+    <p class="entity-conflict-message" role="alert">
+      {#each conflicts as entity (entity)}
+        <span class="step-warning-message"
+          >{t("off_entity_action_conflict").replace(
+            "{entity}",
+            () => entity,
+          )}</span
+        >
+      {/each}
+    </p>
+  {/if}
   {#if form.kind === "entities"}
     {#each form.entities as entity (entity)}
       <EntityRow

@@ -14,6 +14,10 @@
   import { remoteActivities } from "../../utils/remote.js";
   import { coverActions } from "../../utils/cover.js";
   import { changeActionKind } from "../../utils/action-kind.js";
+  import {
+    actionFormTargets,
+    managedOffEntities,
+  } from "../../models/run-condition.js";
 
   let {
     panel,
@@ -32,6 +36,22 @@
   } = $props();
 
   let { form, t } = $derived(context);
+  let customConflicts = $derived.by(() => {
+    if (form.kind !== "custom") {
+      return [];
+    }
+    let extras = panel.draft.run_condition?.off_entities ?? [];
+    if (panel.runConditionForm) {
+      extras = panel.runConditionForm.enabled
+        ? panel.runConditionForm.offEntities
+        : [];
+    }
+
+    return managedOffEntities(
+      { steps: { action: { timing: {}, ...actionFormTargets(form) } } },
+      extras,
+    );
+  });
   let serviceDescription = $derived.by(() => {
     const [domain, service] = form.service.split(".", 2);
 
@@ -68,38 +88,41 @@
       render: true,
     }}
   ></EditorField>
-  {#if form.kind !== "custom" && (!hideEntities || form.kind === "entities")}
-    <EntitiesEditor
-      {panel}
-      {context}
-      label={entityLabel}
-      readOnlyTargets={hideEntities}
-    />{/if}
+  {#if form.kind !== "custom" && !hideEntities}
+    <EntitiesEditor {panel} {context} label={entityLabel} />
+  {/if}
   {#if form.kind === "custom"}
-    <ha-code-editor
-      role="group"
-      aria-label={t("action_yaml")}
-      aria-describedby={context.editor.errors.customYaml
-        ? `step-error-${context.fieldPrefix || ""}customYaml`
-        : undefined}
-      data-builder-field={`${context.fieldPrefix || ""}customYaml`}
-      dir="ltr"
-      use:properties={{
-        mode: "yaml",
-        value: form.customYaml || "",
-        linewrap: true,
-      }}
-      onvalue-changed={(event: Event) => {
-        if (
-          !isValueChangedEvent(event) ||
-          typeof event.detail.value !== "string"
-        ) {
-          return;
-        }
-        form.customYaml = event.detail.value;
-        context.changed("customYaml");
-      }}
-    ></ha-code-editor>
+    <div class:entity-conflict={customConflicts.length > 0}>
+      <ha-code-editor
+        role="group"
+        aria-label={t("action_yaml")}
+        aria-describedby={context.editor.errors.customYaml
+          ? `step-error-${context.fieldPrefix || ""}customYaml`
+          : undefined}
+        data-builder-field={`${context.fieldPrefix || ""}customYaml`}
+        dir="ltr"
+        use:properties={{
+          mode: "yaml",
+          value: form.customYaml || "",
+          linewrap: true,
+        }}
+        onvalue-changed={(event: Event) => {
+          if (
+            !isValueChangedEvent(event) ||
+            typeof event.detail.value !== "string"
+          ) {
+            return;
+          }
+          form.customYaml = event.detail.value;
+          context.changed("customYaml");
+        }}
+      ></ha-code-editor>
+      {#each customConflicts as entity (entity)}
+        <p class="entity-conflict-message" role="alert">
+          {t("off_entity_action_conflict").replace("{entity}", () => entity)}
+        </p>
+      {/each}
+    </div>
     <FieldError
       {t}
       key="customYaml"

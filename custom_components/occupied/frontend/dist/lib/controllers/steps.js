@@ -111,16 +111,17 @@ export function stepTree(entries, sources = [], relatedEntries = []) {
       (relative?.random ? `random:${relative.random}` : undefined)
     );
   };
-  const append = (entry, depth) => {
+  const append = (entry, branches) => {
     if (seen.has(entry.id)) {
       return;
     }
     seen.add(entry.id);
-    ordered.push({ entry, depth });
-    for (const child of sortedEntries) {
-      if (parentId(child) === entry.id) {
-        append(child, depth + 1);
-      }
+    ordered.push({ entry, depth: branches.length, branches });
+    const children = sortedEntries.filter(
+      (child) => parentId(child) === entry.id && !seen.has(child.id),
+    );
+    for (const [index, child] of children.entries()) {
+      append(child, [...branches, index < children.length - 1]);
     }
   };
   const isRoot = (entry) =>
@@ -128,11 +129,11 @@ export function stepTree(entries, sources = [], relatedEntries = []) {
     entries.every((parent) => parent.id !== parentId(entry));
   for (const step of sortedEntries) {
     if (isRoot(step)) {
-      append(step, 0);
+      append(step, []);
     }
   }
   for (const step of sortedEntries) {
-    append(step, 0);
+    append(step, []);
   }
   return ordered;
 }
