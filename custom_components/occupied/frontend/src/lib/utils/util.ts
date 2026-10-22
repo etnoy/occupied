@@ -322,7 +322,7 @@ function baseTimingExplanation(
     days: selectedDays,
   }: {
     includeHints?: boolean;
-    subject?: "runs" | "window_starts" | "window_ends";
+    subject?: "runs" | "window_starts" | "window_ends" | "starts" | "ends";
     locale?: HomeAssistantLocale;
     days?: string[];
   } = {},
@@ -349,11 +349,14 @@ function baseTimingExplanation(
       return t("window_durations_prompt");
     }
 
-    return t(
-      minimum === maximum
-        ? "window_duration_summary"
-        : "window_duration_range_summary",
-    )
+    const fixedLabel =
+      subject === "ends" ? "ends_after_duration" : "window_duration_summary";
+    const rangeLabel =
+      subject === "ends"
+        ? "ends_after_duration_range"
+        : "window_duration_range_summary";
+
+    return t(minimum === maximum ? fixedLabel : rangeLabel)
       .replace("{duration}", () => durationLabel(minimum, t))
       .replace("{min}", () => durationLabel(minimum, t))
       .replace("{max}", () => durationLabel(maximum, t));
