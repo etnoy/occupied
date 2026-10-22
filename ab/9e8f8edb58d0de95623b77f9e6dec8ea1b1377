@@ -1,0 +1,31 @@
+custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
+  s_17c38601c13f43::t_97407e8eefd22b 274
+custom_components/occupied/frontend/src/lib/components/settings/RunConditionSettings.svelte
+  s_17c38601c13f43::t_707fc66f8a2160 297
+custom_components/occupied/frontend/src/lib/components/shared/TimingBoundaryEditor.svelte
+  s_17c38601c13f43::t_49a7ff83121d13 43
+custom_components/occupied/frontend/src/lib/components/shared/TimingEditor.svelte
+  s_17c38601c13f43::t_160f8a8b07aa9b 344,347-348,370,375,403-410
+custom_components/occupied/frontend/src/lib/components/steps/StepEditor.svelte
+  s_17c38601c13f43::t_9b15f72d43f9fd 72
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_17c38601c13f43::t_0061ec43fdab27 186-189,829-832
+custom_components/occupied/frontend/src/lib/utils/util.ts
+  s_17c38601c13f43::t_9525a78c2584b9 325,352-359
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ab9e8f8edb58d0de95623b77f9e6dec8ea1b1377",
+  "prompts": {},
+  "sessions": {
+    "s_17c38601c13f43": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16093-f5bf-74f0-b7d9-2cf032642b2b",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
