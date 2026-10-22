@@ -292,10 +292,7 @@
           panel.stale ||
           panel.yamlDirty ||
           !panel.hasRunConditionChanges}
-        onclick={() => panel.saveRunCondition()}
-        >{t(
-          panel.document.source === "file" ? "add_to_draft" : "save_changes",
-        )}</button
+        onclick={() => panel.saveRunCondition()}>{t("save_changes")}</button
       >
       <button
         type="button"

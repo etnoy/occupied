@@ -271,12 +271,7 @@
         panel.stale ||
         !!editor.errors.minCount ||
         !!editor.errors.maxCount}
-      onclick={save}
-      >{t(
-        panel.document?.source === "file"
-          ? "add_to_draft"
-          : "save_random_event",
-      )}</button
+      onclick={save}>{t("save_random_event")}</button
     >
   </div>
 </section>
