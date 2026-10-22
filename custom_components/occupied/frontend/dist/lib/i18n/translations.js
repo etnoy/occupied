@@ -321,6 +321,14 @@ export const en = {
   add_entity: "Add entity",
   remove_entity: "Remove entity",
   entity_light_settings: "Light settings",
+  entity_add_property: "Add light property",
+  entity_remove_property: "Remove {property}",
+  entity_color: "Color",
+  entity_color_temp: "Color temperature (K)",
+  entity_transition: "Transition (s)",
+  entity_color_error: "Choose a color with RGB values from 0 to 255.",
+  entity_color_temp_error:
+    "Enter a whole color temperature from 1 to 100000 K.",
   entity_brightness: "Brightness (%)",
   entity_brightness_summary: "Brightness {value}%",
   entity_brightness_error:
@@ -966,6 +974,13 @@ export const sv = {
   add_entity: "Lägg till entitet",
   remove_entity: "Ta bort entitet",
   entity_light_settings: "Ljusinställningar",
+  entity_add_property: "Lägg till ljusegenskap",
+  entity_remove_property: "Ta bort {property}",
+  entity_color: "Färg",
+  entity_color_temp: "Färgtemperatur (K)",
+  entity_transition: "Övergång (s)",
+  entity_color_error: "Välj en färg med RGB-värden från 0 till 255.",
+  entity_color_temp_error: "Ange en hel färgtemperatur från 1 till 100000 K.",
   entity_brightness: "Ljusstyrka (%)",
   entity_brightness_summary: "Ljusstyrka {value}%",
   entity_brightness_error:
