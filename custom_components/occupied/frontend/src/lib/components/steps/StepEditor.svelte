@@ -69,7 +69,7 @@
       disabled={panel.busy || panel.stale}
       onclick={submit}
     >
-      {t(panel.document?.source === "file" ? "add_to_draft" : "save_step")}
+      {t("save_step")}
     </button>
   </div>
 </section>

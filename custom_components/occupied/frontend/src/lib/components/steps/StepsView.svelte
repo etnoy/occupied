@@ -7,7 +7,6 @@
   import { warningStepId, warningRandomId } from "../../utils/step-issues.js";
   import StepCard from "./StepCard.svelte";
   import RandomCard from "../random/RandomCard.svelte";
-  import ActivityIntro from "../shared/ActivityIntro.svelte";
 
   let { panel, revision }: { panel: LoadedOccupiedPanel; revision: number } =
     $props();
@@ -70,7 +69,6 @@
     {@render addButtons(true)}
   </section>
 {:else}
-  <ActivityIntro title={t("activity")} description={t("activity_hint")} />
   <div class="step-layout">
     <div class="step-list" aria-label={t("activity")}>
       {#each tree as { entry, depth, branches } (entry.id)}

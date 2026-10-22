@@ -32,23 +32,6 @@
   });
 </script>
 
-<EditorField
-  {panel}
-  context={fields}
-  key="mode"
-  label="boundary_source"
-  value={boundary.mode}
-  update={(value) => {
-    boundary.mode = value;
-    boundary.anchor ||= "sun:sunrise";
-  }}
-  options={{
-    choices: [
-      ["absolute", "absolute_time"],
-      ["relative", "solar_events"],
-    ],
-  }}
-/>
 {#if boundary.mode === "absolute"}
   <EditorField
     {panel}
@@ -57,7 +40,7 @@
     label="boundary_clock"
     value={boundary.start}
     update={(value) => (boundary.start = value)}
-    options={{ type: "time", step: 1 }}
+    options={{ type: "time", step: 1, hideLabel: true }}
   />
 {:else}
   <EditorField

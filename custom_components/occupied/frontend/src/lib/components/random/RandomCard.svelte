@@ -2,7 +2,6 @@
   import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import type { Issue, RandomEntry } from "../../types.js";
   import { actionTargets } from "../../utils/custom-action.js";
-  import { countSummary } from "../../models/random-model.js";
   import { openRandom } from "../../controllers/random-editor-controller.js";
   import {
     entitySummary,
@@ -65,11 +64,14 @@
           <span class="step-status-badge">{t("disabled")}</span>{/if}</span
       >
       <span class="hint"
-        >{countSummary(entry.count)}
-        {t("times_per_window")} · {entry.min_duration ||
-          "5m"}–{entry.max_duration || "15m"} · {entitySummary(
+        >{entitySummary(
           panel.catalog,
-          actionTargets(entry.on),
+          [
+            ...new Set([
+              ...actionTargets(entry.on),
+              ...actionTargets(entry.off),
+            ]),
+          ],
           t,
         )}</span
       >
@@ -83,19 +85,23 @@
       </span>
     {:else if !editing}
       <span class="step-row-time"
-        >{timingSummary(
-          { timing: entry.start },
+        >{timingExplanation(
+          timingForm(entry.start),
           entries,
           t,
           panel.catalog.time_sources,
-          panel._hass.locale,
-        )} → {timingExplanation(
+          {
+            subject: "starts",
+            includeHints: false,
+            locale: panel._hass.locale,
+          },
+        )}, {timingExplanation(
           timingForm(entry.end),
           entries,
           t,
           panel.catalog.time_sources,
           {
-            subject: "window_ends",
+            subject: "ends",
             includeHints: false,
             locale: panel._hass.locale,
           },
