@@ -368,10 +368,6 @@ export const en = {
   boundary_clock: "Boundary time",
   latest_at_summary: "but no later than {boundary}",
   only_before_summary: "but only if that is {boundary} or earlier",
-  timing_limits_sampling_hint:
-    "Sample once, then apply the limit and condition. Samples beyond the limit land on the limit; excluded samples are skipped without resampling",
-  timing_limits_source_date_hint:
-    "Boundaries use the schedule's source date and Home Assistant location. An unavailable solar event skips the step and its dependents",
   enabled: "Enabled",
   disabled: "Disabled",
   save_step: "Save step",
@@ -1009,10 +1005,6 @@ export const sv = {
   boundary_clock: "Gränstid",
   latest_at_summary: "men senast {boundary}",
   only_before_summary: "men bara om det är {boundary} eller tidigare",
-  timing_limits_sampling_hint:
-    "Slumpa en gång och tillämpa sedan gränsen och villkoret. Tider efter gränsen flyttas till gränsen; uteslutna tillfällen hoppas över utan ny slumpning",
-  timing_limits_source_date_hint:
-    "Gränser använder schemats ursprungsdatum och Home Assistants plats. En otillgänglig solhändelse hoppar över steget och dess beroenden",
   enabled: "Aktiverat",
   disabled: "Inaktiverat",
   save_step: "Spara steg",

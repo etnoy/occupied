@@ -199,6 +199,16 @@ export function timingSummary(
     days: entry.days,
   });
 }
+function clockSeconds(value) {
+  return value && /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)
+    ? value
+        .split(":")
+        .reduce(
+          (sum, part, index) => sum + Number(part) * [3600, 60, 1][index],
+          0,
+        )
+    : NaN;
+}
 export function timingExplanation(
   input,
   entries = [],
@@ -207,13 +217,23 @@ export function timingExplanation(
   options = {},
 ) {
   const modified = input.latestAt || input.onlyBefore;
+  const start = clockSeconds(input.start);
+  const fixedClock =
+    input.mode === "absolute" &&
+    Number.isFinite(start) &&
+    (!input.end || clockSeconds(input.end) === start);
   let explanation = baseTimingExplanation(input, entries, t, sources, {
     ...options,
     ...(modified && { includeHints: false }),
   });
   for (const key of ["latestAt", "onlyBefore"]) {
     const boundary = input[key];
-    if (!boundary) {
+    if (
+      !boundary ||
+      (fixedClock &&
+        boundary.mode === "absolute" &&
+        clockSeconds(boundary.start) === start)
+    ) {
       continue;
     }
     let label = formatClock(boundary.start, options.locale);
@@ -228,7 +248,7 @@ export function timingExplanation(
     explanation += `, ${t(key === "latestAt" ? "latest_at_summary" : "only_before_summary").replace("{boundary}", () => label)}`;
   }
   if (modified && options.includeHints !== false) {
-    explanation += `. ${t("timing_limits_sampling_hint")}`;
+    explanation += ".";
   }
   return explanation;
 }
@@ -270,24 +290,18 @@ function baseTimingExplanation(
       .replace("{max}", () => durationLabel(maximum, t));
   }
   if (time.mode === "absolute") {
-    const valid = (value) =>
-      /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value);
     const display = (value) => formatClock(value, locale);
-    const seconds = (value) =>
-      value
-        .split(":")
-        .reduce(
-          (sum, part, index) => sum + Number(part) * [3600, 60, 1][index],
-          0,
-        );
-    if (!valid(time.start) || (time.end && !valid(time.end))) {
+    if (
+      !Number.isFinite(clockSeconds(time.start)) ||
+      (time.end && !Number.isFinite(clockSeconds(time.end)))
+    ) {
       return t("time_window_prompt");
     }
     const fixedTime = `${runs} ${t("at")} ${display(time.start)}`;
     if (!time.end) {
       return `${fixedTime}${includeHints ? `. ${t("time_window_randomness_hint")}` : ""}`;
     }
-    if (seconds(time.end) === seconds(time.start)) {
+    if (clockSeconds(time.end) === clockSeconds(time.start)) {
       return `${fixedTime}${includeHints ? `. ${t("time_window_fixed_hint")}` : ""}`;
     }
     return `${runs} ${t("at_a_random_time_between")} ${display(time.start)} ${t("and")} ${display(time.end)}`;

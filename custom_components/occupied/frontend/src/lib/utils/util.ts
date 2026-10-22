@@ -252,6 +252,17 @@ export function timingSummary(
   });
 }
 
+function clockSeconds(value: string | undefined) {
+  return value && /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)
+    ? value
+        .split(":")
+        .reduce(
+          (sum, part, index) => sum + Number(part) * [3600, 60, 1][index],
+          0,
+        )
+    : NaN;
+}
+
 export function timingExplanation(
   input: Pick<TimingForm, "mode"> & Partial<Omit<TimingForm, "mode">>,
   entries: Pick<StepEntry, "id" | "name">[] = [],
@@ -260,13 +271,23 @@ export function timingExplanation(
   options: Parameters<typeof baseTimingExplanation>[4] = {},
 ) {
   const modified = input.latestAt || input.onlyBefore;
+  const start = clockSeconds(input.start);
+  const fixedClock =
+    input.mode === "absolute" &&
+    Number.isFinite(start) &&
+    (!input.end || clockSeconds(input.end) === start);
   let explanation = baseTimingExplanation(input, entries, t, sources, {
     ...options,
     ...(modified && { includeHints: false }),
   });
   for (const key of ["latestAt", "onlyBefore"] as const) {
     const boundary = input[key];
-    if (!boundary) {
+    if (
+      !boundary ||
+      (fixedClock &&
+        boundary.mode === "absolute" &&
+        clockSeconds(boundary.start) === start)
+    ) {
       continue;
     }
     let label = formatClock(boundary.start, options.locale);
@@ -283,7 +304,7 @@ export function timingExplanation(
     ).replace("{boundary}", () => label)}`;
   }
   if (modified && options.includeHints !== false) {
-    explanation += `. ${t("timing_limits_sampling_hint")}`;
+    explanation += ".";
   }
 
   return explanation;
@@ -338,24 +359,18 @@ function baseTimingExplanation(
       .replace("{max}", () => durationLabel(maximum, t));
   }
   if (time.mode === "absolute") {
-    const valid = (value: string) =>
-      /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value);
     const display = (value: string) => formatClock(value, locale);
-    const seconds = (value: string) =>
-      value
-        .split(":")
-        .reduce(
-          (sum, part, index) => sum + Number(part) * [3600, 60, 1][index],
-          0,
-        );
-    if (!valid(time.start) || (time.end && !valid(time.end))) {
+    if (
+      !Number.isFinite(clockSeconds(time.start)) ||
+      (time.end && !Number.isFinite(clockSeconds(time.end)))
+    ) {
       return t("time_window_prompt");
     }
     const fixedTime = `${runs} ${t("at")} ${display(time.start)}`;
     if (!time.end) {
       return `${fixedTime}${includeHints ? `. ${t("time_window_randomness_hint")}` : ""}`;
     }
-    if (seconds(time.end) === seconds(time.start)) {
+    if (clockSeconds(time.end) === clockSeconds(time.start)) {
       return `${fixedTime}${includeHints ? `. ${t("time_window_fixed_hint")}` : ""}`;
     }
 
