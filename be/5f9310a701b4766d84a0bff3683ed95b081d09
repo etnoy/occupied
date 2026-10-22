@@ -1,0 +1,47 @@
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_6615b0ad189d38::t_256576e2205936 179-182,819-822
+custom_components/occupied/frontend/dist/lib/utils/util.js
+  s_6615b0ad189d38::t_b9f56a9e528ea2 283-289
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_6615b0ad189d38::t_cafcd9439b850a 275-278,919-922,1658-1664,3323,3325,3327,3406-3408,3672-3673,5305,5326,7742,7745,7747,7749,12583,12600,12605,12610,12628,12633,12653,12679,12685,12689,13301-13302,13306,13327,13329,13331-13332,13334,13352,13358-13359,13366,13368,15194,17056,17115,17145,17148-17149,17153-17157,17166,17201,17228,17240-17245,17257,17268,17274,17352,17372,17394,17403,17465,17476-17477,17495,17702,18021,18043,18105,18929,19017,19039,19057,19256,19295,19879,19920,20281,20305,20551,20577,20636,20639-20646,20658,20702,20824,20834,20839-20840,20844,20854,20857-20860,20871,20873,20889,20899,20901-20903,20905,20911-20912,20932,20934,20938,20941-20944,20948-20949,20958,20960,20962-20964,20966,20969,20974-20976,20978,20981,20989,20991-20993,20995,21003,21013,21023,21033,21043,21053-21056,21058,21060,21065-21066,21068-21069,21081,21083,21093-21094,21100
+custom_components/occupied/frontend/src/lib/components/random/RandomCard.svelte
+  s_ab264160f49ca7::t_72b8005e30e8f9 67,69-74,88-89,93-98,104
+custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
+  s_ab264160f49ca7::t_6231e0c0300474 274
+custom_components/occupied/frontend/src/lib/components/settings/RunConditionSettings.svelte
+  s_ab264160f49ca7::t_a50ea4af6a07f2 295
+custom_components/occupied/frontend/src/lib/components/shared/TimingBoundaryEditor.svelte
+  s_ab264160f49ca7::t_da24ba2f4962b0 43
+custom_components/occupied/frontend/src/lib/components/shared/TimingEditor.svelte
+  s_ab264160f49ca7::t_71a9e4f1627196 344,347-348,370,375,403-410
+custom_components/occupied/frontend/src/lib/components/steps/StepEditor.svelte
+  s_ab264160f49ca7::t_a9cbf01ff2dede 72
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_ab264160f49ca7::t_50c44bb4b9746d 180-183,825-828
+custom_components/occupied/frontend/src/lib/utils/util.ts
+  s_ab264160f49ca7::t_72285d57fe65e8 325,352-359
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "be5f9310a701b4766d84a0bff3683ed95b081d09",
+  "prompts": {},
+  "sessions": {
+    "s_6615b0ad189d38": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16250-0b42-7d50-9703-14e141b4a72c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_ab264160f49ca7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16252-db96-74a1-b1c4-fc76fa9101a9",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
