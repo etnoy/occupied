@@ -1,0 +1,83 @@
+custom_components/occupied/frontend/src/App.svelte
+  s_7dc85f6f8f52f0::t_39e6821b24df0b 109-114,145-149
+custom_components/occupied/frontend/src/app.css
+  s_7dc85f6f8f52f0::t_92b773429e68e6 416,424-460,462-463,478-479,488-492
+custom_components/occupied/frontend/src/lib/components/random/RandomActions.svelte
+  s_7dc85f6f8f52f0::t_44ed2e68b280b2 7,20,96-98,137-159
+custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
+  s_7dc85f6f8f52f0::t_b1333fcf53d9db 54-62
+custom_components/occupied/frontend/src/lib/components/settings/RunConditionSettings.svelte
+  s_7dc85f6f8f52f0::t_1cfbbce530ae10 8-9,71,172-175,177-247,249-270,279,337-352
+custom_components/occupied/frontend/src/lib/components/shared/ActionEditor.svelte
+  s_7dc85f6f8f52f0::t_b035925f71b0c6 17-20,39-54,91-93,95-125
+custom_components/occupied/frontend/src/lib/components/shared/EntitiesEditor.svelte
+  s_7dc85f6f8f52f0::t_6ff1219ba45323 27-34,49-52,54-65
+custom_components/occupied/frontend/src/lib/components/shared/EntityRow.svelte
+  s_7dc85f6f8f52f0::t_84c8afa3ced7da 46-55,195-196
+custom_components/occupied/frontend/src/lib/components/shared/TimingEditor.svelte
+  s_7dc85f6f8f52f0::t_2fc3125f588f6a 45-47,293,298,303,309-312,320-324,330,336,414-419
+custom_components/occupied/frontend/src/lib/components/steps/StepActions.svelte
+  s_7dc85f6f8f52f0::t_4be7b769026619 9,24,100-102,151-160
+custom_components/occupied/frontend/src/lib/components/steps/StepEditor.svelte
+  s_7dc85f6f8f52f0::t_385ef6062df933 24-32
+custom_components/occupied/frontend/src/lib/components/steps/StepsView.svelte
+  s_7dc85f6f8f52f0::t_cf9d08f2a88f2f 76-113
+custom_components/occupied/frontend/src/lib/controllers/action-preview-controller.ts
+  s_7dc85f6f8f52f0::t_4e2dd41cd9d409 1-13,15-16,19-39,42-44
+custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts
+  s_7dc85f6f8f52f0::t_685fe53521b2de 2,174-187
+custom_components/occupied/frontend/src/lib/controllers/step-editor-controller.ts
+  s_7dc85f6f8f52f0::t_0ed3dbbeffed82 2,113-126
+custom_components/occupied/frontend/src/lib/controllers/steps.ts
+  s_7dc85f6f8f52f0::t_50fb50bd782183 135,144,149-154,162,167
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_7dc85f6f8f52f0::t_958e8208fd1efe 3-4,65,68-72,444,446,596-597,706,710-714,1099,1101
+custom_components/occupied/frontend/src/lib/models/run-condition.ts
+  s_7dc85f6f8f52f0::t_37b2ff9b44b7bc 1-10,33-36,58-62,151-215
+custom_components/occupied/frontend/src/lib/utils/random-explanation.ts
+  s_7dc85f6f8f52f0::t_d7381233e8ab4e 252-256
+custom_components/occupied/frontend/src/lib/utils/step-issues.ts
+  s_7dc85f6f8f52f0::t_4d151a91bd0cbc 8
+custom_components/occupied/frontend/src/lib/utils/util.ts
+  s_7dc85f6f8f52f0::t_d103f0e6ab834d 255-265,274-278,285-290,307,363-366,373
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_7dc85f6f8f52f0::t_0e8c4add1ee452 29-30,158-161,1054-1060,1073-1103
+custom_components/occupied/validation.py
+  s_7dc85f6f8f52f0::t_7022ac1850ac9d 226-228,274-287,419-429
+docs/schema.md
+  s_7dc85f6f8f52f0::t_ec82e4f243db17 174
+tests/core/test_models.py
+  s_7dc85f6f8f52f0::t_15d9e49d51dea8 327-374
+tests/frontend/src/instances.test.ts
+  s_7dc85f6f8f52f0::t_c734735ed20daa 19,1804-1893,2057-2155
+tests/frontend/src/random-explanation.test.ts
+  s_7dc85f6f8f52f0::t_53d64c49d77797 42
+tests/frontend/src/run-condition.test.ts
+  s_7dc85f6f8f52f0::t_cb38c2eb6411a4 9,11,142-197
+tests/frontend/src/step-issues.test.ts
+  s_7dc85f6f8f52f0::t_c9ab749f544b7d 132-158
+tests/frontend/src/step-tree.test.ts
+  s_7dc85f6f8f52f0::t_395eb832a0ebf7 92-96,98-104,123-147
+tests/frontend/src/timing-limits.test.ts
+  s_7dc85f6f8f52f0::t_ac1ff6f85d5fd8 71,80-83,95-138
+tests/ha/test_daily_runtime.py
+  s_7dc85f6f8f52f0::t_a979c214faf3a4 2482
+tests/ha/test_editor_api.py
+  s_7dc85f6f8f52f0::t_56f108da22b0a7 81-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b1ec3a4bed27bcae94a24c6996be17c1eef1b6e6",
+  "prompts": {},
+  "sessions": {
+    "s_7dc85f6f8f52f0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1607f-f7fe-7fa1-a3f9-30dc73832249",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
