@@ -149,137 +149,135 @@
           />
           {t("run_condition_enforce")}
         </label>
-        <p class="hint">{t("run_condition_enforce_hint")}</p>
-        <label for="run-condition-delay">{t("run_condition_delay")}</label>
-        <input
-          id="run-condition-delay"
-          type="text"
-          value={form.startDelay}
-          disabled={!form.enforceState}
-          aria-invalid={!!errors.startDelay}
-          oninput={(event) => {
-            form!.startDelay = event.currentTarget.value;
-            panel.updateRunCondition();
-          }}
-        />
-        <FieldError
-          {t}
-          {errors}
-          key="startDelay"
-          fieldPrefix="run-condition-"
-        />
-        <p class="hint">{t("run_condition_delay_hint")}</p>
-        <p id="run-condition-offEntities-label">
-          {t("run_condition_off_entities")}
-        </p>
-        <div
-          id="run-condition-offEntities"
-          role="group"
-          aria-labelledby="run-condition-offEntities-label"
-        >
-          {#each form.offEntities as entity, index (entity)}
-            {@const conflict = managedExtras.includes(entity)}
-            <div
-              class="off-entity-row"
-              class:entity-conflict={conflict}
-              data-off-entity={entity}
-            >
-              <ha-selector
-                aria-label={`${t("entity")}: ${entityName(panel.catalog, entity)}`}
-                aria-invalid={conflict ? "true" : undefined}
-                aria-describedby={conflict
-                  ? "off-entities-conflict"
-                  : undefined}
-                use:properties={{
-                  hass: panel._hass,
-                  selector: {
-                    entity: {
-                      filter: { domain: ["light", "switch"] },
-                      exclude_entities: form.offEntities.filter(
-                        (id) => id !== entity,
-                      ),
+        {#if form.enforceState}
+          <label for="run-condition-delay">{t("run_condition_delay")}</label>
+          <input
+            id="run-condition-delay"
+            type="text"
+            value={form.startDelay}
+            aria-invalid={!!errors.startDelay}
+            oninput={(event) => {
+              form!.startDelay = event.currentTarget.value;
+              panel.updateRunCondition();
+            }}
+          />
+          <FieldError
+            {t}
+            {errors}
+            key="startDelay"
+            fieldPrefix="run-condition-"
+          />
+          <p id="run-condition-offEntities-label">
+            {t("run_condition_off_entities")}
+          </p>
+          <div
+            id="run-condition-offEntities"
+            role="group"
+            aria-labelledby="run-condition-offEntities-label"
+          >
+            {#each form.offEntities as entity, index (entity)}
+              {@const conflict = managedExtras.includes(entity)}
+              <div
+                class="off-entity-row"
+                class:entity-conflict={conflict}
+                data-off-entity={entity}
+              >
+                <ha-selector
+                  aria-label={`${t("entity")}: ${entityName(panel.catalog, entity)}`}
+                  aria-invalid={conflict ? "true" : undefined}
+                  aria-describedby={conflict
+                    ? "off-entities-conflict"
+                    : undefined}
+                  use:properties={{
+                    hass: panel._hass,
+                    selector: {
+                      entity: {
+                        filter: { domain: ["light", "switch"] },
+                        exclude_entities: form.offEntities.filter(
+                          (id) => id !== entity,
+                        ),
+                      },
                     },
-                  },
-                  value: entity,
-                  disabled: panel.busy || panel.yamlDirty,
-                }}
-                onvalue-changed={(event: Event) => {
-                  if (!isValueChangedEvent(event)) {
-                    return;
-                  }
-                  const value = event.detail.value;
-                  if (
-                    typeof value === "string" &&
-                    value &&
-                    !form!.offEntities.includes(value)
-                  ) {
-                    form!.offEntities = form!.offEntities.map((id, i) =>
-                      i === index ? value : id,
-                    );
-                  } else if (!value) {
+                    value: entity,
+                    disabled: panel.busy || panel.yamlDirty,
+                  }}
+                  onvalue-changed={(event: Event) => {
+                    if (!isValueChangedEvent(event)) {
+                      return;
+                    }
+                    const value = event.detail.value;
+                    if (
+                      typeof value === "string" &&
+                      value &&
+                      !form!.offEntities.includes(value)
+                    ) {
+                      form!.offEntities = form!.offEntities.map((id, i) =>
+                        i === index ? value : id,
+                      );
+                    } else if (!value) {
+                      form!.offEntities = form!.offEntities.filter(
+                        (id) => id !== entity,
+                      );
+                    }
+                    panel.updateRunCondition();
+                  }}
+                ></ha-selector>
+                <button
+                  type="button"
+                  aria-label={`${t("remove_entity")}: ${entityName(panel.catalog, entity)}`}
+                  onclick={() => {
                     form!.offEntities = form!.offEntities.filter(
                       (id) => id !== entity,
                     );
-                  }
-                  panel.updateRunCondition();
-                }}
-              ></ha-selector>
-              <button
-                type="button"
-                aria-label={`${t("remove_entity")}: ${entityName(panel.catalog, entity)}`}
-                onclick={() => {
-                  form!.offEntities = form!.offEntities.filter(
-                    (id) => id !== entity,
-                  );
-                  panel.updateRunCondition();
-                }}>{t("remove_entity")}</button
-              >
-            </div>
-          {/each}
-          <ha-selector
-            aria-label={t("add_entity")}
-            use:properties={{
-              hass: panel._hass,
-              selector: {
-                entity: {
-                  filter: { domain: ["light", "switch"] },
-                  exclude_entities: form.offEntities,
+                    panel.updateRunCondition();
+                  }}>{t("remove_entity")}</button
+                >
+              </div>
+            {/each}
+            <ha-selector
+              aria-label={t("add_entity")}
+              use:properties={{
+                hass: panel._hass,
+                selector: {
+                  entity: {
+                    filter: { domain: ["light", "switch"] },
+                    exclude_entities: form.offEntities,
+                  },
                 },
-              },
-              value: "",
-              label: t("add_entity"),
-              disabled: panel.busy || panel.yamlDirty,
-            }}
-            onvalue-changed={(event: Event) => {
-              if (!isValueChangedEvent(event)) {
-                return;
-              }
-              const value = event.detail.value;
-              if (
-                typeof value !== "string" ||
-                !value ||
-                form!.offEntities.includes(value)
-              ) {
-                return;
-              }
-              form!.offEntities = [...form!.offEntities, value];
-              (event.currentTarget as HaSelector).value = "";
-              panel.updateRunCondition();
-            }}
-          ></ha-selector>
-        </div>
-        <FieldError
-          {t}
-          {errors}
-          key="offEntities"
-          fieldPrefix="run-condition-"
-        />
-        <p class="hint">{t("run_condition_off_entities_hint")}</p>
-        {#if managedExtras.length > 0}
-          <p class="managed-warning" id="off-entities-conflict" role="alert">
-            {t("run_condition_off_entities_warning")}
-            {managedExtras.join(", ")}
-          </p>
+                value: "",
+                label: t("add_entity"),
+                disabled: panel.busy || panel.yamlDirty,
+              }}
+              onvalue-changed={(event: Event) => {
+                if (!isValueChangedEvent(event)) {
+                  return;
+                }
+                const value = event.detail.value;
+                if (
+                  typeof value !== "string" ||
+                  !value ||
+                  form!.offEntities.includes(value)
+                ) {
+                  return;
+                }
+                form!.offEntities = [...form!.offEntities, value];
+                (event.currentTarget as HaSelector).value = "";
+                panel.updateRunCondition();
+              }}
+            ></ha-selector>
+          </div>
+          <FieldError
+            {t}
+            {errors}
+            key="offEntities"
+            fieldPrefix="run-condition-"
+          />
+          {#if managedExtras.length > 0}
+            <p class="managed-warning" id="off-entities-conflict" role="alert">
+              {t("run_condition_off_entities_warning")}
+              {managedExtras.join(", ")}
+            </p>
+          {/if}
         {/if}
       </fieldset>
     {/if}
