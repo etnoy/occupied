@@ -341,12 +341,11 @@
       {t("random_relative_end_hint")}
     </p>
   {/if}
-  {#if context.stepId !== undefined}
+  {#if context.stepId !== undefined && time.mode === "relative"}
     {#each [["latestAt", "no_later_than"], ["onlyBefore", "only_run_before"]] as [modifier, label] (modifier)}
       {@const key = modifier as "latestAt" | "onlyBefore"}
-      <fieldset class="timing-options">
-        <legend>{t(label)}</legend>
-        <label class="timing-option">
+      <div class="timing-options">
+        <label class="timing-limit-toggle">
           <input
             type="checkbox"
             data-builder-field={key}
@@ -368,12 +367,12 @@
               changed(key);
             }}
           />
-          <span>{t("enabled")}</span>
+          <span>{t(label)}</span>
         </label>
         {#if time[key]}
           <TimingBoundaryEditor {panel} {context} modifier={key} />
         {/if}
-      </fieldset>
+      </div>
     {/each}
   {/if}
   {#if showExplanation}
@@ -398,14 +397,17 @@
       )}
     </p>
   {/if}
-  {#if panel.document?.source === "file"}
-    <p class="hint">
-      {t("managed_file_draft_hint")}
-    </p>
-  {/if}
 </div>
 
 <style>
+  .timing-limit-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    cursor: pointer;
+  }
+
   h4 {
     font-size: 18px;
     margin: 16px 0 8px;

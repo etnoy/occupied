@@ -165,11 +165,6 @@
 <ha-top-app-bar-fixed back-button narrow={panel.hasAttribute("narrow")}>
   <div slot="title">Occupied</div>
   <main>
-    {#if panel.selectedInstance?.source === "file"}
-      <header>
-        <p class="hint">{t("managed_file")}</p>
-      </header>
-    {/if}
     {#each panel.selectedInstance?.overlaps || [] as overlap (overlap.config_entry_id)}
       <p class="banner" role="status">
         {t("shared_devices_with")}

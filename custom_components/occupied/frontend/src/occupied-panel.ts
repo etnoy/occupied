@@ -930,7 +930,6 @@ export class OccupiedPanel extends HTMLElement {
       this.document?.recovery_yaml == null
         ? ""
         : t("stored_program_invalid_hint"),
-      this.document?.source === "file" ? t("managed_file_export_hint") : "",
       this.document?.source === "file" &&
       this.document.configuration_source?.status === "error"
         ? t("managed_file_error")

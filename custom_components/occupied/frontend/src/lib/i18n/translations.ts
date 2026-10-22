@@ -183,6 +183,10 @@ export const en = {
   random_create_hint:
     "Choose an active period, a duration, and actions for the start and end of each occurrence.",
   window_starts: "Active period starts",
+  starts: "Starts",
+  ends: "ends",
+  ends_after_duration: "ends {duration} after it starts",
+  ends_after_duration_range: "ends {min}–{max} after it starts",
   window_ends: "Active period ends",
   active_period: "Active period",
   active_period_hint: "Random events happen during this period.",
@@ -830,6 +834,10 @@ export const sv: Partial<Record<TranslationKey, string>> = {
   random_create_hint:
     "Välj en aktiv period, en varaktighet och åtgärder för början och slutet av varje tillfälle.",
   window_starts: "Den aktiva perioden börjar",
+  starts: "Börjar",
+  ends: "slutar",
+  ends_after_duration: "slutar {duration} efter starten",
+  ends_after_duration_range: "slutar {min}–{max} efter starten",
   window_ends: "Den aktiva perioden slutar",
   active_period: "Aktiv period",
   repeated_activity_window: "Återkommande aktivitetsperiod",
