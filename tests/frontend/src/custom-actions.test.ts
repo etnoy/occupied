@@ -153,7 +153,7 @@ void test("lossy replacement requires explicit choice and preserves the custom b
     actions: [
       {
         action: "set_state",
-        entities: { "light.sofa": { state: "on", rgb_color: [20, 30, 40] } },
+        entities: { "light.sofa": { state: "on", hs_color: [20, 30] } },
       },
     ],
   });

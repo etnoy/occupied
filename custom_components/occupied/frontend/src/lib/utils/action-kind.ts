@@ -7,7 +7,11 @@ import {
   customExample,
 } from "./custom-action.js";
 import { coverActions } from "./cover.js";
-import { setActionEntities, updateEntitySetting } from "./entity-settings.js";
+import {
+  setActionEntities,
+  updateEntitySetting,
+  updateEntityColor,
+} from "./entity-settings.js";
 
 export function changeActionKind(
   form: ActionForm,
@@ -76,6 +80,8 @@ export function changeActionKind(
     if (value === "turn_off" && form.entitySettings) {
       for (const entity of Object.keys(form.entitySettings)) {
         updateEntitySetting(form, entity, "brightness", "");
+        updateEntitySetting(form, entity, "colorTemp", "");
+        updateEntityColor(form, entity);
       }
     }
   }

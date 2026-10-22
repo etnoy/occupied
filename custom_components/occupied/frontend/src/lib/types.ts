@@ -105,6 +105,8 @@ export interface BoundaryForm {
 export interface EntitySettingsForm {
   brightness: string;
   transition: string;
+  rgbColor?: number[];
+  colorTemp?: string;
   // Keep device precision until the percentage is edited.
   rawBrightness?: number;
 }
