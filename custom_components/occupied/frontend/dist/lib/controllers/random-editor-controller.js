@@ -1,5 +1,6 @@
 // Generated from custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts by pnpm run build. Do not edit.
 import { prepareCustomAction } from "../utils/custom-action.js";
+import { offEntityConflictIssues } from "../models/run-condition.js";
 import { copy, randomReferences } from "../models/model.js";
 import {
   canShareEntities,
@@ -143,6 +144,19 @@ export function createRandomEditorContext(panel) {
       }
       const candidate = buildRandom(panel.draft, editor);
       editor.candidatePath = ["random", editor.id];
+      const conflicts = offEntityConflictIssues(candidate, panel.t);
+      if (conflicts.length > 0) {
+        panel.showIssues({ valid: false, issues: conflicts });
+        const ownConflict = conflicts.find(
+          (issue) =>
+            issue.model_path?.[0] === "random" &&
+            issue.model_path[1] === editor.id,
+        );
+        if (ownConflict) {
+          panel.focusIssue(ownConflict);
+        }
+        return;
+      }
       if (panel.document?.source === "file") {
         if (form.on.kind === "custom" || form.off.kind === "custom") {
           const version = panel.version;

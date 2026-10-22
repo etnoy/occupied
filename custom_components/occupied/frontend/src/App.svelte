@@ -106,7 +106,12 @@
       issueTabs,
       issues: visibleIssues.filter(
         (issue) =>
-          !warningStepId(issue, entries) && !warningRandomId(issue, random),
+          (!(
+            issue.code === "off_entity_conflict" && panel.tab === "settings"
+          ) ||
+            panel.yamlDirty) &&
+          !warningStepId(issue, entries) &&
+          !warningRandomId(issue, random),
       ),
     };
   });
@@ -137,7 +142,11 @@
   </div>
 {/snippet}
 {#snippet renderIssue(item: Issue, primary: boolean)}
-  {@const className = item.severity === "warning" ? "hint" : "error"}
+  {@const severityClass = item.severity === "warning" ? "hint" : "error"}
+  {@const className =
+    item.code === "off_entity_conflict"
+      ? "entity-conflict-message"
+      : severityClass}
   {@const text = primary
     ? item.message
     : `${t(`issue_${item.severity || "error"}`)} · ${item.path || "$"}: ${item.message}`}

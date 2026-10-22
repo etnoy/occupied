@@ -1801,6 +1801,96 @@ async function yamlFixture() {
   };
 }
 
+for (const source of ["gui", "file"] as const) {
+  void test(`extra off conflicts block ${source} activity submissions and follow live form targets`, async () => {
+    const f = await fixture();
+    try {
+      f.panel.document.source = source;
+      f.panel.draft.run_condition = {
+        entity_id: "sensor.alarm",
+        state: "armed",
+        off_entities: ["light.extra"],
+      };
+      const before = structuredClone(f.panel.draft);
+      const messages = f.messages.length;
+      startStep(f.panel);
+      const editor = f.panel.stepEditor!;
+      editor.form.entities = ["light.extra"];
+      const context = createStepEditorContext(f.panel);
+      context.changed("entities");
+      assert.equal(f.panel.offEntityConflicts().length, 2);
+      await context.submit();
+      assert.equal(f.panel.stepEditor, editor);
+      assert.match(editor.errors.entities, /Extra entities to turn off/);
+      assert.deepEqual(f.panel.draft, before);
+      assert.equal(f.messages.length, messages);
+      editor.form.entities = ["light.other"];
+      context.changed("entities");
+      assert.deepEqual(f.panel.offEntityConflicts(), []);
+      assert.equal(
+        f.panel
+          .visibleIssues()
+          .filter((issue) => issue.code === "off_entity_conflict").length,
+        0,
+      );
+      f.panel.stepEditor = null;
+
+      openRandom(f.panel);
+      const random = f.panel.randomEditor!;
+      random.form.on.entities = ["light.extra"];
+      const randomContext = createRandomEditorContext(f.panel);
+      randomContext.changed("on.entities");
+      assert.ok(
+        f.panel
+          .offEntityConflicts()
+          .some((issue) => issue.model_path?.[2] === "off"),
+      );
+      await randomContext.submit();
+      assert.equal(f.panel.randomEditor, random);
+      assert.match(random.errors["on.entities"], /Extra entities to turn off/);
+      assert.deepEqual(f.panel.draft, before);
+      assert.equal(f.messages.length, messages);
+      random.form.on.entities = ["light.other"];
+      randomContext.changed("on.entities");
+      assert.deepEqual(f.panel.offEntityConflicts(), []);
+    } finally {
+      f.restore();
+    }
+  });
+}
+
+void test("extra off setting conflicts follow unsaved settings and reject saving", async () => {
+  const f = await fixture();
+  try {
+    f.panel.draft.steps = {
+      lamp: { timing: {}, entities: ["light.lamp"] },
+    };
+    f.panel.openRunCondition();
+    Object.assign(f.panel.runConditionForm!, {
+      enabled: true,
+      entityId: "sensor.alarm",
+      states: ["armed"],
+      offEntities: ["light.lamp"],
+    });
+    f.panel.updateRunCondition();
+    assert.equal(f.panel.offEntityConflicts().length, 2);
+    const messages = f.messages.length;
+    await f.panel.saveRunCondition();
+    assert.equal(
+      f.panel.runConditionErrors.offEntities,
+      "run_condition_off_entities_warning",
+    );
+    assert.equal(f.messages.length, messages);
+    assert.equal(f.panel.draft.run_condition, undefined);
+    f.panel.runConditionForm!.offEntities = ["light.other"];
+    f.panel.updateRunCondition();
+    assert.deepEqual(f.panel.offEntityConflicts(), []);
+    assert.deepEqual(f.panel.runConditionErrors, {});
+  } finally {
+    f.restore();
+  }
+});
+
 void test("reloading a saved program keeps edited YAML tied to its original revision", async () => {
   const f = await yamlFixture();
   try {

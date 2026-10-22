@@ -61,10 +61,14 @@ export const en = {
     "Default: 30s. Use 0s to 1h. Scheduled device changes wait for this delay, then use the state expected at that time.",
   run_condition_off_entities: "Extra entities to turn off",
   run_condition_off_entities_hint:
-    "Turn off these lights and switches when expected states are enforced, after the startup delay or with the enforcement button. Entities used in steps or events keep their scheduled targets. Manual changes are respected until the next activation or button press.",
+    "Turn off these lights and switches when expected states are enforced, after the startup delay or with the enforcement button. Entities used in steps or random events, including disabled ones, cannot also appear in this list. Manual changes are respected until the next activation or button press.",
   run_condition_off_entities_error: "Select valid light or switch entities.",
   run_condition_off_entities_warning:
-    "Already managed by steps or events (including disabled ones). These entities keep their scheduled targets and will not be turned off by this list:",
+    "Remove these entities from this list or from their steps and random events (including disabled ones):",
+  off_entity_action_conflict:
+    "{entity} is also in Extra entities to turn off. Remove it from that list or this action.",
+  off_entity_setting_conflict:
+    "{entity} is also used by a step or random event (including disabled ones). Remove it from this list or those actions.",
   run_condition_yaml_hint:
     "Save or discard YAML edits before changing the run condition.",
   run_condition_entity_error: "Select a valid condition entity.",
@@ -689,11 +693,15 @@ export const sv = {
     "Standard: 30s. Ange 0s till 1h. Schemalagda enhetsändringar väntar på fördröjningen och använder sedan det tillstånd som förväntas då.",
   run_condition_off_entities: "Extra entiteter att stänga av",
   run_condition_off_entities_hint:
-    "Stäng av dessa lampor och strömbrytare när förväntade tillstånd tillämpas, efter startfördröjningen eller med tillämpningsknappen. Entiteter i steg eller händelser behåller sina schemalagda mål. Manuella ändringar respekteras tills nästa aktivering eller knapptryckning.",
+    "Stäng av dessa lampor och strömbrytare när förväntade tillstånd tillämpas, efter startfördröjningen eller med tillämpningsknappen. Entiteter i steg eller slumpmässiga händelser, även inaktiverade, får inte också finnas i denna lista. Manuella ändringar respekteras tills nästa aktivering eller knapptryckning.",
   run_condition_off_entities_error:
     "Välj giltiga lamp- eller strömbrytarentiteter.",
   run_condition_off_entities_warning:
-    "Hanteras redan av steg eller händelser (även inaktiverade). Dessa entiteter behåller sina schemalagda mål och stängs inte av via denna lista:",
+    "Ta bort dessa entiteter från denna lista eller från deras steg och slumpmässiga händelser (även inaktiverade):",
+  off_entity_action_conflict:
+    "{entity} finns också i Extra entiteter att stänga av. Ta bort den från listan eller denna åtgärd.",
+  off_entity_setting_conflict:
+    "{entity} används också av ett steg eller en slumpmässig händelse (även inaktiverade). Ta bort den från listan eller dessa åtgärder.",
   run_condition_yaml_hint:
     "Spara eller kasta YAML-ändringar innan du ändrar körvillkoret.",
   run_condition_entity_error: "Välj en giltig entitet för villkoret.",

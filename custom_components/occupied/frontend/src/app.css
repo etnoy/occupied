@@ -475,13 +475,19 @@ nav button.tab-warning[aria-current="page"] {
   border-style: dashed;
 }
 
-.step-card.step-warning {
+.step-card.step-warning,
+.entity-conflict {
   border-color: var(--warning-color, #ffa600);
   background: color-mix(
     in srgb,
     var(--warning-color, #ffa600) 10%,
     var(--card-background-color, #fff)
   );
+}
+
+.entity-conflict-message {
+  color: var(--warning-color, #ffa600);
+  overflow-wrap: anywhere;
 }
 
 .step-card.step-warning .step-row:not(:disabled):hover {

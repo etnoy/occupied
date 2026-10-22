@@ -1,4 +1,5 @@
 import { prepareCustomAction } from "../utils/custom-action.js";
+import { offEntityConflictIssues } from "../models/run-condition.js";
 import type { FieldErrors } from "../types.js";
 import type {
   OccupiedPanel,
@@ -109,6 +110,20 @@ export function createStepEditorContext(panel: LoadedOccupiedPanel) {
       editor.candidatePath = required(
         stepEntries(candidate).find((entry) => entry.id === editor.id),
       ).path;
+      const conflicts = offEntityConflictIssues(candidate, panel.t);
+      if (conflicts.length > 0) {
+        panel.showIssues({ valid: false, issues: conflicts });
+        const ownConflict = conflicts.find(
+          (issue) =>
+            issue.model_path?.[0] === "steps" &&
+            issue.model_path[1] === editor.id,
+        );
+        if (ownConflict) {
+          panel.focusIssue(ownConflict);
+        }
+
+        return;
+      }
       if (panel.document?.source === "file") {
         if (form.kind === "custom") {
           const version = panel.version;

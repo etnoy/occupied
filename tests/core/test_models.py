@@ -324,6 +324,54 @@ def test_extra_off_entities_reject_invalid_values(program_dict, entities):
         validate_program(program_dict)
 
 
+@pytest.mark.parametrize("enabled", [True, False])
+@pytest.mark.parametrize("enforce", [True, False])
+def test_extra_off_entities_reject_every_conflicting_action(program_dict, enabled, enforce):
+    program_dict["run_condition"] = {
+        "entity_id": "sensor.alarm",
+        "state": "armed",
+        "enforce_state_on_start": enforce,
+        "off_entities": ["light.unused", "light.a", "switch.fan"],
+    }
+    program_dict["steps"]["wake"]["enabled"] = enabled
+    program_dict["steps"]["custom"] = {
+        "enabled": enabled,
+        "timing": {"absolute_time": {"start": "10:00"}},
+        "actions": [
+            {"action": "set_state", "entities": {"switch.fan": {"state": "on"}}},
+            {"action": "switch.turn_off", "entities": ["switch.fan"]},
+        ],
+    }
+    program_dict["random"] = {
+        "fan": {
+            "enabled": enabled,
+            "start": {"absolute_time": {"start": "18:00"}},
+            "end": {"duration": {"min": "1h"}},
+            "on": {"action": "turn_on", "entities": ["switch.fan"]},
+            "off": {"actions": [{"action": "turn_off", "entities": ["switch.fan"]}]},
+        }
+    }
+    with pytest.raises(ProgramError) as error:
+        validate_program(program_dict)
+    issues = error.value.issues
+    assert all(
+        issue.code == "off_entity_conflict" and issue.severity == "error" for issue in issues
+    )
+    assert {issue.path for issue in issues} == {
+        ("steps", "wake", "entities", 0),
+        ("steps", "leave", "entities", 0),
+        ("steps", "custom", "actions", 0, "entities", "switch.fan"),
+        ("steps", "custom", "actions", 1, "entities", 0),
+        ("random", "fan", "on", "entities", 0),
+        ("random", "fan", "off", "actions", 0, "entities", 0),
+        ("run_condition", "off_entities", 1),
+        ("run_condition", "off_entities", 2),
+    }
+    assert all(issue.details["entity_id"] in issue.message for issue in issues)
+    program_dict["run_condition"]["off_entities"] = ["light.unused"]
+    assert validate_program(program_dict)
+
+
 def test_yaml_alias_expansion_budget_is_enforced_before_construction(monkeypatch):
     from custom_components.occupied import file_config
 
