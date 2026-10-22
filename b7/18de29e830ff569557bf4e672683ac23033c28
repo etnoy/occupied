@@ -1,0 +1,31 @@
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_ab264160f49ca7::t_25881c692f0dc2 17580-17584,17587-17590,17658-17659,17670-17671,17747-17873,17875,17878-17879,17882,17889,17892-17893,17897-17931,17934-17939,17941,17944-17945,17948-17952,17958-17960,17962,17964-17965,17968,17970-17971,17976,18017,18020,18022-18024,18026,18029,18031-18032,18035,18037,18039,18041,18043-18047,18049-18051,18053,18061,18063-18064,18067-18068,18070-18071,18090,18093,18116,19349,19728,19976,20229,20725,21062
+custom_components/occupied/frontend/src/lib/components/settings/RunConditionSettings.svelte
+  s_ab264160f49ca7::t_8d128814178dde 152-199,201-228,232-245,247-280
+tests/browser/occupied.spec.ts
+  s_6615b0ad189d38::t_ef92ea5ec74b26 543-556
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b718de29e830ff569557bf4e672683ac23033c28",
+  "prompts": {},
+  "sessions": {
+    "s_6615b0ad189d38": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16250-0b42-7d50-9703-14e141b4a72c",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_ab264160f49ca7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16252-db96-74a1-b1c4-fc76fa9101a9",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
