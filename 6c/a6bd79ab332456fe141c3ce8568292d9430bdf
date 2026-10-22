@@ -1,0 +1,19 @@
+tests/frontend/src/timing-limits.test.ts
+  s_076c2d8a736400::t_bf5bb4cc1f5732 71,80-83,95-138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "6ca6bd79ab332456fe141c3ce8568292d9430bdf",
+  "prompts": {},
+  "sessions": {
+    "s_076c2d8a736400": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16091-a645-70c2-9e62-213c456b5e60",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
