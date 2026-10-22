@@ -51,7 +51,15 @@
   }
 </script>
 
-<section class="step-editor random-editor">
+<section
+  class="step-editor random-editor"
+  class:entity-conflict={panel
+    .offEntityConflicts()
+    .some(
+      (issue) =>
+        issue.model_path?.[0] === "random" && issue.model_path[1] === editor.id,
+    )}
+>
   <div class="step-name-editor">
     <EditorField
       {panel}

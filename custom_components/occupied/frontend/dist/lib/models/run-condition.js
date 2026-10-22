@@ -10,7 +10,7 @@ export function runConditionForm(config) {
     offEntities: [...(config?.off_entities ?? [])],
   };
 }
-export function runConditionErrors(form) {
+export function runConditionErrors(form, program) {
   if (!form.enabled) {
     return {};
   }
@@ -32,6 +32,11 @@ export function runConditionErrors(form) {
     )
   ) {
     errors.offEntities = "run_condition_off_entities_error";
+  } else if (
+    program &&
+    managedOffEntities(program, form.offEntities).length > 0
+  ) {
+    errors.offEntities = "run_condition_off_entities_warning";
   }
   const delay = durationSeconds(form.startDelay);
   if (!Number.isFinite(delay) || delay < 0 || delay > 3600) {
@@ -103,4 +108,62 @@ export function managedOffEntities(program, entities) {
     }
   }
   return [...overlaps];
+}
+// Targets remain inspectable while unrelated editor fields are incomplete.
+export function actionFormTargets(form) {
+  return form.kind === "custom"
+    ? {
+        actions:
+          form.customAccepted === form.customYaml ? form.customActions : [],
+      }
+    : { entities: form.entities };
+}
+export function offEntityConflictIssues(program, t) {
+  const extras = program.run_condition?.off_entities ?? [];
+  const indices = new Map(extras.map((entity, index) => [entity, index]));
+  const conflicts = new Set();
+  const issues = [];
+  const add = (entity, path, key) => {
+    issues.push({
+      code: "off_entity_conflict",
+      severity: "error",
+      model_path: path,
+      details: { entity_id: entity },
+      message: t(key).replace("{entity}", () => entity),
+    });
+  };
+  const visit = (action, path) => {
+    const targets = action.entities ?? [];
+    const entities = Array.isArray(targets) ? targets : Object.keys(targets);
+    for (const [index, entity] of entities.entries()) {
+      if (!indices.has(entity)) {
+        continue;
+      }
+      conflicts.add(entity);
+      add(
+        entity,
+        [...path, "entities", Array.isArray(targets) ? index : entity],
+        "off_entity_action_conflict",
+      );
+    }
+    for (const [index, child] of (action.actions ?? []).entries()) {
+      visit(child, [...path, "actions", index]);
+    }
+  };
+  for (const [id, step] of Object.entries(program.steps ?? {})) {
+    visit(step, ["steps", id]);
+  }
+  for (const [id, event] of Object.entries(program.random ?? {})) {
+    for (const phase of ["on", "off"]) {
+      visit(event[phase], ["random", id, phase]);
+    }
+  }
+  for (const entity of conflicts) {
+    add(
+      entity,
+      ["run_condition", "off_entities", indices.get(entity)],
+      "off_entity_setting_conflict",
+    );
+  }
+  return issues;
 }

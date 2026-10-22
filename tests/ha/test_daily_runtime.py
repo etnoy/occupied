@@ -2479,7 +2479,7 @@ async def test_extra_off_entities_follow_enforcement_delay_gate_and_manual_contr
 
     condition_program["run_condition"].update(
         enforce_state_on_start=startup_enforcement,
-        off_entities=["light.bathroom", "switch.fan", "light.proof", "light.missing"],
+        off_entities=["light.bathroom", "switch.fan", "light.missing"],
     )
     hass.states.async_set("light.bathroom", "on")
     hass.states.async_set("switch.fan", "on")

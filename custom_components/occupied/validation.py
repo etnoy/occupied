@@ -223,6 +223,9 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
             [Issue("schema", i["msg"], tuple(i["loc"])) for i in err.errors()]
         ) from err
     issues = []
+    off_entities = program.run_condition.off_entities if program.run_condition else []
+    off_indices = {entity: index for index, entity in enumerate(off_entities)}
+    conflicting_entities = set()
     if len(program.steps) + len(program.random) > 5000:
         issues.append(
             Issue("program_size", "A program supports at most 5000 steps and random events")
@@ -268,6 +271,20 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
                 )
             )
     for path, step in program_actions(program, enabled_only=False):
+        for index, entity in enumerate(step.entities):
+            if entity not in off_indices:
+                continue
+            conflicting_entities.add(entity)
+            entity_path = entity if isinstance(step.entities, dict) else index
+            issues.append(
+                Issue(
+                    "off_entity_conflict",
+                    f"{entity} is also in Extra entities to turn off. "
+                    "Remove it from that list or this action.",
+                    path + ("entities", entity_path),
+                    details={"entity_id": entity},
+                )
+            )
         if step.stagger.enabled and not (
             step.action
             in {
@@ -397,6 +414,17 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
                     "stagger_duration",
                     "Start stagger periods must be shorter than min_duration",
                     ("random", key, "on"),
+                )
+            )
+    for entity in off_entities:
+        if entity in conflicting_entities:
+            issues.append(
+                Issue(
+                    "off_entity_conflict",
+                    f"{entity} is also used by a step or random event (including disabled ones). "
+                    "Remove it from this list or those actions.",
+                    ("run_condition", "off_entities", off_indices[entity]),
+                    details={"entity_id": entity},
                 )
             )
     if issues:

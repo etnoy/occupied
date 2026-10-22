@@ -5,7 +5,7 @@ function warningEntryId(
   issue: Issue,
   entries: Pick<StepEntry | RandomEntry, "id" | "path">[],
 ): string | undefined {
-  if (issue.severity !== "warning") {
+  if (issue.severity !== "warning" && issue.code !== "off_entity_conflict") {
     return;
   }
 

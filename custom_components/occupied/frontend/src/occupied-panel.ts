@@ -26,6 +26,8 @@ import {
   runConditionForm,
   runConditionErrors,
   runConditionValue,
+  actionFormTargets,
+  offEntityConflictIssues,
   type RunConditionForm,
 } from "./lib/models/run-condition.js";
 import styles from "./app.css";
@@ -153,7 +155,10 @@ export class OccupiedPanel extends HTMLElement {
     ) {
       return;
     }
-    this.runConditionErrors = runConditionErrors(this.runConditionForm);
+    this.runConditionErrors = runConditionErrors(
+      this.runConditionForm,
+      this.draft,
+    );
     if (Object.keys(this.runConditionErrors).length > 0) {
       this.flush();
 
@@ -1046,7 +1051,13 @@ export class OccupiedPanel extends HTMLElement {
       return [];
     }
     const issues = new Map<string, Issue>();
-    for (const issue of [...(this.document?.warnings || []), ...this.issues]) {
+    for (const issue of [
+      ...(this.document?.warnings || []),
+      ...this.issues.filter(
+        (issue) => this.yamlDirty || issue.code !== "off_entity_conflict",
+      ),
+      ...this.offEntityConflicts(),
+    ]) {
       const key = JSON.stringify([
         issue.severity,
         issue.code,
@@ -1057,6 +1068,37 @@ export class OccupiedPanel extends HTMLElement {
     }
 
     return [...issues.values()];
+  }
+
+  offEntityConflicts() {
+    if (!this.draft) {
+      return [];
+    }
+    const program = copy(this.draft);
+    if (this.runConditionForm) {
+      program.run_condition = runConditionValue(this.runConditionForm);
+    }
+    if (this.stepEditor) {
+      (program.steps ||= {})[this.stepEditor.id] = {
+        timing: {},
+        ...actionFormTargets(this.stepEditor.form),
+      };
+    }
+    if (this.randomEditor) {
+      const { form, id } = this.randomEditor;
+      (program.random ||= {})[id] = {
+        start: {},
+        end: {},
+        on: actionFormTargets(form.on),
+        off: actionFormTargets(
+          form.sameEntities
+            ? { ...form.off, entities: form.on.entities }
+            : form.off,
+        ),
+      };
+    }
+
+    return offEntityConflictIssues(program, this.t);
   }
 
   focusIssue(issue: Issue) {

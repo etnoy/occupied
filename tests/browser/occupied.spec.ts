@@ -440,6 +440,86 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     );
   }, beforeWarnings);
 
+  // A draft overlap marks both activities and only the relevant extra-off rows.
+  const beforeConflicts = await panel.evaluate((element) => {
+    const controller = element as OccupiedPanel;
+    const program = controller.saved!;
+    controller.change([], {
+      ...program,
+      run_condition: {
+        entity_id: "light.smoke_light",
+        state: "off",
+        off_entities: ["light.smoke_light", "light.browser_unavailable"],
+      },
+      steps: {
+        ...program.steps,
+        conflict: {
+          name: "Conflicting step",
+          action: "turn_on",
+          entities: ["light.smoke_light"],
+          timing: { absolute_time: { start: "18:00" } },
+        },
+      },
+      random: {
+        conflict: {
+          name: "Conflicting random event",
+          start: { absolute_time: { start: "18:00" } },
+          end: { duration: { min: "1h" } },
+          on: { action: "turn_on", entities: ["light.smoke_light"] },
+          off: { action: "turn_off", entities: ["light.smoke_light"] },
+        },
+      },
+    });
+
+    return JSON.stringify(program);
+  });
+  const conflictStep = panel.locator('[data-step-id="conflict"]');
+  const conflictRandom = panel.locator('[data-random-id="conflict"]');
+  await expect(conflictStep).toHaveClass(/step-warning/);
+  await expect(conflictRandom).toHaveClass(/step-warning/);
+  await expect(conflictRandom.locator(".step-row-warning")).toContainText(
+    "light.smoke_light is also in Extra entities to turn off",
+  );
+  await expect(
+    panel.getByRole("button", { name: "Settings", exact: true }),
+  ).toHaveClass(/tab-warning/);
+  await conflictStep.locator(".step-row").click();
+  await expect(
+    conflictStep.locator('[data-entity-row="light.smoke_light"]'),
+  ).toHaveClass(/entity-warning/);
+  await panel.getByRole("button", { name: "Settings", exact: true }).click();
+  const conflictRow = panel.locator('[data-off-entity="light.smoke_light"]');
+  await expect(conflictRow).toHaveClass(/entity-conflict/);
+  await expect(
+    panel.locator('[data-off-entity="light.browser_unavailable"]'),
+  ).not.toHaveClass(/entity-conflict/);
+  const conditionSettings = panel.locator(
+    "section:has(#run-condition-offEntities)",
+  );
+  await expect(conditionSettings).toHaveClass(/entity-conflict/);
+  await conflictRow.getByRole("button", { name: /^Remove entity:/ }).click();
+  await expect(conditionSettings).not.toHaveClass(/entity-conflict/);
+  await conditionSettings
+    .getByRole("button", { name: "Save changes", exact: true })
+    .click();
+  await expect
+    .poll(() =>
+      panel.evaluate((element) => {
+        const controller = element as OccupiedPanel;
+
+        return !controller.busy && !controller.hasRunConditionChanges;
+      }),
+    )
+    .toBe(true);
+  await panel.getByRole("button", { name: "Activity", exact: true }).click();
+  await expect(conflictStep).not.toHaveClass(/step-warning/);
+  await expect(conflictRandom).not.toHaveClass(/step-warning/);
+  await panel.evaluate(async (element, program) => {
+    await (element as OccupiedPanel).save(
+      JSON.parse(program) as ProgramDocument["program"],
+    );
+  }, beforeConflicts);
+
   // Start times order mixed branches and windows despite old browser preferences.
   await expect(panel.locator('[data-tab="random"]')).toHaveCount(0);
   await expect(panel.locator("[data-create-step]")).toBeVisible();

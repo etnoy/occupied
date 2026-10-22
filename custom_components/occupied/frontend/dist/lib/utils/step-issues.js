@@ -1,7 +1,7 @@
 // Generated from custom_components/occupied/frontend/src/lib/utils/step-issues.ts by pnpm run build. Do not edit.
 // Keep warnings without a visible card in the panel's general issue list.
 function warningEntryId(issue, entries) {
-  if (issue.severity !== "warning") {
+  if (issue.severity !== "warning" && issue.code !== "off_entity_conflict") {
     return;
   }
   return entries.find((entry) =>

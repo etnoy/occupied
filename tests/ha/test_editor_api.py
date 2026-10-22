@@ -78,6 +78,42 @@ async def test_shared_step_entities_need_no_baseline(
     assert not devices
 
 
+async def test_extra_off_conflicts_block_validation_and_save_without_changing_program(
+    hass, editor_entry, devices, program_dict, hass_ws_client
+):
+    assert await hass.config_entries.async_setup(editor_entry.entry_id)
+    client = await hass_ws_client(hass)
+    before = (await request(client, "occupied/program", editor_entry))["result"]
+    program_dict["run_condition"] = {
+        "entity_id": "sensor.alarm",
+        "state": "armed",
+        "off_entities": ["light.a"],
+    }
+    for identifier, command in enumerate(("occupied/editor_validate", "occupied/save"), 2):
+        result = (
+            await request(
+                client,
+                command,
+                editor_entry,
+                identifier,
+                program=program_dict,
+                **({"expected_revision": before["revision"]} if command.endswith("/save") else {}),
+            )
+        )["result"]
+        assert not result["valid"]
+        conflicts = [issue for issue in result["issues"] if issue["code"] == "off_entity_conflict"]
+        assert {tuple(issue["model_path"]) for issue in conflicts} == {
+            ("steps", "wake", "entities", 0),
+            ("steps", "leave", "entities", 0),
+            ("run_condition", "off_entities", 0),
+        }
+        assert all(issue["severity"] == "error" for issue in conflicts)
+    after = (await request(client, "occupied/program", editor_entry, 4))["result"]
+    assert after["program"] == before["program"]
+    assert after["revision"] == before["revision"]
+    assert not devices
+
+
 @pytest.mark.parametrize("state", [None, "unknown", "unavailable"])
 async def test_entity_warnings_survive_save_and_reload_and_clear_on_recovery(
     hass, editor_entry, devices, program_dict, hass_ws_client, state

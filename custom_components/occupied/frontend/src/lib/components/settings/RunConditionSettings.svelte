@@ -5,7 +5,8 @@
     managedOffEntities,
     runConditionStateOptions,
   } from "../../models/run-condition.js";
-  import { isValueChangedEvent } from "../../utils/util.js";
+  import { entityName, isValueChangedEvent } from "../../utils/util.js";
+  import type { HaSelector } from "../../types.js";
   import FieldError from "../shared/FieldError.svelte";
 
   let { panel, revision }: { panel: LoadedOccupiedPanel; revision: number } =
@@ -67,7 +68,7 @@
 </script>
 
 {#if form}
-  <section>
+  <section class:entity-conflict={managedExtras.length > 0 && form.enabled}>
     <h2>{t("run_condition")}</h2>
     <label>
       <input
@@ -168,33 +169,105 @@
           fieldPrefix="run-condition-"
         />
         <p class="hint">{t("run_condition_delay_hint")}</p>
-        <label for="run-condition-offEntities"
-          >{t("run_condition_off_entities")}</label
-        >
-        <ha-selector
+        <p id="run-condition-offEntities-label">
+          {t("run_condition_off_entities")}
+        </p>
+        <div
           id="run-condition-offEntities"
-          aria-label={t("run_condition_off_entities")}
-          use:properties={{
-            hass: panel._hass,
-            selector: {
-              entity: {
-                multiple: true,
-                filter: { domain: ["light", "switch"] },
+          role="group"
+          aria-labelledby="run-condition-offEntities-label"
+        >
+          {#each form.offEntities as entity, index (entity)}
+            {@const conflict = managedExtras.includes(entity)}
+            <div
+              class="off-entity-row"
+              class:entity-conflict={conflict}
+              data-off-entity={entity}
+            >
+              <ha-selector
+                aria-label={`${t("entity")}: ${entityName(panel.catalog, entity)}`}
+                aria-invalid={conflict ? "true" : undefined}
+                aria-describedby={conflict
+                  ? "off-entities-conflict"
+                  : undefined}
+                use:properties={{
+                  hass: panel._hass,
+                  selector: {
+                    entity: {
+                      filter: { domain: ["light", "switch"] },
+                      exclude_entities: form.offEntities.filter(
+                        (id) => id !== entity,
+                      ),
+                    },
+                  },
+                  value: entity,
+                  disabled: panel.busy || panel.yamlDirty,
+                }}
+                onvalue-changed={(event: Event) => {
+                  if (!isValueChangedEvent(event)) {
+                    return;
+                  }
+                  const value = event.detail.value;
+                  if (
+                    typeof value === "string" &&
+                    value &&
+                    !form!.offEntities.includes(value)
+                  ) {
+                    form!.offEntities = form!.offEntities.map((id, i) =>
+                      i === index ? value : id,
+                    );
+                  } else if (!value) {
+                    form!.offEntities = form!.offEntities.filter(
+                      (id) => id !== entity,
+                    );
+                  }
+                  panel.updateRunCondition();
+                }}
+              ></ha-selector>
+              <button
+                type="button"
+                aria-label={`${t("remove_entity")}: ${entityName(panel.catalog, entity)}`}
+                onclick={() => {
+                  form!.offEntities = form!.offEntities.filter(
+                    (id) => id !== entity,
+                  );
+                  panel.updateRunCondition();
+                }}>{t("remove_entity")}</button
+              >
+            </div>
+          {/each}
+          <ha-selector
+            aria-label={t("add_entity")}
+            use:properties={{
+              hass: panel._hass,
+              selector: {
+                entity: {
+                  filter: { domain: ["light", "switch"] },
+                  exclude_entities: form.offEntities,
+                },
               },
-            },
-            value: form.offEntities,
-            disabled: panel.busy || panel.yamlDirty,
-          }}
-          onvalue-changed={(event: Event) => {
-            if (!(
-              isValueChangedEvent(event) && Array.isArray(event.detail.value)
-            )) {
-              return;
-            }
-            form!.offEntities = event.detail.value as string[];
-            panel.updateRunCondition();
-          }}
-        ></ha-selector>
+              value: "",
+              label: t("add_entity"),
+              disabled: panel.busy || panel.yamlDirty,
+            }}
+            onvalue-changed={(event: Event) => {
+              if (!isValueChangedEvent(event)) {
+                return;
+              }
+              const value = event.detail.value;
+              if (
+                typeof value !== "string" ||
+                !value ||
+                form!.offEntities.includes(value)
+              ) {
+                return;
+              }
+              form!.offEntities = [...form!.offEntities, value];
+              (event.currentTarget as HaSelector).value = "";
+              panel.updateRunCondition();
+            }}
+          ></ha-selector>
+        </div>
         <FieldError
           {t}
           {errors}
@@ -203,7 +276,7 @@
         />
         <p class="hint">{t("run_condition_off_entities_hint")}</p>
         {#if managedExtras.length > 0}
-          <p class="managed-warning" role="alert">
+          <p class="managed-warning" id="off-entities-conflict" role="alert">
             {t("run_condition_off_entities_warning")}
             {managedExtras.join(", ")}
           </p>
@@ -260,5 +333,21 @@
   }
   .managed-warning {
     color: var(--warning-color, #e69500);
+  }
+  .off-entity-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid var(--divider-color, #d5dce3);
+    border-radius: 8px;
+  }
+  .off-entity-row ha-selector {
+    flex: 1;
+    min-width: 0;
+  }
+  .off-entity-row.entity-conflict {
+    border-color: var(--warning-color, #ffa600);
   }
 </style>

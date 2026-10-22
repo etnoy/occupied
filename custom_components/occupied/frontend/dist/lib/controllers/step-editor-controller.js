@@ -1,5 +1,6 @@
 // Generated from custom_components/occupied/frontend/src/lib/controllers/step-editor-controller.ts by pnpm run build. Do not edit.
 import { prepareCustomAction } from "../utils/custom-action.js";
+import { offEntityConflictIssues } from "../models/run-condition.js";
 import { required, offsetErrors } from "../utils/util.js";
 import {
   stepEntries,
@@ -92,6 +93,19 @@ export function createStepEditorContext(panel) {
       editor.candidatePath = required(
         stepEntries(candidate).find((entry) => entry.id === editor.id),
       ).path;
+      const conflicts = offEntityConflictIssues(candidate, panel.t);
+      if (conflicts.length > 0) {
+        panel.showIssues({ valid: false, issues: conflicts });
+        const ownConflict = conflicts.find(
+          (issue) =>
+            issue.model_path?.[0] === "steps" &&
+            issue.model_path[1] === editor.id,
+        );
+        if (ownConflict) {
+          panel.focusIssue(ownConflict);
+        }
+        return;
+      }
       if (panel.document?.source === "file") {
         if (form.kind === "custom") {
           const version = panel.version;

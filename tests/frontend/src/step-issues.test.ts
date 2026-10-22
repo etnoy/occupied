@@ -129,3 +129,30 @@ void test("random action warnings belong to the exact event for either phase", (
     undefined,
   );
 });
+
+void test("blocking off entity conflicts receive orange activity cards", () => {
+  assert.equal(
+    warningStepId(
+      {
+        code: "off_entity_conflict",
+        severity: "error",
+        message: "Entity conflict",
+        model_path: ["steps", "heater_2", "entities", 0],
+      },
+      entries,
+    ),
+    "heater_2",
+  );
+  assert.equal(
+    warningStepId(
+      {
+        code: "off_entity_conflict",
+        severity: "error",
+        message: "Entity conflict",
+        model_path: ["run_condition", "off_entities", 0],
+      },
+      entries,
+    ),
+    undefined,
+  );
+});
