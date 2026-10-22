@@ -1,0 +1,23 @@
+.github/workflows/check.yml
+  s_b14d902fafc869::t_5015ce41330f6f 140,198,227,265,307,413
+mise.toml
+  s_b14d902fafc869::t_7f296beae83ab4 3
+package.json
+  s_b14d902fafc869::t_837a567abc781c 37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "4c564c9c7bd516788b06ecd96e36d72857beafef",
+  "prompts": {},
+  "sessions": {
+    "s_b14d902fafc869": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16341-8066-7a52-aa7f-3f0598f6053f",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
