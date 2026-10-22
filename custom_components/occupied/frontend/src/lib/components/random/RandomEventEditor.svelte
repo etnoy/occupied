@@ -22,6 +22,17 @@
   });
   let { editor, form, t, changed, submit, cancel } = $derived(context);
 
+  let actionExplanation = $derived(
+    randomExplanation(
+      form,
+      panel.draft,
+      panel.catalog,
+      t,
+      panel._hass.locale,
+      "actions",
+    ),
+  );
+
   let weekdaysOpen = $state(false);
   let weekdaysButton: HTMLButtonElement;
   let showMaxCount = $state(
@@ -115,6 +126,16 @@
       ]}
     />
   </div>
+  <p class="hint" data-random-period-explanation aria-live="polite">
+    {randomExplanation(
+      form,
+      panel.draft,
+      panel.catalog,
+      t,
+      panel._hass.locale,
+      "active-period",
+    )}
+  </p>
   <h3>{t("frequency_and_duration")}</h3>
   <div class="random-counts" class:with-maximum={maxCountVisible}>
     <label class="minimum-count-label" for="step-minCount">
@@ -225,7 +246,14 @@
     />
   </div>
   <p class="hint" data-random-explanation aria-live="polite">
-    {randomExplanation(form, panel.draft, panel.catalog, t, panel._hass.locale)}
+    {randomExplanation(
+      form,
+      panel.draft,
+      panel.catalog,
+      t,
+      panel._hass.locale,
+      "frequency",
+    )}
   </p>
   <div class="editor-sections">
     <ActionEditor
@@ -258,6 +286,11 @@
       {/if}
     </div>
   </div>
+  {#if actionExplanation}
+    <p class="hint" data-random-actions-explanation aria-live="polite">
+      {actionExplanation}
+    </p>
+  {/if}
   <div class="builder-footer">
     <button type="button" disabled={panel.busy} onclick={cancel}
       >{t("cancel")}</button

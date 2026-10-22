@@ -217,3 +217,59 @@ void test("the explanation describes active period durations and starts after an
   );
   assert.doesNotMatch(infeasible, /3 events start at random times/);
 });
+
+void test("section explanations separate active period timing from event details", () => {
+  const { form } = randomEditor(program);
+  form.start.start = "23:00";
+  form.end.start = "01:00";
+  form.minDuration = "3h";
+  form.maxDuration = "4h";
+  const period = randomExplanation(
+    form,
+    program,
+    catalog,
+    translator(),
+    undefined,
+    "active-period",
+  );
+  const frequency = randomExplanation(
+    form,
+    program,
+    catalog,
+    translator(),
+    undefined,
+    "frequency",
+  );
+  assert.equal(
+    period,
+    "Active period starts at 23:00. Active period ends at 01:00 the next day.",
+  );
+  assert.match(frequency, /minimum duration is longer than the active period/);
+  assert.doesNotMatch(frequency, /Active period starts|Active period ends/);
+  assert.equal(
+    randomExplanation(form, program, catalog),
+    `${period} ${frequency}`,
+  );
+});
+
+void test("action explanations are separate and omit actions that cannot run", () => {
+  const { form } = randomEditor(program);
+  form.on.entities = ["light.living"];
+  const explain = (section: "frequency" | "actions") =>
+    randomExplanation(form, program, catalog, translator(), undefined, section);
+  assert.match(explain("frequency"), /3 events start at random times/);
+  assert.match(explain("frequency"), /Each event lasts/);
+  assert.doesNotMatch(explain("frequency"), /When each event|Living room lamp/);
+  assert.equal(
+    explain("actions"),
+    "When each event starts, turn on Living room lamp. When each event ends, turn off Living room lamp.",
+  );
+  form.minDuration = form.maxDuration = "6h";
+  assert.equal(explain("actions"), "");
+  form.minCount = form.maxCount = "0";
+  assert.equal(explain("actions"), "");
+  assert.match(
+    explain("frequency"),
+    /No events run because the event count is zero/,
+  );
+});
