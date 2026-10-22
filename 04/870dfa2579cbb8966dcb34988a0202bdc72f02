@@ -1,0 +1,99 @@
+custom_components/occupied/frontend/dist/lib/controllers/random-editor-controller.js
+  s_95f7add1263a75::t_1a011a8e2e6dd8 3,147-159
+custom_components/occupied/frontend/dist/lib/controllers/step-editor-controller.js
+  s_95f7add1263a75::t_4f6a7e4a6d8444 3,96-108
+custom_components/occupied/frontend/dist/lib/i18n/translations.js
+  s_95f7add1263a75::t_8f9b0afdd963ea 64,67-71,696,700-704
+custom_components/occupied/frontend/dist/lib/models/run-condition.js
+  s_95f7add1263a75::t_2d13b910b802d3 13,35-39,112-169
+custom_components/occupied/frontend/dist/lib/utils/step-issues.js
+  s_95f7add1263a75::t_bec0073a199eac 4
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_95f7add1263a75::t_66ecd3fe5378d2 160,163-167,794,798-802,1725,1747-1751,1824-1880,1884,1886,1891,1937,1988,2018,2139,2210,2225,2249,2427,2432,2450,2503,2566,2588,2601,2611,2650,2664,2784,3076,3981,4197,4505,4556,4729,4817,5202,5205,5765,5903,5914,6069,6094,6189,6220,6667,6855,7026,7065,7085,7603,7618,7624,7717,7741,7768,7790,7810,7947,7975,8013,8127,8584,8645,8669,8686,8743,8804,9007,9112,9352,9403,9406,9413,9556,9692,10846,10949-10961,13440-13450,13659,13661,13670-13677,13688-13695,13705-13706,13711-13712,13714-13747,13785,13787,13789,13791-13792,13856-13857,13859,13868,13870,13876-13877,13883,13949-13950,13954,13957,13970,13972-13974,13976,13979,13986-13987,13991-14000,14165-14167,14170-14173,14177-14181,14184,14200-14216,14222,14287-14290,14324-14346,14350,14363-14364,14367-14369,14371,14391,14394,14443,14447,14473,14477,14480-14482,14503,14506,14537-14538,14540,14556,14562,14566,14569-14570,14573,14591,14627,14634,14636-14637,14640-14641,14650,14654,14673,14678,14681-14683,14694,14697-14698,14701,14704-14707,14709,14713,14716-14720,14723-14724,14731,14733,14740-14741,14752,14755-14756,14760,14777,14781,14783,14786,14793,14806,14821,14936-14939,14941,14943,14946-14953,15109-15121,15423,15450,15531,15567,15675,15781,15930,16021,16345,16353,16401,16432,16501,16556,16752-16761,16769,16772-16775,16780,16783-16784,16786,16792,16795-16802,16842,16891,17046,17119,17295-17296,17298-17302,17305-17308,17313,17377-17378,17389,17484-17590,17592,17594-17595,17598,17605,17608-17609,17613-17615,17625-17627,17630-17631,17635,17644,17646,17666,17707-17716,17719-17720,17729,17732-17733,17735,17738,17740,17744-17745,17747-17750,17753-17756,17759-17760,17762,17770,17772,17776,17779,17786-17789,17794,17799-17800,17802,17820-17821,17835,17929,18721,18862,19050,19056-19057,19067,19176,19275,19384,19388,19674,19683-19684,19698,19745,19815,19883,19895,19910,19998,20075,20123,20428,20432-20433,20444,20475,20478-20482,20594-20600,20710,20749,21468-21471,22281-22287,22298-22326
+custom_components/occupied/frontend/src/App.svelte
+  s_95f7add1263a75::t_0b590925e08bde 109-114,145-149
+custom_components/occupied/frontend/src/app.css
+  s_95f7add1263a75::t_c4db91ac01b669 478-479,488-492
+custom_components/occupied/frontend/src/lib/components/random/RandomEventEditor.svelte
+  s_95f7add1263a75::t_b598dd4b869085 54-62
+custom_components/occupied/frontend/src/lib/components/settings/RunConditionSettings.svelte
+  s_95f7add1263a75::t_daadc1df6b1a8e 8-9,71,172-175,177-247,249-270,279,337-352
+custom_components/occupied/frontend/src/lib/components/shared/ActionEditor.svelte
+  s_67e19787574819::t_f8aedee0fd2d98 17-20,39-54,95-125
+custom_components/occupied/frontend/src/lib/components/shared/EntitiesEditor.svelte
+  s_95f7add1263a75::t_76a2e342b5c722 27-34,49-52,54-65
+custom_components/occupied/frontend/src/lib/components/shared/EntityRow.svelte
+  s_95f7add1263a75::t_e8ace047161c6f 40-49,70-71
+custom_components/occupied/frontend/src/lib/components/steps/StepEditor.svelte
+  s_95f7add1263a75::t_8b239e886c2323 24-32
+custom_components/occupied/frontend/src/lib/controllers/random-editor-controller.ts
+  s_95f7add1263a75::t_73c521299085ff 2,174-187
+custom_components/occupied/frontend/src/lib/controllers/step-editor-controller.ts
+  s_95f7add1263a75::t_a117570d66a07b 2,113-126
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_95f7add1263a75::t_aa63a8d966f498 65,68-72,702,706-710
+custom_components/occupied/frontend/src/lib/models/run-condition.ts
+  s_95f7add1263a75::t_2d7fafc268bfec 1-10,33-36,58-62,151-215
+custom_components/occupied/frontend/src/lib/utils/step-issues.ts
+  s_95f7add1263a75::t_f9d7f11549fbe0 8
+custom_components/occupied/frontend/src/occupied-panel.ts
+  s_17c38601c13f43::t_1a9c96f8c73a43 29-30,158-161,1054-1060,1073-1103
+custom_components/occupied/validation.py
+  s_7dc85f6f8f52f0::t_18e3f3eb9ded2c 226-228,274-287,419-429
+docs/schema.md
+  s_95f7add1263a75::t_cd8cee287d76a8 174
+tests/browser/occupied.spec.ts
+  s_67e19787574819::t_ce20e48ead2b45 443-522
+tests/core/test_models.py
+  s_17c38601c13f43::t_b99baa9d065648 327-374
+tests/frontend/src/instances.test.ts
+  s_95f7add1263a75::t_07e09b924e63c6 1804-1893
+tests/frontend/src/run-condition.test.ts
+  s_67e19787574819::t_9d1d03e25ddf04 9,11,142-197
+tests/frontend/src/step-issues.test.ts
+  s_67e19787574819::t_496f7cd9af2898 132-158
+tests/ha/test_daily_runtime.py
+  s_95f7add1263a75::t_1b03c64f40a74a 2482
+tests/ha/test_editor_api.py
+  s_95f7add1263a75::t_3a673ac3b5d242 81-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "04870dfa2579cbb8966dcb34988a0202bdc72f02",
+  "prompts": {},
+  "sessions": {
+    "s_17c38601c13f43": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16093-f5bf-74f0-b7d9-2cf032642b2b",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_67e19787574819": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a160cf-190d-71a1-8383-93c86d96117a",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_7dc85f6f8f52f0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1607f-f7fe-7fa1-a3f9-30dc73832249",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_95f7add1263a75": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1608f-1da9-7bd1-81d5-56a548a5ca2b",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
