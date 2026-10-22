@@ -150,14 +150,8 @@ var en = {
   run_condition_hint:
     "When the condition ends, Occupied stops without changing any entities. Management permission and pause still apply.",
   run_condition_enforce: "Enforce expected state on start",
-  run_condition_enforce_hint:
-    "Apply known light, switch, and cover targets after the delay. This can move covers. Unknown states and scene/service effects are skipped.",
   run_condition_delay: "Delay before enforcing state",
-  run_condition_delay_hint:
-    "Default: 30s. Use 0s to 1h. Scheduled device changes wait for this delay, then use the state expected at that time.",
   run_condition_off_entities: "Extra entities to turn off",
-  run_condition_off_entities_hint:
-    "Turn off these lights and switches when expected states are enforced, after the startup delay or with the enforcement button. Entities used in steps or random events, including disabled ones, cannot also appear in this list. Manual changes are respected until the next activation or button press.",
   run_condition_off_entities_error: "Select valid light or switch entities.",
   run_condition_off_entities_warning:
     "Remove these entities from this list or from their steps and random events (including disabled ones):",
@@ -792,14 +786,8 @@ var sv = {
   run_condition_hint:
     "N\xE4r villkoret upph\xF6r stannar Occupied utan att \xE4ndra n\xE5gra entiteter. Hanteringstillst\xE5nd och paus g\xE4ller fortfarande.",
   run_condition_enforce: "Till\xE4mpa f\xF6rv\xE4ntat tillst\xE5nd vid start",
-  run_condition_enforce_hint:
-    "Till\xE4mpa k\xE4nda m\xE5l f\xF6r lampor, str\xF6mbrytare och jalusier efter f\xF6rdr\xF6jningen. Detta kan flytta jalusier. Ok\xE4nda tillst\xE5nd och effekter av scener/tj\xE4nster hoppas \xF6ver.",
   run_condition_delay: "F\xF6rdr\xF6jning f\xF6re till\xE4mpning",
-  run_condition_delay_hint:
-    "Standard: 30s. Ange 0s till 1h. Schemalagda enhets\xE4ndringar v\xE4ntar p\xE5 f\xF6rdr\xF6jningen och anv\xE4nder sedan det tillst\xE5nd som f\xF6rv\xE4ntas d\xE5.",
   run_condition_off_entities: "Extra entiteter att st\xE4nga av",
-  run_condition_off_entities_hint:
-    "St\xE4ng av dessa lampor och str\xF6mbrytare n\xE4r f\xF6rv\xE4ntade tillst\xE5nd till\xE4mpas, efter startf\xF6rdr\xF6jningen eller med till\xE4mpningsknappen. Entiteter i steg eller slumpm\xE4ssiga h\xE4ndelser, \xE4ven inaktiverade, f\xE5r inte ocks\xE5 finnas i denna lista. Manuella \xE4ndringar respekteras tills n\xE4sta aktivering eller knapptryckning.",
   run_condition_off_entities_error:
     "V\xE4lj giltiga lamp- eller str\xF6mbrytarentiteter.",
   run_condition_off_entities_warning:
@@ -17564,13 +17552,17 @@ var root_120 = from_html(
   `<p class="managed-warning svelte-111t7iy" id="off-entities-conflict" role="alert"> </p>`,
 );
 var root_216 = from_html(
-  `<fieldset class="svelte-111t7iy"><legend> </legend> <label for="run-condition-entity" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label for="run-condition-states" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <p class="hint"> </p> <label for="run-condition-delay" class="svelte-111t7iy"> </label> <input id="run-condition-delay" type="text"/> <!> <p class="hint"> </p> <p id="run-condition-offEntities-label"> </p> <div id="run-condition-offEntities" role="group" aria-labelledby="run-condition-offEntities-label"><!> <ha-selector></ha-selector></div> <!> <p class="hint"> </p> <!></fieldset>`,
+  `<label for="run-condition-delay" class="svelte-111t7iy"> </label> <input id="run-condition-delay" type="text"/> <!> <p id="run-condition-offEntities-label"> </p> <div id="run-condition-offEntities" role="group" aria-labelledby="run-condition-offEntities-label"><!> <ha-selector></ha-selector></div> <!> <!>`,
+  3,
+);
+var root_315 = from_html(
+  `<fieldset class="svelte-111t7iy"><legend> </legend> <label for="run-condition-entity" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label for="run-condition-states" class="svelte-111t7iy"> </label> <ha-selector></ha-selector> <!> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <!></fieldset>`,
   2,
 );
-var root_315 = from_html(`<p class="hint"> </p>`);
-var root_410 = from_html(`<p> </p>`);
-var root_56 = from_html(`<p role="status"> </p> <!>`, 1);
-var root_66 = from_html(
+var root_410 = from_html(`<p class="hint"> </p>`);
+var root_56 = from_html(`<p> </p>`);
+var root_66 = from_html(`<p role="status"> </p> <!>`, 1);
+var root_73 = from_html(
   `<section><h2> </h2> <label class="svelte-111t7iy"><input type="checkbox"/> </label> <!> <!> <div class="actions svelte-111t7iy"><button type="button" class="primary"> </button> <button type="button"> </button></div> <!></section>`,
 );
 var $$css6 = {
@@ -17638,8 +17630,8 @@ function RunConditionSettings($$anchor, $$props) {
   var fragment = comment();
   var node = first_child(fragment);
   {
-    var consequent_5 = ($$anchor2) => {
-      var section = root_66();
+    var consequent_6 = ($$anchor2) => {
+      var section = root_73();
       let classes;
       var h2 = child(section);
       var text2 = only_child(h2, true);
@@ -17650,8 +17642,8 @@ function RunConditionSettings($$anchor, $$props) {
       reset(label2);
       var node_1 = sibling(label2, 2);
       {
-        var consequent_1 = ($$anchor3) => {
-          var fieldset = root_216();
+        var consequent_2 = ($$anchor3) => {
+          var fieldset = root_315();
           var legend = child(fieldset);
           var text_2 = only_child(legend, true);
           var label_1 = sibling(legend, 2);
@@ -17727,219 +17719,248 @@ function RunConditionSettings($$anchor, $$props) {
           remove_input_defaults(input_1);
           var text_5 = sibling(input_1);
           reset(label_3);
-          var p = sibling(label_3, 2);
-          var text_6 = only_child(p, true);
-          var label_4 = sibling(p, 2);
-          var text_7 = only_child(label_4, true);
-          var input_2 = sibling(label_4, 2);
-          remove_input_defaults(input_2);
-          var node_4 = sibling(input_2, 2);
-          FieldError(node_4, {
-            get t() {
-              return get(t);
-            },
-            get errors() {
-              return get(errors);
-            },
-            key: "startDelay",
-            fieldPrefix: "run-condition-",
-          });
-          var p_1 = sibling(node_4, 2);
-          var text_8 = only_child(p_1, true);
-          var p_2 = sibling(p_1, 2);
-          var text_9 = only_child(p_2, true);
-          var div = sibling(p_2, 2);
-          var node_5 = child(div);
-          each(
-            node_5,
-            18,
-            () => get(form).offEntities,
-            (entity) => entity,
-            ($$anchor4, entity, index2) => {
-              const conflict = user_derived(() =>
-                get(managedExtras).includes(entity),
+          var node_4 = sibling(label_3, 2);
+          {
+            var consequent_1 = ($$anchor4) => {
+              var fragment_1 = root_216();
+              var label_4 = first_child(fragment_1);
+              var text_6 = only_child(label_4, true);
+              var input_2 = sibling(label_4, 2);
+              remove_input_defaults(input_2);
+              var node_5 = sibling(input_2, 2);
+              FieldError(node_5, {
+                get t() {
+                  return get(t);
+                },
+                get errors() {
+                  return get(errors);
+                },
+                key: "startDelay",
+                fieldPrefix: "run-condition-",
+              });
+              var p = sibling(node_5, 2);
+              var text_7 = only_child(p, true);
+              var div = sibling(p, 2);
+              var node_6 = child(div);
+              each(
+                node_6,
+                18,
+                () => get(form).offEntities,
+                (entity) => entity,
+                ($$anchor5, entity, index2) => {
+                  const conflict = user_derived(() =>
+                    get(managedExtras).includes(entity),
+                  );
+                  var div_1 = root23();
+                  let classes_1;
+                  var ha_selector_2 = child(div_1);
+                  template_effect(
+                    ($0) =>
+                      set_custom_element_data(ha_selector_2, "aria-label", $0),
+                    [
+                      () =>
+                        `${get(t)("entity")}: ${entityName($$props.panel.catalog, entity)}`,
+                    ],
+                  );
+                  template_effect(() =>
+                    set_custom_element_data(
+                      ha_selector_2,
+                      "aria-invalid",
+                      get(conflict) ? "true" : void 0,
+                    ),
+                  );
+                  template_effect(() =>
+                    set_custom_element_data(
+                      ha_selector_2,
+                      "aria-describedby",
+                      get(conflict) ? "off-entities-conflict" : void 0,
+                    ),
+                  );
+                  set_class(ha_selector_2, 1, "svelte-111t7iy");
+                  action(
+                    ha_selector_2,
+                    ($$node, $$action_arg) =>
+                      properties?.($$node, $$action_arg),
+                    () => ({
+                      hass: $$props.panel._hass,
+                      selector: {
+                        entity: {
+                          filter: { domain: ["light", "switch"] },
+                          exclude_entities: get(form).offEntities.filter(
+                            (id) => id !== entity,
+                          ),
+                        },
+                      },
+                      value: entity,
+                      disabled: $$props.panel.busy || $$props.panel.yamlDirty,
+                    }),
+                  );
+                  var button = sibling(ha_selector_2, 2);
+                  var text_8 = only_child(button, true);
+                  reset(div_1);
+                  template_effect(
+                    ($0, $1) => {
+                      classes_1 = set_class(
+                        div_1,
+                        1,
+                        "off-entity-row svelte-111t7iy",
+                        null,
+                        classes_1,
+                        { "entity-conflict": get(conflict) },
+                      );
+                      set_attribute2(div_1, "data-off-entity", entity);
+                      set_attribute2(button, "aria-label", $0);
+                      set_text(text_8, $1);
+                    },
+                    [
+                      () =>
+                        `${get(t)("remove_entity")}: ${entityName($$props.panel.catalog, entity)}`,
+                      () => get(t)("remove_entity"),
+                    ],
+                  );
+                  event("value-changed", ha_selector_2, (event2) => {
+                    if (!isValueChangedEvent(event2)) {
+                      return;
+                    }
+                    const value = event2.detail.value;
+                    if (
+                      typeof value === "string" &&
+                      value &&
+                      !get(form).offEntities.includes(value)
+                    ) {
+                      get(form).offEntities = get(form).offEntities.map(
+                        (id, i) => (i === get(index2) ? value : id),
+                      );
+                    } else if (!value) {
+                      get(form).offEntities = get(form).offEntities.filter(
+                        (id) => id !== entity,
+                      );
+                    }
+                    $$props.panel.updateRunCondition();
+                  });
+                  delegated("click", button, () => {
+                    get(form).offEntities = get(form).offEntities.filter(
+                      (id) => id !== entity,
+                    );
+                    $$props.panel.updateRunCondition();
+                  });
+                  append($$anchor5, div_1);
+                },
               );
-              var div_1 = root23();
-              let classes_1;
-              var ha_selector_2 = child(div_1);
+              var ha_selector_3 = sibling(node_6, 2);
               template_effect(
                 ($0) =>
-                  set_custom_element_data(ha_selector_2, "aria-label", $0),
-                [
-                  () =>
-                    `${get(t)("entity")}: ${entityName($$props.panel.catalog, entity)}`,
-                ],
+                  set_custom_element_data(ha_selector_3, "aria-label", $0),
+                [() => get(t)("add_entity")],
               );
-              template_effect(() =>
-                set_custom_element_data(
-                  ha_selector_2,
-                  "aria-invalid",
-                  get(conflict) ? "true" : void 0,
-                ),
-              );
-              template_effect(() =>
-                set_custom_element_data(
-                  ha_selector_2,
-                  "aria-describedby",
-                  get(conflict) ? "off-entities-conflict" : void 0,
-                ),
-              );
-              set_class(ha_selector_2, 1, "svelte-111t7iy");
               action(
-                ha_selector_2,
+                ha_selector_3,
                 ($$node, $$action_arg) => properties?.($$node, $$action_arg),
                 () => ({
                   hass: $$props.panel._hass,
                   selector: {
                     entity: {
                       filter: { domain: ["light", "switch"] },
-                      exclude_entities: get(form).offEntities.filter(
-                        (id) => id !== entity,
-                      ),
+                      exclude_entities: get(form).offEntities,
                     },
                   },
-                  value: entity,
+                  value: "",
+                  label: get(t)("add_entity"),
                   disabled: $$props.panel.busy || $$props.panel.yamlDirty,
                 }),
               );
-              var button = sibling(ha_selector_2, 2);
-              var text_10 = only_child(button, true);
-              reset(div_1);
+              reset(div);
+              var node_7 = sibling(div, 2);
+              FieldError(node_7, {
+                get t() {
+                  return get(t);
+                },
+                get errors() {
+                  return get(errors);
+                },
+                key: "offEntities",
+                fieldPrefix: "run-condition-",
+              });
+              var node_8 = sibling(node_7, 2);
+              {
+                var consequent = ($$anchor5) => {
+                  var p_1 = root_120();
+                  var text_9 = only_child(p_1);
+                  template_effect(
+                    ($0, $1) =>
+                      set_text(
+                        text_9,
+                        `${$0 ?? ""}
+              ${$1 ?? ""}`,
+                      ),
+                    [
+                      () => get(t)("run_condition_off_entities_warning"),
+                      () => get(managedExtras).join(", "),
+                    ],
+                  );
+                  append($$anchor5, p_1);
+                };
+                if_block(node_8, ($$render) => {
+                  if (get(managedExtras).length > 0) $$render(consequent);
+                });
+              }
               template_effect(
                 ($0, $1) => {
-                  classes_1 = set_class(
-                    div_1,
-                    1,
-                    "off-entity-row svelte-111t7iy",
-                    null,
-                    classes_1,
-                    { "entity-conflict": get(conflict) },
+                  set_text(text_6, $0);
+                  set_value(input_2, get(form).startDelay);
+                  set_attribute2(
+                    input_2,
+                    "aria-invalid",
+                    !!get(errors).startDelay,
                   );
-                  set_attribute2(div_1, "data-off-entity", entity);
-                  set_attribute2(button, "aria-label", $0);
-                  set_text(text_10, $1);
+                  set_text(text_7, $1);
                 },
                 [
-                  () =>
-                    `${get(t)("remove_entity")}: ${entityName($$props.panel.catalog, entity)}`,
-                  () => get(t)("remove_entity"),
+                  () => get(t)("run_condition_delay"),
+                  () => get(t)("run_condition_off_entities"),
                 ],
               );
-              event("value-changed", ha_selector_2, (event2) => {
+              delegated("input", input_2, (event2) => {
+                get(form).startDelay = event2.currentTarget.value;
+                $$props.panel.updateRunCondition();
+              });
+              event("value-changed", ha_selector_3, (event2) => {
                 if (!isValueChangedEvent(event2)) {
                   return;
                 }
                 const value = event2.detail.value;
                 if (
-                  typeof value === "string" &&
-                  value &&
-                  !get(form).offEntities.includes(value)
+                  typeof value !== "string" ||
+                  !value ||
+                  get(form).offEntities.includes(value)
                 ) {
-                  get(form).offEntities = get(form).offEntities.map((id, i) =>
-                    i === get(index2) ? value : id,
-                  );
-                } else if (!value) {
-                  get(form).offEntities = get(form).offEntities.filter(
-                    (id) => id !== entity,
-                  );
+                  return;
                 }
+                get(form).offEntities = [...get(form).offEntities, value];
+                event2.currentTarget.value = "";
                 $$props.panel.updateRunCondition();
               });
-              delegated("click", button, () => {
-                get(form).offEntities = get(form).offEntities.filter(
-                  (id) => id !== entity,
-                );
-                $$props.panel.updateRunCondition();
-              });
-              append($$anchor4, div_1);
-            },
-          );
-          var ha_selector_3 = sibling(node_5, 2);
-          template_effect(
-            ($0) => set_custom_element_data(ha_selector_3, "aria-label", $0),
-            [() => get(t)("add_entity")],
-          );
-          action(
-            ha_selector_3,
-            ($$node, $$action_arg) => properties?.($$node, $$action_arg),
-            () => ({
-              hass: $$props.panel._hass,
-              selector: {
-                entity: {
-                  filter: { domain: ["light", "switch"] },
-                  exclude_entities: get(form).offEntities,
-                },
-              },
-              value: "",
-              label: get(t)("add_entity"),
-              disabled: $$props.panel.busy || $$props.panel.yamlDirty,
-            }),
-          );
-          reset(div);
-          var node_6 = sibling(div, 2);
-          FieldError(node_6, {
-            get t() {
-              return get(t);
-            },
-            get errors() {
-              return get(errors);
-            },
-            key: "offEntities",
-            fieldPrefix: "run-condition-",
-          });
-          var p_3 = sibling(node_6, 2);
-          var text_11 = only_child(p_3, true);
-          var node_7 = sibling(p_3, 2);
-          {
-            var consequent = ($$anchor4) => {
-              var p_4 = root_120();
-              var text_12 = only_child(p_4);
-              template_effect(
-                ($0, $1) =>
-                  set_text(
-                    text_12,
-                    `${$0 ?? ""}
-            ${$1 ?? ""}`,
-                  ),
-                [
-                  () => get(t)("run_condition_off_entities_warning"),
-                  () => get(managedExtras).join(", "),
-                ],
-              );
-              append($$anchor4, p_4);
+              append($$anchor4, fragment_1);
             };
-            if_block(node_7, ($$render) => {
-              if (get(managedExtras).length > 0) $$render(consequent);
+            if_block(node_4, ($$render) => {
+              if (get(form).enforceState) $$render(consequent_1);
             });
           }
           reset(fieldset);
           template_effect(
-            ($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
+            ($0, $1, $2, $3) => {
               fieldset.disabled = $$props.panel.busy || $$props.panel.yamlDirty;
               set_text(text_2, $0);
               set_text(text_3, $1);
               set_text(text_4, $2);
               set_checked(input_1, get(form).enforceState);
               set_text(text_5, ` ${$3 ?? ""}`);
-              set_text(text_6, $4);
-              set_text(text_7, $5);
-              set_value(input_2, get(form).startDelay);
-              input_2.disabled = !get(form).enforceState;
-              set_attribute2(input_2, "aria-invalid", !!get(errors).startDelay);
-              set_text(text_8, $6);
-              set_text(text_9, $7);
-              set_text(text_11, $8);
             },
             [
               () => get(t)("run_condition"),
               () => get(t)("run_condition_entity"),
               () => get(t)("run_condition_states"),
               () => get(t)("run_condition_enforce"),
-              () => get(t)("run_condition_enforce_hint"),
-              () => get(t)("run_condition_delay"),
-              () => get(t)("run_condition_delay_hint"),
-              () => get(t)("run_condition_off_entities"),
-              () => get(t)("run_condition_off_entities_hint"),
             ],
           );
           event("value-changed", ha_selector, (event2) => {
@@ -17965,66 +17986,46 @@ function RunConditionSettings($$anchor, $$props) {
             get(form).enforceState = event2.currentTarget.checked;
             $$props.panel.updateRunCondition();
           });
-          delegated("input", input_2, (event2) => {
-            get(form).startDelay = event2.currentTarget.value;
-            $$props.panel.updateRunCondition();
-          });
-          event("value-changed", ha_selector_3, (event2) => {
-            if (!isValueChangedEvent(event2)) {
-              return;
-            }
-            const value = event2.detail.value;
-            if (
-              typeof value !== "string" ||
-              !value ||
-              get(form).offEntities.includes(value)
-            ) {
-              return;
-            }
-            get(form).offEntities = [...get(form).offEntities, value];
-            event2.currentTarget.value = "";
-            $$props.panel.updateRunCondition();
-          });
           append($$anchor3, fieldset);
         };
         if_block(node_1, ($$render) => {
-          if (get(form).enabled) $$render(consequent_1);
+          if (get(form).enabled) $$render(consequent_2);
         });
       }
-      var node_8 = sibling(node_1, 2);
+      var node_9 = sibling(node_1, 2);
       {
-        var consequent_2 = ($$anchor3) => {
-          var p_5 = root_315();
-          var text_13 = only_child(p_5, true);
+        var consequent_3 = ($$anchor3) => {
+          var p_2 = root_410();
+          var text_10 = only_child(p_2, true);
           template_effect(
-            ($0) => set_text(text_13, $0),
+            ($0) => set_text(text_10, $0),
             [() => get(t)("run_condition_yaml_hint")],
           );
-          append($$anchor3, p_5);
+          append($$anchor3, p_2);
         };
-        if_block(node_8, ($$render) => {
-          if ($$props.panel.yamlDirty) $$render(consequent_2);
+        if_block(node_9, ($$render) => {
+          if ($$props.panel.yamlDirty) $$render(consequent_3);
         });
       }
-      var div_2 = sibling(node_8, 2);
+      var div_2 = sibling(node_9, 2);
       var button_1 = child(div_2);
-      var text_14 = only_child(button_1, true);
+      var text_11 = only_child(button_1, true);
       var button_2 = sibling(button_1, 2);
-      var text_15 = only_child(button_2, true);
+      var text_12 = only_child(button_2, true);
       reset(div_2);
-      var node_9 = sibling(div_2, 2);
+      var node_10 = sibling(div_2, 2);
       {
-        var consequent_4 = ($$anchor3) => {
-          var fragment_1 = root_56();
-          var p_6 = first_child(fragment_1);
-          var text_16 = only_child(p_6, true);
-          var node_10 = sibling(p_6, 2);
+        var consequent_5 = ($$anchor3) => {
+          var fragment_2 = root_66();
+          var p_3 = first_child(fragment_2);
+          var text_13 = only_child(p_3, true);
+          var node_11 = sibling(p_3, 2);
           {
-            var consequent_3 = ($$anchor4) => {
-              var p_7 = root_410();
-              var text_17 = only_child(p_7, true);
+            var consequent_4 = ($$anchor4) => {
+              var p_4 = root_56();
+              var text_14 = only_child(p_4, true);
               template_effect(
-                ($0) => set_text(text_17, $0),
+                ($0) => set_text(text_14, $0),
                 [
                   () =>
                     get(t)("run_condition_countdown").replace("{seconds}", () =>
@@ -18032,17 +18033,17 @@ function RunConditionSettings($$anchor, $$props) {
                     ),
                 ],
               );
-              append($$anchor4, p_7);
+              append($$anchor4, p_4);
             };
-            if_block(node_10, ($$render) => {
-              if (get(deadline)) $$render(consequent_3);
+            if_block(node_11, ($$render) => {
+              if (get(deadline)) $$render(consequent_4);
             });
           }
-          template_effect(() => set_text(text_16, get(snapshot2).reason));
-          append($$anchor3, fragment_1);
+          template_effect(() => set_text(text_13, get(snapshot2).reason));
+          append($$anchor3, fragment_2);
         };
-        if_block(node_9, ($$render) => {
-          if (get(snapshot2).run_condition) $$render(consequent_4);
+        if_block(node_10, ($$render) => {
+          if (get(snapshot2).run_condition) $$render(consequent_5);
         });
       }
       reset(section);
@@ -18061,10 +18062,10 @@ function RunConditionSettings($$anchor, $$props) {
             $$props.panel.stale ||
             $$props.panel.yamlDirty ||
             !$$props.panel.hasRunConditionChanges;
-          set_text(text_14, $2);
+          set_text(text_11, $2);
           button_2.disabled =
             $$props.panel.busy || !$$props.panel.hasRunConditionChanges;
-          set_text(text_15, $3);
+          set_text(text_12, $3);
         },
         [
           () => get(t)("run_condition"),
@@ -18082,7 +18083,7 @@ function RunConditionSettings($$anchor, $$props) {
       append($$anchor2, section);
     };
     if_block(node, ($$render) => {
-      if (get(form)) $$render(consequent_5);
+      if (get(form)) $$render(consequent_6);
     });
   }
   append($$anchor, fragment);
@@ -19315,7 +19316,7 @@ var root_317 = from_html(
 var root_412 = from_html(`<span aria-hidden="true"></span>`);
 var root_57 = from_html(`<span> </span>`);
 var root_67 = from_html(`<div><!> <span> </span> <div> </div></div>`);
-var root_73 = from_html(`<div> </div>`);
+var root_74 = from_html(`<div> </div>`);
 var root_83 = from_html(`<td class="svelte-1iz1525"></td>`);
 var root_93 = from_html(
   `<button type="button" class="text-button source-link svelte-1iz1525"> </button>`,
@@ -19694,7 +19695,7 @@ function Timeline($$anchor, $$props) {
                               append($$anchor8, div_4);
                             };
                             var consequent_8 = ($$anchor8) => {
-                              var div_6 = root_73();
+                              var div_6 = root_74();
                               var text_11 = only_child(div_6, true);
                               template_effect(
                                 ($0) => set_text(text_11, $0),
@@ -19942,7 +19943,7 @@ var root_318 = from_html(`<div class="live-actions svelte-jw9j7k"><!></div>`);
 var root_413 = from_html(`<p class="svelte-jw9j7k"> </p>`);
 var root_58 = from_html(`<p class="error svelte-jw9j7k"> </p>`);
 var root_68 = from_html(`<p class="hint svelte-jw9j7k"> </p>`);
-var root_74 = from_html(`<p class="call svelte-jw9j7k"> <!></p>`);
+var root_75 = from_html(`<p class="call svelte-jw9j7k"> <!></p>`);
 var root_84 = from_html(
   `<p class="svelte-jw9j7k"><strong> </strong></p> <!>`,
   1,
@@ -20195,7 +20196,7 @@ function LivePreviewControls($$anchor, $$props) {
                 () => get(session).next_group.calls,
                 (call) => call.id,
                 ($$anchor5, call) => {
-                  var p_7 = root_74();
+                  var p_7 = root_75();
                   var text_13 = child(p_7);
                   var node_12 = sibling(text_13);
                   {
@@ -20693,7 +20694,7 @@ var root_414 = from_html(
 );
 var root_59 = from_html(`<p class="error"> </p> <p class="error"> </p>`, 1);
 var root_69 = from_html(`<p role="status" aria-live="polite"> </p>`);
-var root_75 = from_html(
+var root_76 = from_html(
   `<ha-top-app-bar-fixed><div slot="title">Occupied</div> <main><!> <!> <div id="notice" class="banner" role="status"> </div> <nav></nav> <div id="secondary-nav"><!></div> <div id="issues"></div> <div id="view"><!></div></main></ha-top-app-bar-fixed> <!>`,
   3,
 );
@@ -20872,7 +20873,7 @@ function App($$anchor, $$props) {
     ["preview", "preview"],
     ["settings", "settings"],
   ];
-  var fragment_1 = root_75();
+  var fragment_1 = root_76();
   var ha_top_app_bar_fixed = first_child(fragment_1);
   set_custom_element_data(ha_top_app_bar_fixed, "back-button", true);
   template_effect(

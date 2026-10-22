@@ -540,6 +540,20 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     conflictStep.locator('[data-entity-row="light.smoke_light"]'),
   ).toHaveClass(/entity-warning/);
   await panel.getByRole("button", { name: "Settings", exact: true }).click();
+  const enforcement = panel.getByRole("checkbox", {
+    name: "Enforce expected state on start",
+    exact: true,
+  });
+  await expect(enforcement).not.toBeChecked();
+  await expect(panel.locator("#run-condition-delay")).toHaveCount(0);
+  await expect(panel.locator("#run-condition-offEntities")).toHaveCount(0);
+  await enforcement.check();
+  await expect(panel.locator("#run-condition-delay")).toBeVisible();
+  await expect(panel.locator("#run-condition-offEntities")).toBeVisible();
+  await enforcement.uncheck();
+  await expect(panel.locator("#run-condition-delay")).toHaveCount(0);
+  await expect(panel.locator("#run-condition-offEntities")).toHaveCount(0);
+  await enforcement.check();
   const conflictRow = panel.locator('[data-off-entity="light.smoke_light"]');
   await expect(conflictRow).toHaveClass(/entity-conflict/);
   await expect(

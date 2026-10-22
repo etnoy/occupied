@@ -55,14 +55,8 @@ export const en = {
   run_condition_hint:
     "When the condition ends, Occupied stops without changing any entities. Management permission and pause still apply.",
   run_condition_enforce: "Enforce expected state on start",
-  run_condition_enforce_hint:
-    "Apply known light, switch, and cover targets after the delay. This can move covers. Unknown states and scene/service effects are skipped.",
   run_condition_delay: "Delay before enforcing state",
-  run_condition_delay_hint:
-    "Default: 30s. Use 0s to 1h. Scheduled device changes wait for this delay, then use the state expected at that time.",
   run_condition_off_entities: "Extra entities to turn off",
-  run_condition_off_entities_hint:
-    "Turn off these lights and switches when expected states are enforced, after the startup delay or with the enforcement button. Entities used in steps or random events, including disabled ones, cannot also appear in this list. Manual changes are respected until the next activation or button press.",
   run_condition_off_entities_error: "Select valid light or switch entities.",
   run_condition_off_entities_warning:
     "Remove these entities from this list or from their steps and random events (including disabled ones):",
@@ -700,14 +694,8 @@ export const sv: Partial<Record<TranslationKey, string>> = {
   run_condition_hint:
     "När villkoret upphör stannar Occupied utan att ändra några entiteter. Hanteringstillstånd och paus gäller fortfarande.",
   run_condition_enforce: "Tillämpa förväntat tillstånd vid start",
-  run_condition_enforce_hint:
-    "Tillämpa kända mål för lampor, strömbrytare och jalusier efter fördröjningen. Detta kan flytta jalusier. Okända tillstånd och effekter av scener/tjänster hoppas över.",
   run_condition_delay: "Fördröjning före tillämpning",
-  run_condition_delay_hint:
-    "Standard: 30s. Ange 0s till 1h. Schemalagda enhetsändringar väntar på fördröjningen och använder sedan det tillstånd som förväntas då.",
   run_condition_off_entities: "Extra entiteter att stänga av",
-  run_condition_off_entities_hint:
-    "Stäng av dessa lampor och strömbrytare när förväntade tillstånd tillämpas, efter startfördröjningen eller med tillämpningsknappen. Entiteter i steg eller slumpmässiga händelser, även inaktiverade, får inte också finnas i denna lista. Manuella ändringar respekteras tills nästa aktivering eller knapptryckning.",
   run_condition_off_entities_error:
     "Välj giltiga lamp- eller strömbrytarentiteter.",
   run_condition_off_entities_warning:
