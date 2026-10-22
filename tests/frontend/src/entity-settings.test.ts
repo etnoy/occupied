@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import type { Action, Program } from "@occupied/lib/types.js";
+import type { Action, Program, JsonValue } from "@occupied/lib/types.js";
 import type { LoadedOccupiedPanel } from "@occupied/occupied-panel.js";
 import {
   actionForm,
@@ -25,6 +25,7 @@ import {
   resetEntitySettings,
   setActionEntities,
   updateEntitySetting,
+  updateEntityColor,
 } from "@occupied/lib/utils/entity-settings.js";
 import { translator } from "@occupied/lib/i18n/translations.js";
 
@@ -205,7 +206,7 @@ void test("advanced, mixed-state, invalid and ordered mappings remain intact in 
   const sources: Action[] = [
     {
       action: "set_state",
-      entities: { "light.a": { state: "on", rgb_color: [1, 2, 3] } },
+      entities: { "light.a": { state: "on", hs_color: [120, 50] } },
     },
     {
       action: "set_state",
@@ -338,4 +339,85 @@ void test("saved settings do not depend on catalog availability and summaries ar
     ),
     "Ljusstyrka 40%",
   );
+});
+
+void test("optional color properties round trip, replace one another and clear without defaults", () => {
+  for (const color of [
+    { rgb_color: [1, 2, 3] },
+    { color_temp_kelvin: 2700 },
+  ] as Record<string, JsonValue>[]) {
+    const source: Action = {
+      action: "set_state",
+      entities: {
+        "light.a": { state: "on", brightness: 13, transition: 0, ...color },
+      },
+    };
+    const form = actionForm(source);
+    assert.equal(form.kind, "entities");
+    assert.deepEqual(buildAction(form), source);
+    updateEntityColor(form, "light.a", [255, 0, 128]);
+    assert.deepEqual(buildAction(form).entities, {
+      "light.a": {
+        state: "on",
+        brightness: 13,
+        transition: 0,
+        rgb_color: [255, 0, 128],
+      },
+    });
+    updateEntitySetting(form, "light.a", "colorTemp", "3000");
+    assert.deepEqual(buildAction(form).entities, {
+      "light.a": {
+        state: "on",
+        brightness: 13,
+        transition: 0,
+        color_temp_kelvin: 3000,
+      },
+    });
+    updateEntitySetting(form, "light.a", "colorTemp", "");
+    updateEntitySetting(form, "light.a", "brightness", "");
+    updateEntitySetting(form, "light.a", "transition", "");
+    assert.equal(form.entitySettings, undefined);
+    assert.deepEqual(buildAction(form), {
+      action: "turn_on",
+      entities: ["light.a"],
+    });
+  }
+});
+
+void test("invalid colors remain in YAML or report errors, and turn-off drops color intent", () => {
+  for (const color of [
+    { rgb_color: [1, 2] },
+    { rgb_color: [1, 2, 256] },
+    { rgb_color: [1.5, 2, 3] },
+    { color_temp_kelvin: 0 },
+    { color_temp_kelvin: 2700, rgb_color: [1, 2, 3] },
+  ] as Record<string, JsonValue>[]) {
+    const source: Action = {
+      action: "set_state",
+      entities: { "light.a": { state: "on", ...color } },
+    };
+    assert.equal(actionForm(source).kind, "custom");
+  }
+  const form = actionForm({ action: "turn_on", entities: ["light.a"] });
+  updateEntityColor(form, "light.a", [0, 2, 256]);
+  assert.ok(actionErrors(form)["entitySettings.light.a.rgbColor"]);
+  updateEntitySetting(form, "light.a", "colorTemp", "0");
+  assert.ok(actionErrors(form)["entitySettings.light.a.colorTemp"]);
+  updateEntitySetting(form, "light.a", "colorTemp", "2700");
+  assert.deepEqual(actionErrors(form), {});
+  updateEntitySetting(form, "light.a", "transition", "0");
+  changeActionKind(form, "turn_off", () => false);
+  assert.deepEqual(buildAction(form).entities, {
+    "light.a": { state: "off", transition: 0 },
+  });
+  changeActionKind(form, "turn_on", () => false);
+  assert.deepEqual(buildAction(form).entities, {
+    "light.a": { state: "on", transition: 0 },
+  });
+  updateEntityColor(form, "light.a", [0, 20, 255]);
+  changeActionKind(form, "turn_off", () => false);
+  changeActionKind(form, "turn_on", () => false);
+  assert.deepEqual(buildAction(form).entities, {
+    "light.a": { state: "on", transition: 0 },
+  });
 });

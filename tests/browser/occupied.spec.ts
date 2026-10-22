@@ -183,7 +183,10 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     .click();
   await page.getByText("Smoke light", { exact: true }).click();
   const lightRow = panel.locator('[data-entity-row="light.smoke_light"]');
-  await lightRow.locator("summary").click();
+  await lightRow.getByRole("button", { name: /^Add light property/ }).click();
+  await lightRow
+    .getByRole("menuitem", { name: "Brightness (%)", exact: true })
+    .click();
   const brightness = lightRow
     .locator('ha-selector[aria-label="Brightness (%)"]')
     .getByRole("slider");
@@ -191,7 +194,57 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   for (let value = 1; value < 40; value += 1) {
     await brightness.press("ArrowRight");
   }
-  await expect(lightRow.locator("summary")).toContainText("Brightness 40%");
+  await expect(brightnessInput(lightRow)).toHaveValue("40");
+  await expect(lightRow.locator("summary")).toHaveCount(0);
+  await lightRow
+    .getByRole("button", { name: "Remove Brightness (%)", exact: true })
+    .click();
+  await expect(brightnessInput(lightRow)).toHaveCount(0);
+  await lightRow
+    .getByRole("button", { name: /^Add light property/ })
+    .press("ArrowDown");
+  await lightRow.getByRole("menuitem", { name: "Color", exact: true }).click();
+  await expect(
+    lightRow.locator('ha-selector[aria-label="Color"]'),
+  ).toBeVisible();
+  await lightRow.getByRole("button", { name: /^Add light property/ }).click();
+  await lightRow
+    .getByRole("menuitem", { name: "Color temperature (K)", exact: true })
+    .click();
+  await expect(lightRow.locator('ha-selector[aria-label="Color"]')).toHaveCount(
+    0,
+  );
+  await lightRow
+    .locator('ha-selector[aria-label="Color temperature (K)"]')
+    .getByRole("spinbutton")
+    .fill("2700");
+  await lightRow
+    .getByRole("button", { name: "Remove Color temperature (K)", exact: true })
+    .click();
+  await expect
+    .poll(() =>
+      panel.evaluate(
+        (element) => (element as OccupiedPanel).stepEditor?.form.entitySettings,
+      ),
+    )
+    .toBeUndefined();
+  await lightRow.getByRole("button", { name: /^Add light property/ }).click();
+  await lightRow
+    .getByRole("menuitem", { name: "Transition (s)", exact: true })
+    .click();
+  await lightRow
+    .locator('ha-selector[aria-label="Transition (s)"]')
+    .getByRole("spinbutton")
+    .fill("0");
+  await lightRow
+    .getByRole("button", { name: "Remove Transition (s)", exact: true })
+    .click();
+  await lightRow.getByRole("button", { name: /^Add light property/ }).click();
+  await lightRow
+    .getByRole("menuitem", { name: "Brightness (%)", exact: true })
+    .click();
+  await brightnessInput(lightRow).fill("40");
+
   await panel
     .getByRole("button", { name: "Step actions", exact: true })
     .click();
@@ -223,7 +276,6 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     /Evening light.*Turn on.*Smoke light.*Runs at/,
   );
   await panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }).click();
-  await lightRow.locator("summary").click();
   await expect(brightnessInput(lightRow)).toHaveValue("40");
   await panel.getByRole("button", { name: "Save step", exact: true }).click();
   await panel.locator("[data-create-random]").click();
@@ -1465,7 +1517,10 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(endLight).toBeVisible();
   await random.getByRole("checkbox", { name: "Use the same entities" }).check();
   await expect(endLight).toHaveCount(0);
-  await startLight.locator("summary").click();
+  await startLight.getByRole("button", { name: /^Add light property/ }).click();
+  await startLight
+    .getByRole("menuitem", { name: "Brightness (%)", exact: true })
+    .click();
   await brightnessInput(startLight).fill("0");
   await random
     .getByRole("button", { name: "Save random event", exact: true })
@@ -1474,10 +1529,14 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await brightnessInput(startLight).fill("40");
   await expect(brightnessInput(endLight)).toHaveCount(0);
   await expect(
-    startAction.locator('[data-entity-row="switch.settings_smoke"] summary'),
+    startAction.locator(
+      '[data-entity-row="switch.settings_smoke"] [aria-haspopup="menu"]',
+    ),
   ).toHaveCount(0);
   await expect(
-    startAction.locator('[data-entity-row="light.onoff_smoke"] summary'),
+    startAction.locator(
+      '[data-entity-row="light.onoff_smoke"] [aria-haspopup="menu"]',
+    ),
   ).toHaveCount(1);
   await expect(
     endAction.getByRole("button", { name: /^Remove entity/ }),
@@ -1528,7 +1587,6 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     ],
   });
   await panel.getByRole("button", { name: /^Settings test(?:\s|$)/ }).click();
-  await startLight.locator("summary").click();
   await expect(brightnessInput(startLight)).toHaveValue("40");
   await random
     .getByRole("button", { name: "Save random event", exact: true })
