@@ -1,0 +1,19 @@
+tests/ha/test_daily_runtime.py
+  s_5d0efb9cc98758::t_78dfb2aff62195 759-763
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "bd71186619fa9211e5a1beeb617a27a7abaa0be2",
+  "prompts": {},
+  "sessions": {
+    "s_5d0efb9cc98758": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a169b5-e432-7461-b0bb-1ed6a01efeff",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
