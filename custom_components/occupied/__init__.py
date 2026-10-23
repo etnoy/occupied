@@ -1,5 +1,7 @@
 """HA lifecycle; HA imports are deferred so the planner/CLI can run without HA."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 # Build Pydantic models in HA's import executor: first use scans plugin metadata on disk.

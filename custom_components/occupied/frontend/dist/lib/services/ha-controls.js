@@ -4,7 +4,6 @@
 export async function loadHaControls() {
   if (
     customElements.get("ha-selector") &&
-    customElements.get("ha-generic-picker") &&
     customElements.get("ha-top-app-bar-fixed") &&
     customElements.get("ha-code-editor")
   ) {
@@ -30,7 +29,6 @@ export async function loadHaControls() {
   }
   await Promise.all([
     customElements.whenDefined("ha-selector"),
-    customElements.whenDefined("ha-generic-picker"),
     customElements.whenDefined("ha-top-app-bar-fixed"),
     customElements.whenDefined("ha-code-editor"),
   ]);

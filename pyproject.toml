@@ -5,8 +5,8 @@ description = "Occupancy simulator for Home Assistant"
 readme = "README.md"
 license = "AGPL-3.0-only"
 license-files = ["LICENSE"]
-requires-python = ">=3.14.2"
-dependencies = ["pydantic>=2.13.2,<3", "PyYAML>=6.0.3,<7", "astral>=2.2,<3"]
+requires-python = ">=3.13.2"
+dependencies = ["pydantic>=2.11.3,<3", "PyYAML>=6.0.2,<7", "astral>=2.2,<3"]
 
 [project.scripts]
 occupied = "custom_components.occupied.cli:main"
@@ -29,9 +29,9 @@ namespaces = true
 
 [dependency-groups]
 test-core = [
-  "pytest>=9,<10",
-  "pytest-asyncio>=1.2,<2",
-  "pytest-cov>=7,<8",
+  "pytest>=8.3.5,<10",
+  "pytest-asyncio>=0.26,<2",
+  "pytest-cov>=6,<8",
   "freezegun>=1.5,<2",
   "pytest-socket>=0.7,<1",
 ]
@@ -52,7 +52,7 @@ addopts = "-q --import-mode=importlib --disable-socket --allow-unix-socket"
 filterwarnings = ["error::DeprecationWarning:custom_components[.]occupied"]
 
 [tool.ruff]
-target-version = "py314"
+target-version = "py313"
 line-length = 100
 
 [tool.ruff.lint]

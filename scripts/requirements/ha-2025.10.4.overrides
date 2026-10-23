@@ -1,0 +1,5 @@
+homeassistant==2025.10.4
+pytest-homeassistant-custom-component==0.13.289
+home-assistant-frontend==20251001.4
+anyio==4.14.2
+yarl==1.25.1

@@ -98,33 +98,61 @@
 </script>
 
 <div class="field source-picker">
-  <!-- HA provides keyboard interaction inside its custom element. -->
-  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-  <ha-generic-picker
-    id={`step-${fieldPrefix}anchor`}
-    data-builder-field={`${fieldPrefix}anchor`}
-    aria-label={t("relative_to")}
-    aria-invalid={error ? "true" : undefined}
-    aria-describedby={error ? `step-error-${fieldPrefix}anchor` : undefined}
-    tabindex="0"
-    use:properties={{
-      hass,
-      value: value || undefined,
-      label: t("relative_to"),
-      searchLabel: t("search_steps_or_time_sources"),
-      placeholder: t("choose_a_step_or_event"),
-      notFoundLabel: t("time_sources_no_matches"),
-      getItems: () => items,
-      searchKeys: ["primary", "secondary", "id", "group"],
-      valueRenderer,
-      rowRenderer,
-      allowCustomValue: false,
-      noSort: true,
-      required: true,
-      invalid: !!error,
-      errorMessage: t(error),
-    }}
-    onvalue-changed={select}
-  ></ha-generic-picker>
+  {#if !customElements.get("ha-generic-picker")}
+    <ha-selector
+      id={`step-${fieldPrefix}anchor`}
+      data-builder-field={`${fieldPrefix}anchor`}
+      aria-label={t("relative_to")}
+      aria-invalid={error ? "true" : undefined}
+      aria-describedby={error ? `step-error-${fieldPrefix}anchor` : undefined}
+      use:properties={{
+        hass,
+        value: value || undefined,
+        label: t("relative_to"),
+        selector: {
+          select: {
+            options: choices.map((choice) => ({
+              value: choice.value,
+              label: choice.name,
+            })),
+            mode: "dropdown",
+            custom_value: false,
+          },
+        },
+        required: true,
+        invalid: !!error,
+      }}
+      onvalue-changed={select}
+    ></ha-selector>
+  {:else}
+    <!-- HA provides keyboard interaction inside its custom element. -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <ha-generic-picker
+      id={`step-${fieldPrefix}anchor`}
+      data-builder-field={`${fieldPrefix}anchor`}
+      aria-label={t("relative_to")}
+      aria-invalid={error ? "true" : undefined}
+      aria-describedby={error ? `step-error-${fieldPrefix}anchor` : undefined}
+      tabindex="0"
+      use:properties={{
+        hass,
+        value: value || undefined,
+        label: t("relative_to"),
+        searchLabel: t("search_steps_or_time_sources"),
+        placeholder: t("choose_a_step_or_event"),
+        notFoundLabel: t("time_sources_no_matches"),
+        getItems: () => items,
+        searchKeys: ["primary", "secondary", "id", "group"],
+        valueRenderer,
+        rowRenderer,
+        allowCustomValue: false,
+        noSort: true,
+        required: true,
+        invalid: !!error,
+        errorMessage: t(error),
+      }}
+      onvalue-changed={select}
+    ></ha-generic-picker>
+  {/if}
   <FieldError {t} key="anchor" {fieldPrefix} errors={{ anchor: error }} />
 </div>

@@ -15,6 +15,7 @@ def test_cold_start_reads_pydantic_metadata_outside_event_loop(tmp_path):
 
         from homeassistant.core import HomeAssistant
         from homeassistant.loader import async_get_integration, async_setup
+        from pydantic.plugin import _loader
 
         metadata_reads = []
         read_text = Path.read_text
@@ -33,6 +34,14 @@ def test_cold_start_reads_pydantic_metadata_outside_event_loop(tmp_path):
         async def main():
             hass = HomeAssistant(sys.argv[1])
             async_setup(hass)
+            # Some HA releases construct Pydantic models during their own
+            # startup. Isolate Occupied's cold discovery from those imports.
+            _loader._plugins = None
+            with patch.object(Path, "read_text", checked_read_text):
+                await check_integration(hass)
+            await hass.async_stop(force=True)
+
+        async def check_integration(hass):
             integration = await async_get_integration(hass, "occupied")
             await integration.async_get_component()
 
@@ -43,10 +52,7 @@ def test_cold_start_reads_pydantic_metadata_outside_event_loop(tmp_path):
             assert OccupiedEngine is not None
             assert validate_program({"schema_version": 1, "name": "House"}).name == "House"
             assert metadata_reads, "Cold startup did not exercise plugin discovery"
-            await hass.async_stop(force=True)
-
-        with patch.object(Path, "read_text", checked_read_text):
-            asyncio.run(main())
+        asyncio.run(main())
         """
     )
     result = subprocess.run(

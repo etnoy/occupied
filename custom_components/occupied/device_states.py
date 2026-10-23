@@ -181,7 +181,7 @@ def device_matches(hass, entity, action):
             try:
                 if float(actual) == float(target):
                     continue
-            except ValueError, TypeError:
+            except (ValueError, TypeError):
                 pass
         if actual != target:
             return False

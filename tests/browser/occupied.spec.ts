@@ -945,12 +945,13 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   expect(markerSeries.description).toContain("scene.turn_on · scene.evening");
   expect(markerSeries.description).toContain("notify.send_message");
   await chart.locator("canvas").hover({ position: markerSeries.position });
-  await expect(
-    chart.getByText('notify.send_message · {"message":"<b>Preview only</b>"}', {
-      exact: false,
-    }),
-  ).toBeVisible();
-  await expect(chart.locator("b")).toHaveCount(0);
+  // Older HA charts mount their tooltip under document.body.
+  const markerTooltip = page.getByText(
+    'notify.send_message · {"message":"<b>Preview only</b>"}',
+    { exact: false },
+  );
+  await expect(markerTooltip).toBeVisible();
+  await expect(markerTooltip.locator("b")).toHaveCount(0);
   await page.screenshot({
     path: "test-results/browser/action-markers.png",
     fullPage: true,
