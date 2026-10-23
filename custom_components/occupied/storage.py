@@ -13,9 +13,10 @@ from .plan_codec import plan_from_data as plan_from_data
 class DurableStore(Store):
     """Surface write failures that HA's base Store otherwise only logs."""
 
-    async def _async_write_data(self, data):
+    async def _async_write_data(self, *args):
+        # Older HA passes (path, data); newer releases pass only (data,).
         try:
-            await super()._async_write_data(data)
+            await super()._async_write_data(*args)
         except Exception as err:
             self._write_failure = err
             raise

@@ -193,13 +193,19 @@ async def test_live_preview_activity_describes_each_target_and_keeps_user_contex
     await live_engine.hass.async_block_till_done()
     assert sorted(event.data["entity_id"] for event in events) == ["light.a", "light.b", "switch.a"]
     assert all(event.context.user_id == "owner" for event in events)
-    assert [event.context.id for event in events] == [call.context.id for call in live_calls]
+    assert {event.data["entity_id"]: event.context.id for event in events} == {
+        call.data["entity_id"]: call.context.id for call in live_calls
+    }
     await next_event(live_engine, "cover")
     scene_group = live_engine.live_preview.session["next_group"]["id"]
     await next_event(live_engine, "scene")
     await live_engine.hass.async_block_till_done()
-    assert events[3].data["message"] == "Set position of cover.blind to 25%"
-    assert events[4].data["message"] == "Activated scene.evening"
+    # The cover and scene share a timestamp; HA may deliver their events in
+    # either order. Each target must still receive its own accurate message.
+    assert {event.data["entity_id"]: event.data["message"] for event in events[3:]} == {
+        "cover.blind": "Set position of cover.blind to 25%",
+        "scene.evening": "Activated scene.evening",
+    }
     before = len(events)
     await live_engine.live_preview.async_next(
         live_engine.live_preview.session["id"], scene_group, "scene", "owner"

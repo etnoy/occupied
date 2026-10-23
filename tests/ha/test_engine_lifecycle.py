@@ -60,14 +60,20 @@ async def test_unload_before_startup_cancels_pending_callbacks(hass, engine, cap
     assert_no_errors(caplog)
 
 
-async def test_entry_reload_after_home_assistant_startup(hass, program_dict, caplog):
+async def test_entry_reload_after_home_assistant_startup(
+    hass, program_dict, caplog, socket_enabled
+):
     hass.set_state(CoreState.not_running)
     entry = MockConfigEntry(
         domain="occupied", data={"source": "gui", "name": "Lifecycle", "program": program_dict}
     )
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
     original = entry.runtime_data
+    if hasattr(hass.http, "server_port"):
+        # Older HA starts HTTP on the startup event; avoid a shared fixed port.
+        hass.http.server_port = 0
     hass.set_state(CoreState.running)
     hass.bus.async_fire(EVENT_HOMEASSISTANT_STARTED)
     await hass.async_block_till_done()

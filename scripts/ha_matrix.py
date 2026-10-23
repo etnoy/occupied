@@ -189,6 +189,10 @@ def check(root=ROOT):
             if source.splitlines()[0] != lane.header or "--hash=sha256:" not in source:
                 raise ValueError(f"{lane.id}: requirements header or hashes differ")
             resolved = pins(source)
+            for requirement in compatibility_constraints(lane_pins):
+                name = canonicalize_name(requirement.name)
+                if name in resolved and Version(resolved[name]) not in requirement.specifier:
+                    raise ValueError(f"{lane.id}: historical compatibility requires {requirement}")
             security = security_pins(policy, lane_pins)
             for package, version in security.items():
                 if resolved.get(package) != version:
@@ -277,7 +281,9 @@ def check_installed(lane_id, root=ROOT):
     lane = next((item for item in lanes if item.id == lane_id), None)
     if lane is None:
         raise ValueError(f"Unknown HA lane: {lane_id}")
-    result = subprocess.run(["uv", "pip", "check"], capture_output=True, text=True)
+    result = subprocess.run(
+        [uv(), "pip", "check", "--python", sys.executable], capture_output=True, text=True
+    )
     if result.returncode == 0:
         print(result.stdout, end="")
         return
@@ -291,7 +297,7 @@ def check_installed(lane_id, root=ROOT):
     unexpected = []
     allowed = 0
     for line in (result.stdout + result.stderr).splitlines():
-        if line.startswith(("Checked ", "Found ")) or not line:
+        if line.startswith(("Checked ", "Found ", "Using Python ")) or not line:
             continue
         match = pattern.fullmatch(line)
         if not match or match.group("owner") != "homeassistant":
@@ -331,6 +337,14 @@ def patched_constraints(source, security):
         "\n".join(line for line in source.splitlines() if not (set(pins(line)) & security.keys()))
         + "\n"
     )
+
+
+def compatibility_constraints(constrained):
+    """Constrain unbounded transitive APIs that predate their breaking release."""
+    if "aiodns" in constrained and Version(constrained["aiodns"]) < Version("3.6"):
+        # aiodns 3.5 evaluates pycares result types removed in pycares 5.
+        return [Requirement("pycares<5")]
+    return []
 
 
 def overrides(lane, security=None):
@@ -383,7 +397,10 @@ def compile_lanes(root=ROOT):
                 with_dev_python((root / "pyproject.toml").read_text(), lane.python_min)
             )
             effective = Path(temporary) / path.name
-            effective.write_text(patched_constraints(path.read_text(), security))
+            effective.write_text(
+                patched_constraints(path.read_text(), security)
+                + "".join(f"{r}\n" for r in compatibility_constraints(pins(path.read_text())))
+            )
             _compile_lane(root, lane, project, override_file, effective, requirement_file)
             source = requirement_file.read_text().replace(str(project), "pyproject.toml")
             source = source.replace(str(effective), str(path.relative_to(root)))
@@ -440,7 +457,11 @@ def github_matrix(kind="ha", root=ROOT):
         }
     chosen = ha_lanes(lanes)
     if kind == "browser":
-        chosen = [lane for lane in chosen if lane.role in {"floor", "newest"}]
+        # Sample from the floor every six months, always including the newest
+        # release even when the inclusive window is not a multiple of six.
+        chosen = [
+            lane for index, lane in enumerate(chosen) if index % 6 == 0 or lane.role == "newest"
+        ]
     elif kind == "python-floor":
         chosen = [selected(lanes, "python-floor")]
     return {
@@ -497,10 +518,15 @@ def test_lane(name, pytest_args=(), root=ROOT):
             )
         run([uv(), "pip", "sync", "--python", python, "--require-hashes", requirements], root)
         run([uv(), "pip", "install", "--python", python, "--no-deps", "-e", "."], root)
-        run([uv(), "pip", "check", "--python", python], root)
         environment_variables = os.environ.copy()
+        environment_variables["OCCUPIED_UV"] = uv()
         environment_variables["PATH"] = (
             str(environment / "bin") + os.pathsep + environment_variables["PATH"]
+        )
+        run(
+            [python, "scripts/ha_matrix.py", "check-installed", "--lane", lane.id],
+            root,
+            env=environment_variables,
         )
         run([python, "-m", "pytest", *pytest_args], root, env=environment_variables)
 
@@ -530,7 +556,7 @@ def matching_phcc(version):
         v
         for v in published_versions("pytest-homeassistant-custom-component")
         if not v.is_prerelease
-    ][:180]
+    ]
 
     def matches(candidate):
         metadata = package_json("pytest-homeassistant-custom-component", str(candidate))

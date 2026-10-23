@@ -357,7 +357,7 @@ class Action(Model):
     entities: tuple[EntityId, ...] | dict[EntityId, dict[str, JsonValue]] = ()
     data: dict[str, JsonValue] = Field(default_factory=dict)
     stagger: Stagger = Field(default_factory=Stagger)
-    actions: Annotated[tuple[Action, ...], Field(min_length=1, max_length=100)] | None = None
+    actions: Annotated[tuple["Action", ...], Field(min_length=1, max_length=100)] | None = None
 
     @field_validator("data", "entities")
     @classmethod
