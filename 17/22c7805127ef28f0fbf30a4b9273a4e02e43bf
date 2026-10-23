@@ -1,0 +1,91 @@
+.github/workflows/check.yml
+  s_5d0efb9cc98758::t_a92df2a099fb7b 34
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_5d0efb9cc98758::t_aa0c93f44f3e68 1907,1912,1958,2009,2039,2160,2231,2246,2270,2448,2453,2471,2524,2587,2609,2622,2632,2671,2685,2805,3097,4002,4218,4526,4577,4750,4838,5223,5226,5786,5924,5935,6090,6115,6210,6241,6688,6876,7047,7086,7106,7624,7639,7645,7738,7762,7789,7811,7831,7968,7996,8034,8148,8605,8666,8683,8740,8801,9004,9109,9349,9400,9403,9410,9553,9689
+scripts/requirements/ha-2025.10.4.overrides
+  s_5d0efb9cc98758::t_4f822a827c86ad 5
+scripts/requirements/ha-2025.10.4.txt
+  s_5d0efb9cc98758::t_00d016d1b6cb12 3,1929-2012,2014
+scripts/requirements/ha-2025.11.3.overrides
+  s_5d0efb9cc98758::t_0426ac47371433 5
+scripts/requirements/ha-2025.11.3.txt
+  s_5d0efb9cc98758::t_a2502b6570da8f 3,2087-2170,2172
+scripts/requirements/ha-2025.12.4.overrides
+  s_5d0efb9cc98758::t_623b471772841d 5
+scripts/requirements/ha-2025.12.4.txt
+  s_5d0efb9cc98758::t_35dde6937d3a15 3,2373-2456,2458
+scripts/requirements/ha-2025.5.0.overrides
+  s_5d0efb9cc98758::t_dc9c8a2420cc9e 5
+scripts/requirements/ha-2025.5.0.txt
+  s_5d0efb9cc98758::t_dce7e70edbd688 3,1862-1945,1947
+scripts/requirements/ha-2025.6.3.overrides
+  s_5d0efb9cc98758::t_65b657696e4386 5
+scripts/requirements/ha-2025.6.3.txt
+  s_5d0efb9cc98758::t_efb00b406a1b37 3,1881-1964,1966
+scripts/requirements/ha-2025.7.4.overrides
+  s_5d0efb9cc98758::t_901806b5ed11e0 5
+scripts/requirements/ha-2025.7.4.txt
+  s_5d0efb9cc98758::t_40248935b09ff8 3,1872-1955,1957
+scripts/requirements/ha-2025.8.3.overrides
+  s_5d0efb9cc98758::t_9f837d761d636c 5
+scripts/requirements/ha-2025.8.3.txt
+  s_5d0efb9cc98758::t_e5df83afc03451 3,1937-2020,2022
+scripts/requirements/ha-2025.9.4.overrides
+  s_5d0efb9cc98758::t_b3d2898ce61441 5
+scripts/requirements/ha-2025.9.4.txt
+  s_5d0efb9cc98758::t_421b9492d7815b 3,1911-1994,1996
+scripts/requirements/ha-2026.1.3.overrides
+  s_5d0efb9cc98758::t_14432dfed839e1 5
+scripts/requirements/ha-2026.1.3.txt
+  s_5d0efb9cc98758::t_ac1a543531ab56 3,2364-2447,2449
+scripts/requirements/ha-2026.2.3.overrides
+  s_5d0efb9cc98758::t_7faf1c07db320b 5
+scripts/requirements/ha-2026.2.3.txt
+  s_5d0efb9cc98758::t_8d0205ebf0bf66 3,2068-2151,2153
+scripts/requirements/ha-2026.3.4.overrides
+  s_5d0efb9cc98758::t_b6f2e1a44d3cbd 5
+scripts/requirements/ha-2026.3.4.txt
+  s_5d0efb9cc98758::t_b6614c14217bc2 3,1985-2068,2070
+scripts/requirements/ha-2026.4.4.overrides
+  s_5d0efb9cc98758::t_43d4bef1cbcd35 5
+scripts/requirements/ha-2026.4.4.txt
+  s_5d0efb9cc98758::t_6d599f984c4118 3,1928-2011,2013
+scripts/requirements/ha-2026.5.0.overrides
+  s_5d0efb9cc98758::t_c1198eb037a64d 5
+scripts/requirements/ha-2026.5.0.txt
+  s_5d0efb9cc98758::t_1dba445555aa7e 3,2155-2238,2240
+scripts/requirements/ha-2026.6.4.overrides
+  s_5d0efb9cc98758::t_e42b16a47df120 5
+scripts/requirements/ha-2026.6.4.txt
+  s_5d0efb9cc98758::t_634e45e3a3e1a6 3,2084-2167,2169
+scripts/requirements/ha-2026.7.4.overrides
+  s_5d0efb9cc98758::t_bd639a7cc9f32a 5
+scripts/requirements/ha-2026.7.4.txt
+  s_5d0efb9cc98758::t_01ce39001d9e34 3,2035-2118,2120
+scripts/requirements/ha-2026.8.3.overrides
+  s_5d0efb9cc98758::t_9d616039b114eb 5
+scripts/requirements/ha-2026.8.3.txt
+  s_5d0efb9cc98758::t_ba4be624c3338e 3,2023-2106,2108
+scripts/requirements/ha-2026.9.4.overrides
+  s_5d0efb9cc98758::t_fba3400b432a2d 5
+scripts/requirements/ha-2026.9.4.txt
+  s_5d0efb9cc98758::t_19a33f32b863f5 3,2113-2196,2198
+tests/ha/test_daily_runtime.py
+  s_5d0efb9cc98758::t_0e9db735488468 1633
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "1722c7805127ef28f0fbf30a4b9273a4e02e43bf",
+  "prompts": {},
+  "sessions": {
+    "s_5d0efb9cc98758": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a169b5-e432-7461-b0bb-1ed6a01efeff",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
