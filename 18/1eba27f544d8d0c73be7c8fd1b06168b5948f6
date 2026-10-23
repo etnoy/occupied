@@ -1,0 +1,35 @@
+README.md
+  s_3f7474a9b5ee30::t_2b161e701f3ea5 113-125
+custom_components/occupied/actions.py
+  s_3f7474a9b5ee30::t_a890009286d5ce 9,101,112-113
+custom_components/occupied/device_states.py
+  s_3f7474a9b5ee30::t_68db8239705111 1-188
+custom_components/occupied/engine_daily.py
+  s_3f7474a9b5ee30::t_ef81a9738ec935 1166-1167,1174-1175
+custom_components/occupied/lighting.py
+  s_3f7474a9b5ee30::t_3a275ef45e90e4 38-43,49
+custom_components/occupied/models.py
+  s_3f7474a9b5ee30::t_d03352c6f0123a 540-549
+custom_components/occupied/reconciliation.py
+  s_3f7474a9b5ee30::t_9c87f975f34c75 4,21-27,35
+tests/core/test_device_states.py
+  s_3f7474a9b5ee30::t_b60b27ee6afbbc 1-142
+tests/ha/test_enforcement_planning.py
+  s_3f7474a9b5ee30::t_c428cd6be867ed 86-175
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "181eba27f544d8d0c73be7c8fd1b06168b5948f6",
+  "prompts": {},
+  "sessions": {
+    "s_3f7474a9b5ee30": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1646b-715d-7c30-80a9-1733f07414aa",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
