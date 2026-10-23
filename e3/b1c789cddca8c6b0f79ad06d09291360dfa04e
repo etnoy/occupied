@@ -1,0 +1,59 @@
+.github/workflows/check.yml
+  s_5d0efb9cc98758::t_e00a679f2248db 30,36
+scripts/requirements/ha-2025.12.4.txt
+  s_5d0efb9cc98758::t_6a5529029cfcff 3,3750-3769,3771
+scripts/requirements/ha-2025.5.0.overrides
+  s_5d0efb9cc98758::t_f54d948c49631d 7
+scripts/requirements/ha-2026.1.3.overrides
+  s_5d0efb9cc98758::t_b557dfc2538d62 7
+scripts/requirements/ha-2026.1.3.txt
+  s_5d0efb9cc98758::t_f2def3304ae2ab 3,3739-3758,3760
+scripts/requirements/ha-2026.2.3.overrides
+  s_5d0efb9cc98758::t_03243214611b64 7
+scripts/requirements/ha-2026.2.3.txt
+  s_5d0efb9cc98758::t_65b9d450382a34 3,3195-3214,3216
+scripts/requirements/ha-2026.3.4.overrides
+  s_5d0efb9cc98758::t_858ebad85285b3 7
+scripts/requirements/ha-2026.3.4.txt
+  s_5d0efb9cc98758::t_f0f5b705c0a394 3,3133-3152,3154
+scripts/requirements/ha-2026.4.4.overrides
+  s_5d0efb9cc98758::t_c54616fc40b88b 7
+scripts/requirements/ha-2026.4.4.txt
+  s_5d0efb9cc98758::t_4e54b406770c02 3,3071-3090,3092
+scripts/requirements/ha-2026.5.0.overrides
+  s_5d0efb9cc98758::t_82d500c1cc3cfd 7
+scripts/requirements/ha-2026.5.0.txt
+  s_5d0efb9cc98758::t_bc9da059034d1c 3,3319-3338,3340
+scripts/requirements/ha-2026.6.4.overrides
+  s_5d0efb9cc98758::t_c5736ab0f320aa 7
+scripts/requirements/ha-2026.6.4.txt
+  s_5d0efb9cc98758::t_eb2bc19370dd95 3,3236-3255,3257
+scripts/requirements/ha-2026.7.4.overrides
+  s_5d0efb9cc98758::t_ddedf3e597dcfa 7
+scripts/requirements/ha-2026.7.4.txt
+  s_5d0efb9cc98758::t_da95484ff623c1 3,3182-3201,3203
+scripts/requirements/ha-2026.8.3.overrides
+  s_5d0efb9cc98758::t_e2586d1588b244 7
+scripts/requirements/ha-2026.8.3.txt
+  s_5d0efb9cc98758::t_bdbaa670486189 3,3179-3198,3200
+scripts/requirements/ha-2026.9.4.overrides
+  s_5d0efb9cc98758::t_eadf32d38db1c2 7
+scripts/requirements/ha-2026.9.4.txt
+  s_5d0efb9cc98758::t_ac548e2801f35f 3,3269-3288,3290
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "e3b1c789cddca8c6b0f79ad06d09291360dfa04e",
+  "prompts": {},
+  "sessions": {
+    "s_5d0efb9cc98758": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a169b5-e432-7461-b0bb-1ed6a01efeff",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
