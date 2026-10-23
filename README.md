@@ -110,6 +110,19 @@ To add another controller, go to **Settings → Devices & services → Add integ
 
 With run conditions, you can also enforce state. This means that as soon as you leave home, it switches to the expected state without having to wait for the next action.
 
+Enforcement restores explicit light, switch, cover, and remote targets, including a
+Harmony remote's selected activity even when the remote is already on. It also
+restores known absolute settings for fans, humidifiers, media players, climate
+devices, water heaters, locks, valves, vacuums, lawn mowers, selectors, and value
+helpers. `homeassistant.turn_on` and `homeassistant.turn_off` are supported for
+devices with known power states. Matching states are left alone. The **Enforce
+expected state** button uses the same rules.
+
+Only explicit, predictable targets can be restored. Toggle, relative adjustments,
+remote button presses, scene/script execution, and actions with unknown effects
+are skipped. An opaque action targeting a device invalidates its earlier expected
+state; Occupied does not guess its result or replay past commands.
+
 Under **Settings → Run condition**, enable a run condition, then enable **Enforce expected state on start**.
 
 There is a default setting in **Delay before enforcing state** of `30s`, giving you time to get out of the house before device changes begin.

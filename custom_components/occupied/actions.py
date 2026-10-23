@@ -6,6 +6,7 @@ import logging
 from homeassistant.components.light import LightEntityFeature
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 
+from .device_states import OBSERVED_ATTRIBUTES
 from .light_tolerances import attribute_matches
 from .lighting import LightState
 
@@ -97,7 +98,7 @@ def observe(hass, entity):
             key: list(state.attributes[key])
             if isinstance(state.attributes[key], tuple)
             else state.attributes[key]
-            for key in (
+            for key in {
                 "brightness",
                 "color_temp_kelvin",
                 "hs_color",
@@ -108,7 +109,8 @@ def observe(hass, entity):
                 "source",
                 "current_position",
                 "current_tilt_position",
-            )
+            }
+            | OBSERVED_ATTRIBUTES
             if key in state.attributes
         },
     }

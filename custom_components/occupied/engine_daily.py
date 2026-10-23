@@ -1163,12 +1163,16 @@ class DailyEngine:
         )
 
     def _target_matches(self, entity, action):
+        from .device_states import device_matches
+
         if entity.startswith("light."):
             state = action.action.removeprefix("light.turn_")
             return light_matches(self.hass, entity, LightState(state, **action.data))
         observed = self._observe(entity)
         if entity.startswith("switch."):
             return observed["state"] == action.action.removeprefix("switch.turn_")
+        if not entity.startswith("cover."):
+            return device_matches(self.hass, entity, action)
         axis, target = next(iter(cover_target(action).to_dict().items()))
         return observed["attributes"].get(f"current_{axis}") == target
 
