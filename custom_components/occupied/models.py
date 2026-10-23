@@ -537,7 +537,16 @@ def projectable_lights(program: Program) -> frozenset[str]:
     return frozenset(
         entity
         for _, action in program_actions(program)
-        if action.action in {"set_state", "turn_on", "turn_off", "light.turn_on", "light.turn_off"}
+        if action.action
+        in {
+            "set_state",
+            "turn_on",
+            "turn_off",
+            "light.turn_on",
+            "light.turn_off",
+            "homeassistant.turn_on",
+            "homeassistant.turn_off",
+        }
         for entity in action.entities
         if entity.startswith("light.")
     )

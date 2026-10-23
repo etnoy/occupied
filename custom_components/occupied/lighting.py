@@ -35,13 +35,18 @@ def project_lighting(program, plan, instant, *, yielded=frozenset()):
         if event.superseded:
             continue
         action = event.action
-        if action.action not in {"light.turn_on", "light.turn_off"}:
+        if action.action not in {
+            "light.turn_on",
+            "light.turn_off",
+            "homeassistant.turn_on",
+            "homeassistant.turn_off",
+        }:
             # Opaque calls can invalidate an earlier known intent on their explicit targets.
             for entity in action.targets:
                 states.pop(entity, None)
             continue
         for entity in lights.intersection(action.targets):
-            if action.action == "light.turn_off":
+            if action.action.endswith(".turn_off"):
                 states[entity] = LightState("off", 0)
                 continue
             data = action.data

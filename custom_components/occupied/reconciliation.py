@@ -1,6 +1,7 @@
 """Known desired states at an instant, without replaying historical actions."""
 
 from .covers import project_covers
+from .device_states import project_devices
 from .lighting import project_lighting
 from .models import controlled_entities, enforcement_off_entities
 from .planner import ResolvedAction
@@ -17,8 +18,13 @@ def project_switches(program, plan, at, *, yielded=frozenset()):
         if event.superseded:
             continue
         for entity in switches.intersection(event.action.targets):
-            if event.action.action in {"switch.turn_on", "switch.turn_off"}:
-                states[entity] = event.action.action.removeprefix("switch.turn_")
+            if event.action.action in {
+                "switch.turn_on",
+                "switch.turn_off",
+                "homeassistant.turn_on",
+                "homeassistant.turn_off",
+            }:
+                states[entity] = event.action.action.rsplit("turn_", 1)[1]
             else:
                 states.pop(entity, None)
     return states
@@ -26,7 +32,7 @@ def project_switches(program, plan, at, *, yielded=frozenset()):
 
 def expected_actions(program, plan, at, *, yielded=frozenset()):
     """Return direct target calls only for explicitly known, supported intent."""
-    actions = {}
+    actions = project_devices(program, plan, at, yielded=yielded)
     for entity, target in project_lighting(program, plan, at, yielded=yielded).items():
         data = target.to_dict() if target.state == "on" else {}
         data.pop("state", None)
