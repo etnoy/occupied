@@ -1,0 +1,145 @@
+.github/workflows/check.yml
+  s_4313424ebb789a::t_1588d88853937a 26-27,35,37-144
+README.md
+  s_4313424ebb789a::t_6ff80b6598ebc9 23
+custom_components/occupied/__init__.py
+  s_5d0efb9cc98758::t_22515217f4fcbb 3-4
+custom_components/occupied/anchor_latches.py
+  s_4313424ebb789a::t_5bc0fdf3f4ecc9 43,52,118
+custom_components/occupied/device_states.py
+  s_4313424ebb789a::t_891e9befd7a263 184
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_5d0efb9cc98758::t_764db575cfa2a2 1907,1912,1958,2009,2039,2160,2231,2246,2270,2448,2453,2471,2524,2587,2609,2622,2632,2671,2685,2805,3097,4002,4218,4526,4577,4750,4838,5223,5226,5786,5924,5935,6090,6115,6210,6241,6688,6876,7047,7086,7106,7624,7639,7645,7738,7762,7789,7811,7831,7968,7996,8034,8148,8605,8666,8683,8740,8801,9004,9109,9349,9400,9403,9410,9553,9689,12201-12207,12420-12422,12488-12613,12616,12740-12741,12935,12978,13318,13493,13497,13689,13758,13982-13983,14023,14103,14194,14479,14483,14600,14707,15494,15507,15547,15551,15603,15625,15731-15732,15750,15758,15839,15875,15983,15986,16089,16130,16238,16241,16329,16363,16667,16671,16893,17030,17197,17201,17246,17268,17386,17389,17459,17501,17625,17628,17799,17961,18170-18171,18207,18264,19054,19057,19190,19195,19383-19384,19400,19509,19569,19581,19608,20007,20010,20031,20072,20078,20148,20408-20409,20422,20456,20761-20762,20778,20836,21099
+custom_components/occupied/frontend/src/lib/components/shared/EditorField.svelte
+  s_4313424ebb789a::t_76ee583f78a554 63-71
+custom_components/occupied/frontend/src/lib/components/shared/SourcePicker.svelte
+  s_5d0efb9cc98758::t_43cbad0afa32b0 101-156
+custom_components/occupied/manifest.json
+  s_5d0efb9cc98758::t_19c5037ee24252 19
+custom_components/occupied/models.py
+  s_4313424ebb789a::t_8a86bc43e979ac 360
+custom_components/occupied/storage.py
+  s_5d0efb9cc98758::t_f0b907775e275d 16-17,19
+custom_components/occupied/time_utils.py
+  s_4313424ebb789a::t_87251a03503747 180
+hacs.json
+  s_5d0efb9cc98758::t_c6e133cf872807 3
+pyproject.toml
+  s_4313424ebb789a::t_92616bd37f2f28 8-9,32-34,55
+scripts/ha_matrix.py
+  s_4313424ebb789a::t_a9a60b79209692 192-195,284-286,300,342-349,400-403,460-464,522,526-530,559
+scripts/requirements/ha-2025.10.4.constraints
+  s_5d0efb9cc98758::t_c8c49c74c49480 1-229
+scripts/requirements/ha-2025.10.4.overrides
+  s_5d0efb9cc98758::t_d5318cdf618f66 1-5
+scripts/requirements/ha-2025.10.4.txt
+  s_5d0efb9cc98758::t_b408dd10387820 1-3382
+scripts/requirements/ha-2025.11.3.constraints
+  s_5d0efb9cc98758::t_053a06090917f2 1-229
+scripts/requirements/ha-2025.11.3.overrides
+  s_5d0efb9cc98758::t_ad8fc35496e111 1-5
+scripts/requirements/ha-2025.11.3.txt
+  s_5d0efb9cc98758::t_c4903f655e99b2 1-3666
+scripts/requirements/ha-2025.12.4.constraints
+  s_5d0efb9cc98758::t_a53753edb3f5ad 1-228
+scripts/requirements/ha-2025.12.4.overrides
+  s_5d0efb9cc98758::t_32dc71e98a5e25 1-5
+scripts/requirements/ha-2025.12.4.txt
+  s_5d0efb9cc98758::t_8e09adc52014d9 1-4212
+scripts/requirements/ha-2025.5.0.constraints
+  s_5d0efb9cc98758::t_8d3ea3ab2b17a3 1-219
+scripts/requirements/ha-2025.5.0.overrides
+  s_4313424ebb789a::t_e2cdb601fc845c 1-5
+scripts/requirements/ha-2025.5.0.txt
+  s_4313424ebb789a::t_01f33e2e1f1aab 1-3188
+scripts/requirements/ha-2025.6.3.constraints
+  s_5d0efb9cc98758::t_5d50f16e9b0ee9 1-213
+scripts/requirements/ha-2025.6.3.overrides
+  s_4313424ebb789a::t_bffb40dfe0c803 1-5
+scripts/requirements/ha-2025.6.3.txt
+  s_5d0efb9cc98758::t_ec2d7d8ee3296d 1-3207
+scripts/requirements/ha-2025.7.4.constraints
+  s_5d0efb9cc98758::t_52fc1d5a0e3584 1-219
+scripts/requirements/ha-2025.7.4.overrides
+  s_5d0efb9cc98758::t_19f91d297be922 1-5
+scripts/requirements/ha-2025.7.4.txt
+  s_5d0efb9cc98758::t_2d8649a9262a7f 1-3166
+scripts/requirements/ha-2025.8.3.constraints
+  s_5d0efb9cc98758::t_36d7aa987cdf46 1-226
+scripts/requirements/ha-2025.8.3.overrides
+  s_5d0efb9cc98758::t_d1ed1a84b4038a 1-5
+scripts/requirements/ha-2025.8.3.txt
+  s_5d0efb9cc98758::t_8bbf3adf62c2c3 1-3392
+scripts/requirements/ha-2025.9.4.constraints
+  s_5d0efb9cc98758::t_da824b227bde5d 1-229
+scripts/requirements/ha-2025.9.4.overrides
+  s_5d0efb9cc98758::t_858a5ff67701c0 1-5
+scripts/requirements/ha-2025.9.4.txt
+  s_5d0efb9cc98758::t_9b0a332c8e2615 1-3364
+scripts/requirements/ha-2026.1.3.constraints
+  s_5d0efb9cc98758::t_c1f18daa27d874 1-231
+scripts/requirements/ha-2026.1.3.overrides
+  s_5d0efb9cc98758::t_fce8f7e504e990 1-5
+scripts/requirements/ha-2026.1.3.txt
+  s_5d0efb9cc98758::t_7d0848df749265 1-4222
+scripts/requirements/ha-2026.2.3.constraints
+  s_5d0efb9cc98758::t_bb638e1db1f636 1-240
+scripts/requirements/ha-2026.2.3.overrides
+  s_5d0efb9cc98758::t_2c120aa5e0e3c7 1-5
+scripts/requirements/ha-2026.2.3.txt
+  s_5d0efb9cc98758::t_45a1e949ffa7ea 1-3674
+scripts/requirements/ha-2026.3.4.constraints
+  s_5d0efb9cc98758::t_d92e9aa4b75d2d 1-238
+scripts/requirements/ha-2026.3.4.overrides
+  s_5d0efb9cc98758::t_c36f66f323cd7b 1-5
+scripts/requirements/ha-2026.3.4.txt
+  s_5d0efb9cc98758::t_caf818badb94da 1-3611
+scripts/requirements/ha-2026.4.4.constraints
+  s_5d0efb9cc98758::t_a1b507c5f10deb 1-246
+scripts/requirements/ha-2026.4.4.overrides
+  s_5d0efb9cc98758::t_9d0be3089c1e1d 1-5
+scripts/requirements/ha-2026.4.4.txt
+  s_5d0efb9cc98758::t_80330f9286605a 1-3550
+scripts/requirements/ha-2026.5.0.txt
+  s_5d0efb9cc98758::t_2e875ff5327801 1
+tests/browser/occupied.spec.ts
+  s_4313424ebb789a::t_5eebcb2bf53c22 948-954
+tests/core/test_ha_matrix.py
+  s_5d0efb9cc98758::t_7de60528f2d123 121,271-319,379-386,396-400,428,430,435,438-440
+tests/frontend/src/ha-controls.test.ts
+  s_4313424ebb789a::t_16d7380ac2e3c4 5-30,32-62,65-72,74-111,114-115
+tests/ha/test_engine_lifecycle.py
+  s_4313424ebb789a::t_da7e3f4c2badb1 63-65,72,74-76
+tests/ha/test_imports.py
+  s_5d0efb9cc98758::t_f22a7373a0770c 18,37-44,55
+tests/ha/test_live_preview.py
+  s_5d0efb9cc98758::t_9b6257a1477feb 196-198,203-208
+tests/ha/test_storage_compat.py
+  s_5d0efb9cc98758::t_75cb833c4e29fd 1-21
+uv.lock
+  s_4313424ebb789a::t_af07a5698f4358 3-7,88-110,287-297,387-402,445-459,583-592,694-707,764-784,879-886,912-926,1054-1059,1113-1121,1166-1197,1239-1246,1289-1298,1346-1354,1621-1636,1682-1701,1807-1829,2013-2034,2071-2079,2095-2096,2104-2106,2113-2115,2125-2139,2181-2192,2298-2314,2392-2397,2435-2448,2527-2541,2654-2655,2671-2672,2689-2690,2707-2708,2803-2805,3001-3010,3037-3052,3265-3271,3347-3355,3470-3478,3584-3586,3601-3603,3618-3620,3635-3637,3652-3654,3669-3671,3686-3688,3703-3705,3720-3722,3739-3755,3836-3844
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "9f6ffd1452d0d176814a5d2efa5a8e109020788d",
+  "prompts": {},
+  "sessions": {
+    "s_4313424ebb789a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a169b6-bb16-7252-bc3f-8025ed0bbef2",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    },
+    "s_5d0efb9cc98758": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a169b5-e432-7461-b0bb-1ed6a01efeff",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
