@@ -1630,6 +1630,7 @@ async def test_enforce_now_dispatches_independent_targets_without_waiting_or_fad
     finally:
         release.set()
         await press
+    await hass.async_block_till_done()
     assert dt_util.utcnow() == before
     assert len(activity) == len(entities) - fail_first
     assert not engine._handover and not engine._native_fades

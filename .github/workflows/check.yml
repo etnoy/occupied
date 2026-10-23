@@ -31,6 +31,7 @@ jobs:
               security_overrides:
                 anyio: 4.14.2
                 yarl: 1.25.1
+                pillow: 13.0.0
             lanes:
               - id: ha-2025.5.0
                 role: floor

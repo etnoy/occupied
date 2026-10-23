@@ -2,4 +2,5 @@ homeassistant==2026.7.4
 pytest-homeassistant-custom-component==0.13.348
 home-assistant-frontend==20260624.6
 anyio==4.14.2
+pillow==13.0.0
 yarl==1.25.1
