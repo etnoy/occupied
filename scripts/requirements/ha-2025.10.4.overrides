@@ -3,4 +3,5 @@ pytest-homeassistant-custom-component==0.13.289
 home-assistant-frontend==20251001.4
 anyio==4.14.2
 pillow==13.0.0
+pyjwt==2.14.0
 yarl==1.25.1

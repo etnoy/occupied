@@ -1,6 +1,6 @@
 # Occupied lane: ha-2025.5.0; metadata-sha256=0ae4934183fca500e662263d960bf7f7cd8115407db974f0b671a181f1d3a8cf
 # Regenerate: python scripts/ha_matrix.py compile
-# Security overrides: anyio==4.14.2, pillow==13.0.0, yarl==1.25.1; see README compatibility tooling notes
+# Security overrides: anyio==4.14.2, pillow==13.0.0, pyjwt==2.14.0, yarl==1.25.1; see README compatibility tooling notes
 acme==3.3.0 \
     --hash=sha256:8e049964eafd89ebbf42ab8e3340222c6332a3cf62ceb2e30325b934d33b57b7 \
     --hash=sha256:c026edc0db13a36fb80d802d2e0256525b52272543beca3b8ddf2264bd8ef1f8
@@ -793,7 +793,6 @@ cryptography==44.0.1 \
     #   hass-nabucasa
     #   homeassistant
     #   josepy
-    #   pyjwt
     #   pyopenssl
     #   securetar
     #   snitun
@@ -2304,11 +2303,11 @@ pydantic-core==2.33.1 \
     --hash=sha256:fc903512177361e868bc1f5b80ac8c8a6e05fcdd574a5fb5ffeac5a9982b9e89 \
     --hash=sha256:fe44d56aa0b00d66640aa84a3cbe80b7a3ccdc6f0b1ca71090696a6d4777c091
     # via pydantic
-pyjwt==2.10.1 \
-    --hash=sha256:3cc5772eb20009233caf06e9d8a0577824723b44e6648ee0a2aedb6cf9381953 \
-    --hash=sha256:dcdd193e30abefd5debf142f9adfcdd2b58004e644f25406ffaebd50bd98dacb
+pyjwt==2.14.0 \
+    --hash=sha256:77283c83fb56ecf566a886c757a714bc83668e38156de2cce8263302f42e0b86 \
+    --hash=sha256:ad0cef71c756a56e74863c2919cf0985f72decbcfcb550ee2f422e7c62b5eedc
     # via
-    #   -c scripts/requirements/ha-2025.5.0.constraints
+    #   --override scripts/requirements/ha-2025.5.0.overrides
     #   hass-nabucasa
     #   homeassistant
     #   pycognito
