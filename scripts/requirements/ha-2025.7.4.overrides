@@ -4,4 +4,5 @@ home-assistant-frontend==20250702.3
 anyio==4.14.2
 pillow==13.0.0
 pyjwt==2.14.0
+uv==0.13.4
 yarl==1.25.1

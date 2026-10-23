@@ -1,6 +1,6 @@
 # Occupied lane: ha-2026.2.3; metadata-sha256=63329ab51ebb5e21cc747041a2c009453d810d46818372ec36003703ca66a851
 # Regenerate: python scripts/ha_matrix.py compile
-# Security overrides: anyio==4.14.2, pillow==13.0.0, pyjwt==2.14.0, yarl==1.25.1; see README compatibility tooling notes
+# Security overrides: anyio==4.14.2, pillow==13.0.0, pyjwt==2.14.0, uv==0.13.4, yarl==1.25.1; see README compatibility tooling notes
 acme==5.2.2 \
     --hash=sha256:354ef66cf226b2bef02006311778e97123237207b4febe8829ded9860784ee64 \
     --hash=sha256:7702d5b99149d5cd9cd48a9270c04693e925730c023ca3e1b853ab43746a9d01
@@ -3192,28 +3192,28 @@ usb-devices==0.5.1 \
     # via
     #   bluetooth-adapters
     #   bluetooth-auto-recovery
-uv==0.9.26 \
-    --hash=sha256:0315fc321f5644b12118f9928086513363ed9b29d74d99f1539fda1b6b5478ab \
-    --hash=sha256:10d075e0193e3a0e6c54f830731c4cb965d6f4e11956e84a7bed7ed61d42aa27 \
-    --hash=sha256:182f5c086c7d03ad447e522b70fa29a0302a70bcfefad4b8cd08496828a0e179 \
-    --hash=sha256:1b012e6c4dfe767f818cbb6f47d02c207c9b0c82fee69a5de6d26ffb26a3ef3c \
-    --hash=sha256:1ba860d2988efc27e9c19f8537a2f9fa499a8b7ebe4afbe2d3d323d72f9aee61 \
-    --hash=sha256:25278f9298aa4dade38241a93d036739b0c87278dcfad1ec1f57e803536bfc49 \
-    --hash=sha256:344ff38749b6cd7b7dfdfb382536f168cafe917ae3a5aa78b7a63746ba2a905b \
-    --hash=sha256:5d8c62a501f13425b4b0ce1dd4c6b82f3ce5a5179e2549c55f4bb27cc0eb8ef8 \
-    --hash=sha256:60a66f1783ec4efc87b7e1f9bd66e8fd2de3e3b30d122b31cb1487f63a3ea8b7 \
-    --hash=sha256:63c6a1f1187facba1fb45a2fa45396980631a3427ac11b0e3d9aa3ebcf2c73cf \
-    --hash=sha256:7dba609e32b7bd13ef81788d580970c6ff3a8874d942755b442cffa8f25dba57 \
-    --hash=sha256:8610bdfc282a681a0a40b90495a478599aa3484c12503ef79ef42cd271fd80fe \
-    --hash=sha256:89a7beea1c692f76a6f8da13beff3cbb43f7123609e48e03517cc0db5c5de87c \
-    --hash=sha256:8b7017a01cc48847a7ae26733383a2456dd060fc50d21d58de5ee14f6b6984d7 \
-    --hash=sha256:b7e89798bd3df7dcc4b2b4ac4e2fc11d6b3ff4fe7d764aa3012d664c635e2922 \
-    --hash=sha256:b815e3b26eeed00e00f831343daba7a9d99c1506883c189453bb4d215f54faac \
-    --hash=sha256:c4bf700bd071bd595084b9ee0a8d77c6a0a10ca3773d3771346a2599f306bd9c \
-    --hash=sha256:c6d8650fbc980ccb348b168266143a9bd4deebc86437537caaf8ff2a39b6ea50 \
-    --hash=sha256:ea296b700d7c4c27acdfd23ffaef2b0ecdd0aa1b58d942c62ee87df3b30f06ac
+uv==0.13.4 \
+    --hash=sha256:05e4332791b4d55b6dde8695b7fa6079b26991519f44760887c5dfbd5ca4fe53 \
+    --hash=sha256:205a4f93e568fb24f45a2f3834f1c0a8f1adb5f396bf473c71030ed707dce048 \
+    --hash=sha256:25cc14ff4fd8335d3be2cc493a621a003fdafcb0fb1c953c905daabe4def5ab8 \
+    --hash=sha256:3a9dcb6762c3ba249d8c084315ba03839082af3ece3536cc4164ec735c351d68 \
+    --hash=sha256:4e6b08578c920b86910897f36bb6da7229c8e7e0187976570e2a538cb28b777e \
+    --hash=sha256:52b5c753a7c2d5f8323a70bb4c93118988356331d0758afa6446c81f974e7196 \
+    --hash=sha256:5d89d1028c2e22977d9215cbb79cfe12559cb0c8a507a12e2f3a7e47930cf1bf \
+    --hash=sha256:77062b02856c74697f48328d8a6583ab07e6da0a993e86c2db46f3d1da27c637 \
+    --hash=sha256:7b3cdf868e5415631fe797b648c0d6945d38d388f23367bdd0b6332e80a1fcb0 \
+    --hash=sha256:8ae6ff2b07892379dc767c9064c2b8bbfac88e767edac7ce28e1b0f15d86abb4 \
+    --hash=sha256:95f4eb2b991b53b50ec2b18ab612fca8ba1e7a75a47af0331fb8bcd21da3eb03 \
+    --hash=sha256:b0bff5b9a5061f7a35b1d0c1a94c19af134222c48eb7aadc42f85a038be1b248 \
+    --hash=sha256:b2ff80397273fff0e02c20eacae6882834c811827d6fc08f658db156fe754386 \
+    --hash=sha256:b4bbacea78c9db136cd2ec3147cbfd9ed910b4db5e1877109bd74d0e73bb2eaf \
+    --hash=sha256:d333f01852b817ba05612de31474739da1af7e5463d119b30a9c4331eba1f408 \
+    --hash=sha256:d86a5dec8ab30c70519c71ca5085c8aaf28664836cbc600951cedaa3fc678cbf \
+    --hash=sha256:deffa5a4afdb48f3e44fb26e80377d256b330ddcad0373daff4b54f6162b43a4 \
+    --hash=sha256:e90ab42825587821096cb0d071e387468da38cfa22818c91f9c0b3c0453048e8 \
+    --hash=sha256:fb0e2028d9a8929884344afb7d91d0f65d9783f640d28aede89fca3602bedde9
     # via
-    #   -c scripts/requirements/ha-2026.2.3.constraints
+    #   --override scripts/requirements/ha-2026.2.3.overrides
     #   homeassistant
 voluptuous==0.15.2 \
     --hash=sha256:016348bc7788a9af9520b1764ebd4de0df41fe2138ebe9e06fa036bf86a65566 \
