@@ -756,7 +756,11 @@ async def test_device_activity_includes_successful_actions_and_survives_reload(
     await advance(hass, freezer, 60.001)
     assert any(event.data["message"] == "Turned on script.test" for event in events[1:])
     assert len(events) == len(daily_devices)
-    assert [event.context.id for event in events] == [call.context.id for call in daily_devices]
+    # Independent services may finish together; HA's listener delivery order
+    # need not match dispatch order. Preserve exact target/context attribution.
+    assert sorted((event.data["entity_id"], event.context.id) for event in events) == sorted(
+        (entity, call.context.id) for call in daily_devices for entity in call.data["entity_id"]
+    )
     before_failure = len(events)
 
     async def fail(_call):
