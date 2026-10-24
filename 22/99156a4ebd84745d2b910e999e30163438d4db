@@ -1,0 +1,97 @@
+.github/workflows/check.yml
+  s_5d0efb9cc98758::t_c65c58cf9471c7 37-44
+.github/workflows/security.yml
+  s_5d0efb9cc98758::t_8c7106ab76bf25 46-49
+README.md
+  s_5d0efb9cc98758::t_0a8992816e95c2 23
+docs/compatibility.md
+  s_5d0efb9cc98758::t_5f647d3fb09eb8 1-28
+scripts/ha_matrix.py
+  s_5d0efb9cc98758::t_48ed37d269cc8e 112-131,216,290-306,322,340,344-345,368-372,423
+scripts/requirements/ha-2025.10.4.overrides
+  s_5d0efb9cc98758::t_1108b30efba7b7 4,6-7,10-11
+scripts/requirements/ha-2025.10.4.txt
+  s_5d0efb9cc98758::t_9adc405f98009c 3,25-186,188,877-923,925,1907-1981,1983,2520-2522,2524,2967
+scripts/requirements/ha-2025.11.3.overrides
+  s_5d0efb9cc98758::t_af0fd5f8bce004 4,6-7,10-11
+scripts/requirements/ha-2025.11.3.txt
+  s_5d0efb9cc98758::t_316ddc52ea6a2c 3,25-186,188,899-945,947,2014-2088,2090,2669-2671,2673,3222
+scripts/requirements/ha-2025.12.4.overrides
+  s_5d0efb9cc98758::t_18c17de43913a4 4,6-7,10-11
+scripts/requirements/ha-2025.12.4.txt
+  s_5d0efb9cc98758::t_a6a3972632cd0c 3,25-186,188,910-956,958,2299-2373,2375,2957-2959,2961,3764
+scripts/requirements/ha-2025.5.0.overrides
+  s_5d0efb9cc98758::t_79785b37d3f98a 4,6-10,13-14
+scripts/requirements/ha-2025.5.0.txt
+  s_5d0efb9cc98758::t_bc07085202704b 3-6,25-186,188,837-883,885,1227-1229,1231,1281-1283,1285,1318-1320,1322,1362-1367,1864-1938,1940,2484-2486,2488,2843-2845,2847
+scripts/requirements/ha-2025.6.3.overrides
+  s_5d0efb9cc98758::t_e20be1c94ccdf3 4,6-10,13-14
+scripts/requirements/ha-2025.6.3.txt
+  s_5d0efb9cc98758::t_714e9291587f62 3-6,31-192,194,843-889,891,1233-1235,1237,1287-1289,1291,1324-1326,1328,1368-1370,1870-1944,1946,2490-2492,2494,2849-2851,2853
+scripts/requirements/ha-2025.7.4.overrides
+  s_5d0efb9cc98758::t_b6671b653065aa 4,6-7,10-11
+scripts/requirements/ha-2025.7.4.txt
+  s_5d0efb9cc98758::t_27d7dcc933609a 3,25-186,188,864-910,912,1861-1935,1937,2465-2467,2469,2813
+scripts/requirements/ha-2025.8.3.overrides
+  s_5d0efb9cc98758::t_b78ff61feb8fd7 4,6-7,10-11
+scripts/requirements/ha-2025.8.3.txt
+  s_5d0efb9cc98758::t_93d37881b4493a 3,25-186,188,885-931,933,1915-1989,1991,2528-2530,2532,2977
+scripts/requirements/ha-2025.9.4.overrides
+  s_5d0efb9cc98758::t_15ca62c40a7949 4,6-7,10-11
+scripts/requirements/ha-2025.9.4.txt
+  s_5d0efb9cc98758::t_2ef9a683c2ee8b 3,25-186,188,859-905,907,1889-1963,1965,2502-2504,2506,2949
+scripts/requirements/ha-2026.1.3.overrides
+  s_5d0efb9cc98758::t_f8d812fce6f5d8 4,6-7,10-11
+scripts/requirements/ha-2026.1.3.txt
+  s_5d0efb9cc98758::t_57004ccbf420e6 3,25-186,188,908-954,956,2291-2365,2367,2946-2948,2950,3753
+scripts/requirements/ha-2026.2.3.overrides
+  s_5d0efb9cc98758::t_ef168a16198b3c 4,6-7,10-11
+scripts/requirements/ha-2026.2.3.txt
+  s_5d0efb9cc98758::t_a3dbfa72ee77b0 3,25-186,188,897-943,945,1997-2071,2073,2656-2658,2660,3210
+scripts/requirements/ha-2026.3.4.overrides
+  s_5d0efb9cc98758::t_0ce267ac875718 4,6,9-10
+scripts/requirements/ha-2026.3.4.txt
+  s_5d0efb9cc98758::t_98cfa9f9e4c5d4 3,31-192,194,909-955,957,2615-2617,2619,3161
+scripts/requirements/ha-2026.4.4.overrides
+  s_5d0efb9cc98758::t_01b5fa3506f24c 4,6,9-10
+scripts/requirements/ha-2026.4.4.txt
+  s_5d0efb9cc98758::t_6f24086fb6dce4 3,29-190,192,903-949,951,2558-2560,2562,3099
+scripts/requirements/ha-2026.5.0.overrides
+  s_5d0efb9cc98758::t_2ab73dbccd7f5f 4,6,9-10
+scripts/requirements/ha-2026.5.0.txt
+  s_5d0efb9cc98758::t_e09c769f96f35e 3,29-190,192,942-988,990,2796-2798,2800,3347
+scripts/requirements/ha-2026.6.4.overrides
+  s_5d0efb9cc98758::t_6ce1e895b4c413 4,6,9-10
+scripts/requirements/ha-2026.6.4.txt
+  s_5d0efb9cc98758::t_ea0bd56ced9bdf 3,29-190,192,910-956,958,2712-2714,2716,3264
+scripts/requirements/ha-2026.7.4.overrides
+  s_5d0efb9cc98758::t_3a0a24910b1908 4,6,9-10
+scripts/requirements/ha-2026.7.4.txt
+  s_5d0efb9cc98758::t_0ba68caf4d1d4a 3,29-190,192,862-908,910,2664-2666,2668,3211
+scripts/requirements/ha-2026.8.3.overrides
+  s_5d0efb9cc98758::t_0c066d36ee3623 4,6,9-10
+scripts/requirements/ha-2026.8.3.txt
+  s_5d0efb9cc98758::t_6b3aaddfc21d7a 3,29-190,192,850-896,898,2658-2660,2662,3207
+scripts/requirements/ha-2026.9.4.overrides
+  s_5d0efb9cc98758::t_159e3e0cddbaf8 4,6,9-10
+scripts/requirements/ha-2026.9.4.txt
+  s_5d0efb9cc98758::t_801685fda6c29c 3,29-190,192,940-986,988,2754-2756,2758,3297
+tests/core/test_ha_matrix.py
+  s_5d0efb9cc98758::t_19698c49cae5da 320-369
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2299156a4ebd84745d2b910e999e30163438d4db",
+  "prompts": {},
+  "sessions": {
+    "s_5d0efb9cc98758": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a169b5-e432-7461-b0bb-1ed6a01efeff",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
