@@ -4,6 +4,15 @@ import pytest
 from homeassistant.data_entry_flow import FlowResultType, InvalidData
 
 
+@pytest.fixture(autouse=True)
+async def finish_flow_setup_before_shutdown(hass):
+    """Older HA can return a flow result before HTTP dependency setup finishes."""
+    yield
+    # HTTP startup schedules a storage write. Let it finish and register its
+    # shutdown listeners before the hass fixture starts stopping HA.
+    await hass.async_block_till_done()
+
+
 async def test_config_flow_allows_another_independent_entry(hass, config, devices):
     result = await hass.config_entries.flow.async_init("occupied", context={"source": "proof"})
     assert result["type"] is FlowResultType.FORM
