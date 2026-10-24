@@ -109,6 +109,26 @@ def pins(text):
     return result
 
 
+def requirement_constraints(text):
+    """Read exact and ranged official constraints for security repairs."""
+    result = {}
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith(("#", "--")):
+            continue
+        try:
+            requirement = Requirement(line.rstrip(" \\"))
+        except Exception:
+            continue
+        name = canonicalize_name(requirement.name)
+        if name in result:
+            requirement = Requirement(f"{name}{result[name].specifier},{requirement.specifier}")
+            exact = [s.version for s in requirement.specifier if s.operator == "=="]
+            if len(exact) == 1 and Version(exact[0]) in requirement.specifier:
+                requirement = Requirement(f"{name}=={exact[0]}")
+        result[name] = requirement
+    return result
+
+
 def check(root=ROOT):
     policy, lanes = load(root)
     actual = ha_lanes(lanes)
@@ -193,7 +213,7 @@ def check(root=ROOT):
                 name = canonicalize_name(requirement.name)
                 if name in resolved and Version(resolved[name]) not in requirement.specifier:
                     raise ValueError(f"{lane.id}: historical compatibility requires {requirement}")
-            security = security_pins(policy, lane_pins)
+            security = security_pins(policy, requirement_constraints(data.decode()))
             for package, version in security.items():
                 if resolved.get(package) != version:
                     raise ValueError(f"{lane.id}: security override requires {package}=={version}")
@@ -267,12 +287,23 @@ def fetch_text(url):
 
 
 def security_pins(policy, constrained):
-    return {
-        canonicalize_name(name): version
-        for name, version in policy.get("security_overrides", {}).items()
-        if canonicalize_name(name) in constrained
-        and Version(constrained[canonicalize_name(name)]) < Version(version)
-    }
+    result = {}
+    for name, version in policy.get("security_overrides", {}).items():
+        name = canonicalize_name(name)
+        if name not in constrained:
+            continue
+        official = constrained[name]
+        if isinstance(official, Requirement):
+            exact = [s.version for s in official.specifier if s.operator == "=="]
+            if not exact and any(
+                s.operator in {">=", ">", "~="} and Version(s.version) >= Version(version)
+                for s in official.specifier
+            ):
+                continue
+            official = exact[0] if len(exact) == 1 else None
+        if official is None or Version(official) < Version(version):
+            result[name] = version
+    return result
 
 
 def check_installed(lane_id, root=ROOT):
@@ -288,7 +319,7 @@ def check_installed(lane_id, root=ROOT):
         print(result.stdout, end="")
         return
 
-    official = pins(constraints_path(root, lane).read_text())
+    official = requirement_constraints(constraints_path(root, lane).read_text())
     overrides = security_pins(policy, official)
     pattern = re.compile(
         r"The package `(?P<owner>[^`]+)` requires `(?P<requirement>[^`]+)`, "
@@ -306,12 +337,12 @@ def check_installed(lane_id, root=ROOT):
         requirement = Requirement(match.group("requirement"))
         package = canonicalize_name(requirement.name)
         version = overrides.get(package)
-        official_version = official.get(package)
+        official_requirement = official.get(package)
         installed = match.group("installed")
         if (
             version is None
-            or official_version is None
-            or str(requirement.specifier) != f"=={official_version}"
+            or official_requirement is None
+            or str(requirement.specifier) != str(official_requirement.specifier)
             or installed != version
             or importlib.metadata.version(package) != version
         ):
@@ -334,7 +365,11 @@ def security_header(security):
 def patched_constraints(source, security):
     """Preserve every official pin except explicitly recorded security repairs."""
     return (
-        "\n".join(line for line in source.splitlines() if not (set(pins(line)) & security.keys()))
+        "\n".join(
+            line
+            for line in source.splitlines()
+            if not (requirement_constraints(line).keys() & security.keys())
+        )
         + "\n"
     )
 
@@ -385,7 +420,7 @@ def compile_lanes(root=ROOT):
         if lane.role == "newest":
             continue
         override_file = path.with_suffix(".overrides")
-        security = security_pins(policy, pins(path.read_text()))
+        security = security_pins(policy, requirement_constraints(path.read_text()))
         override_file.write_text(overrides(lane, security))
         requirement_file = path.with_suffix(".txt")
         expected.update((override_file.name, requirement_file.name))

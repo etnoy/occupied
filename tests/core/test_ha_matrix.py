@@ -317,6 +317,56 @@ def test_historical_dns_constraints(aiodns, bounded):
     assert [str(requirement) for requirement in constraints] == (["pycares<5"] if bounded else [])
 
 
+def test_security_repairs_include_ranged_official_constraints():
+    source = "urllib3>=1.26.5,<2\nh11==0.14.0\nastral==2.2\n"
+    policy = {"security_overrides": {"urllib3": "2.8.0", "h11": "0.16.0"}}
+    security = matrix.security_pins(policy, matrix.requirement_constraints(source))
+    assert security == {"urllib3": "2.8.0", "h11": "0.16.0"}
+    assert matrix.patched_constraints(source, security) == "astral==2.2\n"
+
+
+def test_security_constraints_preserve_exact_pin_with_duplicate_range():
+    official = matrix.requirement_constraints("pyOpenSSL==25.0.0\npyOpenSSL>=24.0.0\n")
+    assert str(official["pyopenssl"].specifier) == "==25.0.0"
+
+
+def test_security_repairs_do_not_downgrade_a_newer_range():
+    official = matrix.requirement_constraints("urllib3>=3,<4\n")
+    assert matrix.security_pins({"security_overrides": {"urllib3": "2.8.0"}}, official) == {}
+
+
+@pytest.mark.parametrize("minimum,allowed", [("1.26.5", True), ("1.26.6", False)])
+def test_installed_security_repair_matches_official_range(
+    matrix_repo, monkeypatch, minimum, allowed
+):
+    from types import SimpleNamespace
+
+    policy, lanes = matrix.load(matrix_repo)
+    policy["security_overrides"] = {"urllib3": "2.8.0"}
+    matrix.write_matrix(policy, lanes, matrix_repo)
+    floor = matrix.ha_lanes(lanes)[0]
+    path = matrix.constraints_path(matrix_repo, floor)
+    path.write_text(path.read_text() + "urllib3>=1.26.5,<2\n")
+    monkeypatch.setattr(
+        matrix.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=1,
+            stdout=(
+                f"The package `homeassistant` requires `urllib3>={minimum},<2`, "
+                "but `2.8.0` is installed\n"
+            ),
+            stderr="Using Python 3.14.8 environment at: /tmp/test\n",
+        ),
+    )
+    monkeypatch.setattr(matrix.importlib.metadata, "version", lambda _: "2.8.0")
+    if allowed:
+        matrix.check_installed(floor.id, matrix_repo)
+    else:
+        with pytest.raises(RuntimeError, match="Installed dependency check failed"):
+            matrix.check_installed(floor.id, matrix_repo)
+
+
 def test_next_prefers_prerelease_and_detects_overdue_stable_patch(monkeypatch, matrix_repo):
     monkeypatch.setattr(
         matrix,
