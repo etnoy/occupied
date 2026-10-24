@@ -1,0 +1,19 @@
+tests/ha/test_config_flow.py
+  s_5d0efb9cc98758::t_b7a1135c397c9b 7-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "211cbde402fc08b495f95a4762c236d964865d5c",
+  "prompts": {},
+  "sessions": {
+    "s_5d0efb9cc98758": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a169b5-e432-7461-b0bb-1ed6a01efeff",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
