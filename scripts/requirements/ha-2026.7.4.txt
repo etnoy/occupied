@@ -1394,9 +1394,9 @@ home-assistant-frontend==20260624.6 \
     #   -c scripts/requirements/ha-2026.7.4.constraints
     #   --override scripts/requirements/ha-2026.7.4.overrides
     #   occupied (pyproject.toml:dev)
-homeassistant==2026.7.4 \
-    --hash=sha256:4c41607a8b675f331d7edb0f5c5ba5fa055ee28c47e1f5cea068c3d989bb03da \
-    --hash=sha256:8b93332eedb63b96ed78dc1bc29ea772de737135e9c8e62b316d24b94bbfa1e4
+homeassistant==2026.7.0 \
+    --hash=sha256:1e096b5c4282904322ccc348de97e19420e11efbb4f630438f98427f817c3e5e \
+    --hash=sha256:299cffe315c30bd47570c45b63d7564df166992fb1de58a4b9ffe0f832d50a50
     # via
     #   --override scripts/requirements/ha-2026.7.4.overrides
     #   occupied (pyproject.toml:dev)
