@@ -1,6 +1,6 @@
 # Occupied lane: ha-2025.12.4; metadata-sha256=af89007ca167c4c04f91d40020dfaf919d91d87089bf176cd6d7874ddbbc416a
 # Regenerate: python scripts/ha_matrix.py compile
-# Security overrides: aiohttp==3.14.4, anyio==4.14.2, cryptography==50.0.0, orjson==3.11.6, pillow==13.0.0, pyjwt==2.14.0, pyopenssl==26.4.0, urllib3==2.8.0, uv==0.13.4, yarl==1.25.1; see README compatibility tooling notes
+# Security overrides: aiohttp==3.14.4, anyio==4.14.2, cryptography==50.0.0, orjson==3.11.6, pillow==13.0.0, pyjwt==2.15.0, pyopenssl==26.4.0, urllib3==2.8.0, uv==0.13.4, yarl==1.25.1; see README compatibility tooling notes
 acme==5.1.0 \
     --hash=sha256:7b97820857d9baffed98bca50ab82bb6a636e447865d7a013a7bdd7972f03cda \
     --hash=sha256:80e9c315d82302bb97279f4516ff31230d29195ab9d4a6c9411ceec20481b61e
@@ -2888,7 +2888,7 @@ pygments==2.21.0 \
     --hash=sha256:2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9 \
     --hash=sha256:610ca751c9bc2492b38eb9a38a7fbc93edbbb2d7182edaf34e66ae493dee5c8c
     # via pytest
-pyjwt==2.14.0 \
+pyjwt==2.15.0 \
     --hash=sha256:77283c83fb56ecf566a886c757a714bc83668e38156de2cce8263302f42e0b86 \
     --hash=sha256:ad0cef71c756a56e74863c2919cf0985f72decbcfcb550ee2f422e7c62b5eedc
     # via
