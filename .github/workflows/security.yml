@@ -43,5 +43,7 @@ jobs:
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
-          # Exception because early 2026 HA versions cant pin updated packages. Review later in 2026
-          allow-ghsas: GHSA-5hxg-r395-fqxx, GHSA-wx4m-69m9-gx3m, GHSA-x84v-g949-293w, GHSA-ffc3-869f-jxw9, GHSA-r6x4-923q-g947, GHSA-p4g4-x82p-q773, GHSA-9v7f-9g4p-ffgj, GHSA-w2cx-738m-mc7w, GHSA-9j54-fg26-wv3r, GHSA-g6cj-pr64-35w5, GHSA-jwv3-5hgf-82ww
+          # Existing upstream dependency exceptions; reviewed separately from compatibility pins.
+          # GHSA-mq77-rv97-285m: HA 2025.5–2025.9 disposable test fixtures retain the
+          # upstream Energy-dashboard XSS fixed in 2025.10.2. See docs/compatibility.md.
+          allow-ghsas: GHSA-5hxg-r395-fqxx, GHSA-wx4m-69m9-gx3m, GHSA-x84v-g949-293w, GHSA-ffc3-869f-jxw9, GHSA-r6x4-923q-g947, GHSA-p4g4-x82p-q773, GHSA-9v7f-9g4p-ffgj, GHSA-w2cx-738m-mc7w, GHSA-9j54-fg26-wv3r, GHSA-g6cj-pr64-35w5, GHSA-jwv3-5hgf-82ww, GHSA-mq77-rv97-285m

@@ -177,7 +177,7 @@ class SimulationDay:
                             )
                         )
                         return None
-        except ValueError, TypeError:
+        except (ValueError, TypeError):
             pass
         if anchor is None:
             self.issues.append(

@@ -109,6 +109,26 @@ def pins(text):
     return result
 
 
+def requirement_constraints(text):
+    """Read exact and ranged official constraints for security repairs."""
+    result = {}
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith(("#", "--")):
+            continue
+        try:
+            requirement = Requirement(line.rstrip(" \\"))
+        except Exception:
+            continue
+        name = canonicalize_name(requirement.name)
+        if name in result:
+            requirement = Requirement(f"{name}{result[name].specifier},{requirement.specifier}")
+            exact = [s.version for s in requirement.specifier if s.operator == "=="]
+            if len(exact) == 1 and Version(exact[0]) in requirement.specifier:
+                requirement = Requirement(f"{name}=={exact[0]}")
+        result[name] = requirement
+    return result
+
+
 def check(root=ROOT):
     policy, lanes = load(root)
     actual = ha_lanes(lanes)
@@ -189,7 +209,11 @@ def check(root=ROOT):
             if source.splitlines()[0] != lane.header or "--hash=sha256:" not in source:
                 raise ValueError(f"{lane.id}: requirements header or hashes differ")
             resolved = pins(source)
-            security = security_pins(policy, lane_pins)
+            for requirement in compatibility_constraints(lane_pins):
+                name = canonicalize_name(requirement.name)
+                if name in resolved and Version(resolved[name]) not in requirement.specifier:
+                    raise ValueError(f"{lane.id}: historical compatibility requires {requirement}")
+            security = security_pins(policy, requirement_constraints(data.decode()))
             for package, version in security.items():
                 if resolved.get(package) != version:
                     raise ValueError(f"{lane.id}: security override requires {package}=={version}")
@@ -263,12 +287,23 @@ def fetch_text(url):
 
 
 def security_pins(policy, constrained):
-    return {
-        canonicalize_name(name): version
-        for name, version in policy.get("security_overrides", {}).items()
-        if canonicalize_name(name) in constrained
-        and Version(constrained[canonicalize_name(name)]) < Version(version)
-    }
+    result = {}
+    for name, version in policy.get("security_overrides", {}).items():
+        name = canonicalize_name(name)
+        if name not in constrained:
+            continue
+        official = constrained[name]
+        if isinstance(official, Requirement):
+            exact = [s.version for s in official.specifier if s.operator == "=="]
+            if not exact and any(
+                s.operator in {">=", ">", "~="} and Version(s.version) >= Version(version)
+                for s in official.specifier
+            ):
+                continue
+            official = exact[0] if len(exact) == 1 else None
+        if official is None or Version(official) < Version(version):
+            result[name] = version
+    return result
 
 
 def check_installed(lane_id, root=ROOT):
@@ -277,12 +312,14 @@ def check_installed(lane_id, root=ROOT):
     lane = next((item for item in lanes if item.id == lane_id), None)
     if lane is None:
         raise ValueError(f"Unknown HA lane: {lane_id}")
-    result = subprocess.run(["uv", "pip", "check"], capture_output=True, text=True)
+    result = subprocess.run(
+        [uv(), "pip", "check", "--python", sys.executable], capture_output=True, text=True
+    )
     if result.returncode == 0:
         print(result.stdout, end="")
         return
 
-    official = pins(constraints_path(root, lane).read_text())
+    official = requirement_constraints(constraints_path(root, lane).read_text())
     overrides = security_pins(policy, official)
     pattern = re.compile(
         r"The package `(?P<owner>[^`]+)` requires `(?P<requirement>[^`]+)`, "
@@ -291,7 +328,7 @@ def check_installed(lane_id, root=ROOT):
     unexpected = []
     allowed = 0
     for line in (result.stdout + result.stderr).splitlines():
-        if line.startswith(("Checked ", "Found ")) or not line:
+        if line.startswith(("Checked ", "Found ", "Using Python ")) or not line:
             continue
         match = pattern.fullmatch(line)
         if not match or match.group("owner") != "homeassistant":
@@ -300,12 +337,12 @@ def check_installed(lane_id, root=ROOT):
         requirement = Requirement(match.group("requirement"))
         package = canonicalize_name(requirement.name)
         version = overrides.get(package)
-        official_version = official.get(package)
+        official_requirement = official.get(package)
         installed = match.group("installed")
         if (
             version is None
-            or official_version is None
-            or str(requirement.specifier) != f"=={official_version}"
+            or official_requirement is None
+            or str(requirement.specifier) != str(official_requirement.specifier)
             or installed != version
             or importlib.metadata.version(package) != version
         ):
@@ -328,9 +365,21 @@ def security_header(security):
 def patched_constraints(source, security):
     """Preserve every official pin except explicitly recorded security repairs."""
     return (
-        "\n".join(line for line in source.splitlines() if not (set(pins(line)) & security.keys()))
+        "\n".join(
+            line
+            for line in source.splitlines()
+            if not (requirement_constraints(line).keys() & security.keys())
+        )
         + "\n"
     )
+
+
+def compatibility_constraints(constrained):
+    """Constrain unbounded transitive APIs that predate their breaking release."""
+    if "aiodns" in constrained and Version(constrained["aiodns"]) < Version("3.6"):
+        # aiodns 3.5 evaluates pycares result types removed in pycares 5.
+        return [Requirement("pycares<5")]
+    return []
 
 
 def overrides(lane, security=None):
@@ -371,7 +420,7 @@ def compile_lanes(root=ROOT):
         if lane.role == "newest":
             continue
         override_file = path.with_suffix(".overrides")
-        security = security_pins(policy, pins(path.read_text()))
+        security = security_pins(policy, requirement_constraints(path.read_text()))
         override_file.write_text(overrides(lane, security))
         requirement_file = path.with_suffix(".txt")
         expected.update((override_file.name, requirement_file.name))
@@ -383,7 +432,10 @@ def compile_lanes(root=ROOT):
                 with_dev_python((root / "pyproject.toml").read_text(), lane.python_min)
             )
             effective = Path(temporary) / path.name
-            effective.write_text(patched_constraints(path.read_text(), security))
+            effective.write_text(
+                patched_constraints(path.read_text(), security)
+                + "".join(f"{r}\n" for r in compatibility_constraints(pins(path.read_text())))
+            )
             _compile_lane(root, lane, project, override_file, effective, requirement_file)
             source = requirement_file.read_text().replace(str(project), "pyproject.toml")
             source = source.replace(str(effective), str(path.relative_to(root)))
@@ -440,7 +492,11 @@ def github_matrix(kind="ha", root=ROOT):
         }
     chosen = ha_lanes(lanes)
     if kind == "browser":
-        chosen = [lane for lane in chosen if lane.role in {"floor", "newest"}]
+        # Sample from the floor every six months, always including the newest
+        # release even when the inclusive window is not a multiple of six.
+        chosen = [
+            lane for index, lane in enumerate(chosen) if index % 6 == 0 or lane.role == "newest"
+        ]
     elif kind == "python-floor":
         chosen = [selected(lanes, "python-floor")]
     return {
@@ -497,10 +553,15 @@ def test_lane(name, pytest_args=(), root=ROOT):
             )
         run([uv(), "pip", "sync", "--python", python, "--require-hashes", requirements], root)
         run([uv(), "pip", "install", "--python", python, "--no-deps", "-e", "."], root)
-        run([uv(), "pip", "check", "--python", python], root)
         environment_variables = os.environ.copy()
+        environment_variables["OCCUPIED_UV"] = uv()
         environment_variables["PATH"] = (
             str(environment / "bin") + os.pathsep + environment_variables["PATH"]
+        )
+        run(
+            [python, "scripts/ha_matrix.py", "check-installed", "--lane", lane.id],
+            root,
+            env=environment_variables,
         )
         run([python, "-m", "pytest", *pytest_args], root, env=environment_variables)
 
@@ -530,7 +591,7 @@ def matching_phcc(version):
         v
         for v in published_versions("pytest-homeassistant-custom-component")
         if not v.is_prerelease
-    ][:180]
+    ]
 
     def matches(candidate):
         metadata = package_json("pytest-homeassistant-custom-component", str(candidate))

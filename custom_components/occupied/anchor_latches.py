@@ -40,7 +40,7 @@ class AnchorLatches:
                 at = datetime.fromisoformat(value["instant"])
                 if at.tzinfo and isinstance(value["value"], str):
                     self.records[value["date"], value["entity"], value["attribute"]] = dict(value)
-            except KeyError, TypeError, ValueError:
+            except (KeyError, TypeError, ValueError):
                 continue
 
     def snapshot(self):
@@ -49,7 +49,7 @@ class AnchorLatches:
     def apply(self, program, context, now):
         try:
             zone = ZoneInfo(context.timezone or "")
-        except ValueError, KeyError:
+        except (ValueError, KeyError):
             return context
         today = now.astimezone(zone).date()
         dates = {day.isoformat() for day in runtime_dates(program, today)}
@@ -115,5 +115,5 @@ class AnchorLatches:
             if at.tzinfo is None and attribute != "state":
                 at = resolve_local(at, zone)[0]
             return at.astimezone(UTC) if at.tzinfo else None
-        except ValueError, TypeError:
+        except (ValueError, TypeError):
             return None

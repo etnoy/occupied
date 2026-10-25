@@ -20,7 +20,7 @@ Occupied is the spiritual successor of [Occusim](https://github.com/acockburn/oc
 
 # Requirements
 
-Occupied is tested on and supports Home Assistant version 2026.5 or later. Earlier versions might work but are untested.
+Occupied supports the last 18 monthly Home Assistant releases, currently 2025.5–2026.10. CI runs the Python suite on every supported monthly release and the complete browser suite on the oldest release, every six months after it, and the newest release. Earlier versions might work but are untested. See the [compatibility test policy](docs/compatibility.md) for historical CI dependency handling.
 
 # Installation
 

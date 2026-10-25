@@ -60,6 +60,15 @@
       if (!isValueChangedEvent(event)) {
         return;
       }
+      // Older HA time selectors emit an initial value with zero seconds.
+      // Opening an unchanged editor must not turn that formatting into an edit.
+      const next = String(event.detail.value || "");
+      if (
+        next.replace(/^(\d{2}:\d{2}):00$/, "$1") ===
+        String(value).replace(/^(\d{2}:\d{2}):00$/, "$1")
+      ) {
+        return;
+      }
       control.value = event.detail.value || "";
     }
     update(String(control.value ?? ""));

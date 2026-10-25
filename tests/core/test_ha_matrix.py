@@ -118,7 +118,7 @@ def edit(root, name, before, after):
 
 
 def test_supported_matrix_is_consistent():
-    assert matrix.check(ROOT)["lanes"] == 6
+    assert matrix.check(ROOT)["lanes"] == 18
 
 
 def test_hashed_ha_dependency_pin_drift_is_rejected(matrix_repo):
@@ -268,6 +268,105 @@ def test_github_matrices_cover_ha_browser_and_python_roles(matrix_repo):
     ]
 
 
+@pytest.mark.parametrize("window", [6, 12, 18, 19])
+def test_browser_matrix_samples_six_month_intervals_and_both_boundaries(matrix_repo, window):
+    from dataclasses import replace
+
+    policy, existing = matrix.load(matrix_repo)
+    policy["window"] = window
+    template = matrix.ha_lanes(existing)[0]
+    lanes = []
+    for index in range(window):
+        year, month = divmod(2025 * 12 + 4 + index, 12)
+        version = f"{year}.{month + 1}.0"
+        lanes.append(
+            replace(
+                template,
+                id=f"ha-{version}",
+                homeassistant=version,
+                role="floor" if index == 0 else "newest" if index == window - 1 else "window",
+            )
+        )
+    # Selection must follow release order rather than YAML ordering.
+    matrix.write_matrix(policy, list(reversed(lanes)), matrix_repo)
+    browser = matrix.github_matrix("browser", matrix_repo)["include"]
+    indices = sorted({*range(0, window, 6), window - 1})
+    assert [row["homeassistant"] for row in browser] == [lanes[i].homeassistant for i in indices]
+    assert len(matrix.github_matrix("ha", matrix_repo)["include"]) == window
+
+
+def test_matching_fixture_search_includes_older_releases(monkeypatch):
+    monkeypatch.setattr(
+        matrix, "published_versions", lambda _: [Version(f"0.13.{n}") for n in range(400, 199, -1)]
+    )
+    monkeypatch.setattr(
+        matrix,
+        "package_json",
+        lambda _, version: {
+            "info": {"requires_dist": ["homeassistant==2025.5.0"] if version == "0.13.200" else []}
+        },
+    )
+    assert matrix.matching_phcc("2025.5.0") == "0.13.200"
+
+
+@pytest.mark.parametrize(
+    "aiodns,bounded", [("3.3.0", True), ("3.5.0", True), ("3.6.1", False), ("4.0.0", False)]
+)
+def test_historical_dns_constraints(aiodns, bounded):
+    constraints = matrix.compatibility_constraints({"aiodns": aiodns})
+    assert [str(requirement) for requirement in constraints] == (["pycares<5"] if bounded else [])
+
+
+def test_security_repairs_include_ranged_official_constraints():
+    source = "urllib3>=1.26.5,<2\nh11==0.14.0\nastral==2.2\n"
+    policy = {"security_overrides": {"urllib3": "2.8.0", "h11": "0.16.0"}}
+    security = matrix.security_pins(policy, matrix.requirement_constraints(source))
+    assert security == {"urllib3": "2.8.0", "h11": "0.16.0"}
+    assert matrix.patched_constraints(source, security) == "astral==2.2\n"
+
+
+def test_security_constraints_preserve_exact_pin_with_duplicate_range():
+    official = matrix.requirement_constraints("pyOpenSSL==25.0.0\npyOpenSSL>=24.0.0\n")
+    assert str(official["pyopenssl"].specifier) == "==25.0.0"
+
+
+def test_security_repairs_do_not_downgrade_a_newer_range():
+    official = matrix.requirement_constraints("urllib3>=3,<4\n")
+    assert matrix.security_pins({"security_overrides": {"urllib3": "2.8.0"}}, official) == {}
+
+
+@pytest.mark.parametrize("minimum,allowed", [("1.26.5", True), ("1.26.6", False)])
+def test_installed_security_repair_matches_official_range(
+    matrix_repo, monkeypatch, minimum, allowed
+):
+    from types import SimpleNamespace
+
+    policy, lanes = matrix.load(matrix_repo)
+    policy["security_overrides"] = {"urllib3": "2.8.0"}
+    matrix.write_matrix(policy, lanes, matrix_repo)
+    floor = matrix.ha_lanes(lanes)[0]
+    path = matrix.constraints_path(matrix_repo, floor)
+    path.write_text(path.read_text() + "urllib3>=1.26.5,<2\n")
+    monkeypatch.setattr(
+        matrix.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=1,
+            stdout=(
+                f"The package `homeassistant` requires `urllib3>={minimum},<2`, "
+                "but `2.8.0` is installed\n"
+            ),
+            stderr="Using Python 3.14.8 environment at: /tmp/test\n",
+        ),
+    )
+    monkeypatch.setattr(matrix.importlib.metadata, "version", lambda _: "2.8.0")
+    if allowed:
+        matrix.check_installed(floor.id, matrix_repo)
+    else:
+        with pytest.raises(RuntimeError, match="Installed dependency check failed"):
+            matrix.check_installed(floor.id, matrix_repo)
+
+
 def test_next_prefers_prerelease_and_detects_overdue_stable_patch(monkeypatch, matrix_repo):
     monkeypatch.setattr(
         matrix,
@@ -327,7 +426,14 @@ def test_roll_requires_matching_fixture_before_changing_files(monkeypatch, matri
 
 
 @pytest.mark.parametrize("python_change", ["patch", "mixed", "floor"])
-def test_roll_advances_window_and_updates_generated_claims(monkeypatch, matrix_repo, python_change):
+@pytest.mark.parametrize("window", [6, 18])
+def test_roll_advances_window_and_updates_generated_claims(
+    monkeypatch, matrix_repo, python_change, window
+):
+    policy, lanes = matrix.load(matrix_repo)
+    policy["window"] = window
+    matrix.write_matrix(policy, lanes, matrix_repo)
+    floor = "2026.6.0" if window == 6 else "2025.6.0"
     versions = [
         "2026.11.0",
         "2026.10.2",
@@ -337,6 +443,11 @@ def test_roll_advances_window_and_updates_generated_claims(monkeypatch, matrix_r
         "2026.6.4",
         "2026.6.0",
     ]
+    if window == 18:
+        versions += [
+            f"{serial // 12}.{serial % 12 + 1}.0"
+            for serial in reversed(range(2025 * 12 + 5, 2026 * 12 + 5))
+        ]
     monkeypatch.setattr(matrix, "published_versions", lambda _: list(map(Version, versions)))
     monkeypatch.setattr(matrix, "matching_phcc", lambda v: f"0.13.{400 + Version(v).minor}")
     monkeypatch.setattr(
@@ -364,18 +475,19 @@ def test_roll_advances_window_and_updates_generated_claims(monkeypatch, matrix_r
     monkeypatch.setattr(matrix, "run", lambda command, *args, **kwargs: commands.append(command))
     compiled = []
     monkeypatch.setattr(matrix, "compile_lanes", lambda root: compiled.append(root))
-    monkeypatch.setattr(matrix, "check", lambda root: {"lanes": 6})
+    monkeypatch.setattr(matrix, "check", lambda root: {"lanes": window})
     readme = (matrix_repo / "README.md").read_bytes()
-    assert matrix.roll("2026.11", matrix_repo) == {"lanes": 6}
+    assert matrix.roll("2026.11", matrix_repo) == {"lanes": window}
     assert (matrix_repo / "README.md").read_bytes() == readme
     policy, lanes = matrix.load(matrix_repo)
     ha = matrix.ha_lanes(lanes)
     assert all(lane.role != "next" for lane in lanes)
-    assert ha[0].homeassistant == "2026.6.0" and ha[0].role == "floor"
+    assert ha[0].homeassistant == floor and ha[0].role == "floor"
     assert ha[-1].homeassistant == "2026.11.0" and ha[-1].role == "newest"
     assert ha[-2].homeassistant == "2026.10.2"
-    assert len(ha) == 6 and all(not lane.homeassistant.startswith("2026.5") for lane in ha)
-    assert json.loads((matrix_repo / "hacs.json").read_text())["homeassistant"] == "2026.6.0"
+    assert len(ha) == window
+    assert len(matrix.github_matrix("browser", matrix_repo)["include"]) == (2 if window == 6 else 4)
+    assert json.loads((matrix_repo / "hacs.json").read_text())["homeassistant"] == floor
     assert "pydantic>=2.13.4,<3" in (matrix_repo / "pyproject.toml").read_text()
     latest = "3.14.9" if python_change == "patch" else "3.15.3"
     assert policy["python_latest"] == latest
