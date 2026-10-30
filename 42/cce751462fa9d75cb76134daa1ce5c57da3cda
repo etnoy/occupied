@@ -1,0 +1,25 @@
+custom_components/occupied/frontend/dist/lib/actions/history-chart.js
+  s_f007746cdfe7fc::t_19fe048b69711c 7-8,15-17,33-35
+custom_components/occupied/frontend/dist/occupied-panel.js
+  s_f007746cdfe7fc::t_0969ba0a87a02b 19236-19237,19244-19246,19262-19264
+custom_components/occupied/frontend/src/lib/actions/history-chart.ts
+  s_f007746cdfe7fc::t_cba020a2b5d864 11-12,19-21,39-42
+tests/frontend/src/history-chart.test.ts
+  s_f007746cdfe7fc::t_42730c6f062668 48-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "42cce751462fa9d75cb76134daa1ce5c57da3cda",
+  "prompts": {},
+  "sessions": {
+    "s_f007746cdfe7fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18de6-d8cc-7fb0-8089-88b68cf5a77f",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
