@@ -1,0 +1,19 @@
+custom_components/occupied/models.py
+  s_f007746cdfe7fc::t_7b1fe725279e75 342
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2b832699b8fedbf9b32733661f18610f30f020b1",
+  "prompts": {},
+  "sessions": {
+    "s_f007746cdfe7fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18de6-d8cc-7fb0-8089-88b68cf5a77f",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
