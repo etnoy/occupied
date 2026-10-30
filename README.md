@@ -137,6 +137,11 @@ Use **Extra entities to turn off** for lights and switches that Occupied does no
 
 ## Limit when a step can run
 
+To react to cloudy or sunny conditions, choose **Light level** as a Step's timing
+mode. Select a measured or estimated outdoor lux sensor, a threshold, and a
+bounded observation window with a deadline fallback. See
+[Lighting based on outdoor lux](docs/lux-thresholds.md) for setup and examples.
+
 Use the timing controls to combine clock times and solar events:
 
 * **No later than** caps a step's time. For example, turn lights on 90 minutes before sunset, but no later than 18:00. This is useful if you don't want sun-controlled lights to turn on when you are sleeping.

@@ -11,7 +11,7 @@
   }: {
     panel: LoadedOccupiedPanel;
     context: TimingEditorContext;
-    modifier: "latestAt" | "onlyBefore";
+    modifier: "latestAt" | "onlyBefore" | "luxStart" | "luxEnd";
   } = $props();
 
   // The panel mutates forms in place; a fresh facade propagates each context update.

@@ -93,4 +93,5 @@ def plan_from_data(data):
         ),
         history_events=events_from_data(data.get("history_events", [])),
         future_events=events_from_data(data.get("future_events", [])),
+        pending_occurrences=tuple(data.get("pending_occurrences", [])),
     )

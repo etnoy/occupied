@@ -364,6 +364,7 @@ async def _live_operation(hass, connection, msg, operation):
                 msg["expected_plan_fingerprint"],
                 msg["request_id"],
                 user_id,
+                msg.get("lux_mode", "fallback"),
             )
         elif operation == "next":
             result = await manager.async_next(
@@ -388,6 +389,7 @@ async def _live_operation(hass, connection, msg, operation):
     {
         **_ENTRY_SCHEMA,
         vol.Required("type"): "occupied/live_preview/start",
+        vol.Optional("lux_mode", default="fallback"): vol.In(["threshold", "fallback"]),
         vol.Required("date"): str,
         vol.Required("expected_plan_fingerprint"): str,
         vol.Required("request_id"): _REQUEST_ID,

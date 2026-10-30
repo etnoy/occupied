@@ -5,6 +5,7 @@
   import FieldError from "./FieldError.svelte";
   import SourcePicker from "./SourcePicker.svelte";
   import TimingBoundaryEditor from "./TimingBoundaryEditor.svelte";
+  import LuxTimingEditor from "./LuxTimingEditor.svelte";
 
   import { stepEntries, timeSourceChoices } from "../../models/step-model.js";
   import { durationSeconds, timingExplanation } from "../../utils/util.js";
@@ -95,7 +96,7 @@
     aria-labelledby={`step-${fieldPrefix}timing-heading`}
   >
     <div class="timing-option-row">
-      {#each modes as [value, label] (value)}
+      {#each context.stepId === undefined ? modes : [...modes, ["lux", "light_level"]] as [value, label] (value)}
         <label class="timing-option"
           ><input
             type="radio"
@@ -108,6 +109,37 @@
                 return;
               }
               time.mode = value;
+              if (value === "lux") {
+                time.lux ||= {
+                  entity_id: "",
+                  above: 400,
+                  for: "3m",
+                  delay: { min: "0s", max: "0s" },
+                  window: {
+                    start: {
+                      relative_to: { sun: "sunrise", start_offset: "-60m" },
+                    },
+                    end: {
+                      relative_to: { sun: "sunrise", start_offset: "90m" },
+                    },
+                  },
+                  fallback: "run",
+                };
+                time.luxStart ||= {
+                  mode: "relative",
+                  start: "06:00",
+                  anchor: "sun:sunrise",
+                  startOffset: "-60m",
+                };
+                time.luxEnd ||= {
+                  mode: "relative",
+                  start: "09:00",
+                  anchor: "sun:sunrise",
+                  startOffset: "90m",
+                };
+                delete time.latestAt;
+                delete time.onlyBefore;
+              }
               if (value === "relative" && !time.anchor) {
                 time.anchor = "sun:sunrise";
               }
@@ -128,7 +160,9 @@
     </div>
     <FieldError {t} key="mode" {fieldPrefix} errors={{ ...editor.errors }} />
   </fieldset>
-  {#if time.mode === "absolute"}
+  {#if time.mode === "lux"}
+    <LuxTimingEditor {panel} {context} />
+  {:else if time.mode === "absolute"}
     <div class:time-controls-inline={!!rangeEdge}>
       <EditorField
         {panel}

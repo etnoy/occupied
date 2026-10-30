@@ -108,8 +108,16 @@ export function timingForm(timing = {}) {
   if (timing.duration) {
     mode = "duration";
   }
+  if (timing.lux) {
+    mode = "lux";
+  }
   return {
     mode,
+    ...(timing.lux && {
+      lux: structuredClone(timing.lux),
+      luxStart: timingForm(timing.lux.window.start),
+      luxEnd: timingForm(timing.lux.window.end),
+    }),
     start: clock?.start || "18:00",
     end: clock?.end || "",
     anchor,
@@ -216,6 +224,36 @@ export function timingExplanation(
   sources = [],
   options = {},
 ) {
+  if (input.mode === "lux") {
+    const lux = input.lux;
+    if (!lux) {
+      return t("lux_configuration_error");
+    }
+    const boundary = (value) => {
+      if (!value) {
+        return "";
+      }
+      return value.mode === "absolute"
+        ? value.start
+        : `${t(value.anchor.slice(4))} ${value.startOffset}`;
+    };
+    const values = {
+      direction: t(lux.above === undefined ? "lux_below" : "lux_above"),
+      threshold: String(lux.above ?? lux.below ?? ""),
+      duration: lux.for || "3m",
+      delay: `${lux.delay?.min || "0s"}–${lux.delay?.max || lux.delay?.min || "0s"}`,
+      start: boundary(input.luxStart),
+      end: boundary(input.luxEnd),
+      nextDay: lux.window.end_day_offset ? t("lux_next_day") : "",
+      fallback: t(
+        lux.fallback === "skip" ? "lux_skip_summary" : "lux_run_summary",
+      ),
+    };
+    return t("lux_summary").replaceAll(
+      /\{(\w+)\}/g,
+      (_, key) => values[key] || "",
+    );
+  }
   const modified = input.latestAt || input.onlyBefore;
   const start = clockSeconds(input.start);
   const fixedClock =

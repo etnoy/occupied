@@ -1267,8 +1267,8 @@ export class OccupiedPanel extends HTMLElement {
     return this.previewController.recoverLivePreview();
   }
 
-  startLivePreview() {
-    return this.previewController.startLivePreview();
+  startLivePreview(luxMode: "threshold" | "fallback" = "fallback") {
+    return this.previewController.startLivePreview(luxMode);
   }
 
   nextLiveEvent() {
@@ -1422,6 +1422,26 @@ function editorField(tail: Path, form: Pick<StepForm, "kind">): string {
     return form.kind === "service" ? "service" : "kind";
   }
   if (head === "timing") {
+    if (has("lux")) {
+      if (has("window")) {
+        const key = has("start") && !has("end") ? "luxStart" : "luxEnd";
+
+        const field = has("absolute_time") ? "start" : "anchor";
+
+        return `${key}.${has("start_offset") ? "startOffset" : field}`;
+      }
+      if (has("entity_id")) {
+        return "luxEntity";
+      }
+      if (has("for")) {
+        return "luxFor";
+      }
+      if (has("delay")) {
+        return has("max") ? "luxDelayMax" : "luxDelayMin";
+      }
+
+      return has("fallback") ? "luxFallback" : "luxThreshold";
+    }
     for (const [field, key] of [
       ["latest_at", "latestAt"],
       ["only_before", "onlyBefore"],

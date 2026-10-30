@@ -106,6 +106,38 @@
   );
 </script>
 
+{#if panel.runtimeSnapshot.lux?.pending.length}
+  <section aria-label={t("light_level")}>
+    <h3>{t("light_level")}</h3>
+    <ul>
+      {#each panel.runtimeSnapshot.lux.pending as item (`${item.source_date}:${item.source_id}`)}
+        <li>
+          {program.steps?.[item.source_id]?.name || item.source_id} · {t(
+            `lux_${item.status}`,
+          )} · {entityNames[item.entity_id] || item.entity_id}: {item.lux ??
+            "—"} lx
+        </li>
+      {/each}
+    </ul>
+  </section>
+{/if}
+{#if Object.keys(panel.runtimeSnapshot.lux?.resolved || {}).length}
+  <details>
+    <summary>{t("lux_history")}</summary>
+    <ul>
+      {#each Object.entries(panel.runtimeSnapshot.lux?.resolved || {}) as [key, result] (key)}
+        <li>
+          {key} · {t(
+            result.reason === "fallback"
+              ? "lux_fallback_result"
+              : `lux_${result.reason}`,
+          )} · {result.at || result.resolved_at} · {result.lux ?? "—"} lx
+        </li>
+      {/each}
+    </ul>
+  </details>
+{/if}
+
 {#snippet dayHeading()}
   <div class="schedule-heading">
     <div class="schedule-title">

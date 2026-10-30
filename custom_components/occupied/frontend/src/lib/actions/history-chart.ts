@@ -8,12 +8,17 @@ export function historyChartProperties(
   values: Record<string, unknown>,
 ) {
   const known = new Map<string, PreviewHistoryEntity>();
+  let previousInput: PreviewHistoryEntity[] | undefined;
+  let previousData: PreviewHistoryEntity[] | undefined;
   const retainSeries = (next: Record<string, unknown>) => {
     const data = next.data;
     if (!Array.isArray(data)) {
       return next;
     }
     const current = data as PreviewHistoryEntity[];
+    if (current === previousInput) {
+      return { ...next, data: previousData };
+    }
     const ids = new Set(current.map((entity) => entity.entity_id));
     for (const entity of current) {
       known.set(entity.entity_id, entity);
@@ -31,7 +36,10 @@ export function historyChartProperties(
         return empty;
       });
 
-    return { ...next, data: [...current, ...removed] };
+    previousInput = current;
+    previousData = [...current, ...removed];
+
+    return { ...next, data: previousData };
   };
   const binding = properties(node, retainSeries(values));
 

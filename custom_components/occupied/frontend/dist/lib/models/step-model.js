@@ -319,6 +319,57 @@ export function actionErrors(form) {
 }
 export function timingErrors(program, time, id, randomId) {
   const errors = {};
+  if (time.mode === "lux") {
+    const spec = time.lux;
+    if (!spec || !/^sensor\.[a-z0-9_]+$/.test(spec.entity_id)) {
+      errors.luxEntity = "lux_sensor_error";
+    }
+    const threshold = spec?.above ?? spec?.below;
+    if (
+      threshold === undefined ||
+      !Number.isFinite(threshold) ||
+      threshold < 0 ||
+      (spec?.above !== undefined && spec?.below !== undefined)
+    ) {
+      errors.luxThreshold = "lux_threshold_error";
+    }
+    const stable = durationSeconds(spec?.for || "3m");
+    if (!Number.isFinite(stable) || stable < 0 || stable > 3600) {
+      errors.luxFor = "lux_duration_error";
+    }
+    const minimum = durationSeconds(spec?.delay?.min || "0s");
+    const maximum = durationSeconds(
+      spec?.delay?.max || spec?.delay?.min || "0s",
+    );
+    if (!Number.isFinite(minimum) || minimum < 0 || minimum > 1800) {
+      errors.luxDelayMin = "lux_delay_error";
+    }
+    if (!Number.isFinite(maximum) || maximum < minimum || maximum > 1800) {
+      errors.luxDelayMax = "lux_delay_error";
+    }
+    for (const field of ["luxStart", "luxEnd"]) {
+      const value = time[field];
+      if (!value) {
+        errors[`${field}.start`] = "start_time_required_error";
+        continue;
+      }
+      const nested = timingErrors(program, {
+        ...value,
+        end: "",
+        endOffset: "",
+      });
+      if (
+        value.mode === "relative" &&
+        solarEvents.every((event) => value.anchor !== `sun:${event}`)
+      ) {
+        nested.anchor = "time_source_required_error";
+      }
+      for (const [key, message] of Object.entries(nested)) {
+        errors[`${field}.${key}`] = message;
+      }
+    }
+    return errors;
+  }
   for (const key of ["latestAt", "onlyBefore"]) {
     const boundary = time[key];
     if (!boundary) {
@@ -382,6 +433,29 @@ export function timingErrors(program, time, id, randomId) {
   return errors;
 }
 export function formTiming(time) {
+  if (time.mode === "lux" && time.lux) {
+    const boundary = (value) =>
+      value?.mode === "relative"
+        ? {
+            relative_to: {
+              sun: value.anchor.slice(4),
+              ...(String(value.startOffset) !== "0s" && {
+                start_offset: String(value.startOffset),
+              }),
+            },
+          }
+        : { absolute_time: { start: value?.start || "06:00" } };
+    return {
+      lux: {
+        ...structuredClone(time.lux),
+        window: {
+          ...time.lux.window,
+          start: boundary(time.luxStart),
+          end: boundary(time.luxEnd),
+        },
+      },
+    };
+  }
   const timing = baseFormTiming(time);
   for (const [key, field] of [
     ["latestAt", "latest_at"],

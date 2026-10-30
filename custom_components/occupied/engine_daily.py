@@ -46,6 +46,7 @@ from .device_motion import complete as motion_complete
 from .device_motion import motion_for, progresses
 from .handover import calls_for_target
 from .lighting import LightState, project_lighting
+from .lux_runtime import LuxRuntime
 from .models import Handover, controlled_entities, projectable_lights
 from .plan_codec import PlannerVersionChanged
 from .plan_persistence import plan_context, plan_fingerprint, restore_plan_fingerprints
@@ -132,6 +133,7 @@ class DailyEngine:
         self._restoring = False
         self._saved_context = None
         self._anchor_latches = AnchorLatches()
+        self._lux = LuxRuntime(self)
         self._storage_failed = False
         self.configuration_ready = True
         self.source_manager = None
@@ -177,10 +179,13 @@ class DailyEngine:
         return max((instant(v["deadline"]) for v in self._handover.values()), default=None)
 
     def _context(self):
-        return self._anchor_latches.apply(
-            self.program,
-            planning_context(self.hass, source_entities(self.program)),
-            dt_util.utcnow(),
+        return replace(
+            self._anchor_latches.apply(
+                self.program,
+                planning_context(self.hass, source_entities(self.program)),
+                dt_util.utcnow(),
+            ),
+            lux_resolutions=self._lux.resolutions(),
         )
 
     def preview_inputs(self):
@@ -190,6 +195,7 @@ class DailyEngine:
         latches = AnchorLatches()
         latches.restore(self._anchor_latches.snapshot())
         context = latches.apply(program, context, dt_util.utcnow())
+        context = replace(context, lux_resolutions=self._lux.resolutions())
         return PreviewInputs(program, self._seed, context, tuple(self._plans.values()))
 
     def _context_identity(self, context=None):
@@ -199,6 +205,7 @@ class DailyEngine:
             context.latitude,
             context.longitude,
             context.elevation,
+            context.lux_resolutions,
             {
                 entity: {
                     "kind": context.time_sources.get(entity, {}).get("kind"),
@@ -239,6 +246,7 @@ class DailyEngine:
             await self._save_permission()
         await self.live_preview.async_prepare()
         saved = await self._store.async_load() or {}
+        self._lux.restore(saved.get("lux"))
         if saved.get("behavior") == behavior_hash(self.program):
             self._anchor_latches.restore(saved.get("anchor_latches"))
         self._seed = saved.get("seed", self._seed)
@@ -350,7 +358,10 @@ class DailyEngine:
             self._state_unsub()
         self._time_source_entities = source_entities(self.program)
         entities = (
-            controlled_entities(self.program) | self._time_source_entities | self.gate.entities
+            controlled_entities(self.program)
+            | self._time_source_entities
+            | self.gate.entities
+            | self._lux.entities
         )
         if self.live_preview.condition_gate:
             entities |= self.live_preview.condition_gate.entities
@@ -470,6 +481,15 @@ class DailyEngine:
     @callback
     def _state_changed(self, event):
         entity = event.data["entity_id"]
+        if entity in self._lux.entities:
+            self._lux.sensor_changed(entity, event.data.get("new_state"))
+            if (
+                entity
+                not in controlled_entities(self.program)
+                | self._time_source_entities
+                | self.gate.entities
+            ):
+                return
         preview_gate = self.live_preview.condition_gate
         if entity in self.gate.entities or (preview_gate and entity in preview_gate.entities):
             old, new = event.data.get("old_state"), event.data.get("new_state")
@@ -565,6 +585,7 @@ class DailyEngine:
 
     @callback
     def _invalidate(self, *, preserve_activation=False):
+        self._lux.stop()
         self.active = False
         if not preserve_activation:
             self.activation_deadline = None
@@ -638,6 +659,7 @@ class DailyEngine:
             "reconciliation": self.reconciliation,
             "context": self._saved_context,
             "anchor_latches": self._anchor_latches.snapshot(),
+            "lux": self._lux.snapshot(),
             "plan_fingerprints": self._stored_plan_fingerprints(),
             "journal": self._journal,
             "yielded": sorted(self._yielded),
@@ -1039,6 +1061,7 @@ class DailyEngine:
                     else:
                         self._push(event.at, "plan", key, (plan, event), event.order_key[1:])
         self._push(current.end, "boundary", f"boundary:{current.end}", order=(0, 0, "", 0))
+        self._lux.arm()
 
     async def _begin_handover(self, *, recover=False):
         now = dt_util.utcnow()
@@ -1892,6 +1915,7 @@ class DailyEngine:
             "behavior_hash": behavior_hash(self.program),
             "journal_count": len(self._journal),
             "outcomes": list(self.outcomes),
+            "lux": self._lux.status(),
             "events": [
                 {"time": e.at.isoformat(), "event": e.kind, "id": e.key}
                 for e in sorted(self._queue)
