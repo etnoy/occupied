@@ -1,0 +1,53 @@
+custom_components/occupied/editor.py
+  s_f007746cdfe7fc::t_3deb214f752029 95-96,116-138
+custom_components/occupied/engine_daily.py
+  s_f007746cdfe7fc::t_c062b77d7642a7 49,136,182-188,198,208,249,361-364,484-492,588,662,1064,1918
+custom_components/occupied/frontend/src/lib/components/preview/LivePreviewControls.svelte
+  s_f007746cdfe7fc::t_d68badecad27f8 12-19,31-33,64-73,78
+custom_components/occupied/frontend/src/lib/components/preview/PreviewView.svelte
+  s_f007746cdfe7fc::t_5978fc291fad18 109-140
+custom_components/occupied/frontend/src/lib/components/preview/Timeline.svelte
+  s_f007746cdfe7fc::t_2a68bd2ad40d78 135-158
+custom_components/occupied/frontend/src/lib/components/shared/LuxTimingEditor.svelte
+  s_f007746cdfe7fc::t_3a848502cd7bbe 1-163
+custom_components/occupied/frontend/src/lib/components/shared/TimingBoundaryEditor.svelte
+  s_f007746cdfe7fc::t_35fa08af51440b 14
+custom_components/occupied/frontend/src/lib/components/shared/TimingEditor.svelte
+  s_f007746cdfe7fc::t_d61226d66fe1b2 8,99,112-142,163-165
+custom_components/occupied/frontend/src/lib/controllers/preview-controller.ts
+  s_f007746cdfe7fc::t_94d89e1e4224a0 155,178
+custom_components/occupied/frontend/src/lib/i18n/translations.ts
+  s_f007746cdfe7fc::t_5aed0d5f5dbdf8 3-52,644-695
+custom_components/occupied/frontend/src/lib/models/step-model.ts
+  s_f007746cdfe7fc::t_edf6d93f8bc8b7 370-421,487-512
+custom_components/occupied/frontend/src/lib/types.ts
+  s_f007746cdfe7fc::t_29c75f4e93401d 14,30-43,101-103,241-242,324-343,393-402
+custom_components/occupied/live_preview.py
+  s_f007746cdfe7fc::t_2e80db8e9cbe9b 233,260-273,305
+custom_components/occupied/plan_codec.py
+  s_f007746cdfe7fc::t_ff3ec62455020f 96
+custom_components/occupied/preview.py
+  s_f007746cdfe7fc::t_bbee323c3f8ae5 53
+custom_components/occupied/runtime_planning.py
+  s_f007746cdfe7fc::t_9f7e353d89f939 91-94
+custom_components/occupied/time_utils.py
+  s_f007746cdfe7fc::t_1172422e539fc3 22
+custom_components/occupied/websocket_api.py
+  s_f007746cdfe7fc::t_85b484ce8ab3fd 367,392
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "fc822a00b90ddb227ccb13dbe2d4e33424bda879",
+  "prompts": {},
+  "sessions": {
+    "s_f007746cdfe7fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a18de6-d8cc-7fb0-8089-88b68cf5a77f",
+        "model": "unknown"
+      },
+      "human_author": "Jonathan Jogenfors <jonathan@jogenfors.se>"
+    }
+  }
+}
