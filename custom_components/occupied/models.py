@@ -339,7 +339,7 @@ class LuxTiming(Model):
     entity_id: Annotated[str, StringConstraints(pattern=r"^sensor\.[a-z0-9_]+$")]
     above: Annotated[float, Field(strict=True, ge=0, allow_inf_nan=False)] | None = None
     below: Annotated[float, Field(strict=True, ge=0, allow_inf_nan=False)] | None = None
-    stable_for: Annotated[Duration, Field(le=3600)] = Field(default="3m", alias="for")
+    stable_for: Annotated[Duration, Field(le=3600, alias="for")] = "3m"
     delay: LuxDelay = Field(default_factory=LuxDelay)
     window: LuxWindow
     fallback: Literal["run", "skip"] = "run"
