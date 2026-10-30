@@ -7,6 +7,7 @@ A program file contains the program mapping directly. The GUI's **Settings** YAM
 - [Program fields](#program-fields)
 - [Steps](#steps)
 - [Timing](#timing)
+- [Light-level timing](#light-level-timing)
 - [Step timing limits](#step-timing-limits)
 - [Run condition](#run-condition)
 - [Random events](#random-events)
@@ -60,7 +61,7 @@ steps:
 
 | Field | Required | Accepted value / default |
 | --- | --- | --- |
-| `timing` | Yes | Exactly one `absolute_time` or `relative_to` source, with optional step timing limits. |
+| `timing` | Yes | Exactly one `absolute_time`, `relative_to`, or `lux` source. Clock and relative modes support optional step timing limits. |
 | `name` | No | Display name. Whitespace is trimmed; an empty name is treated as omitted. |
 | `enabled` | No | Strict boolean, default `true`. |
 | `days` | No | Nonempty list of weekdays, default every day. |
@@ -73,7 +74,7 @@ Weekdays are `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, and `sun`. Duplicates are
 
 ## Timing
 
-Choose exactly one `timing.absolute_time` or `timing.relative_to` branch. The GUI calls these **Absolute time** and **Relative to**.
+Choose exactly one `timing.absolute_time`, `timing.relative_to`, or `timing.lux` branch. The GUI also offers **Light level** for the lux mode described below.
 
 Absolute timing requires `start`, with optional `end`. These delimit the window in which one action occurs. End is not an off action or a duration. Omitting end, or choosing equal bounds, creates a fixed time. An end before start automatically means the next day. Start sampling is uniform.
 
@@ -111,6 +112,38 @@ Solar sources support sunrise, sunset, dawn, dusk, noon, and midnight. Dawn/dusk
 HA entity sources accept `input_datetime.*` helpers with a time component, `sensor.*` timestamp sensors, and `calendar.*` entities. Other entity domains are rejected as time sources. Calendar sources require `attribute: start_time` or `end_time`. Time-only helpers repeat daily. Dated sources use only the occurrence HA reports and are not projected onto unknown future dates. Missing or unavailable values skip the step with a warning. Offline previews have no HA snapshot. Source changes reschedule future work without replaying completed steps for the same source date.
 
 Once a reported anchor instant is reached, Occupied retains it for that source date while the date remains in the runtime planning window, including across restarts. A calendar advancing to its next event therefore preserves offsets that run after midnight. Changes reported before the anchor instant still reschedule its work.
+
+## Light-level timing
+
+`timing.lux` schedules a Step once an illuminance threshold holds continuously
+within a bounded window. It is exclusive with clock, relative and duration timing,
+and cannot use `latest_at` or `only_before`. Random-event timings do not accept it.
+
+| Field under `lux` | Required | Accepted value / default |
+| --- | --- | --- |
+| `entity_id` | Yes | A `sensor.*` entity with device class `illuminance` and unit `lx`. Missing sensors warn and use the configured fallback. |
+| `above` or `below` | Exactly one | A finite, nonnegative number of lux; booleans are rejected. Comparisons are strict, so equality resets qualification. |
+| `for` | No | Continuous stability duration, `0s` through `1h`, default `3m`. |
+| `delay.min`, `delay.max` | No | Nonnegative delays up to `30m`. Minimum defaults to `0s`; omitted maximum equals minimum. Maximum must be at least minimum. |
+| `window.start`, `window.end` | Yes | Fixed clock or solar boundaries with the same shapes as Step timing limits below. |
+| `window.end_day_offset` | No | `0` for the same source date (default), `1` for the next date. |
+| `fallback` | No | `run` (default) or `skip` at the window end. `run` applies even if a working sensor never reaches the threshold. |
+
+The condition must stay true during both stability and random delay; false or
+unavailable readings reset it. Random delay is sampled deterministically once per
+occurrence and reused after resets. Invalid readings never become zero lux.
+Windows must have positive length, last at most 24 hours in elapsed UTC time, and
+not overlap the next occurrence. Missing solar events skip their occurrences with
+an explanation. Deadline policy wins over qualification completing at or after
+window end. Windows missed while inactive do not cause catch-up commands.
+
+Dependent Steps wait for the parent's actual resolved action time and must use
+nonnegative offsets without timing caps. A skipped parent skips its dependents.
+Random windows cannot depend on a lux Step or its dependent chain in this version.
+Preview shows pending windows, not predicted timestamps. Live preview explicitly
+simulates either threshold qualification or the deadline policy without consuming
+production occurrences. See [Lighting based on outdoor lux](lux-thresholds.md)
+for a complete YAML example, sensor setup and recovery behavior.
 
 ## Step timing limits
 

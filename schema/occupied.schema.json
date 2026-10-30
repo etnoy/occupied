@@ -219,6 +219,160 @@
       "type": "string"
     },
     "JsonValue": {},
+    "LuxDelay": {
+      "additionalProperties": false,
+      "properties": {
+        "min": {
+          "default": "0s",
+          "ge": 0,
+          "le": 1800,
+          "title": "Min",
+          "type": "string"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "ge": 0,
+              "le": 1800,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max"
+        }
+      },
+      "title": "LuxDelay",
+      "type": "object"
+    },
+    "LuxTiming": {
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "not": {
+            "required": [
+              "below"
+            ]
+          },
+          "properties": {
+            "above": {
+              "not": {
+                "type": "null"
+              }
+            }
+          },
+          "required": [
+            "above"
+          ]
+        },
+        {
+          "not": {
+            "required": [
+              "above"
+            ]
+          },
+          "properties": {
+            "below": {
+              "not": {
+                "type": "null"
+              }
+            }
+          },
+          "required": [
+            "below"
+          ]
+        }
+      ],
+      "properties": {
+        "entity_id": {
+          "pattern": "^sensor\\.[a-z0-9_]+$",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "above": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Above"
+        },
+        "below": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Below"
+        },
+        "for": {
+          "default": "3m",
+          "ge": 0,
+          "le": 3600,
+          "title": "For",
+          "type": "string"
+        },
+        "delay": {
+          "$ref": "#/$defs/LuxDelay"
+        },
+        "window": {
+          "$ref": "#/$defs/LuxWindow"
+        },
+        "fallback": {
+          "default": "run",
+          "enum": [
+            "run",
+            "skip"
+          ],
+          "title": "Fallback",
+          "type": "string"
+        }
+      },
+      "required": [
+        "entity_id",
+        "window"
+      ],
+      "title": "LuxTiming",
+      "type": "object"
+    },
+    "LuxWindow": {
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/TimingBoundary"
+        },
+        "end": {
+          "$ref": "#/$defs/TimingBoundary"
+        },
+        "end_day_offset": {
+          "default": 0,
+          "enum": [
+            0,
+            1
+          ],
+          "title": "End Day Offset",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "LuxWindow",
+      "type": "object"
+    },
     "RandomEvent": {
       "additionalProperties": false,
       "properties": {
@@ -767,15 +921,13 @@
                 "required": [
                   "duration"
                 ]
+              },
+              {
+                "required": [
+                  "lux"
+                ]
               }
             ]
-          },
-          "properties": {
-            "absolute_time": {
-              "not": {
-                "type": "null"
-              }
-            }
           },
           "required": [
             "absolute_time"
@@ -793,15 +945,13 @@
                 "required": [
                   "duration"
                 ]
+              },
+              {
+                "required": [
+                  "lux"
+                ]
               }
             ]
-          },
-          "properties": {
-            "relative_to": {
-              "not": {
-                "type": "null"
-              }
-            }
           },
           "required": [
             "relative_to"
@@ -819,18 +969,40 @@
                 "required": [
                   "relative_to"
                 ]
+              },
+              {
+                "required": [
+                  "lux"
+                ]
               }
             ]
           },
-          "properties": {
-            "duration": {
-              "not": {
-                "type": "null"
-              }
-            }
-          },
           "required": [
             "duration"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "absolute_time"
+                ]
+              },
+              {
+                "required": [
+                  "relative_to"
+                ]
+              },
+              {
+                "required": [
+                  "duration"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "lux"
           ]
         }
       ],
@@ -861,6 +1033,17 @@
           "anyOf": [
             {
               "$ref": "#/$defs/WindowDuration"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "lux": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LuxTiming"
             },
             {
               "type": "null"

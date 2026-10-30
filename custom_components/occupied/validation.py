@@ -429,7 +429,36 @@ def validate_program(data: Program | Mapping[str, Any]) -> Program:
             )
     if issues:
         raise ProgramError(issues)
-    step_order(program)
+    dynamic = set()
+    for key in step_order(program):
+        timing = program.steps[key].timing
+        source = timing.relative_to
+        if timing.lux:
+            dynamic.add(key)
+        elif source and source.step in dynamic:
+            dynamic.add(key)
+            if source.start_offset < 0 or timing.latest_at or timing.only_before:
+                raise ProgramError(
+                    [
+                        Issue(
+                            "lux_dependency",
+                            "Steps after a light-level Step require "
+                            "nonnegative offsets and no timing caps",
+                            ("steps", key, "timing"),
+                        )
+                    ]
+                )
+    for key, event in program.random.items():
+        if any(t.relative_to and t.relative_to.step in dynamic for t in (event.start, event.end)):
+            raise ProgramError(
+                [
+                    Issue(
+                        "lux_dependency",
+                        "Random windows cannot depend on light-level Steps",
+                        ("random", key),
+                    )
+                ]
+            )
     random_order(program)
     return program
 

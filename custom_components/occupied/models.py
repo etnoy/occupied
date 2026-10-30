@@ -235,14 +235,14 @@ class Timing(Model):
 
     @model_validator(mode="after")
     def one_mode(self):
+        modes = {"absolute_time", "relative_to", "duration"}
+        if hasattr(self, "lux"):
+            modes.add("lux")
         if (
-            len({"absolute_time", "relative_to", "duration"} & self.model_fields_set) != 1
-            or sum(
-                value is not None for value in (self.absolute_time, self.relative_to, self.duration)
-            )
-            != 1
+            len(modes & self.model_fields_set) != 1
+            or sum(getattr(self, key) is not None for key in modes) != 1
         ):
-            raise ValueError("Choose absolute_time, relative_to, or duration")
+            raise ValueError("Choose exactly one timing mode")
         return self
 
 
@@ -305,7 +305,73 @@ class TimingBoundary(Model):
         return value
 
 
+class LuxDelay(Model):
+    min: Annotated[Duration, Field(le=1800)] = "0s"
+    max: Annotated[Duration, Field(le=1800)] | None = None
+
+    @model_validator(mode="after")
+    def ordered(self):
+        if self.max is not None and self.max < self.min:
+            raise ValueError("Maximum delay must be at least the minimum")
+        return self
+
+
+class LuxWindow(Model):
+    start: TimingBoundary
+    end: TimingBoundary
+    end_day_offset: Literal[0, 1] = 0
+
+
+class LuxTiming(Model):
+    model_config = ConfigDict(
+        serialize_by_alias=True,
+        json_schema_extra={
+            "oneOf": [
+                {
+                    "required": [key],
+                    "properties": {key: {"not": {"type": "null"}}},
+                    "not": {"required": [other]},
+                }
+                for key, other in (("above", "below"), ("below", "above"))
+            ]
+        },
+    )
+    entity_id: Annotated[str, StringConstraints(pattern=r"^sensor\.[a-z0-9_]+$")]
+    above: Annotated[float, Field(strict=True, ge=0, allow_inf_nan=False)] | None = None
+    below: Annotated[float, Field(strict=True, ge=0, allow_inf_nan=False)] | None = None
+    stable_for: Annotated[Duration, Field(le=3600)] = Field(default="3m", alias="for")
+    delay: LuxDelay = Field(default_factory=LuxDelay)
+    window: LuxWindow
+    fallback: Literal["run", "skip"] = "run"
+
+    @model_validator(mode="after")
+    def direction(self):
+        if len({"above", "below"} & self.model_fields_set) != 1 or (
+            (self.above is None) == (self.below is None)
+        ):
+            raise ValueError("Choose exactly one lux threshold: above or below")
+        return self
+
+
 class StepTiming(Timing):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "oneOf": [
+                {
+                    "required": [mode],
+                    "not": {
+                        "anyOf": [
+                            {"required": [other]}
+                            for other in ("absolute_time", "relative_to", "duration", "lux")
+                            if other != mode
+                        ]
+                    },
+                }
+                for mode in ("absolute_time", "relative_to", "duration", "lux")
+            ]
+        }
+    )
+    lux: LuxTiming | None = None
     latest_at: TimingBoundary | None = Field(
         default=None, validate_default=False, json_schema_extra={"not": {"type": "null"}}
     )
@@ -319,6 +385,12 @@ class StepTiming(Timing):
         if value is None:
             raise ValueError("Omit an unused timing modifier instead of using null")
         return value
+
+    @model_validator(mode="after")
+    def lux_limits(self):
+        if self.lux and (self.latest_at or self.only_before):
+            raise ValueError("Use the light-level window deadline instead of timing limits")
+        return self
 
 
 class Stagger(Model):

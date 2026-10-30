@@ -50,6 +50,7 @@ def planning_identity(program, context):
         context.latitude,
         context.longitude,
         context.elevation,
+        context.lux_resolutions,
         {entity: context.time_sources.get(entity) for entity in sorted(entities)},
     ]
 

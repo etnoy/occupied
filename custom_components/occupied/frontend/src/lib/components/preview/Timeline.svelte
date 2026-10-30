@@ -132,6 +132,30 @@
       {t}
       eventTime={hoveredEventTime}
     />
+    {#if plan.pending_occurrences?.length}
+      <section aria-label={t("lux_pending")}>
+        <h3>{t("lux_pending")}</h3>
+        <p class="hint">{t("lux_preview_hint")}</p>
+        <ul>
+          {#each plan.pending_occurrences as item (`${item.source_date}:${item.source_id}`)}
+            <li>
+              {program.steps?.[item.source_id]?.name || item.source_id} · {item.source_date}:
+              {#if item.start && item.end}
+                {formatEventTime(
+                  item.start,
+                  plan.timezone,
+                  locale,
+                )}–{formatEventTime(item.end, plan.timezone, locale)} · {t(
+                  item.fallback === "skip" ? "lux_skip" : "lux_run_anyway",
+                )}
+              {:else}
+                {t("lux_waiting_for_parent")}
+              {/if}
+            </li>
+          {/each}
+        </ul>
+      </section>
+    {/if}
     {#if plan.events.length > 0}
       <div class="event-details">
         <div>

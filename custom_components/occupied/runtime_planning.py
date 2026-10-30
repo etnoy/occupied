@@ -88,6 +88,10 @@ def runtime_dates(program, today):
 
 
 def timing_bounds(timing, bounds, random_bounds=None):
+    if spec := getattr(timing, "lux", None):
+        endpoints = (spec.window.start, spec.window.end)
+        offsets = [edge.relative_to.start_offset if edge.relative_to else 0 for edge in endpoints]
+        return min(0, *offsets), 2 * DAY + max(0, *offsets)
     if source := timing.relative_to:
         low, high = (
             bounds[source.step]

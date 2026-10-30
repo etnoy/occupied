@@ -92,6 +92,8 @@ async def async_catalog(hass):
                 "entity_id": state.entity_id,
                 "name": state.name,
                 "state": state.state,
+                "device_class": state.attributes.get("device_class"),
+                "unit_of_measurement": state.attributes.get("unit_of_measurement"),
                 "area": area.name if area else None,
                 "domain": state.domain,
                 "dimmable": dimmable,
@@ -111,6 +113,29 @@ async def async_catalog(hass):
 def installed_issues(hass, program):
     """Validate installed services without dispatching them."""
     issues = []
+    for key, step in program.steps.items():
+        if spec := step.timing.lux:
+            state = hass.states.get(spec.entity_id)
+            if state is None:
+                issues.append(
+                    Issue(
+                        "lux_sensor_missing",
+                        f"{spec.entity_id} is unavailable; the window fallback will apply",
+                        ("steps", key, "timing", "lux", "entity_id"),
+                        "warning",
+                    )
+                )
+            elif (
+                state.attributes.get("device_class") != "illuminance"
+                or state.attributes.get("unit_of_measurement") != "lx"
+            ):
+                issues.append(
+                    Issue(
+                        "lux_sensor",
+                        "Choose an illuminance sensor measured in lx",
+                        ("steps", key, "timing", "lux", "entity_id"),
+                    )
+                )
     registry = hass.services.async_services()
     for path, step in program_actions(program, enabled_only=False):
         for entity in step.entities:

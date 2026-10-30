@@ -19,6 +19,7 @@ class PlanningContext:
     elevation: float = 0
     time_sources: dict[str, dict[str, str | None]] = field(default_factory=dict)
     time_source_latches: dict[str, dict[str, dict[str, str]]] = field(default_factory=dict)
+    lux_resolutions: dict[str, dict[str, str | None]] = field(default_factory=dict)
 
 
 def resolve_local(naive: datetime, zone: ZoneInfo) -> tuple[datetime, str | None]:

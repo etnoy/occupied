@@ -1811,5 +1811,101 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await maximumDuration.fill("");
   await expect(maximumDuration).toHaveCount(0);
   await expect(addDurationRange).toBeVisible();
+  await random.locator("[data-random-submit]").click();
+  await expect(random).toHaveCount(0);
+
+  // Exercise the installed light-level editor with a disposable HA sensor.
+  const luxSensor = await request.post(
+    "/api/states/sensor.browser_outdoor_lux",
+    {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+      data: {
+        state: "450",
+        attributes: {
+          friendly_name: "Outdoor daylight",
+          device_class: "illuminance",
+          unit_of_measurement: "lx",
+        },
+      },
+    },
+  );
+  expect(luxSensor.ok()).toBeTruthy();
+  await panel.evaluate(async (element) => {
+    const controller = element as OccupiedPanel;
+    controller.catalog = await controller.ws("catalog");
+    await controller.save({
+      schema_version: 1,
+      name: "Lux smoke",
+      steps: {
+        lux_browser: {
+          name: "Outdoor lux",
+          timing: { absolute_time: { start: "07:00" } },
+          action: "turn_off",
+          entities: ["light.smoke_light"],
+        },
+      },
+    });
+  });
+  await panel.locator('[data-step-id="lux_browser"] .step-row').click();
+  const luxEditor = panel.locator(".step-editor");
+  await luxEditor
+    .getByRole("radio", { name: "Light level", exact: true })
+    .check();
+  await luxEditor
+    .getByLabel("Outdoor light sensor", { exact: true })
+    .selectOption("sensor.browser_outdoor_lux");
+  await expect(
+    luxEditor.getByLabel("Outdoor light sensor").locator("option:checked"),
+  ).toContainText("Outdoor daylight");
+  await luxEditor.getByLabel("Threshold (lx)", { exact: true }).fill("500");
+  await luxEditor.locator('[data-builder-field="luxFor"]').fill("2m");
+  await luxEditor.locator('[data-builder-field="luxDelayMax"]').fill("4m");
+  await luxEditor.locator("[data-step-submit]").click();
+  await expect(luxEditor).toHaveCount(0);
+  await panel.locator('[data-step-id="lux_browser"] .step-row').click();
+  await expect(
+    luxEditor.getByRole("radio", { name: "Light level", exact: true }),
+  ).toBeChecked();
+  await expect(
+    luxEditor.getByLabel("Threshold (lx)", { exact: true }),
+  ).toHaveValue("500");
+  await expect(
+    luxEditor.locator('[data-builder-field="luxDelayMax"]'),
+  ).toHaveValue("4m");
+  await luxEditor
+    .locator('[data-builder-field="luxDirection"]')
+    .selectOption("below");
+  await luxEditor
+    .locator('[data-builder-field="luxFallback"]')
+    .selectOption("skip");
+  await luxEditor
+    .locator('[data-builder-field="luxStart.anchor"]')
+    .selectOption("sun:sunset");
+  await luxEditor
+    .locator('[data-builder-field="luxEnd.anchor"]')
+    .selectOption("sun:sunset");
+  await expect(luxEditor.locator("[data-timing-explanation]")).toContainText(
+    "below 500 lx",
+  );
+  await luxEditor.locator("[data-step-submit]").click();
+  await expect(luxEditor).toHaveCount(0);
+  expect(
+    await panel.evaluate(
+      (element) =>
+        (element as OccupiedPanel).saved!.steps!.lux_browser.timing.lux,
+    ),
+  ).toMatchObject({
+    entity_id: "sensor.browser_outdoor_lux",
+    below: 500,
+    for: "2m",
+    fallback: "skip",
+  });
+  await panel.getByRole("button", { name: "Preview", exact: true }).click();
+  await expect(
+    panel.getByText(
+      "These are observation windows, not predicted action times. Current lux is not a forecast.",
+    ),
+  ).toBeVisible();
+  await expect(panel.getByLabel("Simulate light-level Steps")).toBeVisible();
   expect(errors).toEqual([]);
 });

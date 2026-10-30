@@ -25,7 +25,7 @@ from .validation import (
     validation_warnings,
 )
 
-PLANNER_VERSION = 15
+PLANNER_VERSION = 16
 
 
 class RandomStreams:
@@ -179,6 +179,7 @@ class DailyPlan:
     # Preview-only context: never dispatched or included in executable groups.
     history_events: tuple[PlanEvent, ...] = ()
     future_events: tuple[PlanEvent, ...] = ()
+    pending_occurrences: tuple[dict, ...] = ()
 
     @cached_property
     def groups(self):
@@ -221,6 +222,8 @@ class DailyPlan:
             result["future_events"] = [
                 e.to_dict(ZoneInfo(self.timezone)) for e in self.future_events
             ]
+        if self.pending_occurrences:
+            result["pending_occurrences"] = list(self.pending_occurrences)
         result["plan_fingerprint"] = hashlib.sha256(
             json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
@@ -392,6 +395,12 @@ def generate_plan(
     context = context or PlanningContext()
     issues, times, events = list(validation_warnings(program)), {}, []
     day = SimulationDay(program, simulation_date, context, issues)
+    from .lux import lux_windows
+
+    windows = lux_windows(program, simulation_date, context, issues)
+    resolutions = context.lux_resolutions.get(simulation_date.isoformat(), {})
+    pending = []
+    waiting = set()
     streams = RandomStreams(seed)
     for key in step_order(program):
         step = program.steps[key]
@@ -406,7 +415,53 @@ def generate_plan(
                 )
             )
             continue
-        start = sample_timing(day, step.timing, times, path, streams.rng("step", key, "start"))
+        if spec := step.timing.lux:
+            if key not in windows:
+                continue
+            if key not in resolutions:
+                low, high = windows[key]
+                pending.append(
+                    {
+                        "source_id": key,
+                        "source_date": simulation_date.isoformat(),
+                        "entity_id": spec.entity_id,
+                        "start": low.isoformat(),
+                        "end": high.isoformat(),
+                        "fallback": spec.fallback,
+                        "status": "waiting_for_light",
+                    }
+                )
+                waiting.add(key)
+                continue
+            if resolutions[key] is None:
+                issues.append(
+                    Issue("lux_skipped", f"{key} light-level occurrence skipped", path, "info")
+                )
+                continue
+            start = datetime.fromisoformat(resolutions[key])
+            if start.tzinfo is None or not windows[key][0] <= start <= windows[key][1]:
+                raise ProgramError(
+                    [
+                        Issue(
+                            "lux_resolution",
+                            "Lux resolution is outside its observation window",
+                            path,
+                        )
+                    ]
+                )
+        elif step.timing.relative_to and step.timing.relative_to.step in waiting:
+            waiting.add(key)
+            pending.append(
+                {
+                    "source_id": key,
+                    "source_date": simulation_date.isoformat(),
+                    "parent": step.timing.relative_to.step,
+                    "status": "waiting_for_parent",
+                }
+            )
+            continue
+        else:
+            start = sample_timing(day, step.timing, times, path, streams.rng("step", key, "start"))
         if start is None:
             continue
         earliest = None
@@ -559,6 +614,7 @@ def generate_plan(
         supersede_ticks(events),
         times,
         tuple(issues),
+        pending_occurrences=tuple(pending),
     )
 
 
@@ -722,6 +778,17 @@ def preview_calendar_dates(program, dates, seed, *, context=None, source_plans=(
     return tuple(
         replace(
             plans[day],
+            pending_occurrences=tuple(
+                item
+                for source, source_plan in plans.items()
+                for item in source_plan.pending_occurrences
+                if "start" in item
+                and (
+                    datetime.fromisoformat(item["start"]) < plans[day].end
+                    and datetime.fromisoformat(item["end"]) > plans[day].start
+                )
+            )
+            + tuple(item for item in plans[day].pending_occurrences if "start" not in item),
             issues=tuple(
                 issue
                 for source, plan in plans.items()

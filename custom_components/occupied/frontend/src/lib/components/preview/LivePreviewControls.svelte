@@ -9,6 +9,14 @@
   let { panel }: { panel: LoadedOccupiedPanel } = $props();
 
   let t = $derived(panel.t);
+
+  let luxMode = $state<"threshold" | "fallback">("fallback");
+
+  let hasLux = $derived(
+    Object.values(panel.previewProgram?.steps || {}).some(
+      (step) => step.timing.lux,
+    ),
+  );
   let session = $derived(panel.liveVisible ? panel.liveSession : null);
   let running = $derived(panel.liveRunning);
   let executing = $derived(panel.liveBusy || session?.state === "executing");
@@ -20,7 +28,9 @@
       !running &&
       (session
         ? !session.storage_failed
-        : !!panel.preview?.valid && !!panel.preview?.plans[0]?.events.length),
+        : !!panel.preview?.valid &&
+          (!!panel.preview?.plans[0]?.events.length ||
+            !!panel.preview?.plans[0]?.pending_occurrences?.length)),
   );
   let currentOutcomes = $derived(
     Object.values(session?.outcomes || {}).filter(
@@ -51,11 +61,21 @@
         >{t(panel.liveStopping ? "stopping" : "stop")}</button
       >
     {:else}
+      {#if hasLux}
+        <label
+          >{t("lux_preview_mode")}
+          <select bind:value={luxMode} disabled={panel.liveBusy}>
+            <option value="fallback">{t("lux_simulate_fallback")}</option>
+            <option value="threshold">{t("lux_simulate_threshold")}</option>
+          </select>
+        </label>
+        <p class="hint">{t("lux_simulation_hint")}</p>
+      {/if}
       <button
         type="button"
         class="primary"
         disabled={!canStart}
-        onclick={() => panel.startLivePreview()}
+        onclick={() => panel.startLivePreview(luxMode)}
         >{t(session ? "run_again" : "start_live_preview")}</button
       >
       {#if panel.schedulingPaused}

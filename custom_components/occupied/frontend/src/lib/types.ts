@@ -11,6 +11,7 @@ export interface TimingBoundary {
 }
 
 export interface Timing {
+  lux?: LuxTiming;
   latest_at?: TimingBoundary;
   only_before?: TimingBoundary;
   absolute_time?: { start: string; end?: string };
@@ -24,6 +25,20 @@ export interface Timing {
     start_offset?: string;
     end_offset?: string;
   };
+}
+
+export interface LuxTiming {
+  entity_id: string;
+  above?: number;
+  below?: number;
+  for?: string;
+  delay?: { min: string; max?: string };
+  window: {
+    start: TimingBoundary;
+    end: TimingBoundary;
+    end_day_offset?: 0 | 1;
+  };
+  fallback?: "run" | "skip";
 }
 
 export interface Stagger {
@@ -83,6 +98,9 @@ export interface StepEntry extends Omit<Step, "name" | "days"> {
 }
 
 export interface TimingForm {
+  lux?: LuxTiming;
+  luxStart?: BoundaryForm;
+  luxEnd?: BoundaryForm;
   latestAt?: BoundaryForm;
   onlyBefore?: BoundaryForm;
   mode: string;
@@ -220,6 +238,8 @@ export interface Catalog {
     area?: string | null;
     domain?: string;
     state?: string;
+    device_class?: string | null;
+    unit_of_measurement?: string | null;
     activity_list?: string[];
     dimmable?: boolean;
     transition?: boolean;
@@ -301,6 +321,26 @@ export type ApiResult<T> =
   ({ valid: true; issues?: Issue[] } & T) | { valid: false; issues: Issue[] };
 
 export interface RuntimeSnapshot {
+  lux?: {
+    pending: {
+      source_id: string;
+      source_date: string;
+      entity_id: string;
+      status: string;
+      lux: number | null;
+      since: string | null;
+      due: string | null;
+    }[];
+    resolved: Record<
+      string,
+      {
+        at: string | null;
+        reason: string;
+        lux: number | null;
+        resolved_at: string;
+      }
+    >;
+  };
   enforce_state_on_start?: boolean;
   reason?: string;
   run_condition?:
@@ -350,6 +390,16 @@ export interface PlannedEvent {
 }
 
 export interface Plan {
+  pending_occurrences?: {
+    source_id: string;
+    source_date: string;
+    entity_id?: string;
+    parent?: string;
+    start?: string;
+    end?: string;
+    fallback?: string;
+    status: string;
+  }[];
   simulation_date: string;
   timezone: string;
   behavior_hash: string;

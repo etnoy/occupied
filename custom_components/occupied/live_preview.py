@@ -230,7 +230,7 @@ class LivePreviewManager:
                     f"overlapping entities: {', '.join(sorted(shared))}",
                 )
 
-    async def async_start(self, day, fingerprint, request_id, user_id):
+    async def async_start(self, day, fingerprint, request_id, user_id, lux_mode="fallback"):
         # Serialize starts across controllers so overlapping sessions cannot both win.
         lock = self.hass.data.setdefault(DOMAIN, {}).setdefault("live_start_lock", asyncio.Lock())
         request_key = f"{user_id}:{request_id}"
@@ -257,6 +257,20 @@ class LivePreviewManager:
             )
             if preview["plan_fingerprint"] != fingerprint:
                 raise LivePreviewError("schedule_changed", "Schedule changed; refresh Preview")
+            if any(step.timing.lux for step in program.steps.values()):
+                from .lux import simulated_context
+                from .preview import PreviewInputs
+
+                simulated = PreviewInputs(
+                    program,
+                    inputs.seed,
+                    simulated_context(
+                        program, date.fromisoformat(day), inputs.context, inputs.seed, lux_mode
+                    ),
+                )
+                preview = await self.hass.async_add_executor_job(
+                    partial(simulated.render, date.fromisoformat(day), 1)
+                )
             plan = plan_from_data(preview["plans"][0])
             if not plan.feasible or not plan.events or len(plan.events) > MAX_EVENTS:
                 raise LivePreviewError("empty_schedule", "Choose a nonempty, feasible preview day")
@@ -288,6 +302,7 @@ class LivePreviewManager:
                     "cursor": 0,
                     "total": len(self.groups),
                     "simulated_time": None,
+                    "lux_simulation": lux_mode,
                     "in_flight": None,
                     "detail": "Ready to start",
                     "outcomes": {},

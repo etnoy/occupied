@@ -152,7 +152,7 @@ export class PreviewController {
     }
   }
 
-  async startLivePreview() {
+  async startLivePreview(luxMode: "threshold" | "fallback" = "fallback") {
     if (
       this.panel.liveBusy ||
       this.panel.liveRunning ||
@@ -175,6 +175,7 @@ export class PreviewController {
     this.panel.flush();
     try {
       const result = await this.panel.ws("live_preview/start", {
+        lux_mode: luxMode,
         date: this.panel.previewDate,
         expected_plan_fingerprint: fingerprint,
         request_id: crypto.randomUUID(),
