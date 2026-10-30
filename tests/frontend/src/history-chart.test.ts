@@ -45,3 +45,23 @@ void test("history chart keeps removed series present with empty data", () => {
     },
   ]);
 });
+
+void test("unrelated chart property updates preserve the current data array", () => {
+  const chart = {} as HTMLElement & { data?: unknown[]; narrow?: boolean };
+  const data = [{ entity_id: "light.one", name: "One", data: [] }];
+  const action = historyChartProperties(chart, { data, narrow: false });
+  const rendered = chart.data;
+  action.update({ data, narrow: true });
+  assert.equal(chart.data, rendered);
+  assert.equal(chart.narrow, true);
+
+  action.update({ data: [], narrow: true });
+  assert.notEqual(chart.data, rendered);
+  const cleared = chart.data;
+  const empty: typeof data = [];
+  action.update({ data: empty, narrow: false });
+  const retained = chart.data;
+  action.update({ data: empty, narrow: true });
+  assert.equal(chart.data, retained);
+  assert.deepEqual(chart.data, cleared);
+});

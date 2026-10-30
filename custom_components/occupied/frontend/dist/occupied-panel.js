@@ -19233,12 +19233,17 @@ function timelineMarkers(node, data) {
 // custom_components/occupied/frontend/src/lib/actions/history-chart.ts
 function historyChartProperties(node, values) {
   const known = /* @__PURE__ */ new Map();
+  let previousInput;
+  let previousData;
   const retainSeries = (next2) => {
     const data = next2.data;
     if (!Array.isArray(data)) {
       return next2;
     }
     const current = data;
+    if (current === previousInput) {
+      return { ...next2, data: previousData };
+    }
     const ids = new Set(current.map((entity) => entity.entity_id));
     for (const entity of current) {
       known.set(entity.entity_id, entity);
@@ -19254,7 +19259,9 @@ function historyChartProperties(node, values) {
         }
         return empty;
       });
-    return { ...next2, data: [...current, ...removed] };
+    previousInput = current;
+    previousData = [...current, ...removed];
+    return { ...next2, data: previousData };
   };
   const binding = properties(node, retainSeries(values));
   return {
