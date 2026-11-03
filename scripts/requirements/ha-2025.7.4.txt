@@ -504,9 +504,9 @@ btsocket==0.3.0 \
     --hash=sha256:7ea495de0ff883f0d9f8eea59c72ca7fed492994df668fe476b84d814a147a0d \
     --hash=sha256:949821c1b580a88e73804ad610f5173d6ae258e7b4e389da4f94d614344f1a9c
     # via bluetooth-auto-recovery
-certifi==2026.10.23 \
-    --hash=sha256:a9895e6e2758b371e0545e321a3a8fd1fcfd9829ada8824a936dfb16aaaf36cd \
-    --hash=sha256:e9b54de76e530bb6cf0ccd036787103acb58fd42ba930ea8bf948ddbaa2f61d1
+certifi==2026.10.18 \
+    --hash=sha256:73191c47aaa79da394e8fee2dbc2ec827432cab56311122c9e47abf79e390f62 \
+    --hash=sha256:b9995d97b64d0431a5af837d8ca8cd6238104d1f319f04bd93ea43124d6c861e
     # via
     #   -c scripts/requirements/ha-2025.7.4.constraints
     #   homeassistant
