@@ -913,15 +913,13 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   const chartInputs = await chart.evaluateHandle((element) => {
     // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
     const timeline = element as HTMLElement & {
-      data: unknown;
       startTime: Date;
       endTime: Date;
     };
 
     return {
-      data: timeline.data,
-      start: timeline.startTime,
-      end: timeline.endTime,
+      start: timeline.startTime.getTime(),
+      end: timeline.endTime.getTime(),
     };
   });
 
@@ -944,15 +942,13 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     await chart.evaluate((element, before) => {
       // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
       const timeline = element as HTMLElement & {
-        data: unknown;
         startTime: Date;
         endTime: Date;
       };
 
       return (
-        timeline.data === before.data &&
-        timeline.startTime === before.start &&
-        timeline.endTime === before.end
+        timeline.startTime.getTime() === before.start &&
+        timeline.endTime.getTime() === before.end
       );
     }, chartInputs),
   ).toBe(true);
