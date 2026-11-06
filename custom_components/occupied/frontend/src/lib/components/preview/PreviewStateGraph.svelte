@@ -44,6 +44,7 @@
   }
 
   let locale = $derived(hass.locale);
+
   let data = $derived(
     previewTimelineData(
       schedulePlans
@@ -55,6 +56,7 @@
       locale,
     ),
   );
+
   // Keep native axis labels/tooltips in the sampled plan's zone, even when
   // HA's display timezone differs. This is a view-only copy of the HA object.
   let config = $derived(hass.config);
@@ -63,10 +65,11 @@
   let end = $derived(plan.end);
   let startTime = $derived(new Date(start));
   let endTime = $derived(new Date(end));
+
   let chartHass = $derived.by(() => ({
     ...untrack(() => hass),
     config: { ...config, time_zone: zone },
-    locale: { ...locale, time_zone: "server" },
+    locale: { ...locale, time_zone: "server" as const },
     get states() {
       return hass.states;
     },
@@ -75,9 +78,11 @@
   onMount(() => {
     let disposed = false;
     const media = globalThis.matchMedia("(max-width: 600px)");
+
     const updateNarrow = () => {
       narrow = media.matches;
     };
+
     updateNarrow();
     media.addEventListener("change", updateNarrow);
     void loadHaHistoryChart()

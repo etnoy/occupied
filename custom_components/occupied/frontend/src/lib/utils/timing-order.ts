@@ -11,13 +11,16 @@ function offsetMinutes(value?: string): number | undefined {
   if (!value) {
     return 0;
   }
+
   const match =
     /^([+-]?)(?:(\d+(?:\.\d+)?)h)?(?:(\d+(?:\.\d+)?)m)?(?:(\d+(?:\.\d+)?)s)?$/.exec(
       value,
     );
+
   if (!match || !/[hms]/.test(value)) {
     return undefined;
   }
+
   const amount =
     Number(match[2] || 0) * 60 +
     Number(match[3] || 0) +
@@ -30,6 +33,7 @@ function clockMinutes(value?: string): number | undefined {
   if (!value || !/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)) {
     return undefined;
   }
+
   const [hours, minutes, seconds = 0] = value.split(":").map(Number);
 
   return hours * 60 + minutes + seconds / 60;
@@ -40,6 +44,7 @@ export function timingOrder(
   sources: Pick<TimeSource, "value" | "today_time">[] = [],
 ) {
   const byId = new Map(entries.map((entry) => [entry.id, entry]));
+
   const sourceTimes = new Map(
     sources.flatMap((source) => {
       const minutes = clockMinutes(source.today_time || undefined);
@@ -47,6 +52,7 @@ export function timingOrder(
       return minutes === undefined ? [] : [[source.value, minutes] as const];
     }),
   );
+
   const memo = new Map<string, number | undefined>();
   const visiting = new Set<string>();
 
@@ -54,16 +60,20 @@ export function timingOrder(
     if (memo.has(entry.id)) {
       return memo.get(entry.id);
     }
+
     if (visiting.has(entry.id)) {
       return undefined;
     }
+
     visiting.add(entry.id);
     const timing = entry.timing || entry.start;
     let base: number | undefined;
+
     if (timing?.absolute_time) {
       base = clockMinutes(timing.absolute_time.start);
     } else if (timing?.relative_to) {
       const relative = timing.relative_to;
+
       if (relative.sun) {
         base = sourceTimes.get(`sun:${relative.sun}`);
       } else if (relative.step) {
@@ -79,15 +89,19 @@ export function timingOrder(
           `entity:${relative.entity}${relative.attribute ? `:${relative.attribute}` : ""}`,
         );
       }
+
       const offset = offsetMinutes(relative.start_offset);
+
       if (base === undefined || offset === undefined) {
         base = undefined;
       } else {
         base += offset;
       }
     }
+
     const latest = timing?.latest_at?.absolute_time?.start;
     const latestMinutes = clockMinutes(latest);
+
     if (
       base !== undefined &&
       latestMinutes !== undefined &&
@@ -95,9 +109,12 @@ export function timingOrder(
     ) {
       base = latestMinutes;
     }
+
     visiting.delete(entry.id);
+
     const normalized =
       base === undefined ? undefined : ((base % 1440) + 1440) % 1440;
+
     memo.set(entry.id, normalized);
 
     return normalized;
@@ -106,6 +123,7 @@ export function timingOrder(
   return (left: TimedEntry, right: TimedEntry) => {
     const a = resolve(left);
     const b = resolve(right);
+
     if (a === undefined || b === undefined) {
       return a === undefined ? (b === undefined ? 0 : 1) : -1;
     }

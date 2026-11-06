@@ -41,6 +41,7 @@ void test("per-entity settings use an existing mapping without adding defaults t
     action: "turn_on",
     entities: ["light.a", "light.b", "switch.a"],
   });
+
   assert.deepEqual(buildAction(form), {
     action: "turn_on",
     entities: form.entities,
@@ -49,6 +50,7 @@ void test("per-entity settings use an existing mapping without adding defaults t
   updateEntitySetting(form, "light.a", "transition", "3");
   updateEntitySetting(form, "light.b", "brightness", "80");
   assert.deepEqual(actionErrors(form), {});
+
   const expected: Action = {
     action: "set_state",
     entities: {
@@ -57,6 +59,7 @@ void test("per-entity settings use an existing mapping without adding defaults t
       "switch.a": { state: "on" },
     },
   };
+
   assert.deepEqual(buildAction(form), expected);
   assert.deepEqual(buildAction(actionForm(expected)), expected);
   form.entitySettings = {};
@@ -75,11 +78,13 @@ void test("all device brightness integers survive untouched percentage round tri
       },
       stagger: { enabled: true, period: "90s" },
     };
+
     const program: Program = {
       steps: {
         evening: { timing: { absolute_time: { start: "18:00" } }, ...source },
       },
     };
+
     const entry = stepEntries(program)[0];
     assert.equal(actionSummary(entry, translator()), "Turn on");
     assert.ok(!entry.name?.includes("Custom YAML"));
@@ -105,6 +110,7 @@ void test("brightness input edits replace device precision, clearing fields omit
     action: "set_state",
     entities: { "light.a": { state: "on", brightness: 13 } },
   });
+
   updateEntitySetting(form, "light.a", "brightness", "50");
   assert.deepEqual(buildAction(form).entities, {
     "light.a": { state: "on", brightness: 128 },
@@ -127,6 +133,7 @@ void test("invalid settings report individual fields and switches never accept l
     action: "turn_on",
     entities: ["light.a", "switch.a"],
   });
+
   for (const brightness of ["0", "-1", "101", "NaN", "Infinity"]) {
     updateEntitySetting(form, "light.a", "brightness", brightness);
     assert.equal(
@@ -134,7 +141,9 @@ void test("invalid settings report individual fields and switches never accept l
       "entity_brightness_error",
     );
   }
+
   updateEntitySetting(form, "light.a", "brightness", "25.5");
+
   for (const transition of ["-1", "604801", "NaN", "Infinity"]) {
     updateEntitySetting(form, "light.a", "transition", transition);
     assert.equal(
@@ -142,6 +151,7 @@ void test("invalid settings report individual fields and switches never accept l
       "entity_transition_error",
     );
   }
+
   updateEntitySetting(form, "light.a", "transition", "0.25");
   assert.deepEqual(actionErrors(form), {});
   updateEntitySetting(form, "switch.a", "brightness", "50");
@@ -156,6 +166,7 @@ void test("entity removal/replacement and action changes cannot leak old setting
     action: "set_state",
     entities: { "light.a": { state: "on", brightness: 45, transition: 3 } },
   });
+
   setActionEntities(form, ["light.b"]);
   setActionEntities(form, ["light.a", "light.b", "light.b"]);
   assert.deepEqual(buildAction(form), {
@@ -188,6 +199,7 @@ void test("GUI to YAML conversions include later GUI edits and preserve stagger"
     entities: { "light.a": { state: "on", brightness: 7, transition: 1 } },
     stagger: { enabled: true, period: "2m" },
   });
+
   changeActionKind(form, "custom", () => false);
   assert.ok(form.customYaml?.includes("brightness: 7"));
   changeActionKind(form, "turn_on", () => {
@@ -239,11 +251,13 @@ void test("advanced, mixed-state, invalid and ordered mappings remain intact in 
       data: { transition: 3 },
     },
   ];
+
   for (const source of sources) {
     const form = actionForm(source);
     assert.equal(form.kind, "custom");
     assert.deepEqual(buildAction(form), { actions: [source] });
   }
+
   const block = { actions: sources.slice(0, 2) };
   assert.deepEqual(buildAction(actionForm(block)), block);
 });
@@ -271,6 +285,7 @@ void test("random phases share only target IDs and prune settings when shared ta
       },
     },
   };
+
   const editor = randomEditor(program, randomEntries(program)[0]);
   assert.equal(editor.form.sameEntities, true);
   assert.deepEqual(
@@ -286,6 +301,8 @@ void test("random phases share only target IDs and prune settings when shared ta
     buildRandom(program, editor).random?.evening.off,
     program.random?.evening.off,
   );
+
+  // SAFETY: This focused fixture supplies the controller members exercised by the operation under test.
   const panel = {
     epoch: 1,
     version: 1,
@@ -293,7 +310,8 @@ void test("random phases share only target IDs and prune settings when shared ta
     randomEditor: editor,
     t: translator(),
     flush() {},
-  } as unknown as LoadedOccupiedPanel;
+  } as LoadedOccupiedPanel;
+
   setActionEntities(editor.form.on, ["light.b", "switch.a"]);
   createRandomEditorContext(panel).action("on").changed("entities");
   assert.deepEqual(editor.form.off.entities, ["light.b", "switch.a"]);
@@ -322,6 +340,7 @@ void test("saved settings do not depend on catalog availability and summaries ar
     action: "set_state",
     entities: { "light.missing": { state: "off", transition: 2 } },
   };
+
   const form = actionForm(source);
   assert.deepEqual(buildAction(form), source);
   assert.equal(
@@ -342,6 +361,7 @@ void test("saved settings do not depend on catalog availability and summaries ar
 });
 
 void test("optional color properties round trip, replace one another and clear without defaults", () => {
+  // SAFETY: This fixture deliberately supplies JSON-compatible service data for the case under test.
   for (const color of [
     { rgb_color: [1, 2, 3] },
     { color_temp_kelvin: 2700 },
@@ -352,6 +372,7 @@ void test("optional color properties round trip, replace one another and clear w
         "light.a": { state: "on", brightness: 13, transition: 0, ...color },
       },
     };
+
     const form = actionForm(source);
     assert.equal(form.kind, "entities");
     assert.deepEqual(buildAction(form), source);
@@ -385,6 +406,7 @@ void test("optional color properties round trip, replace one another and clear w
 });
 
 void test("invalid colors remain in YAML or report errors, and turn-off drops color intent", () => {
+  // SAFETY: This fixture deliberately supplies JSON-compatible service data for the case under test.
   for (const color of [
     { rgb_color: [1, 2] },
     { rgb_color: [1, 2, 256] },
@@ -396,8 +418,10 @@ void test("invalid colors remain in YAML or report errors, and turn-off drops co
       action: "set_state",
       entities: { "light.a": { state: "on", ...color } },
     };
+
     assert.equal(actionForm(source).kind, "custom");
   }
+
   const form = actionForm({ action: "turn_on", entities: ["light.a"] });
   updateEntityColor(form, "light.a", [0, 2, 256]);
   assert.ok(actionErrors(form)["entitySettings.light.a.rgbColor"]);

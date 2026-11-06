@@ -37,6 +37,7 @@ void test("Swedish language variants use translations with English fallback", ()
 void test("external messages and unknown names pass through unchanged", () => {
   for (const language of ["en", "sv"]) {
     const t = translator(language);
+
     for (const text of [
       "Backend validation failed.",
       "Living room",
@@ -51,9 +52,11 @@ void test("external messages and unknown names pass through unchanged", () => {
 });
 
 void test("translation dictionaries use shorthand keys and preserve interpolation tokens", () => {
+  // SAFETY: These keys come from the canonical English translation dictionary shared by every locale.
   for (const key of Object.keys(en) as TranslationKey[]) {
     assert.match(key, /^[a-z][a-z0-9_]*$/);
     const localized = sv[key];
+
     if (localized !== undefined) {
       assert.deepEqual(placeholders(localized), placeholders(en[key]), key);
     }
@@ -88,6 +91,7 @@ void test("catalog source labels are localized while authored names remain uncha
     },
     translator("sv"),
   );
+
   assert.equal(choices[0].name, "action");
   assert.equal(choices[0].group, "Steg");
   assert.equal(choices[1].name, "Gryning");
@@ -128,6 +132,7 @@ void test("cover summaries interpolate valid positions and omit invalid position
     randomExplanation(form, {}, catalog, translator("sv")),
     /ställ in positionen för Bedroom till 50%/,
   );
+
   for (const position of ["", "101", "1.5"]) {
     form.on.position = position;
     assert.doesNotMatch(
@@ -140,6 +145,7 @@ void test("cover summaries interpolate valid positions and omit invalid position
 void test("runtime outcomes have readable English labels", () => {
   for (const language of [undefined, "en", "de"]) {
     const t = translator(language);
+
     for (const [key, label] of Object.entries({
       entity_disabled: "Entity disabled",
       service_missing: "Service not registered",
@@ -163,14 +169,17 @@ void test("every locale supplies core preview, retry and validation-error labels
     "planned_time",
     ...Object.keys(en).filter((key) => key.endsWith("_error")),
   ];
+
   for (const [language, dictionary] of Object.entries({ en, sv })) {
     for (const key of core) {
       assert.ok(Object.hasOwn(dictionary, key), `${language}: ${key}`);
+      // SAFETY: These keys come from the canonical English translation dictionary shared by every locale.
       assert.ok(
         dictionary[key as TranslationKey]?.trim(),
         `${language}: ${key}`,
       );
     }
   }
+
   assert.equal(translator("sv")("off_label"), "Av");
 });

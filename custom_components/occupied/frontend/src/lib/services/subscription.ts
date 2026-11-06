@@ -1,3 +1,4 @@
+import type { WebSocketMessage } from "../types.js";
 import type { HomeAssistant } from "../types.js";
 
 // Pending subscriptions and their callbacks must not outlive the selected panel.
@@ -8,7 +9,7 @@ export class PanelSubscription<T> {
 
   constructor(
     private readonly isConnected: () => boolean,
-    private readonly onError: (error: unknown) => void,
+    private readonly onError: (cause: unknown) => void,
   ) {}
 
   get active(): boolean {
@@ -24,22 +25,25 @@ export class PanelSubscription<T> {
 
   async subscribe(
     connection: HomeAssistant["connection"],
-    message: Record<string, unknown>,
+    message: WebSocketMessage,
     onValue: (value: T) => void,
     onSubscribed?: () => Promise<void>,
   ): Promise<void> {
     if (this.active || !this.isConnected()) {
       return;
     }
+
     this.pending = true;
     const epoch = this.epoch;
     const isCurrent = () => epoch === this.epoch && this.isConnected();
+
     try {
       const unsubscribe = await connection.subscribeMessage<T>((value) => {
         if (isCurrent()) {
           onValue(value);
         }
       }, message);
+
       if (isCurrent()) {
         this.unsubscribe = unsubscribe;
         await onSubscribed?.();

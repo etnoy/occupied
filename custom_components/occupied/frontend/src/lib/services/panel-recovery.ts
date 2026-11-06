@@ -6,12 +6,14 @@ export function entityAvailability(
   programs: (Program | undefined)[],
 ): string {
   const entities = new Set<string>();
+
   for (const program of programs) {
     for (const step of Object.values(program?.steps || {})) {
       for (const entity of actionTargets(step)) {
         entities.add(entity);
       }
     }
+
     for (const event of Object.values(program?.random || {})) {
       for (const entity of [
         ...actionTargets(event.on),
@@ -57,6 +59,7 @@ export class PanelRecovery {
     if (this.connection === connection) {
       return;
     }
+
     this.dispose();
     this.connection = connection;
     connection.addEventListener?.("ready", this.ready);
@@ -83,10 +86,13 @@ export class PanelRecovery {
     if (!states) {
       return;
     }
+
     const availability = entityAvailability(states, programs);
+
     if (this.availability !== undefined && availability !== this.availability) {
       this.schedule();
     }
+
     this.availability = availability;
   }
 
@@ -94,10 +100,13 @@ export class PanelRecovery {
     if (!this.connection) {
       return;
     }
+
     this.pending = true;
+
     if (this.offline || this.running || this.timer !== undefined) {
       return;
     }
+
     this.timer = setTimeout(() => {
       this.timer = undefined;
       void this.run();
@@ -121,6 +130,7 @@ export class PanelRecovery {
     this.pending = false;
     this.running = true;
     let success = false;
+
     try {
       success = await this.refresh();
     } catch {
@@ -128,8 +138,10 @@ export class PanelRecovery {
     } finally {
       if (generation === this.generation) {
         this.running = false;
+
         if (success) {
           this.delay = 1000;
+
           if (this.pending) {
             this.schedule();
           }

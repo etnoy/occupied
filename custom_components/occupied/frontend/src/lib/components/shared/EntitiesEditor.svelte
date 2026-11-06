@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { isString } from "../../utils/value-guards.js";
+
   import { flushSync } from "svelte";
   import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import type { ActionEditorContext } from "../../types.js";
@@ -24,6 +26,7 @@
 
   let { editor, form, t, changed } = $derived(context);
   let fieldPrefix = $derived(context.fieldPrefix || "");
+
   let conflicts = $derived(
     form.entities.filter((entity) =>
       panel.runConditionForm
@@ -74,6 +77,7 @@
           if (value === entity || form.entities.includes(value)) {
             return;
           }
+
           setActionEntities(
             form,
             form.entities.map((id) => (id === entity ? value : id)),
@@ -116,13 +120,16 @@
           onvalue-changed={(event: Event) => {
             if (
               !isValueChangedEvent(event) ||
-              typeof event.detail.value !== "string" ||
+              !isString(event.detail.value) ||
               !event.detail.value
             ) {
               return;
             }
+
             setActionEntities(form, [...form.entities, event.detail.value]);
-            (event.currentTarget as HaSelector).value = "";
+            /* SAFETY: This handler is attached to the control whose native element type is asserted here. */ (
+              event.currentTarget as HaSelector
+            ).value = "";
             adding = false;
             changed("entities");
           }}
@@ -150,13 +157,18 @@
         if (!isValueChangedEvent(event)) {
           return;
         }
-        (event.currentTarget as HaSelector).value = event.detail.value;
+
+        /* SAFETY: This handler is attached to the control whose native element type is asserted here. */ (
+          event.currentTarget as HaSelector
+        ).value = event.detail.value;
         const value = event.detail.value;
+
         if (Array.isArray(value)) {
           form.entities = value;
         } else {
-          form.entities = typeof value === "string" && value ? [value] : [];
+          form.entities = isString(value) && value ? [value] : [];
         }
+
         changed("entities");
       }}
       use:properties={{

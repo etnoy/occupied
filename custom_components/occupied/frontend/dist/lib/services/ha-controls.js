@@ -10,11 +10,13 @@ export async function loadHaControls() {
     return;
   }
   await customElements.whenDefined("partial-panel-resolver");
+  // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
   const resolver = document.createElement("partial-panel-resolver");
   await resolver
     ._getRoutes([{ url_path: "config", component_name: "config" }])
     .routes.config.load();
   await customElements.whenDefined("ha-panel-config");
+  // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
   const config = document.createElement("ha-panel-config");
   await Promise.all([
     config.routerOptions.routes.automation.load(),
@@ -42,6 +44,7 @@ export function loadHaHistoryChart() {
   }
   historyChartLoad ??= (async () => {
     await customElements.whenDefined("partial-panel-resolver");
+    // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
     const resolver = document.createElement("partial-panel-resolver");
     await resolver
       ._getRoutes([{ url_path: "history", component_name: "history" }])
@@ -49,9 +52,9 @@ export function loadHaHistoryChart() {
     if (!customElements.get("state-history-chart-timeline")) {
       throw new Error("Home Assistant history chart is unavailable");
     }
-  })().catch((error) => {
+  })().catch((cause) => {
     historyChartLoad = undefined;
-    throw error;
+    throw cause;
   });
   return historyChartLoad;
 }

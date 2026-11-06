@@ -4,12 +4,14 @@ import { PanelSubscription } from "@occupied/lib/services/subscription.js";
 import type { HomeAssistant } from "@occupied/lib/types.js";
 
 void test("disposing pending subscriptions rejects old snapshots and releases late handles", async () => {
-  const callbacks: ((value: unknown) => void)[] = [];
+  const callbacks: ((value: string) => void)[] = [];
   const completions: ((unsubscribe: () => Promise<void>) => void)[] = [];
   const errors: unknown[] = [];
   const values: unknown[] = [];
+
   const connection: HomeAssistant["connection"] = {
     subscribeMessage: <T>(callback: (value: T) => void) => {
+      // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
       callbacks.push((value) => callback(value as T));
 
       return new Promise<() => Promise<void>>((resolve) => {
@@ -17,15 +19,18 @@ void test("disposing pending subscriptions rejects old snapshots and releases la
       });
     },
   };
-  const subscription = new PanelSubscription<unknown>(
+
+  const subscription = new PanelSubscription<string>(
     () => true,
     (error) => {
       errors.push(error);
     },
   );
-  const receive = (value: unknown) => {
+
+  const receive = (value: string) => {
     values.push(value);
   };
+
   const first = subscription.subscribe(connection, {}, receive);
   await subscription.subscribe(connection, {}, receive);
   assert.equal(
@@ -71,26 +76,33 @@ void test("a subscription failure can be retried and detached callbacks stay ina
   const errors: unknown[] = [];
   const values: string[] = [];
   const failure = new Error("offline");
+
   const connection: HomeAssistant["connection"] = {
     subscribeMessage: <T>(onValue: (value: T) => void) => {
       attempts++;
+
       if (attempts === 1) {
         return Promise.reject(failure);
       }
+
+      // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
       callback = (value) => onValue(value as T);
 
       return Promise.resolve(() => Promise.resolve());
     },
   };
+
   const subscription = new PanelSubscription<string>(
     () => connected,
     (error) => {
       errors.push(error);
     },
   );
+
   const receive = (value: string) => {
     values.push(value);
   };
+
   await subscription.subscribe(connection, {}, receive);
   assert.equal(subscription.active, false);
   assert.deepEqual(errors, [failure]);
@@ -106,38 +118,47 @@ for (const when of ["active", "pending"]) {
   void test(`rejected ${when} unsubscribe is contained after disposal`, async () => {
     const errors: unknown[] = [];
     const unhandled: unknown[] = [];
-    const onRejection = (error: unknown) => {
-      unhandled.push(error);
+
+    const onRejection = (cause: unknown) => {
+      unhandled.push(cause);
     };
+
     process.on("unhandledRejection", onRejection);
     let resolve!: (unsubscribe: () => Promise<void>) => void;
     let releases = 0;
+
     const connection: HomeAssistant["connection"] = {
       subscribeMessage: () =>
         new Promise<() => Promise<void>>((done) => {
           resolve = done;
         }),
     };
-    const subscription = new PanelSubscription<unknown>(
+
+    const subscription = new PanelSubscription<string>(
       () => true,
       (error) => {
         errors.push(error);
       },
     );
+
     try {
       const pending = subscription.subscribe(connection, {}, () => {});
+
       if (when === "pending") {
         subscription.dispose();
       }
+
       resolve(() => {
         releases++;
 
         return Promise.reject(new Error("socket already closed"));
       });
       await pending;
+
       if (when === "active") {
         subscription.dispose();
       }
+
       await new Promise<void>((done) => setImmediate(done));
       assert.equal(releases, 1);
       assert.equal(subscription.active, false);

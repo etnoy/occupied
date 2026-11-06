@@ -1,3 +1,5 @@
+import { isObject } from "./value-guards.js";
+import type { JsonValue } from "../types.js";
 import type { Catalog } from "../types.js";
 
 type ServiceDescription = Catalog["services"][string][string];
@@ -12,13 +14,17 @@ export function serviceOptions(
     "homeassistant.turn_off",
     "homeassistant.toggle",
   ]);
+
   for (const [domain, services] of Object.entries(catalog.services)) {
     for (const [service, description] of Object.entries(services)) {
       const target = description.target?.entity;
+
       if (!target) {
         continue;
       }
+
       const filters = Array.isArray(target) ? target : [target];
+
       if (
         entities.every((entity) =>
           filters.some((filter) => {
@@ -37,6 +43,7 @@ export function serviceOptions(
       }
     }
   }
+
   if (current) {
     values.add(current);
   }
@@ -53,11 +60,11 @@ export function serviceOptions(
 
 export function serviceExample(
   description?: ServiceDescription,
-): Record<string, unknown> {
+): Record<string, JsonValue> {
   return Object.fromEntries(
     Object.entries(description?.fields || {})
       .filter(([, field]) => field.required && field.example !== undefined)
-      .map(([key, field]) => [key, structuredClone(field.example)]),
+      .map(([key, field]) => [key, structuredClone(field.example!)]),
   );
 }
 
@@ -67,7 +74,7 @@ export function emptyServiceData(data: string): boolean {
 
     return (
       value !== null &&
-      typeof value === "object" &&
+      isObject(value) &&
       !Array.isArray(value) &&
       Object.keys(value).length === 0
     );

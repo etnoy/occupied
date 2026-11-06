@@ -17,12 +17,15 @@ function customStaggerAction(form: ActionForm): Action | undefined {
   ) {
     return;
   }
+
   const action = form.customActions[0];
+
   if (
     actionTargets(action).some((entity) => !/^(light|switch)\./.test(entity))
   ) {
     return;
   }
+
   if (action.action === "set_state" && !Array.isArray(action.entities)) {
     return Object.values(action.entities || {}).every((settings) =>
       ["on", "off"].includes(String(settings.state)),
@@ -57,16 +60,20 @@ export function staggerSettings(form: ActionForm): Stagger {
 
 export function applyStagger(form: ActionForm, settings: Stagger) {
   const source = form.kind === "custom" ? customStaggerAction(form) : form;
+
   if (!source) {
     return;
   }
+
   if (
     (source.stagger?.enabled ?? false) === (settings.enabled ?? false) &&
     (source.stagger?.period ?? "2m") === (settings.period ?? "2m")
   ) {
     return;
   }
+
   source.stagger = { ...settings };
+
   if (form.kind !== "custom") {
     return;
   }

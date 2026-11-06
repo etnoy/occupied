@@ -241,7 +241,7 @@ export interface Catalog {
             name?: string;
             description?: string;
             selector?: SelectorConfig;
-            example?: unknown;
+            example?: JsonValue;
             required?: boolean;
           }
         >;
@@ -451,22 +451,26 @@ export interface WebSocketResponses {
 export interface HomeAssistant {
   states?: Record<
     string,
-    { state: string; attributes: Record<string, unknown> }
+    { state: string; attributes: Record<string, JsonValue> }
   >;
   language?: string;
-  config?: { state?: string; time_zone?: string; [key: string]: unknown };
+  config?: {
+    state?: string;
+    time_zone?: string;
+    [key: string]: JsonValue | undefined;
+  };
   locale?: {
     language?: string;
     time_format?: "language" | "system" | "12" | "24";
     time_zone?: "local" | "server";
   };
-  callWS<T>(message: Record<string, unknown>): Promise<T>;
+  callWS<T>(message: WebSocketMessage): Promise<T>;
   connection: {
     addEventListener?(event: string, callback: () => void): void;
     removeEventListener?(event: string, callback: () => void): void;
     subscribeMessage<T>(
       callback: (snapshot: T) => void,
-      message: Record<string, unknown>,
+      message: WebSocketMessage,
     ): Promise<() => Promise<void>>;
   };
 }
@@ -474,7 +478,7 @@ export interface HomeAssistant {
 export interface SelectorConfig {
   entity?: { multiple?: boolean; filter?: { domain: string[] } };
   time?: Record<string, never>;
-  [key: string]: unknown;
+  [key: string]: JsonValue | undefined;
 }
 
 export interface HaSelector extends HTMLElement {
@@ -521,4 +525,9 @@ declare global {
   interface HTMLElementEventMap {
     "value-changed": Event & { detail: { value: unknown } };
   }
+}
+
+// Requests carry JSON plus the explicitly modeled editor payloads.
+export interface WebSocketMessage {
+  [key: string]: JsonValue | Program | Action | undefined;
 }

@@ -26,7 +26,6 @@ import {
   randomEntries,
 } from "@occupied/lib/models/random-model.js";
 import type { Action, Program } from "@occupied/lib/types.js";
-import type { OccupiedPanel } from "@occupied/occupied-panel.js";
 
 void test("imported custom actions show one entity per line and save unchanged", () => {
   const actions = [
@@ -43,6 +42,7 @@ void test("imported custom actions show one entity per line and save unchanged",
       ],
     },
   ];
+
   const program: Program = {
     steps: {
       bedtime: {
@@ -51,6 +51,7 @@ void test("imported custom actions show one entity per line and save unchanged",
       },
     },
   };
+
   const editor = stepEditor(program, stepEntries(program)[0]);
   assert.equal(
     editor.form.customYaml,
@@ -135,6 +136,7 @@ void test("cover, scene, and service migration retain targets and data", () => {
       data: { variables: { message: "hello" } },
     },
   ];
+
   for (const source of sources) {
     const form = actionForm(source);
     changeActionKind(form, "custom", () => false);
@@ -142,6 +144,7 @@ void test("cover, scene, and service migration retain targets and data", () => {
     assert.deepEqual(form.customActions?.[0].entities, source.entities);
     assert.deepEqual(form.customActions?.[0].data || {}, source.data);
     assert.ok(form.customYaml?.includes(source.action!));
+
     if (Object.keys(source.data || {}).length === 0) {
       assert.ok(form.customYaml?.includes("data: {}"));
     }
@@ -157,6 +160,7 @@ void test("lossy replacement requires explicit choice and preserves the custom b
       },
     ],
   });
+
   const text = form.customYaml;
   changeActionKind(form, "turn_on", () => false);
   assert.equal(form.kind, "custom");
@@ -186,6 +190,7 @@ void test("metadata and random edits retain complete ordered actions", () => {
       { action: "scene.turn_on", entities: ["scene.evening"] },
     ],
   };
+
   const program: Program = {
     schema_version: 1,
     name: "House",
@@ -201,6 +206,7 @@ void test("metadata and random edits retain complete ordered actions", () => {
       },
     },
   };
+
   const editor = stepEditor(program, stepEntries(program)[0]);
   editor.form.name = "Renamed";
   editor.form.timing.start = "19:00";
@@ -226,17 +232,26 @@ void test("unvalidated text cannot save stale actions and late responses cannot 
   const form = actionForm({
     actions: [{ action: "turn_on", entities: ["light.sofa"] }],
   });
+
   form.customYaml += "\n# changed";
   assert.throws(() => buildAction(form), /custom_yaml_validation_error/);
-  let resolve!: (value: unknown) => void;
+
+  let resolve!: (
+    value: import("@occupied/lib/types.js").WebSocketResponses["action_yaml"],
+  ) => void;
+
   const panel = {
     version: 1,
+    t: translator(),
     activeEditor: {},
     ws: () =>
-      new Promise((done) => {
+      new Promise<
+        import("@occupied/lib/types.js").WebSocketResponses["action_yaml"]
+      >((done) => {
         resolve = done;
       }),
-  } as unknown as OccupiedPanel;
+  };
+
   const pending = prepareCustomAction(panel, form);
   form.customYaml += "\n# newer";
   resolve({
@@ -260,10 +275,13 @@ void test("migration quotes service-data keys that YAML could interpret as boole
       },
     },
   });
+
   changeActionKind(form, "custom", () => false);
+
   for (const key of ["on", "off", "null", "yes"]) {
     assert.ok(form.customYaml?.includes(`"${key}":`));
   }
+
   assert.deepEqual(form.customActions?.[0].data, {
     variables: { on: "enabled", off: "disabled", null: "value", yes: "answer" },
   });
@@ -275,6 +293,7 @@ void test("stagger checkbox state and custom period survive lossless editor conv
     entities: ["light.a", "switch.b"],
     stagger: { enabled: true, period: "90s" },
   };
+
   const form = actionForm(source);
   assert.deepEqual(buildAction(form), source);
   changeActionKind(form, "custom", () => false);
@@ -304,6 +323,7 @@ void test("singular mapping preserves stagger options in the entity editor", () 
     entities: { "light.a": { state: "on", brightness: 128 } },
     stagger: { enabled: true, period: "3m" },
   };
+
   const form = actionForm(source);
   assert.equal(form.kind, "entities");
   assert.deepEqual(buildAction(form), source);
@@ -321,9 +341,11 @@ void test("advanced stagger options use a buffered 2m default and retain off act
   assert.deepEqual(buildAction(form).stagger, settings);
   settings.period = "3m";
   assert.equal(buildAction(form).stagger?.period, "90s");
+
   for (const period of ["", "0s", "-1m", "31m", "120", "0.5s"]) {
     assert.ok(staggerPeriodError({ period }));
   }
+
   assert.equal(staggerPeriodError({ period: "2m" }), undefined);
 });
 
@@ -332,6 +354,7 @@ void test("advanced settings can update a single custom action without losing li
     action: "set_state",
     entities: { "light.a": { state: "off", transition: 3 } },
   };
+
   const form = actionForm({ actions: [source] });
   assert.ok(supportsStagger(form));
   const text = form.customYaml;
@@ -355,18 +378,20 @@ void test("Custom YAML issue line prefixes use the panel language", async () => 
     const form = actionForm({
       actions: [{ action: "turn_on", entities: ["light.example"] }],
     });
+
     const panel = {
       version: 0,
       activeEditor: null,
       t: translator(language),
       ws: () =>
         Promise.resolve({
-          valid: false,
+          valid: false as const,
           issues: [
             { line: 3, path: "$.actions[0]", message: "Backend detail" },
           ],
         }),
-    } as unknown as OccupiedPanel;
+    };
+
     await assert.rejects(prepareCustomAction(panel, form), {
       message: `${label} 3: $.actions[0]: Backend detail`,
     });

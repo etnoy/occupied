@@ -24,13 +24,16 @@ void test("editing enforcement and delay preserves the other run condition setti
     entity_id: "sensor.alarm",
     state: "armed_away",
   });
+
   assert.deepEqual(scalar.states, ["armed_away"]);
+
   const form = runConditionForm({
     entity_id: "alarm_control_panel.alarm",
     state: ["armed_away", "armed_night"],
     enforce_state_on_start: true,
     start_delay: "45s",
   });
+
   assert.deepEqual(runConditionErrors(form), {});
   form.startDelay = "50s";
   form.enforceState = false;
@@ -47,16 +50,19 @@ void test("invalid states, entity IDs and out of bounds delays receive field err
     entity_id: "bad",
     state: ["unknown", "unavailable"],
   });
+
   form.startDelay = "1h1s";
   assert.deepEqual(Object.keys(runConditionErrors(form)).sort(), [
     "entityId",
     "startDelay",
     "states",
   ]);
+
   for (const delay of ["0s", "30s", "1h"]) {
     form.startDelay = delay;
     assert.equal(runConditionErrors(form).startDelay, undefined);
   }
+
   for (const delay of ["", "-1s", "30", "1d"]) {
     form.startDelay = delay;
     assert.ok(runConditionErrors(form).startDelay);
@@ -81,6 +87,7 @@ void test("alarm suggestions retain custom states without suggesting unresolved 
     ["custom", "armed_away"],
     "unavailable",
   );
+
   assert.ok(
     choices.includes("armed_away") &&
       choices.includes("armed_night") &&
@@ -96,6 +103,7 @@ void test("extra off entities round trip, deduplicate, and validate supported do
     state: "armed",
     off_entities: ["light.bathroom", "switch.fan"],
   };
+
   const form = runConditionForm(config);
   form.offEntities.push("light.bathroom");
   assert.deepEqual(config.off_entities, ["light.bathroom", "switch.fan"]);
@@ -127,6 +135,7 @@ void test("extra off entity warnings find step, custom, disabled and random targ
       },
     },
   };
+
   assert.deepEqual(
     managedOffEntities(program, [
       "light.extra",
@@ -165,6 +174,7 @@ void test("off entity conflicts locate every action and each setting entry, and 
       },
     },
   };
+
   const issues = offEntityConflictIssues(program, translator("en"));
   assert.deepEqual(
     issues.map((issue) => issue.model_path),

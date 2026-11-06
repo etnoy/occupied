@@ -14,17 +14,18 @@ export function historyChartProperties(node, values) {
     for (const entity of current) {
       known.set(entity.entity_id, entity);
     }
-    const removed = [...known.values()]
-      .filter((entity) => !ids.has(entity.entity_id))
-      .map((entity) => {
-        const empty = { ...entity, data: [] };
-        if (entity.markers) {
-          empty.markers = [];
-        } else {
-          delete empty.markers;
-        }
-        return empty;
-      });
+    const removed = [...known.values()].flatMap((entity) => {
+      if (ids.has(entity.entity_id)) {
+        return [];
+      }
+      const empty = { ...entity, data: [] };
+      if (entity.markers) {
+        empty.markers = [];
+      } else {
+        delete empty.markers;
+      }
+      return empty;
+    });
     return { ...next, data: [...current, ...removed] };
   };
   const binding = properties(node, retainSeries(values));

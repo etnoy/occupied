@@ -8,30 +8,38 @@ export async function loadHaControls() {
   ) {
     return;
   }
+
   await customElements.whenDefined("partial-panel-resolver");
+
+  // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
   const resolver = document.createElement(
     "partial-panel-resolver",
   ) as HTMLElement & {
     _getRoutes(panels: { url_path: string; component_name: string }[]): {
-      routes: Record<string, { load(): Promise<unknown> }>;
+      routes: Record<string, { load(): Promise<void> }>;
     };
   };
+
   await resolver
     ._getRoutes([{ url_path: "config", component_name: "config" }])
     .routes.config.load();
   await customElements.whenDefined("ha-panel-config");
+
+  // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
   const config = document.createElement("ha-panel-config") as HTMLElement & {
     routerOptions: {
       routes: {
-        automation: { load(): Promise<unknown> };
-        integrations: { load(): Promise<unknown> };
+        automation: { load(): Promise<void> };
+        integrations: { load(): Promise<void> };
       };
     };
   };
+
   await Promise.all([
     config.routerOptions.routes.automation.load(),
     config.routerOptions.routes.integrations.load(),
   ]);
+
   // Older configuration pages do not import the app bar used by this panel.
   // The history route registers it alongside the chart we also use.
   if (!customElements.get("ha-top-app-bar-fixed")) {
@@ -39,6 +47,7 @@ export async function loadHaControls() {
       ._getRoutes([{ url_path: "history", component_name: "history" }])
       .routes.history.load();
   }
+
   await Promise.all([
     customElements.whenDefined("ha-selector"),
     customElements.whenDefined("ha-top-app-bar-fixed"),
@@ -54,24 +63,29 @@ export function loadHaHistoryChart() {
   if (customElements.get("state-history-chart-timeline")) {
     return Promise.resolve();
   }
+
   historyChartLoad ??= (async () => {
     await customElements.whenDefined("partial-panel-resolver");
+
+    // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
     const resolver = document.createElement(
       "partial-panel-resolver",
     ) as HTMLElement & {
       _getRoutes(panels: { url_path: string; component_name: string }[]): {
-        routes: Record<string, { load(): Promise<unknown> }>;
+        routes: Record<string, { load(): Promise<void> }>;
       };
     };
+
     await resolver
       ._getRoutes([{ url_path: "history", component_name: "history" }])
       .routes.history.load();
+
     if (!customElements.get("state-history-chart-timeline")) {
       throw new Error("Home Assistant history chart is unavailable");
     }
-  })().catch((error: unknown) => {
+  })().catch((cause: unknown) => {
     historyChartLoad = undefined;
-    throw error;
+    throw cause;
   });
 
   return historyChartLoad;

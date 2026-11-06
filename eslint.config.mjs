@@ -1,4 +1,6 @@
 import js from "@eslint/js";
+import antiSlop from "./tools/oxlint/anti-slop/index.ts";
+import antiSlopEffect from "./tools/oxlint/anti-slop/effect/index.ts";
 import stylistic from "@stylistic/eslint-plugin";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 import svelte from "eslint-plugin-svelte";
@@ -34,7 +36,11 @@ export default typescriptEslint.config([
   },
   {
     files: sourceFiles,
-    plugins: { "@stylistic": stylistic },
+    plugins: {
+      "@stylistic": stylistic,
+      "anti-slop": antiSlop,
+      "anti-slop-effect": antiSlopEffect,
+    },
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
@@ -45,6 +51,19 @@ export default typescriptEslint.config([
       },
     },
     rules: {
+      ...Object.fromEntries(
+        Object.keys(antiSlop.rules).map((name) => [
+          `anti-slop/${name}`,
+          "error",
+        ]),
+      ),
+      ...Object.fromEntries(
+        Object.keys(antiSlopEffect.rules).map((name) => [
+          `anti-slop-effect/${name}`,
+          "error",
+        ]),
+      ),
+      "anti-slop/no-runtime-typeof": ["error", { allowInTypeGuards: true }],
       "@stylistic/padding-line-between-statements": [
         "error",
         { blankLine: "always", prev: "import", next: "*" },
@@ -106,6 +125,7 @@ export default typescriptEslint.config([
         "error",
         { preferThis: false, preferSuper: false },
       ],
+      "unicorn/catch-error-name": ["error", { ignore: ["^cause$"] }],
       "unicorn/consistent-boolean-name": "off",
       "unicorn/consistent-class-member-order": "off",
       "unicorn/filename-case": "off",

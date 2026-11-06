@@ -10,6 +10,7 @@ export function expectedHaShellError(
   ) {
     return true;
   }
+
   const stack = error.stack ?? "";
 
   return (

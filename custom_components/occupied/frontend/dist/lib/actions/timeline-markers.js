@@ -1,10 +1,12 @@
 // Generated from custom_components/occupied/frontend/src/lib/actions/timeline-markers.ts by pnpm run build. Do not edit.
+import { isFunction } from "../utils/value-guards.js";
 // Replace the empty native series for command rows with point symbols. Keeping
 // their IDs preserves native row ordering, name measurement, zoom and resize.
 export function timelineMarkers(node, data) {
+  // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
   const chart = node;
   const generate = chart._generateData;
-  if (typeof generate !== "function") {
+  if (!isFunction(generate)) {
     return;
   }
   let histories = data;
@@ -43,7 +45,7 @@ export function timelineMarkers(node, data) {
           }
           return {
             type: "polygon",
-            shape: {
+            ["shape"]: {
               points: [
                 [x, y - 7],
                 [x + 7, y],

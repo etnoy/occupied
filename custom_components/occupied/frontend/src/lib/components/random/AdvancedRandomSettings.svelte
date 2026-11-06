@@ -27,6 +27,7 @@
 
   let canStartStagger = $derived(supportsStagger(form.on));
   let canEndStagger = $derived(supportsStagger(form.off));
+
   let staggerError = $derived(
     (canStartStagger && staggerPeriodError(startStagger)) ||
       (canEndStagger && staggerPeriodError(endStagger)),
@@ -43,14 +44,17 @@
     if (panel.busy || staggerError) {
       return;
     }
+
     if (canStartStagger) {
       applyStagger(form.on, startStagger);
       changed("on.stagger");
     }
+
     if (canEndStagger) {
       applyStagger(form.off, endStagger);
       changed("off.stagger");
     }
+
     dialog.close();
   }
 </script>

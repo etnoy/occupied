@@ -36,6 +36,7 @@ void test("entity warnings belong to their exact step, including multiple target
       "heater_2",
     );
   }
+
   assert.equal(
     warningStepId(
       {
@@ -88,6 +89,7 @@ void test("random action warnings belong to the exact event for either phase", (
       ]),
     ),
   });
+
   for (const phase of ["on", "off"]) {
     for (const location of [
       { model_path: ["random", "heater_2", phase, "entities"] },
@@ -99,10 +101,12 @@ void test("random action warnings belong to the exact event for either phase", (
         message: "Missing entity",
         ...location,
       };
+
       assert.equal(warningRandomId(issue, random), "heater_2");
       assert.equal(warningStepId(issue, entries), undefined);
     }
   }
+
   for (const location of [
     { model_path: ["steps", "heater", "entities"] },
     { model_path: ["random", "removed", "on", "entities"] },
@@ -117,6 +121,7 @@ void test("random action warnings belong to the exact event for either phase", (
       undefined,
     );
   }
+
   assert.equal(
     warningRandomId(
       {

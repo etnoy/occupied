@@ -1,11 +1,13 @@
 // Generated from custom_components/occupied/frontend/src/lib/actions/timeline-tooltip.ts by pnpm run build. Do not edit.
+import { isFunction } from "../utils/value-guards.js";
 // HA's native timeline clips its final interval at endTime. Adapt only the
 // tooltip arguments so its native date/duration formatting can show the next
 // planned transition without changing the rendered interval or chart axis.
 export function timelineTooltip(node, data) {
+  // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
   const chart = node;
   const render = chart._renderTooltip;
-  if (typeof render !== "function") {
+  if (!isFunction(render)) {
     return;
   }
   let histories = data;

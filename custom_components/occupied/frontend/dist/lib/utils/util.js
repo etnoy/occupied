@@ -1,21 +1,23 @@
 // Generated from custom_components/occupied/frontend/src/lib/utils/util.ts by pnpm run build. Do not edit.
+import { lookup } from "./lookup.js";
+import { isObject, isNumber } from "./value-guards.js";
 import { translator } from "../i18n/translations.js";
 import { formatClock } from "./time-format.js";
 import { days } from "../models/model.js";
-export function errorMessage(error) {
-  if (error instanceof Error) {
-    return error.message;
+export function errorMessage(cause) {
+  if (cause instanceof Error) {
+    return cause.message;
   }
   return String(
-    typeof error === "object" && error !== null && "message" in error
-      ? error.message
-      : error,
+    isObject(cause) && cause !== null && "message" in cause
+      ? cause.message
+      : cause,
   );
 }
 export function isValueChangedEvent(event) {
   return (
     "detail" in event &&
-    typeof event.detail === "object" &&
+    isObject(event.detail) &&
     event.detail !== null &&
     "value" in event.detail
   );
@@ -50,7 +52,7 @@ function minutes(value) {
   if (value === "0") {
     return 0;
   }
-  if (typeof value === "number") {
+  if (isNumber(value)) {
     return value / 60;
   }
   const text = value || "0s";
@@ -64,7 +66,7 @@ function minutes(value) {
   }
   const total = [...text.matchAll(/(\d+(?:\.\d+)?)([hms])/g)].reduce(
     (n, [, amount, unit]) =>
-      n + Number(amount) * { h: 60, m: 1, s: 1 / 60 }[unit],
+      n + Number(amount) * lookup({ h: 60, m: 1, s: 1 / 60 }, unit),
     0,
   );
   return text.startsWith("-") ? -total : total;
@@ -78,15 +80,14 @@ export function durationLabel(value, t = translator()) {
   remaining -= hours * 3600;
   const mins = Math.floor(remaining / 60);
   const seconds = Math.round((remaining - mins * 60) * 1e6) / 1e6;
+  // SAFETY: Each literal tuple contains a numeric amount followed by its singular and plural translation keys.
   return [
     [hours, "hour", "hours"],
     [mins, "minute", "minutes"],
     [seconds, "second", "seconds"],
   ]
-    .filter(([amount]) => amount > 0)
-    .map(
-      ([amount, singular, plural]) =>
-        `${amount} ${t(amount === 1 ? singular : plural)}`,
+    .flatMap(([amount, singular, plural]) =>
+      amount > 0 ? `${amount} ${t(amount === 1 ? singular : plural)}` : [],
     )
     .join(" ");
 }
@@ -175,7 +176,7 @@ function scheduleDaySuffix(selected, t) {
     sat: "saturdays",
     sun: "sundays",
   };
-  const dayNames = selected.map((day) => t(weekdayNames[day] || day));
+  const dayNames = selected.map((day) => t(lookup(weekdayNames, day) || day));
   const lastDay = dayNames.pop();
   const dayList =
     dayNames.length > 0

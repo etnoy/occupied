@@ -1,4 +1,5 @@
 // Generated from custom_components/occupied/frontend/src/lib/utils/custom-action.ts by pnpm run build. Do not edit.
+import { isObject } from "./value-guards.js";
 import { entityName } from "./util.js";
 import {
   editableEntityMapping,
@@ -36,12 +37,12 @@ export function actionYaml(value, level = 0) {
       })
       .join("\n");
   }
-  if (value !== null && typeof value === "object") {
+  if (value !== null && isObject(value)) {
     return Object.entries(value)
       .map(([key, item]) => {
         const scalar =
           item === null ||
-          typeof item !== "object" ||
+          !isObject(item) ||
           (!Array.isArray(item) && Object.keys(item).length === 0) ||
           (Array.isArray(item) && item.length === 0);
         const name =

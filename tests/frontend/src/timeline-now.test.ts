@@ -4,10 +4,12 @@ import { timelineNow } from "@occupied/lib/actions/timeline-now.js";
 
 void test("now marker follows the clock and native regeneration, clips to the visible plot, and cleans up", (context) => {
   context.mock.timers.enable({ apis: ["Date", "setInterval"], now: 1000 });
+
   const previousStyle = Object.getOwnPropertyDescriptor(
     globalThis,
     "getComputedStyle",
   );
+
   Object.defineProperty(globalThis, "getComputedStyle", {
     configurable: true,
     value: () => ({ getPropertyValue: () => "#123456" }),
@@ -36,14 +38,19 @@ void test("now marker follows the clock and native regeneration, clips to the vi
     };
   }
 
+  // SAFETY: The fixture defines marker series with the renderItem contract exercised below.
   const chart = {
+    isConnected: true,
     _chartData: [{ id: "light.a" }] as Marker[],
     _generateData() {
       chart._chartData = [{ id: "light.a" }];
     },
   };
+
   const generate = chart._generateData;
-  const action = timelineNow(chart as unknown as HTMLElement, "Now")!;
+
+  const action = timelineNow(chart, "Now")!;
+
   assert.equal(chart._chartData.length, 2);
   assert.deepEqual(chart._chartData[1]!.data, [[1000]]);
   context.mock.timers.tick(30_000);
@@ -80,6 +87,7 @@ void test("now marker follows the clock and native regeneration, clips to the vi
     { type: "group", children: [] },
   );
   assert.equal(positions.at(-1), null);
+
   const setRange = (start: number, end: number, eventTime?: string) =>
     action.update({
       label: "Now",
@@ -90,6 +98,7 @@ void test("now marker follows the clock and native regeneration, clips to the vi
         positions.push(position);
       },
     });
+
   setRange(0, 86_400_000);
   assert.ok(chart._chartData.some((series) => series.id === "occupied-now"));
   setRange(86_400_000, 172_800_000);
@@ -146,5 +155,6 @@ void test("now marker follows the clock and native regeneration, clips to the vi
 });
 
 void test("now adapter leaves unsupported native charts alone", () => {
+  // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
   assert.equal(timelineNow({} as HTMLElement, "Now"), undefined);
 });

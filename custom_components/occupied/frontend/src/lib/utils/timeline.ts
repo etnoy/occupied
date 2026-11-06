@@ -1,3 +1,4 @@
+import { lookup } from "./lookup.js";
 import { managedOffEntities } from "../models/run-condition.js";
 import { translator } from "../i18n/translations.js";
 import type { Program, Translate, Plan, PlannedEvent } from "../types.js";
@@ -12,10 +13,13 @@ import { formatTimestamp, formatEventTime } from "./time-format.js";
 
 export function calendarDayPlan(plans: Plan[], date: string): Plan | undefined {
   const current = plans.find((plan) => plan.simulation_date === date);
+
   if (!current) {
     return undefined;
   }
+
   const { start, end } = current;
+
   const within = (time: string) =>
     Date.parse(time) >= Date.parse(start) && Date.parse(time) < Date.parse(end);
 
@@ -46,6 +50,7 @@ export interface PreviewHistoryEntity {
 function onOffState(event: PlannedEvent, entity: string) {
   const [domain, service] = event.action.action.split(".", 2);
   const targetDomain = entity.split(".", 1)[0];
+
   // Scene activation and script execution do not describe a persistent state.
   // Covers use their position/tilt projection instead of binary on/off states.
   if (
@@ -58,6 +63,7 @@ function onOffState(event: PlannedEvent, entity: string) {
   if (service === "turn_on") {
     return "on";
   }
+
   if (service === "turn_off") {
     return "off";
   }
@@ -87,8 +93,10 @@ export function previewTimelineData(
 ): PreviewHistoryEntity[] {
   const states = previewStateHistory(plan, program, names, t);
   const rows = new Map<string, PreviewHistoryEntity>();
+
   const start = Date.parse(plan.start),
     end = Date.parse(plan.end);
+
   for (const group of groupPreviewEvents(
     plan.events.filter(
       (event) =>
@@ -103,6 +111,7 @@ export function previewTimelineData(
     const id = `occupied-${random ? "random" : "step"}:${event.source_id}`;
     const source = (random ? program.random : program.steps)?.[event.source_id];
     let row = rows.get(id);
+
     if (!row) {
       row = {
         entity_id: id,
@@ -112,6 +121,7 @@ export function previewTimelineData(
       };
       rows.set(id, row);
     }
+
     const actions = group.actions.map((action) => {
       const targets = action.entities
         .map((entity) => names[entity] || entity)
@@ -125,6 +135,7 @@ export function previewTimelineData(
         .filter(Boolean)
         .join(" · ");
     });
+
     row.markers!.push({
       time: Date.parse(event.time),
       description: [
@@ -146,19 +157,24 @@ export function previewStateHistory(
 ): PreviewHistoryEntity[] {
   const start = Date.parse(plan.start),
     end = Date.parse(plan.end);
+
   const entities = new Map<string, PreviewHistoryEntity>();
   const covers = new Map<string, CoverPosition>();
-  const stateLabels: Record<string, string> = {
+
+  const stateLabels = {
     on: "on_label",
     off: "off_label",
   };
-  const label = (state: string) => t(stateLabels[state] || "unknown");
+
+  const label = (state: string) => t(lookup(stateLabels, state) || "unknown");
   const extraEntities = program.run_condition?.off_entities ?? [];
   const managedExtras = new Set(managedOffEntities(program, extraEntities));
+
   for (const entity of extraEntities) {
     if (managedExtras.has(entity)) {
       continue;
     }
+
     const state = "off";
     entities.set(entity, {
       entity_id: entity,
@@ -166,6 +182,7 @@ export function previewStateHistory(
       data: [{ state, state_localize: label(state), last_changed: start }],
     });
   }
+
   const events = [
     ...(plan.history_events || []),
     ...plan.events,
@@ -173,6 +190,7 @@ export function previewStateHistory(
   ]
     .filter((event) => !event.superseded)
     .sort((a, b) => Date.parse(a.time) - Date.parse(b.time));
+
   const onOffEntities = new Set(
     events.flatMap((event) =>
       event.action.entities.filter(
@@ -180,8 +198,10 @@ export function previewStateHistory(
       ),
     ),
   );
+
   for (const event of events) {
     const at = Date.parse(event.time);
+
     for (const entity of event.action.entities) {
       if (
         !/^(light|switch|cover)\./.test(entity) &&
@@ -189,13 +209,16 @@ export function previewStateHistory(
       ) {
         continue;
       }
+
       let history = entities.get(entity);
+
       if (
         at >= end &&
         (!history || history.data.at(-1)?.end_time !== undefined)
       ) {
         continue;
       }
+
       if (!history) {
         const initialState = entity.startsWith("cover.") ? "unknown" : "off";
         history = {
@@ -211,23 +234,29 @@ export function previewStateHistory(
         };
         entities.set(entity, history);
       }
+
       let state: string = onOffState(event, entity) ?? "unknown";
       let localized = label(state);
+
       if (entity.startsWith("cover.")) {
         const target = coverTarget(event.action, covers.get(entity));
         covers.set(entity, target);
         const parts: string[] = [];
+
         if (target.position !== undefined) {
           let position = t("cover_position_summary").replace("{position}", () =>
             String(target.position),
           );
+
           if (target.position === 100) {
             position = t("open");
           } else if (target.position === 0) {
             position = t("closed");
           }
+
           parts.push(position);
         }
+
         if (target.tilt_position !== undefined) {
           parts.push(
             t("cover_tilt_summary").replace("{position}", () =>
@@ -235,17 +264,23 @@ export function previewStateHistory(
             ),
           );
         }
+
         state = parts.length > 0 ? JSON.stringify(target) : "unknown";
         localized = parts.length > 0 ? parts.join(" · ") : label("unknown");
       }
+
       const previous = history.data.at(-1)!;
+
       if (at >= end) {
         if (previous.state !== state) {
           previous.end_time = at;
         }
+
         continue;
       }
+
       const time = Math.max(start, at);
+
       if (previous.last_changed === time) {
         previous.state = state;
         previous.state_localize = localized;
@@ -289,6 +324,7 @@ export function calendarStateHistory(
 ): PreviewHistoryEntity[] {
   const start = Date.parse(day.start),
     end = Date.parse(day.end);
+
   const events = plans
     .flatMap((plan) => plan.events)
     .filter(
@@ -307,6 +343,7 @@ export function stamp(
   if (!value) {
     return "—";
   }
+
   try {
     return formatTimestamp(value, zone, locale);
   } catch {
@@ -322,37 +359,46 @@ export function eventDetails(
   locale?: HomeAssistantLocale,
   entityNames: Record<string, string> = {},
 ) {
-  const kinds: Record<string, string> = {
+  const kinds = {
     random_start: "random_start",
     random_end: "random_end",
   };
-  const actionLabels: Record<string, string> = {
+
+  const actionLabels = {
     turn_on: "on_label",
     turn_off: "off_label",
     "scene.turn_on": "activate_scene",
     ...Object.fromEntries(coverActions),
   };
+
   const service = event.action.action;
   const shortService = service.split(".").at(-1)!;
-  const actionLabel = actionLabels[service] || actionLabels[shortService];
+
+  const actionLabel =
+    lookup(actionLabels, service) || lookup(actionLabels, shortService);
+
   let action = actionLabel ? t(actionLabel) : service;
-  const positionFields: Record<string, string> = {
+
+  const positionFields = {
     "cover.set_cover_position": "position",
     "cover.set_cover_tilt_position": "tilt_position",
   };
-  const positionField = positionFields[service];
+
+  const positionField = lookup(positionFields, service);
+
   if (positionField && event.action.data?.[positionField] !== undefined) {
     action += ` · ${event.action.data[positionField]}%`;
   }
+
   if (event.superseded) {
     action += ` · ${t("superseded")}`;
   }
 
   return {
     time: formatEventTime(event.time, timezone, locale),
-    source: `${label} · ${t(kinds[event.kind] || event.kind)}`,
+    source: `${label} · ${t(lookup(kinds, event.kind) || event.kind)}`,
     action,
-    actionState: ["on_label", "off_label"].includes(actionLabel)
+    actionState: ["on_label", "off_label"].includes(actionLabel || "")
       ? shortService.slice(5)
       : undefined,
     targets: event.action.entities
@@ -375,6 +421,7 @@ export function previewNowIndex(
   ) {
     return -1;
   }
+
   const index = groups.findIndex(({ event }) => Date.parse(event.time) > now);
 
   return index === -1 ? groups.length : index;
@@ -394,7 +441,9 @@ export function groupPreviewEvents(events: PlannedEvent[]) {
       }[];
     }
   >();
+
   const actionKeys = new Map<string, Map<string, number>>();
+
   for (const event of events) {
     const key = JSON.stringify([
       Date.parse(event.time),
@@ -402,18 +451,22 @@ export function groupPreviewEvents(events: PlannedEvent[]) {
       event.kind,
       event.source_date,
     ]);
+
     let group = groups.get(key);
+
     if (!group) {
       group = { key, event, actions: [] };
       groups.set(key, group);
       actionKeys.set(key, new Map());
     }
+
     // On/off calls can be split by entity domain by the planner.
     const service = /^(?:light|switch|homeassistant)\.turn_(on|off)$/.test(
       event.action.action,
     )
       ? event.action.action.split(".", 2)[1]
       : event.action.action;
+
     const actionKey = JSON.stringify([
       service,
       Object.entries(event.action.data || {}).sort(([a], [b]) =>
@@ -421,15 +474,19 @@ export function groupPreviewEvents(events: PlannedEvent[]) {
       ),
       !!event.superseded,
     ]);
+
     const keys = actionKeys.get(key)!;
     let index = keys.get(actionKey);
+
     if (index === undefined) {
       index = group.actions.length;
       keys.set(actionKey, index);
       group.actions.push({ key: actionKey, event, events: [], entities: [] });
     }
+
     const action = group.actions[index]!;
     action.events.push(event);
+
     for (const entity of event.action.entities) {
       if (!action.entities.includes(entity)) {
         action.entities.push(entity);
@@ -452,6 +509,7 @@ export function staggerTransitions(plan: Plan) {
       events: Plan["events"];
     }
   >();
+
   for (const event of plan.events) {
     if (
       !event.tick ||
@@ -461,8 +519,10 @@ export function staggerTransitions(plan: Plan) {
     ) {
       continue;
     }
+
     const id = `${event.occurrence_id}:${event.configured_index}`;
     let group = groups.get(id);
+
     if (!group) {
       group = {
         start: event.authored_at,
@@ -476,6 +536,7 @@ export function staggerTransitions(plan: Plan) {
       };
       groups.set(id, group);
     }
+
     group.events.push(event);
   }
 

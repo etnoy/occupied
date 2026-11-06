@@ -32,6 +32,7 @@
       deleteOpen = false;
       advancedOpen = false;
     });
+
     if (trigger?.isConnected) {
       trigger.focus();
     }
@@ -40,6 +41,7 @@
   function closeMenu(restoreFocus = true) {
     menu.hidePopover();
     menuOpen = false;
+
     if (restoreFocus) {
       trigger.focus();
     }
@@ -49,6 +51,7 @@
     if (!menu.matches(":popover-open")) {
       return;
     }
+
     const anchor = trigger.getBoundingClientRect();
     const bounds = menu.getBoundingClientRect();
     const above = anchor.top - bounds.height - 8;
@@ -61,9 +64,11 @@
     menu.showPopover();
     menuOpen = true;
     positionMenu();
+
     const items = [
       ...menu.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"),
     ];
+
     (last ? items.at(-1) : items[0])?.focus({ preventScroll: true });
   }
 
@@ -71,19 +76,25 @@
     const items = [
       ...menu.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"),
     ];
+
+    // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
     const index = items.indexOf(
       panel.shadowRoot.activeElement as HTMLButtonElement,
     );
+
     if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
       event.preventDefault();
+
       let next =
         (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) %
         items.length;
+
       if (event.key === "Home") {
         next = 0;
       } else if (event.key === "End") {
         next = items.length - 1;
       }
+
       items[next]?.focus();
     } else if (event.key === "Escape") {
       event.preventDefault();
@@ -151,10 +162,13 @@
         onclick={async () => {
           closeMenu();
           previewStatus = panel.t("running");
+
           if (!context) {
             return;
           }
+
           previewStatus = (await previewAction(panel, context.form)) || "";
+
           if (trigger.isConnected) {
             trigger.focus();
           }
@@ -169,9 +183,11 @@
         disabled={panel.busy}
         onclick={() => {
           closeMenu();
+
           if (!context) {
             return;
           }
+
           context.form.enabled = !context.form.enabled;
           context.changed("enabled");
         }}
@@ -187,6 +203,7 @@
         disabled={panel.busy}
         onclick={() => {
           closeMenu();
+
           if (entry) {
             startStep(panel, null, entry);
           }

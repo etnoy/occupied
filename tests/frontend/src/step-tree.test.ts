@@ -81,6 +81,7 @@ void test("mixed activity sorts roots and siblings while indenting cross-type de
       },
     },
   };
+
   const entries = [
     ...stepEntries(program),
     ...randomEntries(program).map((entry) => ({
@@ -88,6 +89,7 @@ void test("mixed activity sorts roots and siblings while indenting cross-type de
       id: `random:${entry.id}`,
     })),
   ];
+
   assert.deepEqual(
     stepTree(entries).map(({ entry, depth, branches }) => [
       entry.id,
@@ -130,6 +132,7 @@ void test("connector branches continue through descendants and stop at the last 
     lunch: { timing: { relative_to: { step: "morning", start_offset: "6h" } } },
     evening: { timing: { absolute_time: { start: "20:00" } } },
   };
+
   assert.deepEqual(
     stepTree(stepEntries({ steps })).map(({ entry, branches }) => [
       entry.id,

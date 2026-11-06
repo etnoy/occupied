@@ -1,3 +1,5 @@
+import { lookup } from "../utils/lookup.js";
+import { isString, isObject } from "../utils/value-guards.js";
 import { remoteErrors } from "../utils/remote.js";
 import { en, translator } from "../i18n/translations.js";
 import type {
@@ -43,7 +45,8 @@ import {
 import { staggerPeriodError } from "../utils/stagger.js";
 
 const sorted = (values: string[]) => [...new Set(values)].sort();
-const actionLabels: Record<string, string> = {
+
+const actionLabels = {
   turn_on: "turn_on",
   turn_off: "turn_off",
   "scene.turn_on": "activate_scene",
@@ -56,10 +59,11 @@ function stepDisplayName(
   t: Translate,
 ): string {
   const action = editableEntityMapping(step)?.action || step.action || "";
+
   const label =
     step.actions || action === "set_state"
       ? "custom_yaml"
-      : actionLabels[action] || action;
+      : lookup(actionLabels, action) || action;
 
   return `${actionTargetSummary(step, catalog)} · ${t(label)}`;
 }
@@ -111,6 +115,7 @@ export function timeSourceChoices(
     ...(randomId
       ? parentRandomEvents(program, randomId).map((event) => {
           const first = actionTargets(event.on)[0];
+
           const name =
             event.name ||
             (catalog.entities
@@ -125,7 +130,7 @@ export function timeSourceChoices(
         })
       : []),
     ...(catalog.time_sources?.map((source) => {
-      const solarLabels: Record<string, string> = {
+      const solarLabels = {
         sunrise: "sunrise_label",
         sunset: "sunset_label",
         dawn: "dawn_label",
@@ -133,6 +138,7 @@ export function timeSourceChoices(
         noon: "solar_noon",
         midnight: "solar_midnight",
       };
+
       const groupKey = (
         ["solar_events", "calendars", "home_assistant_times"] as const
       ).find((key) => en[key] === source.group);
@@ -140,7 +146,7 @@ export function timeSourceChoices(
       return {
         ...source,
         name: source.value.startsWith("sun:")
-          ? t(solarLabels[source.value.slice(4)] || source.name)
+          ? t(lookup(solarLabels, source.value.slice(4)) || source.name)
           : source.name,
         group: groupKey ? t(groupKey) : source.group,
       };
@@ -159,6 +165,7 @@ export function stepEditor(
   parent?: StepEntry,
 ): StepEditor {
   const source = entry || parent;
+
   const form: StepForm = {
     ...actionForm(source),
     name: entry ? program.steps?.[entry.id]?.name || "" : "",
@@ -166,6 +173,7 @@ export function stepEditor(
     days: [...(source?.days || days)],
     timing: timingForm(entry?.timing),
   };
+
   if (parent) {
     Object.assign(form.timing, {
       mode: "relative",
@@ -188,6 +196,7 @@ export function actionForm(source?: Action): ActionForm {
   const mapping = editableEntityMapping(source);
   const action = mapping?.action || source?.action;
   let kind = "entities";
+
   if (source?.actions || action === "set_state") {
     kind = "custom";
   } else if (action === "scene.turn_on") {
@@ -205,8 +214,7 @@ export function actionForm(source?: Action): ActionForm {
     Object.keys(source.data || {}).every(
       (key) => key === "activity" && action === "remote.turn_on",
     ) &&
-    (source.data?.activity === undefined ||
-      typeof source.data.activity === "string")
+    (source.data?.activity === undefined || isString(source.data.activity))
   ) {
     kind = "remote";
   } else if (action?.includes(".")) {
@@ -273,6 +281,7 @@ export function editorErrors(program: Program, editor: StepEditor) {
       ...actionErrors(form),
       ...timingErrors(program, form.timing, id),
     };
+
   if (form.days.length === 0) {
     errors.days = "days_required_error";
   }
@@ -282,12 +291,15 @@ export function editorErrors(program: Program, editor: StepEditor) {
 
 export function actionErrors(form: ActionForm): FieldErrors {
   const errors: FieldErrors = {};
+
   if (form.stagger) {
     const error = staggerPeriodError(form.stagger);
+
     if (error) {
       errors.stagger = error;
     }
   }
+
   if (form.kind === "custom") {
     if (!form.customYaml?.trim()) {
       errors.customYaml = "custom_yaml_required_error";
@@ -295,48 +307,60 @@ export function actionErrors(form: ActionForm): FieldErrors {
 
     return errors;
   }
+
   if (form.entities.length === 0) {
     errors.entities =
       form.kind === "scene"
         ? "scene_required_error"
         : "entities_required_error";
   }
+
   if (form.entities.some((e) => !/^[a-z_][a-z0-9_]*\.[a-z0-9_]+$/.test(e))) {
     errors.entities = "entity_ids_error";
   }
+
   if (
     form.kind === "scene" &&
     (form.entities.length !== 1 || !form.entities[0]?.startsWith("scene."))
   ) {
     errors.entities = "scene_single_error";
   }
+
   if (
     form.kind === "entities" &&
     form.entities.some((e) => !/^(light|switch)\./.test(e))
   ) {
     errors.entities = "light_switch_entities_error";
   }
+
   if (form.kind === "entities") {
     Object.assign(errors, entitySettingsErrors(form));
   }
+
   if (
     form.kind === "service" &&
     !/^[a-z_][a-z0-9_]*\.[a-z_][a-z0-9_]*$/.test(form.service)
   ) {
     errors.service = "service_error";
   }
+
   Object.assign(errors, remoteErrors(form));
+
   if (form.kind === "cover") {
     if (form.entities.some((entity) => !entity.startsWith("cover."))) {
       errors.entities = "cover_entities_error";
     }
+
     if (coverActions.every(([action]) => action !== form.service)) {
       errors.service = "cover_action_error";
     }
+
     const field = coverField(form.service);
+
     if (field) {
       const key = field === "position" ? "position" : "tiltPosition";
       const value = Number(form[key]);
+
       if (
         !form[key].trim() ||
         !Number.isSafeInteger(value) ||
@@ -349,7 +373,8 @@ export function actionErrors(form: ActionForm): FieldErrors {
   } else if (form.kind === "scene" || form.kind === "service") {
     try {
       const data = JSON.parse(form.data);
-      if (!data || Array.isArray(data) || typeof data !== "object") {
+
+      if (!data || Array.isArray(data) || !isObject(data)) {
         throw new TypeError("Expected service data to be a JSON object");
       }
     } catch {
@@ -367,40 +392,50 @@ export function timingErrors(
   randomId?: string,
 ): FieldErrors {
   const errors: FieldErrors = {};
+
   for (const key of ["latestAt", "onlyBefore"] as const) {
     const boundary = time[key];
+
     if (!boundary) {
       continue;
     }
+
     const boundaryErrors = timingErrors(program, {
       ...boundary,
       end: "",
       endOffset: "",
     });
+
     if (
       boundary.mode === "relative" &&
       solarEvents.every((event) => boundary.anchor !== `sun:${event}`)
     ) {
       boundaryErrors.anchor = "time_source_required_error";
     }
+
     for (const [field, error] of Object.entries(boundaryErrors)) {
       errors[`${key}.${field}`] = error;
     }
   }
+
   const clockPattern = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
+
   if (time.mode === "absolute") {
     if (!clockPattern.test(time.start)) {
       errors.start = "start_time_required_error";
     }
+
     if (time.end && !clockPattern.test(time.end)) {
       errors.end = "end_time_error";
     }
   } else if (time.mode === "relative") {
     Object.assign(errors, offsetErrors(time));
+
     if (time.anchor.startsWith("step:")) {
       const parent = stepEntries(program).find(
         (e) => e.id === time.anchor.slice(5),
       );
+
       if (
         !parent ||
         parentSteps(program, id).every((e) => e.id !== parent.id)
@@ -433,11 +468,13 @@ export function timingErrors(
 
 export function formTiming(time: TimingForm): Timing {
   const timing = baseFormTiming(time);
+
   for (const [key, field] of [
     ["latestAt", "latest_at"],
     ["onlyBefore", "only_before"],
   ] as const) {
     const boundary = time[key];
+
     if (boundary) {
       timing[field] =
         boundary.mode === "absolute"
@@ -467,11 +504,13 @@ function baseFormTiming(time: TimingForm): Timing {
       },
     };
   }
+
   if (time.mode === "absolute") {
     return {
       absolute_time: { start: time.start, ...(time.end && { end: time.end }) },
     };
   }
+
   const offsets = {
     start_offset: String(
       time.startOffset === "0" ? "0s" : time.startOffset || "0s",
@@ -480,19 +519,25 @@ function baseFormTiming(time: TimingForm): Timing {
       end_offset: String(time.endOffset === "0" ? "0s" : time.endOffset),
     }),
   };
+
   if (time.anchor.startsWith("random:")) {
     return { relative_to: { random: time.anchor.slice(7), ...offsets } };
   }
+
   if (time.anchor.startsWith("step:")) {
     return { relative_to: { step: time.anchor.slice(5), ...offsets } };
   }
+
   if (time.anchor.startsWith("entity:")) {
     const [, entity, attribute] = time.anchor.split(":", 3);
 
+    // SAFETY: The selected time-source attribute is limited by the editor options to start_time or end_time.
     return {
       relative_to: {
         entity,
-        ...(attribute && { attribute: attribute as "start_time" | "end_time" }),
+        ...(attribute && {
+          attribute: attribute as "start_time" | "end_time",
+        }),
         ...offsets,
       },
     };
@@ -503,14 +548,18 @@ function baseFormTiming(time: TimingForm): Timing {
 
 export function buildStep(program: Program, editor: StepEditor) {
   const errors = editorErrors(program, editor);
+
   if (Object.keys(errors).length > 0) {
     throw new Error(Object.values(errors)[0]);
   }
+
   if (editor.existing && !program.steps?.[editor.id]) {
     throw new Error("step_changed_error");
   }
+
   const next = copy(program),
     { form } = editor;
+
   (next.steps ||= {})[editor.id] = {
     ...(form.name.trim() && { name: form.name.trim() }),
     ...(!form.enabled && { enabled: false }),
@@ -530,6 +579,7 @@ export function buildAction(form: ActionForm): Action {
 
     return { actions: copy(form.customActions) };
   }
+
   if (
     form.kind === "entities" &&
     form.entities.some(
@@ -538,12 +588,15 @@ export function buildAction(form: ActionForm): Action {
   ) {
     return mappedControl(form);
   }
+
   let action = form.action;
+
   if (form.kind === "scene") {
     action = "scene.turn_on";
   } else if (["service", "cover", "remote"].includes(form.kind)) {
     action = form.service;
   }
+
   if (form.kind === "remote") {
     return {
       action,
@@ -552,6 +605,7 @@ export function buildAction(form: ActionForm): Action {
         form.activity && { data: { activity: form.activity } }),
     };
   }
+
   if (form.kind === "cover") {
     const field = coverField(action);
 

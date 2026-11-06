@@ -1,4 +1,5 @@
 // Generated from custom_components/occupied/frontend/src/lib/utils/entity-settings.ts by pnpm run build. Do not edit.
+import { isNumber } from "./value-guards.js";
 export function emptyEntitySettings() {
   return { brightness: "", transition: "" };
 }
@@ -36,12 +37,12 @@ export function editableEntityMapping(source) {
       return (
         Object.keys(settings).some((key) => !allowed.includes(key)) ||
         (settings.brightness !== undefined &&
-          (typeof settings.brightness !== "number" ||
+          (!isNumber(settings.brightness) ||
             !Number.isSafeInteger(settings.brightness) ||
             settings.brightness < 1 ||
             settings.brightness > 255)) ||
         (settings.transition !== undefined &&
-          (typeof settings.transition !== "number" ||
+          (!isNumber(settings.transition) ||
             !Number.isFinite(settings.transition) ||
             settings.transition < 0 ||
             settings.transition > 604_800)) ||
@@ -66,6 +67,7 @@ export function editableEntityMapping(source) {
     ) {
       continue;
     }
+    // SAFETY: The preceding validation establishes a finite numeric value before constructing the entity setting.
     entitySettings[entity] = {
       brightness:
         settings.brightness === undefined
@@ -76,7 +78,9 @@ export function editableEntityMapping(source) {
       }),
       transition: String(settings.transition ?? ""),
       ...(settings.rgb_color !== undefined && {
-        rgbColor: [...settings.rgb_color],
+        rgbColor: [
+          .../* SAFETY: The preceding validation establishes a finite numeric value before constructing the entity setting. */ settings.rgb_color,
+        ],
       }),
       ...(settings.color_temp_kelvin !== undefined && {
         colorTemp: String(settings.color_temp_kelvin),
@@ -160,7 +164,7 @@ function validRgbColor(value) {
 }
 function validColorTemp(value) {
   return (
-    typeof value === "number" &&
+    isNumber(value) &&
     Number.isSafeInteger(value) &&
     value >= 1 &&
     value <= 100_000

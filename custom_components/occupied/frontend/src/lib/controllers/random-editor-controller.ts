@@ -23,6 +23,7 @@ export function openRandom(panel: LoadedOccupiedPanel, entry?: RandomEntry) {
   if (panel.busy) {
     return;
   }
+
   if (panel.activeEditor) {
     const same = !!entry && panel.randomEditor?.id === entry.id;
     panel.requestStepExit(() => {
@@ -33,12 +34,14 @@ export function openRandom(panel: LoadedOccupiedPanel, entry?: RandomEntry) {
 
     return;
   }
+
   panel.randomEditor = randomEditor(panel.draft, entry);
   panel.tab = "steps";
   panel.error = "";
   panel.issues = [];
   panel.renderView();
   focusEditor(panel, "name");
+
   if (entry) {
     panel.shadowRoot
       .getElementById(`random-editor-${entry.id}`)
@@ -52,6 +55,7 @@ export function createRandomEditorContext(panel: LoadedOccupiedPanel) {
     t = panel.t;
 
   const epoch = panel.epoch;
+
   const isCurrent = () =>
     panel.epoch === epoch && panel.activeEditor === editor;
 
@@ -68,10 +72,12 @@ export function createRandomEditorContext(panel: LoadedOccupiedPanel) {
     if (form.sameEntities) {
       setActionEntities(form.off, form.on.entities);
     }
+
     panel.version++;
     panel.validatedVersion = -1;
 
     const errors = randomErrors(panel.draft, editor);
+
     for (const field of Object.keys(editor.errors)) {
       if (errors[field]) {
         editor.errors[field] = errors[field];
@@ -79,15 +85,19 @@ export function createRandomEditorContext(panel: LoadedOccupiedPanel) {
         delete editor.errors[field];
       }
     }
+
     delete editor.errors[key];
+
     if (key === "minCount" || key === "maxCount") {
       if (errors[key]) {
         editor.errors[key] = errors[key];
       }
+
       if (errors.maxCount === "random_count_order_error") {
         editor.errors.maxCount = errors.maxCount;
       }
     }
+
     panel.flush();
   };
 
@@ -98,6 +108,7 @@ export function createRandomEditorContext(panel: LoadedOccupiedPanel) {
     new Proxy(editor, {
       get(target, key) {
         if (key === "errors") {
+          // SAFETY: Filtering and stripping the timing prefix retains only field names and their validation messages.
           return Object.fromEntries(
             Object.entries(target.errors)
               .filter(([field]) => field.startsWith(prefix))
@@ -105,9 +116,10 @@ export function createRandomEditorContext(panel: LoadedOccupiedPanel) {
           ) as FieldErrors;
         }
 
+        // SAFETY: The proxy forwards property keys to its original typed target without changing their values.
         return options && (key === "showEndTime" || key === "showEndOffset")
           ? options[key]
-          : Reflect.get(target, key);
+          : target[key as keyof typeof target];
       },
       set(target, key, value) {
         if (options && (key === "showEndTime" || key === "showEndOffset")) {
@@ -148,14 +160,18 @@ export function createRandomEditorContext(panel: LoadedOccupiedPanel) {
     if (!isCurrent()) {
       return;
     }
+
     editor.errors = randomErrors(panel.draft, editor);
+
     if (Object.keys(editor.errors).length > 0) {
       return refresh(Object.keys(editor.errors)[0]);
     }
+
     try {
       for (const phase of ["on", "off"] as const) {
         try {
           await prepareCustomAction(panel, form[phase]);
+
           if (!isCurrent()) {
             return;
           }
@@ -163,39 +179,49 @@ export function createRandomEditorContext(panel: LoadedOccupiedPanel) {
           if (!isCurrent()) {
             return;
           }
+
           editor.errors[`${phase}.customYaml`] =
             error instanceof Error ? error.message : String(error);
 
           return refresh(`${phase}.customYaml`);
         }
       }
+
       const candidate = buildRandom(panel.draft, editor);
       editor.candidatePath = ["random", editor.id];
       const conflicts = offEntityConflictIssues(candidate, panel.t);
+
       if (conflicts.length > 0) {
         panel.showIssues({ valid: false, issues: conflicts });
+
         const ownConflict = conflicts.find(
           (issue) =>
             issue.model_path?.[0] === "random" &&
             issue.model_path[1] === editor.id,
         );
+
         if (ownConflict) {
           panel.focusIssue(ownConflict);
         }
 
         return;
       }
+
       if (panel.document?.source === "file") {
         if (form.on.kind === "custom" || form.off.kind === "custom") {
           const version = panel.version;
+
           const validation = await panel.ws("editor_validate", {
             program: candidate,
           });
+
           if (panel.version !== version || !isCurrent()) {
             return;
           }
+
           if (!validation.valid) {
             panel.showIssues(validation);
+
             if (validation.issues.length > 0) {
               panel.focusIssue(validation.issues[0]);
             }
@@ -203,6 +229,7 @@ export function createRandomEditorContext(panel: LoadedOccupiedPanel) {
             return;
           }
         }
+
         panel.randomEditor = null;
         panel.change([], candidate, true);
       } else {
@@ -234,11 +261,13 @@ export function createRandomEditorContext(panel: LoadedOccupiedPanel) {
 
 export async function deleteRandom(panel: LoadedOccupiedPanel) {
   const editor = panel.randomEditor;
+
   if (!editor || panel.busy) {
     return;
   }
 
   const candidate = copy(panel.draft);
+
   if (randomReferences(candidate, editor.id).length > 0) {
     panel.error = panel.t("random_dependents_error");
     panel.flush();
@@ -247,6 +276,7 @@ export async function deleteRandom(panel: LoadedOccupiedPanel) {
   }
 
   delete candidate.random?.[editor.id];
+
   if (panel.document?.source === "file") {
     panel.randomEditor = null;
     panel.change([], candidate, true);

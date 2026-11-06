@@ -36,12 +36,15 @@ const cover = (action: string, data?: Action["data"]): Action => ({
 void test("all dedicated cover commands round-trip through the step editor as native services", () => {
   for (const [action] of coverActions) {
     let data: Action["data"];
+
     if (action === "cover.set_cover_position") {
       data = { position: 0 };
     } else if (action === "cover.set_cover_tilt_position") {
       data = { tilt_position: 100 };
     }
+
     const source = cover(action, data);
+
     const p: Program = {
       steps: {
         blind: {
@@ -51,6 +54,7 @@ void test("all dedicated cover commands round-trip through the step editor as na
         },
       },
     };
+
     const editor = stepEditor(p, stepEntries(p)[0]);
     assert.equal(editor.form.kind, "cover");
     assert.deepEqual(actionErrors(editor.form), {});
@@ -63,6 +67,7 @@ void test("cover fields validate targets and integer percentages without requiri
   const form = actionForm(cover("cover.open_cover"));
   form.service = "cover.set_cover_position";
   form.data = "not JSON";
+
   for (const value of [
     "",
     " ",
@@ -76,6 +81,7 @@ void test("cover fields validate targets and integer percentages without requiri
     form.position = value;
     assert.ok(actionErrors(form).position, value);
   }
+
   for (const value of ["0", "60", "100"]) {
     form.position = value;
     assert.deepEqual(actionErrors(form), {});
@@ -84,6 +90,7 @@ void test("cover fields validate targets and integer percentages without requiri
       cover("cover.set_cover_position", { position: Number(value) }),
     );
   }
+
   form.service = "cover.set_cover_tilt_position";
   assert.ok(actionErrors(form).tiltPosition);
   form.tiltPosition = "25";
@@ -131,6 +138,7 @@ void test("random events share cover targets and preserve independent position/t
       },
     },
   };
+
   const editor = randomEditor(p, randomEntries(p)[0]);
   assert.equal(editor.form.sameEntities, true);
   assert.deepEqual(randomErrors(p, editor), {});
@@ -155,6 +163,7 @@ void test("cover projection tracks axes separately and does not guess stopped or
   const tilted = coverTarget(
     cover("cover.set_cover_tilt_position", { tilt_position: 25 }),
   );
+
   const opened = coverTarget(cover("cover.open_cover"), tilted);
   assert.deepEqual(opened, { position: 100, tilt_position: 25 });
   const stopped = coverTarget(cover("cover.stop_cover"), opened);
@@ -169,6 +178,8 @@ void test("cover projection tracks axes separately and does not guess stopped or
 
 const time = (hour: number) =>
   `2026-10-13T${String(hour).padStart(2, "0")}:00:00Z`;
+
+// SAFETY: The multiple-selection control emits an array of selected string values.
 const event = (hour: number, action: Action, kind = "step"): PlannedEvent => ({
   time: time(hour),
   source_id: "blinds",
@@ -179,6 +190,7 @@ const event = (hour: number, action: Action, kind = "step"): PlannedEvent => ({
     data: action.data,
   },
 });
+
 const plan = (events: PlannedEvent[]): Plan => ({
   simulation_date: "2026-10-13",
   timezone: "UTC",
@@ -208,6 +220,7 @@ void test("cover preview strips show targets, unknown stops, and random start/en
     {},
     { "cover.blind": "Blinds" },
   );
+
   assert.equal(histories[0].name, "Blinds");
   assert.deepEqual(
     histories[0].data.map((value) => value.state_localize),
@@ -241,10 +254,12 @@ void test("calendar cover projection resets daily and preserves overnight target
     ]),
     simulation_date: "2026-10-12",
   };
+
   const current = plan([
     event(8, cover("cover.close_cover")),
     event(8, cover("cover.stop_cover")),
   ]);
+
   const history = calendarStateHistory([previous, current], current, {});
   assert.deepEqual(
     history[0].data.map((value) => value.state_localize),

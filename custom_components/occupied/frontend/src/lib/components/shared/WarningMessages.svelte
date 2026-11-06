@@ -6,6 +6,7 @@
   let unresolved = $derived(
     warnings.filter((warning) => warning.code === "entity_unavailable"),
   );
+
   let visible = $derived(
     warnings.filter(
       (warning) =>

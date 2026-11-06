@@ -1,4 +1,5 @@
 // Generated from custom_components/occupied/frontend/src/lib/utils/random-explanation.ts by pnpm run build. Do not edit.
+import { lookup } from "./lookup.js";
 import { translator } from "../i18n/translations.js";
 import {
   durationLabel,
@@ -192,7 +193,7 @@ export function randomExplanation(
         "cover.stop_cover_tilt": "action_stop_tilt_summary",
         "cover.set_cover_tilt_position": "action_tilt_position_summary",
       };
-      const description = descriptions[selected.service];
+      const description = lookup(descriptions, selected.service);
       if (!description) {
         return "";
       }

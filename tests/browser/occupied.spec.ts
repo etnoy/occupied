@@ -1,3 +1,4 @@
+import type { WebSocketMessage } from "@occupied/lib/types.js";
 import { expect, test, type Locator } from "@playwright/test";
 import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
@@ -20,13 +21,15 @@ test("create, preview, delete and protect YAML edits in the installed release", 
 }) => {
   // Capture errors throughout HA setup and the installed panel, including reload.
   const errors: string[] = [];
-  const saves: { steps?: Record<string, unknown> }[] = [];
+  const saves: { steps?: ProgramDocument["program"]["steps"] }[] = [];
   page.on("websocket", (socket) => {
     socket.on("framesent", ({ payload }) => {
+      // SAFETY: The panel sends these modeled request fields; the command type is checked before their payload is used.
       const message = JSON.parse(payload.toString()) as {
         type?: string;
-        program?: { steps?: Record<string, unknown> };
+        program?: { steps?: ProgramDocument["program"]["steps"] };
       };
+
       if (message.type === "occupied/save" && message.program) {
         saves.push(message.program);
       }
@@ -35,11 +38,13 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   const actionPreviews: { action: Action; execute?: boolean }[] = [];
   page.on("websocket", (socket) => {
     socket.on("framesent", ({ payload }) => {
+      // SAFETY: The panel sends these modeled request fields; the command type is checked before their payload is used.
       const message = JSON.parse(payload.toString()) as {
         type?: string;
         action: Action;
         execute?: boolean;
       };
+
       if (message.type === "occupied/action_preview") {
         actionPreviews.push(message);
       }
@@ -50,6 +55,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     if (expectedHaShellError(error, panelStarted)) {
       return;
     }
+
     errors.push(error.message);
   });
 
@@ -62,9 +68,14 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       language: "en",
     },
   });
+
   expect(owner.ok(), await owner.text()).toBeTruthy();
 
-  const { auth_code: authCode } = (await owner.json()) as { auth_code: string };
+  // SAFETY: The authentication endpoint returns the authorization-code response consumed by this browser fixture.
+  const { auth_code: authCode } = (await owner.json()) as {
+    auth_code: string;
+  };
+
   const response = await request.post("/auth/token", {
     form: {
       grant_type: "authorization_code",
@@ -72,6 +83,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       client_id: `${browserBaseUrl}/`,
     },
   });
+
   expect(response.ok(), await response.text()).toBeTruthy();
   const tokens = await response.json();
   await page.addInitScript(
@@ -89,14 +101,18 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await page.goto("/config/integrations/dashboard");
   // Newer HA frontends ask for confirmation before opening settings.
   const confirm = page.getByRole("button", { name: "Confirm", exact: true });
+
   const addIntegration = page.getByRole("button", {
     name: "Add integration",
     exact: true,
   });
+
   await expect(confirm.or(addIntegration).first()).toBeVisible();
+
   if (await confirm.isVisible()) {
     await confirm.click();
   }
+
   await page.goto("/config/integrations/dashboard/add?domain=occupied");
   await page.getByRole("button", { name: "OK", exact: true }).click();
   await page
@@ -117,12 +133,15 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   const settingsEditor = panel.locator("ha-code-editor");
   await expect(settingsEditor).toBeVisible();
   const settingsNode = await settingsEditor.elementHandle();
+
   const entryId = await panel.evaluate((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     controller.change(["name"], "Pending reload draft");
     const callWS = controller._hass.callWS.bind(controller._hass);
     let failOnce = true;
-    controller._hass.callWS = <T>(message: Record<string, unknown>) => {
+    controller._hass.callWS = <T>(message: WebSocketMessage) => {
       if (failOnce && message.type === "occupied/program") {
         failOnce = false;
 
@@ -134,14 +153,23 @@ test("create, preview, delete and protect YAML edits in the installed release", 
 
     return controller.selectedEntry;
   });
+
   const reloadEntry = () =>
     request.post(`/api/config/config_entries/entry/${entryId}/reload`, {
       headers: { Authorization: `Bearer ${tokens.access_token}` },
     });
+
   const failedReload = await reloadEntry();
   expect(failedReload.ok()).toBeTruthy();
   await expect
-    .poll(() => panel.evaluate((element) => (element as OccupiedPanel).error))
+    .poll(() =>
+      panel.evaluate(
+        (element) =>
+          /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+            element as OccupiedPanel
+          ).error,
+      ),
+    )
     .toBe("Simulated controller load failure");
   await expect(settingsEditor).toBeVisible();
   await expect(
@@ -149,21 +177,40 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   ).toHaveCount(0);
   await expect
     .poll(() =>
-      panel.evaluate((element) => (element as OccupiedPanel).entryLoaded),
+      panel.evaluate(
+        (element) =>
+          /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+            element as OccupiedPanel
+          ).entryLoaded,
+      ),
     )
     .toBe(true);
   expect(await settingsNode!.evaluate((element) => element.isConnected)).toBe(
     true,
   );
   expect(
-    await panel.evaluate((element) => (element as OccupiedPanel).draft?.name),
+    await panel.evaluate(
+      (element) =>
+        /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+          element as OccupiedPanel
+        ).draft?.name,
+    ),
   ).toBe("Pending reload draft");
-  await panel.evaluate((element) => (element as OccupiedPanel).discardEdits());
+  await panel.evaluate((element) =>
+    /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+      element as OccupiedPanel
+    ).discardEdits(),
+  );
   const recoveredReload = await reloadEntry();
   expect(recoveredReload.ok()).toBeTruthy();
   await expect
     .poll(() =>
-      panel.evaluate((element) => (element as OccupiedPanel).entryLoaded),
+      panel.evaluate(
+        (element) =>
+          /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+            element as OccupiedPanel
+          ).entryLoaded,
+      ),
     )
     .toBe(true);
   await panel.getByRole("button", { name: "Activity", exact: true }).click();
@@ -187,13 +234,17 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await lightRow
     .getByRole("menuitem", { name: "Brightness (%)", exact: true })
     .click();
+
   const brightness = lightRow
     .locator('ha-selector[aria-label="Brightness (%)"]')
     .getByRole("slider");
+
   await brightness.press("Home");
+
   for (let value = 1; value < 40; value += 1) {
     await brightness.press("ArrowRight");
   }
+
   await expect(brightnessInput(lightRow)).toHaveValue("40");
   await expect(lightRow.locator("summary")).toHaveCount(0);
   await lightRow
@@ -224,7 +275,10 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect
     .poll(() =>
       panel.evaluate(
-        (element) => (element as OccupiedPanel).stepEditor?.form.entitySettings,
+        (element) =>
+          /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+            element as OccupiedPanel
+          ).stepEditor?.form.entitySettings,
       ),
     )
     .toBeUndefined();
@@ -280,7 +334,9 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await panel.getByRole("button", { name: "Save step", exact: true }).click();
   await panel.locator("[data-create-random]").click();
   await panel.evaluate((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     const form = controller.randomEditor!.form;
     form.on.entities = ["light.smoke_light"];
     form.off.entities = [];
@@ -322,34 +378,43 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   expect(saves).toHaveLength(savedCount);
   await expect(panel.locator("[data-random-actions]")).toBeFocused();
   await panel.evaluate((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     controller.randomEditor = null;
     controller.tab = "steps";
     controller.renderView();
   });
   await panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }).click();
+
   const editedName = panel.getByRole("textbox", {
     name: "Step name",
     exact: true,
   });
+
   await editedName.fill("Unsaved name");
   await panel.getByRole("button", { name: "Preview", exact: true }).click();
+
   const unsaved = panel.getByRole("alertdialog", {
     name: "Unsaved changes",
     exact: true,
   });
+
   await expect(unsaved).toBeVisible();
   expect(await unsaved.evaluate((element) => element.matches(":modal"))).toBe(
     true,
   );
+
   const keepEditing = unsaved.getByRole("button", {
     name: "Keep editing",
     exact: true,
   });
+
   const discard = unsaved.getByRole("button", {
     name: "Discard changes",
     exact: true,
   });
+
   await expect(keepEditing).toBeFocused();
   await page.keyboard.press("Shift+Tab");
   await expect(discard).toBeFocused();
@@ -368,6 +433,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     panel.getByRole("button", { name: /^Evening light(?:\s|$)/ }),
   ).toBeVisible();
+
   // Entity warnings remain on their cards after save, editor changes, and reload.
   const unavailableState = await request.post(
     "/api/states/light.browser_unavailable",
@@ -376,7 +442,9 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       data: { state: "unavailable" },
     },
   );
+
   expect(unavailableState.ok()).toBeTruthy();
+
   for (const entity of [
     "light.browser_unavailable_2",
     "light.browser_unavailable_3",
@@ -385,10 +453,14 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       headers: { Authorization: `Bearer ${tokens.access_token}` },
       data: { state: "unavailable" },
     });
+
     expect(response.ok()).toBeTruthy();
   }
+
   const beforeWarnings = await panel.evaluate(async (element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     const program = controller.saved!;
     await controller.save({
       ...program,
@@ -419,6 +491,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
 
     return JSON.stringify(program);
   });
+
   const stepWarning = panel.locator('[data-step-id="browser_unavailable"]');
   await expect(stepWarning).toHaveClass(/step-warning/);
   await expect(stepWarning.locator(".step-row-warning")).toContainText(
@@ -463,6 +536,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   ).toHaveCount(0);
   await page.reload();
   await expect(eventWarning).toHaveClass(/step-warning/);
+
   const recoveredState = await request.post(
     "/api/states/light.browser_unavailable",
     {
@@ -470,7 +544,9 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       data: { state: "off" },
     },
   );
+
   expect(recoveredState.ok()).toBeTruthy();
+
   for (const entity of [
     "light.browser_unavailable_2",
     "light.browser_unavailable_3",
@@ -479,22 +555,27 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       headers: { Authorization: `Bearer ${tokens.access_token}` },
       data: { state: "off" },
     });
+
     expect(response.ok()).toBeTruthy();
   }
+
   await expect(eventWarning).not.toHaveClass(/step-warning/);
   await panel.getByRole("button", { name: "Activity", exact: true }).click();
   await expect(stepWarning).not.toHaveClass(/step-warning/);
   await stepWarning.locator(".step-row").click();
   await expect(stepWarning.locator(".entity-warning")).toHaveCount(0);
   await panel.evaluate(async (element, program) => {
-    await (element as OccupiedPanel).save(
-      JSON.parse(program) as ProgramDocument["program"],
-    );
+    // SAFETY: The fixture response for occupied/program contains the modeled program document.
+    await /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+      element as OccupiedPanel
+    ).save(JSON.parse(program) as ProgramDocument["program"]);
   }, beforeWarnings);
 
   // A draft overlap marks both activities and only the relevant extra-off rows.
   const beforeConflicts = await panel.evaluate((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     const program = controller.saved!;
     controller.change([], {
       ...program,
@@ -525,6 +606,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
 
     return JSON.stringify(program);
   });
+
   const conflictStep = panel.locator('[data-step-id="conflict"]');
   const conflictRandom = panel.locator('[data-random-id="conflict"]');
   await expect(conflictStep).toHaveClass(/step-warning/);
@@ -540,10 +622,12 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     conflictStep.locator('[data-entity-row="light.smoke_light"]'),
   ).toHaveClass(/entity-warning/);
   await panel.getByRole("button", { name: "Settings", exact: true }).click();
+
   const enforcement = panel.getByRole("checkbox", {
     name: "Enforce expected state on start",
     exact: true,
   });
+
   await expect(enforcement).not.toBeChecked();
   await expect(panel.locator("#run-condition-delay")).toHaveCount(0);
   await expect(panel.locator("#run-condition-offEntities")).toHaveCount(0);
@@ -559,9 +643,11 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     panel.locator('[data-off-entity="light.browser_unavailable"]'),
   ).not.toHaveClass(/entity-conflict/);
+
   const conditionSettings = panel.locator(
     "section:has(#run-condition-offEntities)",
   );
+
   await expect(conditionSettings).toHaveClass(/entity-conflict/);
   await conflictRow.getByRole("button", { name: /^Remove entity:/ }).click();
   await expect(conditionSettings).not.toHaveClass(/entity-conflict/);
@@ -571,6 +657,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect
     .poll(() =>
       panel.evaluate((element) => {
+        // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
         const controller = element as OccupiedPanel;
 
         return !controller.busy && !controller.hasRunConditionChanges;
@@ -581,21 +668,27 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(conflictStep).not.toHaveClass(/step-warning/);
   await expect(conflictRandom).not.toHaveClass(/step-warning/);
   await panel.evaluate(async (element, program) => {
-    await (element as OccupiedPanel).save(
-      JSON.parse(program) as ProgramDocument["program"],
-    );
+    // SAFETY: The fixture response for occupied/program contains the modeled program document.
+    await /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+      element as OccupiedPanel
+    ).save(JSON.parse(program) as ProgramDocument["program"]);
   }, beforeConflicts);
 
   // Start times order mixed branches and windows despite old browser preferences.
   await expect(panel.locator('[data-tab="random"]')).toHaveCount(0);
   await expect(panel.locator("[data-create-step]")).toBeVisible();
   await expect(panel.locator("[data-create-random]")).toBeVisible();
+
   const ids = await panel.evaluate((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     const draft = controller.draft;
+
     if (!draft) {
       throw new Error("Expected a loaded program before checking list order");
     }
+
     const first = Object.keys(draft.steps!)[0];
     controller.draft = {
       ...draft,
@@ -655,12 +748,19 @@ test("create, preview, delete and protect YAML edits in the installed release", 
 
     return ["browser_second", "browser_after_random", first, "browser_child"];
   });
+
   const stepIds = () =>
     panel
       .locator("[data-step-id]")
       .evaluateAll((rows) =>
-        rows.map((row) => (row as HTMLElement).dataset.stepId),
+        rows.map(
+          (row) =>
+            /* SAFETY: The fixture or queried native element supplies the DOM members exercised by this test. */ (
+              row as HTMLElement
+            ).dataset.stepId,
+        ),
       );
+
   await expect.poll(stepIds).toEqual(ids);
   await expect(panel.locator("[data-step-id=browser_child]")).toHaveCSS(
     "margin-left",
@@ -671,7 +771,9 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     panel.getByRole("button", { name: "Reset to chronological", exact: true }),
   ).toHaveCount(0);
   await panel.evaluate((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     controller.hass = {
       ...controller._hass,
       states: { ...controller._hass.states },
@@ -684,7 +786,12 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       panel
         .locator("[data-random-id]")
         .evaluateAll((rows) =>
-          rows.map((row) => (row as HTMLElement).dataset.randomId),
+          rows.map(
+            (row) =>
+              /* SAFETY: The fixture or queried native element supplies the DOM members exercised by this test. */ (
+                row as HTMLElement
+              ).dataset.randomId,
+          ),
         ),
     )
     .toEqual(["browser_early", "browser_nested", "browser_late"]);
@@ -695,8 +802,10 @@ test("create, preview, delete and protect YAML edits in the installed release", 
         .evaluateAll((rows) =>
           rows.map(
             (row) =>
-              (row as HTMLElement).dataset.stepId ||
-              `random:${(row as HTMLElement).dataset.randomId}`,
+              /* SAFETY: The fixture or queried native element supplies the DOM members exercised by this test. */ (
+                row as HTMLElement
+              ).dataset.stepId ||
+              `random:${/* SAFETY: The fixture or queried native element supplies the DOM members exercised by this test. */ (row as HTMLElement).dataset.randomId}`,
           ),
         ),
     )
@@ -709,12 +818,14 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       "random:browser_nested",
       "random:browser_late",
     ]);
+
   for (const selector of [
     '[data-step-id="browser_after_random"]',
     '[data-random-id="browser_nested"]',
   ]) {
     await expect(panel.locator(selector)).toHaveCSS("margin-left", "24px");
   }
+
   await expect(panel.locator(".step-tree-branch")).toHaveCount(3);
   await expect
     .poll(() =>
@@ -725,7 +836,9 @@ test("create, preview, delete and protect YAML edits in the installed release", 
               .closest(".step-tree-item")!
               .querySelector(".step-card")!
               .getBoundingClientRect();
+
             const rail = branch.getBoundingClientRect();
+
             const join =
               rail.top +
               Number(getComputedStyle(branch, "::after").top.replace("px", ""));
@@ -737,10 +850,12 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     )
     .toBeLessThan(1);
   await panel.locator('[data-random-id="browser_early"] .step-row').click();
+
   const randomName = panel.getByRole("textbox", {
     name: "Random event name",
     exact: true,
   });
+
   await randomName.fill("Unsaved window");
   await panel.locator('[data-step-id="browser_second"] .step-row').click();
   await expect(panel.getByRole("alertdialog")).toBeVisible();
@@ -761,7 +876,9 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     panel.getByRole("button", { name: "Reset to chronological", exact: true }),
   ).toHaveCount(0);
   await panel.evaluate((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     for (const collection of ["steps", "random"]) {
       localStorage.removeItem(
         `occupied:activity-order:${controller.selectedEntry}:${collection}`,
@@ -784,13 +901,17 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     panel.getByRole("button", { name: "Evening light · step", exact: true }),
   ).toBeVisible();
+
   const source = panel.getByRole("button", {
     name: "Evening light · step",
     exact: true,
   });
+
   const sourceNode = (await source.elementHandle())!;
   const chart = panel.locator("state-history-chart-timeline");
+
   const chartInputs = await chart.evaluateHandle((element) => {
+    // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
     const timeline = element as HTMLElement & {
       data: unknown;
       startTime: Date;
@@ -803,9 +924,12 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       end: timeline.endTime,
     };
   });
+
   await source.focus();
   await panel.evaluate((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     for (let index = 0; index < 10; index++) {
       controller.hass = {
         ...controller._hass,
@@ -818,6 +942,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(source).toBeFocused();
   expect(
     await chart.evaluate((element, before) => {
+      // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
       const timeline = element as HTMLElement & {
         data: unknown;
         startTime: Date;
@@ -832,13 +957,17 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     }, chartInputs),
   ).toBe(true);
   await chartInputs.dispose();
+
   // Exercise opaque commands on the real HA chart alongside predictable bars.
   const originalPreview = await panel.evaluateHandle((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     const original = {
       preview: controller.preview,
       program: controller.previewProgram,
     };
+
     const day = controller.preview!.plans.at(-1)!;
     const time = new Date(Date.parse(day.start) + 12 * 3_600_000).toISOString();
     controller.previewProgram = {
@@ -885,9 +1014,11 @@ test("create, preview, delete and protect YAML edits in the installed release", 
 
     return original;
   });
+
   await expect
     .poll(() =>
       chart.evaluate((element) => {
+        // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
         const timeline = element as HTMLElement & {
           _chartData: { id: string; data: unknown[] }[];
         };
@@ -901,10 +1032,13 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect
     .poll(() =>
       chart.evaluate((element) => {
+        // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
         const base = element.shadowRoot!.querySelector(
           "ha-chart-base",
         ) as HTMLElement & {
-          chart: { getOption(): { series: { id: string; data: unknown[] }[] } };
+          chart: {
+            getOption(): { series: { id: string; data: unknown[] }[] };
+          };
         };
 
         return base.chart
@@ -916,25 +1050,35 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     .toBe(1);
   expect(errors).toEqual([]);
   await expect(chart.locator("canvas")).toHaveCSS("height", "90px");
+
   const markerSeries = await chart.evaluate((element) => {
+    // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
     const timeline = element as HTMLElement & {
-      _chartData: { id: string; data: { value: [string, number, string] }[] }[];
+      _chartData: {
+        id: string;
+        data: { value: [string, number, string] }[];
+      }[];
     };
+
     const seriesIndex = timeline._chartData.findIndex(
       (series) => series.id === "occupied-step:complex",
     );
+
+    // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
     const base = timeline.shadowRoot!.querySelector(
       "ha-chart-base",
     ) as HTMLElement & {
       chart: {
         getOption(): { series: { id: string }[] };
         convertToPixel(
-          finder: Record<string, unknown>,
+          finder: { xAxisIndex: number; yAxisIndex: number },
           value: (string | number)[],
         ): number[];
       };
     };
+
     const value = timeline._chartData[seriesIndex]!.data[0]!.value;
+
     const [x, y] = base.chart.convertToPixel({ xAxisIndex: 0, yAxisIndex: 0 }, [
       value[1],
       value[0],
@@ -942,14 +1086,17 @@ test("create, preview, delete and protect YAML edits in the installed release", 
 
     return { description: value[2], position: { x, y } };
   });
+
   expect(markerSeries.description).toContain("scene.turn_on · scene.evening");
   expect(markerSeries.description).toContain("notify.send_message");
   await chart.locator("canvas").hover({ position: markerSeries.position });
+
   // Older HA charts mount their tooltip under document.body.
   const markerTooltip = page.getByText(
     'notify.send_message · {"message":"<b>Preview only</b>"}',
     { exact: false },
   );
+
   await expect(markerTooltip).toBeVisible();
   await expect(markerTooltip.locator("b")).toHaveCount(0);
   await page.screenshot({
@@ -958,7 +1105,9 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   });
   // A service-only day still has a visible graph, without placeholder state bars.
   await panel.evaluate((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     const day = controller.preview!.plans[0]!;
     controller.preview = {
       valid: true,
@@ -970,6 +1119,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect
     .poll(() =>
       chart.evaluate((element) => {
+        // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
         const timeline = element as HTMLElement & {
           data: { data: unknown[]; markers?: unknown[] }[];
         };
@@ -983,25 +1133,36 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       }),
     )
     .toBe(true);
+
   // A generic on/off service for a remote uses the same native yellow bars.
   const harmonyState = await request.post("/api/states/remote.harmony", {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
     data: { state: "off", attributes: { friendly_name: "Harmony Hub" } },
   });
+
   expect(harmonyState.ok()).toBeTruthy();
   await expect
     .poll(() =>
       panel.evaluate((element) =>
-        Boolean((element as OccupiedPanel)._hass?.states?.["remote.harmony"]),
+        Boolean(
+          /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+            element as OccupiedPanel
+          )._hass?.states?.["remote.harmony"],
+        ),
       ),
     )
     .toBe(true);
   await panel.evaluate(async (element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
+    // SAFETY: This response is served for the occupied/catalog command and contains the catalog fixture.
     controller.catalog = (await controller.ws("catalog")) as Catalog;
     const day = controller.preview!.plans[0]!;
+
     const at = (hour: number) =>
       new Date(Date.parse(day.start) + hour * 3_600_000).toISOString();
+
     controller.previewProgram = {
       schema_version: 1,
       random: {
@@ -1057,6 +1218,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect
     .poll(() =>
       chart.evaluate((element) => {
+        // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
         const base = element.shadowRoot!.querySelector(
           "ha-chart-base",
         ) as HTMLElement & {
@@ -1086,6 +1248,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     ]);
   expect(
     await chart.evaluate((element) => {
+      // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
       const timeline = element as HTMLElement & {
         data: { markers?: unknown[] }[];
       };
@@ -1096,6 +1259,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect
     .poll(() =>
       chart.evaluate((element) => {
+        // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
         const base = element.shadowRoot!.querySelector(
           "ha-chart-base",
         ) as HTMLElement & {
@@ -1109,6 +1273,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
             };
           };
         };
+
         const display = base.chart.getZr().storage.getDisplayList();
 
         return (
@@ -1123,17 +1288,23 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     fullPage: true,
   });
   await panel.evaluate((element, original) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     controller.preview = original.preview;
     controller.previewProgram = original.program;
     controller.flush();
   }, originalPreview);
   await originalPreview.dispose();
   await panel.evaluate((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
+    // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
     const timeline = controller.shadowRoot.querySelector(
       "state-history-chart-timeline",
     ) as HTMLElement & { data: unknown[] };
+
     timeline.data = [...timeline.data];
     controller.navigate("steps");
   });
@@ -1157,10 +1328,12 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await panel
     .getByRole("menuitem", { name: "Delete step", exact: true })
     .click();
+
   const deletion = panel.getByRole("dialog", {
     name: "Delete step?",
     exact: true,
   });
+
   await deletion
     .getByRole("button", { name: "Delete step", exact: true })
     .click();
@@ -1178,13 +1351,20 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await page.reload();
   await panel.getByRole("button", { name: "Settings", exact: true }).click();
   const editor = panel.locator("ha-code-editor");
+
   const yamlValue = () =>
     editor.evaluate(
-      (element) => (element as HTMLElement & { value: string }).value,
+      (element) =>
+        /* SAFETY: The fixture or queried native element supplies the DOM members exercised by this test. */ (
+          element as HTMLElement & { value: string }
+        ).value,
     );
+
   await expect.poll(yamlValue).toContain("Smoke controller");
   const yaml = `${await yamlValue()}\n# Local YAML edit\n`;
+
   const before = await panel.evaluate((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
 
     return controller._hass.callWS<ProgramDocument>({
@@ -1192,10 +1372,12 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       config_entry_id: controller.selectedEntry,
     });
   });
+
   const saveYaml = panel.locator("section.yaml-panel").getByRole("button", {
     name: "Save changes",
     exact: true,
   });
+
   await expect(saveYaml).toBeDisabled();
   await panel.locator('input[type="file"]').setInputFiles({
     name: "local.yaml",
@@ -1203,8 +1385,11 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     buffer: Buffer.from(yaml),
   });
   await expect(saveYaml).toBeEnabled();
+
   const external = await panel.evaluate(async (element, revision) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     const document = await controller._hass.callWS<ProgramDocument>({
       type: "occupied/program",
       config_entry_id: controller.selectedEntry,
@@ -1217,22 +1402,34 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       program: { ...document.program, name: "Externally changed controller" },
     });
   }, before.revision);
+
   expect(external.valid).toBe(true);
+
   const reload = panel.getByRole("button", {
     name: "Reload saved program",
     exact: true,
   });
+
   await expect(reload).toBeVisible();
   await reload.click();
   await expect(saveYaml).toBeEnabled();
   await expect.poll(yamlValue).toBe(yaml);
   await saveYaml.click();
   await expect
-    .poll(() => panel.evaluate((element) => (element as OccupiedPanel).error))
+    .poll(() =>
+      panel.evaluate(
+        (element) =>
+          /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+            element as OccupiedPanel
+          ).error,
+      ),
+    )
     .toContain("program changed");
   await expect(panel.locator("#error")).toHaveCount(0);
   await expect(reload).toBeVisible();
+
   const saved = await panel.evaluate((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
 
     return controller._hass.callWS<ProgramDocument>({
@@ -1240,21 +1437,33 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       config_entry_id: controller.selectedEntry,
     });
   });
+
   expect(saved.program.name).toBe("Externally changed controller");
   await expect.poll(yamlValue).toBe(yaml);
-  await panel.evaluate((element) => (element as OccupiedPanel).discardEdits());
-  const recoveryEntry = await panel.evaluate(
-    (element) => (element as OccupiedPanel).selectedEntry,
+  await panel.evaluate((element) =>
+    /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+      element as OccupiedPanel
+    ).discardEdits(),
   );
+
+  const recoveryEntry = await panel.evaluate(
+    (element) =>
+      /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+        element as OccupiedPanel
+      ).selectedEntry,
+  );
+
   const containerName = await readFile(
     ".browser-artifacts/active-container",
     "utf8",
   );
+
   const container = containerName.trim();
   expect(container).toMatch(/^occupied-browser-[a-f0-9]{12}$/);
   const docker = promisify(execFile);
   const storageKey = `occupied.${recoveryEntry}.program`;
   const storagePath = `/config/.storage/${storageKey}`;
+
   const readStoredProgram = async () => {
     const { stdout } = await docker("docker", [
       "exec",
@@ -1267,11 +1476,13 @@ test("create, preview, delete and protect YAML edits in the installed release", 
 
     return JSON.parse(stdout).data;
   };
+
   const preserved = {
     schema_version: 99,
     name: "Preserved future program",
     steps: { future: { opaque: "keep me" } },
   };
+
   const enterRecovery = async () => {
     await docker("docker", [
       "exec",
@@ -1289,12 +1500,14 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     ]);
     // Seed recovery from another HA page; open-panel reload is covered by B1.
     await page.goto("/config/integrations/dashboard");
+
     const response = await request.post(
       `/api/config/config_entries/entry/${recoveryEntry}/reload`,
       {
         headers: { Authorization: `Bearer ${tokens.access_token}` },
       },
     );
+
     expect(response.ok()).toBeTruthy();
     await page.goto("/occupied");
     await expect(
@@ -1309,6 +1522,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     await expect.poll(yamlValue).toContain("keep me");
     expect(await readStoredProgram()).toEqual(preserved);
   };
+
   await enterRecovery();
   await panel.locator('input[type="file"]').setInputFiles({
     name: "repair.yaml",
@@ -1333,7 +1547,9 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   expect(Object.keys(discarded.steps || {})).toEqual([]);
   // Supply deterministic service descriptions; this exercises help without dispatch.
   await panel.evaluate((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     controller.discardEdits();
     controller.catalog.services.remote = {
       turn_on: {
@@ -1358,9 +1574,11 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await serviceEditor
     .locator('[data-builder-field="kind"]')
     .selectOption("service");
+
   const serviceSelector = serviceEditor.locator(
     '[data-builder-field="service"]',
   );
+
   await serviceSelector.evaluate((element) => {
     element.dispatchEvent(
       new CustomEvent("value-changed", {
@@ -1386,6 +1604,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(
     panel.getByRole("button", { name: "Create your first step", exact: true }),
   ).toBeVisible();
+
   // Disposable state only: this editor smoke test never dispatches a device call.
   const remoteState = await request.post("/api/states/remote.service_smoke", {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
@@ -1397,10 +1616,14 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       },
     },
   });
+
   expect(remoteState.ok()).toBeTruthy();
   await panel.evaluate(async (element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     controller.discardEdits();
+    // SAFETY: This response is served for the occupied/catalog command and contains the catalog fixture.
     controller.catalog = (await controller.ws("catalog")) as Catalog;
     controller.tab = "steps";
     controller.renderView();
@@ -1432,7 +1655,12 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     .poll(() =>
       random
         .locator('[data-builder-field="on.activity"]')
-        .evaluate((element) => (element as HaSelector).selector),
+        .evaluate(
+          (element) =>
+            /* SAFETY: The fixture or queried native element supplies the DOM members exercised by this test. */ (
+              element as HaSelector
+            ).selector,
+        ),
     )
     .toMatchObject({ select: { options: ["TV", "Wii"], custom_value: true } });
   await random
@@ -1449,9 +1677,14 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     .getByRole("button", { name: "Save random event", exact: true })
     .click();
   await expect(random).toHaveCount(0);
+
   const remoteProgram = await panel.evaluate(
-    (element) => (element as OccupiedPanel).saved,
+    (element) =>
+      /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+        element as OccupiedPanel
+      ).saved,
   );
+
   const remoteEvent = Object.values(remoteProgram!.random!)[0];
   expect(remoteEvent.on).toMatchObject({
     action: "remote.turn_on",
@@ -1482,10 +1715,15 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       headers: { Authorization: `Bearer ${tokens.access_token}` },
       data: { state: "off", attributes },
     });
+
     expect(state.ok()).toBeTruthy();
   }
+
   await panel.evaluate(async (element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
+    // SAFETY: This response is served for the occupied/catalog command and contains the catalog fixture.
     controller.catalog = (await controller.ws("catalog")) as Catalog;
     controller.renderView();
   });
@@ -1495,6 +1733,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     .fill("Settings test");
   const startAction = random.locator('[data-editor-section="action"]').first();
   const endAction = random.locator('[data-editor-section="action"]').last();
+
   for (const entity of [
     "light.fade_smoke",
     "light.onoff_smoke",
@@ -1504,9 +1743,11 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       name: "Add entity",
       exact: true,
     });
+
     if (await add.isVisible()) {
       await add.click();
     }
+
     await startAction
       .locator('[data-builder-field="on.entities"]')
       .evaluate((element, value) => {
@@ -1518,10 +1759,13 @@ test("create, preview, delete and protect YAML edits in the installed release", 
         );
       }, entity);
   }
+
   await random.getByRole("checkbox", { name: "Use the same entities" }).check();
+
   const startLight = startAction.locator(
     '[data-entity-row="light.fade_smoke"]',
   );
+
   const endLight = endAction.locator('[data-entity-row="light.fade_smoke"]');
   await expect(
     endAction.locator('[data-editor-section="entities"]'),
@@ -1578,13 +1822,16 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     .getByRole("button", { name: "Save random event", exact: true })
     .click();
   await expect(random).toHaveCount(0);
+
   const settingsEvent = await panel.evaluate((element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
 
     return Object.values(controller.saved!.random!).find(
       (event) => event.name === "Settings test",
     );
   });
+
   expect(settingsEvent?.on).toMatchObject({
     action: "set_state",
     entities: {
@@ -1610,7 +1857,9 @@ test("create, preview, delete and protect YAML edits in the installed release", 
 
   // Older programs can have relative boundaries at both ends of a random window.
   await panel.evaluate(async (element) => {
+    // SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel.
     const controller = element as OccupiedPanel;
+
     await controller.save({
       ...controller.saved!,
       steps: {
@@ -1641,13 +1890,16 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       },
     });
   });
+
   const legacyCard = panel.getByRole("button", {
     name: "Random day",
     exact: true,
   });
+
   const relativeEnd = random.locator(
     '[data-builder-field="end.mode"][value="relative"]',
   );
+
   const endSource = random.locator('[data-builder-field="end.anchor"]');
   await legacyCard.click();
   await expect(relativeEnd).toBeChecked();
@@ -1658,6 +1910,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(random.locator("[data-random-explanation]")).not.toContainText(
     "Events may overlap",
   );
+
   for (const timing of await random
     .locator('[data-editor-section="time"]')
     .all()) {
@@ -1684,14 +1937,19 @@ test("create, preview, delete and protect YAML edits in the installed release", 
       timing.getByRole("button", { name: "Add randomness", exact: true }),
     ).toBeVisible();
   }
+
   await random.locator("[data-random-submit]").click();
   await expect(random).toHaveCount(0);
   expect(
     await panel.evaluate(
-      (element) => (element as OccupiedPanel).saved!.random!.legacy.end,
+      (element) =>
+        /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+          element as OccupiedPanel
+        ).saved!.random!.legacy.end,
     ),
   ).toEqual({ relative_to: { step: "evening" } });
   await legacyCard.click();
+
   for (const mode of ["absolute", "duration"]) {
     await random
       .locator(`[data-builder-field="end.mode"][value="${mode}"]`)
@@ -1699,6 +1957,7 @@ test("create, preview, delete and protect YAML edits in the installed release", 
     await relativeEnd.check();
     await expect(endSource).toHaveJSProperty("value", "step:evening");
   }
+
   await endSource.evaluate((element) => {
     element.dispatchEvent(
       new CustomEvent("value-changed", {
@@ -1719,7 +1978,10 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(random).toHaveCount(0);
   expect(
     await panel.evaluate(
-      (element) => (element as OccupiedPanel).saved!.random!.legacy.end,
+      (element) =>
+        /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+          element as OccupiedPanel
+        ).saved!.random!.legacy.end,
     ),
   ).toEqual({
     relative_to: { sun: "sunset", start_offset: "-15m", end_offset: "15m" },
@@ -1744,16 +2006,20 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   ).toHaveValue("15m");
 
   const durationEnd = random.locator('[data-editor-section="time"]').last();
+
   const minimumDuration = durationEnd.locator(
     '[data-builder-field="end.minDuration"]',
   );
+
   const maximumDuration = durationEnd.locator(
     '[data-builder-field="end.maxDuration"]',
   );
+
   const addDurationRange = durationEnd.getByRole("button", {
     name: "Add randomness",
     exact: true,
   });
+
   await durationEnd
     .getByRole("radio", { name: "Duration", exact: true })
     .check();
@@ -1767,7 +2033,10 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(random).toHaveCount(0);
   expect(
     await panel.evaluate(
-      (element) => (element as OccupiedPanel).saved!.random!.legacy.end,
+      (element) =>
+        /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+          element as OccupiedPanel
+        ).saved!.random!.legacy.end,
     ),
   ).toEqual({ duration: { min: "1h30m" } });
   await legacyCard.click();
@@ -1783,7 +2052,10 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(random).toHaveCount(0);
   expect(
     await panel.evaluate(
-      (element) => (element as OccupiedPanel).saved!.random!.legacy.end,
+      (element) =>
+        /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+          element as OccupiedPanel
+        ).saved!.random!.legacy.end,
     ),
   ).toEqual({ duration: { min: "1h30m", max: "2h" } });
   await legacyCard.click();
@@ -1802,7 +2074,10 @@ test("create, preview, delete and protect YAML edits in the installed release", 
   await expect(random).toHaveCount(0);
   expect(
     await panel.evaluate(
-      (element) => (element as OccupiedPanel).saved!.random!.legacy.end,
+      (element) =>
+        /* SAFETY: The fixture installs the OccupiedPanel custom element before creating or querying this panel. */ (
+          element as OccupiedPanel
+        ).saved!.random!.legacy.end,
     ),
   ).toEqual({ duration: { min: "2h" } });
   await legacyCard.click();

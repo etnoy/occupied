@@ -6,6 +6,7 @@ import {
 } from "@occupied/lib/utils/services.js";
 import type { Catalog } from "@occupied/lib/types.js";
 
+// SAFETY: This response is served for the occupied/catalog command and contains the catalog fixture.
 const catalog = {
   entities: [],
   services: {
@@ -24,7 +25,9 @@ const catalog = {
       send_command: { target: { entity: [{ domain: ["remote"] }] } },
     },
     light: { turn_on: { target: { entity: [{ domain: "light" }] } } },
-    script: { both: { target: { entity: [{ domain: ["light", "remote"] }] } } },
+    script: {
+      both: { target: { entity: [{ domain: ["light", "remote"] }] } },
+    },
   },
 } as Catalog;
 

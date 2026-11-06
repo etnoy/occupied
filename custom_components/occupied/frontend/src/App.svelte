@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { isFunction } from "./lib/utils/value-guards.js";
+
   import { SvelteSet } from "svelte/reactivity";
   import { hasProgram } from "./lib/panel-state.js";
   import type { OccupiedPanel } from "./occupied-panel.js";
@@ -35,13 +37,16 @@
 
     return new Proxy(controller, {
       get(target, key) {
-        const value = Reflect.get(target, key, target);
+        // SAFETY: The proxy forwards property keys to its original typed target without changing their values.
+        const value = target[key as keyof OccupiedPanel];
 
-        if (typeof value === "function") {
+        if (isFunction(value)) {
           const previous = methods[key];
+
           if (previous?.target === target && previous.value === value) {
             return previous.bound;
           }
+
           const bound = value.bind(target);
           methods[key] = { target, value, bound };
 
@@ -52,30 +57,40 @@
       },
     });
   });
+
   let revision = $derived($updates);
+
   let state = $derived.by(() => {
     void revision;
+
     const showingCards =
       hasProgram(panel) &&
       (!panel.stepEditor || panel.stepEditor.existing) &&
       (!panel.randomEditor || panel.randomEditor.existing);
+
     const entries =
       showingCards && panel.tab === "steps" ? stepEntries(panel.draft) : [];
+
     const random =
       showingCards && panel.tab === "steps" ? randomEntries(panel.draft) : [];
+
     const visibleIssues = panel.visibleIssues();
     const issueTabs = new SvelteSet<Tab>();
+
     for (const issue of visibleIssues) {
       if (issue.severity === "info") {
         continue;
       }
+
       const section = issue.model_path
         ? issue.model_path[0]
         : issue.path?.match(/^\$\.(steps|random)(?:\.|\[|$)/)?.[1];
+
       issueTabs.add(
         section === "steps" || section === "random" ? "steps" : "settings",
       );
     }
+
     for (const [tab, errors] of [
       ["steps", panel.stepEditor?.errors],
       ["steps", panel.randomEditor?.errors],
@@ -85,10 +100,12 @@
         issueTabs.add(tab);
       }
     }
+
     const previewPlans =
       panel.liveVisible && panel.livePlan
         ? [panel.livePlan]
         : panel.preview?.plans;
+
     if (
       (!(panel.liveVisible && panel.livePlan) &&
         panel.preview?.valid === false) ||
@@ -115,6 +132,7 @@
       ),
     };
   });
+
   let { t, notices, primary, issues, issueTabs } = $derived(state);
 
   const primaryTabs: [Tab, string][] = [

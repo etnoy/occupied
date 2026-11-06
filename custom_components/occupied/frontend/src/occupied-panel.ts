@@ -1,3 +1,6 @@
+import { lookup } from "./lib/utils/lookup.js";
+import { isObject } from "./lib/utils/value-guards.js";
+import type { WebSocketMessage } from "./lib/types.js";
 import type {
   Program,
   Catalog,
@@ -127,6 +130,7 @@ export class OccupiedPanel extends HTMLElement {
     if (!this.draft) {
       return;
     }
+
     this.runConditionForm = runConditionForm(this.draft.run_condition);
     this.runConditionOriginal = copy(this.runConditionForm);
     this.runConditionErrors = {};
@@ -140,6 +144,7 @@ export class OccupiedPanel extends HTMLElement {
         states: [...this.runConditionForm.states],
       };
     }
+
     this.version++;
     this.runConditionErrors = {};
     this.flush();
@@ -155,22 +160,27 @@ export class OccupiedPanel extends HTMLElement {
     ) {
       return;
     }
+
     this.runConditionErrors = runConditionErrors(
       this.runConditionForm,
       this.draft,
     );
+
     if (Object.keys(this.runConditionErrors).length > 0) {
       this.flush();
 
       return;
     }
+
     const candidate = copy(this.draft);
     const config = runConditionValue(this.runConditionForm);
+
     if (config) {
       candidate.run_condition = config;
     } else {
       delete candidate.run_condition;
     }
+
     if (this.document.source === "file") {
       this.change([], candidate);
       this.openRunCondition();
@@ -178,7 +188,9 @@ export class OccupiedPanel extends HTMLElement {
 
       return;
     }
+
     await this.save(candidate);
+
     if (
       this.dirty ||
       this.error ||
@@ -266,6 +278,7 @@ export class OccupiedPanel extends HTMLElement {
     if (!this.starting) {
       return false;
     }
+
     this.flush();
     const generation = this.startupGeneration;
     await this.startupSubscription.subscribe(
@@ -277,6 +290,7 @@ export class OccupiedPanel extends HTMLElement {
         const config = await this._hass.callWS<{ state: string }>({
           type: "get_config",
         });
+
         if (
           generation === this.startupGeneration &&
           config.state === "RUNNING"
@@ -311,9 +325,11 @@ export class OccupiedPanel extends HTMLElement {
     const localeChanged =
       this._hass?.locale?.language !== value?.locale?.language ||
       this._hass?.locale?.time_format !== value?.locale?.time_format;
+
     const changed = this._hass?.connection !== value?.connection;
     const languageChanged = this._hass?.language !== value?.language;
     this._hass = value;
+
     if (languageChanged) {
       this.t = translator(value?.language);
     }
@@ -323,19 +339,24 @@ export class OccupiedPanel extends HTMLElement {
     >("ha-selector,ha-generic-picker")) {
       selector.hass = value;
     }
+
     if (localeChanged) {
       this.flush();
     }
+
     if (changed) {
       this._reconnect();
     }
+
     if (this.isConnected) {
       this.recovery.connect(value.connection);
       this.recovery.observe(value.states, [this.saved, this.draft]);
+
       if (changed && this.document) {
         this.recovery.schedule();
       }
     }
+
     void this._load();
   }
 
@@ -346,14 +367,16 @@ export class OccupiedPanel extends HTMLElement {
 
   set narrow(value: boolean) {
     const narrow = !!value;
+
     if (this.hasAttribute("narrow") === narrow) {
       return;
     }
+
     this.toggleAttribute("narrow", narrow);
     this.flush();
   }
 
-  set route(_value: unknown) {
+  set route(_value: { path?: string }) {
     void this._load();
   }
 
@@ -371,6 +394,7 @@ export class OccupiedPanel extends HTMLElement {
     if (this._hass?.connection) {
       this.recovery.connect(this._hass.connection);
     }
+
     if (!this.component) {
       const style = document.createElement("style");
       style.textContent = styles;
@@ -381,6 +405,7 @@ export class OccupiedPanel extends HTMLElement {
       });
       this.flush();
     }
+
     void this._load();
     window.addEventListener("beforeunload", this._beforeUnload);
     globalThis.addEventListener("location-changed", this._locationChanged);
@@ -396,10 +421,12 @@ export class OccupiedPanel extends HTMLElement {
     this.startupSubscription.dispose();
     this.startupComplete = false;
     this.startupGeneration++;
+
     if (this.component) {
       void unmount(this.component);
       this.component = undefined;
     }
+
     this.shadowRoot.replaceChildren();
     this._invalidateRequests();
     this._loadedEntry = null;
@@ -440,39 +467,50 @@ export class OccupiedPanel extends HTMLElement {
     if (!this.isConnected || !this._hass || !this._panel) {
       return true;
     }
+
     if (this.starting && (await this._waitForStartup())) {
       return false;
     }
+
     if (this.busy || this._loading) {
       return false;
     }
+
     this._failedEntry = null;
     this._instancesFailed = false;
     await this._load();
+
     if (!this._instancesReady) {
       return false;
     }
+
     if (!this.selectedEntry) {
       return true;
     }
+
     if (!this._loadedEntry || !this.draft || !this.document) {
       return false;
     }
+
     const epoch = this.epoch;
     const version = this.version;
     const revision = this.revision;
     const issues = this.issues;
+
     try {
       await this._subscribeInstances();
       await this._subscribe();
+
       const [doc, catalog, validation] = await Promise.all([
         this.ws("program"),
         this.ws("catalog"),
         this.ws("editor_validate", { program: copy(this.draft) }),
       ]);
+
       if (epoch !== this.epoch) {
         return true;
       }
+
       if (
         version !== this.version ||
         revision !== this.revision ||
@@ -481,6 +519,7 @@ export class OccupiedPanel extends HTMLElement {
       ) {
         return false;
       }
+
       // Availability updates must not reset a draft, editor, YAML, or preview.
       this.document = doc;
       this.saved = doc.program;
@@ -493,6 +532,7 @@ export class OccupiedPanel extends HTMLElement {
         ),
       ];
       this.flush();
+
       if (
         this.stale &&
         !this.dirty &&
@@ -525,15 +565,19 @@ export class OccupiedPanel extends HTMLElement {
       (instances) => {
         const wasLoaded = this.selectedInstance?.loaded;
         this.instances = instances;
+
         if (!wasLoaded && this.selectedInstance?.loaded) {
           this._failedEntry = null;
         }
+
         this.flush();
+
         if (!this.selectedInstance?.loaded && this._loadedEntry) {
           this._invalidateRequests();
           this._loadedEntry = null;
           this._disposeSubscription();
         }
+
         void this._load();
       },
     );
@@ -562,6 +606,7 @@ export class OccupiedPanel extends HTMLElement {
     if (this.selectedEntry) {
       this.recovery.reset();
     }
+
     this._invalidateRequests();
     this._disposeSubscription();
     this._loadedEntry = null;
@@ -608,7 +653,7 @@ export class OccupiedPanel extends HTMLElement {
 
   ws<K extends keyof WebSocketResponses>(
     type: K,
-    data: Record<string, unknown> = {},
+    data: WebSocketMessage = {},
   ): Promise<WebSocketResponses[K]> {
     return this._hass.callWS<WebSocketResponses[K]>({
       type: `occupied/${type}`,
@@ -631,6 +676,7 @@ export class OccupiedPanel extends HTMLElement {
     ) {
       return;
     }
+
     this.runtimeSubscriptionError = "";
     this.previewController.disconnect();
     this.previewController.connect(this._hass.connection);
@@ -645,31 +691,38 @@ export class OccupiedPanel extends HTMLElement {
 
   private _onSnapshot(snapshot: RuntimeSnapshot) {
     this.runtimeSnapshot = snapshot;
+
     if (snapshot.loaded === false) {
       this.previewController.invalidate();
     }
+
     this.schedulingPaused = snapshot.paused ?? this.schedulingPaused;
+
     if (snapshot.live_preview !== undefined) {
       const changedSession = this.liveSession?.id !== snapshot.live_preview?.id;
       this.liveSession = mergeLiveSession(
         this.liveSession,
         snapshot.live_preview,
       );
+
       if (changedSession) {
         this.liveReady = false;
         void this.recoverLivePreview();
       }
     }
+
     if (snapshot.configuration_source && this.document) {
       this.document.configuration_source = snapshot.configuration_source;
       this.document.source = snapshot.configuration_source.mode;
     }
+
     this.stale = !!(
       snapshot.source_revision &&
       this.revision &&
       snapshot.source_revision !== this.revision
     );
     this.flush();
+
     if (
       this.stale &&
       !this.dirty &&
@@ -685,9 +738,11 @@ export class OccupiedPanel extends HTMLElement {
     if (this._instancesReady) {
       return true;
     }
+
     if (this._instancesFailed) {
       return false;
     }
+
     if (!this._instancesRequest) {
       const epoch = this._instancesEpoch;
       this._instancesRequest = (async () => {
@@ -695,9 +750,11 @@ export class OccupiedPanel extends HTMLElement {
           const instances = await this._hass.callWS<InstanceDocument[]>({
             type: "occupied/instances",
           });
+
           if (epoch !== this._instancesEpoch || !this.isConnected) {
             return false;
           }
+
           this.instances = instances;
           this._instancesReady = true;
           this.error = "";
@@ -715,7 +772,9 @@ export class OccupiedPanel extends HTMLElement {
         }
       })();
     }
+
     const request = this._instancesRequest;
+
     try {
       return await request;
     } finally {
@@ -729,23 +788,28 @@ export class OccupiedPanel extends HTMLElement {
     if (!this.isConnected || !this._hass || !this._panel) {
       return;
     }
+
     if (this.starting && (await this._waitForStartup())) {
       return;
     }
+
     if (!this._instancesReady && !(await this._loadInstances())) {
       return;
     }
+
     const entry =
       new URLSearchParams(location.search).get("config_entry") ||
       this._panel.config?.config_entry_id ||
       this.selectedEntry ||
       this.instances.find((item) => item.loaded)?.config_entry_id ||
       this.instances[0]?.config_entry_id;
+
     if (!entry) {
       this.flush();
 
       return;
     }
+
     if (entry !== this.selectedEntry) {
       if (this.busy || !this._canSwitchInstance()) {
         if (this.selectedEntry) {
@@ -754,8 +818,10 @@ export class OccupiedPanel extends HTMLElement {
 
         return;
       }
+
       this._resetInstance(entry);
     }
+
     if (
       !this.selectedInstance?.loaded ||
       this._loading ||
@@ -772,20 +838,24 @@ export class OccupiedPanel extends HTMLElement {
 
       return;
     }
+
     this._loading = true;
     this.flush();
     this._disposeSubscription();
     const epoch = ++this.epoch;
     this._loadedEntry = entry;
+
     try {
       const [doc, catalog] = await Promise.all([
         this.ws("program"),
         this.ws("catalog"),
         loadHaControls(),
       ]);
+
       if (epoch !== this.epoch) {
         return;
       }
+
       if (
         this.draft &&
         (doc.revision === this.revision ||
@@ -801,6 +871,7 @@ export class OccupiedPanel extends HTMLElement {
         this.adopt(doc);
         this.resetDraft();
       }
+
       this.catalog = catalog;
       this.recovery.observe(this._hass.states, [this.saved, this.draft]);
       this._failedEntry = null;
@@ -832,6 +903,7 @@ export class OccupiedPanel extends HTMLElement {
     if (this.tab === "preview") {
       void this.previewController.loadPreview();
     }
+
     this.flush();
   }
 
@@ -843,13 +915,16 @@ export class OccupiedPanel extends HTMLElement {
 
       return;
     }
+
     if (this.tab === tab) {
       return;
     }
+
     if (this.yamlDirty || this.hasRunConditionChanges) {
       if (!globalThis.confirm(this.t("view_switch_confirm"))) {
         return;
       }
+
       this.yaml = this.yamlSaved;
       this.runConditionForm = null;
       this.runConditionOriginal = null;
@@ -857,26 +932,32 @@ export class OccupiedPanel extends HTMLElement {
       this.error = "";
       this.issues = [];
     }
+
     this.tab = tab;
+
     if (tab === "preview") {
       void this.recoverLivePreview();
     }
+
     this.renderView();
   }
 
   requestStepExit(action: () => void) {
     const editor = this.activeEditor;
+
     if (!editor) {
       action();
 
       return;
     }
+
     if (this.hasEditorChanges) {
       this.pendingStepExit = action;
       this.flush();
 
       return;
     }
+
     this.finishStepExit(action);
   }
 
@@ -887,6 +968,7 @@ export class OccupiedPanel extends HTMLElement {
 
   confirmStepExit() {
     const action = this.pendingStepExit;
+
     if (action) {
       this.finishStepExit(action);
     }
@@ -908,9 +990,11 @@ export class OccupiedPanel extends HTMLElement {
     this._failedEntry = null;
     this._instancesFailed = false;
     this._instancesReady = false;
+
     if (this._loadedEntry && this.selectedInstance?.loaded) {
       void this._subscribe();
     }
+
     void this._load();
   }
 
@@ -964,6 +1048,7 @@ export class OccupiedPanel extends HTMLElement {
     this.resetDraft();
     this.yaml = this.yamlSaved;
     this.error = "";
+
     if (render) {
       this.renderView();
     }
@@ -976,15 +1061,22 @@ export class OccupiedPanel extends HTMLElement {
     this.flush();
   }
 
-  change(path: Path, value: unknown, rerender = false) {
+  change(
+    path: Path,
+    value: Program | import("./lib/types.js").JsonValue | undefined,
+    rerender = false,
+  ) {
     if (this.recovering) {
       return;
     }
+
     if (path.length === 0) {
+      // SAFETY: An empty editor path replaces the root with the program supplied by the program editor.
       this.draft = value as Program;
     } else {
-      set(this.draft, path, value);
+      set(this.draft!, path, value);
     }
+
     this.edited(rerender);
   }
 
@@ -992,6 +1084,7 @@ export class OccupiedPanel extends HTMLElement {
     this.version++;
     this.dirty = true;
     this.validatedVersion = -1;
+
     if (rerender) {
       this.renderView();
     } else {
@@ -999,12 +1092,12 @@ export class OccupiedPanel extends HTMLElement {
     }
   }
 
-  fail(error: unknown) {
-    this.error = this.t(errorMessage(error));
+  fail(cause: unknown) {
+    this.error = this.t(errorMessage(cause));
     this.flush();
   }
 
-  attempt(action: () => unknown) {
+  attempt(action: () => void) {
     try {
       action();
     } catch (error) {
@@ -1016,10 +1109,12 @@ export class OccupiedPanel extends HTMLElement {
     if (this.busy) {
       return;
     }
+
     this.busy = true;
     this.error = "";
     this.flush();
     const epoch = this.epoch;
+
     try {
       return await action(epoch);
     } catch (error) {
@@ -1027,6 +1122,7 @@ export class OccupiedPanel extends HTMLElement {
         if (isRevisionConflict(error)) {
           this.stale = true;
         }
+
         this.fail(error);
       }
     } finally {
@@ -1040,6 +1136,7 @@ export class OccupiedPanel extends HTMLElement {
   showIssues(result: { valid?: boolean; issues?: Issue[] }) {
     this.issues = result.issues || [];
     this.flush();
+
     if (result.valid === false && this.issues.length === 0) {
       this.fail(this.t("preview_infeasible_error"));
     }
@@ -1049,7 +1146,9 @@ export class OccupiedPanel extends HTMLElement {
     if (this.starting) {
       return [];
     }
+
     const issues = new Map<string, Issue>();
+
     for (const issue of [
       ...(this.document?.warnings || []),
       ...this.issues.filter(
@@ -1063,6 +1162,7 @@ export class OccupiedPanel extends HTMLElement {
         issue.model_path || issue.path || "$",
         issue.message,
       ]);
+
       issues.set(key, issue);
     }
 
@@ -1073,16 +1173,20 @@ export class OccupiedPanel extends HTMLElement {
     if (!this.draft) {
       return [];
     }
+
     const program = copy(this.draft);
+
     if (this.runConditionForm) {
       program.run_condition = runConditionValue(this.runConditionForm);
     }
+
     if (this.stepEditor) {
       (program.steps ||= {})[this.stepEditor.id] = {
         timing: {},
         ...actionFormTargets(this.stepEditor.form),
       };
     }
+
     if (this.randomEditor) {
       const { form, id } = this.randomEditor;
       (program.random ||= {})[id] = {
@@ -1102,19 +1206,24 @@ export class OccupiedPanel extends HTMLElement {
 
   focusIssue(issue: Issue) {
     const editor = this.activeEditor;
+
     if (!editor) {
       return;
     }
+
     const path = issue.model_path || [],
       prefix = editor.candidatePath || [];
+
     if (prefix.length === 0 || prefix.some((key, i) => path[i] !== key)) {
       this.fail(this.t("step_edit_in_progress_hint"));
 
       return;
     }
+
     const field = this.randomEditor
       ? randomEditorField(path.slice(prefix.length), this.randomEditor.form)
       : editorField(path.slice(prefix.length), this.stepEditor!.form);
+
     editor.errors[field] = issue.message;
     this.renderView();
     this.shadowRoot
@@ -1128,10 +1237,13 @@ export class OccupiedPanel extends HTMLElement {
 
     return this.run(async (epoch) => {
       const result = await this.ws("editor_validate", { program: draft });
+
       if (epoch !== this.epoch || version !== this.version) {
         return;
       }
+
       this.showIssues(result);
+
       if (result.valid) {
         this.validatedVersion = version;
       }
@@ -1142,6 +1254,7 @@ export class OccupiedPanel extends HTMLElement {
     if (this.document?.source === "file" || this.stale || this.recovering) {
       return;
     }
+
     const version = this.version,
       draft = copy(candidate || this.draft),
       expected = this.revision,
@@ -1151,15 +1264,19 @@ export class OccupiedPanel extends HTMLElement {
 
     return this.run(async (epoch) => {
       const validation = await this.ws("editor_validate", { program: draft });
+
       if (epoch !== this.epoch) {
         return;
       }
+
       if (version !== this.version) {
         this.fail(this.t("save_newer_edits_hint"));
 
         return;
       }
+
       this.showIssues(validation);
+
       if (!validation.valid) {
         if (editor && this.issues.length > 0) {
           this.focusIssue(
@@ -1169,42 +1286,57 @@ export class OccupiedPanel extends HTMLElement {
 
         return;
       }
+
       this.validatedVersion = version;
+
       const result = await this.ws("save", {
         program: draft,
         expected_revision: expected,
       });
+
       if (epoch !== this.epoch) {
         return;
       }
+
       if (!result.valid) {
         return this.showIssues(result);
       }
+
       this.adopt({ ...this.document, ...result, needs_apply: false });
+
       if (editor && this.activeEditor === editor) {
         this.draft = copy(result.program);
         this.dirty = false;
+
         if (this.stepEditor) {
           this.selectedStep = editor.id;
         }
+
         editor.existing = true;
+
         if (this.randomEditor) {
+          // SAFETY: The active editor kind selects the corresponding submitted form captured before the asynchronous request.
           this.randomEditor.original = submittedForm as RandomForm;
         } else {
+          // SAFETY: The active editor kind selects the corresponding submitted form captured before the asynchronous request.
           this.stepEditor!.original = submittedForm as StepForm;
         }
+
         if (version !== this.version) {
           this.fail(this.t("saved_newer_edits_hint"));
 
           return;
         }
+
         this.stepEditor = null;
         this.randomEditor = null;
       }
+
       if (version === this.version) {
         this.draft = copy(result.program);
         this.dirty = false;
         this.renderView();
+
         if (editor) {
           this.shadowRoot
             .getElementById(`${editorKind}-card-${editor.id}`)
@@ -1213,6 +1345,7 @@ export class OccupiedPanel extends HTMLElement {
 
         return true;
       }
+
       this.dirty = true;
     });
   }
@@ -1228,21 +1361,25 @@ export class OccupiedPanel extends HTMLElement {
     ) {
       return;
     }
+
     const version = this.version;
     const epoch = this.epoch;
     let reloaded = false;
 
     await this.run(async (epoch) => {
       const doc = await this.ws("program");
+
       if (epoch !== this.epoch || version !== this.version) {
         return;
       }
+
       this.adopt(doc);
       this.resetDraft();
       this.stepEditor = null;
       this.randomEditor = null;
       reloaded = true;
     });
+
     if (!(reloaded && epoch === this.epoch)) {
       return;
     }
@@ -1250,6 +1387,7 @@ export class OccupiedPanel extends HTMLElement {
     if (!this.yamlDirty) {
       await this.exportYaml();
     }
+
     if (epoch === this.epoch) {
       this.renderView();
     }
@@ -1289,6 +1427,7 @@ export class OccupiedPanel extends HTMLElement {
 
   discardRecovery() {
     const document = this.document;
+
     if (
       !document ||
       !this.recovering ||
@@ -1298,6 +1437,7 @@ export class OccupiedPanel extends HTMLElement {
     ) {
       return;
     }
+
     const yaml = this.yaml;
     const program = copy(document.program);
     const expected = this.revision;
@@ -1308,12 +1448,15 @@ export class OccupiedPanel extends HTMLElement {
         expected_revision: expected,
         discard_recovery: true,
       });
+
       if (epoch !== this.epoch) {
         return;
       }
+
       if (!result.valid) {
         return this.showIssues(result);
       }
+
       const hasNewerYaml = this.yaml !== yaml;
       const newerYaml = hasNewerYaml ? this.yaml : "";
       this.adopt({ ...this.document, ...result, needs_apply: false });
@@ -1330,6 +1473,7 @@ export class OccupiedPanel extends HTMLElement {
     if (this.document?.source === "file" || this.stale || !this.yamlDirty) {
       return;
     }
+
     const yaml = this.yaml,
       version = this.version,
       expected = this.yamlRevision;
@@ -1339,16 +1483,20 @@ export class OccupiedPanel extends HTMLElement {
         program: yaml,
         expected_revision: expected,
       });
+
       if (epoch !== this.epoch) {
         return;
       }
+
       if (!result.valid) {
         return this.showIssues(result);
       }
+
       this.adopt({ ...this.document, ...result, needs_apply: false });
       this.yamlSaved = yaml;
       this.yamlRevision = result.revision;
       this.issues = [];
+
       if (version === this.version) {
         this.draft = copy(result.program);
         this.dirty = false;
@@ -1356,6 +1504,7 @@ export class OccupiedPanel extends HTMLElement {
         this.validatedVersion = this.version;
         this.openRunCondition();
       }
+
       this.flush();
     });
   }
@@ -1364,6 +1513,7 @@ export class OccupiedPanel extends HTMLElement {
     if (this.yamlDirty || this.busy) {
       return;
     }
+
     if (this.document?.recovery_yaml != null) {
       this.yaml = this.yamlSaved = this.document.recovery_yaml;
       this.yamlRevision = this.document.revision;
@@ -1371,16 +1521,20 @@ export class OccupiedPanel extends HTMLElement {
 
       return;
     }
+
     const yaml = this.yaml,
       revision = this.revision,
       version = this.version;
 
     return this.run(async (epoch) => {
       const result = await this.ws("export", { program: copy(this.draft) });
+
       if (epoch !== this.epoch) {
         return;
       }
+
       this.showIssues(result);
+
       if (
         !result.valid ||
         this.yaml !== yaml ||
@@ -1397,12 +1551,12 @@ export class OccupiedPanel extends HTMLElement {
   }
 }
 
-function isRevisionConflict(error: unknown) {
+function isRevisionConflict(cause: unknown) {
   return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "revision_conflict"
+    isObject(cause) &&
+    cause !== null &&
+    "code" in cause &&
+    cause.code === "revision_conflict"
   );
 }
 
@@ -1413,14 +1567,18 @@ function editorField(tail: Path, form: Pick<StepForm, "kind">): string {
   ) {
     return "customYaml";
   }
+
   const has = (key: string) => tail.includes(key),
     head = tail[0];
+
   if (["name", "days", "entities", "data"].includes(String(head))) {
     return String(head);
   }
+
   if (head === "action") {
     return form.kind === "service" ? "service" : "kind";
   }
+
   if (head === "timing") {
     for (const [field, key] of [
       ["latest_at", "latestAt"],
@@ -1428,6 +1586,7 @@ function editorField(tail: Path, form: Pick<StepForm, "kind">): string {
     ]) {
       if (has(field)) {
         let boundaryField = "anchor";
+
         if (has("absolute_time")) {
           boundaryField = "start";
         } else if (has("start_offset")) {
@@ -1437,9 +1596,11 @@ function editorField(tail: Path, form: Pick<StepForm, "kind">): string {
         return `${key}.${boundaryField}`;
       }
     }
+
     if (has("absolute_time")) {
       return has("end") ? "end" : "start";
     }
+
     if (has("start_offset")) {
       return "startOffset";
     }
@@ -1452,12 +1613,15 @@ function editorField(tail: Path, form: Pick<StepForm, "kind">): string {
 
 function randomEditorField(tail: Path, form: RandomForm): string {
   const head = tail[0];
+
   if (head === "start" || head === "end") {
     if (tail[1] === "duration") {
       return `${head}.${tail[2] === "max" ? "maxDuration" : "minDuration"}`;
     }
+
     if (tail.length === 1) {
       let field = "anchor";
+
       if (form[head].mode === "absolute") {
         field = "start";
       } else if (form[head].mode === "duration") {
@@ -1469,21 +1633,24 @@ function randomEditorField(tail: Path, form: RandomForm): string {
 
     return `${head}.${editorField(["timing", ...tail.slice(1)], form.on)}`;
   }
+
   if (head === "on" || head === "off") {
     return `${head}.${editorField(tail.slice(1), form[head])}`;
   }
+
   if (head === "count") {
     return tail[1] === "max" ? "maxCount" : "minCount";
   }
 
   return (
-    (
+    lookup(
       {
         min_duration: "minDuration",
         max_duration: "maxDuration",
         days: "days",
-      } as Record<string, string>
-    )[String(head)] || "name"
+      },
+      String(head),
+    ) || "name"
   );
 }
 

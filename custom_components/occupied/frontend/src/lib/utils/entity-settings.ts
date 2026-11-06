@@ -1,3 +1,4 @@
+import { isNumber } from "./value-guards.js";
 import type {
   Action,
   ActionForm,
@@ -29,17 +30,22 @@ export function editableEntityMapping(source?: Action) {
   ) {
     return;
   }
+
   const entries = Object.entries(source.entities);
   const state = entries[0]?.[1].state;
+
   if (
     !["on", "off"].includes(String(state)) ||
     entries.some(([entity, settings]) => {
       if (!/^(light|switch)\./.test(entity) || settings.state !== state) {
         return true;
       }
+
       const allowed = ["state"];
+
       if (entity.startsWith("light.")) {
         allowed.push("transition");
+
         if (state === "on") {
           allowed.push("brightness", "rgb_color", "color_temp_kelvin");
         }
@@ -48,12 +54,12 @@ export function editableEntityMapping(source?: Action) {
       return (
         Object.keys(settings).some((key) => !allowed.includes(key)) ||
         (settings.brightness !== undefined &&
-          (typeof settings.brightness !== "number" ||
+          (!isNumber(settings.brightness) ||
             !Number.isSafeInteger(settings.brightness) ||
             settings.brightness < 1 ||
             settings.brightness > 255)) ||
         (settings.transition !== undefined &&
-          (typeof settings.transition !== "number" ||
+          (!isNumber(settings.transition) ||
             !Number.isFinite(settings.transition) ||
             settings.transition < 0 ||
             settings.transition > 604_800)) ||
@@ -68,7 +74,9 @@ export function editableEntityMapping(source?: Action) {
   ) {
     return;
   }
+
   const entitySettings: Record<string, EntitySettingsForm> = {};
+
   for (const [entity, settings] of entries) {
     if (
       settings.brightness === undefined &&
@@ -78,6 +86,8 @@ export function editableEntityMapping(source?: Action) {
     ) {
       continue;
     }
+
+    // SAFETY: The preceding validation establishes a finite numeric value before constructing the entity setting.
     entitySettings[entity] = {
       brightness:
         settings.brightness === undefined
@@ -88,7 +98,9 @@ export function editableEntityMapping(source?: Action) {
       }),
       transition: String(settings.transition ?? ""),
       ...(settings.rgb_color !== undefined && {
-        rgbColor: [...(settings.rgb_color as number[])],
+        rgbColor: [
+          .../* SAFETY: The preceding validation establishes a finite numeric value before constructing the entity setting. */ (settings.rgb_color as number[]),
+        ],
       }),
       ...(settings.color_temp_kelvin !== undefined && {
         colorTemp: String(settings.color_temp_kelvin),
@@ -101,6 +113,7 @@ export function editableEntityMapping(source?: Action) {
 
 export function setActionEntities(form: ActionForm, entities: string[]) {
   form.entities = [...new Set(entities)];
+
   if (!form.entitySettings) {
     return;
   }
@@ -110,6 +123,7 @@ export function setActionEntities(form: ActionForm, entities: string[]) {
       form.entities.includes(entity),
     ),
   );
+
   if (Object.keys(form.entitySettings).length === 0) {
     delete form.entitySettings;
   }
@@ -118,6 +132,7 @@ export function setActionEntities(form: ActionForm, entities: string[]) {
 export function resetEntitySettings(form: ActionForm, entity: string) {
   const next = { ...form.entitySettings };
   delete next[entity];
+
   if (Object.keys(next).length > 0) {
     form.entitySettings = next;
   } else {
@@ -135,15 +150,19 @@ export function updateEntitySetting(
     ...(form.entitySettings?.[entity] || emptyEntitySettings()),
     [key]: value,
   };
+
   if (key === "brightness") {
     delete settings.rawBrightness;
   }
+
   if (key === "colorTemp" && value.trim()) {
     delete settings.rgbColor;
   }
+
   if (key === "colorTemp" && !value.trim()) {
     delete settings.colorTemp;
   }
+
   saveEntitySettings(form, entity, settings);
 }
 
@@ -155,12 +174,14 @@ export function updateEntityColor(
   const settings = {
     ...(form.entitySettings?.[entity] || emptyEntitySettings()),
   };
+
   if (value) {
     settings.rgbColor = [...value];
     delete settings.colorTemp;
   } else {
     delete settings.rgbColor;
   }
+
   saveEntitySettings(form, entity, settings);
 }
 
@@ -179,6 +200,7 @@ function saveEntitySettings(
 
     return;
   }
+
   form.entitySettings = { ...form.entitySettings, [entity]: settings };
 }
 
@@ -193,9 +215,9 @@ function validRgbColor(value: unknown): value is number[] {
   );
 }
 
-function validColorTemp(value: unknown): boolean {
+function validColorTemp(value: unknown): value is number {
   return (
-    typeof value === "number" &&
+    isNumber(value) &&
     Number.isSafeInteger(value) &&
     value >= 1 &&
     value <= 100_000
@@ -204,11 +226,14 @@ function validColorTemp(value: unknown): boolean {
 
 export function entitySettingsErrors(form: ActionForm): FieldErrors {
   const errors: FieldErrors = {};
+
   for (const entity of form.entities) {
     const settings = form.entitySettings?.[entity];
+
     if (!settings) {
       continue;
     }
+
     if (
       form.action === "turn_on" &&
       settings.brightness.trim() &&
@@ -219,6 +244,7 @@ export function entitySettingsErrors(form: ActionForm): FieldErrors {
     ) {
       errors[`entitySettings.${entity}.brightness`] = "entity_brightness_error";
     }
+
     if (form.action === "turn_on") {
       if (
         settings.rgbColor &&
@@ -226,6 +252,7 @@ export function entitySettingsErrors(form: ActionForm): FieldErrors {
       ) {
         errors[`entitySettings.${entity}.rgbColor`] = "entity_color_error";
       }
+
       if (
         settings.colorTemp?.trim() &&
         (!entity.startsWith("light.") ||
@@ -236,6 +263,7 @@ export function entitySettingsErrors(form: ActionForm): FieldErrors {
           "entity_color_temp_error";
       }
     }
+
     if (
       settings.transition.trim() &&
       (!entity.startsWith("light.") ||
@@ -253,22 +281,27 @@ export function entitySettingsErrors(form: ActionForm): FieldErrors {
 export function entitySettingsData(form: ActionForm, entity: string) {
   const settings = form.entitySettings?.[entity];
   const data: Record<string, JsonValue> = {};
+
   if (!entity.startsWith("light.") || !settings) {
     return data;
   }
+
   if (form.action === "turn_on" && settings.brightness.trim()) {
     data.brightness =
       settings.rawBrightness ??
       Math.max(1, Math.round((Number(settings.brightness) * 255) / 100));
   }
+
   if (form.action === "turn_on") {
     if (settings.rgbColor) {
       data.rgb_color = [...settings.rgbColor];
     }
+
     if (settings.colorTemp?.trim()) {
       data.color_temp_kelvin = Number(settings.colorTemp);
     }
   }
+
   if (settings.transition.trim()) {
     data.transition = Number(settings.transition);
   }

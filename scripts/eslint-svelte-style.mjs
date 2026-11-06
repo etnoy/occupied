@@ -13,12 +13,16 @@ function section(node) {
   if (node.type !== "VariableDeclaration") {
     return;
   }
+
   const initializer = node.declarations[0]?.init;
+
   if (initializer?.type !== "CallExpression") {
     return;
   }
+
   const callee = initializer.callee;
   const name = callee.type === "Identifier" ? callee.name : callee.object?.name;
+
   if (["$props", "$state", "$derived"].includes(name)) {
     return name;
   }
@@ -38,19 +42,23 @@ export default {
       },
       create(context) {
         const sourceCode = context.sourceCode;
+
         return {
           SvelteScriptElement(script) {
             for (let index = 1; index < script.body.length; index++) {
               const previous = script.body[index - 1];
               const current = script.body[index];
+
               if (
                 previous.type === "ImportDeclaration" &&
                 current.type === "ImportDeclaration"
               ) {
                 continue;
               }
+
               const previousSection = section(previous);
               const currentSection = section(current);
+
               const needsSpacing =
                 previous.type === "ImportDeclaration" ||
                 declarations.has(previous.type) ||
@@ -59,16 +67,20 @@ export default {
                 (previousSection &&
                   currentSection &&
                   previousSection !== currentSection);
+
               if (!needsSpacing) {
                 continue;
               }
+
               const between = sourceCode.lines.slice(
                 previous.loc.end.line,
                 current.loc.start.line - 1,
               );
+
               if (between.some((line) => !line.trim())) {
                 continue;
               }
+
               context.report({
                 node: current,
                 messageId: "blankLine",
@@ -78,6 +90,7 @@ export default {
                     "\n",
                     previous.range[1],
                   );
+
                   if (endOfLine === -1 || endOfLine >= current.range[0]) {
                     return;
                   }

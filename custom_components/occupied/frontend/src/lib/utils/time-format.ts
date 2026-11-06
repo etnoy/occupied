@@ -1,3 +1,4 @@
+import { lookup } from "./lookup.js";
 import type { HomeAssistant } from "../types.js";
 
 export type HomeAssistantLocale = NonNullable<HomeAssistant["locale"]>;
@@ -45,14 +46,17 @@ export function formatPreviewDate(
   const valueTime = Date.parse(`${value}T12:00:00Z`);
   const todayTime = Date.parse(`${today}T12:00:00Z`);
   const daysFromToday = Math.round((valueTime - todayTime) / 86_400_000);
-  const relativeLabels: Record<number, string> = {
+
+  const relativeLabels = {
     [-1]: "yesterday",
     0: "today",
     1: "tomorrow",
   };
-  const relativeLabel = relativeLabels[daysFromToday]
-    ? t(relativeLabels[daysFromToday])
+
+  const relativeLabel = lookup(relativeLabels, daysFromToday)
+    ? t(lookup(relativeLabels, daysFromToday)!)
     : undefined;
+
   const dateLabel = formatScheduleDate(value, locale);
 
   return relativeLabel ? `${relativeLabel} · ${dateLabel}` : dateLabel;
@@ -62,15 +66,18 @@ function usesAmPm(locale?: HomeAssistantLocale) {
   if (!locale) {
     return false;
   }
+
   if (locale.time_format === "12") {
     return true;
   }
+
   if (locale.time_format === "24") {
     return false;
   }
 
   const language =
     locale.time_format === "language" ? locale.language : undefined;
+
   const hourCycle = new Intl.DateTimeFormat(language, {
     hour: "numeric",
   }).resolvedOptions().hourCycle;
@@ -88,11 +95,13 @@ function hourCycle(locale?: HomeAssistantLocale): "h12" | "h23" {
 
 export function formatClock(value: string, locale?: HomeAssistantLocale) {
   const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
+
   if (!match) {
     return value;
   }
 
   const [, hour, minute, second] = match;
+
   const date = new Date(
     Date.UTC(2020, 0, 1, Number(hour), Number(minute), Number(second || 0)),
   );

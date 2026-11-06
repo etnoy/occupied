@@ -48,35 +48,45 @@
   let field = $derived(`${fieldPrefix}${key}`);
   let id = $derived(`step-${field}`);
   let invalid = $derived(editor.errors[key] ? true : undefined);
+
   let described = $derived(
     editor.errors[key] ? `step-error-${field}` : undefined,
   );
+
   let nativeTime = $derived(options.type === "time");
 
   function input(event: Event) {
+    // SAFETY: This handler is attached to the control whose native element type is asserted here.
     const control = event.currentTarget as
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HaSelector;
+
     if (nativeTime) {
       if (!isValueChangedEvent(event)) {
         return;
       }
+
       // Older HA time selectors emit an initial value with zero seconds.
       // Opening an unchanged editor must not turn that formatting into an edit.
       const next = String(event.detail.value || "");
+
       if (
         next.replace(/^(\d{2}:\d{2}):00$/, "$1") ===
         String(value).replace(/^(\d{2}:\d{2}):00$/, "$1")
       ) {
         return;
       }
+
       control.value = event.detail.value || "";
     }
+
     update(String(control.value ?? ""));
     changed(key);
+
     // Restore the displayed choice when a guarded conversion was canceled.
     if (control instanceof HTMLSelectElement) {
       control.value = String(value);
     }
+
     if (options.render) {
       focusEditor(panel, field);
     }

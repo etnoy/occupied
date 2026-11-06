@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { isString } from "../../utils/value-guards.js";
+
   import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
 
   import { properties } from "../../actions/dom.js";
@@ -21,9 +23,11 @@
 
   $effect(() => {
     void revision;
+
     if (autoExportStarted || panel.busy) {
       return;
     }
+
     // Export flushes controller updates synchronously. Start it after this
     // render batch, and cancel if the view disappears or becomes busy first.
     let cancelled = false;
@@ -31,6 +35,7 @@
       if (cancelled) {
         return;
       }
+
       autoExportStarted = true;
       void panel.exportYaml();
     });
@@ -59,15 +64,22 @@
     accept=".yaml,.yml,.json"
     aria-label={t("choose_configuration_file")}
     onchange={async (event: Event) => {
-      const file = (event.currentTarget as HTMLInputElement).files?.[0];
+      const file =
+        /* SAFETY: This handler is attached to the control whose native element type is asserted here. */ (
+          event.currentTarget as HTMLInputElement
+        ).files?.[0];
+
       if (!file) {
         return;
       }
+
       const epoch = panel.epoch;
       const yaml = await file.text();
+
       if (epoch !== panel.epoch) {
         return;
       }
+
       panel.yaml = yaml;
       panel.flush();
     }}
@@ -78,12 +90,10 @@
     dir="ltr"
     use:properties={{ mode: "yaml", value: panel.yaml, linewrap: true }}
     onvalue-changed={(event: Event) => {
-      if (
-        !isValueChangedEvent(event) ||
-        typeof event.detail.value !== "string"
-      ) {
+      if (!isValueChangedEvent(event) || !isString(event.detail.value)) {
         return;
       }
+
       panel.yaml = event.detail.value;
       panel.flush();
     }}

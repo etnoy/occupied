@@ -1,3 +1,4 @@
+import { isNumber } from "./value-guards.js";
 import type { Action, JsonValue } from "../types.js";
 
 export const coverActions: [string, string][] = [
@@ -15,6 +16,7 @@ export function coverField(action: string) {
   if (action === "cover.set_cover_position") {
     return "position";
   }
+
   if (action === "cover.set_cover_tilt_position") {
     return "tilt_position";
   }
@@ -34,10 +36,7 @@ export function isCoverAction(action: Pick<Action, "action" | "data">) {
 
 function validCoverPosition(value: JsonValue | undefined): value is number {
   return (
-    typeof value === "number" &&
-    Number.isSafeInteger(value) &&
-    value >= 0 &&
-    value <= 100
+    isNumber(value) && Number.isSafeInteger(value) && value >= 0 && value <= 100
   );
 }
 
@@ -54,11 +53,15 @@ export function coverTarget(
   if (!isCoverAction(action)) {
     return {};
   }
+
   const next = { ...previous };
+
   const tilt =
     action.action?.endsWith("_tilt") ||
     action.action === "cover.set_cover_tilt_position";
+
   const field = tilt ? "tilt_position" : "position";
+
   if (action.action?.includes(".stop_")) {
     delete next[field];
   } else if (action.action?.includes(".open_")) {
@@ -67,6 +70,7 @@ export function coverTarget(
     next[field] = 0;
   } else {
     const value: JsonValue | undefined = action.data?.[field];
+
     if (validCoverPosition(value)) {
       next[field] = value;
     } else {

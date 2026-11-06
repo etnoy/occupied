@@ -35,6 +35,7 @@ void test("explicit script and cover services survive a kind change", () => {
       action,
       entities: [`${action.split(".", 1)[0]}.test`],
     });
+
     changeActionKind(form, "service", () => false);
     assert.equal(form.service, action);
     assert.equal(actionErrors(form).service, undefined);

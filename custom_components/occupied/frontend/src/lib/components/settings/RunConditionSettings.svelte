@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { isString } from "../../utils/value-guards.js";
+
   import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import { properties } from "../../actions/dom.js";
   import {
@@ -26,7 +28,9 @@
       ),
     };
   });
+
   let { t, form, errors, snapshot, managedExtras } = $derived(data);
+
   let current = $derived(
     panel.catalog.entities.find((item) => item.entity_id === form?.entityId),
   );
@@ -34,6 +38,7 @@
   let now = $state(Date.now());
 
   let deadline = $derived(snapshot.run_condition?.activation_deadline);
+
   let remaining = $derived(
     deadline ? Math.max(0, Math.ceil((Date.parse(deadline) - now) / 1000)) : 0,
   );
@@ -42,6 +47,7 @@
     if (panel.runConditionForm) {
       return;
     }
+
     let cancelled = false;
     queueMicrotask(() => {
       if (!cancelled) {
@@ -100,8 +106,9 @@
               return;
             }
 
-            form!.entityId =
-              typeof event.detail.value === "string" ? event.detail.value : "";
+            form!.entityId = isString(event.detail.value)
+              ? event.detail.value
+              : "";
             panel.updateRunCondition();
           }}
         ></ha-selector>
@@ -133,7 +140,9 @@
               return;
             }
 
-            form!.states = event.detail.value as string[];
+            form!.states =
+              /* SAFETY: The multiple-selection control emits an array of selected string values. */ event
+                .detail.value as string[];
             panel.updateRunCondition();
           }}
         ></ha-selector>
@@ -205,9 +214,11 @@
                     if (!isValueChangedEvent(event)) {
                       return;
                     }
+
                     const value = event.detail.value;
+
                     if (
-                      typeof value === "string" &&
+                      isString(value) &&
                       value &&
                       !form!.offEntities.includes(value)
                     ) {
@@ -219,6 +230,7 @@
                         (id) => id !== entity,
                       );
                     }
+
                     panel.updateRunCondition();
                   }}
                 ></ha-selector>
@@ -252,16 +264,21 @@
                 if (!isValueChangedEvent(event)) {
                   return;
                 }
+
                 const value = event.detail.value;
+
                 if (
-                  typeof value !== "string" ||
+                  !isString(value) ||
                   !value ||
                   form!.offEntities.includes(value)
                 ) {
                   return;
                 }
+
                 form!.offEntities = [...form!.offEntities, value];
-                (event.currentTarget as HaSelector).value = "";
+                /* SAFETY: This handler is attached to the control whose native element type is asserted here. */ (
+                  event.currentTarget as HaSelector
+                ).value = "";
                 panel.updateRunCondition();
               }}
             ></ha-selector>

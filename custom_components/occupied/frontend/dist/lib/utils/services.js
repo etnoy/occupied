@@ -1,4 +1,5 @@
 // Generated from custom_components/occupied/frontend/src/lib/utils/services.ts by pnpm run build. Do not edit.
+import { isObject } from "./value-guards.js";
 export function serviceOptions(catalog, entities, current = "") {
   const values = new Set([
     "homeassistant.turn_on",
@@ -52,7 +53,7 @@ export function emptyServiceData(data) {
     const value = JSON.parse(data);
     return (
       value !== null &&
-      typeof value === "object" &&
+      isObject(value) &&
       !Array.isArray(value) &&
       Object.keys(value).length === 0
     );

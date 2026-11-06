@@ -36,9 +36,12 @@ function program(): Program {
 void test("a first random event uses the selected start entities at both ends", () => {
   const p = program(),
     editor = randomEditor(p);
+
   editor.form.on.entities = ["switch.b", "light.a", "light.a"];
+
   const next = buildRandom(p, editor),
     event = next.random![editor.id];
+
   assert.deepEqual(event.on, {
     action: "turn_on",
     entities: ["light.a", "switch.b"],
@@ -60,9 +63,11 @@ void test("untitled random events and steps omit category names and preserve cus
   const editor = randomEditor(p);
   editor.form.on.entities = ["light.a"];
   const next = buildRandom(p, editor);
+
   const catalog = {
     entities: [{ entity_id: "light.a", name: "Living room lamp" }],
   };
+
   assert.equal(randomEntries(next, catalog)[0].name, "Living room lamp");
   assert.equal(
     stepEntries(next, catalog)[0].name,
@@ -117,13 +122,16 @@ void test("every random field roundtrips including timed step boundaries and dis
 void test("random count ranges save, reopen, and display both inclusive bounds", () => {
   const p = program(),
     editor = randomEditor(p);
+
   editor.form.on.entities = ["light.a"];
   editor.form.minCount = "2";
   editor.form.maxCount = "6";
   assert.deepEqual(randomErrors(p, editor), {});
+
   const next = buildRandom(p, editor),
     event = next.random![editor.id],
     reopened = randomEditor(next, randomEntries(next)[0]);
+
   assert.deepEqual(event.count, { min: 2, max: 6 });
   assert.equal(reopened.form.minCount, "2");
   assert.equal(reopened.form.maxCount, "6");
@@ -138,10 +146,13 @@ void test("random count ranges save, reopen, and display both inclusive bounds",
 void test("legacy fixed counts initialize both fields without changing the count", () => {
   const p = program(),
     editor = randomEditor(p);
+
   editor.form.on.entities = ["light.a"];
   editor.form.minCount = editor.form.maxCount = "6";
+
   const next = buildRandom(p, editor),
     reopened = randomEditor(next, randomEntries(next)[0]);
+
   assert.equal(reopened.form.minCount, "6");
   assert.equal(reopened.form.maxCount, "6");
   assert.equal(buildRandom(next, reopened).random![editor.id].count, 6);
@@ -151,6 +162,7 @@ void test("zero minimum and fixed zero counts save, reopen, and display", () => 
   for (const maximum of [0, 1, 6]) {
     const p = program(),
       editor = randomEditor(p);
+
     editor.form.on.entities = ["light.a"];
     editor.form.minCount = "0";
     editor.form.maxCount = String(maximum);
@@ -169,6 +181,7 @@ void test("zero minimum and fixed zero counts save, reopen, and display", () => 
 void test("fixed zero counts need no feasible window while positive maxima still do", () => {
   const p = program(),
     editor = randomEditor(p);
+
   editor.form.on.entities = ["light.a"];
   editor.form.minCount = editor.form.maxCount = "0";
   editor.form.minDuration = editor.form.maxDuration = "6h";
@@ -267,7 +280,9 @@ void test("window-start sources include other random windows and exclude self an
 void test("count bounds reject invalid integers and reversed ranges before saving", () => {
   const p = program(),
     editor = randomEditor(p);
+
   editor.form.on.entities = ["light.a"];
+
   for (const field of ["minCount", "maxCount"] as const) {
     for (const value of ["", " ", "-1", "1.5", "1001", "invalid"]) {
       editor.form.minCount = "2";
@@ -277,6 +292,7 @@ void test("count bounds reject invalid integers and reversed ranges before savin
       assert.throws(() => buildRandom(p, editor));
     }
   }
+
   editor.form.minCount = "6";
   editor.form.maxCount = "2";
   assert.ok(randomErrors(p, editor).maxCount);
@@ -289,6 +305,7 @@ void test("count bounds reject invalid integers and reversed ranges before savin
 void test("random sources include all steps even when a random ID matches a step ID", () => {
   const p = program(),
     editor = randomEditor(p);
+
   editor.id = "evening";
   editor.form.start.mode = "relative";
   editor.form.start.anchor = "step:evening";
@@ -325,6 +342,7 @@ void test("duration, count, and both actions report separate field errors", () =
 void test("overnight windows are editable and undersized windows fail before saving", () => {
   const p = program(),
     editor = randomEditor(p);
+
   editor.form.on.entities = ["light.a"];
   editor.form.start.start = "23:00";
   editor.form.end.start = "01:00";
@@ -339,6 +357,7 @@ void test("overnight windows are editable and undersized windows fail before sav
 void test("two random boundaries can depend on a step and preserve independent weekday choices", () => {
   const p = program(),
     editor = randomEditor(p);
+
   editor.form.on.entities = ["light.a"];
   editor.form.days = ["sat"];
   editor.form.start = {
@@ -362,11 +381,14 @@ void test("two random boundaries can depend on a step and preserve independent w
 void test("independent end targets are preserved and random IDs stay stable through renames", () => {
   const p = program(),
     editor = randomEditor(p);
+
   editor.form.on.entities = ["light.a"];
   editor.form.off.entities = ["light.b"];
   editor.form.sameEntities = false;
+
   const next = buildRandom(p, editor),
     reopened = randomEditor(next, randomEntries(next)[0]);
+
   reopened.form.name = "Changed title";
   assert.equal(reopened.id, editor.id);
   assert.deepEqual(

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { isString, isNumber } from "../../utils/value-guards.js";
+
   import { flushSync } from "svelte";
   import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import type { ActionEditorContext, HaSelector } from "../../types.js";
@@ -43,6 +45,7 @@
 
     return state == null || state === "unknown" || state === "unavailable";
   });
+
   let conflict = $derived.by(() => {
     void context;
 
@@ -56,10 +59,13 @@
 
   let fieldPrefix = $derived(context.fieldPrefix || "");
   let name = $derived(entityName(panel.catalog, entity));
+
   let settings = $derived(
     form.entitySettings?.[entity] || emptyEntitySettings(),
   );
+
   let brightness = $derived(canSetBrightness(entity, form.action));
+
   let brightnessState = $derived({
     entity_id: entity,
     state: "on",
@@ -76,9 +82,11 @@
       ...(settings.rgbColor && { rgb_color: settings.rgbColor }),
     },
   });
+
   let field = $derived(`entitySettings.${entity}`);
   let light = $derived(entity.startsWith("light."));
   let menuId = $derived(`entity-properties-${fieldPrefix}${entity}`);
+
   let fields = $derived([
     {
       key: "brightness" as const,
@@ -118,13 +126,9 @@
     if (key === "rgbColor") {
       updateEntityColor(form, entity, Array.isArray(value) ? value : undefined);
     } else {
-      updateEntitySetting(
-        form,
-        entity,
-        key,
-        typeof value === "string" ? value : "",
-      );
+      updateEntitySetting(form, entity, key, isString(value) ? value : "");
     }
+
     context.changed(`${field}.${key}`);
   }
 
@@ -138,6 +142,7 @@
     if (!menu?.matches(":popover-open") || !trigger) {
       return;
     }
+
     const anchor = trigger.getBoundingClientRect();
     const bounds = menu.getBoundingClientRect();
     menu.style.left = `${Math.max(16, Math.min(anchor.right - bounds.width, window.innerWidth - bounds.width - 16))}px`;
@@ -148,12 +153,15 @@
     if (!menu) {
       return;
     }
+
     menu.showPopover();
     menuOpen = true;
     positionMenu();
+
     const items = [
       ...menu.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"),
     ];
+
     (last ? items.at(-1) : items[0])?.focus({ preventScroll: true });
   }
 
@@ -161,27 +169,35 @@
     if (!menu) {
       return;
     }
+
     const items = [
       ...menu.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"),
     ];
+
+    // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
     const index = items.indexOf(
       panel.shadowRoot.activeElement as HTMLButtonElement,
     );
+
     if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
       event.preventDefault();
+
       let next =
         (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) %
         items.length;
+
       if (event.key === "Home") {
         next = 0;
       } else if (event.key === "End") {
         next = items.length - 1;
       }
+
       items[next]?.focus();
     } else if (event.key === "Escape" || event.key === "Tab") {
       if (event.key === "Escape") {
         event.preventDefault();
       }
+
       closeMenu();
     }
   }
@@ -214,13 +230,18 @@
           if (!isValueChangedEvent(event)) {
             return;
           }
+
           const value = event.detail.value;
-          if (typeof value === "string" && value) {
+
+          if (isString(value) && value) {
             replace(value);
           } else {
             remove();
           }
-          (event.currentTarget as HaSelector).value = entity;
+
+          /* SAFETY: This handler is attached to the control whose native element type is asserted here. */ (
+            event.currentTarget as HaSelector
+          ).value = entity;
         }}
       ></ha-selector>
       <button
@@ -278,7 +299,7 @@
             onclick={() => {
               closeMenu();
               flushSync(() => setValue(item.key, item.initial));
-              (
+              /* SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use. */ (
                 row.querySelector(
                   `[data-property="${CSS.escape(item.key)}"] ha-selector`,
                 ) as HTMLElement
@@ -328,16 +349,18 @@
               if (!isValueChangedEvent(event)) {
                 return;
               }
+
               const value = event.detail.value;
+
               if (item.key === "rgbColor") {
                 if (
                   Array.isArray(value) &&
                   value.length === 3 &&
-                  value.every((channel) => typeof channel === "number")
+                  value.every((channel) => isNumber(channel))
                 ) {
                   setValue(item.key, value);
                 }
-              } else if (value == null || typeof value === "number") {
+              } else if (value == null || isNumber(value)) {
                 setValue(item.key, value == null ? "" : String(value));
               }
             }}

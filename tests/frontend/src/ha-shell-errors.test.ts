@@ -4,6 +4,7 @@ import { expectedHaShellError } from "./ha-shell-errors.js";
 
 const toastMessage =
   "Failed to execute 'showPopover' on 'HTMLElement': Invalid on disconnected popover elements.";
+
 const nativeStack =
   "InvalidStateError: toast\n    at c._showToastPopover (http://127.0.0.1:18123/frontend_latest/8672.js:5:3942)";
 

@@ -29,9 +29,11 @@
   } = $props();
 
   let t = $derived(panel.t);
+
   let editing = $derived(
     panel.randomEditor?.existing && panel.randomEditor.id === entry.id,
   );
+
   let disabled = $derived(
     (editing ? panel.randomEditor?.form.enabled : entry.enabled) === false,
   );

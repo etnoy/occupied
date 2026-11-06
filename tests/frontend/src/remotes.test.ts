@@ -51,6 +51,7 @@ void test("nonstandard remote payloads and mixed targets remain generic services
     { action: "remote.turn_on", entities: ["remote.tv", "light.a"] },
     { action: "remote.send_command", entities: ["remote.tv"] },
   ];
+
   for (const source of sources) {
     assert.equal(actionForm(source).kind, "service");
   }
@@ -82,6 +83,7 @@ void test("random remote phases share entities and explain activity and power of
       },
     },
   };
+
   const editor = randomEditor(p, randomEntries(p)[0]);
   assert.equal(editor.form.sameEntities, true);
   assert.deepEqual(buildRandom(p, editor).random!.tv.on, p.random!.tv.on);
@@ -93,12 +95,14 @@ void test("random remote phases share entities and explain activity and power of
 
 void test("activity suggestions contain only activities common to every remote", async () => {
   const { remoteActivities } = await import("@occupied/lib/utils/remote.js");
+
   const catalog = {
     entities: [
       { entity_id: "remote.a", name: "A", activity_list: ["TV", "Wii", "TV"] },
       { entity_id: "remote.b", name: "B", activity_list: ["tv", "Radio"] },
     ],
   };
+
   assert.deepEqual(remoteActivities(catalog, ["remote.a", "remote.b"]), ["TV"]);
   assert.deepEqual(
     remoteActivities(catalog, ["remote.a", "remote.missing"]),
@@ -112,6 +116,7 @@ void test("switching from a service keeps only compatible remote entities", () =
     action: "script.turn_on",
     entities: ["remote.tv", "cover.blind", "remote.other", "light.a"],
   });
+
   changeActionKind(form, "remote", () => false);
   assert.deepEqual(form.entities, ["remote.tv", "remote.other"]);
 });

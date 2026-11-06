@@ -10,6 +10,7 @@ export function liveSessionStatus(session: LivePreviewSession): string {
   if (session.state === "ready") {
     return session.cursor === 0 ? "ready_to_start" : "ready_for_next_event";
   }
+
   const labels: Record<
     Exclude<LivePreviewSession["state"], "ready">,
     string
@@ -31,9 +32,11 @@ export function mergeLiveSession(
   if (!incoming || previous?.id !== incoming.id) {
     return incoming;
   }
+
   if (incoming.cursor < previous.cursor) {
     return previous;
   }
+
   const states = [
     "ready",
     "executing",
@@ -42,13 +45,16 @@ export function mergeLiveSession(
     "stopped",
     "interrupted",
   ];
+
   if (
     incoming.cursor === previous.cursor &&
     states.indexOf(incoming.state) < states.indexOf(previous.state)
   ) {
     return previous;
   }
+
   const terminal = new Set(["completed", "stopped", "interrupted"]);
+
   if (terminal.has(previous.state) && !terminal.has(incoming.state)) {
     return previous;
   }
@@ -66,7 +72,9 @@ export function eventLiveResult(
   if (!session || !event.group_id) {
     return;
   }
+
   const outcome = event.id ? session.outcomes[event.id] : undefined;
+
   const current =
     session.next_group?.id === event.group_id && liveRunning(session);
 
@@ -77,12 +85,15 @@ export function lastGroupResult(session: LivePreviewSession) {
   const outcomes = Object.values(session.outcomes).filter(
     (outcome) => outcome.group_id === session.last_group_id,
   );
+
   if (outcomes.length === 0) {
     return "";
   }
+
   const succeeded = outcomes.filter(
     (outcome) => outcome.status === "dispatched",
   ).length;
+
   if (succeeded === outcomes.length) {
     return "dispatched_label";
   }

@@ -27,6 +27,7 @@ export function focusEditor(panel: OccupiedPanel, key?: string) {
       panel.shadowRoot.querySelector<HTMLElement>(
         '.step-editor [data-builder-field="name"]',
       );
+
   target?.focus();
 }
 
@@ -38,6 +39,7 @@ export function createStepEditorContext(panel: LoadedOccupiedPanel) {
     editing = editor.existing;
 
   const epoch = panel.epoch;
+
   const isCurrent = () =>
     panel.epoch === epoch && panel.activeEditor === editor;
 
@@ -51,8 +53,10 @@ export function createStepEditorContext(panel: LoadedOccupiedPanel) {
     panel.version++;
     panel.validatedVersion = -1;
     delete editor.errors[key];
+
     if (key === "entities" || key === "kind") {
       const errors = actionErrors(form);
+
       for (const field of Object.keys(editor.errors)) {
         if (field.startsWith("entitySettings.") && !errors[field]) {
           delete editor.errors[field];
@@ -60,6 +64,7 @@ export function createStepEditorContext(panel: LoadedOccupiedPanel) {
       }
     } else if (key === "days") {
       const { anchor } = editorErrors(panel.draft, editor);
+
       if (anchor) {
         editor.errors.anchor = anchor;
       } else {
@@ -69,6 +74,7 @@ export function createStepEditorContext(panel: LoadedOccupiedPanel) {
 
     if (["startOffset", "endOffset"].includes(key)) {
       const errors = offsetErrors(time);
+
       for (const offset of ["startOffset", "endOffset"]) {
         if (errors[offset]) {
           editor.errors[offset] = errors[offset];
@@ -85,10 +91,13 @@ export function createStepEditorContext(panel: LoadedOccupiedPanel) {
     if (!isCurrent()) {
       return;
     }
+
     editor.errors = editorErrors(panel.draft, editor);
+
     if (Object.keys(editor.errors).length > 0) {
       return refresh();
     }
+
     try {
       try {
         await prepareCustomAction(panel, form);
@@ -96,6 +105,7 @@ export function createStepEditorContext(panel: LoadedOccupiedPanel) {
         if (!isCurrent()) {
           return;
         }
+
         editor.errors.customYaml =
           error instanceof Error ? error.message : String(error);
 
@@ -111,22 +121,27 @@ export function createStepEditorContext(panel: LoadedOccupiedPanel) {
         stepEntries(candidate).find((entry) => entry.id === editor.id),
       ).path;
       const conflicts = offEntityConflictIssues(candidate, panel.t);
+
       if (conflicts.length > 0) {
         panel.showIssues({ valid: false, issues: conflicts });
+
         const ownConflict = conflicts.find(
           (issue) =>
             issue.model_path?.[0] === "steps" &&
             issue.model_path[1] === editor.id,
         );
+
         if (ownConflict) {
           panel.focusIssue(ownConflict);
         }
 
         return;
       }
+
       if (panel.document?.source === "file") {
         if (form.kind === "custom") {
           const version = panel.version;
+
           const validation = await panel.ws("editor_validate", {
             program: candidate,
           });
@@ -137,6 +152,7 @@ export function createStepEditorContext(panel: LoadedOccupiedPanel) {
 
           if (!validation.valid) {
             panel.showIssues(validation);
+
             if (validation.issues.length > 0) {
               panel.focusIssue(validation.issues[0]);
             }

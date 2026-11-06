@@ -1,3 +1,9 @@
+import type {
+  WebSocketResponses,
+  RuntimeSnapshot,
+  JsonValue,
+} from "@occupied/lib/types.js";
+import type { WebSocketMessage } from "@occupied/lib/types.js";
 import test from "node:test";
 import type { LoadedOccupiedPanel } from "@occupied/occupied-panel.js";
 import assert from "node:assert/strict";
@@ -30,6 +36,7 @@ const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
 async function fixture(startupState?: string, reportedState = startupState) {
   const originalNow = Date.now;
   Date.now = () => Date.parse("2026-10-06T12:00:00Z");
+
   const descriptors = new Map(
     [
       "HTMLElement",
@@ -44,9 +51,11 @@ async function fixture(startupState?: string, reportedState = startupState) {
       "removeEventListener",
     ].map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]),
   );
+
   let url = new URL("http://localhost/occupied?config_entry=main"),
     accepted = false,
     confirmations = 0;
+
   Object.defineProperties(globalThis, {
     document: { configurable: true, value: { removeEventListener() {} } },
     removeEventListener: { configurable: true, value() {} },
@@ -82,10 +91,10 @@ async function fixture(startupState?: string, reportedState = startupState) {
           return url;
         },
         history: {
-          pushState: (_data: unknown, _title: string, next: URL) => {
+          pushState: (_data: null, _title: string, next: URL) => {
             url = new URL(next);
           },
-          replaceState: (_data: unknown, _title: string, next: URL) => {
+          replaceState: (_data: null, _title: string, next: URL) => {
             url = new URL(next);
           },
         },
@@ -98,15 +107,20 @@ async function fixture(startupState?: string, reportedState = startupState) {
       },
     },
   });
+
   for (const key of ["location", "history", "confirm", "dispatchEvent"]) {
+    // SAFETY: The keys are the window globals explicitly installed by this fixture.
     Object.defineProperty(globalThis, key, {
       configurable: true,
-      get: () => Reflect.get(globalThis.window, key),
+      get: () => globalThis.window[key as keyof Window],
     });
   }
+
   const { OccupiedPanel, hasProgram } =
     await import("@occupied/occupied-panel.js");
+
   const panel = new OccupiedPanel();
+
   const instances: InstanceDocument[] = ["main", "guest"].map((id) => ({
     config_entry_id: id,
     name: id,
@@ -119,6 +133,7 @@ async function fixture(startupState?: string, reportedState = startupState) {
     paused: false,
     overlaps: [],
   }));
+
   const documents: Record<string, ProgramDocument> = Object.fromEntries(
     instances.map((instance) => [
       instance.config_entry_id,
@@ -135,17 +150,22 @@ async function fixture(startupState?: string, reportedState = startupState) {
       } satisfies ProgramDocument,
     ]),
   );
-  const subscriptions = new Map<string, (value: unknown) => void>();
+
+  const subscriptions = new Map<string, (value: FixtureResponse) => void>();
+
   const disposed: string[] = [];
   const connectionListeners = new Map<string, () => void>();
   const connectionCallbacks = new Map<string, Set<() => void>>();
+
   let liveOverride:
-    | ((message: Record<string, unknown>) => Promise<LivePreviewResponse>)
-    | undefined;
+    ((message: WebSocketMessage) => Promise<LivePreviewResponse>) | undefined;
+
   let programOverride:
       ((entry: string) => Promise<ProgramDocument>) | undefined,
     previewOverride: (() => Promise<PreviewResult>) | undefined;
-  const messages: Record<string, unknown>[] = [];
+
+  const messages: WebSocketMessage[] = [];
+
   const preview: PreviewResult = {
     valid: true,
     plans: [
@@ -161,12 +181,14 @@ async function fixture(startupState?: string, reportedState = startupState) {
       },
     ],
   };
+
   const hass: HomeAssistant = {
     config: startupState ? { state: startupState } : undefined,
-    callWS: async <T>(message: Record<string, unknown>): Promise<T> => {
+    callWS: async <T>(message: WebSocketMessage): Promise<T> => {
       messages.push(message);
       const entry = String(message.config_entry_id);
-      const responses: Record<string, unknown> = {
+
+      const responses = {
         get_config: { state: reportedState },
         "occupied/instances": instances,
         "occupied/program": documents[entry],
@@ -180,31 +202,43 @@ async function fixture(startupState?: string, reportedState = startupState) {
         },
         "occupied/live_preview/status": { session: null, can_advance: false },
       };
+
       if (message.type === "occupied/program" && programOverride) {
+        // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
         return (await programOverride(entry)) as T;
       }
+
       if (message.type === "occupied/preview" && previewOverride) {
         preview.program = structuredClone(documents[entry].program);
 
+        // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
         return (await previewOverride()) as T;
       }
+
       if (message.type === "occupied/preview") {
         preview.program = structuredClone(documents[entry].program);
       }
 
+      // SAFETY: The request selects one of the response keys declared in this fixture.
       return String(message.type).startsWith("occupied/live_preview/") &&
         liveOverride
-        ? ((await liveOverride(message)) as T)
-        : (responses[String(message.type)] as T);
+        ? /* SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T. */ ((await liveOverride(
+            message,
+          )) as T)
+        : /* SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T. */ (responses[
+            String(message.type) as keyof typeof responses
+          ] as T);
     },
     connection: {
       addEventListener: (event, callback) => {
         const callbacks =
           connectionCallbacks.get(event) || new Set<() => void>();
+
         callbacks.add(callback);
         connectionCallbacks.set(event, callbacks);
         connectionListeners.set(event, () => {
           const listeners = [...callbacks];
+
           for (const listener of listeners) {
             listener();
           }
@@ -213,16 +247,18 @@ async function fixture(startupState?: string, reportedState = startupState) {
       removeEventListener: (event, callback) => {
         const callbacks = connectionCallbacks.get(event);
         callbacks?.delete(callback);
+
         if (callbacks?.size === 0) {
           connectionListeners.delete(event);
         }
       },
       subscribeMessage: <T>(
         callback: (snapshot: T) => void,
-        message: Record<string, unknown>,
+        message: WebSocketMessage,
       ) => {
         const key = `${message.type}:${message.config_entry_id || "all"}`;
-        subscriptions.set(key, callback as (snapshot: unknown) => void);
+        // SAFETY: This stored callback belongs to the matching subscription or deferred response created in the fixture.
+        subscriptions.set(key, callback as (snapshot: FixtureResponse) => void);
 
         return Promise.resolve(() => {
           disposed.push(key);
@@ -233,13 +269,16 @@ async function fixture(startupState?: string, reportedState = startupState) {
       },
     },
   };
+
   panel.hass = hass;
   panel.panel = {};
   await settle();
+
   if (!startupState || startupState === "RUNNING") {
     assert.ok(hasProgram(panel));
   }
 
+  // SAFETY: This focused fixture supplies the controller members exercised by the operation under test.
   return {
     panel: panel as LoadedOccupiedPanel,
     documents,
@@ -271,6 +310,7 @@ async function fixture(startupState?: string, reportedState = startupState) {
     restore() {
       panel.disconnectedCallback();
       Date.now = originalNow;
+
       for (const [key, descriptor] of descriptors) {
         if (descriptor) {
           Object.defineProperty(globalThis, key, descriptor);
@@ -285,6 +325,7 @@ async function fixture(startupState?: string, reportedState = startupState) {
 for (const retryFails of [false, true]) {
   void test(`failed runtime subscription can retry with loaded draft (${retryFails})`, async () => {
     const f = await fixture();
+
     try {
       const draft = f.panel.draft;
       let attempts = 0;
@@ -296,6 +337,7 @@ for (const retryFails of [false, true]) {
           subscribeMessage: (callback, message) => {
             if (message.type === "occupied/subscribe") {
               attempts++;
+
               if (attempts === 1 || retryFails) {
                 return Promise.reject(new Error("Subscription unavailable"));
               }
@@ -309,16 +351,19 @@ for (const retryFails of [false, true]) {
       assert.equal(attempts, 1);
       assert.match(f.panel.notices(), /Live updates are unavailable/);
       assert.equal(f.panel.liveReady, false);
+
       for (let update = 0; update < 5; update++) {
         f.panel.hass = f.panel._hass;
         await settle();
       }
+
       assert.equal(attempts, 1);
       f.panel.retry();
       f.panel.retry();
       await settle();
       assert.equal(attempts, 2);
       assert.equal(f.panel.draft, draft);
+
       if (retryFails) {
         assert.match(f.panel.notices(), /Live updates are unavailable/);
         assert.equal(f.panel.liveReady, false);
@@ -359,11 +404,13 @@ async function deletionFixture() {
 
 void test("GUI step deletion saves the removed step and adopts the authoritative result", async () => {
   const f = await deletionFixture();
+
   try {
-    const requests: Record<string, unknown>[] = [];
-    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+    const requests: WebSocketMessage[] = [];
+    f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
       requests.push(structuredClone(message));
 
+      // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
       return Promise.resolve({
         valid: true,
         issues: [],
@@ -371,6 +418,7 @@ void test("GUI step deletion saves the removed step and adopts the authoritative
         revision: "deleted",
       } as T);
     };
+
     assert.equal(await deleteStep(f.panel, "evening"), true);
     assert.deepEqual(
       requests.map((message) => message.type),
@@ -378,7 +426,9 @@ void test("GUI step deletion saves the removed step and adopts the authoritative
     );
     assert.equal(requests[1].expected_revision, "revision-main");
     assert.equal(
-      (requests[1].program as ProgramDocument["program"]).steps?.evening,
+      /* SAFETY: The fixture response for occupied/program contains the modeled program document. */ (
+        requests[1].program as ProgramDocument["program"]
+      ).steps?.evening,
       undefined,
     );
     assert.equal(f.panel.saved.steps?.evening, undefined);
@@ -393,11 +443,13 @@ void test("GUI step deletion saves the removed step and adopts the authoritative
 
 void test("managed-file step deletion changes only the draft", async () => {
   const f = await deletionFixture();
+
   try {
     f.panel.document.source = "file";
     f.panel._hass.callWS = () => {
       throw new Error("Managed-file deletion must not send a save");
     };
+
     assert.equal(await deleteStep(f.panel, "evening"), true);
     assert.equal(f.panel.draft.steps?.evening, undefined);
     assert.ok(f.panel.saved.steps?.evening);
@@ -412,20 +464,30 @@ void test("managed-file step deletion changes only the draft", async () => {
 for (const failure of ["validation", "conflict"]) {
   void test(`failed ${failure} keeps the deletion editor and program intact`, async () => {
     const f = await deletionFixture();
+
     try {
       const editor = f.panel.stepEditor;
-      f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
         if (failure === "validation") {
-          return Promise.resolve({ valid: false, issues: [] } as T);
+          // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
+          return Promise.resolve({
+            valid: false,
+            issues: [],
+          } as T);
         }
 
+        // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
         return message.type === "occupied/save"
           ? Promise.reject({
               code: "revision_conflict",
               message: "Program changed",
             })
-          : Promise.resolve({ valid: true, issues: [] } as T);
+          : Promise.resolve({
+              valid: true,
+              issues: [],
+            } as T);
       };
+
       assert.equal(await deleteStep(f.panel, "evening"), false);
       assert.equal(f.panel.stepEditor, editor);
       assert.ok(f.panel.draft.steps?.evening);
@@ -441,6 +503,7 @@ for (const failure of ["validation", "conflict"]) {
 for (const guard of ["busy", "stale", "dependent"]) {
   void test(`${guard} prevents step deletion`, async () => {
     const f = await deletionFixture();
+
     try {
       if (guard === "dependent") {
         f.panel.draft.steps!.dependent = {
@@ -449,11 +512,14 @@ for (const guard of ["busy", "stale", "dependent"]) {
           entities: ["light.test"],
         };
       } else {
+        // SAFETY: The loop supplies only busy and stale, both writable boolean panel flags.
         f.panel[guard as "busy" | "stale"] = true;
       }
+
       f.panel._hass.callWS = () => {
         throw new Error("Guarded deletion must not save");
       };
+
       assert.equal(await deleteStep(f.panel, "evening"), false);
       assert.ok(f.panel.draft.steps?.evening);
       assert.ok(f.panel.stepEditor);
@@ -465,6 +531,7 @@ for (const guard of ["busy", "stale", "dependent"]) {
 
 void test("a loaded proof document awaiting migration is not an unsaved user edit", async () => {
   const f = await fixture();
+
   try {
     f.documents.main.needs_apply = true;
     await f.panel.reloadSaved(true);
@@ -483,6 +550,7 @@ void test("a loaded proof document awaiting migration is not an unsaved user edi
 for (const viewChange of ["YAML", "run condition"]) {
   void test(`tab navigation preserves the managed-file draft when discarding ${viewChange}`, async () => {
     const f = await fixture();
+
     try {
       f.route("guest");
       await settle();
@@ -497,11 +565,13 @@ for (const viewChange of ["YAML", "run condition"]) {
       f.panel.navigate("settings");
       f.panel.openRunCondition();
       f.panel.yaml = f.panel.yamlSaved = "schema_version: 1\nname: guest\n";
+
       if (viewChange === "YAML") {
         f.panel.yaml += "# Unsaved YAML\n";
       } else {
         f.panel.runConditionForm!.enabled = true;
       }
+
       f.panel.runConditionErrors = { entityId: "Unfinished form" };
       f.accept();
       f.panel.navigate("steps");
@@ -523,6 +593,7 @@ for (const viewChange of ["YAML", "run condition"]) {
 
 void test("cancelling tab navigation keeps view edits and the managed-file draft", async () => {
   const f = await fixture();
+
   try {
     f.route("guest");
     await settle();
@@ -543,16 +614,18 @@ void test("cancelling tab navigation keeps view edits and the managed-file draft
 for (const failedRequest of ["program", "catalog"]) {
   void test(`a failed ${failedRequest} load waits for Retry across HA updates`, async () => {
     const f = await fixture();
+
     try {
       const original = f.panel._hass.callWS.bind(f.panel._hass);
       let fail = true;
       let attempts = 0;
-      f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
         if (
           message.config_entry_id === "guest" &&
           message.type === `occupied/${failedRequest}`
         ) {
           attempts++;
+
           if (fail) {
             return Promise.reject(new Error("Controller load failed"));
           }
@@ -560,12 +633,15 @@ for (const failedRequest of ["program", "catalog"]) {
 
         return original<T>(message);
       };
+
       f.route("guest");
       await settle();
+
       for (let update = 0; update < 10; update++) {
         f.panel.hass = f.panel._hass;
         await settle();
       }
+
       assert.equal(attempts, 1);
       assert.equal(f.panel._loading, false);
       assert.equal(f.panel.error, "Controller load failed");
@@ -587,32 +663,38 @@ for (const failedRequest of ["program", "catalog"]) {
 void test("in-flight controller discovery is shared across HA updates", async () => {
   const f = await fixture();
   const replies: ((instances: InstanceDocument[]) => void)[] = [];
+
   try {
     const original = f.panel._hass.callWS.bind(f.panel._hass);
     let attempts = 0;
-    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+    f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
       if (message.type === "occupied/instances") {
         attempts++;
 
         return new Promise<T>((resolve) => {
+          // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
           replies.push((instances) => resolve(instances as T));
         });
       }
 
       return original<T>(message);
     };
+
     f.panel.hass = {
       ...f.panel._hass,
       connection: { ...f.panel._hass.connection },
     };
+
     for (let update = 0; update < 10; update++) {
       f.panel.hass = f.panel._hass;
     }
+
     assert.equal(attempts, 1);
   } finally {
     for (const reply of replies) {
       reply(f.instances);
     }
+
     await settle();
     f.restore();
   }
@@ -620,10 +702,11 @@ void test("in-flight controller discovery is shared across HA updates", async ()
 
 void test("failed controller discovery waits for Retry across HA updates", async () => {
   const f = await fixture();
+
   try {
     const original = f.panel._hass.callWS.bind(f.panel._hass);
     let attempts = 0;
-    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+    f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
       if (message.type === "occupied/instances") {
         attempts++;
 
@@ -632,15 +715,18 @@ void test("failed controller discovery waits for Retry across HA updates", async
 
       return original<T>(message);
     };
+
     f.panel.hass = {
       ...f.panel._hass,
       connection: { ...f.panel._hass.connection },
     };
     await settle();
+
     for (let update = 0; update < 10; update++) {
       f.panel.hass = f.panel._hass;
       await settle();
     }
+
     assert.equal(attempts, 1);
     assert.equal(f.panel.error, "Discovery failed");
     f.panel.retry();
@@ -654,6 +740,7 @@ void test("failed controller discovery waits for Retry across HA updates", async
 for (const raw of ["# Original comment\nschema_version: 99\n", ""]) {
   void test(`invalid stored YAML is preserved for recovery (${JSON.stringify(raw)})`, async () => {
     const f = await fixture();
+
     try {
       f.documents.main = {
         ...f.documents.main,
@@ -662,9 +749,11 @@ for (const raw of ["# Original comment\nschema_version: 99\n", ""]) {
         configuration_source: { mode: "gui", status: "error" },
       };
       await f.panel.reloadSaved();
+
       const exports = f.messages.filter(
         (m) => m.type === "occupied/export",
       ).length;
+
       await f.panel.exportYaml();
       assert.equal(f.panel.yaml, raw);
       assert.equal(f.panel.yamlSaved, raw);
@@ -679,11 +768,12 @@ for (const raw of ["# Original comment\nschema_version: 99\n", ""]) {
       await f.panel.exportYaml();
       assert.equal(f.panel.yaml, "schema_version: 1\nname: Repaired\n");
       const original = f.panel._hass.callWS;
-      let save: Record<string, unknown> | undefined;
-      f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+      let save: WebSocketMessage | undefined;
+      f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
         if (message.type === "occupied/save") {
           save = message;
 
+          // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
           return Promise.resolve({
             valid: true,
             ...f.documents.main,
@@ -696,6 +786,7 @@ for (const raw of ["# Original comment\nschema_version: 99\n", ""]) {
 
         return original<T>(message);
       };
+
       await f.panel.saveYaml();
       assert.equal(save?.expected_revision, "invalid:original");
       assert.equal(save?.program, "schema_version: 1\nname: Repaired\n");
@@ -738,6 +829,7 @@ function liveSession(): LivePreviewSession {
 void test("reconnect retrieves the frozen day before enabling Next and leaves the draft intact", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const f = await fixture();
+
   try {
     f.panel.change(["name"], "Unsaved editor draft");
     const frozen = { ...f.preview.plans[0], simulation_date: "2026-10-05" };
@@ -779,6 +871,7 @@ void test("reconnect retrieves the frozen day before enabling Next and leaves th
 
 void test("Next never advances optimistically or resends after a lost response", async () => {
   const f = await fixture();
+
   try {
     const session = liveSession();
     f.setLiveOverride((message) => {
@@ -812,6 +905,7 @@ void test("Next never advances optimistically or resends after a lost response",
 
 void test("Stop remains available during Next and late responses cannot resume a stopped session", async () => {
   const f = await fixture();
+
   try {
     const session = liveSession();
     let resolve!: (value: LivePreviewResponse) => void;
@@ -842,6 +936,7 @@ void test("Stop remains available during Next and late responses cannot resume a
 
 void test("late live status from another controller cannot replace the current session", async () => {
   const f = await fixture();
+
   try {
     let resolve!: (value: LivePreviewResponse) => void;
     f.setLiveOverride((message) =>
@@ -872,6 +967,7 @@ void test("late live status from another controller cannot replace the current s
 for (const operation of ["next", "stop"] as const) {
   void test(`unloading during live ${operation} resets controls and ignores the old response`, async () => {
     const f = await fixture();
+
     try {
       const session = liveSession();
       let resolve!: (value: LivePreviewResponse) => void;
@@ -890,10 +986,12 @@ for (const operation of ["next", "stop"] as const) {
       );
       f.panel.liveSession = session;
       f.panel.liveReady = f.panel.liveCanAdvance = true;
+
       const pending =
         operation === "next"
           ? f.panel.nextLiveEvent()
           : f.panel.stopLivePreview();
+
       assert.equal(
         operation === "next" ? f.panel.liveBusy : f.panel.liveStopping,
         true,
@@ -929,6 +1027,7 @@ for (const operation of ["next", "stop"] as const) {
 
 void test("disconnecting during an advance cannot leave recovered controls permanently busy", async () => {
   const f = await fixture();
+
   try {
     const session = liveSession();
     let resolve!: (result: LivePreviewResponse) => void;
@@ -970,14 +1069,17 @@ void test("disconnecting during an advance cannot leave recovered controls perma
 
 void test("preview loads the controller program independently of editor state", async () => {
   const f = await fixture();
+
   try {
     f.panel.navigate("preview");
     assert.equal(f.panel.busy, true);
     await settle();
     assert.equal(f.panel.preview, f.preview);
     assert.equal(f.panel.busy, false);
+
     const requests = () =>
       f.messages.filter((message) => message.type === "occupied/preview");
+
     assert.equal(requests().length, 1);
     assert.equal(requests()[0].date, f.panel.document.simulation_date);
     assert.equal(requests()[0].days, 1);
@@ -1001,6 +1103,7 @@ void test("preview loads the controller program independently of editor state", 
 
 void test("reloading on Preview regenerates the saved program before live start is available", async () => {
   const f = await fixture();
+
   try {
     const cachedProgram = () => f.panel.previewProgram;
     f.preview.plan_fingerprint = "old-preview";
@@ -1020,9 +1123,11 @@ void test("reloading on Preview regenerates the saved program before live start 
         }),
     );
     await f.panel.reloadSaved();
+
     const previews = f.messages.filter(
       (message) => message.type === "occupied/preview",
     );
+
     assert.equal(previews.length, 2);
     assert.equal("program" in previews[1], false);
     assert.equal(f.panel.preview, undefined);
@@ -1038,9 +1143,11 @@ void test("reloading on Preview regenerates the saved program before live start 
     await settle();
     assert.equal(cachedProgram()?.name, "External program");
     await f.panel.startLivePreview();
+
     const start = f.messages.find(
       (message) => message.type === "occupied/live_preview/start",
     );
+
     assert.equal("program" in start!, false);
     assert.equal("seed" in start!, false);
     assert.equal(start?.expected_plan_fingerprint, "updated-preview");
@@ -1051,6 +1158,7 @@ void test("reloading on Preview regenerates the saved program before live start 
 
 void test("a failed preview refresh cannot start the previous saved program", async () => {
   const f = await fixture();
+
   try {
     f.preview.plan_fingerprint = "old-preview";
     f.panel.navigate("preview");
@@ -1082,6 +1190,7 @@ void test("a failed preview refresh cannot start the previous saved program", as
 
 void test("a pending preview cannot replace a draft edited while it loads", async () => {
   const f = await fixture();
+
   try {
     let resolvePreview!: (result: PreviewResult) => void;
     f.setPreviewOverride(
@@ -1108,14 +1217,17 @@ void test("a pending preview cannot replace a draft edited while it loads", asyn
 
 void test("preview day navigation loads adjacent dates and Today without overlapping requests", async () => {
   const f = await fixture();
+
   try {
     Date.now = () => Date.parse("2026-12-31T12:00:00Z");
     f.documents.main.simulation_date = "2026-12-31";
     f.panel.navigate("preview");
     await settle();
     assert.equal(f.panel.previewDate, "2026-12-31");
+
     const requests = () =>
       f.messages.filter((message) => message.type === "occupied/preview");
+
     const pending = f.panel.movePreviewDay(1);
     assert.equal(f.panel.previewDate, "2027-01-01");
     assert.equal(f.panel.preview, f.preview);
@@ -1152,6 +1264,7 @@ void test("preview day navigation loads adjacent dates and Today without overlap
 
 void test("Configure routing selects the requested instance and switches all editor state", async () => {
   const f = await fixture();
+
   try {
     assert.equal(f.panel.draft.name, "main");
     f.panel.yaml = f.panel.yamlSaved = "old export";
@@ -1173,6 +1286,7 @@ void test("Configure routing selects the requested instance and switches all edi
 
 void test("canceling a new step only asks to discard actual edits", async () => {
   const f = await fixture();
+
   try {
     const original = structuredClone(f.panel.draft);
     startStep(f.panel);
@@ -1213,12 +1327,14 @@ void test("canceling a new step only asks to discard actual edits", async () => 
 
 void test("saved warnings survive navigation and editor exits until a resolved program loads", async () => {
   const f = await fixture();
+
   try {
     const warning = {
       code: "undefined_baseline",
       message: "Lights without a baseline are left alone: light.shared",
       severity: "warning",
     };
+
     f.documents.main = { ...f.documents.main, warnings: [warning] };
     await f.panel.reloadSaved();
     assert.deepEqual(f.panel.visibleIssues(), [warning]);
@@ -1250,6 +1366,7 @@ void test("saved warnings survive navigation and editor exits until a resolved p
 
 void test("navigation to another controller preserves unsaved drafts and step forms when declined", async () => {
   const f = await fixture();
+
   try {
     f.panel.change(["name"], "Pending name");
     f.route("guest");
@@ -1276,6 +1393,7 @@ void test("navigation to another controller preserves unsaved drafts and step fo
 
 void test("responses and snapshots from a previous instance cannot replace the selection", async () => {
   const f = await fixture();
+
   try {
     const oldSnapshot = f.subscriptions.get("occupied/subscribe:main")!;
     f.route("guest");
@@ -1309,6 +1427,7 @@ void test("responses and snapshots from a previous instance cannot replace the s
 
 void test("unloaded selections remain discoverable and recover without losing drafts", async () => {
   const f = await fixture();
+
   try {
     f.panel.change(["name"], "Pending draft");
     f.instances[0].loaded = false;
@@ -1335,6 +1454,7 @@ void test("unloaded selections remain discoverable and recover without losing dr
 
 void test("a failed entry reload recovers on the next availability transition with its draft", async () => {
   const f = await fixture();
+
   try {
     f.panel.change(["name"], "Pending draft");
     let fail = true;
@@ -1344,6 +1464,7 @@ void test("a failed entry reload recovers on the next availability transition wi
         : Promise.resolve(f.documents[entry]);
     });
     const update = f.subscriptions.get("occupied/instances_subscribe:all")!;
+
     const available = (loaded: boolean) =>
       update(
         f.instances.map((instance) =>
@@ -1352,6 +1473,7 @@ void test("a failed entry reload recovers on the next availability transition wi
             : { ...instance },
         ),
       );
+
     available(false);
     await settle();
     available(true);
@@ -1373,6 +1495,7 @@ void test("a failed entry reload recovers on the next availability transition wi
 
 void test("recovery mode keeps the preserved program safe from GUI edits and saves", async () => {
   const f = await fixture();
+
   try {
     f.panel.document.recovery_yaml = "schema_version: 99\nname: Preserved\n";
     const before = structuredClone(f.panel.draft);
@@ -1391,6 +1514,7 @@ void test("recovery mode keeps the preserved program safe from GUI edits and sav
 
 void test("discarding a preserved program requires confirmation and an explicit save flag", async () => {
   const f = await fixture();
+
   try {
     f.panel.document.recovery_yaml = "schema_version: 99\n";
     f.panel.revision = "invalid:preserved";
@@ -1399,10 +1523,11 @@ void test("discarding a preserved program requires confirmation and an explicit 
     assert.equal(f.confirmations, 1);
     assert.equal(f.messages.length, 0);
     assert.equal(f.panel.recovering, true);
-    const requests: Record<string, unknown>[] = [];
-    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+    const requests: WebSocketMessage[] = [];
+    f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
       requests.push(message);
 
+      // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
       return Promise.resolve({
         ...f.panel.document,
         valid: true,
@@ -1410,6 +1535,7 @@ void test("discarding a preserved program requires confirmation and an explicit 
         revision: "discarded",
       } as T);
     };
+
     f.accept();
     await f.panel.discardRecovery();
     assert.equal(requests.length, 1);
@@ -1427,12 +1553,16 @@ void test("discarding a preserved program requires confirmation and an explicit 
 
 void test("discard preserves YAML edits made while its request is in flight", async () => {
   const f = await fixture();
+
   try {
     f.panel.document.recovery_yaml = "schema_version: 99\n";
     await f.panel.exportYaml();
-    let resolve!: (value: unknown) => void;
+
+    let resolve!: (value: FixtureResponse) => void;
+
     f.panel._hass.callWS = <T>() =>
       new Promise<T>((done) => {
+        // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
         resolve = (value) => done(value as T);
       });
     f.accept();
@@ -1457,14 +1587,16 @@ void test("discard preserves YAML edits made while its request is in flight", as
 
 void test("repairing preserved YAML unlocks the GUI without an explicit discard", async () => {
   const f = await fixture();
+
   try {
     f.panel.document.recovery_yaml = "schema_version: 99\n";
     await f.panel.exportYaml();
     f.panel.yaml = "schema_version: 1\nname: Repaired\n";
-    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+    f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
       assert.equal(message.discard_recovery, undefined);
       assert.equal(message.program, f.panel.yaml);
 
+      // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
       return Promise.resolve({
         ...f.panel.document,
         valid: true,
@@ -1473,6 +1605,7 @@ void test("repairing preserved YAML unlocks the GUI without an explicit discard"
         program: { schema_version: 1, name: "Repaired" },
       } as T);
     };
+
     await f.panel.saveYaml();
     assert.equal(f.panel.recovering, false);
     assert.equal(f.panel.draft.name, "Repaired");
@@ -1484,11 +1617,13 @@ void test("repairing preserved YAML unlocks the GUI without an explicit discard"
 
 void test("Save step validates and saves new and edited steps, then closes the editor", async () => {
   const f = await fixture();
+
   try {
-    const requests: Record<string, unknown>[] = [];
-    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+    const requests: WebSocketMessage[] = [];
+    f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
       requests.push(structuredClone(message));
 
+      // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
       return Promise.resolve({
         ...f.panel.document,
         valid: true,
@@ -1497,6 +1632,7 @@ void test("Save step validates and saves new and edited steps, then closes the e
         revision: `saved-${requests.length}`,
       } as T);
     };
+
     startStep(f.panel);
     const editor = f.panel.stepEditor!;
     editor.form.name = "Window on";
@@ -1542,6 +1678,7 @@ for (const phase of ["on", "off"] as const) {
   for (const field of ["service", "data"] as const) {
     void test(`random ${phase} action conversion displays ${field} errors after rendering`, async () => {
       const f = await fixture();
+
       try {
         openRandom(f.panel);
         const editor = f.panel.randomEditor!;
@@ -1569,11 +1706,13 @@ for (const phase of ["on", "off"] as const) {
 
 void test("random creation, editing, and deletion use the guarded save flow", async () => {
   const f = await fixture();
+
   try {
-    const requests: Record<string, unknown>[] = [];
-    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+    const requests: WebSocketMessage[] = [];
+    f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
       requests.push(structuredClone(message));
 
+      // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
       return Promise.resolve({
         ...f.panel.document,
         valid: true,
@@ -1582,6 +1721,7 @@ void test("random creation, editing, and deletion use the guarded save flow", as
         revision: `random-${requests.length}`,
       } as T);
     };
+
     openRandom(f.panel);
     const editor = f.panel.randomEditor!;
     assert.equal(editor.form.sameEntities, true);
@@ -1625,6 +1765,7 @@ void test("random creation, editing, and deletion use the guarded save flow", as
 
 void test("random count ordering validates immediately when either bound changes and blocks invalid saves", async () => {
   const f = await fixture();
+
   try {
     openRandom(f.panel);
     const editor = f.panel.randomEditor!;
@@ -1632,11 +1773,13 @@ void test("random count ordering validates immediately when either bound changes
     const context = createRandomEditorContext(f.panel);
     context.changed("on.entities");
     const requests: string[] = [];
-    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+    f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
       requests.push(String(message.type));
 
+      // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
       return Promise.resolve({} as T);
     };
+
     editor.form.maxCount = "2";
     context.changed("maxCount");
     assert.equal(editor.errors.maxCount, "random_count_order_error");
@@ -1669,6 +1812,7 @@ void test("random count ordering validates immediately when either bound changes
 
 void test("editing a blank fixed count reports the visible field without revealing a hidden maximum", async () => {
   const f = await fixture();
+
   try {
     openRandom(f.panel);
     const editor = f.panel.randomEditor!;
@@ -1686,6 +1830,7 @@ void test("editing a blank fixed count reports the visible field without reveali
 
 void test("random forms preserve unsaved changes and backend field errors", async () => {
   const f = await fixture();
+
   try {
     openRandom(f.panel);
     const editor = f.panel.randomEditor!;
@@ -1696,6 +1841,7 @@ void test("random forms preserve unsaved changes and backend field errors", asyn
     assert.ok(f.panel.pendingStepExit);
     f.panel.cancelStepExit();
     assert.equal(f.panel.randomEditor, editor);
+    // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
     f.panel._hass.callWS = <T>() =>
       Promise.resolve({
         valid: false,
@@ -1709,6 +1855,7 @@ void test("random forms preserve unsaved changes and backend field errors", asyn
       } as T);
     await createRandomEditorContext(f.panel).submit();
     assert.equal(editor.errors.maxDuration, "Invalid duration");
+
     for (const [path, field] of [
       [[], "minCount"],
       [["min"], "minCount"],
@@ -1720,6 +1867,7 @@ void test("random forms preserve unsaved changes and backend field errors", asyn
       });
       assert.equal(editor.errors[field], "Invalid count");
     }
+
     assert.equal(f.panel.saved.random, undefined);
     assert.equal(f.panel.randomEditor, editor);
     f.panel.navigate("steps");
@@ -1733,6 +1881,7 @@ void test("random forms preserve unsaved changes and backend field errors", asyn
 
 void test("managed random edits stay in the draft and can be exported or removed", async () => {
   const f = await fixture();
+
   try {
     f.route("guest");
     await settle();
@@ -1756,19 +1905,23 @@ void test("managed random edits stay in the draft and can be exported or removed
 
 async function yamlFixture() {
   const f = await fixture();
-  const requests: Record<string, unknown>[] = [];
+  const requests: WebSocketMessage[] = [];
   const original = f.panel._hass.callWS.bind(f.panel._hass);
-  f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+  f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
     requests.push(structuredClone(message));
+
     if (message.type === "occupied/export") {
+      // SAFETY: The fixture response for occupied/program contains the modeled program document.
       const program = message.program as ProgramDocument["program"];
 
+      // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
       return Promise.resolve({
         valid: true,
         issues: [],
         yaml: `schema_version: 1\nname: ${program.name}\n`,
       } as T);
     }
+
     if (message.type === "occupied/save") {
       if (message.expected_revision !== f.documents.main.revision) {
         return Promise.reject({
@@ -1776,13 +1929,18 @@ async function yamlFixture() {
           message: "Reload first",
         });
       }
+
       f.documents.main = {
         ...f.documents.main,
         program: { schema_version: 1, name: "Local YAML" },
         revision: "yaml-updated",
       };
 
-      return Promise.resolve({ valid: true, ...f.documents.main } as T);
+      // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
+      return Promise.resolve({
+        valid: true,
+        ...f.documents.main,
+      } as T);
     }
 
     return original<T>(message);
@@ -1804,6 +1962,7 @@ async function yamlFixture() {
 for (const source of ["gui", "file"] as const) {
   void test(`extra off conflicts block ${source} activity submissions and follow live form targets`, async () => {
     const f = await fixture();
+
     try {
       f.panel.document.source = source;
       f.panel.draft.run_condition = {
@@ -1861,6 +2020,7 @@ for (const source of ["gui", "file"] as const) {
 
 void test("extra off setting conflicts follow unsaved settings and reject saving", async () => {
   const f = await fixture();
+
   try {
     f.panel.draft.steps = {
       lamp: { timing: {}, entities: ["light.lamp"] },
@@ -1893,6 +2053,7 @@ void test("extra off setting conflicts follow unsaved settings and reject saving
 
 void test("reloading a saved program keeps edited YAML tied to its original revision", async () => {
   const f = await yamlFixture();
+
   try {
     await f.panel.exportYaml();
     f.panel.yaml = "schema_version: 1\nname: Local YAML\n";
@@ -1913,6 +2074,7 @@ void test("reloading a saved program keeps edited YAML tied to its original revi
 
 void test("reloading a saved program refreshes unedited YAML", async () => {
   const f = await yamlFixture();
+
   try {
     await f.panel.exportYaml();
     f.externalSave();
@@ -1931,6 +2093,7 @@ void test("reloading a saved program refreshes unedited YAML", async () => {
 
 void test("unchanged YAML cannot send another save", async () => {
   const f = await yamlFixture();
+
   try {
     await f.panel.exportYaml();
     await f.panel.saveYaml();
@@ -1945,14 +2108,16 @@ void test("unchanged YAML cannot send another save", async () => {
 
 void test("saving YAML sends code to the validated save API and adopts the saved program", async () => {
   const f = await fixture();
+
   try {
     const program = { ...f.panel.draft, name: "Edited YAML" };
     const code = "# Keep this comment\nname: Edited YAML\nschema_version: 1";
     f.panel.yaml = code;
-    let request: Record<string, unknown> | undefined;
-    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+    let request: WebSocketMessage | undefined;
+    f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
       request = message;
 
+      // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
       return Promise.resolve({
         valid: true,
         ...f.panel.document,
@@ -1960,6 +2125,7 @@ void test("saving YAML sends code to the validated save API and adopts the saved
         revision: "yaml-save",
       } as T);
     };
+
     await f.panel.saveYaml();
     assert.equal(request?.type, "occupied/save");
     assert.equal(request?.program, code);
@@ -1978,12 +2144,17 @@ void test("saving YAML sends code to the validated save API and adopts the saved
 
 void test("invalid YAML keeps code, draft and saved program with reviewable errors", async () => {
   const f = await fixture();
+
   try {
     const before = structuredClone(f.panel.saved);
     f.panel.yaml = "name: [";
     const issues = [{ severity: "error", message: "Invalid YAML", line: 1 }];
+    // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
     f.panel._hass.callWS = <T>() =>
-      Promise.resolve({ valid: false, issues } as T);
+      Promise.resolve({
+        valid: false,
+        issues,
+      } as T);
     await f.panel.saveYaml();
     assert.equal(f.panel.yaml, "name: [");
     assert.equal(f.panel.yamlDirty, true);
@@ -1998,10 +2169,13 @@ void test("invalid YAML keeps code, draft and saved program with reviewable erro
 
 void test("YAML saves preserve edits made in flight and tab changes do not export over code", async () => {
   const f = await fixture();
+
   try {
-    let resolve!: (value: unknown) => void;
+    let resolve!: (value: FixtureResponse) => void;
+
     f.panel._hass.callWS = <T>() =>
       new Promise<T>((done) => {
+        // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
         resolve = (value) => done(value as T);
       });
     f.panel.yaml = "name: Submitted";
@@ -2035,6 +2209,7 @@ void test("YAML saves preserve edits made in flight and tab changes do not expor
 
 void test("YAML save conflicts preserve code and managed files cannot be saved", async () => {
   const f = await fixture();
+
   try {
     f.panel.yaml = "name: Edited";
     f.panel._hass.callWS = () =>
@@ -2048,6 +2223,7 @@ void test("YAML save conflicts preserve code and managed files cannot be saved",
     f.panel._hass.callWS = () => {
       assert.fail("managed save must not send a request");
     };
+
     await f.panel.saveYaml();
   } finally {
     f.restore();
@@ -2056,26 +2232,30 @@ void test("YAML save conflicts preserve code and managed files cannot be saved",
 
 void test("direct action previews validate unsaved actions and surface execution failures without saving", async () => {
   const f = await fixture();
+
   try {
     startStep(f.panel);
     const form = f.panel.stepEditor!.form;
     const originalDraft = structuredClone(f.panel.draft);
-    const requests: Record<string, unknown>[] = [];
-    let result: unknown = {
-      valid: true,
-      calls: [],
-      outcomes: [{ status: "dispatched" }],
-    };
+    const requests: WebSocketMessage[] = [];
+
+    let result: import("@occupied/lib/types.js").WebSocketResponses["action_preview"] =
+      {
+        valid: true,
+        calls: [],
+        outcomes: [{ status: "dispatched" }],
+      };
+
     const callWS = f.panel._hass.callWS;
-    f.panel._hass.callWS = <T>(
-      message: Record<string, unknown>,
-    ): Promise<T> => {
+    f.panel._hass.callWS = <T>(message: WebSocketMessage): Promise<T> => {
       requests.push(message);
 
+      // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
       return message.type === "occupied/action_preview"
         ? Promise.resolve(result as T)
         : callWS<T>(message);
     };
+
     await previewAction(f.panel, form);
     assert.equal(f.panel.error, f.panel.t("entities_required_error"));
     assert.equal(requests.length, 0);
@@ -2118,17 +2298,21 @@ void test("direct action previews validate unsaved actions and surface execution
 
 void test("pending custom action previews cannot execute after unloading or execute twice", async () => {
   const f = await fixture();
+
   try {
     startStep(f.panel);
     const form = f.panel.stepEditor!.form;
     form.kind = "custom";
     form.customYaml = "action: turn_on\nentities: [light.main]";
-    let resolve!: (value: unknown) => void;
+
+    let resolve!: (value: FixtureResponse) => void;
+
     const callWS = f.panel._hass.callWS;
-    f.panel._hass.callWS = <T>(message: Record<string, unknown>): Promise<T> =>
+    f.panel._hass.callWS = <T>(message: WebSocketMessage): Promise<T> =>
       message.type === "occupied/action_yaml"
         ? new Promise((done) => {
-            resolve = done as (value: unknown) => void;
+            // SAFETY: This stored callback belongs to the matching subscription or deferred response created in the fixture.
+            resolve = done as (value: FixtureResponse) => void;
           })
         : callWS<T>(message);
     const pending = previewAction(f.panel, form);
@@ -2156,8 +2340,10 @@ void test("pending custom action previews cannot execute after unloading or exec
 for (const kind of ["step", "random"] as const) {
   void test(`pending ${kind} submission cannot edit another controller`, async () => {
     const f = await fixture();
+
     try {
       let submit: () => Promise<void>;
+
       if (kind === "step") {
         startStep(f.panel);
         f.panel.stepEditor!.form.entities = ["light.main"];
@@ -2168,6 +2354,7 @@ for (const kind of ["step", "random"] as const) {
         createRandomEditorContext(f.panel).changed("on.entities");
         submit = createRandomEditorContext(f.panel).submit;
       }
+
       const pending = submit();
       f.accept();
       f.route("guest");
@@ -2196,6 +2383,7 @@ for (const kind of ["step", "random"] as const) {
 
 void test("steps, random events, and preview requests use only the selected controller", async () => {
   const f = await fixture();
+
   try {
     for (const entry of ["main", "guest"]) {
       f.documents[entry].program.steps = {
@@ -2216,7 +2404,9 @@ void test("steps, random events, and preview requests use only the selected cont
         },
       };
     }
+
     await f.panel.reloadSaved();
+
     for (const entry of ["main", "guest", "main"]) {
       f.route(entry);
       await settle();
@@ -2232,9 +2422,11 @@ void test("steps, random events, and preview requests use only the selected cont
       assert.equal(f.panel.liveSession, null);
       f.panel.navigate("preview");
       await settle();
+
       const request = f.messages.findLast(
         (message) => message.type === "occupied/preview",
       )!;
+
       assert.equal(request.config_entry_id, entry);
       assert.equal("program" in request, false);
       assert.deepEqual(f.panel.previewProgram, f.documents[entry].program);
@@ -2247,33 +2439,39 @@ void test("steps, random events, and preview requests use only the selected cont
 for (const kind of ["step", "random"] as const) {
   void test(`late custom YAML errors from a ${kind} editor stay with its controller`, async () => {
     const f = await fixture();
+
     try {
       if (kind === "step") {
         startStep(f.panel);
       } else {
         openRandom(f.panel);
       }
+
       const form =
         kind === "step"
           ? f.panel.stepEditor!.form
           : f.panel.randomEditor!.form.on;
+
       form.entities = ["light.main"];
       form.kind = "custom";
       form.customYaml = "action: turn_on\nentities: [light.main]";
-      let resolve!: (value: unknown) => void;
+
+      let resolve!: (value: FixtureResponse) => void;
+
       const callWS = f.panel._hass.callWS;
-      f.panel._hass.callWS = <T>(
-        message: Record<string, unknown>,
-      ): Promise<T> =>
+      f.panel._hass.callWS = <T>(message: WebSocketMessage): Promise<T> =>
         message.type === "occupied/action_yaml"
           ? new Promise((done) => {
-              resolve = done as (value: unknown) => void;
+              // SAFETY: This stored callback belongs to the matching subscription or deferred response created in the fixture.
+              resolve = done as (value: FixtureResponse) => void;
             })
           : callWS<T>(message);
+
       const pending =
         kind === "step"
           ? createStepEditorContext(f.panel).submit()
           : createRandomEditorContext(f.panel).submit();
+
       assert.ok(resolve);
       f.accept();
       f.route("guest");
@@ -2294,14 +2492,17 @@ for (const kind of ["step", "random"] as const) {
 void test("preview Today follows HA midnight without reloading the saved document", async () => {
   const f = await fixture();
   const originalNow = Date.now;
+
   try {
     Date.now = () => Date.parse("2026-10-05T09:59:59Z");
     f.panel._hass.config = { time_zone: "Pacific/Kiritimati" };
     f.panel.document.simulation_date = "2026-10-04";
     f.panel.navigate("preview");
     await settle();
+
     const requests = () =>
       f.messages.filter((message) => message.type === "occupied/preview");
+
     assert.equal(requests().at(-1)?.date, "2026-10-05");
     Date.now = () => Date.parse("2026-10-05T10:00:00Z");
     assert.equal(f.panel.today, "2026-10-06");
@@ -2317,6 +2518,7 @@ void test("preview Today follows HA midnight without reloading the saved documen
 
 void test("shared service entities follow edits and clear when a phase changes kind", async () => {
   const f = await fixture();
+
   try {
     openRandom(f.panel);
     const form = f.panel.randomEditor!.form;
@@ -2339,6 +2541,7 @@ void test("shared service entities follow edits and clear when a phase changes k
 void test("entity recovery refreshes both warning stores and catalog while preserving every edit", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const f = await deletionFixture();
+
   try {
     const warning = {
       code: "entity_unavailable",
@@ -2346,11 +2549,13 @@ void test("entity recovery refreshes both warning stores and catalog while prese
       message: "Unresolved entity: light.test",
       model_path: ["steps", "evening", "entities"],
     };
+
     const error = {
       code: "input",
       severity: "error",
       message: "Keep this validation error",
     };
+
     f.panel.document.warnings = [warning];
     f.panel.issues = [warning, error];
     f.panel.hass = {
@@ -2368,11 +2573,16 @@ void test("entity recovery refreshes both warning stores and catalog while prese
     const condition = f.panel.runConditionForm;
     const version = f.panel.version;
     const callWS = f.panel._hass.callWS.bind(f.panel._hass);
-    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+    f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
       if (message.type === "occupied/catalog") {
+        // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
         return Promise.resolve({
           entities: [
-            { entity_id: "light.test", name: "Recovered light", state: "off" },
+            {
+              entity_id: "light.test",
+              name: "Recovered light",
+              state: "off",
+            },
           ],
           services: {},
         } as T);
@@ -2380,6 +2590,7 @@ void test("entity recovery refreshes both warning stores and catalog while prese
 
       return callWS<T>(message);
     };
+
     f.documents.main.warnings = [];
     f.panel.hass = {
       ...f.panel._hass,
@@ -2408,6 +2619,7 @@ void test("entity recovery refreshes both warning stores and catalog while prese
 void test("same-object reconnect retries temporary discovery failure and keeps revision conflicts", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const f = await fixture();
+
   try {
     f.panel.change(["name"], "Unsaved restart draft");
     f.documents.main = {
@@ -2416,11 +2628,12 @@ void test("same-object reconnect retries temporary discovery failure and keeps r
     };
     const callWS = f.panel._hass.callWS.bind(f.panel._hass);
     let attempts = 0;
-    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+    f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
       return message.type === "occupied/instances" && ++attempts === 1
         ? Promise.reject(new Error("HA still starting"))
         : callWS<T>(message);
     };
+
     const connection = f.panel._hass.connection;
     f.connectionListeners.get("disconnected")!();
     f.connectionListeners.get("ready")!();
@@ -2445,6 +2658,7 @@ void test("late environment refresh cannot update another controller", async (t)
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const f = await deletionFixture();
   let resolve!: (doc: ProgramDocument) => void;
+
   try {
     f.panel.stepEditor = null;
     f.panel.hass = {
@@ -2482,6 +2696,7 @@ void test("late environment refresh cannot update another controller", async (t)
 void test("staggered recovery retains genuine warnings and ignores ordinary state updates", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const f = await deletionFixture();
+
   try {
     f.panel.stepEditor = null;
     f.panel.draft.steps!.evening.entities = ["light.test", "light.other"];
@@ -2489,14 +2704,16 @@ void test("staggered recovery retains genuine warnings and ignores ordinary stat
       "light.test",
       "light.other",
     ];
+
     const states = {
       "light.test": { state: "unknown", attributes: {} },
       "light.other": { state: "unavailable", attributes: {} },
     };
+
     f.panel.hass = { ...f.panel._hass, states: structuredClone(states) };
     const callWS = f.panel._hass.callWS.bind(f.panel._hass);
     let refreshes = 0;
-    f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+    f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
       const warnings = Object.entries(states)
         .filter(([, value]) => ["unknown", "unavailable"].includes(value.state))
         .map(([entity]) => ({
@@ -2505,16 +2722,26 @@ void test("staggered recovery retains genuine warnings and ignores ordinary stat
           message: `Unresolved entity: ${entity}`,
           model_path: ["steps", "evening", "entities"],
         }));
+
       if (message.type === "occupied/program") {
         refreshes++;
 
-        return Promise.resolve({ ...f.documents.main, warnings } as T);
+        // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
+        return Promise.resolve({
+          ...f.documents.main,
+          warnings,
+        } as T);
       }
 
+      // SAFETY: The fixture dispatches the response for the requested command; the matching caller chooses T.
       return message.type === "occupied/editor_validate"
-        ? Promise.resolve({ valid: true, issues: warnings } as T)
+        ? Promise.resolve({
+            valid: true,
+            issues: warnings,
+          } as T)
         : callWS<T>(message);
     };
+
     states["light.test"].state = "off";
     f.panel.hass = { ...f.panel._hass, states: structuredClone(states) };
     t.mock.timers.tick(250);
@@ -2549,14 +2776,17 @@ for (const failure of [
   void test(`reconnect automatically recovers a temporary ${failure} failure`, async (t) => {
     t.mock.timers.enable({ apis: ["setTimeout"] });
     const f = await fixture();
+
     try {
       f.panel.change(["name"], "Keep this draft");
       let failed = false;
       const callWS = f.panel._hass.callWS.bind(f.panel._hass);
+
       const subscribe = f.panel._hass.connection.subscribeMessage.bind(
         f.panel._hass.connection,
       );
-      f.panel._hass.callWS = <T>(message: Record<string, unknown>) => {
+
+      f.panel._hass.callWS = <T>(message: WebSocketMessage) => {
         if (message.type === failure && !failed) {
           failed = true;
 
@@ -2565,9 +2795,10 @@ for (const failure of [
 
         return callWS<T>(message);
       };
+
       f.panel._hass.connection.subscribeMessage = <T>(
         callback: (value: T) => void,
-        message: Record<string, unknown>,
+        message: WebSocketMessage,
       ) => {
         if (message.type === failure && !failed) {
           failed = true;
@@ -2577,6 +2808,7 @@ for (const failure of [
 
         return subscribe(callback, message);
       };
+
       f.connectionListeners.get("ready")!();
       t.mock.timers.tick(0);
       await settle();
@@ -2597,9 +2829,12 @@ for (const failure of [
 void test("initial discovery recovery keeps retrying if the subsequent environment refresh fails", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const f = await fixture();
+
   const { OccupiedPanel, hasProgram } =
     await import("@occupied/occupied-panel.js");
+
   const panel = new OccupiedPanel();
+
   try {
     f.panel.disconnectedCallback();
     const callWS = f.panel._hass.callWS.bind(f.panel._hass);
@@ -2607,7 +2842,7 @@ void test("initial discovery recovery keeps retrying if the subsequent environme
     let catalogs = 0;
     panel.hass = {
       ...f.panel._hass,
-      callWS: <T>(message: Record<string, unknown>) => {
+      callWS: <T>(message: WebSocketMessage) => {
         if (message.type === "occupied/instances" && ++discoveries === 1) {
           return Promise.reject(new Error("HA restarting"));
         }
@@ -2637,6 +2872,7 @@ void test("initial discovery recovery keeps retrying if the subsequent environme
 void test("startup waits for the started event before loading and validating", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const f = await fixture("STARTING");
+
   try {
     assert.equal(f.panel.starting, true);
     assert.deepEqual(
@@ -2664,6 +2900,7 @@ void test("startup waits for the started event before loading and validating", a
 void test("startup rechecks config after subscribing in case the started event was missed", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const f = await fixture("STARTING", "RUNNING");
+
   try {
     t.mock.timers.tick(0);
     await settle();
@@ -2681,6 +2918,7 @@ void test("startup rechecks config after subscribing in case the started event w
 
 void test("switching between random events and steps protects unsaved editors in both directions", async () => {
   const f = await fixture();
+
   try {
     openRandom(f.panel);
     const random = f.panel.randomEditor!;
@@ -2716,3 +2954,7 @@ void test("switching between random events and steps protects unsaved editors in
     f.restore();
   }
 });
+
+// Subscription fixtures include both websocket replies and pushed runtime snapshots.
+type FixtureResponse =
+  WebSocketResponses[keyof WebSocketResponses] | RuntimeSnapshot | JsonValue;

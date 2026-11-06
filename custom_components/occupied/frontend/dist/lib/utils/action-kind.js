@@ -1,4 +1,5 @@
 // Generated from custom_components/occupied/frontend/src/lib/utils/action-kind.ts by pnpm run build. Do not edit.
+import { lookup } from "./lookup.js";
 import { actionForm, actionErrors, buildAction } from "../models/step-model.js";
 import {
   actionYaml,
@@ -104,7 +105,7 @@ export function acceptedEntities(kind, entities) {
     scene: ["scene"],
   };
   const accepted = entities.filter((entity) =>
-    domains[kind]?.includes(entity.split(".", 1)[0]),
+    lookup(domains, kind)?.includes(entity.split(".", 1)[0]),
   );
   return kind === "scene" ? accepted.slice(0, 1) : accepted;
 }
