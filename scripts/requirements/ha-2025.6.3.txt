@@ -1314,9 +1314,9 @@ home-assistant-intents==2025.6.10 \
     # via
     #   -c scripts/requirements/ha-2025.6.3.constraints
     #   homeassistant
-homeassistant==2025.6.3 \
-    --hash=sha256:80785270aa624b19b14c36a6864d7e00bf63ad63e27fb32ce5f9e4134445ada9 \
-    --hash=sha256:c9b3e9b96acd161a67c2e2ec15c25025decf062396976e321cb383cc2815729b
+homeassistant==2026.7.0 \
+    --hash=sha256:1e096b5c4282904322ccc348de97e19420e11efbb4f630438f98427f817c3e5e \
+    --hash=sha256:299cffe315c30bd47570c45b63d7564df166992fb1de58a4b9ffe0f832d50a50
     # via
     #   --override scripts/requirements/ha-2025.6.3.overrides
     #   occupied (pyproject.toml:dev)
