@@ -1,3 +1,4 @@
+import { lookup } from "./lookup.js";
 import { translator } from "../i18n/translations.js";
 import type {
   ActionForm,
@@ -26,12 +27,14 @@ export function randomExplanation(
 ): string {
   const say = (text: string, values: Record<string, string | number> = {}) => {
     let message = t(text);
+
     for (const [key, value] of Object.entries(values)) {
       message = message.replaceAll(`{${key}}`, () => String(value));
     }
 
     return message;
   };
+
   const entries = [
     ...stepEntries(program, catalog, t),
     ...randomEntries(program, catalog).map((entry) => ({
@@ -39,6 +42,7 @@ export function randomExplanation(
       name: entry.name,
     })),
   ];
+
   const start = timingExplanation(
     form.start,
     entries,
@@ -51,12 +55,15 @@ export function randomExplanation(
       locale,
     },
   );
+
   let end = timingExplanation(form.end, entries, t, catalog.time_sources, {
     includeHints: false,
     subject: "window_ends",
     locale,
   });
+
   let windowSeconds: number | undefined;
+
   const clockSeconds = (value: string) =>
     /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)
       ? value
@@ -66,6 +73,7 @@ export function randomExplanation(
             0,
           )
       : NaN;
+
   if (
     form.start.mode === "absolute" &&
     form.end.mode === "absolute" &&
@@ -74,46 +82,58 @@ export function randomExplanation(
   ) {
     const difference =
       clockSeconds(form.end.start) - clockSeconds(form.start.start);
+
     if (Number.isFinite(difference)) {
       windowSeconds = difference < 0 ? difference + 86_400 : difference;
+
       if (difference < 0) {
         end += ` ${t("the_next_day")}`;
       }
     }
   }
+
   if (form.end.mode === "duration") {
     const duration = durationSeconds(
       form.end.maxDuration || form.end.minDuration || "",
     );
+
     if (Number.isFinite(duration) && duration > 0) {
       windowSeconds = duration;
     }
   }
+
   const periodSentences = [
     ...(form.enabled ? [] : [t("random_disabled_hint")]),
     `${start}.`,
     `${end}.`,
   ];
+
   if (section === "active-period") {
     return periodSentences.join(" ");
   }
+
   const minDuration = durationSeconds(form.minDuration);
   const maxDuration = durationSeconds(form.maxDuration);
+
   const cannotFit =
     windowSeconds !== undefined &&
     Number.isFinite(minDuration) &&
     minDuration > windowSeconds;
+
   const sentences = section === "all" ? periodSentences : [];
   const minimum = Number(form.minCount);
   const maximum = Number(form.maxCount);
+
   const validCount = (value: number) =>
     Number.isSafeInteger(value) && value >= 0 && value <= 1000;
+
   const validCounts =
     !!form.minCount.trim() &&
     !!form.maxCount.trim() &&
     validCount(minimum) &&
     validCount(maximum) &&
     maximum >= minimum;
+
   if (validCounts && maximum === 0) {
     sentences.push(
       t("random_zero_count_hint"),
@@ -122,6 +142,7 @@ export function randomExplanation(
 
     return section === "actions" ? "" : sentences.join(" ");
   }
+
   if (cannotFit) {
     sentences.push(t("random_duration_exceeds_window"));
   } else if (!validCounts) {
@@ -142,10 +163,13 @@ export function randomExplanation(
       }),
     );
   }
+
   if (validCounts && minimum === 0) {
     sentences.push(t("random_empty_window_hint"));
   }
+
   const duration = (seconds: number) => durationLabel(seconds, t);
+
   if (
     !Number.isFinite(minDuration) ||
     !Number.isFinite(maxDuration) ||
@@ -161,6 +185,7 @@ export function randomExplanation(
       windowSeconds === undefined
         ? maxDuration
         : Math.min(maxDuration, windowSeconds);
+
     sentences.push(
       minDuration === longest
         ? say("random_duration_summary", {
@@ -172,27 +197,35 @@ export function randomExplanation(
           }),
     );
   }
+
   if (section === "actions") {
     sentences.length = 0;
   }
+
   const action = (selected: ActionForm) => {
     if (selected.kind === "custom") {
       return t("custom_yaml_summary");
     }
+
     const names = [...new Set(selected.entities)].map((id) =>
       entityName(catalog, id),
     );
+
     if (names.length === 0) {
       return "";
     }
+
     const last = names.pop()!;
+
     const entities =
       names.length > 0 ? `${names.join(", ")} ${t("and")} ${last}` : last;
+
     if (selected.kind === "scene") {
       return say("action_activate_summary", { entities });
     }
+
     if (selected.kind === "cover") {
-      const descriptions: Record<string, string> = {
+      const descriptions = {
         "cover.open_cover": "action_open_summary",
         "cover.close_cover": "action_close_summary",
         "cover.stop_cover": "action_stop_summary",
@@ -202,10 +235,13 @@ export function randomExplanation(
         "cover.stop_cover_tilt": "action_stop_tilt_summary",
         "cover.set_cover_tilt_position": "action_tilt_position_summary",
       };
-      const description = descriptions[selected.service];
+
+      const description = lookup(descriptions, selected.service);
+
       if (!description) {
         return "";
       }
+
       const position =
         selected.service === "cover.set_cover_position"
           ? selected.position
@@ -219,6 +255,7 @@ export function randomExplanation(
         ? ""
         : say(description, { entities, position });
     }
+
     if (selected.kind === "remote") {
       if (selected.service === "remote.turn_off") {
         return say("action_turn_off_summary", { entities });
@@ -231,6 +268,7 @@ export function randomExplanation(
           })
         : say("action_remote_default_summary", { entities });
     }
+
     if (selected.kind === "service") {
       return selected.service.trim()
         ? say("action_service_summary", {
@@ -247,16 +285,21 @@ export function randomExplanation(
       { entities },
     );
   };
+
   const on = action(form.on);
+
   const off = action(
     form.sameEntities ? { ...form.off, entities: form.on.entities } : form.off,
   );
+
   if (on && !cannotFit && section !== "frequency") {
     sentences.push(say("random_start_action_summary", { action: on }));
   }
+
   if (off && !cannotFit && section !== "frequency") {
     sentences.push(say("random_end_action_summary", { action: off }));
   }
+
   if (cannotFit && section !== "actions") {
     sentences.push(t("random_duration_priority_hint"));
   } else if (section !== "actions" && validCounts && maximum === 1) {

@@ -1,4 +1,5 @@
 // Generated from custom_components/occupied/frontend/src/lib/utils/timeline.ts by pnpm run build. Do not edit.
+import { lookup } from "./lookup.js";
 import { managedOffEntities } from "../models/run-condition.js";
 import { translator } from "../i18n/translations.js";
 import { coverActions, coverTarget, isCoverAction } from "./cover.js";
@@ -124,7 +125,7 @@ export function previewStateHistory(
     on: "on_label",
     off: "off_label",
   };
-  const label = (state) => t(stateLabels[state] || "unknown");
+  const label = (state) => t(lookup(stateLabels, state) || "unknown");
   const extraEntities = program.run_condition?.off_entities ?? [];
   const managedExtras = new Set(managedOffEntities(program, extraEntities));
   for (const entity of extraEntities) {
@@ -296,13 +297,14 @@ export function eventDetails(
   };
   const service = event.action.action;
   const shortService = service.split(".").at(-1);
-  const actionLabel = actionLabels[service] || actionLabels[shortService];
+  const actionLabel =
+    lookup(actionLabels, service) || lookup(actionLabels, shortService);
   let action = actionLabel ? t(actionLabel) : service;
   const positionFields = {
     "cover.set_cover_position": "position",
     "cover.set_cover_tilt_position": "tilt_position",
   };
-  const positionField = positionFields[service];
+  const positionField = lookup(positionFields, service);
   if (positionField && event.action.data?.[positionField] !== undefined) {
     action += ` · ${event.action.data[positionField]}%`;
   }
@@ -311,9 +313,9 @@ export function eventDetails(
   }
   return {
     time: formatEventTime(event.time, timezone, locale),
-    source: `${label} · ${t(kinds[event.kind] || event.kind)}`,
+    source: `${label} · ${t(lookup(kinds, event.kind) || event.kind)}`,
     action,
-    actionState: ["on_label", "off_label"].includes(actionLabel)
+    actionState: ["on_label", "off_label"].includes(actionLabel || "")
       ? shortService.slice(5)
       : undefined,
     targets: event.action.entities

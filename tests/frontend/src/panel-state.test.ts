@@ -14,6 +14,7 @@ const optional: OptionalProgramState = {
   document: true,
   previewProgram: true,
 };
+
 void test("program state types admit the unloaded lifecycle", () => {
   assert.deepEqual(optional, {
     draft: true,

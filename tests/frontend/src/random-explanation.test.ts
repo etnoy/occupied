@@ -20,6 +20,7 @@ const program: Program = {
     },
   },
 };
+
 const catalog = {
   entities: [
     { entity_id: "light.living", name: "Living room lamp" },
@@ -224,6 +225,7 @@ void test("section explanations separate active period timing from event details
   form.end.start = "01:00";
   form.minDuration = "3h";
   form.maxDuration = "4h";
+
   const period = randomExplanation(
     form,
     program,
@@ -232,6 +234,7 @@ void test("section explanations separate active period timing from event details
     undefined,
     "active-period",
   );
+
   const frequency = randomExplanation(
     form,
     program,
@@ -240,6 +243,7 @@ void test("section explanations separate active period timing from event details
     undefined,
     "frequency",
   );
+
   assert.equal(
     period,
     "Active period starts at 23:00. Active period ends at 01:00 the next day.",
@@ -255,8 +259,10 @@ void test("section explanations separate active period timing from event details
 void test("action explanations are separate and omit actions that cannot run", () => {
   const { form } = randomEditor(program);
   form.on.entities = ["light.living"];
+
   const explain = (section: "frequency" | "actions") =>
     randomExplanation(form, program, catalog, translator(), undefined, section);
+
   assert.match(explain("frequency"), /3 events start at random times/);
   assert.match(explain("frequency"), /Each event lasts/);
   assert.doesNotMatch(explain("frequency"), /When each event|Living room lamp/);

@@ -1,3 +1,4 @@
+import { lookup } from "./lookup.js";
 import type { ActionForm, FieldErrors } from "../types.js";
 import { actionForm, actionErrors, buildAction } from "../models/step-model.js";
 import {
@@ -19,8 +20,10 @@ export function changeActionKind(
   confirmReplace: (message: string) => boolean,
 ): FieldErrors {
   const kind = value === "turn_on" || value === "turn_off" ? "entities" : value;
+
   if (kind === "custom" && form.kind !== "custom") {
     const errors = actionErrors(form);
+
     if (Object.keys(errors).length > 0) {
       if (form.entities.length === 0 && form.kind === "entities") {
         form.customYaml ||= customExample;
@@ -31,28 +34,35 @@ export function changeActionKind(
 
       return errors;
     }
+
     if (!form.customYaml) {
       const source =
         form.kind === "entities" ? mappedControl(form) : buildAction(form);
+
       form.customYaml = actionYaml(source);
       form.customAccepted = form.customYaml;
       form.customActions = [source];
     }
+
     form.kind = "custom";
 
     return {};
   }
+
   if (form.kind === "custom" && kind !== "custom") {
     const accepted =
       form.customAccepted === form.customYaml &&
       form.customActions?.length === 1
         ? simpleMapping(form.customActions[0])
         : undefined;
+
     const next = accepted ? actionForm(accepted) : undefined;
+
     const compatible =
       next &&
       next.kind === kind &&
       (kind !== "entities" || next.action === value);
+
     if (compatible) {
       delete form.entitySettings;
       Object.assign(form, next);
@@ -63,20 +73,26 @@ export function changeActionKind(
 
       return {};
     }
+
     if (!confirmReplace("custom_yaml_replace_confirm")) {
       return {};
     }
   }
+
   if (form.kind !== kind) {
     setActionEntities(form, acceptedEntities(kind, form.entities));
     delete form.entitySettings;
   }
+
   form.kind = kind;
+
   if (!(kind === "entities" && ["turn_on", "turn_off"].includes(value))) {
     delete form.stagger;
   }
+
   if (kind === "entities") {
     form.action = value;
+
     if (value === "turn_off" && form.entitySettings) {
       for (const entity of Object.keys(form.entitySettings)) {
         updateEntitySetting(form, entity, "brightness", "");
@@ -85,15 +101,18 @@ export function changeActionKind(
       }
     }
   }
+
   if (kind === "service" && !form.service.includes(".")) {
     form.service = `homeassistant.${form.action}`;
   }
+
   if (
     kind === "remote" &&
     !["remote.turn_on", "remote.turn_off"].includes(form.service)
   ) {
     form.service = `remote.${form.action === "turn_off" ? "turn_off" : "turn_on"}`;
   }
+
   if (
     kind === "cover" &&
     coverActions.every(([action]) => action !== form.service)
@@ -108,14 +127,16 @@ export function acceptedEntities(kind: string, entities: string[]): string[] {
   if (kind === "service") {
     return [...entities];
   }
-  const domains: Record<string, string[]> = {
+
+  const domains = {
     entities: ["light", "switch"],
     cover: ["cover"],
     remote: ["remote"],
     scene: ["scene"],
   };
+
   const accepted = entities.filter((entity) =>
-    domains[kind]?.includes(entity.split(".", 1)[0]),
+    lookup(domains, kind)?.includes(entity.split(".", 1)[0]),
   );
 
   return kind === "scene" ? accepted.slice(0, 1) : accepted;

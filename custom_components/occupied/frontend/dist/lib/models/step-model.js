@@ -1,4 +1,6 @@
 // Generated from custom_components/occupied/frontend/src/lib/models/step-model.ts by pnpm run build. Do not edit.
+import { lookup } from "../utils/lookup.js";
+import { isString, isObject } from "../utils/value-guards.js";
 import { remoteErrors } from "../utils/remote.js";
 import { en, translator } from "../i18n/translations.js";
 import {
@@ -40,7 +42,7 @@ function stepDisplayName(step, catalog, t) {
   const label =
     step.actions || action === "set_state"
       ? "custom_yaml"
-      : actionLabels[action] || action;
+      : lookup(actionLabels, action) || action;
   return `${actionTargetSummary(step, catalog)} · ${t(label)}`;
 }
 export function stepEntries(program, catalog, t = translator()) {
@@ -112,7 +114,7 @@ export function timeSourceChoices(
       return {
         ...source,
         name: source.value.startsWith("sun:")
-          ? t(solarLabels[source.value.slice(4)] || source.name)
+          ? t(lookup(solarLabels, source.value.slice(4)) || source.name)
           : source.name,
         group: groupKey ? t(groupKey) : source.group,
       };
@@ -170,8 +172,7 @@ export function actionForm(source) {
     Object.keys(source.data || {}).every(
       (key) => key === "activity" && action === "remote.turn_on",
     ) &&
-    (source.data?.activity === undefined ||
-      typeof source.data.activity === "string")
+    (source.data?.activity === undefined || isString(source.data.activity))
   ) {
     kind = "remote";
   } else if (action?.includes(".")) {
@@ -308,7 +309,7 @@ export function actionErrors(form) {
   } else if (form.kind === "scene" || form.kind === "service") {
     try {
       const data = JSON.parse(form.data);
-      if (!data || Array.isArray(data) || typeof data !== "object") {
+      if (!data || Array.isArray(data) || !isObject(data)) {
         throw new TypeError("Expected service data to be a JSON object");
       }
     } catch {
@@ -436,10 +437,13 @@ function baseFormTiming(time) {
   }
   if (time.anchor.startsWith("entity:")) {
     const [, entity, attribute] = time.anchor.split(":", 3);
+    // SAFETY: The selected time-source attribute is limited by the editor options to start_time or end_time.
     return {
       relative_to: {
         entity,
-        ...(attribute && { attribute: attribute }),
+        ...(attribute && {
+          attribute: attribute,
+        }),
         ...offsets,
       },
     };

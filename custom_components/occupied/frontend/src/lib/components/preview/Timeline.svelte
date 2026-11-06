@@ -54,6 +54,7 @@
       name,
     })),
   });
+
   let labels = $derived(
     new Map([
       ...stepEntries(program || {}, catalog, t).map(
@@ -84,6 +85,7 @@
   });
 
   let scheduleDate = $derived(plan?.simulation_date);
+
   $effect(() => {
     void scheduleDate;
     hoveredEventTime = null;
@@ -93,6 +95,7 @@
   let events = $derived(plan?.events ?? []);
   let groups = $derived(groupPreviewEvents(events));
   let nowIndex = $derived(previewNowIndex(plan, groups, now));
+
   let currentPage = $derived(
     Math.max(0, Math.min(page, Math.ceil(groups.length / 50) - 1)),
   );

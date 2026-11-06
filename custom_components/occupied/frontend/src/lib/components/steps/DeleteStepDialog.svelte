@@ -31,7 +31,8 @@
 <dialog
   use:reference={(node) => {
     if (node) {
-      dialog = node as HTMLDialogElement;
+      dialog =
+        /* SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use. */ node as HTMLDialogElement;
     }
   }}
   class="step-delete-dialog"

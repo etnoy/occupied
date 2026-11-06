@@ -20,6 +20,7 @@
 
     return createRandomEditorContext(panel);
   });
+
   let { editor, form, t, changed, submit, cancel } = $derived(context);
 
   let actionExplanation = $derived(
@@ -35,6 +36,7 @@
 
   let weekdaysOpen = $state(false);
   let weekdaysButton: HTMLButtonElement;
+
   let showMaxCount = $state(
     untrack(() => Number(form.minCount) !== Number(form.maxCount)),
   );
@@ -47,6 +49,7 @@
 
   async function save() {
     await submit();
+
     if (!panel.randomEditor?.errors.days) {
       return;
     }
@@ -56,6 +59,7 @@
 
   function closeWeekdays() {
     flushSync(() => (weekdaysOpen = false));
+
     if (weekdaysButton.isConnected) {
       weekdaysButton.focus();
     }
@@ -158,6 +162,7 @@
           if (!maxCountVisible) {
             form.maxCount = value;
           }
+
           form.minCount = value;
         }}
         options={{

@@ -21,6 +21,7 @@
   let dayError = $derived(
     selectedDays.length > 0 ? undefined : t("days_required_error"),
   );
+
   let dialog: HTMLDialogElement;
 
   const presets: [string, string[]][] = [
@@ -28,6 +29,7 @@
     ["weekdays", days.slice(0, 5)],
     ["weekends", days.slice(5)],
   ];
+
   const weekdays = [
     "monday",
     "tuesday",
@@ -47,6 +49,7 @@
     if (panel.busy || dayError) {
       return;
     }
+
     form.days = [...selectedDays];
     changed("days");
     dialog.close();

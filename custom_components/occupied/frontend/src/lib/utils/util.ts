@@ -1,3 +1,5 @@
+import { lookup } from "./lookup.js";
+import { isObject, isNumber } from "./value-guards.js";
 import { translator } from "../i18n/translations.js";
 import type {
   Action,
@@ -13,15 +15,15 @@ import type { HomeAssistantLocale } from "./time-format.js";
 import { formatClock } from "./time-format.js";
 import { days } from "../models/model.js";
 
-export function errorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
+export function errorMessage(cause: unknown): string {
+  if (cause instanceof Error) {
+    return cause.message;
   }
 
   return String(
-    typeof error === "object" && error !== null && "message" in error
-      ? error.message
-      : error,
+    isObject(cause) && cause !== null && "message" in cause
+      ? cause.message
+      : cause,
   );
 }
 
@@ -30,7 +32,7 @@ export function isValueChangedEvent(
 ): event is HTMLElementEventMap["value-changed"] {
   return (
     "detail" in event &&
-    typeof event.detail === "object" &&
+    isObject(event.detail) &&
     event.detail !== null &&
     "value" in event.detail
   );
@@ -51,6 +53,7 @@ export function download(
 ) {
   const url = URL.createObjectURL(new Blob([text], { type })),
     link = document.createElement("a");
+
   link.href = url;
   link.download = name;
   link.click();
@@ -69,6 +72,7 @@ export function entitySummary(
   if (entities.length < 5) {
     return entities.map((id) => entityName(catalog, id)).join(", ");
   }
+
   const first = entityName(catalog, entities[0]);
 
   return t("entity_and_more")
@@ -80,10 +84,13 @@ function minutes(value: string | number | undefined) {
   if (value === "0") {
     return 0;
   }
-  if (typeof value === "number") {
+
+  if (isNumber(value)) {
     return value / 60;
   }
+
   const text = value || "0s";
+
   if (
     !/^[+-]?(?:\d+(?:\.\d+)?h)?(?:\d+(?:\.\d+)?m)?(?:\d+(?:\.\d+)?s)?$/.test(
       text,
@@ -92,11 +99,10 @@ function minutes(value: string | number | undefined) {
   ) {
     return NaN;
   }
+
   const total = [...text.matchAll(/(\d+(?:\.\d+)?)([hms])/g)].reduce(
     (n, [, amount, unit]) =>
-      n +
-      Number(amount) *
-        ({ h: 60, m: 1, s: 1 / 60 } as Record<string, number>)[unit],
+      n + Number(amount) * lookup({ h: 60, m: 1, s: 1 / 60 }, unit)!,
     0,
   );
 
@@ -117,6 +123,7 @@ export function durationLabel(
   const mins = Math.floor(remaining / 60);
   const seconds = Math.round((remaining - mins * 60) * 1e6) / 1e6;
 
+  // SAFETY: Each literal tuple contains a numeric amount followed by its singular and plural translation keys.
   return (
     [
       [hours, "hour", "hours"],
@@ -124,10 +131,8 @@ export function durationLabel(
       [seconds, "second", "seconds"],
     ] as [number, string, string][]
   )
-    .filter(([amount]) => amount > 0)
-    .map(
-      ([amount, singular, plural]) =>
-        `${amount} ${t(amount === 1 ? singular : plural)}`,
+    .flatMap(([amount, singular, plural]) =>
+      amount > 0 ? `${amount} ${t(amount === 1 ? singular : plural)}` : [],
     )
     .join(" ");
 }
@@ -135,7 +140,9 @@ export function durationLabel(
 export function timingForm(timing: Timing = {}): TimingForm {
   const clock = timing.absolute_time,
     source = timing.relative_to;
+
   let anchor = "";
+
   if (source?.step) {
     anchor = `step:${source.step}`;
   } else if (source?.random) {
@@ -146,7 +153,9 @@ export function timingForm(timing: Timing = {}): TimingForm {
     const attribute = source.attribute ? `:${source.attribute}` : "";
     anchor = `entity:${source.entity}${attribute}`;
   }
+
   let mode = source ? "relative" : "absolute";
+
   if (timing.duration) {
     mode = "duration";
   }
@@ -173,14 +182,18 @@ export function offsetErrors(
 ) {
   const errors: FieldErrors = {},
     low = minutes(time.startOffset);
+
   const formatError = "offset_format_error";
+
   if (!time.startOffset || !Number.isFinite(low)) {
     errors.startOffset = formatError;
   } else if (Math.abs(low) > 10_080) {
     errors.startOffset = "offset_range_error";
   }
+
   if (time.endOffset) {
     const high = minutes(time.endOffset);
+
     if (!Number.isFinite(high)) {
       errors.endOffset = formatError;
     } else if (Math.abs(high) > 10_080) {
@@ -197,25 +210,30 @@ function scheduleDaySuffix(selected: string[] | undefined, t: Translate) {
   if (!selected) {
     return "";
   }
+
   if (selected.length === 0) {
     return ` ${t("on_no_days")}`;
   }
+
   if (days.every((day) => selected.includes(day))) {
     return "";
   }
+
   if (
     selected.length === 5 &&
     days.slice(0, 5).every((day) => selected.includes(day))
   ) {
     return ` ${t("on_weekdays")}`;
   }
+
   if (
     selected.length === 2 &&
     days.slice(5).every((day) => selected.includes(day))
   ) {
     return ` ${t("on_weekends")}`;
   }
-  const weekdayNames: Record<string, string> = {
+
+  const weekdayNames = {
     mon: "mondays",
     tue: "tuesdays",
     wed: "wednesdays",
@@ -224,8 +242,10 @@ function scheduleDaySuffix(selected: string[] | undefined, t: Translate) {
     sat: "saturdays",
     sun: "sundays",
   };
-  const dayNames = selected.map((day) => t(weekdayNames[day] || day));
+
+  const dayNames = selected.map((day) => t(lookup(weekdayNames, day) || day));
   const lastDay = dayNames.pop()!;
+
   const dayList =
     dayNames.length > 0
       ? `${dayNames.join(", ")}${dayNames.length > 1 ? "," : ""} ${t("and")} ${lastDay}`
@@ -272,16 +292,20 @@ export function timingExplanation(
 ) {
   const modified = input.latestAt || input.onlyBefore;
   const start = clockSeconds(input.start);
+
   const fixedClock =
     input.mode === "absolute" &&
     Number.isFinite(start) &&
     (!input.end || clockSeconds(input.end) === start);
+
   let explanation = baseTimingExplanation(input, entries, t, sources, {
     ...options,
     ...(modified && { includeHints: false }),
   });
+
   for (const key of ["latestAt", "onlyBefore"] as const) {
     const boundary = input[key];
+
     if (
       !boundary ||
       (fixedClock &&
@@ -290,7 +314,9 @@ export function timingExplanation(
     ) {
       continue;
     }
+
     let label = formatClock(boundary.start, options.locale);
+
     if (boundary.mode === "relative") {
       label =
         durationSeconds(String(boundary.startOffset)) === 0
@@ -299,10 +325,12 @@ export function timingExplanation(
               includeHints: false,
             }).slice(t("runs").length + 1);
     }
+
     explanation += `, ${t(
       key === "latestAt" ? "latest_at_summary" : "only_before_summary",
     ).replace("{boundary}", () => label)}`;
   }
+
   if (modified && options.includeHints !== false) {
     explanation += ".";
   }
@@ -328,6 +356,7 @@ function baseTimingExplanation(
   } = {},
 ) {
   const runs = `${t(subject)}${scheduleDaySuffix(selectedDays, t)}`;
+
   const time: TimingForm = {
     start: "",
     end: "",
@@ -336,9 +365,11 @@ function baseTimingExplanation(
     endOffset: "",
     ...input,
   };
+
   if (time.mode === "duration") {
     const minimum = durationSeconds(time.minDuration || "");
     const maximum = durationSeconds(time.maxDuration || time.minDuration || "");
+
     if (
       !Number.isFinite(minimum) ||
       !Number.isFinite(maximum) ||
@@ -351,6 +382,7 @@ function baseTimingExplanation(
 
     const fixedLabel =
       subject === "ends" ? "ends_after_duration" : "window_duration_summary";
+
     const rangeLabel =
       subject === "ends"
         ? "ends_after_duration_range"
@@ -361,34 +393,43 @@ function baseTimingExplanation(
       .replace("{min}", () => durationLabel(minimum, t))
       .replace("{max}", () => durationLabel(maximum, t));
   }
+
   if (time.mode === "absolute") {
     const display = (value: string) => formatClock(value, locale);
+
     if (
       !Number.isFinite(clockSeconds(time.start)) ||
       (time.end && !Number.isFinite(clockSeconds(time.end)))
     ) {
       return t("time_window_prompt");
     }
+
     const fixedTime = `${runs} ${t("at")} ${display(time.start)}`;
+
     if (!time.end) {
       return `${fixedTime}${includeHints ? `. ${t("time_window_randomness_hint")}` : ""}`;
     }
+
     if (clockSeconds(time.end) === clockSeconds(time.start)) {
       return `${fixedTime}${includeHints ? `. ${t("time_window_fixed_hint")}` : ""}`;
     }
 
     return `${runs} ${t("at_a_random_time_between")} ${display(time.start)} ${t("and")} ${display(time.end)}`;
   }
+
   if (Object.keys(offsetErrors(time)).length > 0) {
     return t(
       subject === "runs" ? "step_offsets_prompt" : "window_offsets_prompt",
     );
   }
+
   if (!time.anchor) {
     return t("choose_a_step_or_event");
   }
+
   const step = time.anchor.startsWith("step:");
   let name: string;
+
   if (time.anchor.startsWith("random:")) {
     name = `${t("the_end_of")} ${entries.find((entry) => entry.id === time.anchor)?.name || time.anchor.slice(7)}`;
   } else if (step) {
@@ -408,11 +449,15 @@ function baseTimingExplanation(
             ` · ${t(attribute === "start_time" ? "start" : "end")}`,
         );
   }
+
   const low = minutes(time.startOffset),
     high = time.endOffset ? minutes(time.endOffset) : low;
+
   const duration = (offset: number) => durationLabel(Math.abs(offset) * 60, t);
+
   const offsetLabel = (offset: number) =>
     `${duration(offset)} ${t(offset < 0 ? "before" : "after")}`;
+
   if (low === high) {
     const fixedTime =
       low === 0
@@ -421,9 +466,11 @@ function baseTimingExplanation(
 
     return `${fixedTime}${includeHints && !time.endOffset ? `. ${t("time_offset_randomness_hint")}` : ""}`;
   }
+
   if (low === 0 || high === 0) {
     return `${runs} ${t("at_a_random_time_during_the")} ${offsetLabel(low === 0 ? high : low)} ${name}`;
   }
+
   const firstBound =
     Math.sign(low) === Math.sign(high) ? duration(low) : offsetLabel(low);
 

@@ -15,6 +15,7 @@
     void revision;
     const steps = stepEntries(panel.draft, panel.catalog, panel.t);
     const random = randomEntries(panel.draft, panel.catalog);
+
     const entries = [
       ...steps.map((entry) => ({ kind: "step" as const, ...entry })),
       ...random.map((entry) => ({
@@ -37,6 +38,7 @@
       })),
     };
   });
+
   let { t, entries, tree, issues } = $derived(data);
 </script>
 

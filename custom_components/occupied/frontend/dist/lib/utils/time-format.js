@@ -1,4 +1,5 @@
 // Generated from custom_components/occupied/frontend/src/lib/utils/time-format.ts by pnpm run build. Do not edit.
+import { lookup } from "./lookup.js";
 export function scheduleToday(zone, now = new Date(Date.now())) {
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat("en-CA", {
@@ -33,8 +34,8 @@ export function formatPreviewDate(value, today, locale, t) {
     0: "today",
     1: "tomorrow",
   };
-  const relativeLabel = relativeLabels[daysFromToday]
-    ? t(relativeLabels[daysFromToday])
+  const relativeLabel = lookup(relativeLabels, daysFromToday)
+    ? t(lookup(relativeLabels, daysFromToday))
     : undefined;
   const dateLabel = formatScheduleDate(value, locale);
   return relativeLabel ? `${relativeLabel} · ${dateLabel}` : dateLabel;

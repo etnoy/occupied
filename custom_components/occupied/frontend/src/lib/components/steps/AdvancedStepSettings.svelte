@@ -28,6 +28,7 @@
   let selectedStagger = $state(untrack(() => staggerSettings(form)));
 
   let canStagger = $derived(supportsStagger(form));
+
   let staggerError = $derived(
     canStagger ? staggerPeriodError(selectedStagger) : undefined,
   );
@@ -39,6 +40,7 @@
     ["weekdays", days.slice(0, 5)],
     ["weekends", days.slice(5)],
   ];
+
   const weekdayNames = [
     "monday",
     "tuesday",
@@ -73,12 +75,15 @@
     if (dayError || staggerError || panel.busy) {
       return;
     }
+
     form.days = [...selectedDays];
     changed("days");
+
     if (canStagger) {
       applyStagger(form, selectedStagger);
       changed("stagger");
     }
+
     dialog.close();
   }
 </script>

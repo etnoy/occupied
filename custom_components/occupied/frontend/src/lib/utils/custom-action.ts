@@ -1,4 +1,11 @@
-import type { Action, ActionForm, Catalog } from "../types.js";
+import { isObject } from "./value-guards.js";
+import type {
+  Action,
+  ActionForm,
+  Catalog,
+  WebSocketResponses,
+  WebSocketMessage,
+} from "../types.js";
 import type { OccupiedPanel } from "../../occupied-panel.js";
 import { entityName } from "./util.js";
 import {
@@ -10,6 +17,7 @@ export function actionTargets(source?: Action): string[] {
   if (!source) {
     return [];
   }
+
   if (source.actions) {
     return [
       ...new Set(source.actions.flatMap((action) => actionTargets(action))),
@@ -32,8 +40,12 @@ export function actionTargetSummary(
   return `${first}${remaining}`;
 }
 
-export function actionYaml(value: unknown, level = 0): string {
+export function actionYaml(
+  value: Action | ActionForm | Action[] | import("../types.js").JsonValue,
+  level = 0,
+): string {
   const pad = "  ".repeat(level);
+
   if (Array.isArray(value)) {
     if (value.length === 0) {
       return "[]";
@@ -47,14 +59,16 @@ export function actionYaml(value: unknown, level = 0): string {
       })
       .join("\n");
   }
-  if (value !== null && typeof value === "object") {
+
+  if (value !== null && isObject(value)) {
     return Object.entries(value)
       .map(([key, item]) => {
         const scalar =
           item === null ||
-          typeof item !== "object" ||
+          !isObject(item) ||
           (!Array.isArray(item) && Object.keys(item).length === 0) ||
           (Array.isArray(item) && item.length === 0);
+
         const name =
           /^[a-z_][a-z0-9_.]*$/.test(key) &&
           ![
@@ -106,16 +120,26 @@ export function simpleMapping(source: Action): Action | undefined {
 }
 
 export async function prepareCustomAction(
-  panel: OccupiedPanel,
+  panel: {
+    version: number;
+    activeEditor: object | null;
+    t: OccupiedPanel["t"];
+    ws(
+      command: "action_yaml",
+      data: WebSocketMessage,
+    ): Promise<WebSocketResponses["action_yaml"]>;
+  },
   form: ActionForm,
 ): Promise<boolean> {
   if (form.kind !== "custom") {
     return true;
   }
+
   const text = form.customYaml || "";
   const version = panel.version;
   const editor = panel.activeEditor;
   const result = await panel.ws("action_yaml", { yaml: text });
+
   if (
     form.customYaml !== text ||
     panel.version !== version ||
@@ -123,6 +147,7 @@ export async function prepareCustomAction(
   ) {
     throw new Error("submit_newer_edits_hint");
   }
+
   if (!result.valid) {
     throw new Error(
       result.issues
@@ -133,6 +158,7 @@ export async function prepareCustomAction(
         .join("\n"),
     );
   }
+
   form.customActions = result.actions;
   form.customAccepted = text;
 

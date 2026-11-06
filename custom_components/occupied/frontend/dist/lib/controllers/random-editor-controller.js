@@ -78,15 +78,17 @@ export function createRandomEditorContext(panel) {
     new Proxy(editor, {
       get(target, key) {
         if (key === "errors") {
+          // SAFETY: Filtering and stripping the timing prefix retains only field names and their validation messages.
           return Object.fromEntries(
             Object.entries(target.errors)
               .filter(([field]) => field.startsWith(prefix))
               .map(([field, message]) => [field.slice(prefix.length), message]),
           );
         }
+        // SAFETY: The proxy forwards property keys to its original typed target without changing their values.
         return options && (key === "showEndTime" || key === "showEndOffset")
           ? options[key]
-          : Reflect.get(target, key);
+          : target[key];
       },
       set(target, key, value) {
         if (options && (key === "showEndTime" || key === "showEndOffset")) {

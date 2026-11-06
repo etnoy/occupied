@@ -50,6 +50,7 @@ export class PreviewController {
     ) {
       return;
     }
+
     this.panel.previewDate = date;
     this.panel.liveVisible = false;
 
@@ -65,8 +66,10 @@ export class PreviewController {
     ) {
       return;
     }
+
     const version = this.panel.version,
       date = this.panel.previewDate || this.panel.today;
+
     this.panel.previewDate = date;
 
     return this.panel.run(async (epoch) => {
@@ -74,6 +77,7 @@ export class PreviewController {
         date,
         days: 1,
       });
+
       if (
         epoch !== this.panel.epoch ||
         version !== this.panel.version ||
@@ -81,6 +85,7 @@ export class PreviewController {
       ) {
         return;
       }
+
       this.panel.preview = result;
       this.panel.previewProgram = result.program;
       this.panel.showIssues(result);
@@ -105,24 +110,29 @@ export class PreviewController {
       this.panel.liveSession,
       result.session,
     );
+
     if (this.panel.liveSession && result.call_outcomes) {
       this.panel.liveSession.outcomes = {
         ...this.panel.liveSession.outcomes,
         ...result.call_outcomes,
       };
     }
+
     this.panel.liveCanAdvance = result.can_advance;
     this.panel.schedulingPaused =
       this.panel.liveSession?.paused ?? this.panel.schedulingPaused;
+
     if (result.plan && result.program) {
       this.panel.livePlan = result.plan;
       this.panel.liveProgram = result.program;
       this.panel.liveVisible =
         !!result.session && (this.panel.liveRunning || result.session.paused);
+
       if (this.panel.liveVisible) {
         this.panel.previewDate = result.session!.date;
       }
     }
+
     this.panel.flush();
   }
 
@@ -130,15 +140,20 @@ export class PreviewController {
     if (!this.getEntryId() || !this.panel.isConnected) {
       return;
     }
+
     const epoch = this.panel.epoch,
       recovery = ++this.recoveryEpoch;
+
     this.panel.liveReady = false;
     this.panel.flush();
+
     try {
       const result = await this.panel.ws("live_preview/status");
+
       if (epoch !== this.panel.epoch || recovery !== this.recoveryEpoch) {
         return;
       }
+
       this.adoptLive(result);
       this.panel.liveReady = true;
     } catch (error) {
@@ -161,24 +176,30 @@ export class PreviewController {
     ) {
       return;
     }
+
     const frozen = this.panel.liveVisible && this.panel.liveSession;
     const program = frozen ? this.panel.liveProgram : this.panel.previewProgram;
+
     const fingerprint = frozen
       ? this.panel.liveSession?.plan_fingerprint
       : this.panel.preview?.plan_fingerprint;
+
     if (!program || !fingerprint) {
       return;
     }
+
     const epoch = this.panel.epoch;
     this.panel.liveBusy = true;
     this.panel.error = "";
     this.panel.flush();
+
     try {
       const result = await this.panel.ws("live_preview/start", {
         date: this.panel.previewDate,
         expected_plan_fingerprint: fingerprint,
         request_id: crypto.randomUUID(),
       });
+
       if (epoch === this.panel.epoch) {
         this.adoptLive(result);
       }
@@ -197,6 +218,7 @@ export class PreviewController {
 
   async nextLiveEvent() {
     const session = this.panel.liveSession;
+
     if (
       !session?.next_group ||
       session.state !== "ready" ||
@@ -207,16 +229,19 @@ export class PreviewController {
     ) {
       return;
     }
+
     const epoch = this.panel.epoch;
     this.panel.liveBusy = true;
     this.panel.error = "";
     this.panel.flush();
+
     try {
       const result = await this.panel.ws("live_preview/next", {
         session_id: session.id,
         expected_group_id: session.next_group.id,
         request_id: crypto.randomUUID(),
       });
+
       if (
         epoch === this.panel.epoch &&
         this.panel.liveSession?.id === session.id
@@ -238,16 +263,20 @@ export class PreviewController {
 
   async stopLivePreview() {
     const session = this.panel.liveSession;
+
     if (!session || !this.panel.liveRunning || this.panel.liveStopping) {
       return;
     }
+
     const epoch = this.panel.epoch;
     this.panel.liveStopping = true;
     this.panel.flush();
+
     try {
       const result = await this.panel.ws("live_preview/stop", {
         session_id: session.id,
       });
+
       if (
         epoch === this.panel.epoch &&
         this.panel.liveSession?.id === session.id
@@ -275,6 +304,7 @@ export class PreviewController {
         service: "resume",
         service_data: { config_entry_id: this.getEntryId() },
       });
+
       if (epoch === this.panel.epoch) {
         await this.recoverLivePreview();
       }
@@ -285,6 +315,7 @@ export class PreviewController {
     if (this.panel.liveRunning || this.panel.liveBusy) {
       return;
     }
+
     this.panel.liveVisible = false;
 
     return this.loadPreview();

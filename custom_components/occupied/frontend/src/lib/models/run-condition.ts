@@ -37,10 +37,13 @@ export function runConditionErrors(
   if (!form.enabled) {
     return {};
   }
+
   const errors: FieldErrors = {};
+
   if (!/^[a-z_][a-z0-9_]*\.[a-z0-9_]+$/.test(form.entityId)) {
     errors.entityId = "run_condition_entity_error";
   }
+
   if (
     form.states.length === 0 ||
     form.states.some(
@@ -49,6 +52,7 @@ export function runConditionErrors(
   ) {
     errors.states = "run_condition_states_error";
   }
+
   if (
     form.offEntities.some(
       (entity) => !/^(light|switch)\.[a-z0-9_]+$/.test(entity),
@@ -61,7 +65,9 @@ export function runConditionErrors(
   ) {
     errors.offEntities = "run_condition_off_entities_warning";
   }
+
   const delay = durationSeconds(form.startDelay);
+
   if (!Number.isFinite(delay) || delay < 0 || delay > 3600) {
     errors.startDelay = "run_condition_delay_error";
   }
@@ -120,26 +126,32 @@ export function managedOffEntities(
   entities: string[],
 ): string[] {
   const managed = new Set<string>();
+
   const visit = (action: Action) => {
     const targets = action.entities ?? [];
+
     for (const entity of Array.isArray(targets)
       ? targets
       : Object.keys(targets)) {
       managed.add(entity);
     }
+
     for (const child of action.actions ?? []) {
       visit(child);
     }
   };
+
   for (const step of Object.values(program.steps ?? {})) {
     visit(step);
   }
+
   for (const event of Object.values(program.random ?? {})) {
     visit(event.on);
     visit(event.off);
   }
 
   const overlaps = new Set<string>();
+
   for (const entity of entities) {
     if (managed.has(entity)) {
       overlaps.add(entity);
@@ -167,6 +179,7 @@ export function offEntityConflictIssues(
   const indices = new Map(extras.map((entity, index) => [entity, index]));
   const conflicts = new Set<string>();
   const issues: Issue[] = [];
+
   const add = (entity: string, path: Path, key: string) => {
     issues.push({
       code: "off_entity_conflict",
@@ -176,9 +189,11 @@ export function offEntityConflictIssues(
       message: t(key).replace("{entity}", () => entity),
     });
   };
+
   const visit = (action: Action, path: Path) => {
     const targets = action.entities ?? [];
     const entities = Array.isArray(targets) ? targets : Object.keys(targets);
+
     for (const [index, entity] of entities.entries()) {
       if (!indices.has(entity)) {
         continue;
@@ -191,18 +206,22 @@ export function offEntityConflictIssues(
         "off_entity_action_conflict",
       );
     }
+
     for (const [index, child] of (action.actions ?? []).entries()) {
       visit(child, [...path, "actions", index]);
     }
   };
+
   for (const [id, step] of Object.entries(program.steps ?? {})) {
     visit(step, ["steps", id]);
   }
+
   for (const [id, event] of Object.entries(program.random ?? {})) {
     for (const phase of ["on", "off"] as const) {
       visit(event[phase], ["random", id, phase]);
     }
   }
+
   for (const entity of conflicts) {
     add(
       entity,

@@ -4,7 +4,9 @@ import { loadHaControls } from "@occupied/lib/services/ha-controls.js";
 
 for (const genericPicker of [true, false]) {
   void test(`loads native controls with generic picker available: ${genericPicker}`, async () => {
-    const constructor = class {} as unknown as CustomElementConstructor;
+    // SAFETY: The registry fixture uses this constructor only as an identity token and never instantiates it.
+    const constructor = class {} as CustomElementConstructor;
+
     const defined = new Set([
       "partial-panel-resolver",
       "ha-selector",
@@ -12,15 +14,19 @@ for (const genericPicker of [true, false]) {
       "ha-code-editor",
       "state-history-chart-timeline",
     ]);
+
     const pending = new Map<
       string,
       (value: CustomElementConstructor) => void
     >();
+
     const loaded: string[] = [];
+
     const register = (name: string) => {
       defined.add(name);
       pending.get(name)?.(constructor);
     };
+
     const registry = {
       get: (name: string) => (defined.has(name) ? constructor : undefined),
       whenDefined: (name: string) =>
@@ -29,13 +35,16 @@ for (const genericPicker of [true, false]) {
           : new Promise<CustomElementConstructor>((resolve) => {
               pending.set(name, resolve);
             }),
-    } as unknown as CustomElementRegistry;
+    };
+
     const route = (name: string, define?: string) => ({
       load: () => {
         loaded.push(name);
+
         if (define) {
           register(define);
         }
+
         if (name === "history") {
           register("ha-top-app-bar-fixed");
         }
@@ -43,6 +52,7 @@ for (const genericPicker of [true, false]) {
         return Promise.resolve();
       },
     });
+
     const documentStub = {
       createElement: (name: string) =>
         name === "partial-panel-resolver"
@@ -62,20 +72,24 @@ for (const genericPicker of [true, false]) {
                 },
               },
             },
-    } as unknown as Document;
+    };
+
     const originalRegistry = Object.getOwnPropertyDescriptor(
       globalThis,
       "customElements",
     );
+
     const originalDocument = Object.getOwnPropertyDescriptor(
       globalThis,
       "document",
     );
+
     Object.defineProperties(globalThis, {
       customElements: { configurable: true, value: registry },
       document: { configurable: true, value: documentStub },
     });
     let timeout: ReturnType<typeof setTimeout> | undefined;
+
     try {
       await Promise.race([
         loadHaControls(),
@@ -100,6 +114,7 @@ for (const genericPicker of [true, false]) {
       );
     } finally {
       clearTimeout(timeout);
+
       for (const [name, descriptor] of [
         ["customElements", originalRegistry],
         ["document", originalDocument],

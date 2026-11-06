@@ -1172,6 +1172,8 @@ export function translator(language?: string) {
     if (!Object.hasOwn(en, key)) {
       return key;
     }
+
+    // SAFETY: These keys come from the canonical English translation dictionary shared by every locale.
     const translationKey = key as TranslationKey;
 
     return localized?.[translationKey] ?? en[translationKey];

@@ -1,3 +1,4 @@
+import { isFunction } from "../utils/value-guards.js";
 import type { PreviewHistoryEntity } from "../utils/timeline.js";
 
 interface TooltipPoint {
@@ -11,16 +12,22 @@ export function timelineTooltip(
   node: HTMLElement,
   data: PreviewHistoryEntity[],
 ) {
+  // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
   const chart = node as HTMLElement & {
-    _renderTooltip?: (point: TooltipPoint | TooltipPoint[]) => unknown;
+    _renderTooltip?: (point: TooltipPoint | TooltipPoint[]) => void;
   };
+
   const render = chart._renderTooltip;
-  if (typeof render !== "function") {
+
+  if (!isFunction(render)) {
     return;
   }
+
   let histories = data;
+
   const adapt = (point: TooltipPoint): TooltipPoint => {
     const [entity, start] = point.value;
+
     const end = histories
       .find((history) => history.entity_id === entity)
       ?.data.find((state) => state.last_changed === Number(start))?.end_time;
@@ -32,6 +39,7 @@ export function timelineTooltip(
           value: [entity, start, new Date(end), ...point.value.slice(3)],
         };
   };
+
   chart._renderTooltip = (point) =>
     render.call(
       chart,

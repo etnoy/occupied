@@ -1,4 +1,5 @@
 // Generated from custom_components/occupied/frontend/src/lib/models/random-model.ts by pnpm run build. Do not edit.
+import { isObject } from "../utils/value-guards.js";
 import { actionTargetSummary } from "../utils/custom-action.js";
 import { copy, days, identifier } from "./model.js";
 import {
@@ -16,9 +17,7 @@ export function canShareEntities(on, off) {
   );
 }
 export function countBounds(count) {
-  return typeof count === "object"
-    ? count
-    : { min: count ?? 3, max: count ?? 3 };
+  return isObject(count) ? count : { min: count ?? 3, max: count ?? 3 };
 }
 export function countSummary(count) {
   const { min, max } = countBounds(count);

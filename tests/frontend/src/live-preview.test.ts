@@ -46,6 +46,7 @@ void test("live status distinguishes initial readiness, subsequent events, and t
     translator()(liveSessionStatus(session)),
     "Ready for next event",
   );
+
   for (const [state, expected] of [
     ["executing", "Running…"],
     ["stopping", "Stopping…"],
@@ -66,6 +67,7 @@ void test("session updates preserve earlier call results and reject cursor regre
       first: { group_id: "first", status: "dispatched", detail: "done" },
     },
   };
+
   const incoming = {
     ...sessionFixture(),
     cursor: 2,
@@ -74,6 +76,7 @@ void test("session updates preserve earlier call results and reject cursor regre
       second: { group_id: "second", status: "failed", detail: "error" },
     },
   };
+
   const merged = mergeLiveSession(previous, incoming)!;
   assert.equal(Object.keys(merged.outcomes).length, 2);
   assert.equal(mergeLiveSession(merged, previous), merged);
@@ -107,6 +110,7 @@ void test("partial success and interrupted events are never reported as wholly s
 
 void test("timeline status follows occurrence identity regardless of filtering", () => {
   const session = sessionFixture();
+
   const event = {
     id: "call",
     group_id: session.next_group!.id,
@@ -115,6 +119,7 @@ void test("timeline status follows occurrence identity regardless of filtering",
     kind: "step",
     action: { action: "light.turn_on", entities: ["light.a"] },
   };
+
   assert.equal(eventLiveResult(event, session)?.current, true);
   session.outcomes.call = {
     group_id: event.group_id,

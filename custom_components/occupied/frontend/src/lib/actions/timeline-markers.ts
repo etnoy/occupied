@@ -1,3 +1,4 @@
+import { isFunction } from "../utils/value-guards.js";
 import type { PreviewHistoryEntity } from "../utils/timeline.js";
 
 interface MarkerPoint {
@@ -10,21 +11,28 @@ export function timelineMarkers(
   node: HTMLElement,
   data: PreviewHistoryEntity[],
 ) {
+  // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
   const chart = node as HTMLElement & {
     _generateData?: () => void;
-    _chartData?: { id?: string; [key: string]: unknown }[];
+    _chartData?: { id?: string }[];
   };
+
   const generate = chart._generateData;
-  if (typeof generate !== "function") {
+
+  if (!isFunction(generate)) {
     return;
   }
+
   let histories = data;
+
   const refresh = () => {
     const color =
       getComputedStyle(node).getPropertyValue("--primary-color").trim() ||
       "#03a9f4";
+
     chart._chartData = chart._chartData?.map((series) => {
       const row = histories.find((history) => history.entity_id === series.id);
+
       if (!row?.markers) {
         return series;
       }
@@ -50,6 +58,7 @@ export function timelineMarkers(
         ) => {
           const [x, y] = api.coord([api.value(1), api.value(0)]);
           const plot = params.coordSys;
+
           if (
             x < plot.x ||
             x > plot.x + plot.width ||
@@ -64,7 +73,7 @@ export function timelineMarkers(
 
           return {
             type: "polygon",
-            shape: {
+            ["shape"]: {
               points: [
                 [x, y - 7],
                 [x + 7, y],
@@ -92,13 +101,16 @@ export function timelineMarkers(
       };
     });
   };
+
   chart._generateData = () => {
     if ("isConnected" in node && !node.isConnected) {
       return;
     }
+
     generate.call(chart);
     refresh();
   };
+
   refresh();
 
   return {

@@ -42,6 +42,7 @@ const program = (): Program => ({
     },
   },
 });
+
 void test("IDs are stable map keys and references block deleting a parent", () => {
   const p = program();
   assert.equal(identifier(p, "Dinner"), "dinner_2");
@@ -53,6 +54,7 @@ void test("IDs are stable map keys and references block deleting a parent", () =
   removeStep(p, ["steps", "dinner"]);
   assert.deepEqual(p.steps, {});
 });
+
 void test("parent picker excludes self and descendants", () => {
   assert.deepEqual(parentSteps(program(), "dinner"), []);
   assert.deepEqual(
@@ -60,9 +62,11 @@ void test("parent picker excludes self and descendants", () => {
     ["dinner"],
   );
 });
+
 void test("new mixed-domain step has one action and no hidden configuration", () => {
   const p = program(),
     editor = stepEditor(p);
+
   editor.form.entities = ["light.b", "switch.b"];
   const next = buildStep(p, editor);
   assert.equal(next.steps?.[editor.id].action, "turn_on");
@@ -75,9 +79,11 @@ void test("new mixed-domain step has one action and no hidden configuration", ()
   ]);
   assert.equal(Object.keys(p.steps || {}).length, 2);
 });
+
 void test("blank titles are editable and generated names remain display-only", () => {
   const p = program(),
     editor = stepEditor(p, stepEntries(p)[0]);
+
   editor.form.name = "";
   assert.equal(editorErrors(p, editor).name, undefined);
   const next = buildStep(p, editor);
@@ -85,6 +91,7 @@ void test("blank titles are editable and generated names remain display-only", (
   assert.match(stepEntries(next)[0].name, /light.a/);
   assert.equal(stepEditor(next, stepEntries(next)[0]).form.name, "");
 });
+
 void test("related creation inherits targets and weekdays without a container", () => {
   const p = program();
   p.steps!.dinner.days = ["mon"];
@@ -97,9 +104,11 @@ void test("related creation inherits targets and weekdays without a container", 
     start_offset: "30m",
   });
 });
+
 void test("parent and dependent weekdays can be edited independently", () => {
   const p = program(),
     parent = stepEditor(p, stepEntries(p)[0]);
+
   parent.form.days = ["mon"];
   assert.deepEqual(editorErrors(p, parent), {});
   const next = buildStep(p, parent);
@@ -112,9 +121,11 @@ void test("parent and dependent weekdays can be edited independently", () => {
   child.form.days = [];
   assert.equal(editorErrors(next, child).days, "days_required_error");
 });
+
 void test("cycle errors identify the relevant field", () => {
   const p = program(),
     editor = stepEditor(p, stepEntries(p)[0]);
+
   editor.form.timing = {
     mode: "relative",
     anchor: "step:bed",
@@ -125,6 +136,7 @@ void test("cycle errors identify the relevant field", () => {
   };
   assert.equal(editorErrors(p, editor).anchor, "step_reference_error");
 });
+
 void test("signed and second-precision sources round-trip", () => {
   for (const relative_to of [
     { step: "dinner", start_offset: "10s", end_offset: "1m30s" },
@@ -137,15 +149,18 @@ void test("signed and second-precision sources round-trip", () => {
     },
   ]) {
     const timing = { relative_to };
+
     const expected = {
       relative_to: {
         ...relative_to,
         start_offset: relative_to.start_offset || "0s",
       },
     };
+
     assert.deepEqual(formTiming(timingForm(timing)), expected);
   }
 });
+
 void test("absolute fixed and overnight windows round-trip without flags", () => {
   for (const absolute_time of [
     { start: "18:00" },
@@ -156,6 +171,7 @@ void test("absolute fixed and overnight windows round-trip without flags", () =>
     });
   }
 });
+
 void test("service payloads and qualified actions remain editable", () => {
   const p = program();
   p.steps!.dinner = {
@@ -171,6 +187,7 @@ void test("service payloads and qualified actions remain editable", () => {
     brightness_pct: 55,
   });
 });
+
 void test("scene data and selection round-trip", () => {
   const p = program();
   p.steps!.dinner = {
@@ -185,9 +202,11 @@ void test("scene data and selection round-trip", () => {
   editor.form.entities.push("scene.other");
   assert.ok(editorErrors(p, editor).entities);
 });
+
 void test("disabled state and edits leave siblings intact", () => {
   const p = program(),
     editor = stepEditor(p, stepEntries(p)[0]);
+
   const sibling = copy(p.steps!.bed);
   assert.equal(hasStepChanges(editor), false);
   editor.form.enabled = false;
@@ -196,6 +215,7 @@ void test("disabled state and edits leave siblings intact", () => {
   assert.equal(next.steps?.dinner.enabled, false);
   assert.deepEqual(next.steps?.bed, sibling);
 });
+
 void test("source picker offers all supported solar sources", () => {
   assert.deepEqual(
     timeSourceChoices(program(), "bed")
@@ -211,6 +231,7 @@ void test("source picker offers all supported solar sources", () => {
     ],
   );
 });
+
 void test("offsets validate unit format, bounds, and ordering", () => {
   assert.deepEqual(offsetErrors({ startOffset: "0", endOffset: "10s" }), {});
   assert.ok(offsetErrors({ startOffset: "1h", endOffset: "-1h" }).endOffset);
@@ -220,12 +241,14 @@ void test("offsets validate unit format, bounds, and ordering", () => {
 
 void test("timing explanation describes signed offsets and window bounds directly", () => {
   const entries = [{ id: "kitchen", name: "Kitchen lights" }];
+
   const base = {
     mode: "relative",
     anchor: "step:kitchen",
     startOffset: "0s",
     endOffset: "",
   };
+
   for (const [startOffset, endOffset, expected] of [
     ["2h", "", "Runs 2 hours after Kitchen lights"],
     ["-20m", "", "Runs 20 minutes before Kitchen lights"],
@@ -264,6 +287,7 @@ void test("timing explanation describes signed offsets and window bounds directl
       `${expected}${endOffset ? "" : ". Add an end offset to introduce randomness"}`,
     );
   }
+
   assert.equal(
     timingExplanation({ ...base, startOffset: "bad" }, entries),
     "Enter valid offsets to see when this step runs",
@@ -286,9 +310,11 @@ void test("timing explanation describes signed offsets and window bounds directl
     ),
     "Runs 20 minutes before sunset. Add an end offset to introduce randomness",
   );
+
   const sources = [
     { value: "entity:calendar.work:start_time", name: "Work · start" },
   ];
+
   assert.equal(
     timingExplanation(
       { ...base, anchor: sources[0].value },
@@ -319,6 +345,7 @@ void test("solar timing ranges mention the anchor once at a zero-offset boundary
       startOffset,
       endOffset,
     };
+
     assert.equal(
       timingExplanation(timing),
       `Runs at a random time during the 30 minutes ${direction} dusk`,
@@ -353,14 +380,18 @@ void test("absolute timing explanation follows fixed, random and overnight windo
 void test("untitled parent picker labels match the cards and use HA friendly names", () => {
   const p = program();
   delete p.steps!.dinner.name;
+
   const catalog = {
     entities: [{ entity_id: "light.a", name: "Kitchen" }],
     services: {},
   };
+
   const card = stepEntries(p, catalog)[0];
   assert.match(card.name, /Kitchen/);
+
   const source = timeSourceChoices(p, "bed", catalog).find(
     (s) => s.value === "step:dinner",
   );
+
   assert.equal(source?.name, card.name);
 });

@@ -51,6 +51,7 @@ void test("clock and solar modifiers survive unrelated editor changes and reopen
 void test("modifier validation reports nested fields and permits fixed solar sources only", () => {
   const p = program(),
     editor = stepEditor(p, stepEntries(p)[0]);
+
   editor.form.timing.latestAt!.start = "25:00";
   editor.form.timing.onlyBefore!.startOffset = "invalid";
   assert.deepEqual(Object.keys(editorErrors(p, editor)).sort(), [

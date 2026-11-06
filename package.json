@@ -6,17 +6,19 @@
   "scripts": {
     "build": "node scripts/build-frontend.ts",
     "build:check": "node scripts/build-frontend.ts --check",
-    "lint": "eslint \"custom_components/occupied/frontend/src/**/*.{ts,svelte}\" \"tests/frontend/**/*.ts\" \"tests/browser/**/*.ts\" \"scripts/*.{ts,mjs}\" --max-warnings 0",
+    "lint": "eslint \"custom_components/occupied/frontend/src/**/*.{ts,svelte}\" \"tests/frontend/**/*.ts\" \"tests/browser/**/*.ts\" \"scripts/*.{ts,mjs}\" --max-warnings 0 && pnpm run lint:anti-slop",
     "typecheck": "tsc --noEmit && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "test": "pnpm run build:tests && node --test tests/frontend/generated/*.test.js",
-    "format:check": "prettier --check custom_components/occupied/frontend tests/frontend tests/browser \"scripts/*.{ts,mjs}\" eslint.config.mjs tsconfig.json package.json .prettierrc.json .github/workflows .github/dependabot.yml",
-    "format:fix": "prettier --write custom_components/occupied/frontend tests/frontend tests/browser \"scripts/*.{ts,mjs}\" eslint.config.mjs tsconfig.json package.json .prettierrc.json .github/workflows .github/dependabot.yml && pnpm run build",
+    "format:check": "prettier --check custom_components/occupied/frontend tests/frontend tests/browser \"scripts/*.{ts,mjs}\" eslint.config.mjs oxlint.config.ts tsconfig.json package.json .prettierrc.json .github/workflows .github/dependabot.yml",
+    "format:fix": "prettier --write custom_components/occupied/frontend tests/frontend tests/browser \"scripts/*.{ts,mjs}\" eslint.config.mjs oxlint.config.ts tsconfig.json package.json .prettierrc.json .github/workflows .github/dependabot.yml && pnpm run build",
     "build:tests": "node scripts/build-frontend.ts --tests-only",
-    "lint:fix": "eslint \"custom_components/occupied/frontend/src/**/*.{ts,svelte}\" \"tests/frontend/**/*.ts\" \"tests/browser/**/*.ts\" \"scripts/*.{ts,mjs}\" --fix --max-warnings 0 && pnpm run build",
-    "test:browser": "playwright test --config tests/browser/playwright.config.ts"
+    "lint:fix": "oxlint --fix -c oxlint.config.ts custom_components/occupied/frontend/src tests/frontend/src tests/browser scripts && eslint \"custom_components/occupied/frontend/src/**/*.{ts,svelte}\" \"tests/frontend/**/*.ts\" \"tests/browser/**/*.ts\" \"scripts/*.{ts,mjs}\" --fix --max-warnings 0 && pnpm run build",
+    "test:browser": "playwright test --config tests/browser/playwright.config.ts",
+    "lint:anti-slop": "oxlint -c oxlint.config.ts custom_components/occupied/frontend/src tests/frontend/src tests/browser scripts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@oxlint/plugins": "1.78.0",
     "@playwright/test": "1.64.1",
     "@stylistic/eslint-plugin": "5.10.0",
     "@types/node": "24.19.2",
@@ -27,6 +29,7 @@
     "eslint-plugin-svelte": "3.23.1",
     "eslint-plugin-unicorn": "78.0.0",
     "globals": "17.13.0",
+    "oxlint": "1.78.0",
     "prettier": "3.9.10",
     "prettier-plugin-svelte": "4.1.1",
     "svelte-check": "4.7.6",

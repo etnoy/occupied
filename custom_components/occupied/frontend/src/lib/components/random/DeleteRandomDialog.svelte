@@ -53,6 +53,7 @@
       disabled={panel.busy || panel.stale || dependents.length > 0}
       onclick={async () => {
         await deleteRandom(panel);
+
         if (!panel.error && !panel.randomEditor) {
           dialog.close();
         }

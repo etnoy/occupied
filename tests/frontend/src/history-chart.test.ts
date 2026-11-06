@@ -3,7 +3,11 @@ import assert from "node:assert/strict";
 import { historyChartProperties } from "@occupied/lib/actions/history-chart.js";
 
 void test("history chart keeps removed series present with empty data", () => {
-  const chart = {} as HTMLElement & { data?: unknown[] };
+  // SAFETY: The fixture or queried native element supplies the DOM members exercised by this test.
+  const chart = {} as HTMLElement & {
+    data?: unknown[];
+  };
+
   const action = historyChartProperties(chart, {
     data: [
       {

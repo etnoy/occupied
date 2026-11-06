@@ -1,11 +1,17 @@
-export function properties(node: HTMLElement, values: Record<string, unknown>) {
-  const apply = (next: Record<string, unknown>) => {
-    for (const [key, value] of Object.entries(next)) {
-      if ((node as unknown as Record<string, unknown>)[key] !== value) {
-        (node as unknown as Record<string, unknown>)[key] = value;
+// Native HA custom elements expose properties beyond HTMLElement's standard API.
+export function properties<T extends object>(node: HTMLElement, values: T) {
+  // SAFETY: callers supply the native element's property contract; only those supplied keys are read/written.
+  // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
+  const target = node as HTMLElement & T;
+
+  const apply = (next: T) => {
+    for (const key in next) {
+      if (target[key] !== next[key]) {
+        Reflect.set(target, key, next[key]);
       }
     }
   };
+
   apply(values);
 
   return { update: apply };

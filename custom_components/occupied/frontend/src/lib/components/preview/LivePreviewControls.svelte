@@ -13,6 +13,7 @@
   let running = $derived(panel.liveRunning);
   let executing = $derived(panel.liveBusy || session?.state === "executing");
   let lastResult = $derived(session ? lastGroupResult(session) : "");
+
   let canStart = $derived(
     panel.liveReady &&
       !panel.busy &&
@@ -22,6 +23,7 @@
         ? !session.storage_failed
         : !!panel.preview?.valid && !!panel.preview?.plans[0]?.events.length),
   );
+
   let currentOutcomes = $derived(
     Object.values(session?.outcomes || {}).filter(
       (outcome) => outcome.group_id === session?.last_group_id,

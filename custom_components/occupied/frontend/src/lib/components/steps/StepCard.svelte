@@ -24,12 +24,15 @@
   } = $props();
 
   let t = $derived(panel.t);
+
   let editing = $derived(
     panel.stepEditor?.existing && panel.stepEditor.id === entry.id,
   );
+
   let stepDisabled = $derived(
     (editing ? panel.stepEditor?.form.enabled : entry.enabled) === false,
   );
+
   let expanded = $derived(
     editing || (!panel.activeEditor && panel.selectedStep === entry.id),
   );

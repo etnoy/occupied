@@ -20,14 +20,18 @@ export async function deleteStep(panel: LoadedOccupiedPanel, id: string) {
   ) {
     return false;
   }
+
   const entry = stepEntries(panel.draft, panel.catalog, panel.t).find(
     (step) => step.id === id,
   );
+
   if (!entry) {
     return true;
   }
+
   const candidate = copy(panel.draft);
   removeStep(candidate, entry.path);
+
   if (panel.document.source === "file") {
     panel.selectedStep = null;
     panel.stepEditor = null;
@@ -35,6 +39,7 @@ export async function deleteStep(panel: LoadedOccupiedPanel, id: string) {
 
     return true;
   }
+
   if (await panel.save(candidate)) {
     panel.selectedStep = null;
     panel.stepEditor = null;
@@ -55,6 +60,7 @@ export function startStep(
 
     return;
   }
+
   showStep(panel, entry, parent);
 }
 
@@ -69,6 +75,7 @@ function showStep(
   panel.issues = [];
   panel.renderView();
   focusEditor(panel);
+
   if (entry) {
     scrollStepEditorIntoView(panel, entry.id);
   }
@@ -85,6 +92,7 @@ export function openStep(panel: LoadedOccupiedPanel, entry: StepEntry) {
   if (panel.busy) {
     return;
   }
+
   if (panel.stepEditor?.id === entry.id) {
     panel.requestStepExit(() => {
       panel.selectedStep = null;
@@ -93,11 +101,13 @@ export function openStep(panel: LoadedOccupiedPanel, entry: StepEntry) {
 
     return;
   }
+
   if (panel.activeEditor) {
     panel.requestStepExit(() => openStep(panel, entry));
 
     return;
   }
+
   showEntry(panel, entry);
 }
 
@@ -107,15 +117,19 @@ function showEntry(panel: LoadedOccupiedPanel, entry: StepEntry) {
 
 export function actionSummary(entry: StepEntry, t: Translate) {
   const mapping = editableEntityMapping(entry);
+
   if (mapping) {
     return t(mapping.action);
   }
+
   if (entry.actions || entry.action === "set_state") {
     return `${t("custom_yaml")} · ${entry.actions?.length || 1} ${t("actions")}`;
   }
+
   if (entry.action === "scene.turn_on") {
     return t("activate_scene");
   }
+
   if (entry.action === "turn_on" || entry.action === "turn_off") {
     return t(entry.action === "turn_off" ? "turn_off" : "turn_on");
   }
@@ -131,8 +145,10 @@ export function stepTree<T extends TimedEntry>(
   const sortedEntries = [...entries].sort(
     timingOrder([...entries, ...relatedEntries], sources),
   );
+
   const seen = new Set<string>(),
     ordered: { entry: T; depth: number; branches: boolean[] }[] = [];
+
   const parentId = (entry: T) => {
     const relative = (entry.timing || entry.start)?.relative_to;
 
@@ -141,22 +157,28 @@ export function stepTree<T extends TimedEntry>(
       (relative?.random ? `random:${relative.random}` : undefined)
     );
   };
+
   const append = (entry: T, branches: boolean[]) => {
     if (seen.has(entry.id)) {
       return;
     }
+
     seen.add(entry.id);
     ordered.push({ entry, depth: branches.length, branches });
+
     const children = sortedEntries.filter(
       (child) => parentId(child) === entry.id && !seen.has(child.id),
     );
+
     for (const [index, child] of children.entries()) {
       append(child, [...branches, index < children.length - 1]);
     }
   };
+
   const isRoot = (entry: T) =>
     !parentId(entry) ||
     entries.every((parent) => parent.id !== parentId(entry));
+
   for (const step of sortedEntries) {
     if (isRoot(step)) {
       append(step, []);

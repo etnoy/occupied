@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { isString } from "../../utils/value-guards.js";
+
   import type {
     HomeAssistant,
     TimeSource,
@@ -31,11 +33,13 @@
   let items = $derived.by(() => {
     const items: (string | PickerItem)[] = [];
     let group;
+
     for (const choice of choices) {
       if (group !== choice.group) {
         group = choice.group;
         items.push(group);
       }
+
       items.push({
         id: choice.value,
         primary: choice.name,
@@ -62,13 +66,16 @@
     headline.slot = "headline";
     headline.textContent = item.primary;
     row.append(headline);
+
     if (item.secondary) {
       const secondary = document.createElement("span");
       secondary.slot = "supporting-text";
       secondary.textContent = item.secondary;
       row.append(secondary);
     }
+
     const choice = choices.find((choice) => choice.value === item.id);
+
     if (choice?.value.startsWith("sun:")) {
       const time = document.createElement("span");
       time.slot = "end";
@@ -86,12 +93,16 @@
     if (!isValueChangedEvent(event)) {
       return;
     }
-    const next =
-      typeof event.detail.value === "string" ? event.detail.value : "";
+
+    const next = isString(event.detail.value) ? event.detail.value : "";
+
     if (next && choices.every((choice) => choice.value !== next)) {
       return;
     }
+
+    // SAFETY: This handler is attached to the control whose native element type is asserted here.
     const control = event.currentTarget as HaGenericPicker;
+
     control.value = next || undefined;
     onChange(next);
   }

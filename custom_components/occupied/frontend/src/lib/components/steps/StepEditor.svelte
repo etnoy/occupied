@@ -18,6 +18,7 @@
 
     return createStepEditorContext(panel);
   });
+
   let { editor, form, t, editing, submit, cancel } = $derived(context);
 </script>
 

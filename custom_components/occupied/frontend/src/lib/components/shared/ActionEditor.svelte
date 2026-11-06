@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { isString } from "../../utils/value-guards.js";
+
   import type { LoadedOccupiedPanel } from "../../../occupied-panel.js";
   import type { ActionEditorContext } from "../../types.js";
   import { properties } from "../../actions/dom.js";
@@ -36,11 +38,14 @@
   } = $props();
 
   let { form, t } = $derived(context);
+
   let customConflicts = $derived.by(() => {
     if (form.kind !== "custom") {
       return [];
     }
+
     let extras = panel.draft.run_condition?.off_entities ?? [];
+
     if (panel.runConditionForm) {
       extras = panel.runConditionForm.enabled
         ? panel.runConditionForm.offEntities
@@ -52,11 +57,13 @@
       extras,
     );
   });
+
   let serviceDescription = $derived.by(() => {
     const [domain, service] = form.service.split(".", 2);
 
     return panel.catalog.services[domain]?.[service];
   });
+
   let example = $derived(serviceExample(serviceDescription));
 </script>
 
@@ -72,6 +79,7 @@
       const errors = changeActionKind(form, value, (message) =>
         globalThis.confirm(t(message)),
       );
+
       context.setErrors(errors);
     }}
     options={{
@@ -107,12 +115,10 @@
           linewrap: true,
         }}
         onvalue-changed={(event: Event) => {
-          if (
-            !isValueChangedEvent(event) ||
-            typeof event.detail.value !== "string"
-          ) {
+          if (!isValueChangedEvent(event) || !isString(event.detail.value)) {
             return;
           }
+
           form.customYaml = event.detail.value;
           context.changed("customYaml");
         }}
@@ -156,10 +162,11 @@
       onvalue-changed={(event: Event) => {
         if (
           !isValueChangedEvent(event) ||
-          (event.detail.value != null && typeof event.detail.value !== "string")
+          (event.detail.value != null && !isString(event.detail.value))
         ) {
           return;
         }
+
         form.service = event.detail.value || "";
         context.changed("service");
       }}
@@ -205,11 +212,11 @@
         onvalue-changed={(event: Event) => {
           if (
             !isValueChangedEvent(event) ||
-            (event.detail.value != null &&
-              typeof event.detail.value !== "string")
+            (event.detail.value != null && !isString(event.detail.value))
           ) {
             return;
           }
+
           form.activity = event.detail.value || "";
           context.changed("activity");
         }}
@@ -293,6 +300,7 @@
             if (!emptyServiceData(form.data)) {
               return;
             }
+
             form.data = JSON.stringify(example, null, 2);
             context.changed("data");
           }}>{t("insert_service_example")}</button

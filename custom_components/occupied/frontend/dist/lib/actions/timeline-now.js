@@ -1,11 +1,13 @@
 // Generated from custom_components/occupied/frontend/src/lib/actions/timeline-now.ts by pnpm run build. Do not edit.
+import { isFunction, isString } from "../utils/value-guards.js";
 export function timelineNow(node, options) {
+  // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
   const chart = node;
   const generate = chart._generateData;
-  if (typeof generate !== "function") {
+  if (!isFunction(generate)) {
     return;
   }
-  let current = typeof options === "string" ? { label: options } : options;
+  let current = isString(options) ? { label: options } : options;
   const markerId = "occupied-now";
   const eventMarkerId = "occupied-event";
   const refresh = () => {
@@ -20,10 +22,12 @@ export function timelineNow(node, options) {
     if (!chart._chartData) {
       return;
     }
+    // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
     const color =
       getComputedStyle(node).getPropertyValue("--primary-text-color").trim() ||
       "#333";
     const eventTime = current.eventTime ? Date.parse(current.eventTime) : NaN;
+    // SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use.
     const markers = [
       ...(showNow
         ? [
@@ -85,7 +89,12 @@ export function timelineNow(node, options) {
             children: [
               {
                 type: "line",
-                shape: { x1: position, x2: position, y1: y, y2: y + height },
+                ["shape"]: {
+                  x1: position,
+                  x2: position,
+                  y1: y,
+                  y2: y + height,
+                },
                 style: {
                   stroke: marker.color,
                   lineWidth: 2,
@@ -122,7 +131,7 @@ export function timelineNow(node, options) {
   const timer = globalThis.setInterval(refresh, 30_000);
   return {
     update(next) {
-      current = typeof next === "string" ? { label: next } : next;
+      current = isString(next) ? { label: next } : next;
       refresh();
     },
     destroy() {

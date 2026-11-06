@@ -1,4 +1,23 @@
 // Generated from custom_components/occupied/frontend/src/occupied-panel.ts by pnpm run build. Do not edit.
+// custom_components/occupied/frontend/src/lib/utils/lookup.ts
+function lookup(table, key2) {
+  return Object.hasOwn(table, key2) ? table[key2] : void 0;
+}
+
+// custom_components/occupied/frontend/src/lib/utils/value-guards.ts
+function isString(value) {
+  return typeof value === "string";
+}
+function isNumber(value) {
+  return typeof value === "number";
+}
+function isObject(value) {
+  return value !== null && typeof value === "object";
+}
+function isFunction(value) {
+  return typeof value === "function";
+}
+
 // custom_components/occupied/frontend/src/lib/utils/time-format.ts
 function scheduleToday(zone, now = new Date(Date.now())) {
   const parts = Object.fromEntries(
@@ -34,8 +53,8 @@ function formatPreviewDate(value, today, locale, t) {
     0: "today",
     1: "tomorrow",
   };
-  const relativeLabel = relativeLabels[daysFromToday]
-    ? t(relativeLabels[daysFromToday])
+  const relativeLabel = lookup(relativeLabels, daysFromToday)
+    ? t(lookup(relativeLabels, daysFromToday))
     : void 0;
   const dateLabel = formatScheduleDate(value, locale);
   return relativeLabel ? `${relativeLabel} \xB7 ${dateLabel}` : dateLabel;
@@ -1286,7 +1305,7 @@ function set(object, path, value) {
   }
   let parent = object;
   for (const [i, key2] of path.slice(0, -1).entries()) {
-    parent = parent[key2] ??= typeof path[i + 1] === "number" ? [] : {};
+    parent = parent[key2] ??= isNumber(path[i + 1]) ? [] : {};
   }
   const last = path.at(-1);
   if (value === void 0) {
@@ -1381,20 +1400,20 @@ function randomReferences(program, id) {
 }
 
 // custom_components/occupied/frontend/src/lib/utils/util.ts
-function errorMessage(error) {
-  if (error instanceof Error) {
-    return error.message;
+function errorMessage(cause) {
+  if (cause instanceof Error) {
+    return cause.message;
   }
   return String(
-    typeof error === "object" && error !== null && "message" in error
-      ? error.message
-      : error,
+    isObject(cause) && cause !== null && "message" in cause
+      ? cause.message
+      : cause,
   );
 }
 function isValueChangedEvent(event2) {
   return (
     "detail" in event2 &&
-    typeof event2.detail === "object" &&
+    isObject(event2.detail) &&
     event2.detail !== null &&
     "value" in event2.detail
   );
@@ -1429,7 +1448,7 @@ function minutes(value) {
   if (value === "0") {
     return 0;
   }
-  if (typeof value === "number") {
+  if (isNumber(value)) {
     return value / 60;
   }
   const text2 = value || "0s";
@@ -1443,7 +1462,7 @@ function minutes(value) {
   }
   const total = [...text2.matchAll(/(\d+(?:\.\d+)?)([hms])/g)].reduce(
     (n, [, amount, unit]) =>
-      n + Number(amount) * { h: 60, m: 1, s: 1 / 60 }[unit],
+      n + Number(amount) * lookup({ h: 60, m: 1, s: 1 / 60 }, unit),
     0,
   );
   return text2.startsWith("-") ? -total : total;
@@ -1462,10 +1481,8 @@ function durationLabel(value, t = translator()) {
     [mins, "minute", "minutes"],
     [seconds, "second", "seconds"],
   ]
-    .filter(([amount]) => amount > 0)
-    .map(
-      ([amount, singular, plural]) =>
-        `${amount} ${t(amount === 1 ? singular : plural)}`,
+    .flatMap(([amount, singular, plural]) =>
+      amount > 0 ? `${amount} ${t(amount === 1 ? singular : plural)}` : [],
     )
     .join(" ");
 }
@@ -1554,7 +1571,7 @@ function scheduleDaySuffix(selected, t) {
     sat: "saturdays",
     sun: "sundays",
   };
-  const dayNames = selected.map((day) => t(weekdayNames[day] || day));
+  const dayNames = selected.map((day) => t(lookup(weekdayNames, day) || day));
   const lastDay = dayNames.pop();
   const dayList =
     dayNames.length > 0
@@ -9759,10 +9776,7 @@ function isCoverAction(action2) {
 }
 function validCoverPosition(value) {
   return (
-    typeof value === "number" &&
-    Number.isSafeInteger(value) &&
-    value >= 0 &&
-    value <= 100
+    isNumber(value) && Number.isSafeInteger(value) && value >= 0 && value <= 100
   );
 }
 function coverTarget(action2, previous = {}) {
@@ -9829,12 +9843,12 @@ function editableEntityMapping(source2) {
       return (
         Object.keys(settings).some((key2) => !allowed.includes(key2)) ||
         (settings.brightness !== void 0 &&
-          (typeof settings.brightness !== "number" ||
+          (!isNumber(settings.brightness) ||
             !Number.isSafeInteger(settings.brightness) ||
             settings.brightness < 1 ||
             settings.brightness > 255)) ||
         (settings.transition !== void 0 &&
-          (typeof settings.transition !== "number" ||
+          (!isNumber(settings.transition) ||
             !Number.isFinite(settings.transition) ||
             settings.transition < 0 ||
             settings.transition > 604800)) ||
@@ -9867,7 +9881,10 @@ function editableEntityMapping(source2) {
       }),
       transition: String(settings.transition ?? ""),
       ...(settings.rgb_color !== void 0 && {
-        rgbColor: [...settings.rgb_color],
+        rgbColor: [
+          .../* SAFETY: The preceding validation establishes a finite numeric value before constructing the entity setting. */
+          settings.rgb_color,
+        ],
       }),
       ...(settings.color_temp_kelvin !== void 0 && {
         colorTemp: String(settings.color_temp_kelvin),
@@ -9951,10 +9968,7 @@ function validRgbColor(value) {
 }
 function validColorTemp(value) {
   return (
-    typeof value === "number" &&
-    Number.isSafeInteger(value) &&
-    value >= 1 &&
-    value <= 1e5
+    isNumber(value) && Number.isSafeInteger(value) && value >= 1 && value <= 1e5
   );
 }
 function entitySettingsErrors(form) {
@@ -10061,12 +10075,12 @@ function actionYaml(value, level = 0) {
       })
       .join("\n");
   }
-  if (value !== null && typeof value === "object") {
+  if (value !== null && isObject(value)) {
     return Object.entries(value)
       .map(([key2, item]) => {
         const scalar =
           item === null ||
-          typeof item !== "object" ||
+          !isObject(item) ||
           (!Array.isArray(item) && Object.keys(item).length === 0) ||
           (Array.isArray(item) && item.length === 0);
         const name =
@@ -10227,7 +10241,7 @@ function stepDisplayName(step, catalog, t) {
   const label2 =
     step.actions || action2 === "set_state"
       ? "custom_yaml"
-      : actionLabels[action2] || action2;
+      : lookup(actionLabels, action2) || action2;
   return `${actionTargetSummary(step, catalog)} \xB7 ${t(label2)}`;
 }
 function stepEntries(program, catalog, t = translator()) {
@@ -10292,7 +10306,7 @@ function timeSourceChoices(
       return {
         ...source2,
         name: source2.value.startsWith("sun:")
-          ? t(solarLabels[source2.value.slice(4)] || source2.name)
+          ? t(lookup(solarLabels, source2.value.slice(4)) || source2.name)
           : source2.name,
         group: groupKey ? t(groupKey) : source2.group,
       };
@@ -10350,8 +10364,7 @@ function actionForm(source2) {
     Object.keys(source2.data || {}).every(
       (key2) => key2 === "activity" && action2 === "remote.turn_on",
     ) &&
-    (source2.data?.activity === void 0 ||
-      typeof source2.data.activity === "string")
+    (source2.data?.activity === void 0 || isString(source2.data.activity))
   ) {
     kind = "remote";
   } else if (action2?.includes(".")) {
@@ -10488,7 +10501,7 @@ function actionErrors(form) {
   } else if (form.kind === "scene" || form.kind === "service") {
     try {
       const data = JSON.parse(form.data);
-      if (!data || Array.isArray(data) || typeof data !== "object") {
+      if (!data || Array.isArray(data) || !isObject(data)) {
         throw new TypeError("Expected service data to be a JSON object");
       }
     } catch {
@@ -10619,7 +10632,9 @@ function baseFormTiming(time) {
     return {
       relative_to: {
         entity,
-        ...(attribute && { attribute }),
+        ...(attribute && {
+          attribute,
+        }),
         ...offsets,
       },
     };
@@ -10723,9 +10738,7 @@ function canShareEntities(on2, off) {
   );
 }
 function countBounds(count) {
-  return typeof count === "object"
-    ? count
-    : { min: count ?? 3, max: count ?? 3 };
+  return isObject(count) ? count : { min: count ?? 3, max: count ?? 3 };
 }
 function randomEntries(program, catalog) {
   return Object.entries(program.random || {}).map(([id, event2]) => ({
@@ -11306,10 +11319,11 @@ function stepTree(entries, sources = [], relatedEntries = []) {
 
 // custom_components/occupied/frontend/src/lib/actions/dom.ts
 function properties(node, values) {
+  const target = node;
   const apply2 = (next2) => {
-    for (const [key2, value] of Object.entries(next2)) {
-      if (node[key2] !== value) {
-        node[key2] = value;
+    for (const key2 in next2) {
+      if (target[key2] !== next2[key2]) {
+        Reflect.set(target, key2, next2[key2]);
       }
     }
   };
@@ -11422,7 +11436,9 @@ function DeleteStepDialog($$anchor, $$props) {
     ($$node, $$action_arg) => reference?.($$node, $$action_arg),
     () => (node) => {
       if (node) {
-        dialog = node;
+        dialog =
+          /* SAFETY: The queried native HA element owns these documented DOM members; optional extension methods are checked before use. */
+          node;
       }
     },
   );
@@ -12476,8 +12492,7 @@ function SourcePicker($$anchor, $$props) {
     if (!isValueChangedEvent(event2)) {
       return;
     }
-    const next2 =
-      typeof event2.detail.value === "string" ? event2.detail.value : "";
+    const next2 = isString(event2.detail.value) ? event2.detail.value : "";
     if (next2 && $$props.choices.every((choice) => choice.value !== next2)) {
       return;
     }
@@ -12890,7 +12905,12 @@ function TimingEditor($$anchor, $$props) {
         [() => get(t)(label2())],
       );
       delegated("change", input, (event2) => {
-        if (!event2.currentTarget.checked) {
+        if (
+          !(
+            /* SAFETY: This handler is attached to the control whose native element type is asserted here. */
+            event2.currentTarget.checked
+          )
+        ) {
           return;
         }
         get(time).mode = value();
@@ -13617,7 +13637,7 @@ function EntityRow($$anchor, $$props) {
         get(form),
         $$props.entity,
         key2,
-        typeof value === "string" ? value : "",
+        isString(value) ? value : "",
       );
     }
     $$props.context.changed(`${get(field)}.${key2}`);
@@ -13721,7 +13741,7 @@ function EntityRow($$anchor, $$props) {
           return;
         }
         const value = event2.detail.value;
-        if (typeof value === "string" && value) {
+        if (isString(value) && value) {
           $$props.replace(value);
         } else {
           $$props.remove();
@@ -13944,11 +13964,11 @@ function EntityRow($$anchor, $$props) {
           if (
             Array.isArray(value) &&
             value.length === 3 &&
-            value.every((channel) => typeof channel === "number")
+            value.every((channel) => isNumber(channel))
           ) {
             setValue(get(item).key, value);
           }
-        } else if (value == null || typeof value === "number") {
+        } else if (value == null || isNumber(value)) {
           setValue(get(item).key, value == null ? "" : String(value));
         }
       });
@@ -14148,7 +14168,7 @@ function EntitiesEditor($$anchor, $$props) {
               event("value-changed", ha_selector, (event2) => {
                 if (
                   !isValueChangedEvent(event2) ||
-                  typeof event2.detail.value !== "string" ||
+                  !isString(event2.detail.value) ||
                   !event2.detail.value
                 ) {
                   return;
@@ -14250,8 +14270,7 @@ function EntitiesEditor($$anchor, $$props) {
         if (Array.isArray(value)) {
           get(form).entities = value;
         } else {
-          get(form).entities =
-            typeof value === "string" && value ? [value] : [];
+          get(form).entities = isString(value) && value ? [value] : [];
         }
         get(changed)("entities");
       });
@@ -14368,7 +14387,7 @@ function emptyServiceData(data) {
     const value = JSON.parse(data);
     return (
       value !== null &&
-      typeof value === "object" &&
+      isObject(value) &&
       !Array.isArray(value) &&
       Object.keys(value).length === 0
     );
@@ -14469,7 +14488,7 @@ function acceptedEntities(kind, entities) {
     scene: ["scene"],
   };
   const accepted = entities.filter((entity) =>
-    domains[kind]?.includes(entity.split(".", 1)[0]),
+    lookup(domains, kind)?.includes(entity.split(".", 1)[0]),
   );
   return kind === "scene" ? accepted.slice(0, 1) : accepted;
 }
@@ -14686,10 +14705,7 @@ function ActionEditor($$anchor, $$props) {
         [() => get(t)("custom_yaml_hint")],
       );
       event("value-changed", ha_code_editor, (event2) => {
-        if (
-          !isValueChangedEvent(event2) ||
-          typeof event2.detail.value !== "string"
-        ) {
+        if (!isValueChangedEvent(event2) || !isString(event2.detail.value)) {
           return;
         }
         get(form).customYaml = event2.detail.value;
@@ -14773,8 +14789,7 @@ function ActionEditor($$anchor, $$props) {
       event("value-changed", ha_selector, (event2) => {
         if (
           !isValueChangedEvent(event2) ||
-          (event2.detail.value != null &&
-            typeof event2.detail.value !== "string")
+          (event2.detail.value != null && !isString(event2.detail.value))
         ) {
           return;
         }
@@ -14856,8 +14871,7 @@ function ActionEditor($$anchor, $$props) {
           event("value-changed", ha_selector_1, (event2) => {
             if (
               !isValueChangedEvent(event2) ||
-              (event2.detail.value != null &&
-                typeof event2.detail.value !== "string")
+              (event2.detail.value != null && !isString(event2.detail.value))
             ) {
               return;
             }
@@ -15356,7 +15370,7 @@ function createRandomEditorContext(panel) {
         }
         return options && (key2 === "showEndTime" || key2 === "showEndOffset")
           ? options[key2]
-          : Reflect.get(target, key2);
+          : target[key2];
       },
       set(target, key2, value) {
         if (options && (key2 === "showEndTime" || key2 === "showEndOffset")) {
@@ -16600,7 +16614,7 @@ function randomExplanation(
         "cover.stop_cover_tilt": "action_stop_tilt_summary",
         "cover.set_cover_tilt_position": "action_tilt_position_summary",
       };
-      const description = descriptions[selected.service];
+      const description = lookup(descriptions, selected.service);
       if (!description) {
         return "";
       }
@@ -17898,7 +17912,7 @@ function RunConditionSettings($$anchor, $$props) {
                     }
                     const value = event2.detail.value;
                     if (
-                      typeof value === "string" &&
+                      isString(value) &&
                       value &&
                       !get(form).offEntities.includes(value)
                     ) {
@@ -18004,7 +18018,7 @@ function RunConditionSettings($$anchor, $$props) {
                 }
                 const value = event2.detail.value;
                 if (
-                  typeof value !== "string" ||
+                  !isString(value) ||
                   !value ||
                   get(form).offEntities.includes(value)
                 ) {
@@ -18041,10 +18055,9 @@ function RunConditionSettings($$anchor, $$props) {
             if (!isValueChangedEvent(event2)) {
               return;
             }
-            get(form).entityId =
-              typeof event2.detail.value === "string"
-                ? event2.detail.value
-                : "";
+            get(form).entityId = isString(event2.detail.value)
+              ? event2.detail.value
+              : "";
             $$props.panel.updateRunCondition();
           });
           event("value-changed", ha_selector_1, (event2) => {
@@ -18053,7 +18066,9 @@ function RunConditionSettings($$anchor, $$props) {
             )) {
               return;
             }
-            get(form).states = event2.detail.value;
+            get(form).states =
+              /* SAFETY: The multiple-selection control emits an array of selected string values. */
+              event2.detail.value;
             $$props.panel.updateRunCondition();
           });
           delegated("change", input_1, (event2) => {
@@ -18152,7 +18167,13 @@ function RunConditionSettings($$anchor, $$props) {
         get(form).enabled = event2.currentTarget.checked;
         $$props.panel.updateRunCondition();
       });
-      delegated("click", button_1, () => $$props.panel.saveRunCondition());
+      delegated(
+        "click",
+        /* SAFETY: The multiple-selection control emits an array of selected string values. */
+        /* SAFETY: This handler is attached to the control whose native element type is asserted here. */
+        button_1,
+        () => $$props.panel.saveRunCondition(),
+      );
       delegated("click", button_2, () => $$props.panel.openRunCondition());
       append($$anchor2, section);
     };
@@ -18322,7 +18343,9 @@ function SettingsView($$anchor, $$props) {
     ],
   );
   delegated("change", input, async (event2) => {
-    const file = event2.currentTarget.files?.[0];
+    const file =
+      /* SAFETY: This handler is attached to the control whose native element type is asserted here. */
+      event2.currentTarget.files?.[0];
     if (!file) {
       return;
     }
@@ -18335,10 +18358,7 @@ function SettingsView($$anchor, $$props) {
     panel().flush();
   });
   event("value-changed", ha_code_editor, (event2) => {
-    if (
-      !isValueChangedEvent(event2) ||
-      typeof event2.detail.value !== "string"
-    ) {
+    if (!isValueChangedEvent(event2) || !isString(event2.detail.value)) {
       return;
     }
     panel().yaml = event2.detail.value;
@@ -18358,10 +18378,10 @@ delegate(["change", "click"]);
 function timelineNow(node, options) {
   const chart = node;
   const generate = chart._generateData;
-  if (typeof generate !== "function") {
+  if (!isFunction(generate)) {
     return;
   }
-  let current = typeof options === "string" ? { label: options } : options;
+  let current = isString(options) ? { label: options } : options;
   const markerId = "occupied-now";
   const eventMarkerId = "occupied-event";
   const refresh = () => {
@@ -18437,7 +18457,12 @@ function timelineNow(node, options) {
             children: [
               {
                 type: "line",
-                shape: { x1: position, x2: position, y1: y, y2: y + height },
+                ["shape"]: {
+                  x1: position,
+                  x2: position,
+                  y1: y,
+                  y2: y + height,
+                },
                 style: {
                   stroke: marker.color,
                   lineWidth: 2,
@@ -18474,7 +18499,7 @@ function timelineNow(node, options) {
   const timer = globalThis.setInterval(refresh, 3e4);
   return {
     update(next2) {
-      current = typeof next2 === "string" ? { label: next2 } : next2;
+      current = isString(next2) ? { label: next2 } : next2;
       refresh();
     },
     destroy() {
@@ -18491,7 +18516,7 @@ function timelineNow(node, options) {
 function timelineTooltip(node, data) {
   const chart = node;
   const render = chart._renderTooltip;
-  if (typeof render !== "function") {
+  if (!isFunction(render)) {
     return;
   }
   let histories = data;
@@ -18526,7 +18551,7 @@ function timelineTooltip(node, data) {
 function timelineMarkers(node, data) {
   const chart = node;
   const generate = chart._generateData;
-  if (typeof generate !== "function") {
+  if (!isFunction(generate)) {
     return;
   }
   let histories = data;
@@ -18564,7 +18589,7 @@ function timelineMarkers(node, data) {
           }
           return {
             type: "polygon",
-            shape: {
+            ["shape"]: {
               points: [
                 [x, y - 7],
                 [x + 7, y],
@@ -18623,17 +18648,18 @@ function historyChartProperties(node, values) {
     for (const entity of current) {
       known.set(entity.entity_id, entity);
     }
-    const removed = [...known.values()]
-      .filter((entity) => !ids.has(entity.entity_id))
-      .map((entity) => {
-        const empty = { ...entity, data: [] };
-        if (entity.markers) {
-          empty.markers = [];
-        } else {
-          delete empty.markers;
-        }
-        return empty;
-      });
+    const removed = [...known.values()].flatMap((entity) => {
+      if (ids.has(entity.entity_id)) {
+        return [];
+      }
+      const empty = { ...entity, data: [] };
+      if (entity.markers) {
+        empty.markers = [];
+      } else {
+        delete empty.markers;
+      }
+      return empty;
+    });
     return { ...next2, data: [...current, ...removed] };
   };
   const binding = properties(node, retainSeries(values));
@@ -18689,9 +18715,9 @@ function loadHaHistoryChart() {
     if (!customElements.get("state-history-chart-timeline")) {
       throw new Error("Home Assistant history chart is unavailable");
     }
-  })().catch((error) => {
+  })().catch((cause) => {
     historyChartLoad = void 0;
-    throw error;
+    throw cause;
   });
   return historyChartLoad;
 }
@@ -18812,7 +18838,7 @@ function previewStateHistory(plan, program, names = {}, t = translator()) {
     on: "on_label",
     off: "off_label",
   };
-  const label2 = (state2) => t(stateLabels[state2] || "unknown");
+  const label2 = (state2) => t(lookup(stateLabels, state2) || "unknown");
   const extraEntities = program.run_condition?.off_entities ?? [];
   const managedExtras = new Set(managedOffEntities(program, extraEntities));
   for (const entity of extraEntities) {
@@ -18960,13 +18986,14 @@ function eventDetails(event2, label2, timezone, t, locale, entityNames = {}) {
   };
   const service = event2.action.action;
   const shortService = service.split(".").at(-1);
-  const actionLabel = actionLabels2[service] || actionLabels2[shortService];
+  const actionLabel =
+    lookup(actionLabels2, service) || lookup(actionLabels2, shortService);
   let action2 = actionLabel ? t(actionLabel) : service;
   const positionFields = {
     "cover.set_cover_position": "position",
     "cover.set_cover_tilt_position": "tilt_position",
   };
-  const positionField = positionFields[service];
+  const positionField = lookup(positionFields, service);
   if (positionField && event2.action.data?.[positionField] !== void 0) {
     action2 += ` \xB7 ${event2.action.data[positionField]}%`;
   }
@@ -18975,9 +19002,9 @@ function eventDetails(event2, label2, timezone, t, locale, entityNames = {}) {
   }
   return {
     time: formatEventTime(event2.time, timezone, locale),
-    source: `${label2} \xB7 ${t(kinds[event2.kind] || event2.kind)}`,
+    source: `${label2} \xB7 ${t(lookup(kinds, event2.kind) || event2.kind)}`,
     action: action2,
-    actionState: ["on_label", "off_label"].includes(actionLabel)
+    actionState: ["on_label", "off_label"].includes(actionLabel || "")
       ? shortService.slice(5)
       : void 0,
     targets: event2.action.entities
@@ -20854,8 +20881,8 @@ function App($$anchor, $$props) {
     void $updates();
     return new Proxy($$props.panel, {
       get(target, key2) {
-        const value = Reflect.get(target, key2, target);
-        if (typeof value === "function") {
+        const value = target[key2];
+        if (isFunction(value)) {
           const previous = methods[key2];
           if (previous?.target === target && previous.value === value) {
             return previous.bound;
@@ -22546,8 +22573,8 @@ var OccupiedPanel = class extends HTMLElement {
       this.flush();
     }
   }
-  fail(error) {
-    this.error = this.t(errorMessage(error));
+  fail(cause) {
+    this.error = this.t(errorMessage(cause));
     this.flush();
   }
   attempt(action2) {
@@ -22907,12 +22934,12 @@ var OccupiedPanel = class extends HTMLElement {
     });
   }
 };
-function isRevisionConflict(error) {
+function isRevisionConflict(cause) {
   return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "revision_conflict"
+    isObject(cause) &&
+    cause !== null &&
+    "code" in cause &&
+    cause.code === "revision_conflict"
   );
 }
 function editorField(tail, form) {
@@ -22979,11 +23006,14 @@ function randomEditorField(tail, form) {
     return tail[1] === "max" ? "maxCount" : "minCount";
   }
   return (
-    {
-      min_duration: "minDuration",
-      max_duration: "maxDuration",
-      days: "days",
-    }[String(head2)] || "name"
+    lookup(
+      {
+        min_duration: "minDuration",
+        max_duration: "maxDuration",
+        days: "days",
+      },
+      String(head2),
+    ) || "name"
   );
 }
 if (!customElements.get("occupied-panel")) {

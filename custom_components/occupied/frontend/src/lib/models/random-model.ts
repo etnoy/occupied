@@ -1,3 +1,4 @@
+import { isObject } from "../utils/value-guards.js";
 import type {
   Program,
   RandomEntry,
@@ -27,9 +28,7 @@ export function canShareEntities(on: ActionForm, off: ActionForm): boolean {
 }
 
 export function countBounds(count: RandomEvent["count"]) {
-  return typeof count === "object"
-    ? count
-    : { min: count ?? 3, max: count ?? 3 };
+  return isObject(count) ? count : { min: count ?? 3, max: count ?? 3 };
 }
 
 export function countSummary(count: RandomEvent["count"]): string {
@@ -59,6 +58,7 @@ export function randomEditor(
   const on = actionForm(source?.on);
   const off = actionForm(source?.off || { action: "turn_off", entities: [] });
   const count = countBounds(source?.count);
+
   const form: RandomForm = {
     name: source?.name || "",
     enabled: source?.enabled !== false,
@@ -109,6 +109,7 @@ export function randomErrors(
   editor: RandomEditorState,
 ): FieldErrors {
   const { form } = editor;
+
   const errors: FieldErrors = {
     ...prefixedErrors(
       timingErrors(program, form.start, undefined, editor.id),
@@ -125,20 +126,26 @@ export function randomErrors(
       "off.",
     ),
   };
+
   const minimum = durationSeconds(form.minDuration),
     maximum = durationSeconds(form.maxDuration);
+
   if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604_800) {
     errors.minDuration = "duration_error";
   }
+
   if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604_800) {
     errors.maxDuration = "duration_error";
   } else if (maximum < minimum) {
     errors.maxDuration = "duration_order_error";
   }
+
   const minCount = Number(form.minCount),
     maxCount = Number(form.maxCount);
+
   for (const field of ["minCount", "maxCount"] as const) {
     const count = Number(form[field]);
+
     if (
       !form[field].trim() ||
       !Number.isSafeInteger(count) ||
@@ -148,12 +155,15 @@ export function randomErrors(
       errors[field] = "random_count_error";
     }
   }
+
   if (!errors.minCount && !errors.maxCount && maxCount < minCount) {
     errors.maxCount = "random_count_order_error";
   }
+
   if (form.days.length === 0) {
     errors.days = "days_required_error";
   }
+
   if (
     maxCount > 0 &&
     form.end.mode === "duration" &&
@@ -164,6 +174,7 @@ export function randomErrors(
   ) {
     errors.minDuration = "duration_exceeds_window_error";
   }
+
   if (
     maxCount > 0 &&
     form.start.mode === "absolute" &&
@@ -177,10 +188,13 @@ export function randomErrors(
       clock
         .split(":")
         .reduce((total, part, i) => total + Number(part) * [3600, 60, 1][i], 0);
+
     let span = seconds(form.end.start) - seconds(form.start.start);
+
     if (span < 0) {
       span += 86_400;
     }
+
     if (span === 0) {
       errors["end.start"] = "window_end_order_error";
     } else if (minimum > span) {
@@ -198,12 +212,15 @@ export function windowEndErrors(
   if (time.mode !== "duration") {
     return timingErrors(program, time);
   }
+
   const errors: FieldErrors = {};
   const minimum = durationSeconds(time.minDuration || "");
   const maximum = durationSeconds(time.maxDuration || time.minDuration || "");
+
   if (!Number.isFinite(minimum) || minimum <= 0 || minimum > 604_800) {
     errors.minDuration = "window_duration_error";
   }
+
   if (!Number.isFinite(maximum) || maximum <= 0 || maximum > 604_800) {
     errors.maxDuration = "window_duration_error";
   } else if (maximum < minimum) {
@@ -218,14 +235,18 @@ export function buildRandom(
   editor: RandomEditorState,
 ): Program {
   const errors = randomErrors(program, editor);
+
   if (Object.keys(errors).length > 0) {
     throw new Error(Object.values(errors)[0]);
   }
+
   if (editor.existing && !program.random?.[editor.id]) {
     throw new Error("random_changed_error");
   }
+
   const next = copy(program),
     { form } = editor;
+
   (next.random ||= {})[editor.id] = {
     ...(form.name.trim() && { name: form.name.trim() }),
     ...(!form.enabled && { enabled: false }),

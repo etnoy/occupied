@@ -1,20 +1,27 @@
 // Generated from custom_components/occupied/frontend/src/lib/models/model.ts by pnpm run build. Do not edit.
+import { isNumber } from "../utils/value-guards.js";
 export const copy = (value) => structuredClone(value);
 export const days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 export function get(object, path) {
   let value = object;
   for (const key of path) {
-    value = value?.[key];
+    value =
+      /* SAFETY: Editor paths address mutable program JSON containers; intermediate containers are created before assignment. */ value?.[
+        key
+      ];
   }
+  // SAFETY: The caller selects T from the editor path; traversal preserves the stored value without conversion.
   return value;
 }
 export function set(object, path, value) {
   if (path.length === 0) {
     throw new Error("Cannot set an empty path");
   }
+  // SAFETY: Editor paths address mutable program JSON containers; intermediate containers are created before assignment.
   let parent = object;
   for (const [i, key] of path.slice(0, -1).entries()) {
-    parent = parent[key] ??= typeof path[i + 1] === "number" ? [] : {};
+    // SAFETY: Editor paths address mutable program JSON containers; intermediate containers are created before assignment.
+    parent = parent[key] ??= isNumber(path[i + 1]) ? [] : {};
   }
   const last = path.at(-1);
   if (value === undefined) {

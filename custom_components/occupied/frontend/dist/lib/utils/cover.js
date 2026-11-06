@@ -1,4 +1,5 @@
 // Generated from custom_components/occupied/frontend/src/lib/utils/cover.ts by pnpm run build. Do not edit.
+import { isNumber } from "./value-guards.js";
 export const coverActions = [
   ["cover.open_cover", "open_cover"],
   ["cover.close_cover", "close_cover"],
@@ -28,10 +29,7 @@ export function isCoverAction(action) {
 }
 function validCoverPosition(value) {
   return (
-    typeof value === "number" &&
-    Number.isSafeInteger(value) &&
-    value >= 0 &&
-    value <= 100
+    isNumber(value) && Number.isSafeInteger(value) && value >= 0 && value <= 100
   );
 }
 // These are authored targets, without inferred travel times or stop positions.

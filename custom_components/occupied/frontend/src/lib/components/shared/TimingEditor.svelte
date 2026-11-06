@@ -39,9 +39,11 @@
 
   let { editor, form, time, t, refresh, changed } = $derived(context);
   let fieldPrefix = $derived(context.fieldPrefix || "");
+
   let endTimeVisible = $derived(
     !!(time.end || editor.showEndTime || editor.errors.end),
   );
+
   let endOffsetVisible = $derived(
     !!(time.endOffset || editor.showEndOffset || editor.errors.endOffset),
   );
@@ -56,8 +58,10 @@
           durationSeconds(time.minDuration || "")) ||
       !!editor.errors.maxDuration,
   );
+
   let choices = $derived.by(() => {
     void context;
+
     let choices = timeSourceChoices(
       panel.draft,
       context.stepId,
@@ -65,6 +69,7 @@
       t,
       context.randomId,
     );
+
     if (
       time.anchor &&
       choices.every((choice) => choice.value !== time.anchor)
@@ -104,17 +109,27 @@
             data-builder-field={`${fieldPrefix}mode`}
             checked={time.mode === value}
             onchange={(event: Event) => {
-              if (!(event.currentTarget as HTMLInputElement).checked) {
+              if (
+                !(
+                  /* SAFETY: This handler is attached to the control whose native element type is asserted here. */ (
+                    event.currentTarget as HTMLInputElement
+                  ).checked
+                )
+              ) {
                 return;
               }
+
               time.mode = value;
+
               if (value === "relative" && !time.anchor) {
                 time.anchor = "sun:sunrise";
               }
+
               if (value === "duration") {
                 time.minDuration ||= "1h";
                 time.maxDuration ||= time.minDuration;
               }
+
               changed("mode");
               panel.shadowRoot
                 .querySelector<HTMLElement>(
@@ -167,6 +182,7 @@
           value={time.end}
           update={(value) => {
             time.end = value;
+
             if (!value) {
               editor.showEndTime = false;
             }
@@ -191,6 +207,7 @@
         if (!maxDurationVisible) {
           time.maxDuration = value;
         }
+
         time.minDuration = value;
       }}
       options={{ placeholder: "1h" }}
@@ -204,6 +221,7 @@
         value={time.maxDuration || ""}
         update={(value) => {
           time.maxDuration = value;
+
           if (!value) {
             showMaxDuration = false;
           }
@@ -248,28 +266,35 @@
         fieldPrefix,
         onChange: (value) => {
           time.anchor = value;
+
           if (!editor.existing && value.startsWith("step:")) {
             const parent = stepEntries(
               panel.draft,
               panel.catalog,
               panel.t,
             ).find((step) => step.id === value.slice(5));
+
             if (parent) {
               form.days = [...parent.days];
             }
           }
+
           if (!editor.existing && value.startsWith("random:")) {
             const parent = randomEntries(panel.draft).find(
               (entry) => entry.id === value.slice(7),
             );
+
             if (parent) {
               form.days = [...parent.days];
             }
           }
+
           changed("anchor");
+
           const picker = panel.shadowRoot.querySelector<HTMLElement>(
             `[data-builder-field="${CSS.escape(fieldPrefix)}anchor"]`,
           );
+
           if (picker && panel.shadowRoot.activeElement !== picker) {
             picker.focus();
           }
@@ -343,7 +368,9 @@
   {/if}
   {#if context.stepId !== undefined && time.mode === "relative"}
     {#each [["latestAt", "no_later_than"], ["onlyBefore", "only_run_before"]] as [modifier, label] (modifier)}
-      {@const key = modifier as "latestAt" | "onlyBefore"}
+      {@const key =
+        /* SAFETY: The loop defines only the latestAt and onlyBefore modifier keys. */ modifier as
+          "latestAt" | "onlyBefore"}
       <div class="timing-options">
         <label class="timing-limit-toggle">
           <input
@@ -359,11 +386,13 @@
                     startOffset: "0s",
                   }
                 : undefined;
+
               for (const field of Object.keys(editor.errors)) {
                 if (field.startsWith(`${key}.`)) {
                   delete editor.errors[field];
                 }
               }
+
               changed(key);
             }}
           />

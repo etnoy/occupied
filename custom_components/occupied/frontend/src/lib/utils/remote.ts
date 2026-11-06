@@ -7,6 +7,7 @@ export function remoteActivities(
   if (entities.length === 0 || !catalog) {
     return [];
   }
+
   const lists = entities.map(
     (id) =>
       catalog.entities.find((entity) => entity.entity_id === id)
@@ -26,10 +27,13 @@ export function remoteErrors(form: ActionForm): FieldErrors {
   if (form.kind !== "remote") {
     return {};
   }
+
   const errors: FieldErrors = {};
+
   if (form.entities.some((entity) => !entity.startsWith("remote."))) {
     errors.entities = "remote_entities_error";
   }
+
   if (!["remote.turn_on", "remote.turn_off"].includes(form.service)) {
     errors.service = "remote_command_error";
   }

@@ -8,6 +8,7 @@ void test("switching to service keeps selected lights and switches", () => {
     action: "turn_on",
     entities: ["light.a", "switch.b"],
   });
+
   changeActionKind(form, "service", () => false);
   assert.deepEqual(form.entities, ["light.a", "switch.b"]);
 });
@@ -29,6 +30,7 @@ void test("kind changes retain only compatible domains and one scene", () => {
         "switch.b",
       ],
     });
+
     changeActionKind(form, kind, () => false);
     assert.deepEqual(form.entities, expected);
   }
